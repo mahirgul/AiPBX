@@ -1,0 +1,5 @@
+[general]
+udptlstart=4000
+udptlend=4999
+udptlchecksums=yes
+udptlfecentries=3

@@ -1,0 +1,15 @@
+release-key.jks
+keystore.properties
+hosting-*.json
+*.apk
+*.aab
+build/
+.gradle/
+app/build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+__pycache__/

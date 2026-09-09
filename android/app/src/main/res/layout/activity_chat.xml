@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light"
+    android:orientation="vertical">
+
+    <!-- Top Toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@color/card_bg"
+        android:elevation="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Geri"
+            android:src="@drawable/ic_contacts"
+            app:tint="@color/text_primary" />
+
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/tvTargetAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_avatar"
+                android:gravity="center"
+                android:text="U"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View
+                android:id="@+id/vTargetOnlineDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/circle_status"
+                android:backgroundTint="#9CA3AF" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvTargetName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="Kullanıcı Adı"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvTargetStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Çevrimdışı"
+                android:textColor="@color/text_secondary"
+                android:textSize="11.5sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCall"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Ara"
+            android:src="@drawable/ic_phone"
+            app:tint="@color/primary" />
+    </LinearLayout>
+
+    <!-- Messages RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMessages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp" />
+
+    <!-- Typing Indicator -->
+    <TextView
+        android:id="@+id/tvTyping"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="4dp"
+        android:text="Ahmet yazıyor..."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+    <!-- Upload / Attachment Pending Preview Banner -->
+    <LinearLayout
+        android:id="@+id/llUploadPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EFF6FF"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_attach"
+            app:tint="@color/primary" />
+
+        <TextView
+            android:id="@+id/tvUploadFilename"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:text="dosya.pdf"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp" />
+
+        <ImageButton
+            android:id="@+id/btnCancelUpload"
+            android:contentDescription="Yüklemeyi iptal et"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_call_end"
+            app:tint="#DC2626" />
+    </LinearLayout>
+
+    <!-- Input Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/card_bg"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp">
+
+        <ImageButton
+            android:id="@+id/btnAttach"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Dosya Ekle"
+            android:src="@drawable/ic_attach"
+            app:tint="@color/text_secondary" />
+
+        <ImageButton
+            android:id="@+id/btnCamera"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Fotoğraf Çek / Gönder"
+            android:src="@drawable/ic_photo"
+            app:tint="@color/text_secondary" />
+
+        <EditText
+            android:id="@+id/etMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/chip_tab_btn_bg"
+            android:hint="Bir mesaj yazın..."
+            android:maxLines="4"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <ImageButton
+            android:id="@+id/btnSend"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/circle_avatar"
+            android:contentDescription="Gönder"
+            android:padding="8dp"
+            android:src="@drawable/ic_send"
+            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

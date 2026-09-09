@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Üretim ağ politikası (2026-09-05).
+
+    Koddaki TLS baypasları kaldırıldı; kendinden imzalı / kurumsal sertifika
+    ihtiyacı varsa çözüm buradadır, kodda değil. Üretimde YALNIZCA sistem CA
+    deposu güvenilir sayılır ve şifrelenmemiş (http) trafik yasaktır.
+
+    Debug derlemesi bunu app/src/debug/res/xml altındaki sürümüyle EZER ve
+    kullanıcı CA deposunu da kabul eder. O dosya release paketine GİRMEZ.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

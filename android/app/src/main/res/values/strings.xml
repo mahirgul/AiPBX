@@ -1,0 +1,100 @@
+<resources>
+    <string name="app_name">AiPBX</string>
+
+    <!-- Server Setup -->
+    <string name="server_setup_title">Santral Sunucusu</string>
+    <string name="server_setup_subtitle">Bağlanmak istediğiniz AI PBX sunucu adresini girin.</string>
+    <string name="server_url_hint">Örn: https://santral.ornek.com</string>
+    <string name="default_brand_sub">Akıllı IP Santral</string>
+    <string name="btn_test_and_continue">Bağlan ve Devam Et</string>
+    <string name="err_invalid_url">Lütfen geçerli bir http:// veya https:// adresi girin.</string>
+    <string name="msg_testing_connection">Sunucuya bağlanılıyor...</string>
+    <string name="err_connection_failed">Sunucuya ulaşılamadı. Lütfen adresi kontrol edin.</string>
+
+    <!-- Login -->
+    <string name="login_title">Giriş Yap</string>
+    <string name="login_subtitle">Santral kullanıcı adı veya dahili numaranız</string>
+    <string name="username_hint">Kullanıcı Adı veya Dahili (Örn: 19000)</string>
+    <string name="password_hint">Şifre</string>
+    <string name="btn_login">Giriş Yap</string>
+    <string name="btn_change_server">Sunucu Adresini Değiştir</string>
+    <string name="msg_logging_in">Giriş yapılıyor...</string>
+
+    <!-- Dialer -->
+    <string name="status_connected">ÇEVRİMİÇİ</string>
+    <string name="status_connecting">BAĞLANIYOR...</string>
+    <string name="status_disconnected">ÇEVRİMDİŞİ</string>
+    <string name="dialer_hint">Numara veya dahili girin</string>
+    <string name="btn_call">Ara</string>
+    <string name="menu_logout">Çıkış Yap</string>
+    <string name="menu_settings">Ayarlar</string>
+
+    <!-- In Call -->
+    <string name="call_ongoing">Görüşülüyor</string>
+    <string name="call_ringing">Çalıyor...</string>
+    <string name="call_connecting">Bağlanıyor...</string>
+    <string name="call_ended">Çağrı Sonlandı</string>
+    <string name="btn_mute">Sessiz</string>
+    <string name="btn_speaker">Hoparlör</string>
+    <string name="btn_hold">Beklet</string>
+    <string name="btn_resume">Sürdür</string>
+    <string name="btn_keypad">Tuşlar</string>
+    <string name="btn_transfer">Aktar</string>
+    <string name="btn_hangup">Kapat</string>
+    <string name="btn_hide_keypad">Gizle</string>
+    <string name="transfer_dialog_title">Çağrıyı Aktar</string>
+    <string name="transfer_dialog_msg">Aktarılacak dahili numarayı girin:</string>
+    <string name="transfer_in_progress">Çağrı %s numarasına aktarılıyor...</string>
+
+    <!-- Incoming Call -->
+    <string name="incoming_call_title">Gelen Çağrı</string>
+    <string name="btn_answer">Cevapla</string>
+    <string name="btn_decline">Reddet</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_service">Santral Arka Plan Bağlantısı</string>
+    <string name="notif_channel_calls">Gelen Çağrılar</string>
+    <string name="notif_channel_chat">Sohbet ve Mesajlar</string>
+    <string name="notif_service_title">Santral Bağlantısı Aktif</string>
+    <string name="notif_service_text">Dahili: %1$s (%2$s) - Çağrılar bekleniyor</string>
+    <string name="notif_call_calling_title">AiPBX - Aranıyor...</string>
+    <string name="notif_call_calling_desc">%s aranıyor...</string>
+    <string name="notif_call_active_title">AiPBX - Görüşülüyor</string>
+    <string name="notif_call_active_desc">Aktif Çağrı: %s</string>
+    <string name="notif_call_on_hold_title">AiPBX - Beklemede</string>
+    <string name="notif_call_on_hold_desc">Görüşme Bekletiliyor: %s</string>
+    <string name="notif_call_incoming_title">AiPBX - Gelen Çağrı</string>
+    <string name="notif_call_incoming_desc">%s arıyor...</string>
+    <string name="notif_incoming_call_title">GELEN ÇAĞRI: %s</string>
+    <string name="notif_incoming_call_desc">Dahili: %s</string>
+    <string name="action_hangup">Kapat</string>
+    <string name="action_answer">Cevapla</string>
+    <string name="action_decline">Reddet</string>
+
+    <!-- Call History & Dates -->
+    <string name="unknown_number">Bilinmeyen Numara</string>
+    <string name="call_missed_status">Cevapsız</string>
+    <string name="date_today">Bugün %s</string>
+    <string name="date_yesterday">Dün %s</string>
+
+    <!-- Battery & System -->
+    <string name="battery_optimization_title">Pil Kısıtlaması</string>
+    <string name="battery_optimization_desc">Gelen aramaların gecikmeden çalması için pil tasarrufu kısıtlamasını kapatın.</string>
+    <string name="privacy_policy_url">https://www.mhrgl.com/privacy</string>
+
+    <!-- Santral & Forwarding Features -->
+    <string name="features_title">Santral &amp; Yönlendirme</string>
+    <string name="features_cf_title">Çağrı Yönlendirme Seçenekleri</string>
+    <string name="features_cf_subtitle">Aramaları koşullara göre başka bir dahiliye veya telefona aktarın</string>
+    <string name="features_cf_always_title">1. Her Zaman (Koşulsuz)</string>
+    <string name="features_cf_always_desc">Tüm gelen aramalar doğrudan bu numaraya aktarılır.</string>
+    <string name="features_cf_busy_title">2. Meşgulken</string>
+    <string name="features_cf_busy_desc">Dahiliniz meşgulken veya arama reddedildiğinde aktarılır.</string>
+    <string name="features_cf_noanswer_title">3. Cevapsızken &amp; Süre</string>
+    <string name="features_cf_noanswer_desc">Belirtilen süre cevap verilmezse aktarılır.</string>
+    <string name="features_cf_hint">Dahili veya Tel (ör. 1005 / 05xx...)</string>
+    <string name="features_cf_timeout_hint">Süre</string>
+    <string name="features_btn_save">Yönlendirmeleri Kaydet</string>
+    <string name="features_btn_clear">Temizle</string>
+    <string name="features_system_info_title">Sistem &amp; Sürüm Bilgileri</string>
+</resources>
