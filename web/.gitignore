@@ -1,0 +1,19 @@
+*.log
+*.swp
+*.bak
+.DS_Store
+
+# Composer bağımlılıkları — composer.json/composer.lock git'te takip edilir,
+# vendor/ 'composer install' ile yeniden üretilir, git'e girmez.
+/vendor/
+
+# Let's Encrypt HTTP-01 doğrulama token'ları — certbot yenileme sırasında
+# buraya geçici dosya yazar, git'i kirletmesin (bkz. le-redirect-*.conf'taki
+# ACME istisnası, 2026-08-31).
+/.well-known/
+
+# Test veritabanı kimlik bilgileri — asla commit edilmez
+/tests/.env.test
+/.phpunit.cache
+*.apk
+*.aab

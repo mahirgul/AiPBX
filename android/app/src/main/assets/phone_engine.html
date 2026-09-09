@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AI PBX Engine</title>
+    <script src="jssip.min.js"></script>
+</head>
+<body>
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <script>
+        var ua = null;
+        var currentSession = null;
+        var globalIceServers = [];
+
+        function log(msg) {
+            if (window.AndroidBridge && window.AndroidBridge.log) {
+                window.AndroidBridge.log(msg);
+            }
+        }
+
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            log("JS Exception: " + msg + " at line " + lineNo + ":" + columnNo);
+            return false;
+        };
+
+        function notifyEngineReady() {
+            log("Phone engine HTML DOM ready. isSecureContext=" + window.isSecureContext + ", mediaDevices=" + (typeof navigator.mediaDevices));
+            if (window.AndroidBridge && window.AndroidBridge.onEngineReady) {
+                window.AndroidBridge.onEngineReady();
+            }
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(notifyEngineReady, 50);
+        } else {
+            window.addEventListener('DOMContentLoaded', notifyEngineReady);
+        }
+
+        function cleanupMedia(session) {
+            var s = session || currentSession;
+            if (s) {
+                if (s._mediaCleaned) {
+                    log("Media already cleaned for this session, skipping.");
+                    return;
+                }
+                s._mediaCleaned = true;
+            }
+            log("Cleaning up media streams and tracks...");
+            if (s && s.connection) {
+                try {
+                    if (s.connection.getSenders) {
+                        var senders = s.connection.getSenders();
+                        senders.forEach(function(sender) {
+                            if (sender && sender.track) {
+                                try {
+                                    sender.track.stop();
+                                    log("Stopped sender track: " + sender.track.kind);
+                                } catch (e) {
+                                    log("Error stopping sender track: " + e);
+                                }
+                            }
+                        });
+                    }
+                    if (s.connection.getLocalStreams) {
+                        var localStreams = s.connection.getLocalStreams();
+                        localStreams.forEach(function(stream) {
+                            if (stream && stream.getTracks) {
+                                stream.getTracks().forEach(function(track) {
+                                    try {
+                                        track.stop();
+                                        log("Stopped local stream track: " + track.kind);
+                                    } catch (e) {}
+                                });
+                            }
+                        });
+                    }
+                } catch (e) {
+                    log("Error during connection media cleanup: " + e);
+                }
+            }
+            var remoteAudio = document.getElementById('remoteAudio');
+            if (remoteAudio) {
+                try {
+                    remoteAudio.pause();
+                    remoteAudio.srcObject = null;
+                } catch (e) {}
+            }
+            log("Media cleanup finished.");
+        }
+
+        function attachPeerConnectionHandlers(pc) {
+            if (!pc) return;
+            log("Attaching peerconnection handlers to RTCPeerConnection");
+
+            pc.addEventListener('iceconnectionstatechange', function() {
+                log("ICE Connection State: " + pc.iceConnectionState);
+            });
+            pc.addEventListener('connectionstatechange', function() {
+                log("PeerConnection State: " + pc.connectionState);
+            });
+            // Toplama SURESI de loglanir: cagri gec basliyorsa ilk bakilacak
+            // yer burasi (2026-09-05'te 4-5 sn / 30 sn gecikme teshisinde
+            // tam olarak bu bilgi eksikti).
+            var iceGatherT0 = Date.now();
+            pc.addEventListener('icegatheringstatechange', function() {
+                var gecen = ((Date.now() - iceGatherT0) / 1000).toFixed(2);
+                log("ICE Gathering State: " + pc.iceGatheringState + " (+" + gecen + " sn)");
+            });
+            pc.addEventListener('icecandidate', function(e) {
+                if (e.candidate) {
+                    log("Local ICE Candidate: " + (e.candidate.candidate || JSON.stringify(e.candidate)));
+                } else {
+                    log("Local ICE Candidate gathering finished");
+                }
+            });
+
+            try {
+                if (pc.getReceivers) {
+                    var receivers = pc.getReceivers();
+                    receivers.forEach(function(r) {
+                        if (r.track && r.track.kind === 'audio') {
+                            log("Found existing remote audio track on receiver: " + r.track.id);
+                            var remoteAudio = document.getElementById('remoteAudio');
+                            if (remoteAudio) {
+                                remoteAudio.srcObject = new MediaStream([r.track]);
+                                remoteAudio.muted = false;
+                                remoteAudio.volume = 1.0;
+                                remoteAudio.play().then(function() {
+                                    log("Existing track playing successfully");
+                                    if (window.AndroidBridge && window.AndroidBridge.onRemoteAudioPlaying) {
+                                        window.AndroidBridge.onRemoteAudioPlaying();
+                                    }
+                                }).catch(function(e) {
+                                    log("Existing track play error: " + e);
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                log("Error checking existing receivers: " + err);
+            }
+
+            // Standart track event - onaddstream cift atamayla ses kekelemesi yaptigi icin kaldirildi
+            pc.addEventListener('track', function(event) {
+                log("Received remote audio track: " + event.track.kind + " (enabled=" + event.track.enabled + ", readyState=" + event.track.readyState + ")");
+                var remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio) {
+                    if (event.streams && event.streams[0]) {
+                        remoteAudio.srcObject = event.streams[0];
+                    } else {
+                        remoteAudio.srcObject = new MediaStream([event.track]);
+                    }
+                    remoteAudio.muted = false;
+                    remoteAudio.volume = 1.0;
+                    remoteAudio.play().then(function() {
+                        log("Remote audio playing successfully");
+                        if (window.AndroidBridge && window.AndroidBridge.onRemoteAudioPlaying) {
+                            window.AndroidBridge.onRemoteAudioPlaying();
+                        }
+                    }).catch(function(err) {
+                        log("Audio play error: " + err);
+                    });
+                }
+            });
+        }
+
+        function initUA(wsUrl, sipUsername, password, domain, displayName, turnUrl, turnUser, turnPass) {
+            try {
+                if (ua) {
+                    log("Stopping existing UA before re-initialization");
+                    ua.stop();
+                    ua = null;
+                }
+
+                log("Initializing JsSIP UA for " + sipUsername + " on " + wsUrl);
+
+                var socket = new JsSIP.WebSocketInterface(wsUrl);
+
+                globalIceServers = [];
+                var turnVar = !!(turnUrl && turnUser && turnPass);
+                if (turnVar) {
+                    globalIceServers.push({
+                        urls: turnUrl,
+                        username: turnUser,
+                        credential: turnPass
+                    });
+                }
+                // Genel STUN sunucusu YALNIZCA TURN yokken eklenir (2026-09-05).
+                //
+                // Kosulsuz eklendiginde: kampus agi disa UDP'yi kapattigi icin
+                // stun.l.google.com hic cevap vermiyor, ama tarayici/WebView
+                // ICE toplamayi bitirmis saymiyor ve JsSIP INVITE'i toplama
+                // bitene kadar gondermiyor — cagri saniyelerce gec basliyor.
+                // TURNS rolesi zaten calisirken (turns:443 uzerinden) genel bir
+                // STUN'un ekleyecegi srflx adayinin bu agda hicbir faydasi yok.
+                if (!turnVar) {
+                    globalIceServers.push({ urls: "stun:stun.l.google.com:19302" });
+                }
+
+                var configuration = {
+                    sockets: [socket],
+                    uri: "sip:" + sipUsername + "@" + domain,
+                    authorization_user: sipUsername,
+                    password: password,
+                    display_name: displayName || sipUsername,
+                    register: true,
+                    register_expires: 1800,
+                    session_timers: true,
+                    session_timers_refresh_method: 'update',
+                    connection_recovery_min_interval: 2,
+                    connection_recovery_max_interval: 15
+                };
+
+                ua = new JsSIP.UA(configuration);
+
+                ua.on('connecting', function() {
+                    log("SIP connecting to " + wsUrl + "...");
+                    if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("CONNECTING");
+                });
+
+                ua.on('connected', function() {
+                    log("SIP WebSocket connected");
+                });
+
+                ua.on('registered', function() {
+                    log("SIP registered successfully as " + sipUsername);
+                    if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("CONNECTED");
+                });
+
+                ua.on('unregistered', function() {
+                    log("SIP unregistered");
+                    if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("DISCONNECTED");
+                });
+
+                ua.on('registrationFailed', function(e) {
+                    log("SIP registration failed: " + (e ? (e.cause || JSON.stringify(e)) : "Unknown"));
+                    if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("DISCONNECTED");
+                });
+
+                ua.on('disconnected', function() {
+                    log("SIP WebSocket disconnected");
+                    if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("DISCONNECTED");
+                });
+
+                ua.on('newRTCSession', function(data) {
+                    var session = data.session;
+                    if (currentSession && currentSession !== session) {
+                        log("newRTCSession: Cleaning up previous session");
+                        cleanupMedia(currentSession);
+                    }
+                    currentSession = session;
+                    bindSessionEvents(session);
+
+                    if (session.direction === 'incoming') {
+                        var rawName = session.remote_identity.display_name || session.remote_identity.uri.user || "Bilinmiyor";
+                        var rawNumber = session.remote_identity.uri.user || "";
+
+                        var callerNumber = rawNumber.replace(/-mob-webrtc$|-webrtc$|-sip$/, '');
+                        var callerName = (rawName === rawNumber) ? callerNumber : rawName.replace(/-mob-webrtc$|-webrtc$|-sip$/, '');
+
+                        log("Incoming call from: " + callerName + " (" + callerNumber + ")");
+
+                        if (window.AndroidBridge) {
+                            window.AndroidBridge.onIncomingCall(callerName, callerNumber);
+                        }
+                    } else {
+                        log("newRTCSession for outgoing session");
+                    }
+                });
+
+                ua.start();
+
+            } catch (err) {
+                log("Error initUA: " + err.message);
+                if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("DISCONNECTED");
+            }
+        }
+
+        function bindSessionEvents(session) {
+            if (!session || session._eventsBound) return;
+            session._eventsBound = true;
+
+            session.on('progress', function(e) {
+                log("Call progress: " + (e.originator || ""));
+                if (window.AndroidBridge) window.AndroidBridge.onCallProgress();
+            });
+
+            session.on('confirmed', function() {
+                log("Call confirmed/answered");
+                if (window.AndroidBridge) window.AndroidBridge.onCallConfirmed();
+            });
+
+            session.on('ended', function(e) {
+                log("Call ended: " + (e.cause || ""));
+                cleanupMedia(session);
+                currentSession = null;
+                if (window.AndroidBridge) window.AndroidBridge.onCallEnded(e.cause || "ENDED");
+            });
+
+            session.on('failed', function(e) {
+                log("Call failed: " + (e.cause || ""));
+                cleanupMedia(session);
+                currentSession = null;
+                if (window.AndroidBridge) window.AndroidBridge.onCallEnded(e.cause || "FAILED");
+            });
+
+            session.on('peerconnection', function(data) {
+                attachPeerConnectionHandlers(data.peerconnection);
+            });
+        }
+
+        function makeCall(target, domain, turnUrl, turnUser, turnPass) {
+            try {
+                if (!ua) {
+                    log("makeCall error: UA not initialized");
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("UA NOT INITIALIZED");
+                    return;
+                }
+
+                // Onceki oturum veya medya kalintisi varsa yeni aramadan once tamamen temizle
+                if (currentSession) {
+                    log("makeCall: Cleaning up previous session before placing new call");
+                    try {
+                        currentSession.terminate();
+                    } catch (e) {}
+                    cleanupMedia(currentSession);
+                    currentSession = null;
+                } else {
+                    cleanupMedia();
+                }
+
+                var cleanTarget = (target || "").replace(/[^0-9*#+]/g, '');
+                if (!cleanTarget) {
+                    log("makeCall error: Target is empty");
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("INVALID NUMBER");
+                    return;
+                }
+
+                var targetUri = "sip:" + cleanTarget + "@" + domain;
+                log("Placing call to: " + targetUri);
+
+                var iceServers = (globalIceServers && globalIceServers.length > 0) ? globalIceServers.slice() : [];
+                if (turnUrl && turnUser && turnPass) {
+                    var exists = iceServers.some(function(s) { return s.urls === turnUrl; });
+                    if (!exists) {
+                        iceServers.unshift({
+                            urls: turnUrl,
+                            username: turnUser,
+                            credential: turnPass
+                        });
+                    }
+                }
+                // TURN varsa genel STUN EKLENMEZ — gerekce initUA'daki notta.
+                var hasTurn = iceServers.some(function(s) {
+                    var u = s.urls;
+                    if (!u) return false;
+                    if (typeof u === 'string') return u.indexOf("turn:") === 0 || u.indexOf("turns:") === 0;
+                    return u.some(function(x) { return x.indexOf("turn:") === 0 || x.indexOf("turns:") === 0; });
+                });
+                var hasStun = iceServers.some(function(s) { return s.urls && (typeof s.urls === 'string' ? s.urls.indexOf("stun:") !== -1 : s.urls.some(function(u) { return u.indexOf("stun:") !== -1; })); });
+                if (!hasStun && !hasTurn) {
+                    iceServers.push({ urls: "stun:stun.l.google.com:19302" });
+                }
+
+                var options = {
+                    mediaConstraints: { audio: true, video: false },
+                    pcConfig: { iceServers: iceServers },
+                    sessionTimersExpires: 120,
+                    eventHandlers: {
+                        peerconnection: function(e) {
+                            attachPeerConnectionHandlers(e.peerconnection);
+                        }
+                    }
+                };
+
+                currentSession = ua.call(targetUri, options);
+                if (currentSession) {
+                    bindSessionEvents(currentSession);
+                    if (currentSession.connection) {
+                        attachPeerConnectionHandlers(currentSession.connection);
+                    }
+                } else {
+                    log("makeCall: ua.call returned null");
+                    cleanupMedia();
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("CALL FAILED");
+                }
+            } catch (err) {
+                log("Exception in makeCall: " + err.message);
+                cleanupMedia();
+                if (window.AndroidBridge) window.AndroidBridge.onCallEnded(err.message || "EXCEPTION");
+            }
+        }
+
+        function answerCall() {
+            try {
+                if (currentSession && currentSession.direction === 'incoming') {
+                    log("Answering incoming call");
+                    currentSession.answer({
+                        mediaConstraints: { audio: true, video: false },
+                        pcConfig: { iceServers: globalIceServers }
+                    });
+                    if (currentSession.connection) {
+                        attachPeerConnectionHandlers(currentSession.connection);
+                    }
+                } else {
+                    log("answerCall error: No active incoming session");
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("NO_INCOMING_SESSION");
+                }
+            } catch (err) {
+                log("Exception in answerCall: " + err.message);
+                cleanupMedia(currentSession);
+                currentSession = null;
+                if (window.AndroidBridge) window.AndroidBridge.onCallEnded("ANSWER_FAILED: " + (err.message || "EXCEPTION"));
+            }
+        }
+
+        function rejectCall() {
+            log("Rejecting incoming call (SIP 603 Decline)");
+            if (currentSession) {
+                var sess = currentSession;
+                try {
+                    if (!sess.isEstablished()) {
+                        sess.terminate({
+                            status_code: 603,
+                            reason_phrase: "Decline"
+                        });
+                    } else {
+                        sess.terminate();
+                    }
+                } catch (e) {
+                    log("Exception rejecting call: " + e.message);
+                    cleanupMedia(sess);
+                    if (currentSession === sess) currentSession = null;
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("REJECT_ERROR");
+                }
+            } else {
+                cleanupMedia();
+            }
+        }
+
+        function hangupCall() {
+            log("Terminating call");
+            if (currentSession) {
+                var sess = currentSession;
+                try {
+                    if (!sess.isEstablished()) {
+                        sess.terminate({
+                            status_code: 603,
+                            reason_phrase: "Decline"
+                        });
+                    } else {
+                        sess.terminate();
+                    }
+                } catch (e) {
+                    log("Exception terminating call: " + e.message);
+                    cleanupMedia(sess);
+                    if (currentSession === sess) currentSession = null;
+                    if (window.AndroidBridge) window.AndroidBridge.onCallEnded("TERMINATE_ERROR");
+                }
+            } else {
+                cleanupMedia();
+            }
+        }
+
+        function transferCall(target, domain) {
+            try {
+                if (!currentSession) {
+                    log("transferCall error: No active session");
+                    return false;
+                }
+                var cleanTarget = (target || "").replace(/[^0-9*#+]/g, '');
+                if (!cleanTarget) {
+                    log("transferCall error: Invalid target number");
+                    return false;
+                }
+                var targetHost = domain || (ua && ua.configuration && ua.configuration.uri ? ua.configuration.uri.host : "");
+                var targetUri = targetHost ? ("sip:" + cleanTarget + "@" + targetHost) : ("sip:" + cleanTarget);
+                log("Transferring call to: " + targetUri);
+                if (typeof currentSession.refer === 'function') {
+                    currentSession.refer(targetUri);
+                    log("SIP REFER successfully triggered for " + targetUri);
+                    return true;
+                } else {
+                    log("currentSession.refer is not available");
+                    return false;
+                }
+            } catch (e) {
+                log("Exception in transferCall: " + e.message);
+                return false;
+            }
+        }
+
+        function sendDtmf(digit) {
+            if (currentSession && typeof currentSession.sendDTMF === 'function') {
+                log("Sending DTMF: " + digit);
+                try {
+                    currentSession.sendDTMF(digit);
+                } catch (e) {
+                    log("sendDTMF exception: " + e.message);
+                }
+            }
+        }
+
+        function toggleMute(mute) {
+            if (currentSession) {
+                if (mute) {
+                    currentSession.mute({ audio: true });
+                } else {
+                    currentSession.unmute({ audio: true });
+                }
+            }
+        }
+
+        function toggleHold(hold) {
+            if (currentSession) {
+                try {
+                    if (hold) {
+                        log("Putting call on hold");
+                        currentSession.hold({ useUpdate: true });
+                    } else {
+                        log("Resuming call from hold");
+                        currentSession.unhold({ useUpdate: true });
+                    }
+                } catch (e) {
+                    log("toggleHold exception: " + e.message);
+                }
+            }
+        }
+
+        function reRegister() {
+            log("reRegister requested from native watchdog");
+            if (ua) {
+                try {
+                    ua.register();
+                    log("ua.register() triggered");
+                } catch (e) {
+                    log("Error in ua.register(): " + e.message);
+                }
+            } else {
+                log("reRegister: ua is null");
+            }
+        }
+
+        function checkEngineStatus() {
+            var isReg = !!(ua && ua.isRegistered && ua.isRegistered());
+            var isConn = !!(ua && ua.isConnected && ua.isConnected());
+            log("checkEngineStatus: isRegistered=" + isReg + ", isConnected=" + isConn);
+            if (window.AndroidBridge && window.AndroidBridge.onStatusQueryResponse) {
+                window.AndroidBridge.onStatusQueryResponse(isReg, isConn);
+            }
+            return isReg;
+        }
+
+        function destroyUA() {
+            cleanupMedia();
+            if (ua) {
+                ua.stop();
+                ua = null;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1385 @@
+/* UI Components, Cards, Forms, Modals, Badges, Tables, Toast Notifications */
+
+/* Cards & Components */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Data Tables System */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+    position: relative;
+}
+
+.data-table,
+.portal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13.5px;
+    text-align: left;
+    background: var(--bg-card);
+}
+
+.data-table thead th,
+.portal-table thead th {
+    background-color: var(--bg-input);
+    padding: 12px 16px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-table tbody td,
+.portal-table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+    vertical-align: middle;
+}
+
+.data-table tbody tr:hover,
+.portal-table tbody tr:hover {
+    background-color: var(--bg-card-hover);
+}
+
+/* For free-text columns (error messages, descriptions, notes) that can run long
+   and would otherwise stretch the whole table. Hover/tap shows the full text via title="". */
+.cell-truncate {
+    display: inline-block;
+    max-width: 320px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td,
+.portal-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Pinned Sticky Table Actions Column */
+.data-table th.text-right,
+.data-table td.text-right,
+.portal-table th.text-right,
+.portal-table td.text-right {
+    text-align: right;
+    white-space: nowrap;
+    position: sticky;
+    right: 0;
+    z-index: 5;
+    box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08);
+}
+
+.data-table thead th.text-right,
+.portal-table thead th.text-right {
+    background-color: var(--bg-input) !important;
+}
+
+.data-table tbody td.text-right,
+.portal-table tbody td.text-right {
+    background-color: var(--bg-card);
+}
+
+.data-table tbody tr:hover td.text-right,
+.portal-table tbody tr:hover td.text-right {
+    background-color: var(--bg-card-hover);
+}
+
+.table-actions-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+/* DataTable Enhancer Controls & Pagination */
+.dt-container {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.dt-controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.dt-search-box {
+    position: relative;
+    flex: 1;
+    max-width: 360px;
+    min-width: 220px;
+}
+
+.dt-search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.dt-search-box input {
+    padding-left: 36px !important;
+    height: 38px;
+    font-size: 13px;
+    border-radius: 8px;
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dt-search-box input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.dt-length-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.dt-length-box select {
+    height: 38px;
+    padding: 4px 10px;
+    font-size: 12.5px;
+    border-radius: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+/* Sortable Headers */
+.data-table thead th.sortable,
+.portal-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.data-table thead th.sortable:hover,
+.portal-table thead th.sortable:hover {
+    color: var(--primary);
+    background-color: var(--bg-card-hover);
+}
+
+.dt-sort-icon {
+    margin-left: 6px;
+    font-size: 11px;
+    opacity: 0.4;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.data-table thead th.sortable.sort-asc .dt-sort-icon,
+.data-table thead th.sortable.sort-desc .dt-sort-icon,
+.portal-table thead th.sortable.sort-asc .dt-sort-icon,
+.portal-table thead th.sortable.sort-desc .dt-sort-icon {
+    opacity: 1;
+    color: var(--primary);
+}
+
+/* Pagination Bar */
+.dt-pagination-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.dt-info {
+    font-weight: 500;
+}
+
+/* Sunucu tarafi sayfalamada bilgi + "Goster" secicisi yan yana durur
+   (templates/pagination.php). Istemci tarafi zenginlestiricide secici tablonun
+   ustunde oldugu icin bu grup orada kullanilmaz. */
+.dt-pagination-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Sayfa dugmeleri sunucu tarafinda <a> olarak uretiliyor; :disabled
+   yalnizca <button> icin gecerli oldugundan ayni gorunum aria ile veriliyor. */
+.dt-page-btn[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dt-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dt-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.dt-page-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-card-hover);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.dt-page-btn.active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+}
+
+.dt-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Forms & Inputs */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-main);
+    font-size: 14px;
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Field-level help icon: a small "?" badge next to a form-label that reveals
+   a short explanation on hover/focus/tap. Use with .form-label-help on the
+   label so the icon sits inline at the end of the label text. */
+.form-label-help {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.field-help {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+}
+
+.field-help:hover,
+.field-help:focus,
+.field-help.active {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+    outline: none;
+}
+
+.field-help-tip {
+    display: none;
+    position: absolute;
+    z-index: 40;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 220px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+    white-space: normal;
+    padding: 8px 10px;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.field-help:hover .field-help-tip,
+.field-help:focus .field-help-tip,
+.field-help.active .field-help-tip {
+    display: block;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    /* Tarayıcılar <button>'a body'den color miras bırakmaz (UA varsayılanı
+       kullanır, genelde siyah) — renk vermeyen düz .btn'ler (ör. sidebar
+       tema butonu) temadan bağımsız hep siyah/karanlık görünüyordu. */
+    color: inherit;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #ffffff;
+    box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-muted);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* Status Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.badge-info { background: rgba(59, 130, 246, 0.2); color: var(--secondary); }
+.badge-primary { background: var(--primary-glow); color: var(--primary); border: 1px solid var(--border-glow); }
+.badge-purple { background: rgba(167, 139, 250, 0.2); color: var(--purple); }
+.badge-teal { background: rgba(45, 212, 191, 0.2); color: var(--teal); }
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1150;
+    backdrop-filter: blur(8px);
+}
+
+.modal-overlay.active {
+    display: flex !important;
+}
+
+.modal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--card-shadow);
+    animation: modalAppear 0.2s ease-out;
+}
+
+@keyframes modalAppear {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Footer Toast Notifications */
+.footer-toast-container {
+    /* .app-footer-bar (position:fixed, 40px) içine ekleniyor (bkz.
+       footer_notify.js) — "position:absolute; bottom:4px" onun İÇİNDE,
+       footer metniyle üst üste biniyordu. Artık footer'ın TAMAMEN
+       ÜSTÜNDE, kendi sabit konumunda. */
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 52px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 6px;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.footer-center-toast {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px 5px 16px;
+    border-radius: 20px;
+    /* --bg-card gece modunda %85 opak (yarı saydam) — bildirim tam opak
+       olsun diye --bg-sidebar kullanılıyor (her iki temada da tam opak). */
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+    color: var(--text-main);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    transition: all 0.25s ease;
+    max-width: 90vw;
+}
+
+.footer-center-toast.toast-success {
+    background: var(--bg-sidebar);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: var(--success);
+}
+
+.footer-center-toast.toast-danger,
+.footer-center-toast.toast-error {
+    background: var(--bg-sidebar);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: var(--danger);
+}
+
+.footer-center-toast .toast-text {
+    color: var(--text-main);
+}
+
+.footer-center-toast .toast-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+}
+
+.footer-center-toast .toast-close-btn:hover {
+    background: var(--bg-card-hover, rgba(148, 163, 184, 0.15));
+    color: var(--text-main);
+}
+
+/* Auth Pages (Login & 403) */
+body.auth-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg-body);
+    color: var(--text-main);
+    padding: 24px;
+}
+
+.auth-card {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--card-shadow);
+}
+
+/* ===== Topbar Quick Controls & User Dropdown ===== */
+.mobile-menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s ease;
+}
+
+.mobile-menu-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.header-phone-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.header-phone-status-pill:hover {
+    border-color: var(--primary);
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.5); }
+    70% { box-shadow: 0 0 0 7px rgba(148, 163, 184, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(148, 163, 184, 0); }
+}
+
+.status-text {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+
+.header-quick-dial-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.header-quick-dial-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 12px;
+    color: var(--text-main);
+    width: 170px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.header-quick-dial-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.header-quick-dial-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.header-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 280px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    z-index: 1100;
+    padding: 6px;
+}
+
+.header-btn-pulse {
+    animation: header-btn-pulse 1.2s infinite;
+}
+
+@keyframes header-btn-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+    70% { box-shadow: 0 0 0 9px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.user-profile-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.user-profile-dropdown {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    top: auto;
+    right: 0;
+    left: auto;
+    min-width: 190px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 1200;
+    overflow: hidden;
+}
+
+
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 16px;
+    background: transparent;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.user-dropdown-item:hover {
+    background: var(--bg-card-hover);
+}
+
+.user-dropdown-item.text-danger {
+    color: var(--danger);
+}
+
+/* ===== Header Top Bar Right & Pending Sync (Uygula) ===== */
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.header-sync-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.header-sync-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border-radius: 20px;
+    background: var(--warning);
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 12.5px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.header-sync-btn:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.45);
+}
+
+.header-sync-btn:active {
+    transform: translateY(0);
+}
+
+.header-sync-count {
+    background: rgba(0, 0, 0, 0.22);
+    color: #1a1a1a;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.header-sync-arrow {
+    font-size: 10px;
+    margin-left: 2px;
+    transition: transform 0.2s ease;
+}
+
+.header-sync-btn.active .header-sync-arrow {
+    transform: rotate(180deg);
+}
+
+.header-sync-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 290px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    z-index: 1200;
+    overflow: hidden;
+    padding: 6px 0;
+}
+
+.header-sync-dropdown.show {
+    display: block;
+    animation: headerSyncFadeIn 0.15s ease-out;
+}
+
+@keyframes headerSyncFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.header-sync-dropdown-title {
+    padding: 10px 16px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-sync-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    text-decoration: none;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.header-sync-dropdown-item:hover {
+    background: var(--bg-card-hover);
+}
+
+.sync-item-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.sync-item-icon-direct {
+    background: rgba(245, 158, 11, 0.16);
+    color: var(--warning);
+}
+
+.sync-item-icon-review {
+    background: rgba(2, 132, 199, 0.16);
+    color: var(--primary);
+}
+
+.sync-item-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.sync-item-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.sync-item-desc {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+/* ===== Header Softphone DTMF Drawer ===== */
+.header-phone-drawer {
+    display: none;
+    position: fixed;
+    top: 64px;
+    right: 20px;
+    width: 280px;
+    z-index: 1150;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow);
+    padding: 16px;
+    backdrop-filter: blur(12px);
+}
+
+.header-phone-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 14px 0;
+}
+
+.header-phone-key {
+    height: 46px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.header-phone-key:hover {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.header-phone-key:active {
+    transform: scale(0.95);
+}
+
+/* ===== Footer Status & Notification Bar ===== */
+.footer-left-group,
+.footer-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* ===== CC Agent Softphone ===== */
+.softphone-card {
+    max-width: 420px;
+}
+
+.phone-display {
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.phone-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.phone-number {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--primary);
+    font-family: 'Courier New', monospace;
+    min-height: 32px;
+    line-height: 32px;
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.key-btn {
+    height: 54px;
+    background: var(--bg-card-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    color: var(--text-main);
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.key-btn:hover {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.04);
+}
+
+.key-btn:active {
+    transform: scale(0.95);
+}
+
+.phone-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ===== Module Help Button ===== */
+.btn-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-help:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.btn-help:active {
+    transform: translateY(0);
+}
+
+/* ===== Module Help Box ===== */
+.module-help-box {
+    display: none;
+    margin-bottom: 20px;
+    background: var(--nav-active-bg);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.module-help-box h4 {
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.module-help-box code {
+    background: var(--bg-input);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--primary);
+}
+
+/* ===== Empty Table State ===== */
+.empty-table-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.empty-table-box i {
+    font-size: 36px;
+    opacity: 0.45;
+}
+
+/* ===== Sound Badge ===== */
+.sound-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-main);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.sound-badge:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.sound-badge code {
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+}
+
+/* ===== Permission Matrix Checkboxes ===== */
+.perm-cb {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.perm-view { accent-color: var(--secondary); }
+.perm-access { accent-color: var(--primary); }
+.perm-edit { accent-color: var(--warning); }
+.perm-delete { accent-color: var(--danger); }
+
+/* ===== Time Condition Days Grid ===== */
+.tc-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.tc-day-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.tc-day-checkbox:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.tc-day-checkbox input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.tc-day-checkbox:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--nav-active-bg);
+    color: var(--primary);
+}
+
+/* ===== Queue Agent Checkbox ===== */
+.modal-agent-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* ===== Mobile Sidebar Drawer ===== */
+.mobile-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+
+.mobile-sidebar-overlay.active {
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .mobile-menu-btn {
+        display: inline-flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -270px;
+        /* .app-footer-bar da 1050: DOM'da ondan önce geldiği için aynı
+           z-index'te altında kalıp kullanıcı rozetini kesiyordu. Açık
+           menü her zaman üstte olmalı. */
+        z-index: 1060;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar.mobile-open {
+        left: 0;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+    }
+
+    .sidebar.mobile-open .brand,
+    .sidebar.mobile-open .nav-menu {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        width: auto;
+        height: auto;
+    }
+
+    .app-footer-bar {
+        left: 0;
+        padding: 0 12px;
+    }
+
+    .footer-left-group,
+    .footer-right-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* .content-area'nın mobil kenar boşluğu geçersiz kılması style.css'e
+       taşındı (bu dosya components.css'ten önce yüklendiği için buradaki
+       kural hiç etkili olmuyordu — bkz. style.css). */
+
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    /* Üst bar: telefon/CID/mola kontrolleri dar ekrana sığmıyordu (numara
+       yazma kutusu kırpılıyordu) — sabit 70px yükseklik yerine ikinci
+       satıra sarsın: ☰/durum/mod ilk satırda, numara girişi kendi tam
+       genişlik satırında. */
+    .top-bar {
+        height: auto;
+        min-height: 56px;
+        padding: 8px 10px;
+    }
+
+    /* Hepsi tek satırda kalsın: ☰ / durum rozeti / mod anahtarı sabit
+       boyutunu korur, numara giriş kutusu kalan alanı doldurup küçülür
+       (ikinci satıra sarmak yerine). */
+    .top-bar-left {
+        flex-wrap: nowrap;
+        column-gap: 6px;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+    }
+
+    .top-bar-right {
+        margin-left: 6px;
+        flex-shrink: 0;
+    }
+
+    .header-sync-btn .header-sync-label {
+        display: none;
+    }
+
+    .header-sync-btn {
+        padding: 5px 9px;
+        gap: 5px;
+    }
+
+    .mobile-menu-btn,
+    .header-phone-status-pill,
+    .header-phone-mode-switcher {
+        flex-shrink: 0;
+    }
+
+    .header-quick-dial-wrapper {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .header-quick-dial-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .header-phone-status-pill {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .header-phone-status-pill .status-text {
+        display: none;
+    }
+
+    /* Cevapla/Reddet/Beklet/Aktar/Kapat: mobilde sadece ikon, metin gizli */
+    .topbar-btn-label {
+        display: none;
+    }
+
+    .topbar-btn {
+        padding: 8px 10px !important;
+        width: 38px;
+        justify-content: center;
+    }
+
+    /* Onlarca form sayfasında satır-içi (inline) "display:grid;
+       grid-template-columns: 1fr 1fr[ 1fr]" kullanılıyor — masaüstünde
+       yan yana kolonlar güzel görünüyor ama mobilde alanları sıkıştırıp
+       etrafında boş/dar bir görünüm bırakıyordu. Inline style en yüksek
+       özgüllüğe sahip olduğundan sadece !important ile geçersiz kılınabilir. */
+    [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ===== Responsive Utility ===== */
+@media (max-width: 900px) {
+    .col-hide-mobile {
+        display: none;
+    }
+}

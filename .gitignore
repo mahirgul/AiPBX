@@ -1,0 +1,77 @@
+# === OS / IDE ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# === Secrets / Environment ===
+ai-pbx.env
+/etc/ai-pbx.env
+*.env
+!.env.example
+
+# === AI / Agent Memory (internal dev files) ===
+CLAUDE.md
+AGENTS.md
+.claude/
+.claude.json
+.agents/
+memory/
+planlar/
+
+# === Build Artifacts ===
+*.o
+*.a
+*.so
+*.exe
+*.dll
+*.dylib
+
+# === Go ===
+chat/aipbx-chat
+
+# === PHP ===
+web/vendor/
+web/.phpunit.cache/
+
+# === Android ===
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/*.jks
+android/keystore.properties
+android/hosting-*.json
+android/__pycache__/
+android/app.aab
+android/app.apk
+
+# === Web build/temp ===
+web/app.aab
+web/app.apk
+web/.well-known/
+
+# === Logs / Temp ===
+*.log
+*.tmp
+*.bak
+
+# === DB dumps with real data ===
+db/asterisk_db_dump.sql
+
+# === System ===
+.bash_history
+.cache/
+.config/
+.local/
+.gemini/
+.ssh/
+
+# Personal shell files
+.bash_logout
+.bashrc
+.profile
+.bash_history

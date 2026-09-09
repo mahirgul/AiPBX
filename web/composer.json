@@ -1,0 +1,26 @@
+{
+    "name": "ai-pbx/portal",
+    "description": "AI PBX — Santral, Faks & Çağrı Merkezi Portalı",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "mahirgul",
+            "email": "mahirgul@gmail.com"
+        }
+    ],
+    "require-dev": {
+        "robmorgan/phinx": "^0.16.12",
+        "phpunit/phpunit": "^13.3"
+    },
+    "autoload": {
+        "classmap": [
+            "src/core/",
+            "src/controllers/",
+            "src/repositories/"
+        ]
+    },
+    "require": {
+        "mpdf/mpdf": "^8.3"
+    }
+}
