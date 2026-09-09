@@ -1,0 +1,48 @@
+# Clean URL Routing — Front Controller
+# /dashboard, /trunks, /fax-inbox, /cc-agent etc. are resolved by index.php
+# (the front controller). Adjust /var/www/html below if you deploy elsewhere,
+# then drop this file into /etc/httpd/conf.d/ (or your distro's equivalent)
+# and reload Apache.
+#
+# src/, vendor/, db/, and bin/ are intentionally denied from direct HTTP
+# access — src/ is the application layer (only ever require()'d server-side
+# by index.php), vendor/ holds Composer packages, db/ holds migrations plus
+# phinx.php (which reads DB credentials), and bin/ holds CLI-only maintenance
+# scripts (e.g. lint_lang.php). None of these should ever be served directly.
+
+<Directory "/var/www/html">
+    DirectoryIndex index.php
+    Options -Indexes +FollowSymLinks
+    AllowOverride All
+    Require all granted
+
+    RewriteEngine On
+    RewriteRule ^(api|assets|modules)(/|$) - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</Directory>
+
+<Directory "/var/www/html/src">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory "/var/www/html/vendor">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory "/var/www/html/db">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory "/var/www/html/bin">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</Directory>

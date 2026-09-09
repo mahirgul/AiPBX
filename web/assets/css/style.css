@@ -1,0 +1,372 @@
+/* Design Tokens & Theme Variables are centrally managed in variables.css */
+
+/* Global Layout and Scrollbars are centrally managed in layout.css */
+
+/* Sidebar & Main Layout styles are centrally managed in layout.css */
+
+.page-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.topbar-btn {
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.topbar-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--nav-hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.topbar-btn-danger {
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.user-badge {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-badge:hover {
+    border-color: var(--primary);
+    background: var(--bg-card-hover);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.user-badge-icon {
+    font-size: 14px;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.user-badge-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.user-badge-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.user-badge-role {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-sidebar);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.user-badge-role i {
+    display: none;
+}
+
+.user-badge-arrow {
+    font-size: 9px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+
+.role-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    /* Fallback for custom roles with no dedicated color below (e.g. new sys_roles entries) */
+    background: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+}
+
+.role-admin { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.role-read_only_admin { background: rgba(2, 132, 199, 0.2); color: var(--primary); }
+.role-fax_user { background: rgba(59, 130, 246, 0.2); color: var(--secondary); }
+.role-cc_agent { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.role-cc_manager { background: rgba(167, 139, 250, 0.2); color: var(--purple); }
+
+.content-area {
+    padding: 15px 15px 75px 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Bu dosya components.css'ten SONRA yüklendiği için oradaki mobil
+   @media kuralı burada ezilip hiç etkisi olmuyordu (aynı özgüllük,
+   sonraki dosya kazanır) — mobil geçersiz kılma artık burada, aynı
+   yerde tanımlanıyor. */
+@media (max-width: 900px) {
+    .content-area {
+        padding: 12px 0 80px 0;
+    }
+
+    /* iOS Safari, font-size 16px altındaki input/select/textarea'ya
+       dokunulunca sayfayı otomatik yakınlaştırır — .form-control 14px
+       olduğu için her formda bu oluyordu. */
+    .form-control {
+        font-size: 16px;
+    }
+}
+
+/* Component & Data Table styles are centrally managed in components.css */
+
+.btn-info {
+    background: var(--secondary);
+    color: #fff;
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: #fff;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    gap: 6px;
+}
+
+/* .btn-xs hiç tanımlı değildi — kullanıldığı yerlerde (ör. temsilci
+   ekranı kuyruk çipleri) temel .btn boyutuna (10px 20px) düşüp
+   gereğinden büyük görünüyordu. */
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    gap: 4px;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 10px;
+}
+
+/* .form-control varsayılanı (12px 16px dolgu) modal/tam form alanları için
+   tasarlanmış — araç çubuğu filtre dropdown'ları (ör. kuyruk/tarih seçimi)
+   yanındaki .btn-sm butonlarla yan yana konunca orantısız büyük kalıyordu. */
+.form-control-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+}
+
+/* Badges & Modals are centrally managed in components.css */
+
+/* Modals and Footer Toasts are centrally managed in components.css */
+/* .footer-center-toast.toast-success / .toast-danger / .toast-error tanımları
+   buradan kaldırıldı — components.css'teki tam opak versiyonlarını (bilinçli
+   olarak --bg-sidebar kullanıyor, bkz. oradaki yorum) style.css sonradan
+   yüklendiği için saydam bir rgba(...,0.15) ile sessizce eziyordu. */
+
+.app-footer-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: var(--bg-sidebar);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 20px -2px rgba(0, 0, 0, 0.08), 0 -2px 6px -1px rgba(0, 0, 0, 0.04);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Masaüstünde footer, sol menünün altına uzamaz — içerik alanının
+   genişliğiyle sınırlı kalır (menü daraltılınca tam ekran olur). */
+@media (min-width: 901px) {
+    .app-footer-bar {
+        left: 260px;
+    }
+    .sidebar.collapsed ~ .app-footer-bar {
+        left: 0;
+    }
+}
+
+@media (max-width: 520px) {
+    .app-footer-bar {
+        padding: 0 8px;
+    }
+    .footer-stat-pill {
+        padding: 2px 7px;
+        font-size: 10.5px;
+        gap: 4px;
+    }
+    .user-badge {
+        padding: 0 7px;
+        gap: 5px;
+    }
+    .user-badge-role {
+        display: none !important;
+    }
+}
+
+/* Tab Navigation System */
+.portal-tabs,
+.sub-tab-nav,
+.tc-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 24px;
+    padding-bottom: 0;
+    align-items: center;
+}
+
+.portal-tab-btn,
+.sub-tab-btn,
+.tc-tab-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    outline: none;
+    margin-bottom: -2px;
+    border-bottom: 3px solid transparent;
+}
+
+.portal-tab-btn.active,
+.sub-tab-btn.active,
+.tc-tab-btn.active {
+    color: var(--primary);
+    font-weight: 700;
+    background: rgba(79, 70, 229, 0.08);
+    border-bottom: 3px solid var(--primary);
+}
+
+.portal-tab-pane,
+.tab-pane,
+.tc-tab-pane {
+    display: none;
+}
+
+.portal-tab-pane.active,
+.tab-pane.active,
+.tc-tab-pane.active {
+    display: block;
+}
+
+.ext-badge-num {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 4px 10px;
+    background: var(--nav-active-bg);
+    color: var(--primary);
+    border-radius: 6px;
+    border: 1px solid var(--border-glow);
+}
+
+.dest-preview-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+}
+
+.route-pattern-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.status-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    color: var(--success);
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.status-offline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    color: var(--text-muted);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.btn .btn-label {
+    display: inline-block;
+}

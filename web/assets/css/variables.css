@@ -1,0 +1,174 @@
+/* 100% Offline Local Google Fonts - Inter & Plus Jakarta Sans */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/assets/fonts/Inter-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/assets/fonts/Inter-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/assets/fonts/Inter-600.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/assets/fonts/Inter-700.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/assets/fonts/PlusJakartaSans-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/assets/fonts/PlusJakartaSans-600.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/assets/fonts/PlusJakartaSans-700.woff2') format('woff2');
+}
+
+/* Modern Design System - CSS Variables & Theme Design Tokens */
+:root, [data-theme="dark"] {
+    --bg-body: #0a0e17;
+    --bg-sidebar: #0f172a;
+    --bg-card: rgba(15, 23, 42, 0.85);
+    --bg-card-hover: rgba(30, 41, 59, 0.9);
+    --bg-input: #1e293b;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 242, 254, 0.3);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-inverse: #0f172a;
+    --primary: #00f2fe;
+    --primary-hover: #4facfe;
+    --primary-glow: rgba(0, 242, 254, 0.2);
+    --secondary: #3b82f6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #a78bfa;
+    --teal: #2dd4bf;
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --nav-active-bg: rgba(0, 242, 254, 0.1);
+    --nav-hover-bg: rgba(255, 255, 255, 0.06);
+    --brand-icon-bg: #334155;
+    --brand-icon-border: rgba(255, 255, 255, 0.12);
+    --brand-icon-color: var(--primary);
+    --brand-icon-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] {
+    --bg-body: #f1f5f9;
+    --bg-sidebar: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-input: #f1f5f9;
+    --border-color: #e2e8f0;
+    --border-glow: rgba(2, 132, 199, 0.3);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-inverse: #ffffff;
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-glow: rgba(2, 132, 199, 0.15);
+    --secondary: #2563eb;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --purple: #7c3aed;
+    --teal: #0d9488;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --nav-active-bg: rgba(2, 132, 199, 0.1);
+    --nav-hover-bg: rgba(2, 132, 199, 0.06);
+    --brand-icon-bg: #ffffff;
+    --brand-icon-border: #e2e8f0;
+    --brand-icon-color: var(--primary);
+    --brand-icon-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Typography Scale Tokens & Font Size Presets (Small / Normal / Large) */
+html[data-font-size="small"],
+body[data-font-size="small"] {
+    font-size: 13.5px !important;
+}
+
+html[data-font-size="small"] body,
+html[data-font-size="small"] .app-container,
+html[data-font-size="small"] .main-wrapper,
+html[data-font-size="small"] .content-area,
+html[data-font-size="small"] .card,
+html[data-font-size="small"] .card-title,
+html[data-font-size="small"] table,
+html[data-font-size="small"] .data-table,
+html[data-font-size="small"] th,
+html[data-font-size="small"] td,
+html[data-font-size="small"] input,
+html[data-font-size="small"] select,
+html[data-font-size="small"] button,
+html[data-font-size="small"] .btn,
+html[data-font-size="small"] .badge,
+html[data-font-size="small"] .sidebar,
+html[data-font-size="small"] .nav-text,
+html[data-font-size="small"] .top-bar {
+    font-size: 0.96em !important;
+}
+
+html[data-font-size="normal"],
+body[data-font-size="normal"],
+html:not([data-font-size]) {
+    font-size: 14px !important;
+}
+
+html[data-font-size="large"],
+body[data-font-size="large"] {
+    font-size: 14.5px !important;
+}
+
+html[data-font-size="large"] body,
+html[data-font-size="large"] .app-container,
+html[data-font-size="large"] .main-wrapper,
+html[data-font-size="large"] .content-area,
+html[data-font-size="large"] .card,
+html[data-font-size="large"] .card-title,
+html[data-font-size="large"] table,
+html[data-font-size="large"] .data-table,
+html[data-font-size="large"] th,
+html[data-font-size="large"] td,
+html[data-font-size="large"] input,
+html[data-font-size="large"] select,
+html[data-font-size="large"] button,
+html[data-font-size="large"] .btn,
+html[data-font-size="large"] .badge,
+html[data-font-size="large"] .sidebar,
+html[data-font-size="large"] .nav-text,
+html[data-font-size="large"] .top-bar {
+    font-size: 1.04em !important;
+}

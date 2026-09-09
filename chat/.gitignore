@@ -1,0 +1,10 @@
+# Binaries
+aipbx-chat
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and temp files
+*.tmp
+*.log

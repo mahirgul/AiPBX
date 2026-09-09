@@ -1,0 +1,8 @@
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/hangup_red_pressed">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/hangup_red" />
+        </shape>
+    </item>
+</ripple>

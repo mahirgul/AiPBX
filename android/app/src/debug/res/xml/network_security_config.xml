@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    YALNIZCA DEBUG derlemesi için; release paketine girmez. Kullanıcı CA
+    deposu da güvenilir sayılır: kendinden imzalı bir sunucuya karşı test
+    etmek isteyen yönetici kendi kök sertifikasını cihaza kurar.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
