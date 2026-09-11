@@ -1,12 +1,18 @@
 <p align="center">
-  <img src="web/assets/img/logo.png" alt="AI PBX Logo" width="120">
+  <a href="https://mahirgul.github.io/AiPBX/">
+    <img src="docs/logo.png" alt="AI PBX Logo" width="130">
+  </a>
 </p>
 
 <h1 align="center">AI PBX</h1>
 
 <p align="center">
-  <strong>Open-source enterprise IP PBX management portal</strong><br>
-  Asterisk 22 · PHP 8 · MariaDB · WebRTC · Android
+  <strong>Open-Source Enterprise IP PBX Management Portal & Unified Communications</strong><br>
+  Asterisk 22 · PHP 8 · MariaDB · WebRTC · Instant Messaging · Android App
+</p>
+
+<p align="center">
+  <a href="https://mahirgul.github.io/AiPBX/">🌐 <strong>Official Website & Documentation: mahirgul.github.io/AiPBX</strong></a>
 </p>
 
 <p align="center">
@@ -15,12 +21,14 @@
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
+  <a href="https://mahirgul.github.io/AiPBX/"><img src="https://img.shields.io/badge/GitHub%20Pages-Live-success?logo=github" alt="GitHub Pages"></a>
 </p>
 
 <p align="center">
   <a href="#quick-install">Quick Install</a> •
   <a href="#features">Features</a> •
   <a href="#architecture">Architecture</a> •
+  <a href="https://mahirgul.github.io/AiPBX/">Website</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
