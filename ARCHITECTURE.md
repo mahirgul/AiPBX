@@ -20,36 +20,43 @@
 │   │     (Kotlin + WebRTC/SIP)     │               │   (WebRTC Softphone + Portal)   │   │
 │   └───────────────┬───────────────┘               └────────────────┬────────────────┘   │
 └───────────────────┼────────────────────────────────────────────────┼────────────────────┘
-                    │ HTTPS / WSS / DTLS-SRTP                        │ HTTPS / WSS
+                    │ HTTPS / WSS / TURNS                            │ HTTPS / WSS / TURNS
                     ▼                                                ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                         INGRESS & REVERSE PROXY LAYER (EDGE)                            │
+│                   EDGE INGRESS: NGINX PORT 443 ALPN MULTIPLEXER                         │
+│   Nginx TCP Stream module with ssl_preread on (Non-decrypting transparent proxy)       │
+│   Evaluates ClientHello Application-Layer Protocol Negotiation (ALPN):                  │
 │                                                                                         │
-│     [ Option A: Nginx (Recommended) ]        OR        [ Option B: Apache 2.4 ]         │
-│     - TLS 1.3 / HTTP/2 Termination                     - mod_ssl / HTTP/2               │
-│     - WebSocket Multiplexing                           - mod_proxy / mod_proxy_wstunnel │
-│     - Static Asset Caching (30d)                       - mod_headers / mod_deflate      │
-│     - Auth Rate Limiting                               - .htaccess rewrite rules        │
-│                                                                                         │
-│   Routing Table:                                                                        │
-│     ├── /               ──► Web Portal (PHP 8 FastCGI via PHP-FPM or Apache mod_php)    │
-│     ├── /ws             ──► Asterisk WebRTC SIP WebSocket (127.0.0.1:8088/ws)           │
-│     ├── /chat/ws        ──► Go Messaging Hub WebSocket (127.0.0.1:9090/ws)              │
-│     └── /assets/        ──► Zero-copy static asset serving                              │
-└───────────────────┬────────────────────────────────────────────────┬────────────────────┘
-                    │                                                │
-         ┌──────────┴──────────┐                          ┌──────────┴──────────┐
-         ▼                     ▼                          ▼                     ▼
-┌─────────────────┐   ┌─────────────────┐        ┌─────────────────┐   ┌─────────────────┐
-│   PHP 8 MVC     │   │   Asterisk 22   │        │     Go Chat     │   │     coturn      │
-│   Web Portal    │   │   VoIP Engine   │        │     Service     │   │   TURN / STUN   │
-│   (PHP-FPM)     │   │  (PJSIP/WebRTC) │        │   (Port 9090)   │   │   (Port 5349)   │
-└────────┬────────┘   └────────┬────────┘        └────────┬────────┘   └─────────────────┘
-         │                     │                          │
-         │   AMI (Port 5038)   │                          │
-         ├─────────────────────┘                          │
-         │                                                │
-         ▼                                                ▼
+│   ├── [ ALPN Present ] (http/1.1, h2 from Web Browsers, Mobile Apps, REST API)          │
+│   │     └──► Streamed directly to Apache 2.4 (127.0.0.1:8443)                           │
+│   │                                                                                     │
+│   └── [ ALPN Empty / None ] (WebRTC TURNS media relay behind restrictive firewalls)     │
+│         └──► Streamed directly to coturn TURNS (127.0.0.1:5349)                         │
+└───────────────────────────────────┬────────────────────────────────┬────────────────────┘
+                                    │                                │
+                     [ ALPN Present ]                                [ No ALPN ]
+                                    ▼                                │
+┌───────────────────────────────────────────────────────┐            │
+│          APPLICATION & WEBSOCKET PROXY TIER           │            │
+│  Apache 2.4 (127.0.0.1:8443 with TLS Termination)     │            │
+│   ├── /                 ──► PHP 8 MVC Web Portal      │            │
+│   ├── /ws               ──► Asterisk WebRTC (8088/ws) │            │
+│   └── /chat/ws          ──► Go Messaging (9090/ws)    │            │
+│                                                       │            │
+│  Port 80: HTTP Redirect & Certbot ACME HTTP-01 Pass   │            │
+└──────────┬────────────────────────┬───────────────────┘            │
+           │                        │                                │
+           ▼                        ▼                                ▼
+┌─────────────────────┐  ┌─────────────────────┐          ┌─────────────────────┐
+│     PHP 8 MVC       │  │     Asterisk 22     │          │       coturn        │
+│     Web Portal      │  │     VoIP Engine     │          │     TURN / STUN     │
+│     (Runtime)       │  │    (PJSIP/WebRTC)   │          │     (Port 5349)     │
+└──────────┬──────────┘  └──────────┬──────────┘          └─────────────────────┘
+           │                        │
+           │    AMI (Port 5038)     │
+           ├────────────────────────┘
+           │
+           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                                       DATA LAYER                                        │
 │  MariaDB 11 (utf8mb4_unicode_ci)                                                        │
@@ -60,41 +67,60 @@
 
 ---
 
-## 2. Ingress & Reverse Proxy Tier (Nginx vs Apache 2.4)
+## 2. Ingress & Reverse Proxy Tier (Nginx ALPN Multiplexer + Apache Backend)
 
-The platform supports both **Nginx** and **Apache 2.4** as the edge reverse proxy. Both options provide unified single-port HTTPS/WSS access (port 443), eliminating the need to expose Asterisk's raw HTTP port (8088) or Go's internal WebSocket port (9090) to the public internet.
+The system deploys **Nginx at the edge on Port 443** paired with **Apache 2.4 on Port 8443** (and Port 80 for HTTP/ACME verification). This is the exact production architecture running across active nodes (including `10.8.0.10`).
 
-### 2.1 Why Nginx for Modern WebRTC & Voice Architectures?
-1. **Event-Driven Non-Blocking Architecture**: Nginx maintains tens of thousands of idle WebSocket connections (`/ws` for SIP registration and `/chat/ws` for messaging) with minimal RAM usage (~2.5 MB per worker process), whereas thread/process-based servers incur higher overhead per connection.
-2. **Multiplexed WebSocket Upgrades**: Native connection upgrade handling via the `$http_upgrade` and `$connection_upgrade` map guarantees smooth HTTP-to-WebSocket protocol switching.
-3. **Optimized Timeout Tuning**: WebRTC SIP sessions require extended idle timeouts. Nginx's `proxy_read_timeout 3600s;` and `proxy_send_timeout 3600s;` prevent mobile carrier NAT timeouts from dropping active or standby calls.
-4. **FastCGI Microcaching & Zero-Copy Static Delivery**: Nginx delivers CSS, JS, sound prompts, and favicons directly from the kernel filesystem buffer cache (`sendfile on; tcp_nopush on;`), bypassing the PHP runtime.
+### 2.1 The Core Challenge: Sharing Port 443 between Web & WebRTC TURNS
+In enterprise, hospital, and university environments, corporate firewalls strictly block all outbound UDP traffic as well as non-standard TCP ports, permitting only **Port 80** and **Port 443**.
+- WebRTC clients inside these restrictive networks cannot establish peer-to-peer audio or reach standard STUN/TURN ports (`3478`, `5349`).
+- Therefore, the TURN server (**coturn**) **MUST be reachable over TLS on Port 443 (TURNS)** to relay audio packets through corporate firewalls.
+- Simultaneously, the HTTPS Web Portal, Asterisk WebRTC SIP WebSocket (`/ws`), and Go Chat WebSocket (`/chat/ws`) **must ALSO be accessible on Port 443**.
 
-### 2.2 Reverse Proxy Topologies
+### 2.2 The Solution: Nginx TCP Stream with ALPN Pre-Read (`ssl_preread on`)
+Nginx is deployed as a transparent L4 TCP stream router on Port 443:
+1. When an incoming TLS connection arrives on port 443, Nginx parses the initial TLS `ClientHello` packet using `ssl_preread on;` **without decrypting or terminating TLS**.
+2. **ALPN Inspection**:
+   - **Web Browsers & Mobile HTTPS/WSS Clients** always advertise ALPN protocols (e.g. `http/1.1` or `h2`). Nginx matches this and forwards the raw TLS stream to **Apache 2.4 on `127.0.0.1:8443`**.
+   - **WebRTC TURNS (coturn) Clients** do not send ALPN protocols (`""`). Nginx matches this empty string and routes the connection directly to **coturn on `127.0.0.1:5349`**.
+3. **Zero Encryption Overhead at the Edge**: Because Nginx does not decrypt TLS, there is zero certificate synchronization overhead between Nginx and Apache/coturn. Each backend handles its own TLS handshake natively.
 
-#### Topology 1: Standalone Nginx + PHP-FPM (High Concurrency)
-- **Front-End**: Nginx listening on ports 80 (HTTP redirect) and 443 (HTTPS/HTTP2).
-- **PHP Execution**: Routed directly to `unix:/run/php/php-fpm.sock` using `fastcgi_pass`.
-- **WebSocket Routing**:
-  - `wss://<FQDN>/ws` is proxied to `http://127.0.0.1:8088/ws` (Asterisk `res_pjsip_transport_websocket`).
-  - `wss://<FQDN>/chat/ws` is proxied to `http://127.0.0.1:9090/ws` (Go Chat).
-- **Configuration Template**: Provided in [`conf/nginx/aipbx.conf.example`](file:///home/pbx/conf/nginx/aipbx.conf.example).
+```nginx
+stream {
+    log_format stream_debug '$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$turn_backend status=$status';
+    access_log /var/log/nginx/stream.log stream_debug;
 
-#### Topology 2: Nginx as Edge SSL/TLS Accelerator in front of Apache
-- **Edge Layer**: Nginx terminates public TLS (443), terminates WSS, and handles static assets.
-- **Dynamic Backend**: Nginx forwards `/` dynamic PHP requests to Apache listening on `127.0.0.1:8080` (or `127.0.0.1:8443`).
-- **Benefit**: Retains existing Apache `.htaccess` rules while benefiting from Nginx's superior SSL acceleration and WebSocket concurrency.
+    map $ssl_preread_alpn_protocols $turn_backend {
+        default     127.0.0.1:8443;   # Web Portal, WebRTC /ws, Chat /chat/ws (Apache SSL)
+        ""          127.0.0.1:5349;   # coturn TURNS (Firewall bypass)
+    }
 
-#### Topology 3: Native Apache 2.4 (Default in automated installer)
-- Uses Apache with `mod_ssl`, `mod_proxy`, `mod_proxy_http`, and `mod_proxy_wstunnel`.
-- Proxies `/ws` and `/chat/ws` using Apache's `ProxyPass` directives.
+    server {
+        listen 443;
+        listen [::]:443;
+        ssl_preread on;
+        proxy_pass $turn_backend;
+        proxy_timeout 3600s;
+        proxy_connect_timeout 5s;
+    }
+}
+```
 
-### 2.3 WebSocket Reverse Proxy Specifications
+### 2.3 Port 80 and Let's Encrypt ACME HTTP-01 Challenge Handling
+Apache listens on Port 80 (`*:80`):
+- All general web traffic is permanently 301-redirected to `https://%{HTTP_HOST}%{REQUEST_URI}`.
+- Crucially, `/.well-known/acme-challenge/` requests from Certbot / Let's Encrypt are **exempted from HTTPS redirect**:
+  ```apache
+  RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
+  ```
+  *Rationale:* Let's Encrypt's automated validation bot does not send ALPN. If port 80 redirected ACME challenges to port 443, Nginx would misroute the validation traffic to coturn, causing SSL certificate renewals to fail. Serving ACME HTTP-01 directly over port 80 guarantees automated, uninterrupted certificate renewals.
 
-| Endpoint | Target Backend | Protocol | Key Headers | Timeouts |
-|----------|----------------|----------|-------------|----------|
-| `/ws` | `127.0.0.1:8088/ws` | WebRTC SIP Signaling (JsSIP) | `Upgrade: websocket`, `Connection: Upgrade`, `Host`, `X-Real-IP`, `X-Forwarded-For` | Read/Send: `3600s`, Buffering: `off` |
-| `/chat/ws` | `127.0.0.1:9090/ws` | Go Chat JSON Packets | `Upgrade: websocket`, `Connection: Upgrade`, `Host`, `X-Real-IP`, `X-Forwarded-For` | Read/Send: `3600s`, Buffering: `off` |
+### 2.4 Apache 2.4 Application & WebSocket Proxy Layer (127.0.0.1:8443)
+Apache terminates TLS and acts as the internal application multiplexer:
+- **Web Portal**: Executes PHP 8 via `libapache2-mod-php` or PHP-FPM.
+- **Asterisk WebRTC SIP (`/ws`)**: Proxied via `mod_proxy_wstunnel` to `ws://127.0.0.1:8088/ws` with `timeout=3600`.
+- **Go Chat Hub (`/chat/ws`)**: Proxied via `mod_proxy_wstunnel` to `ws://127.0.0.1:9090/ws` with `timeout=3600 keepalive=On`.
 
 ---
 
