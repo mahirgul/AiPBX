@@ -1,46 +1,130 @@
 #!/usr/bin/env bash
 # ============================================================================
-# AI PBX — Ubuntu LTS Kurulum Betiği
-# Desteklenen: Ubuntu 22.04 / 24.04 / 26.04 LTS
+# AI PBX — Ubuntu LTS Fresh Install Script
+# Supported: Ubuntu 22.04 / 24.04 / 26.04 LTS
 #
-# Kullanım:
+# Usage:
 #   git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
 #   cd /opt/aipbx
 #   sudo bash install.sh
 #
-# Bu betik aşağıdakileri kurar ve yapılandırır:
-#   - Asterisk PBX (Ubuntu reposu)
-#   - MariaDB veritabanı + şema
-#   - Apache2 + PHP + gerekli modüller
-#   - coturn TURN sunucusu (WebRTC için)
-#   - Go + Chat servisi (build & systemd)
-#   - fail2ban, ghostscript, ODBC
+# What this script does:
+#   - Generates strong random passwords for all services (no hardcoded defaults)
+#   - Asks for FQDN — uses Let's Encrypt if provided, self-signed if not
+#   - Installs: Asterisk, MariaDB, Apache2+PHP, coturn, Go+Chat, fail2ban
+#   - Creates a single admin user with a secure random password
+#   - Displays and saves all credentials at the end
 # ============================================================================
 set -euo pipefail
 
-# --- Renk kodları ---
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+# --- Color codes ---
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
 info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
-ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
+ok()    { echo -e "${GREEN}[ OK ]${NC}  $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+error() { echo -e "${RED}[ERR ]${NC}  $*"; exit 1; }
+step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 
-# --- Root kontrolü ---
-[[ $EUID -ne 0 ]] && error "Bu betiği root olarak çalıştırın: sudo bash install.sh"
+# --- Root check ---
+[[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
 
-# --- Proje kök dizini ---
+# --- Script and install directories ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 
-info "AI PBX kurulumu başlıyor..."
-info "Proje dizini: $SCRIPT_DIR"
-info "Kurulum dizini: $INSTALL_DIR"
+# ============================================================================
+# STEP 0: WELCOME BANNER
+# ============================================================================
+clear
+echo -e "${CYAN}${BOLD}"
+echo "  ╔══════════════════════════════════════════════════════════════╗"
+echo "  ║              AI PBX — Fresh Installation                    ║"
+echo "  ║         Open Source Enterprise Phone System                  ║"
+echo "  ╚══════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+echo -e "  Source directory : ${YELLOW}$SCRIPT_DIR${NC}"
+echo -e "  Install directory: ${YELLOW}$INSTALL_DIR${NC}"
+echo ""
 
 # ============================================================================
-# 1. SİSTEM PAKETLERİ
+# STEP 1: FQDN / DOMAIN CONFIGURATION
 # ============================================================================
-info "Sistem paketleri kuruluyor (Ubuntu repoları)..."
+step "1. Domain / FQDN Configuration"
+
+SERVER_IP=$(hostname -I | awk '{print $1}')
+echo ""
+echo -e "  Your server's IP address: ${YELLOW}$SERVER_IP${NC}"
+echo ""
+echo -e "  Enter your fully qualified domain name (FQDN) for HTTPS."
+echo -e "  Examples: ${CYAN}pbx.company.com${NC}, ${CYAN}voice.example.org${NC}"
+echo -e "  Leave blank to use IP address with a self-signed certificate."
+echo ""
+read -r -p "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT
+
+if [[ -z "$PORTAL_DOMAIN_INPUT" ]]; then
+    PORTAL_DOMAIN="$SERVER_IP"
+    USE_SELFSIGNED=true
+    USE_LETSENCRYPT=false
+    warn "No FQDN provided. A self-signed TLS certificate will be generated."
+    warn "Browsers will show a security warning — this is normal for self-signed certs."
+else
+    PORTAL_DOMAIN="$PORTAL_DOMAIN_INPUT"
+    USE_SELFSIGNED=false
+    echo ""
+    echo -e "  Domain set to: ${GREEN}$PORTAL_DOMAIN${NC}"
+    echo ""
+    echo -e "  Do you want a free Let's Encrypt TLS certificate? (recommended)"
+    echo -e "  Note: DNS must point ${CYAN}$PORTAL_DOMAIN${NC} → ${CYAN}$SERVER_IP${NC} already."
+    read -r -p "  Use Let's Encrypt? [y/N]: " LE_CHOICE
+    if [[ "${LE_CHOICE,,}" == "y" || "${LE_CHOICE,,}" == "yes" ]]; then
+        USE_LETSENCRYPT=true
+        echo ""
+        read -r -p "  Email for Let's Encrypt notifications: " LE_EMAIL
+    else
+        USE_LETSENCRYPT=false
+        USE_SELFSIGNED=true
+        info "A self-signed certificate will be used for $PORTAL_DOMAIN"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
+# STEP 2: GENERATE ALL RANDOM CREDENTIALS
+# ============================================================================
+step "2. Generating Secure Random Credentials"
+
+# Generate strong random password
+gen_pass() {
+    local len="${1:-20}"
+    LC_ALL=C tr -dc 'A-Za-z0-9!@#%^&*' < /dev/urandom | head -c "$len"
+}
+
+# Generate hex secret
+gen_hex() {
+    local len="${1:-32}"
+    openssl rand -hex "$len"
+}
+
+# All passwords generated randomly — no static defaults
+ADMIN_PASS=$(gen_pass 16)
+DB_USER="aipbx_portal"
+DB_PASS=$(gen_pass 20)
+MIGRATOR_USER="aipbx_migrator"
+MIGRATOR_PASS=$(gen_pass 20)
+AMI_USER="aipbx-manager"
+AMI_PASS=$(gen_hex 16)
+TURN_SECRET=$(gen_hex 32)
+
+ok "All credentials generated"
+echo ""
+
+# ============================================================================
+# STEP 3: INSTALL SYSTEM PACKAGES
+# ============================================================================
+step "3. Installing System Packages"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -75,27 +159,26 @@ apt-get install -y \
   ghostscript \
   libtiff-tools \
   certbot \
+  python3-certbot-apache \
+  openssl \
   2>&1 | tail -5
 
-ok "Sistem paketleri kuruldu"
+ok "System packages installed"
 
 # ============================================================================
-# 2. DİZİN YAPISINI OLUŞTUR
+# STEP 4: DIRECTORY STRUCTURE
 # ============================================================================
-info "Dizin yapısı oluşturuluyor..."
+step "4. Creating Directory Structure"
 
-# Proje dosyalarını kurulum dizinine kopyala (eğer farklıysa)
 if [[ "$SCRIPT_DIR" != "$INSTALL_DIR" ]]; then
     mkdir -p "$INSTALL_DIR"
     cp -a "$SCRIPT_DIR"/* "$INSTALL_DIR"/
     cp -a "$SCRIPT_DIR"/.gitignore "$INSTALL_DIR"/ 2>/dev/null || true
 fi
 
-# Web portal symlink
 rm -rf /var/www/html
 ln -sf "$INSTALL_DIR/web" /var/www/html
 
-# Gerekli dizinler
 mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing
 mkdir -p /var/spool/asterisk/monitor
@@ -106,110 +189,212 @@ mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/httpd
 
-# Sahiplik
 chown -R www-data:www-data /var/www/faxes /var/lib/aipbx
 chmod 755 "$(dirname "$INSTALL_DIR")" "$INSTALL_DIR"
 
-ok "Dizin yapısı oluşturuldu"
+ok "Directory structure created"
 
 # ============================================================================
-# 3. ENV DOSYASI
+# STEP 5: ENVIRONMENT FILE
 # ============================================================================
-if [[ ! -f /etc/ai-pbx.env ]]; then
-    info "Ortam dosyası oluşturuluyor..."
+step "5. Creating Environment Configuration"
 
-    # Rastgele şifreler üret
-    DB_PASS_GEN=$(openssl rand -base64 24 | tr -d '/+=')
-    MIGRATOR_PASS_GEN=$(openssl rand -base64 24 | tr -d '/+=')
-    AMI_PASS_GEN=$(openssl rand -hex 16)
-    TURN_SECRET_GEN=$(openssl rand -hex 32)
+cat > /etc/ai-pbx.env << ENVFILE
+# AI PBX - Environment Configuration
+# Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+# KEEP THIS FILE SECURE — it contains all service secrets.
+# You can update values here or via the Admin Panel (Settings → System).
 
-    cp "$INSTALL_DIR/web/.env.example" /etc/ai-pbx.env
-    sed -i "s/^DB_PASS=.*/DB_PASS=$DB_PASS_GEN/" /etc/ai-pbx.env
-    sed -i "s/^MIGRATOR_DB_PASS=.*/MIGRATOR_DB_PASS=$MIGRATOR_PASS_GEN/" /etc/ai-pbx.env
-    sed -i "s/^AMI_PASS=.*/AMI_PASS=$AMI_PASS_GEN/" /etc/ai-pbx.env
-    sed -i "s/^TURN_SECRET=.*/TURN_SECRET=$TURN_SECRET_GEN/" /etc/ai-pbx.env
+# --- Database runtime user (DML: SELECT/INSERT/UPDATE/DELETE) ---
+DB_HOST=localhost
+DB_NAME=asterisk
+DB_USER=${DB_USER}
+DB_PASS=${DB_PASS}
 
-    chown root:www-data /etc/ai-pbx.env
-    chmod 640 /etc/ai-pbx.env
+# --- Database DDL user (Phinx migrations: CREATE/ALTER/DROP) ---
+MIGRATOR_DB_USER=${MIGRATOR_USER}
+MIGRATOR_DB_PASS=${MIGRATOR_PASS}
 
-    ok "Ortam dosyası oluşturuldu: /etc/ai-pbx.env"
-else
-    warn "/etc/ai-pbx.env zaten mevcut, dokunulmadı."
-    # Mevcut değerleri oku
-    DB_PASS_GEN=$(grep '^DB_PASS=' /etc/ai-pbx.env | cut -d= -f2)
-    MIGRATOR_PASS_GEN=$(grep '^MIGRATOR_DB_PASS=' /etc/ai-pbx.env | cut -d= -f2)
-    AMI_PASS_GEN=$(grep '^AMI_PASS=' /etc/ai-pbx.env | cut -d= -f2)
-fi
+# --- Site identity ---
+SITE_NAME=AI PBX Portal
+PORTAL_DOMAIN=${PORTAL_DOMAIN}
+TIMEZONE=Europe/Istanbul
+
+# --- Asterisk AMI (Manager Interface) ---
+AMI_HOST=127.0.0.1
+AMI_PORT=5038
+AMI_USER=${AMI_USER}
+AMI_PASS=${AMI_PASS}
+
+# --- File/directory paths ---
+ASTERISK_PBX_DIR=/etc/asterisk/pbx
+ASTERISK_CALL_SPOOL=/var/spool/asterisk/outgoing
+FAX_STORAGE_PATH=/var/www/faxes
+FAX_OUTGOING_SPOOL=/var/spool/asterisk/fax/outgoing
+SOUNDS_CUSTOM_DIR=/var/lib/asterisk/sounds/custom
+MOH_BASE_DIR=/var/lib/asterisk/moh
+MONITOR_STORAGE_PATH=/var/spool/asterisk/monitor
+PJSIP_DTLS_CERT=/etc/asterisk/keys/asterisk.pem
+GS_BINARY=/usr/bin/gs
+SYNC_QUEUE_LOGS_SCRIPT=/usr/local/bin/sync_queue_logs.php
+
+# --- Mail (password reset / fax notification emails) ---
+MAIL_FROM_ADDRESS=no-reply@${PORTAL_DOMAIN}
+MAIL_FROM_NAME=AI PBX Portal
+
+# --- WebRTC TURN (coturn) ---
+TURN_HOST=${PORTAL_DOMAIN}
+TURN_SECRET=${TURN_SECRET}
+TURNS_PORT=5349
+ENVFILE
+
+chown root:www-data /etc/ai-pbx.env
+chmod 640 /etc/ai-pbx.env
+
+ok "Environment file created: /etc/ai-pbx.env"
 
 # ============================================================================
-# 4. MARİADB VERİTABANI
+# STEP 6: MARIADB DATABASE
 # ============================================================================
-info "MariaDB yapılandırılıyor..."
+step "6. Configuring MariaDB"
 
 systemctl start mariadb
 systemctl enable mariadb
 
-# Veritabanı ve kullanıcılar
+# Create database
 mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
+# Create app users (drop first to allow re-run)
 mysql -e "
-CREATE USER IF NOT EXISTS 'aipbx_portal'@'localhost' IDENTIFIED BY '$DB_PASS_GEN';
-GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO 'aipbx_portal'@'localhost';
-
-CREATE USER IF NOT EXISTS 'aipbx_migrator'@'localhost' IDENTIFIED BY '$MIGRATOR_PASS_GEN';
-GRANT ALL PRIVILEGES ON asterisk.* TO 'aipbx_migrator'@'localhost';
-
+DROP USER IF EXISTS '${DB_USER}'@'localhost';
+DROP USER IF EXISTS '${MIGRATOR_USER}'@'localhost';
+CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO '${DB_USER}'@'localhost';
+CREATE USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
+GRANT ALL PRIVILEGES ON asterisk.* TO '${MIGRATOR_USER}'@'localhost';
 FLUSH PRIVILEGES;
 "
 
-# Şema ve temel veriler
-TABLE_COUNT=$(mysql -sN -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='asterisk';")
-if [[ "$TABLE_COUNT" -eq 0 ]]; then
-    info "Veritabanı şeması yükleniyor..."
+# Load schema and seed (fresh install only)
+TABLE_COUNT=$(mysql -sN -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='asterisk';" 2>/dev/null || echo "0")
+
+if [[ "${TABLE_COUNT:-0}" -eq 0 ]]; then
+    info "Loading database schema..."
     mysql asterisk < "$INSTALL_DIR/db/schema.sql"
     mysql asterisk < "$INSTALL_DIR/db/seed.sql"
 
-    # Varsayılan admin kullanıcısı (şifre: admin123 — ilk girişte değiştirin!)
-    ADMIN_HASH=$(php -r "echo password_hash('admin123', PASSWORD_BCRYPT);")
+    # Create admin user with generated random password (no hardcoded admin123!)
+    ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
     mysql asterisk -e "
     INSERT IGNORE INTO sys_users (username, password_hash, display_name, role_id, is_active)
-    VALUES ('admin', '$ADMIN_HASH', 'Yönetici', 1, 1);
+    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', 1, 1);
     "
-    ok "Veritabanı şeması ve varsayılan admin kullanıcısı oluşturuldu"
-    warn "Varsayılan admin şifresi: admin123 — İLK GİRİŞTE DEĞİŞTİRİN!"
+    ok "Database schema loaded and admin user created"
 else
-    warn "Veritabanında zaten $TABLE_COUNT tablo var, şema yüklenmedi."
+    warn "Database already has ${TABLE_COUNT} tables — schema not reloaded."
+    # Update admin password on reinstall
+    ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
+    mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
 fi
 
-ok "MariaDB yapılandırıldı"
+ok "MariaDB configured"
 
 # ============================================================================
-# 5. APACHE2 YAPILANDIRMASI
+# STEP 7: TLS CERTIFICATE
 # ============================================================================
-info "Apache2 yapılandırılıyor..."
+step "7. TLS Certificate Setup"
 
-# Gerekli modüller
+if [[ "$USE_LETSENCRYPT" == "true" ]]; then
+    info "Requesting Let's Encrypt certificate for $PORTAL_DOMAIN..."
+    systemctl start apache2 2>/dev/null || true
+    if certbot certonly --apache -d "$PORTAL_DOMAIN" \
+        --non-interactive --agree-tos \
+        -m "${LE_EMAIL:-admin@${PORTAL_DOMAIN}}" 2>&1; then
+        CERT_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/fullchain.pem"
+        KEY_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/privkey.pem"
+        USE_SELFSIGNED=false
+        ok "Let's Encrypt certificate obtained"
+    else
+        warn "Let's Encrypt failed — falling back to self-signed certificate"
+        USE_SELFSIGNED=true
+    fi
+fi
+
+if [[ "$USE_SELFSIGNED" == "true" ]]; then
+    info "Generating self-signed TLS certificate..."
+    mkdir -p /etc/ssl/aipbx
+
+    openssl req -x509 -nodes -days 3650 \
+        -newkey rsa:2048 \
+        -keyout /etc/ssl/aipbx/aipbx.key \
+        -out /etc/ssl/aipbx/aipbx.crt \
+        -subj "/C=TR/ST=Istanbul/L=Istanbul/O=AI PBX/OU=IT/CN=${PORTAL_DOMAIN}" \
+        2>/dev/null
+
+    chmod 600 /etc/ssl/aipbx/aipbx.key
+    chmod 644 /etc/ssl/aipbx/aipbx.crt
+
+    CERT_FILE="/etc/ssl/aipbx/aipbx.crt"
+    KEY_FILE="/etc/ssl/aipbx/aipbx.key"
+    ok "Self-signed certificate generated (valid 10 years)"
+fi
+
+# Generate Asterisk DTLS certificate (WebRTC)
+if [[ ! -f /etc/asterisk/keys/asterisk.pem ]]; then
+    info "Generating Asterisk DTLS certificate..."
+    openssl req -x509 -nodes -days 3650 \
+        -newkey rsa:2048 \
+        -keyout /etc/asterisk/keys/asterisk.key \
+        -out /etc/asterisk/keys/asterisk.crt \
+        -subj "/CN=asterisk" 2>/dev/null
+    cat /etc/asterisk/keys/asterisk.crt /etc/asterisk/keys/asterisk.key \
+        > /etc/asterisk/keys/asterisk.pem
+    chmod 640 /etc/asterisk/keys/asterisk.pem /etc/asterisk/keys/asterisk.key
+    chown asterisk:asterisk /etc/asterisk/keys/asterisk.pem \
+        /etc/asterisk/keys/asterisk.key 2>/dev/null || true
+    ok "Asterisk DTLS certificate generated"
+fi
+
+# ============================================================================
+# STEP 8: APACHE2 CONFIGURATION
+# ============================================================================
+step "8. Configuring Apache2"
+
 a2enmod rewrite proxy proxy_wstunnel ssl headers php* 2>/dev/null || true
 a2dismod mpm_event 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
-# VirtualHost
-cat > /etc/apache2/sites-available/aipbx.conf << 'VHOST'
+cat > /etc/apache2/sites-available/aipbx.conf << VHOST
 <VirtualHost *:80>
-    ServerName localhost
+    ServerName ${PORTAL_DOMAIN}
+    DocumentRoot /var/www/html
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName ${PORTAL_DOMAIN}
     DocumentRoot /var/www/html
 
-    # Asterisk WebRTC WebSocket Reverse Proxy
+    SSLEngine on
+    SSLCertificateFile    ${CERT_FILE}
+    SSLCertificateKeyFile ${KEY_FILE}
+    SSLProtocol TLSv1.2 TLSv1.3
+    SSLHonorCipherOrder on
+    Header always set Strict-Transport-Security "max-age=31536000"
+
     ProxyPass /ws ws://127.0.0.1:8088/ws retry=0 timeout=3600
     ProxyPassReverse /ws ws://127.0.0.1:8088/ws
 
-    ErrorLog ${APACHE_LOG_DIR}/aipbx_error.log
-    CustomLog ${APACHE_LOG_DIR}/aipbx_access.log combined
+    ProxyPass /chat/ws ws://127.0.0.1:9090/ws retry=0 timeout=3600
+    ProxyPassReverse /chat/ws ws://127.0.0.1:9090/ws
+
+    ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log
+    CustomLog \${APACHE_LOG_DIR}/aipbx_access.log combined
 </VirtualHost>
 VHOST
 
-# Routing kuralları
 cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
 <Directory "/var/www/html">
     DirectoryIndex index.php
@@ -247,43 +432,39 @@ a2ensite aipbx.conf 2>/dev/null
 a2dissite 000-default.conf 2>/dev/null || true
 a2enconf aipbx-routing 2>/dev/null
 
-# Composer bağımlılıkları
+# Composer dependencies
 cd "$INSTALL_DIR/web" && composer install --no-dev --no-interaction --quiet 2>/dev/null || true
 
-# nginx'i durdur (port 80 çakışması)
 systemctl stop nginx 2>/dev/null || true
 systemctl disable nginx 2>/dev/null || true
 
 systemctl restart apache2
 systemctl enable apache2
 
-ok "Apache2 yapılandırıldı"
+ok "Apache2 configured (HTTP→HTTPS redirect enabled)"
 
 # ============================================================================
-# 6. ASTERİSK YAPILANDIRMASI
+# STEP 9: ASTERISK CONFIGURATION
 # ============================================================================
-info "Asterisk yapılandırılıyor..."
+step "9. Configuring Asterisk PBX"
 
-# Asterisk PBX config dizini
 mkdir -p /etc/asterisk/pbx
 cp "$INSTALL_DIR/asterisk-config/pbx/"*.conf /etc/asterisk/pbx/ 2>/dev/null || true
 
-# Master config dosyalarını kopyala (varsa)
 for f in extensions.conf pjsip.conf queues.conf musiconhold.conf http.conf rtp.conf modules.conf; do
     if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
 done
 
-# AMI (Manager) yapılandırması
 cat > /etc/asterisk/manager.conf << MANAGER
 [general]
 enabled = yes
 bindaddr = 127.0.0.1
 port = 5038
 
-[aipbx-manager]
-secret = $AMI_PASS_GEN
+[${AMI_USER}]
+secret = ${AMI_PASS}
 deny = 0.0.0.0/0.0.0.0
 permit = 127.0.0.1/255.255.255.0
 read = originate,call,agent
@@ -291,21 +472,22 @@ write = originate,call,agent
 writetimeout = 5000
 MANAGER
 
-# Sahiplik
 chown -R asterisk:asterisk /etc/asterisk/
 
 systemctl restart asterisk
 systemctl enable asterisk
 
-ok "Asterisk yapılandırıldı"
+ok "Asterisk configured"
 
 # ============================================================================
-# 7. CHAT SERVİSİ (Go build)
+# STEP 10: CHAT SERVICE (Go)
 # ============================================================================
+step "10. Building Chat Service"
+
 if [[ -f "$INSTALL_DIR/chat/main.go" ]]; then
-    info "Chat servisi derleniyor..."
+    info "Building chat service..."
     cd "$INSTALL_DIR/chat"
-    go build -o aipbx-chat . 2>/dev/null || warn "Chat servisi derlenemedi (Go bağımlılıkları eksik olabilir)"
+    go build -o aipbx-chat . 2>/dev/null || warn "Chat service build failed (Go dependencies may be missing)"
 
     if [[ -f "$INSTALL_DIR/chat/aipbx-chat" ]]; then
         cat > /etc/systemd/system/aipbx-chat.service << EOF
@@ -315,9 +497,10 @@ After=network.target mariadb.service
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=$INSTALL_DIR/chat
-ExecStart=$INSTALL_DIR/chat/aipbx-chat
+User=www-data
+WorkingDirectory=${INSTALL_DIR}/chat
+EnvironmentFile=/etc/ai-pbx.env
+ExecStart=${INSTALL_DIR}/chat/aipbx-chat
 Restart=always
 RestartSec=3
 LimitNOFILE=65536
@@ -326,72 +509,159 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
-        ok "Chat servisi derlendi ve systemd servisi oluşturuldu"
+        systemctl enable aipbx-chat 2>/dev/null || true
+        systemctl start aipbx-chat 2>/dev/null || true
+        ok "Chat service built and started"
     fi
 fi
 
 # ============================================================================
-# 8. COTURN (WebRTC TURN)
+# STEP 11: COTURN (WebRTC TURN)
 # ============================================================================
-info "coturn yapılandırılıyor..."
+step "11. Configuring coturn"
 
-TURN_SECRET=$(grep '^TURN_SECRET=' /etc/ai-pbx.env | cut -d= -f2)
-
-if [[ -n "$TURN_SECRET" && "$TURN_SECRET" != "change-me" ]]; then
-    cat > /etc/turnserver.conf << TURNCONF
+cat > /etc/turnserver.conf << TURNCONF
 listening-port=3478
 tls-listening-port=5349
 fingerprint
 use-auth-secret
-static-auth-secret=$TURN_SECRET
-realm=localhost
-server-name=localhost
+static-auth-secret=${TURN_SECRET}
+realm=${PORTAL_DOMAIN}
+server-name=${PORTAL_DOMAIN}
 no-cli
 no-multicast-peers
 stale-nonce=600
-verbose
 log-file=/var/log/turnserver/turnserver.log
 simple-log
 min-port=49152
 max-port=65535
 TURNCONF
-    mkdir -p /var/log/turnserver
-    systemctl restart coturn 2>/dev/null || true
-    systemctl enable coturn 2>/dev/null || true
-    ok "coturn yapılandırıldı"
-else
-    warn "TURN_SECRET boş — coturn devre dışı. WebRTC için /etc/ai-pbx.env'de ayarlayın."
-fi
+
+mkdir -p /var/log/turnserver
+systemctl restart coturn 2>/dev/null || true
+systemctl enable coturn 2>/dev/null || true
+
+ok "coturn configured"
 
 # ============================================================================
-# 9. FAİL2BAN
+# STEP 12: FAIL2BAN
 # ============================================================================
-info "fail2ban yapılandırılıyor..."
+step "12. Configuring fail2ban"
 systemctl enable fail2ban 2>/dev/null || true
 systemctl start fail2ban 2>/dev/null || true
-ok "fail2ban yapılandırıldı"
+ok "fail2ban configured"
 
 # ============================================================================
-# 10. SON DURUM
+# STEP 13: SAVE CREDENTIALS TO FILE
+# ============================================================================
+CREDS_FILE="/root/aipbx-credentials.txt"
+
+cat > "$CREDS_FILE" << CREDS
+================================================================
+  AI PBX — Installation Credentials
+  Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+  Server: $(hostname) / ${SERVER_IP}
+  ⚠  KEEP THIS FILE SECURE — delete it after noting credentials
+================================================================
+
+  WEB PORTAL
+  ──────────
+  URL           : https://${PORTAL_DOMAIN}
+  Admin User    : admin
+  Admin Password: ${ADMIN_PASS}
+
+  DATABASE (MariaDB)
+  ──────────────────
+  Database Name : asterisk
+  App User      : ${DB_USER}
+  App Password  : ${DB_PASS}
+  DDL User      : ${MIGRATOR_USER}
+  DDL Password  : ${MIGRATOR_PASS}
+
+  ASTERISK AMI
+  ────────────
+  AMI User      : ${AMI_USER}
+  AMI Password  : ${AMI_PASS}
+
+  WebRTC TURN
+  ───────────
+  TURN Secret   : ${TURN_SECRET}
+
+  TLS CERTIFICATE
+  ───────────────
+  Type          : $(if [[ "$USE_LETSENCRYPT" == "true" ]]; then echo "Let's Encrypt (auto-renews)"; else echo "Self-Signed (10 years)"; fi)
+  Domain        : ${PORTAL_DOMAIN}
+  Cert File     : ${CERT_FILE}
+  Key File      : ${KEY_FILE}
+
+  CONFIGURATION FILES
+  ───────────────────
+  Environment   : /etc/ai-pbx.env
+  Install dir   : ${INSTALL_DIR}
+  Web dir       : /var/www/html → ${INSTALL_DIR}/web
+  Asterisk conf : /etc/asterisk/
+
+  All passwords can be changed from: Admin Panel → Settings → System
+================================================================
+CREDS
+
+chmod 600 "$CREDS_FILE"
+
+# ============================================================================
+# DONE — PRINT SUMMARY
 # ============================================================================
 echo ""
-echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  AI PBX kurulumu tamamlandı!${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}${BOLD}"
+echo "  ╔══════════════════════════════════════════════════════════════╗"
+echo "  ║           ✅  AI PBX Installation Complete!                  ║"
+echo "  ╚══════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+
+echo -e "  ${BOLD}WEB PORTAL${NC}"
+echo -e "  ┌─────────────────────────────────────────────────────────┐"
+echo -e "  │  URL      : ${CYAN}https://${PORTAL_DOMAIN}${NC}"
+echo -e "  │  Username : ${YELLOW}admin${NC}"
+echo -e "  │  Password : ${YELLOW}${ADMIN_PASS}${NC}"
+echo -e "  └─────────────────────────────────────────────────────────┘"
 echo ""
-echo -e "  Portal URL:     ${BLUE}http://$(hostname -I | awk '{print $1}')${NC}"
-echo -e "  Admin Kullanıcı: ${YELLOW}admin${NC}"
-echo -e "  Admin Şifre:     ${YELLOW}admin123${NC} (ilk girişte değiştirin!)"
+
+echo -e "  ${BOLD}DATABASE (MariaDB)${NC}"
+echo -e "  ┌─────────────────────────────────────────────────────────┐"
+echo -e "  │  App User    : ${YELLOW}${DB_USER}${NC}"
+echo -e "  │  App Password: ${YELLOW}${DB_PASS}${NC}"
+echo -e "  │  DDL User    : ${YELLOW}${MIGRATOR_USER}${NC}"
+echo -e "  │  DDL Password: ${YELLOW}${MIGRATOR_PASS}${NC}"
+echo -e "  └─────────────────────────────────────────────────────────┘"
 echo ""
-echo -e "  Ortam dosyası:   /etc/ai-pbx.env"
-echo -e "  Web dizini:      $INSTALL_DIR/web → /var/www/html"
-echo -e "  Asterisk conf:   /etc/asterisk/"
+
+echo -e "  ${BOLD}ASTERISK AMI${NC}"
+echo -e "  ┌─────────────────────────────────────────────────────────┐"
+echo -e "  │  User    : ${YELLOW}${AMI_USER}${NC}"
+echo -e "  │  Password: ${YELLOW}${AMI_PASS}${NC}"
+echo -e "  └─────────────────────────────────────────────────────────┘"
 echo ""
-echo -e "  ${BLUE}Servisler:${NC}"
-systemctl is-active --quiet mariadb   && echo -e "    MariaDB:   ${GREEN}aktif${NC}" || echo -e "    MariaDB:   ${RED}kapalı${NC}"
-systemctl is-active --quiet asterisk  && echo -e "    Asterisk:  ${GREEN}aktif${NC}" || echo -e "    Asterisk:  ${RED}kapalı${NC}"
-systemctl is-active --quiet apache2   && echo -e "    Apache2:   ${GREEN}aktif${NC}" || echo -e "    Apache2:   ${RED}kapalı${NC}"
+
+echo -e "  ${BOLD}TLS CERTIFICATE${NC}"
+if [[ "${USE_LETSENCRYPT:-false}" == "true" ]]; then
+    echo -e "  ✅ Let's Encrypt certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
+else
+    echo -e "  ⚠️  Self-signed certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
+    echo -e "     Your browser will show a warning — click Advanced → Proceed to continue."
+    echo -e "     To upgrade to a real certificate later:"
+    echo -e "     ${CYAN}certbot --apache -d ${PORTAL_DOMAIN}${NC}"
+fi
 echo ""
-echo -e "  ${YELLOW}Önemli: /etc/ai-pbx.env dosyasını kontrol edip SITE_NAME ve${NC}"
-echo -e "  ${YELLOW}PORTAL_DOMAIN değerlerini kendi ortamınıza göre düzenleyin.${NC}"
+
+echo -e "  ${BOLD}SERVICE STATUS${NC}"
+systemctl is-active --quiet mariadb    && echo -e "  ✅ MariaDB  : ${GREEN}running${NC}"  || echo -e "  ❌ MariaDB  : ${RED}stopped${NC}"
+systemctl is-active --quiet asterisk   && echo -e "  ✅ Asterisk : ${GREEN}running${NC}"  || echo -e "  ❌ Asterisk : ${RED}stopped${NC}"
+systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC}"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
+systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}running${NC}"  || echo -e "  ⚠️  coturn   : ${YELLOW}not running${NC}"
+systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
+echo ""
+
+echo -e "  ${BOLD}📄 All credentials saved to:${NC} ${CYAN}${CREDS_FILE}${NC}"
+echo -e "  ${YELLOW}⚠️  Note these credentials now! Delete the file after saving them securely.${NC}"
+echo ""
+echo -e "  All passwords can be changed later from: ${CYAN}Admin Panel → Settings → System${NC}"
 echo ""

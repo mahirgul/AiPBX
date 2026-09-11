@@ -1,187 +1,184 @@
-# 🌐 AI PBX — Açık Kaynak Kurumsal Telefon Santralı
-
 <p align="center">
   <img src="web/assets/img/logo.png" alt="AI PBX Logo" width="120">
 </p>
 
+<h1 align="center">AI PBX</h1>
+
 <p align="center">
-  <strong>Modern, web tabanlı IP PBX yönetim portalı</strong><br>
+  <strong>Open-source enterprise IP PBX management portal</strong><br>
   Asterisk 22 · PHP 8 · MariaDB · WebRTC · Android
 </p>
 
 <p align="center">
-  <a href="#kurulum">Kurulum</a> •
-  <a href="#özellikler">Özellikler</a> •
-  <a href="#mimari">Mimari</a> •
-  <a href="#ekran-görüntüleri">Ekran Görüntüleri</a> •
-  <a href="#katkıda-bulunma">Katkıda Bulunma</a>
+  <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu LTS">
+  <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
+  <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
+  <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
+</p>
+
+<p align="center">
+  <a href="#quick-install">Quick Install</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#contributing">Contributing</a>
 </p>
 
 ---
 
-## Özellikler
-
-### 📞 Santral Yönetimi
-- **Dahili yönetimi** — PJSIP tabanlı, dual-endpoint (SIP + WebRTC)
-- **Dış hat (Trunk) yönetimi** — dinamik PJSIP trunk konfigürasyonu
-- **Gelen/Giden arama yönlendirme** — DID eşleme, çıkış rotaları, zaman koşulları
-- **IVR (Sesli Yanıt)** — çok seviyeli menü, zaman bazlı yönlendirme
-- **Kuyruk yönetimi** — çağrı kuyruğu, ajan login/logout, bekleme müziği
-- **Feature kodları** — *72 yönlendirme, *60 DND, *43 intercom vb.
-- **Otomatik rollback** — Asterisk reload başarısız olursa config geri alınır
-
-### 📠 Faks Sistemi
-- **Gelen/Giden faks** — T.38 ve G.711 faks desteği (res_fax + SpanDSP)
-- **WYSIWYG faks editörü** — tarayıcıdan doğrudan zengin metin faks yazma
-- **PDF yükleme ve gönderme**
-- **Faks tekrar gönderme (retry)**
-- **E-posta bildirimi** — gelen faks otomatik e-posta ile iletilir
-
-### 📊 Çağrı Merkezi
-- **Gerçek zamanlı ajan paneli** — kuyruk durumu, aktif çağrılar
-- **Ajan login/logout/mola** — web arayüzünden kontrol
-- **CDR raporlama** — detaylı çağrı kayıtları, filtreleme, dışa aktarma
-- **Çağrı kayıt dinleme** — kayıtlı görüşmeleri web'den dinleme
-
-### 🌐 WebRTC Yazılım Telefonu
-- **Tarayıcı içi SIP telefon** — ek yazılım gerektirmez
-- **TURN/STUN desteği** — NAT arkasından sorunsuz çalışma (coturn)
-- **Opus + DTLS-SRTP** — yüksek kalite, şifreli ses
-
-### 📱 Android Uygulaması
-- **Native Kotlin** uygulama
-- **PJSIP + WebRTC** çift motor
-- **FCM push bildirim** ile gelen arama uyandırma
-- **Anlık mesajlaşma (Chat)** — Go tabanlı WebSocket backend
-
-### 🔒 Güvenlik
-- **RBAC** — rol tabanlı erişim kontrolü
-- **Math CAPTCHA** + brute-force kilitleme (5 hata → 15dk IP kilidi)
-- **CSRF koruması** — tüm POST formlarında token
-- **fail2ban entegrasyonu**
-- **Firewall yönetimi** — web arayüzünden firewalld/fail2ban kontrolü
-- **SIP kimlik bilgileri API ile** — sayfa kaynağına gömülmez
-
-### 🌍 Çoklu Dil
-- Türkçe 🇹🇷 ve İngilizce 🇬🇧 (1.300+ çeviri anahtarı)
-- `t()` fonksiyonu ile kolay genişleme
-
----
-
-## Kurulum
-
-### Gereksinimler
-- **Ubuntu 22.04 / 24.04 / 26.04 LTS** (x86_64)
-- En az **2 GB RAM**, **10 GB disk**
-- Root erişimi
-
-### Hızlı Kurulum
+## Quick Install
 
 ```bash
-# 1. Projeyi klonla
+# Clone the repository
 git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
 cd /opt/aipbx
 
-# 2. Kurulum betiğini çalıştır
+# Run the installer as root
 sudo bash install.sh
 ```
 
-Kurulum tamamlandığında:
-- **Portal**: `http://<sunucu-ip>`
-- **Kullanıcı**: `admin`
-- **Şifre**: `admin123` (ilk girişte değiştirin!)
+The installer will:
+1. Ask for your **FQDN** (domain name) — or use your IP with a self-signed cert
+2. Generate **strong random passwords** for all services automatically
+3. Install and configure everything (Asterisk, MariaDB, Apache2, coturn, Chat service)
+4. Display all credentials at the end and save them to `/root/aipbx-credentials.txt`
 
-### Elle Kurulum
+> **Requirements**: Ubuntu 22.04 / 24.04 / 26.04 LTS · 2 GB RAM · 10 GB disk · root access
 
-Adım adım kurulum için [INSTALL.md](INSTALL.md) dosyasına bakın.
-
-### Kurulum Sonrası
-
-1. `/etc/ai-pbx.env` dosyasını düzenleyin:
-   - `SITE_NAME` — portal başlığı
-   - `PORTAL_DOMAIN` — alan adı (TLS için)
-   - `TURN_HOST` / `TURN_SECRET` — WebRTC TURN sunucusu
-
-2. Admin şifresini değiştirin
-
-3. İlk dahili (extension) numaranızı ekleyin
-
-4. (Opsiyonel) Let's Encrypt TLS sertifikası:
-   ```bash
-   certbot --apache -d your-domain.com
-   ```
+After install, open `https://<your-server>` in your browser and log in with the credentials shown.
 
 ---
 
-## Mimari
+## Features
+
+### 📞 PBX Management
+- **Extension management** — PJSIP-based, dual-endpoint (SIP + WebRTC)
+- **Trunk management** — dynamic PJSIP trunk configuration
+- **Call routing** — DID mapping, outbound routes, time conditions
+- **IVR** — multi-level voice menus with time-based routing
+- **Queue management** — call queues, agent login/logout, hold music
+- **Feature codes** — *72 call forward, *60 DND, *43 intercom, etc.
+- **Auto-rollback** — failed Asterisk reloads are automatically reverted
+
+### 📠 Fax System
+- **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
+- **WYSIWYG fax editor** — compose rich-text faxes directly in the browser
+- **PDF upload & send**
+- **Fax retry**
+- **Email notification** — incoming faxes forwarded by email automatically
+
+### 📊 Call Center
+- **Real-time agent panel** — live queue status, active calls
+- **Agent login/logout/break** — web-controlled
+- **CDR reporting** — detailed call records, filtering, export
+- **Call recording playback** — listen to recordings in the browser
+
+### 🌐 WebRTC Softphone
+- **In-browser SIP phone** — no additional software required
+- **TURN/STUN support** — works reliably behind NAT (coturn)
+- **Opus + DTLS-SRTP** — high-quality, encrypted audio
+
+### 📱 Android App
+- **Native Kotlin** application
+- **PJSIP + WebRTC** dual engine
+- **FCM push notifications** — wake device for incoming calls
+- **Instant messaging (Chat)** — Go-based WebSocket backend
+
+### 🔒 Security
+- **RBAC** — role-based access control
+- **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban)
+- **CSRF protection** — token on every POST form
+- **fail2ban integration**
+- **Firewall management** — control firewalld/fail2ban from the web UI
+- **Credentials served via API** — never embedded in page source
+
+### 🌍 Multi-language
+- Turkish 🇹🇷 and English 🇬🇧 (1,300+ translation keys)
+- Easy to extend with the `t()` function
+
+---
+
+## Architecture
 
 ```
 AiPBX/
-├── web/                    # PHP MVC Web Portalı
+├── web/                    # PHP MVC Web Portal
 │   ├── src/
-│   │   ├── controllers/    # 35 sayfa controller
-│   │   ├── services/       # 24 iş mantığı servisi
-│   │   ├── repositories/   # 28 veritabanı deposu
-│   │   └── sync/           # 13 Asterisk config jeneratörü
-│   ├── templates/views/    # 34 PHP view şablonu
-│   ├── api/                # REST API katmanı
-│   ├── assets/             # CSS, JS, fontlar
-│   ├── lang/               # Çoklu dil dosyaları (tr/en)
-│   └── db/migrations/      # Phinx veritabanı migrasyonları
+│   │   ├── controllers/    # 35 page controllers
+│   │   ├── services/       # 24 business logic services
+│   │   ├── repositories/   # 28 database repositories
+│   │   └── sync/           # 13 Asterisk config generators
+│   ├── templates/views/    # 34 PHP view templates
+│   ├── api/                # REST API layer
+│   ├── assets/             # CSS, JS, fonts
+│   ├── lang/               # Language files (tr/en)
+│   └── db/migrations/      # Phinx database migrations
 │
-├── android/                # Kotlin Android Uygulaması
+├── android/                # Kotlin Android App
 │   └── app/src/main/
 │       └── java/com/mhrgl/aipbx/
 │
-├── chat/                   # Go WebSocket Chat Servisi
+├── chat/                   # Go WebSocket Chat Service
 │   ├── main.go
 │   ├── hub.go              # WebSocket hub
-│   ├── handlers.go         # HTTP/WS handler'lar
-│   └── db.go               # Veritabanı katmanı
+│   ├── handlers.go         # HTTP/WS handlers
+│   └── db.go               # Database layer
 │
-├── asterisk-config/        # Asterisk referans konfigürasyonu
-│   └── pbx/                # Modüler dialplan, PJSIP, kuyruk dosyaları
+├── asterisk-config/        # Asterisk reference configuration
+│   └── pbx/                # Modular dialplan, PJSIP, queue files
 │
-├── db/                     # Veritabanı şeması
-│   ├── schema.sql          # Tablo yapıları
-│   └── seed.sql            # Temel başlangıç verileri
+├── db/                     # Database schema
+│   ├── schema.sql          # Table definitions
+│   └── seed.sql            # Initial seed data
 │
-├── install.sh              # Otomatik kurulum betiği
+├── install.sh              # One-command installer
 └── README.md
 ```
 
-### Teknoloji Yığını
+### Technology Stack
 
-| Katman | Teknoloji |
-|--------|-----------|
+| Layer | Technology |
+|-------|-----------|
 | PBX | Asterisk 22 (PJSIP, res_fax, AMI, ODBC) |
-| Web Backend | PHP 8.x, Katı MVC, Composer |
-| Web Frontend | Vanilla JS + CSS (framework yok) |
-| Veritabanı | MariaDB (Phinx migrasyonları) |
+| Web Backend | PHP 8.x, strict MVC, Composer |
+| Web Frontend | Vanilla JS + CSS (no framework) |
+| Database | MariaDB (Phinx migrations) |
 | Chat | Go + gorilla/websocket |
 | Android | Kotlin, PJSIP, WebRTC, FCM |
 | WebRTC | coturn TURN/STUN, DTLS-SRTP, Opus |
-| Güvenlik | fail2ban, RBAC, CSRF, CAPTCHA |
+| Security | fail2ban, RBAC, CSRF, CAPTCHA |
 
 ---
 
-## Lisans
+## Post-Install
 
-Bu proje [MIT Lisansı](web/LICENSE) ile lisanslanmıştır.
+All credentials (admin password, DB passwords, AMI key, TURN secret) are generated randomly during install and saved to `/root/aipbx-credentials.txt`.
 
----
+You can change all passwords later from **Admin Panel → Settings → System**.
 
-## Katkıda Bulunma
-
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/yeni-ozellik`)
-3. Commit atın (`git commit -m 'Yeni özellik ekle'`)
-4. Push edin (`git push origin feature/yeni-ozellik`)
-5. Pull Request açın
+To add a real TLS certificate after install (if you skipped Let's Encrypt):
+```bash
+certbot --apache -d your-domain.com
+```
 
 ---
 
-## İletişim
+## Contributing
 
-- **Geliştirici**: Mahir Gül
-- **GitHub**: [@mahirgul](https://github.com/mahirgul)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'Add my feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Author
+
+**Mahir Gül** · [@mahirgul](https://github.com/mahirgul)
