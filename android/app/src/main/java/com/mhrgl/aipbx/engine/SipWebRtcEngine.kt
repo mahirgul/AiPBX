@@ -339,13 +339,16 @@ class SipWebRtcEngine(private val context: Context) {
         @JavascriptInterface
         fun onStatusQueryResponse(isRegistered: Boolean, isConnected: Boolean) {
             Log.d(TAG, "onStatusQueryResponse: isRegistered=$isRegistered, isConnected=$isConnected")
-            if (!isRegistered && currentConnectionStatus == ConnectionStatus.CONNECTED) {
-                Log.w(TAG, "Watchdog detected mismatch: native status was CONNECTED but JsSIP is NOT registered! Updating to DISCONNECTED")
-                currentConnectionStatus = ConnectionStatus.DISCONNECTED
-                handler.post { listener?.onConnectionStatusChanged(ConnectionStatus.DISCONNECTED) }
-            } else if (isRegistered && currentConnectionStatus != ConnectionStatus.CONNECTED) {
+            if (isRegistered && currentConnectionStatus != ConnectionStatus.CONNECTED) {
                 currentConnectionStatus = ConnectionStatus.CONNECTED
                 handler.post { listener?.onConnectionStatusChanged(ConnectionStatus.CONNECTED) }
+            } else if (!isConnected && currentConnectionStatus != ConnectionStatus.DISCONNECTED) {
+                Log.w(TAG, "Watchdog detected socket disconnected: updating to DISCONNECTED")
+                currentConnectionStatus = ConnectionStatus.DISCONNECTED
+                handler.post { listener?.onConnectionStatusChanged(ConnectionStatus.DISCONNECTED) }
+            } else if (!isRegistered && isConnected) {
+                Log.d(TAG, "Socket connected but SIP registering/not registered yet. Triggering reRegister() without dropping status.")
+                reRegister()
             }
         }
 

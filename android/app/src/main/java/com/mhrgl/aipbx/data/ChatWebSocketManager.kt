@@ -57,6 +57,11 @@ class ChatWebSocketManager private constructor() {
     fun connect(baseUrl: String, token: String) {
         if (baseUrl.isEmpty() || token.isEmpty()) return
 
+        if (isConnected && webSocket != null && currentUrl == baseUrl && currentToken == token) {
+            Log.d(TAG, "Chat WS already connected with current credentials, skipping redundant connect")
+            return
+        }
+
         currentUrl = baseUrl
         currentToken = token
         isManuallyClosed = false

@@ -86,11 +86,11 @@ def upload_bundle():
         release_notes = [
             {
                 'language': 'tr-TR',
-                'text': 'Sohbet ve mesajlaşma butonu alt navigasyon çubuğuna (Rehber yanına) taşındı. Arayüz ve erişilebilirlik iyileştirmeleri yapıldı.'
+                'text': 'Sohbet özelliği ana ekranda sekmeler arasına entegre edildi. Arka plan bağlantı kararlılığı artırıldı. Santral sekmesine sistem loglarını inceleme ve indirme desteği eklendi.'
             },
             {
                 'language': 'en-US',
-                'text': 'Moved chat button to the bottom navigation bar next to contacts. UI and accessibility enhancements.'
+                'text': 'Integrated chat tab into main navigation. Enhanced background connection stability. Added diagnostic log viewer and export feature to PBX tab.'
             }
         ]
 
