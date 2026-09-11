@@ -19,6 +19,7 @@
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu LTS">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
+  <img src="https://img.shields.io/badge/Web_Server-Nginx%20%7C%20Apache-blue?logo=nginx" alt="Nginx & Apache">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
   <a href="https://mahirgul.github.io/AiPBX/"><img src="https://img.shields.io/badge/GitHub%20Pages-Live-success?logo=github" alt="GitHub Pages"></a>
@@ -92,6 +93,12 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **FCM push notifications** — wake device for incoming calls
 - **Instant messaging (Chat)** — Go-based WebSocket backend
 
+### ⚡ Ingress & Reverse Proxy (Nginx & Apache)
+- **High-concurrency Nginx support** — event-driven WebSocket multiplexer, TLS 1.3, PHP-FPM FastCGI
+- **Native Apache 2.4 support** — `mod_proxy_wstunnel` and `.htaccess` compatibility
+- **Unified Port 443** — multiplexes Asterisk WebRTC SIP (`/ws`) and Go Chat (`/chat/ws`)
+- **Ready-to-use Nginx template** — available in `conf/nginx/aipbx.conf.example`
+
 ### 🔒 Security
 - **RBAC** — role-based access control
 - **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban)
@@ -110,6 +117,9 @@ After install, open `https://<your-server>` in your browser and log in with the 
 
 ```
 AiPBX/
+├── conf/                   # Nginx & web server production templates
+│   └── nginx/aipbx.conf.example
+│
 ├── web/                    # PHP MVC Web Portal
 │   ├── src/
 │   │   ├── controllers/    # 35 page controllers
