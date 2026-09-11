@@ -75,3 +75,4 @@ db/asterisk_db_dump.sql
 .bashrc
 .profile
 .bash_history
+*.prev
