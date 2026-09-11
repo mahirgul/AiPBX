@@ -91,13 +91,14 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 if (!engine.isEngineReady) {
                     Log.w(TAG, "Watchdog: Engine is not ready, re-triggering connectSip()")
                     connectSip()
-                } else if (engine.currentConnectionStatus != ConnectionStatus.CONNECTED) {
+                } else if (engine.currentConnectionStatus == ConnectionStatus.DISCONNECTED) {
                     Log.w(TAG, "Watchdog: Engine is DISCONNECTED, re-triggering connectSip() (M14)")
                     connectSip()
+                } else if (engine.currentConnectionStatus == ConnectionStatus.CONNECTING) {
+                    Log.d(TAG, "Watchdog: Engine is already CONNECTING, waiting for outcome")
                 } else {
-                    Log.d(TAG, "Watchdog: Periodic SIP keepalive check (reRegister & checkEngineStatus)")
+                    Log.d(TAG, "Watchdog: Engine is CONNECTED, sending keepalive check")
                     engine.reRegister()
-                    engine.checkEngineStatus()
                 }
                 connectChatWs()
             }

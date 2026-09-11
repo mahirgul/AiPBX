@@ -96,6 +96,23 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- System & Diagnostic Log Viewer Activity -->
+        <activity
+            android:name=".ui.LogViewerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- FileProvider for Sharing / Downloading Log Files -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Background VoIP Connection Service -->
         <service
             android:name=".service.PbxForegroundService"

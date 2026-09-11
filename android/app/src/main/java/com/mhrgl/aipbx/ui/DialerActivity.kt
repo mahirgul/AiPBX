@@ -27,15 +27,20 @@ import com.mhrgl.aipbx.BuildConfig
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
+import com.mhrgl.aipbx.data.ChatEventListener
+import com.mhrgl.aipbx.data.ChatWebSocketManager
 import com.mhrgl.aipbx.databinding.ActivityDialerBinding
 import com.mhrgl.aipbx.engine.SipEngineListener
 import com.mhrgl.aipbx.model.CallStatus
+import com.mhrgl.aipbx.model.ChatConversation
+import com.mhrgl.aipbx.model.ChatMessage
 import com.mhrgl.aipbx.model.ConnectionStatus
 import com.mhrgl.aipbx.model.ContactItem
 import com.mhrgl.aipbx.service.PbxForegroundService
 import com.mhrgl.aipbx.util.SamsungPowerManagerHelper
+import com.mhrgl.aipbx.util.SearchUtils
 
-class DialerActivity : AppCompatActivity(), SipEngineListener {
+class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener {
 
     private lateinit var binding: ActivityDialerBinding
     private lateinit var prefs: AppPreferences
@@ -46,6 +51,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
 
     private lateinit var historyAdapter: CallHistoryAdapter
     private lateinit var contactsAdapter: ContactsAdapter
+    private lateinit var chatAdapter: ChatConversationAdapter
+    private val allConversations = mutableListOf<ChatConversation>()
+    private val chatCorporateContacts = mutableListOf<ContactItem>()
 
     private var currentFilter = "all"
     private var isDndEnabled = false
@@ -108,6 +116,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
         setupBottomNav()
         setupHistoryTab()
         setupContactsTab()
+        setupChatTab()
         setupFeaturesTab()
         checkPermissions()
         checkBatteryOptimization()
@@ -142,15 +151,19 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
 
     override fun onResume() {
         super.onResume()
+        ChatWebSocketManager.instance.addListener(this)
+
         if (currentTab == Tab.HISTORY) {
             loadCallHistory(currentFilter)
+        } else if (currentTab == Tab.CHAT) {
+            loadConversations()
         }
         updateChatUnreadBadge()
 
         val sUrl = prefs.serverUrl
         val token = prefs.token
         if (!sUrl.isNullOrEmpty() && !token.isNullOrEmpty()) {
-            com.mhrgl.aipbx.data.ChatWebSocketManager.instance.connect(sUrl, token)
+            ChatWebSocketManager.instance.connect(sUrl, token)
         }
 
         if (prefs.hasSleepingWarning) {
@@ -172,6 +185,20 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
             pbxService?.unregisterListener(this)
             unbindService(serviceConnection)
             isBound = false
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        ChatWebSocketManager.instance.removeListener(this)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (currentTab != Tab.DIALER) {
+            switchTab(Tab.DIALER)
+        } else {
+            super.onBackPressed()
         }
     }
 
@@ -217,7 +244,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
 
     // ================= BOTTOM NAVIGATION =================
 
-    private enum class Tab { DIALER, HISTORY, CONTACTS, FEATURES }
+    private enum class Tab { DIALER, HISTORY, CONTACTS, CHAT, FEATURES }
     private var currentTab: Tab = Tab.DIALER
 
     private fun setupBottomNav() {
@@ -235,7 +262,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
             }
         }
         binding.tabChat.setOnClickListener {
-            ChatListActivity.start(this)
+            switchTab(Tab.CHAT)
+            loadConversations()
         }
         binding.tabFeatures.setOnClickListener {
             switchTab(Tab.FEATURES)
@@ -263,6 +291,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
         binding.layoutDialpad.visibility = View.GONE
         binding.layoutHistory.visibility = View.GONE
         binding.layoutContacts.visibility = View.GONE
+        binding.layoutChat.visibility = View.GONE
         binding.layoutFeatures.visibility = View.GONE
 
         when (tab) {
@@ -280,6 +309,11 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
                 binding.layoutContacts.visibility = View.VISIBLE
                 binding.ivTabContacts.setColorFilter(colorActive)
                 binding.tvTabContacts.setTextColor(colorActive)
+            }
+            Tab.CHAT -> {
+                binding.layoutChat.visibility = View.VISIBLE
+                binding.ivTabChat.setColorFilter(colorActive)
+                binding.tvTabChat.setTextColor(colorActive)
             }
             Tab.FEATURES -> {
                 binding.layoutFeatures.visibility = View.VISIBLE
@@ -634,7 +668,176 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
         }
     }
 
-    // ================= TAB 4: FEATURES (DND & CF) =================
+    // ================= TAB 4: CHAT =================
+
+    private fun setupChatTab() {
+        chatAdapter = ChatConversationAdapter { conv ->
+            ChatActivity.start(this, conv.id, conv.targetExt ?: "", conv.targetName)
+        }
+        binding.rvChatConversations.layoutManager = LinearLayoutManager(this)
+        binding.rvChatConversations.adapter = chatAdapter
+
+        binding.btnNewChat.setOnClickListener {
+            showNewChatDialog()
+        }
+
+        binding.btnChatEmptyNewChat.setOnClickListener {
+            showNewChatDialog()
+        }
+
+        binding.etChatSearch.doAfterTextChanged { text ->
+            filterConversations(text?.toString() ?: "")
+        }
+    }
+
+    private fun loadConversations() {
+        val sUrl = prefs.serverUrl
+        if (sUrl.isEmpty()) return
+        val token = prefs.token ?: return
+
+        binding.pbChat.visibility = View.VISIBLE
+
+        lifecycleScope.launch {
+            val convRes = apiClient.getChatConversations(sUrl, token)
+            binding.pbChat.visibility = View.GONE
+
+            convRes.onSuccess { list ->
+                allConversations.clear()
+                allConversations.addAll(list)
+                filterConversations(binding.etChatSearch.text?.toString() ?: "")
+                updateChatUnreadBadge()
+            }
+
+            val contactsRes = apiClient.getContacts(sUrl, token)
+            contactsRes.onSuccess { response ->
+                chatCorporateContacts.clear()
+                chatCorporateContacts.addAll(response.contacts ?: emptyList())
+                filterConversations(binding.etChatSearch.text?.toString() ?: "")
+            }
+        }
+    }
+
+    private fun filterConversations(query: String) {
+        val q = query.trim()
+        val myExt = prefs.extension ?: ""
+        val displayList = mutableListOf<ChatConversation>()
+
+        if (q.isEmpty()) {
+            displayList.addAll(allConversations)
+        } else {
+            val matchedConversations = allConversations.filter {
+                SearchUtils.matches(it.targetName, q) ||
+                SearchUtils.matches(it.targetExt, q) ||
+                SearchUtils.matches(it.lastMessageText, q)
+            }
+            displayList.addAll(matchedConversations)
+
+            val matchedContacts = chatCorporateContacts.filter { contact ->
+                contact.extension != myExt && (
+                    SearchUtils.matches(contact.name, q) ||
+                    SearchUtils.matches(contact.extension, q) ||
+                    SearchUtils.matches(contact.role, q)
+                )
+            }
+
+            for (contact in matchedContacts) {
+                val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
+                if (!alreadyInList) {
+                    val isOnline = contact.status.equals("online", true) ||
+                            contact.sipStatus.equals("online", true) ||
+                            contact.webrtcStatus.equals("online", true)
+                    displayList.add(
+                        ChatConversation(
+                            id = 0,
+                            type = "direct",
+                            directKey = null,
+                            title = null,
+                            createdBy = "",
+                            lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
+                            lastMessageAt = null,
+                            unreadCount = 0,
+                            targetExt = contact.extension,
+                            targetName = contact.name,
+                            targetOnline = isOnline
+                        )
+                    )
+                }
+            }
+        }
+
+        chatAdapter.submitList(displayList)
+        if (displayList.isEmpty()) {
+            binding.llChatEmptyState.visibility = View.VISIBLE
+            binding.rvChatConversations.visibility = View.GONE
+        } else {
+            binding.llChatEmptyState.visibility = View.GONE
+            binding.rvChatConversations.visibility = View.VISIBLE
+        }
+    }
+
+    private fun showNewChatDialog() {
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl
+            if (sUrl.isEmpty()) return@launch
+            val token = prefs.token ?: return@launch
+
+            val contacts = if (chatCorporateContacts.isNotEmpty()) {
+                chatCorporateContacts
+            } else {
+                val res = apiClient.getContacts(sUrl, token)
+                val fetched = res.getOrNull()?.contacts ?: emptyList()
+                chatCorporateContacts.clear()
+                chatCorporateContacts.addAll(fetched)
+                fetched
+            }
+
+            val myExt = prefs.extension ?: ""
+            val otherContacts = contacts.filter { it.extension != myExt }
+
+            if (otherContacts.isEmpty()) {
+                AlertDialog.Builder(this@DialerActivity)
+                    .setTitle("Dahili Rehber")
+                    .setMessage("Sistemde mesajlaşılabilecek başka dahili bulunamadı.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+                return@launch
+            }
+
+            val dialogBinding = com.mhrgl.aipbx.databinding.DialogNewChatBinding.inflate(layoutInflater)
+            val dialog = AlertDialog.Builder(this@DialerActivity)
+                .setView(dialogBinding.root)
+                .create()
+
+            val pickerAdapter = ChatContactPickerAdapter { selected ->
+                dialog.dismiss()
+                ChatActivity.start(this@DialerActivity, 0, selected.extension, selected.name)
+            }
+
+            dialogBinding.rvNewChatContacts.layoutManager = LinearLayoutManager(this@DialerActivity)
+            dialogBinding.rvNewChatContacts.adapter = pickerAdapter
+            pickerAdapter.submitList(otherContacts)
+
+            dialogBinding.etSearchContact.doAfterTextChanged { s ->
+                val q = s?.toString() ?: ""
+                pickerAdapter.filter(q)
+                if (pickerAdapter.itemCount == 0) {
+                    dialogBinding.tvEmptyNewChat.visibility = View.VISIBLE
+                    dialogBinding.rvNewChatContacts.visibility = View.GONE
+                } else {
+                    dialogBinding.tvEmptyNewChat.visibility = View.GONE
+                    dialogBinding.rvNewChatContacts.visibility = View.VISIBLE
+                }
+            }
+
+            dialogBinding.btnCancelNewChat.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            dialog.show()
+        }
+    }
+
+    // ================= TAB 5: FEATURES (DND & CF) =================
 
     private fun setupFeaturesTab() {
         // 1. Sürüm ve Sistem Bilgileri
@@ -740,6 +943,22 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
                 startActivity(intent)
             } catch (e: Exception) {
                 // Browser not available
+            }
+        }
+
+        binding.btnViewLogs.setOnClickListener {
+            LogViewerActivity.start(this)
+        }
+
+        binding.btnDownloadShareLogs.setOnClickListener {
+            lifecycleScope.launch {
+                Toast.makeText(this@DialerActivity, "Loglar toplanıyor ve hazırlanıyor...", Toast.LENGTH_SHORT).show()
+                val uri = com.mhrgl.aipbx.util.AppLogManager.exportLogsToDownloads(this@DialerActivity)
+                val file = com.mhrgl.aipbx.util.AppLogManager.saveLogsToFile(this@DialerActivity)
+                if (uri != null) {
+                    Toast.makeText(this@DialerActivity, "Loglar İndirilenler/AiPBX klasörüne kaydedildi!", Toast.LENGTH_SHORT).show()
+                }
+                com.mhrgl.aipbx.util.AppLogManager.shareLogs(this@DialerActivity, file)
             }
         }
     }
@@ -929,5 +1148,16 @@ class DialerActivity : AppCompatActivity(), SipEngineListener {
 
     override fun onIncomingCall(callerName: String, callerNumber: String) {
         // Handled by Foreground Service
+    }
+
+    // --- ChatEventListener ---
+
+    override fun onNewMessage(message: ChatMessage) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) {
+                loadConversations()
+            }
+            updateChatUnreadBadge()
+        }
     }
 }

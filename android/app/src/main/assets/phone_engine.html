@@ -167,10 +167,32 @@
         }
 
         function initUA(wsUrl, sipUsername, password, domain, displayName, turnUrl, turnUser, turnPass) {
+        var currentConfigKey = "";
+
+        function initUA(wsUrl, sipUsername, password, domain, displayName, turnUrl, turnUser, turnPass) {
             try {
+                var configKey = wsUrl + "|" + sipUsername + "|" + domain;
+
+                // Eğer UA zaten mevcut, aynı ayarlarla çalışıyor ve bağlıysa gereksiz yere stop etme!
+                if (ua && currentConfigKey === configKey) {
+                    if (ua.isConnected && ua.isConnected()) {
+                        if (ua.isRegistered && ua.isRegistered()) {
+                            log("initUA: UA already connected and registered for " + sipUsername + ", skipping recreation.");
+                            if (window.AndroidBridge) window.AndroidBridge.onStatusChanged("CONNECTED");
+                            return;
+                        } else {
+                            log("initUA: UA is connected but not registered, triggering ua.register()");
+                            ua.register();
+                            return;
+                        }
+                    }
+                }
+
+                currentConfigKey = configKey;
+
                 if (ua) {
                     log("Stopping existing UA before re-initialization");
-                    ua.stop();
+                    try { ua.stop(); } catch (e) {}
                     ua = null;
                 }
 
@@ -188,13 +210,6 @@
                     });
                 }
                 // Genel STUN sunucusu YALNIZCA TURN yokken eklenir (2026-09-05).
-                //
-                // Kosulsuz eklendiginde: kampus agi disa UDP'yi kapattigi icin
-                // stun.l.google.com hic cevap vermiyor, ama tarayici/WebView
-                // ICE toplamayi bitirmis saymiyor ve JsSIP INVITE'i toplama
-                // bitene kadar gondermiyor — cagri saniyelerce gec basliyor.
-                // TURNS rolesi zaten calisirken (turns:443 uzerinden) genel bir
-                // STUN'un ekleyecegi srflx adayinin bu agda hicbir faydasi yok.
                 if (!turnVar) {
                     globalIceServers.push({ urls: "stun:stun.l.google.com:19302" });
                 }
@@ -206,7 +221,7 @@
                     password: password,
                     display_name: displayName || sipUsername,
                     register: true,
-                    register_expires: 1800,
+                    register_expires: 300, // Mobil NAT tablolarını taze tutmak için 5 dk
                     session_timers: true,
                     session_timers_refresh_method: 'update',
                     connection_recovery_min_interval: 2,
@@ -533,8 +548,17 @@
             log("reRegister requested from native watchdog");
             if (ua) {
                 try {
-                    ua.register();
-                    log("ua.register() triggered");
+                    if (ua.isConnected && ua.isConnected()) {
+                        if (!ua.isRegistered || !ua.isRegistered()) {
+                            log("ua connected but not registered, triggering ua.register()");
+                            ua.register();
+                        } else {
+                            log("ua is already registered and connected; keeping alive");
+                        }
+                    } else {
+                        log("ua is not connected, triggering ua.start()");
+                        ua.start();
+                    }
                 } catch (e) {
                     log("Error in ua.register(): " + e.message);
                 }
@@ -552,6 +576,18 @@
             }
             return isReg;
         }
+
+        // 30 saniyelik mobil NAT keepalive
+        setInterval(function() {
+            try {
+                if (ua && ua.isConnected && ua.isConnected()) {
+                    if (!ua.isRegistered || !ua.isRegistered()) {
+                        log("Periodic Keepalive: ua connected but not registered, calling ua.register()");
+                        ua.register();
+                    }
+                }
+            } catch (e) {}
+        }, 30000);
 
         function destroyUA() {
             cleanupMedia();
