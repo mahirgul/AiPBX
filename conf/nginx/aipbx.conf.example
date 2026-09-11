@@ -1,0 +1,165 @@
+# ==============================================================================
+# AI PBX — Production Nginx Configuration Template
+# ==============================================================================
+# Place in: /etc/nginx/sites-available/aipbx.conf
+# Enable:   ln -s /etc/nginx/sites-available/aipbx.conf /etc/nginx/sites-enabled/
+# Test:     nginx -t && systemctl reload nginx
+# ==============================================================================
+
+# WebSocket Upgrade Mapping (place inside http {} or keep here if included)
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# Rate Limiting Zone for Authentication Endpoints
+limit_req_zone $binary_remote_addr zone=aipbx_auth:10m rate=10r/m;
+
+# ------------------------------------------------------------------------------
+# 1. HTTP Server (Port 80) — Redirect to HTTPS & ACME Challenges
+# ------------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name pbx.example.com; # Replace with your FQDN or IP
+
+    # Let's Encrypt / Certbot ACME Challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+        allow all;
+    }
+
+    # Permanent redirect to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ------------------------------------------------------------------------------
+# 2. HTTPS Server (Port 443) — TLS Termination, Web Portal, & WebSockets
+# ------------------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name pbx.example.com; # Replace with your FQDN or IP
+
+    root /var/www/html;
+    index index.php index.html;
+
+    # SSL / TLS Modern Parameters
+    ssl_certificate /etc/letsencrypt/live/pbx.example.com/fullchain.pem; # Or self-signed path
+    ssl_certificate_key /etc/letsencrypt/live/pbx.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Logging
+    access_log /var/log/nginx/aipbx_access.log combined;
+    error_log /var/log/nginx/aipbx_error.log warn;
+
+    client_max_body_size 50M;
+
+    # --------------------------------------------------------------------------
+    # 2.1 Asterisk WebRTC SIP WebSocket Proxy (/ws)
+    # --------------------------------------------------------------------------
+    location /ws {
+        proxy_pass http://127.0.0.1:8088/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Keep idle WebRTC connections alive for up to 1 hour
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+
+    # --------------------------------------------------------------------------
+    # 2.2 Go Instant Messaging WebSocket Proxy (/chat/ws)
+    # --------------------------------------------------------------------------
+    location /chat/ws {
+        proxy_pass http://127.0.0.1:9090/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Keep idle Chat connections alive
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+
+    # --------------------------------------------------------------------------
+    # 2.3 Static Asset Caching
+    # --------------------------------------------------------------------------
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|svg|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }
+
+    # --------------------------------------------------------------------------
+    # 2.4 Login Rate Limiting
+    # --------------------------------------------------------------------------
+    location = /login {
+        limit_req zone=aipbx_auth burst=5 nodelay;
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    # --------------------------------------------------------------------------
+    # 2.5 PHP 8 MVC Portal Routing
+    # --------------------------------------------------------------------------
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    # PHP-FPM FastCGI Handler
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        
+        # Adjust socket path according to installed PHP version:
+        # fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+        # fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/run/php/php-fpm.sock;
+        
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_PROXY ""; # Mitigate httpoxy vulnerability
+        fastcgi_read_timeout 180s;
+        include fastcgi_params;
+    }
+
+    # --------------------------------------------------------------------------
+    # 2.6 Protect Sensitive Files & Dotfiles
+    # --------------------------------------------------------------------------
+    location ~ /\.(?!well-known).* {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* \.(env|ini|log|conf|sql|sh|bak)$ {
+        deny all;
+    }
+
+    location ~* /(composer\.(json|lock)|phinx\.php)$ {
+        deny all;
+    }
+}
