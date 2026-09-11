@@ -137,6 +137,8 @@ apt-get install -y \
   asterisk-modules \
   mariadb-server \
   mariadb-client \
+  nginx \
+  libnginx-mod-stream \
   apache2 \
   libapache2-mod-php \
   php \
@@ -356,24 +358,36 @@ if [[ ! -f /etc/asterisk/keys/asterisk.pem ]]; then
 fi
 
 # ============================================================================
-# STEP 8: APACHE2 CONFIGURATION
+# STEP 8: NGINX (EDGE 443 MULTIPLEXER) & APACHE2 (BACKEND)
 # ============================================================================
-step "8. Configuring Apache2"
+step "8. Configuring Nginx (Edge 443) & Apache2 (80/8443 Backend)"
 
-a2enmod rewrite proxy proxy_wstunnel ssl headers php* 2>/dev/null || true
+a2enmod rewrite proxy proxy_wstunnel proxy_http ssl headers php* 2>/dev/null || true
 a2dismod mpm_event 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
+
+# Apache ports: Listen 80 for HTTP/ACME, 127.0.0.1:8443 for HTTPS behind Nginx
+cat > /etc/apache2/ports.conf << 'PORTS'
+# Apache listens on 80 for HTTP and 127.0.0.1:8443 for HTTPS (behind nginx)
+Listen 80
+Listen 127.0.0.1:8443
+PORTS
 
 cat > /etc/apache2/sites-available/aipbx.conf << VHOST
 <VirtualHost *:80>
     ServerName ${PORTAL_DOMAIN}
     DocumentRoot /var/www/html
+
+    # Let's Encrypt HTTP-01 challenge pass-through, redirect all other traffic to HTTPS
     RewriteEngine On
-    RewriteCond %{HTTPS} off
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
+
+    ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log
+    CustomLog \${APACHE_LOG_DIR}/aipbx_access.log combined
 </VirtualHost>
 
-<VirtualHost *:443>
+<VirtualHost 127.0.0.1:8443>
     ServerName ${PORTAL_DOMAIN}
     DocumentRoot /var/www/html
 
@@ -384,14 +398,16 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     SSLHonorCipherOrder on
     Header always set Strict-Transport-Security "max-age=31536000"
 
+    # Asterisk WebRTC WebSocket Reverse Proxy
     ProxyPass /ws ws://127.0.0.1:8088/ws retry=0 timeout=3600
     ProxyPassReverse /ws ws://127.0.0.1:8088/ws
 
-    ProxyPass /chat/ws ws://127.0.0.1:9090/ws retry=0 timeout=3600
+    # Go Chat WebSocket Reverse Proxy
+    ProxyPass /chat/ws ws://127.0.0.1:9090/ws retry=0 timeout=3600 keepalive=On
     ProxyPassReverse /chat/ws ws://127.0.0.1:9090/ws
 
-    ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log
-    CustomLog \${APACHE_LOG_DIR}/aipbx_access.log combined
+    ErrorLog \${APACHE_LOG_DIR}/aipbx_ssl_error.log
+    CustomLog \${APACHE_LOG_DIR}/aipbx_ssl_access.log combined
 </VirtualHost>
 VHOST
 
@@ -435,13 +451,39 @@ a2enconf aipbx-routing 2>/dev/null
 # Composer dependencies
 cd "$INSTALL_DIR/web" && composer install --no-dev --no-interaction --quiet 2>/dev/null || true
 
-systemctl stop nginx 2>/dev/null || true
-systemctl disable nginx 2>/dev/null || true
+# Nginx Stream Multiplexer on Port 443 (ALPN routing: HTTPS/WSS -> Apache 8443, TURNS -> coturn 5349)
+if ! grep -q "map \$ssl_preread_alpn_protocols" /etc/nginx/nginx.conf 2>/dev/null; then
+    sed -i '/^http {/i \
+stream {\
+    log_format stream_debug '\''$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$turn_backend status=$status bytes_s=$bytes_sent bytes_r=$bytes_received'\'';\
+    access_log /var/log/nginx/stream.log stream_debug;\
+\
+    map $ssl_preread_alpn_protocols $turn_backend {\
+        default     127.0.0.1:8443;\
+        ""          127.0.0.1:5349;\
+    }\
+\
+    server {\
+        listen 443;\
+        listen [::]:443;\
+        ssl_preread on;\
+        proxy_pass $turn_backend;\
+        proxy_timeout 3600s;\
+        proxy_connect_timeout 5s;\
+    }\
+}\
+' /etc/nginx/nginx.conf
+fi
 
 systemctl restart apache2
 systemctl enable apache2
 
-ok "Apache2 configured (HTTP→HTTPS redirect enabled)"
+nginx -t 2>/dev/null && {
+    systemctl restart nginx
+    systemctl enable nginx
+}
+
+ok "Nginx (Edge 443 ALPN Multiplexer) & Apache2 (80/8443) configured"
 
 # ============================================================================
 # STEP 9: ASTERISK CONFIGURATION
@@ -655,7 +697,8 @@ echo ""
 echo -e "  ${BOLD}SERVICE STATUS${NC}"
 systemctl is-active --quiet mariadb    && echo -e "  ✅ MariaDB  : ${GREEN}running${NC}"  || echo -e "  ❌ MariaDB  : ${RED}stopped${NC}"
 systemctl is-active --quiet asterisk   && echo -e "  ✅ Asterisk : ${GREEN}running${NC}"  || echo -e "  ❌ Asterisk : ${RED}stopped${NC}"
-systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC}"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
+systemctl is-active --quiet nginx      && echo -e "  ✅ Nginx    : ${GREEN}running${NC} (Edge 443 ALPN Multiplexer)" || echo -e "  ❌ Nginx    : ${RED}stopped${NC}"
+systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC} (80 / 8443 Backend)"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
 systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}running${NC}"  || echo -e "  ⚠️  coturn   : ${YELLOW}not running${NC}"
 systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
 echo ""
