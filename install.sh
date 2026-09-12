@@ -161,6 +161,8 @@ apt-get install -y \
   composer \
   coturn \
   golang-go \
+  build-essential \
+  libc6-dev \
   git \
   fail2ban \
   ghostscript \
@@ -415,9 +417,13 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     ProxyPass /ws ws://127.0.0.1:8088/ws retry=0 timeout=3600
     ProxyPassReverse /ws ws://127.0.0.1:8088/ws
 
-    # Go Chat WebSocket Reverse Proxy
-    ProxyPass /chat/ws ws://127.0.0.1:9090/ws retry=0 timeout=3600 keepalive=On
-    ProxyPassReverse /chat/ws ws://127.0.0.1:9090/ws
+    # Go Chat WebSocket & HTTP API Reverse Proxy
+    ProxyPass /chat/ws ws://127.0.0.1:8086/ws retry=0 timeout=3600 keepalive=On
+    ProxyPassReverse /chat/ws ws://127.0.0.1:8086/ws
+    ProxyPass /chat/api/ http://127.0.0.1:8086/api/
+    ProxyPassReverse /chat/api/ http://127.0.0.1:8086/api/
+    ProxyPass /chat/media/ http://127.0.0.1:8086/media/
+    ProxyPassReverse /chat/media/ http://127.0.0.1:8086/media/
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_ssl_error.log
     CustomLog \${APACHE_LOG_DIR}/aipbx_ssl_access.log combined
@@ -542,7 +548,7 @@ step "10. Building Chat Service"
 if [[ -f "$INSTALL_DIR/chat/main.go" ]]; then
     info "Building chat service..."
     cd "$INSTALL_DIR/chat"
-    go build -o aipbx-chat . 2>/dev/null || warn "Chat service build failed (Go dependencies may be missing)"
+    CGO_ENABLED=0 go build -o aipbx-chat . 2>/dev/null || warn "Chat service build failed (Go dependencies may be missing)"
 
     if [[ -f "$INSTALL_DIR/chat/aipbx-chat" ]]; then
         cat > /etc/systemd/system/aipbx-chat.service << EOF
