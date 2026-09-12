@@ -1173,6 +1173,97 @@
 
             .footer-grid { grid-template-columns: 1fr; }
         }
+    
+        /* Real App Screenshots Showcase Gallery */
+        .app-gallery-container {
+            margin-top: 48px;
+            position: relative;
+        }
+
+        .app-gallery-scroll {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 16px 8px 30px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #243552 #0a101d;
+        }
+
+        .app-gallery-card {
+            flex: 0 0 230px;
+            scroll-snap-align: start;
+            background: #0d1524;
+            border: 1.5px solid #1e2e4a;
+            border-radius: 24px;
+            padding: 10px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
+        }
+
+        .app-gallery-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: #008FD0;
+            box-shadow: 0 20px 45px rgba(0, 143, 208, 0.25);
+        }
+
+        .app-screen-frame {
+            border-radius: 18px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid #223555;
+            position: relative;
+        }
+
+        .app-screen-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .app-screen-info {
+            padding: 14px 6px 8px;
+        }
+
+        .app-screen-badge {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(0, 143, 208, 0.15);
+            color: #38bdf8;
+            margin-bottom: 6px;
+        }
+
+        .app-screen-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .app-screen-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .gallery-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
     </style>
 </head>
 <body>
@@ -1616,15 +1707,71 @@
                 </div>
             </div>
 
-            <div class="mobile-screens-wrapper">
-                <div class="phone-mockup">
-                    <img src="img/screenshot_dialer.png" alt="AiPBX Dialer Screen">
+
+            <div class="app-gallery-container">
+                <div class="app-gallery-scroll">
+                    <!-- Screen 1: Dialer -->
+                    <div class="app-gallery-card">
+                        <div class="app-screen-frame">
+                            <img src="img/app_dialer.jpg" alt="AiPBX Android WebRTC Dialer" loading="lazy">
+                        </div>
+                        <div class="app-screen-info">
+                            <span class="app-screen-badge">VoIP / WebRTC</span>
+                            <div class="app-screen-title">Tuş Takımı (Dialer)</div>
+                            <div class="app-screen-desc">Dahili 19000 çevrimiçi, tek dokunuşla HD Opus arama</div>
+                        </div>
+                    </div>
+
+                    <!-- Screen 2: Chat -->
+                    <div class="app-gallery-card">
+                        <div class="app-screen-frame">
+                            <img src="img/app_chat.jpg" alt="AiPBX Android Real-Time Chat" loading="lazy">
+                        </div>
+                        <div class="app-screen-info">
+                            <span class="app-screen-badge" style="background:rgba(16,185,129,0.15); color:#34d399;">Go WebSocket</span>
+                            <div class="app-screen-title">Anlık Sohbet (Chat)</div>
+                            <div class="app-screen-desc">Kurumsal mesajlaşma, yazıyor göstergesi ve bildirimler</div>
+                        </div>
+                    </div>
+
+                    <!-- Screen 3: Contacts -->
+                    <div class="app-gallery-card">
+                        <div class="app-screen-frame">
+                            <img src="img/app_contacts.jpg" alt="AiPBX Android Corporate Contacts" loading="lazy">
+                        </div>
+                        <div class="app-screen-info">
+                            <span class="app-screen-badge" style="background:rgba(139,92,246,0.15); color:#a78bfa;">Kurumsal Rehber</span>
+                            <div class="app-screen-title">Dahili Rehberi</div>
+                            <div class="app-screen-desc">50+ dahili, roller, çevrimiçi göstergeleri &amp; hızlı arama</div>
+                        </div>
+                    </div>
+
+                    <!-- Screen 4: History -->
+                    <div class="app-gallery-card">
+                        <div class="app-screen-frame">
+                            <img src="img/app_history.jpg" alt="AiPBX Android Call History" loading="lazy">
+                        </div>
+                        <div class="app-screen-info">
+                            <span class="app-screen-badge" style="background:rgba(245,158,11,0.15); color:#fbbf24;">Detaylı CDR</span>
+                            <div class="app-screen-title">Arama Geçmişi</div>
+                            <div class="app-screen-desc">Tümü, cevapsız, gelen/giden filtreleri ve süre analizi</div>
+                        </div>
+                    </div>
+
+                    <!-- Screen 5: Login / Setup -->
+                    <div class="app-gallery-card">
+                        <div class="app-screen-frame">
+                            <img src="img/app_login.jpg" alt="AiPBX Android Server Setup" loading="lazy">
+                        </div>
+                        <div class="app-screen-info">
+                            <span class="app-screen-badge">Build 30</span>
+                            <div class="app-screen-title">Sunucu Bağlantısı</div>
+                            <div class="app-screen-desc">Dinamik URL girişi, otomatik TLS &amp; WSS keşfi</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="phone-mockup">
-                    <img src="img/screenshot_call.png" alt="AiPBX Active Call Screen">
-                </div>
-                <div class="phone-mockup">
-                    <img src="img/screenshot_contacts.png" alt="AiPBX Corporate Contacts Screen">
+                <div class="gallery-hint">
+                    <span>👈 Ekranları kaydırarak inceleyin 👉</span>
                 </div>
             </div>
         </div>
