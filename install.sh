@@ -172,6 +172,10 @@ apt-get install -y \
 
 ok "System packages installed"
 
+# Remove default Nginx site immediately so it does not conflict with Apache on port 80
+rm -f /etc/nginx/sites-enabled/default
+systemctl reload nginx 2>/dev/null || true
+
 # ============================================================================
 # STEP 4: DIRECTORY STRUCTURE
 # ============================================================================
@@ -366,6 +370,10 @@ fi
 # STEP 8: NGINX (EDGE 443 MULTIPLEXER) & APACHE2 (BACKEND)
 # ============================================================================
 step "8. Configuring Nginx (Edge 443) & Apache2 (80/8443 Backend)"
+
+# Ensure default Nginx HTTP site is removed so Apache binds to port 80 exclusively
+rm -f /etc/nginx/sites-enabled/default
+systemctl reload nginx 2>/dev/null || true
 
 a2enmod rewrite proxy proxy_wstunnel proxy_http ssl headers php* 2>/dev/null || true
 a2dismod mpm_event 2>/dev/null || true
