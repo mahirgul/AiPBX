@@ -37,7 +37,7 @@ INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 # ============================================================================
 # STEP 0: WELCOME BANNER
 # ============================================================================
-clear
+clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
 echo "  ╔══════════════════════════════════════════════════════════════╗"
 echo "  ║              AI PBX — Fresh Installation                    ║"
@@ -61,7 +61,12 @@ echo -e "  Enter your fully qualified domain name (FQDN) for HTTPS."
 echo -e "  Examples: ${CYAN}pbx.company.com${NC}, ${CYAN}voice.example.org${NC}"
 echo -e "  Leave blank to use IP address with a self-signed certificate."
 echo ""
-read -r -p "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT
+if [[ -n "${AIPBX_FQDN:-}" ]]; then
+    PORTAL_DOMAIN_INPUT="$AIPBX_FQDN"
+    echo -e "  FQDN provided via environment: ${GREEN}$PORTAL_DOMAIN_INPUT${NC}"
+else
+    read -r -p "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT 2>/dev/null || PORTAL_DOMAIN_INPUT=""
+fi
 
 if [[ -z "$PORTAL_DOMAIN_INPUT" ]]; then
     PORTAL_DOMAIN="$SERVER_IP"
@@ -77,11 +82,11 @@ else
     echo ""
     echo -e "  Do you want a free Let's Encrypt TLS certificate? (recommended)"
     echo -e "  Note: DNS must point ${CYAN}$PORTAL_DOMAIN${NC} → ${CYAN}$SERVER_IP${NC} already."
-    read -r -p "  Use Let's Encrypt? [y/N]: " LE_CHOICE
+    read -r -p "  Use Let's Encrypt? [y/N]: " LE_CHOICE 2>/dev/null || LE_CHOICE="n"
     if [[ "${LE_CHOICE,,}" == "y" || "${LE_CHOICE,,}" == "yes" ]]; then
         USE_LETSENCRYPT=true
         echo ""
-        read -r -p "  Email for Let's Encrypt notifications: " LE_EMAIL
+        read -r -p "  Email for Let's Encrypt notifications: " LE_EMAIL 2>/dev/null || LE_EMAIL=""
     else
         USE_LETSENCRYPT=false
         USE_SELFSIGNED=true
