@@ -87,11 +87,21 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **TURN/STUN support** — works reliably behind NAT (coturn)
 - **Opus + DTLS-SRTP** — high-quality, encrypted audio
 
-### 📱 Android App
-- **Native Kotlin** application
-- **PJSIP + WebRTC** dual engine
-- **FCM push notifications** — wake device for incoming calls
-- **Instant messaging (Chat)** — Go-based WebSocket backend
+### 📱 Android App (Build 30 · v1.0.29)
+- **Native Kotlin** application with zero external cloud dependencies
+- **PJSIP + WebRTC** dual engine with Opus HD audio & DTLS-SRTP encryption
+- **FCM Push & Persistent Foreground Service** — instantaneous wake-up for incoming calls
+- **Instant Messaging (Chat)** — Go-based WebSocket backend with real-time conversations
+- **Corporate Directory & Live Presence** — 50+ extensions with live status & 1-tap dialing
+- **Detailed Call History & In-App Log Viewer** — full diagnostics and call filtering
+
+<p align="center">
+  <img src="docs/img/app_dialer.jpg" width="18%" alt="Dialer">
+  <img src="docs/img/app_chat.jpg" width="18%" alt="Chat">
+  <img src="docs/img/app_contacts.jpg" width="18%" alt="Contacts">
+  <img src="docs/img/app_history.jpg" width="18%" alt="History">
+  <img src="docs/img/app_login.jpg" width="18%" alt="Setup">
+</p>
 
 ### ⚡ Ingress & Reverse Proxy (Nginx & Apache)
 - **High-concurrency Nginx support** — event-driven WebSocket multiplexer, TLS 1.3, PHP-FPM FastCGI
