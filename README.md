@@ -183,10 +183,12 @@ certbot --apache -d your-domain.com
 
 ## Contributing
 
+Contributions are welcome! Please check out our [Contributing Guidelines](CONTRIBUTING.md) for details on code style, commit conventions, and sandbox testing.
+
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add awesome feature'`)
+4. Push to the branch (`git push origin feat/my-feature`)
 5. Open a Pull Request
 
 ---
@@ -197,6 +199,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## Author
+## Author & Creator
 
-**Mahir Gül** · [@mahirgul](https://github.com/mahirgul)
+**Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [@mahirgul](https://github.com/mahirgul)
+
