@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>AI PBX — Modern Open Source Enterprise IP PBX &amp; Unified Communications</title>
     <meta name="description" content="AI PBX is a modern open-source enterprise IP PBX and Unified Communications platform by Mahir Gül (mhrgl.com). Integrating Asterisk 22, Nginx L4 ALPN stream multiplexing, WebRTC, Go instant messaging, and a native Android app.">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
@@ -37,13 +37,16 @@
             --gradient-card: linear-gradient(180deg, rgba(20, 31, 51, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
         }
 
-        * {
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        html {
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
             scroll-behavior: smooth;
         }
 
@@ -52,7 +55,6 @@
             background-color: var(--dark-bg);
             color: var(--text-main);
             line-height: 1.65;
-            overflow-x: hidden;
         }
 
         /* Top Announcement */
@@ -271,7 +273,7 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .mobile-nav-item {
@@ -280,7 +282,7 @@
             font-size: 0.98rem;
             font-weight: 600;
             display: block;
-            padding: 8px 12px;
+            padding: 9px 12px;
             border-radius: 8px;
             transition: all 0.2s;
         }
@@ -333,7 +335,8 @@
             top: -100px;
             left: 50%;
             transform: translateX(-50%);
-            width: 700px;
+            width: 90%;
+            max-width: 700px;
             height: 500px;
             background: radial-gradient(circle, rgba(0, 143, 208, 0.18) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 70%);
             pointer-events: none;
@@ -501,6 +504,7 @@
             font-size: 0.94rem;
             line-height: 1.75;
             color: #e2e8f0;
+            overflow-x: auto;
         }
 
         .terminal-comment { color: #64748b; }
@@ -551,7 +555,7 @@
         /* Architectural Rationale */
         .rationale-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
             gap: 26px;
             max-width: 1280px;
             margin: 0 auto;
@@ -627,16 +631,17 @@
             background: #080d17;
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 34px;
+            padding: 30px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .arch-flow {
             display: flex;
             flex-direction: column;
             gap: 18px;
-            min-width: 760px;
+            min-width: 720px;
         }
 
         .arch-layer {
@@ -660,7 +665,7 @@
 
         .arch-node-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
         }
 
@@ -700,106 +705,226 @@
             gap: 8px;
         }
 
-        /* Android Showcase */
+        /* ===================================================
+           REBUILT: ANDROID SHOWCASE & SCREENSHOT SELECTOR
+        =================================================== */
         .android-showcase {
             background: #0a101d;
+            position: relative;
         }
 
-        .mobile-container {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 48px;
-            align-items: center;
-            max-width: 1220px;
+        .android-section-wrapper {
+            max-width: 1240px;
             margin: 0 auto;
         }
 
-        .mobile-content h3 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 18px;
+        /* Screen Selector Tabs */
+        .screen-tabs-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 0 auto 36px;
+            max-width: 900px;
+        }
+
+        .screen-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #111a2e;
+            border: 1.5px solid var(--border);
+            color: #94a3b8;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+
+        .screen-tab-btn:hover {
             color: #fff;
-            letter-spacing: -0.02em;
+            border-color: #38bdf8;
+            background: #18243d;
         }
 
-        .mobile-content p {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-            margin-bottom: 24px;
-            line-height: 1.7;
+        .screen-tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: #38bdf8;
+            box-shadow: 0 4px 16px rgba(0, 143, 208, 0.4);
         }
 
-        .mobile-features-list {
-            list-style: none;
+        /* Interactive Showcase Stage */
+        .showcase-stage {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 48px;
+            align-items: center;
+            background: var(--gradient-card);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Smartphone Frame */
+        .phone-frame-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone-hardware-frame {
+            width: 280px;
+            max-width: 100%;
+            background: #000;
+            border-radius: 36px;
+            padding: 12px;
+            border: 3.5px solid #293d61;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 10px;
+            background: #162030;
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        .phone-screen-viewport {
+            border-radius: 26px;
+            overflow: hidden;
+            background: #0f172a;
+            aspect-ratio: 9 / 19.5;
+            position: relative;
+        }
+
+        .phone-screen-viewport img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Screen Details Description */
+        .screen-meta-panel {
             display: flex;
             flex-direction: column;
             gap: 16px;
-            margin-bottom: 30px;
         }
 
-        .mobile-feat-item {
+        .screen-badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            width: fit-content;
+        }
+
+        .screen-meta-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .screen-meta-desc {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .screen-meta-bullets {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 12px 0 20px;
+        }
+
+        .screen-meta-bullet {
             display: flex;
             align-items: flex-start;
-            gap: 14px;
+            gap: 12px;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            line-height: 1.5;
         }
 
-        .mobile-feat-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: rgba(0, 143, 208, 0.2);
+        .bullet-icon {
             color: #38bdf8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
             flex-shrink: 0;
             margin-top: 2px;
         }
 
-        .mobile-feat-text strong {
-            display: block;
-            color: #fff;
-            font-size: 0.98rem;
-            margin-bottom: 2px;
+        .stage-actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
         }
 
-        .mobile-feat-text span {
+        /* Android Core Highlights Grid */
+        .android-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 22px;
+            margin-top: 36px;
+        }
+
+        .af-card {
+            background: #0d1524;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .af-card:hover {
+            border-color: #38bdf8;
+            transform: translateY(-3px);
+        }
+
+        .af-icon {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        .af-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .af-desc {
             color: var(--text-muted);
             font-size: 0.88rem;
+            line-height: 1.6;
         }
 
-        .mobile-screens-wrapper {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            position: relative;
-        }
-
-        .phone-mockup {
-            width: 31%;
-            max-width: 220px;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            border: 2px solid #223555;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-            background: #000;
-        }
-
-        .phone-mockup:hover {
-            transform: translateY(-8px) scale(1.03);
-            border-color: #38bdf8;
-            z-index: 2;
-        }
-
-        .phone-mockup img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        /* Features */
+        /* Features Section */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -846,7 +971,7 @@
             line-height: 1.6;
         }
 
-        /* Table */
+        /* Comparison Table */
         .table-container {
             max-width: 1050px;
             margin: 0 auto;
@@ -854,6 +979,7 @@
             background: #090e17;
             border: 1px solid var(--border);
             border-radius: 14px;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
@@ -861,6 +987,7 @@
             border-collapse: collapse;
             text-align: left;
             font-size: 0.94rem;
+            min-width: 600px;
         }
 
         th, td {
@@ -1065,11 +1192,24 @@
             color: #38bdf8;
         }
 
-        /* Responsive Breakpoints */
+        /* Responsive Breakpoints & Mobile Optimization */
         @media (max-width: 980px) {
             .hero h1 { font-size: 2.8rem; }
-            .mobile-container { grid-template-columns: 1fr; }
-            .mobile-screens-wrapper { margin-top: 30px; }
+            .showcase-stage {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                padding: 30px 24px;
+                text-align: center;
+            }
+            .screen-meta-panel {
+                align-items: center;
+            }
+            .screen-meta-bullets {
+                text-align: left;
+            }
+            .stage-actions {
+                justify-content: center;
+            }
             .dev-card { grid-template-columns: 1fr; text-align: center; }
             .dev-avatar { margin: 0 auto; }
             .dev-links { justify-content: center; }
@@ -1105,25 +1245,29 @@
                 font-size: 0.78rem;
             }
 
+            section {
+                padding: 60px 4%;
+            }
+
             .hero {
-                padding: 44px 4% 36px;
+                padding: 40px 4% 30px;
             }
             .hero-tag {
                 max-width: 96%;
                 font-size: 0.76rem;
                 padding: 5px 12px;
                 line-height: 1.45;
-                margin-bottom: 20px;
+                margin-bottom: 18px;
             }
             .hero h1 {
-                font-size: 2.05rem;
+                font-size: 2.1rem;
                 line-height: 1.18;
                 margin-bottom: 16px;
             }
             .hero p {
                 font-size: 0.96rem;
                 line-height: 1.6;
-                margin-bottom: 26px;
+                margin-bottom: 24px;
                 padding: 0 4px;
             }
             .hero-actions {
@@ -1131,7 +1275,7 @@
                 align-items: stretch;
                 gap: 10px;
                 max-width: 320px;
-                margin: 0 auto 34px;
+                margin: 0 auto 30px;
             }
             .btn-primary, .btn-secondary {
                 width: 100%;
@@ -1141,7 +1285,7 @@
             }
 
             .terminal-container {
-                margin: 0 2px;
+                margin: 0;
                 border-radius: 10px;
             }
             .terminal-header {
@@ -1151,119 +1295,118 @@
                 padding: 16px 12px;
                 font-size: 0.8rem;
                 line-height: 1.6;
-                overflow-x: auto;
             }
 
+            .section-header {
+                margin-bottom: 36px;
+            }
             .section-header h2 {
-                font-size: 2rem;
+                font-size: 1.95rem;
+                line-height: 1.2;
             }
             .section-header p {
-                font-size: 0.96rem;
+                font-size: 0.95rem;
             }
 
             .rationale-grid {
                 grid-template-columns: 1fr;
+                gap: 18px;
             }
             .rationale-card {
-                padding: 24px;
+                padding: 22px 18px;
+            }
+            .rationale-card h3 {
+                font-size: 1.18rem;
             }
 
-            .phone-mockup { width: 48%; }
-            .phone-mockup:last-child { display: none; }
+            /* Android Showcase Mobile Tweaks */
+            .screen-tabs-bar {
+                gap: 6px;
+                margin-bottom: 24px;
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 6px;
+                -webkit-overflow-scrolling: touch;
+                flex-wrap: nowrap;
+            }
+            .screen-tab-btn {
+                padding: 8px 14px;
+                font-size: 0.82rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
 
-            .footer-grid { grid-template-columns: 1fr; }
-        }
-    
-        /* Real App Screenshots Showcase Gallery */
-        .app-gallery-container {
-            margin-top: 48px;
-            position: relative;
-        }
+            .showcase-stage {
+                padding: 24px 16px;
+                border-radius: 18px;
+            }
+            .phone-hardware-frame {
+                width: 240px;
+                border-radius: 30px;
+                padding: 10px;
+                border-width: 3px;
+            }
+            .phone-screen-viewport {
+                border-radius: 22px;
+            }
+            .screen-meta-title {
+                font-size: 1.45rem;
+            }
+            .screen-meta-desc {
+                font-size: 0.92rem;
+            }
+            .screen-meta-bullets {
+                gap: 10px;
+                margin: 10px 0 16px;
+            }
+            .screen-meta-bullet {
+                font-size: 0.88rem;
+            }
+            .stage-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            .stage-actions .btn-primary,
+            .stage-actions .btn-secondary {
+                width: 100%;
+            }
 
-        .app-gallery-scroll {
-            display: flex;
-            gap: 20px;
-            overflow-x: auto;
-            padding: 16px 8px 30px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #243552 #0a101d;
-        }
+            .android-features-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .af-card {
+                padding: 18px 16px;
+            }
 
-        .app-gallery-card {
-            flex: 0 0 230px;
-            scroll-snap-align: start;
-            background: #0d1524;
-            border: 1.5px solid #1e2e4a;
-            border-radius: 24px;
-            padding: 10px;
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            text-align: center;
-        }
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .feature-card {
+                padding: 22px 18px;
+            }
 
-        .app-gallery-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            border-color: #008FD0;
-            box-shadow: 0 20px 45px rgba(0, 143, 208, 0.25);
-        }
+            .arch-diagram-box {
+                padding: 18px 14px;
+                border-radius: 12px;
+            }
 
-        .app-screen-frame {
-            border-radius: 18px;
-            overflow: hidden;
-            background: #000;
-            border: 1px solid #223555;
-            position: relative;
-        }
+            .dev-card {
+                padding: 28px 18px;
+            }
+            .dev-avatar {
+                width: 90px;
+                height: 90px;
+                font-size: 2.2rem;
+                border-radius: 18px;
+            }
+            .dev-info h3 {
+                font-size: 1.45rem;
+            }
 
-        .app-screen-frame img {
-            width: 100%;
-            height: auto;
-            display: block;
+            .footer-grid { grid-template-columns: 1fr; gap: 28px; }
         }
-
-        .app-screen-info {
-            padding: 14px 6px 8px;
-        }
-
-        .app-screen-badge {
-            display: inline-block;
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 2px 8px;
-            border-radius: 6px;
-            background: rgba(0, 143, 208, 0.15);
-            color: #38bdf8;
-            margin-bottom: 6px;
-        }
-
-        .app-screen-title {
-            font-size: 0.92rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        .app-screen-desc {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        .gallery-hint {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
     </style>
 </head>
 <body>
@@ -1321,7 +1464,7 @@
             <li><a href="#overview" class="mobile-nav-item">🏠 Overview</a></li>
             <li><a href="#rationale" class="mobile-nav-item">🧠 Why &amp; How (Neden ve Nasıl?)</a></li>
             <li><a href="#architecture" class="mobile-nav-item">🏗 System Architecture</a></li>
-            <li><a href="#android" class="mobile-nav-item">📱 Android App</a></li>
+            <li><a href="#android" class="mobile-nav-item">📱 Android App (Build 30)</a></li>
             <li><a href="#features" class="mobile-nav-item">⚡ Features</a></li>
             <li><a href="#install" class="mobile-nav-item">💻 Quick Install</a></li>
             <li><a href="#developer" class="mobile-nav-item">🌐 About Developer (mhrgl.com)</a></li>
@@ -1370,14 +1513,14 @@
                     <span class="terminal-dot dot-yellow"></span>
                     <span class="terminal-dot dot-green"></span>
                 </div>
-                <span class="terminal-title">bash — Automated One-Command Installation (Ubuntu 22/24/26 LTS)</span>
+                <span class="terminal-title">bash — Automated Turnkey Install (Ubuntu LTS)</span>
                 <button class="terminal-copy" onclick="navigator.clipboard.writeText('git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx && cd /opt/aipbx && sudo bash install.sh'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000)">Copy</button>
             </div>
             <div class="terminal-body">
-                <span class="terminal-comment"># 1. Clone the official repository</span><br>
+                <span class="terminal-comment"># 1. Clone repository</span><br>
                 <span class="terminal-cmd">git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx</span><br>
                 <span class="terminal-cmd">cd /opt/aipbx</span><br><br>
-                <span class="terminal-comment"># 2. Run turnkey automated installer (zero hardcoded passwords)</span><br>
+                <span class="terminal-comment"># 2. Run automated installer (zero hardcoded passwords)</span><br>
                 <span class="terminal-cmd">sudo bash install.sh</span><br><br>
                 <span class="terminal-success">✔ Nginx L4 ALPN Stream Multiplexer configured on Port 443</span><br>
                 <span class="terminal-success">✔ Apache 2.4 Backend active on Port 80 &amp; 8443</span><br>
@@ -1395,7 +1538,7 @@
             <span class="section-badge">Engineering Deep Dive</span>
             <h2>Architectural Rationale: Why &amp; How We Built It</h2>
             <p>
-                Every engineering decision in AiPBX was made to resolve real-world pain points found in traditional PBX systems: restrictive firewalls, split identities, bloated dependencies, and security vulnerabilities.
+                Every engineering decision in AiPBX resolves real-world pain points: restrictive firewalls, split identities, bloated dependencies, and security vulnerabilities.
             </p>
         </div>
 
@@ -1407,13 +1550,13 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        Enterprise, university, and hotel firewalls block non-standard ports (5060 SIP, 8088 WS, 3478/5349 TURN). Remote workers and mobile users fail to establish WebRTC media behind these strict NATs.
+                        Enterprise and university firewalls block non-standard ports (5060 SIP, 8088 WS, 3478/5349 TURN). Remote workers fail to establish WebRTC media behind strict NATs.
                     </div>
                 </div>
                 <div class="rationale-block">
                     <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
                     <div class="rationale-text">
-                        Nginx operates at L4 using <code>ssl_preread on</code> on Port 443. It inspects the TLS ClientHello ALPN string without decrypting: connections with ALPN (<code>h2</code>, <code>http/1.1</code>) go to Apache (8443); non-ALPN traffic goes to Coturn (5349).
+                        Nginx operates at L4 using <code>ssl_preread on</code> on Port 443. Connections with ALPN (<code>h2</code>, <code>http/1.1</code>) go to Apache (8443); non-ALPN traffic goes to Coturn (5349).
                     </div>
                 </div>
                 <div class="rationale-block">
@@ -1431,7 +1574,7 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        Let's Encrypt / Certbot renewal bots do NOT send ALPN extensions. If Port 80 unconditionally redirected ACME challenges to Port 443, Nginx would route them to Coturn, causing automated SSL renewals to permanently fail.
+                        Let's Encrypt / Certbot renewal bots do NOT send ALPN extensions. If Port 80 redirected ACME challenges to Port 443, Nginx would route them to Coturn, permanently breaking automated SSL renewals.
                     </div>
                 </div>
                 <div class="rationale-block">
@@ -1455,7 +1598,7 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        Traditional PBXs require separate extension numbers for desk phones (e.g. 1001) and softphones/mobile apps (e.g. 2001). This breaks call transfers, fragments CDR reporting, and confuses callers.
+                        Traditional PBXs require separate extension numbers for desk phones (e.g. 1001) and softphones/mobile apps (e.g. 2001). This breaks call transfers and fragments CDR reporting.
                     </div>
                 </div>
                 <div class="rationale-block">
@@ -1479,19 +1622,19 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        PHP is stateless and request-driven. Maintaining persistent WebSocket connections in PHP exhausts server memory, introduces process locking, and scales poorly with concurrent chat users.
+                        PHP is stateless and request-driven. Maintaining persistent WebSocket connections in PHP exhausts server memory, introduces process locking, and scales poorly.
                     </div>
                 </div>
                 <div class="rationale-block">
                     <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
                     <div class="rationale-text">
-                        Built an independent Go microservice with Gorilla WebSocket on Port 8086. It compiles to a self-contained static binary (<code>CGO_ENABLED=0</code>) requiring under 20MB RAM.
+                        Built an independent Go microservice with Gorilla WebSocket on Port 8086. It compiles to a static binary (<code>CGO_ENABLED=0</code>) requiring under 20MB RAM.
                     </div>
                 </div>
                 <div class="rationale-block">
                     <div class="rationale-label label-impact">🚀 Real-World Impact</div>
                     <div class="rationale-text">
-                        Supports thousands of concurrent connections with native Goroutines. Provides instant message delivery, typing indicators, read receipts, and file transfers with negligible CPU footprint.
+                        Supports thousands of concurrent connections with native Goroutines. Provides instant message delivery, typing indicators, read receipts, and file transfers.
                     </div>
                 </div>
             </div>
@@ -1503,7 +1646,7 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        Third-party Android native SIP SDKs (PJSIP C-wrappers, Linphone) bloat APKs to 40MB+, crash unpredictably across Android 12-16 vendor skins, and struggle with background Doze mode.
+                        Third-party Android native SIP SDKs (PJSIP C-wrappers, Linphone) bloat APKs to 40MB+, crash unpredictably across Android 12-16 vendor skins, and struggle with Doze mode.
                     </div>
                 </div>
                 <div class="rationale-block">
@@ -1515,7 +1658,7 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-impact">🚀 Real-World Impact</div>
                     <div class="rationale-text">
-                        Featherweight 2.8 MB APK, 100% standards-compliant WebRTC Opus audio, zero native library crashes, and instantaneous incoming call wake-up even when the phone is asleep.
+                        Featherweight 2.8 MB APK, 100% standards-compliant WebRTC Opus audio, zero native library crashes, and instantaneous incoming call wake-up.
                     </div>
                 </div>
             </div>
@@ -1527,7 +1670,7 @@
                 <div class="rationale-block">
                     <div class="rationale-label label-problem">⚠ The Challenge</div>
                     <div class="rationale-text">
-                        Most web portals use a single database account with full DDL rights. If an SQL injection exploit occurs, attackers can execute <code>DROP TABLE</code> or alter critical PBX configuration tables.
+                        Most web portals use a single database account with full DDL rights. If an SQL injection exploit occurs, attackers can execute <code>DROP TABLE</code> or alter PBX tables.
                     </div>
                 </div>
                 <div class="rationale-block">
@@ -1659,119 +1802,107 @@
         </div>
     </section>
 
-    <!-- SECTION 3: ANDROID MOBILE APP SHOWCASE -->
+    <!-- SECTION 3: REBUILT ANDROID SHOWCASE -->
     <section class="android-showcase" id="android">
-        <div class="mobile-container">
-            <div class="mobile-content">
-                <span class="section-badge">Mobile Companion</span>
-                <h3>Native Android App for Enterprise PBX</h3>
+        <div class="android-section-wrapper">
+            <div class="section-header">
+                <span class="section-badge">📱 Mobile Client · Build 30 (v1.0.29)</span>
+                <h2>Native Android App for Enterprise PBX</h2>
                 <p>
-                    AiPBX includes a first-class native Android application written in Kotlin. It transforms any smartphone into an enterprise extension with zero complex configurations.
+                    A true enterprise softphone with zero external cloud dependencies. WebRTC HD Opus voice, live corporate extension directory, and real-time team chat right on your smartphone.
                 </p>
+            </div>
 
-                <ul class="mobile-features-list">
-                    <li class="mobile-feat-item">
-                        <div class="mobile-feat-icon">⚡</div>
-                        <div class="mobile-feat-text">
-                            <strong>Instant FCM Background Wake-Up</strong>
-                            <span>Incoming calls trigger high-priority push notifications, waking the device from deep sleep with a native ringer.</span>
-                        </div>
-                    </li>
-                    <li class="mobile-feat-item">
-                        <div class="mobile-feat-icon">💬</div>
-                        <div class="mobile-feat-text">
-                            <strong>Built-in Team Chat Tab</strong>
-                            <span>Real-time instant messaging powered by Go WebSockets with typing indicators and image attachments.</span>
-                        </div>
-                    </li>
-                    <li class="mobile-feat-item">
-                        <div class="mobile-feat-icon">🔄</div>
-                        <div class="mobile-feat-text">
-                            <strong>Live Call Forwarding (CFU / CFB / CFNR)</strong>
-                            <span>Adjust call forward rules (Always, Busy, No-Answer) directly from the mobile settings in real time.</span>
-                        </div>
-                    </li>
-                    <li class="mobile-feat-item">
-                        <div class="mobile-feat-icon">📑</div>
-                        <div class="mobile-feat-text">
-                            <strong>In-App Diagnostics Log Viewer</strong>
-                            <span>Engineers can view, filter, and export full SIP, WebRTC, and HTTP network logs directly from the device.</span>
-                        </div>
-                    </li>
-                </ul>
+            <!-- Screen Selector Tabs -->
+            <div class="screen-tabs-bar" role="tablist">
+                <button class="screen-tab-btn active" onclick="switchScreen(0)">📞 Tuş Takımı</button>
+                <button class="screen-tab-btn" onclick="switchScreen(1)">💬 Anlık Sohbet</button>
+                <button class="screen-tab-btn" onclick="switchScreen(2)">👥 Dahili Rehberi</button>
+                <button class="screen-tab-btn" onclick="switchScreen(3)">📊 Arama Geçmişi</button>
+                <button class="screen-tab-btn" onclick="switchScreen(4)">⚙️ Sunucu Bağlantısı</button>
+            </div>
 
-                <div>
-                    <a href="https://github.com/mahirgul/AiPBX/tree/main/android" target="_blank" class="btn-primary">
-                        View Android Source Code
-                    </a>
+            <!-- Interactive Stage -->
+            <div class="showcase-stage">
+                <!-- Smartphone Device Frame -->
+                <div class="phone-frame-wrapper">
+                    <div class="phone-hardware-frame">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen-viewport">
+                            <img id="activePhoneImg" src="img/app_dialer.jpg" alt="AiPBX Android Application Screen">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Meta Description -->
+                <div class="screen-meta-panel">
+                    <div class="screen-badge-live" id="activeScreenBadge">
+                        🟢 Canlı Santral Entegrasyonu
+                    </div>
+                    <h3 class="screen-meta-title" id="activeScreenTitle">
+                        WebRTC HD Tuş Takımı (Dialer)
+                    </h3>
+                    <p class="screen-meta-desc" id="activeScreenDesc">
+                        Dahili 19000 (Mahir) anlık çevrimiçi kayıtlı. DTLS-SRTP şifreli WebRTC Opus ses motoru ile düşük gecikmeli, kristal netliğinde kurum içi ve dış hat görüşmeleri.
+                    </p>
+
+                    <ul class="screen-meta-bullets" id="activeScreenBullets">
+                        <li class="screen-meta-bullet">
+                            <span class="bullet-icon">✔</span>
+                            <span><strong>Hızlı Arama &amp; DTMF:</strong> 0-9, *, # tuşları ile IVR sesli menüleri kolayca yönetin.</span>
+                        </li>
+                        <li class="screen-meta-bullet">
+                            <span class="bullet-icon">✔</span>
+                            <span><strong>Canlı Durum Göstergesi:</strong> Bağlantı durumunu (Çevrimiçi, Bağlanıyor, Çevrimdışı) üst çubukta anında görün.</span>
+                        </li>
+                        <li class="screen-meta-bullet">
+                            <span class="bullet-icon">✔</span>
+                            <span><strong>Sıfır Çökme / Hafif Mimari:</strong> Ağır C++ kütüphaneleri yerine standart WebRTC ile sadece 2.8 MB APK boyutu.</span>
+                        </li>
+                    </ul>
+
+                    <div class="stage-actions">
+                        <a href="https://github.com/mahirgul/AiPBX/tree/main/android" target="_blank" class="btn-primary">
+                            📱 Android Kaynak Kodunu İncele
+                        </a>
+                        <a href="https://github.com/mahirgul/AiPBX/blob/main/android/README.md" target="_blank" class="btn-secondary">
+                            📖 Android Kılavuzu
+                        </a>
+                    </div>
                 </div>
             </div>
 
-
-            <div class="app-gallery-container">
-                <div class="app-gallery-scroll">
-                    <!-- Screen 1: Dialer -->
-                    <div class="app-gallery-card">
-                        <div class="app-screen-frame">
-                            <img src="img/app_dialer.jpg" alt="AiPBX Android WebRTC Dialer" loading="lazy">
-                        </div>
-                        <div class="app-screen-info">
-                            <span class="app-screen-badge">VoIP / WebRTC</span>
-                            <div class="app-screen-title">Tuş Takımı (Dialer)</div>
-                            <div class="app-screen-desc">Dahili 19000 çevrimiçi, tek dokunuşla HD Opus arama</div>
-                        </div>
-                    </div>
-
-                    <!-- Screen 2: Chat -->
-                    <div class="app-gallery-card">
-                        <div class="app-screen-frame">
-                            <img src="img/app_chat.jpg" alt="AiPBX Android Real-Time Chat" loading="lazy">
-                        </div>
-                        <div class="app-screen-info">
-                            <span class="app-screen-badge" style="background:rgba(16,185,129,0.15); color:#34d399;">Go WebSocket</span>
-                            <div class="app-screen-title">Anlık Sohbet (Chat)</div>
-                            <div class="app-screen-desc">Kurumsal mesajlaşma, yazıyor göstergesi ve bildirimler</div>
-                        </div>
-                    </div>
-
-                    <!-- Screen 3: Contacts -->
-                    <div class="app-gallery-card">
-                        <div class="app-screen-frame">
-                            <img src="img/app_contacts.jpg" alt="AiPBX Android Corporate Contacts" loading="lazy">
-                        </div>
-                        <div class="app-screen-info">
-                            <span class="app-screen-badge" style="background:rgba(139,92,246,0.15); color:#a78bfa;">Kurumsal Rehber</span>
-                            <div class="app-screen-title">Dahili Rehberi</div>
-                            <div class="app-screen-desc">50+ dahili, roller, çevrimiçi göstergeleri &amp; hızlı arama</div>
-                        </div>
-                    </div>
-
-                    <!-- Screen 4: History -->
-                    <div class="app-gallery-card">
-                        <div class="app-screen-frame">
-                            <img src="img/app_history.jpg" alt="AiPBX Android Call History" loading="lazy">
-                        </div>
-                        <div class="app-screen-info">
-                            <span class="app-screen-badge" style="background:rgba(245,158,11,0.15); color:#fbbf24;">Detaylı CDR</span>
-                            <div class="app-screen-title">Arama Geçmişi</div>
-                            <div class="app-screen-desc">Tümü, cevapsız, gelen/giden filtreleri ve süre analizi</div>
-                        </div>
-                    </div>
-
-                    <!-- Screen 5: Login / Setup -->
-                    <div class="app-gallery-card">
-                        <div class="app-screen-frame">
-                            <img src="img/app_login.jpg" alt="AiPBX Android Server Setup" loading="lazy">
-                        </div>
-                        <div class="app-screen-info">
-                            <span class="app-screen-badge">Build 30</span>
-                            <div class="app-screen-title">Sunucu Bağlantısı</div>
-                            <div class="app-screen-desc">Dinamik URL girişi, otomatik TLS &amp; WSS keşfi</div>
-                        </div>
-                    </div>
+            <!-- Core Mobile Features Grid -->
+            <div class="android-features-grid">
+                <div class="af-card">
+                    <div class="af-icon">⚡</div>
+                    <div class="af-title">FCM Arka Plan Uyanışı (Doze Bypass)</div>
+                    <div class="af-desc">Ekran kapalı veya telefon derin uykudayken yüksek öncelikli FCM sinyali ile telefon anında uyanır ve yerel tam ekran zil çalar.</div>
                 </div>
-                <div class="gallery-hint">
-                    <span>👈 Ekranları kaydırarak inceleyin 👉</span>
+                <div class="af-card">
+                    <div class="af-icon">💬</div>
+                    <div class="af-title">Go WebSocket Destekli Sohbet</div>
+                    <div class="af-desc">Santraldeki çalışma arkadaşlarınızla anlık yazışma, yazıyor... bilgisi, teslim edildi bildirimi ve resim paylaşımı.</div>
+                </div>
+                <div class="af-card">
+                    <div class="af-icon">👥</div>
+                    <div class="af-title">50+ Kurumsal Dahili &amp; Canlı Durum</div>
+                    <div class="af-desc">Tüm santral personelinin dahili numaraları, unvanları ve çevrimiçi yeşil durum noktaları ile tek dokunuşla arama.</div>
+                </div>
+                <div class="af-card">
+                    <div class="af-icon">🔄</div>
+                    <div class="af-title">Canlı Çağrı Yönlendirme (CFU/CFB/CFNR)</div>
+                    <div class="af-desc">Koşulsuz, meşgulde veya cevapsızda arama yönlendirme ayarlarını mobil uygulama ayarlarından anında kaydedin.</div>
+                </div>
+                <div class="af-card">
+                    <div class="af-icon">📑</div>
+                    <div class="af-title">Dahili Tanılama &amp; Log Görüntüleyici</div>
+                    <div class="af-desc">Ağ veya kayıt problemlerini anında tespit etmek için tam SIP, WebRTC ve HTTP kayıtlarını cihaz üzerinden inceleyin ve dışa aktarın.</div>
+                </div>
+                <div class="af-card">
+                    <div class="af-icon">🔒</div>
+                    <div class="af-title">%100 Kurum İçi Güvenlik (Zero Cloud)</div>
+                    <div class="af-desc">Hiçbir harici bulut sunucusu kullanılmaz; ses ve mesaj trafiği doğrudan kurumunuzun TLS/WSS/TURNS sunucusundan akar.</div>
                 </div>
             </div>
         </div>
@@ -2000,8 +2131,9 @@
         </div>
     </footer>
 
-    <!-- Mobile Drawer Script -->
+    <!-- Interactive Scripts -->
     <script>
+        // Mobile Drawer
         const mobileToggleBtn = document.getElementById('mobileToggleBtn');
         const mobileDrawer = document.getElementById('mobileDrawer');
         const mobileDrawerClose = document.getElementById('mobileDrawerClose');
@@ -2024,6 +2156,118 @@
         if (mobileDrawerClose) mobileDrawerClose.addEventListener('click', closeMenu);
         if (mobileBackdrop) mobileBackdrop.addEventListener('click', closeMenu);
         mobileNavItems.forEach(item => item.addEventListener('click', closeMenu));
+
+        // Interactive Screen Switcher Data
+        const screensData = [
+            {
+                img: 'img/app_dialer.jpg',
+                badge: '🟢 Canlı Santral Entegrasyonu',
+                badgeColor: 'rgba(16, 185, 129, 0.15)',
+                badgeBorder: 'rgba(16, 185, 129, 0.3)',
+                badgeText: '#34d399',
+                title: 'WebRTC HD Tuş Takımı (Dialer)',
+                desc: 'Dahili 19000 (Mahir) anlık çevrimiçi kayıtlı. DTLS-SRTP şifreli WebRTC Opus ses motoru ile düşük gecikmeli, kristal netliğinde kurum içi ve dış hat görüşmeleri.',
+                bullets: [
+                    '<strong>Hızlı Arama &amp; DTMF:</strong> 0-9, *, # tuşları ile sesli yanıt (IVR) sistemlerinde anında tuşlama yapın.',
+                    '<strong>Canlı Durum Göstergesi:</strong> Bağlantı durumunu (Çevrimiçi, Bağlanıyor, Çevrimdışı) üst çubukta anında görün.',
+                    '<strong>Sıfır Çökme / Hafif Mimari:</strong> Ağır C++ kütüphaneleri yerine standart WebRTC motoru ile sadece 2.8 MB APK.'
+                ]
+            },
+            {
+                img: 'img/app_chat.jpg',
+                badge: '💬 Go WebSocket Chat Hub',
+                badgeColor: 'rgba(0, 143, 208, 0.15)',
+                badgeBorder: 'rgba(0, 143, 208, 0.3)',
+                badgeText: '#38bdf8',
+                title: 'Kurumsal Sohbet (Chat)',
+                desc: 'Santral kullanıcıları arasında entegre, yüksek hızlı anlık mesajlaşma. Go arka ucu sayesinde sıfır gecikmeli mesaj iletimi ve konuşma listesi.',
+                bullets: [
+                    '<strong>Yazıyor... &amp; Okundu Bildirimi:</strong> Karşı tarafın yazma durumunu ve mesaj teslimini anlık takip edin.',
+                    '<strong>Geçmiş Konuşmalar:</strong> Kemal, Toygar, Eflani MYO gibi birimlerle kesintisiz mesajlaşma akışı.',
+                    '<strong>Arka Plan Bildirimleri:</strong> Uygulama kapalıyken bile yeni mesajlar anında bildirim olarak düşer.'
+                ]
+            },
+            {
+                img: 'img/app_contacts.jpg',
+                badge: '👥 50+ Kurumsal Dahili',
+                badgeColor: 'rgba(139, 92, 246, 0.15)',
+                badgeBorder: 'rgba(139, 92, 246, 0.3)',
+                badgeText: '#a78bfa',
+                title: 'Canlı Kurumsal Rehber',
+                desc: 'Santral veri tabanındaki tüm dahililer otomatik olarak telefonunuza senkronize olur. Harici numara ezberleme zorunluluğuna son.',
+                bullets: [
+                    '<strong>Anlık Çevrimiçi Durum:</strong> Kimin masasında veya telefonda müsait olduğunu yeşil nokta ile canlı izleyin.',
+                    '<strong>Rol &amp; Yetki Göstergeleri:</strong> admin, read_only_admin, cc_agent gibi departman yetkileri unvan altında belirtilir.',
+                    '<strong>Tek Tıkla Arama:</strong> Dahili listesindeki yeşil telefon butonuna dokunarak doğrudan çağrı başlatın.'
+                ]
+            },
+            {
+                img: 'img/app_history.jpg',
+                badge: '📊 Detaylı CDR & İstatistik',
+                badgeColor: 'rgba(245, 158, 11, 0.15)',
+                badgeBorder: 'rgba(245, 158, 11, 0.3)',
+                badgeText: '#fbbf24',
+                title: 'Arama Geçmişi & Süre Sayacı',
+                desc: 'Toplam 330 arama, 45 cevapsız, 47 dakika konuşma gibi tüm istatistiklerinizi tek ekrandan filtreleyip analiz edin.',
+                bullets: [
+                    '<strong>Çoklu Filtreleme:</strong> Tümü, Cevapsız, Gelen ve Giden çağrıları tek dokunuşla ayırın.',
+                    '<strong>Saniye Hassasiyetinde Süre:</strong> Her aramanın başlangıç saati ve net konuşma süresi listelenir.',
+                    '<strong>Geri Arama:</strong> Geçmiş listedeki herhangi bir kayda dokunarak anında geri arama yapın.'
+                ]
+            },
+            {
+                img: 'img/app_login.jpg',
+                badge: '⚙️ Zero Config • Build 30',
+                badgeColor: 'rgba(14, 165, 233, 0.15)',
+                badgeBorder: 'rgba(14, 165, 233, 0.3)',
+                badgeText: '#38bdf8',
+                title: 'Hızlı Sunucu Bağlantısı',
+                desc: 'Karmaşık SIP portları, proxy adresleri ve STUN/TURN şifreleriyle uğraşmaya gerek yok. Yalnızca santral URL adresinizi girin.',
+                bullets: [
+                    '<strong>Otomatik Yapılandırma Keşfi:</strong> Sunucu adresinden WSS ve TLS parametreleri dinamik olarak çekilir.',
+                    '<strong>Dahili Sürüm Takibi:</strong> AiPBX v1.0.29 (Build 30) ve sonraki sürümlerle %100 tam uyumlu.',
+                    '<strong>Self-Signed ve Güvenli TLS:</strong> Kurum içi özel SSL sertifikalarıyla kesintisiz el sıkışma.'
+                ]
+            }
+        ];
+
+        function switchScreen(index) {
+            const data = screensData[index];
+            if (!data) return;
+
+            // Update Tab Buttons
+            const buttons = document.querySelectorAll('.screen-tab-btn');
+            buttons.forEach((btn, idx) => {
+                if (idx === index) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            // Smooth image fade
+            const imgEl = document.getElementById('activePhoneImg');
+            imgEl.style.opacity = '0.3';
+            setTimeout(() => {
+                imgEl.src = data.img;
+                imgEl.style.opacity = '1';
+            }, 120);
+
+            // Update Meta Content
+            const badgeEl = document.getElementById('activeScreenBadge');
+            badgeEl.innerText = data.badge;
+            badgeEl.style.background = data.badgeColor;
+            badgeEl.style.borderColor = data.badgeBorder;
+            badgeEl.style.color = data.badgeText;
+
+            document.getElementById('activeScreenTitle').innerText = data.title;
+            document.getElementById('activeScreenDesc').innerText = data.desc;
+
+            const bulletsContainer = document.getElementById('activeScreenBullets');
+            bulletsContainer.innerHTML = data.bullets.map(b => `
+                <li class="screen-meta-bullet">
+                    <span class="bullet-icon">✔</span>
+                    <span>${b}</span>
+                </li>
+            `).join('');
+        }
     </script>
 
 </body>
