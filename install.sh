@@ -293,8 +293,8 @@ if [[ "${TABLE_COUNT:-0}" -eq 0 ]]; then
     # Create admin user with generated random password (no hardcoded admin123!)
     ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
     mysql asterisk -e "
-    INSERT IGNORE INTO sys_users (username, password_hash, display_name, role_id, is_active)
-    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', 1, 1);
+    INSERT IGNORE INTO sys_users (username, password_hash, full_name, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
+    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', 'admin', 1, 1, 1, 1);
     "
     ok "Database schema loaded and admin user created"
 else
