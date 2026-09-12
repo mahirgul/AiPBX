@@ -115,6 +115,7 @@ gen_hex() {
 
 # All passwords generated randomly — no static defaults
 ADMIN_PASS=$(gen_pass 16)
+ADMIN_SIP_PASS=$(gen_hex 12)
 DB_USER="aipbx_portal"
 DB_PASS=$(gen_pass 20)
 MIGRATOR_USER="aipbx_migrator"
@@ -299,15 +300,24 @@ if [[ "${TABLE_COUNT:-0}" -eq 0 ]]; then
     # Create admin user with generated random password (no hardcoded admin123!)
     ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
     mysql asterisk -e "
-    INSERT IGNORE INTO sys_users (username, password_hash, full_name, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
-    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', 'admin', 1, 1, 1, 1);
+    INSERT IGNORE INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
+    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
     "
     ok "Database schema loaded and admin user created"
 else
     warn "Database already has ${TABLE_COUNT} tables — schema not reloaded."
-    # Update admin password on reinstall
     ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
-    mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
+    ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
+    if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
+        mysql asterisk -e "
+        INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
+        VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
+        "
+        ok "Admin user created in existing database"
+    else
+        mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
+        ok "Admin password updated in existing database"
+    fi
 fi
 
 ok "MariaDB configured"
@@ -538,6 +548,10 @@ chown -R asterisk:asterisk /etc/asterisk/
 systemctl restart asterisk
 systemctl enable asterisk
 
+# Sync initial endpoints, dialplans, and transports from DB to Asterisk
+info "Syncing database endpoints and dialplan to Asterisk..."
+php /var/www/html/src/asterisk_sync.php 2>/dev/null || true
+
 ok "Asterisk configured"
 
 # ============================================================================
@@ -625,11 +639,13 @@ cat > "$CREDS_FILE" << CREDS
   ⚠  KEEP THIS FILE SECURE — delete it after noting credentials
 ================================================================
 
-  WEB PORTAL
-  ──────────
+  WEB PORTAL & EXTENSION
+  ──────────────────────
   URL           : https://${PORTAL_DOMAIN}
   Admin User    : admin
   Admin Password: ${ADMIN_PASS}
+  Admin Exten   : 1000
+  Admin SIP Pass: ${ADMIN_SIP_PASS}
 
   DATABASE (MariaDB)
   ──────────────────
@@ -678,11 +694,13 @@ echo "  ║           ✅  AI PBX Installation Complete!                  ║"
 echo "  ╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
-echo -e "  ${BOLD}WEB PORTAL${NC}"
+echo -e "  ${BOLD}WEB PORTAL & DEFAULT EXTENSION${NC}"
 echo -e "  ┌─────────────────────────────────────────────────────────┐"
-echo -e "  │  URL      : ${CYAN}https://${PORTAL_DOMAIN}${NC}"
-echo -e "  │  Username : ${YELLOW}admin${NC}"
-echo -e "  │  Password : ${YELLOW}${ADMIN_PASS}${NC}"
+echo -e "  │  URL          : ${CYAN}https://${PORTAL_DOMAIN}${NC}"
+echo -e "  │  Username     : ${YELLOW}admin${NC}"
+echo -e "  │  Password     : ${YELLOW}${ADMIN_PASS}${NC}"
+echo -e "  │  Extension    : ${YELLOW}1000${NC} (Web/Mobile/SIP)"
+echo -e "  │  SIP Password : ${YELLOW}${ADMIN_SIP_PASS}${NC}"
 echo -e "  └─────────────────────────────────────────────────────────┘"
 echo ""
 
