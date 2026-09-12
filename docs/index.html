@@ -3,24 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI PBX — Modern Open Source Enterprise IP PBX</title>
+    <title>AI PBX — Modern Open Source Enterprise IP PBX &amp; Unified Communications</title>
+    <meta name="description" content="AI PBX is a modern open-source enterprise IP PBX and Unified Communications platform by Mahir Gül (mhrgl.com). Integrating Asterisk 22, Nginx L4 ALPN stream multiplexing, WebRTC, Go instant messaging, and a native Android app.">
+    <meta name="author" content="Mahir Gül (mhrgl.com)">
+    
+    <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-light: #eff6ff;
+            --primary: #008FD0;
+            --primary-hover: #0077b0;
+            --primary-light: rgba(0, 143, 208, 0.12);
             --accent: #10b981;
-            --dark-bg: #0f172a;
-            --card-bg: #1e293b;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #f59e0b;
+            --dark-bg: #090e17;
+            --dark-surface: #0f172a;
+            --card-bg: #141f33;
+            --card-border: #1e2e4a;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --border: #334155;
+            --border: #243552;
+            --gradient-accent: linear-gradient(135deg, #008FD0 0%, #10b981 100%);
+            --gradient-card: linear-gradient(180deg, rgba(20, 31, 51, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
         }
 
         * {
@@ -29,52 +43,80 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--dark-bg);
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.65;
             overflow-x: hidden;
         }
 
-        /* Navigation */
+        .top-banner {
+            background: linear-gradient(90deg, #0284c7 0%, #0d9488 100%);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 7px 16px;
+            letter-spacing: 0.02em;
+        }
+
+        .top-banner a {
+            color: #fff;
+            text-decoration: underline;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
         nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 8%;
+            padding: 16px 6%;
             border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
             position: sticky;
             top: 0;
-            z-index: 100;
-            background: rgba(15, 23, 42, 0.85);
+            z-index: 1000;
+            background: rgba(9, 14, 23, 0.88);
         }
 
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.3rem;
-            font-weight: 700;
+            font-size: 1.35rem;
+            font-weight: 800;
             color: #fff;
             text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .logo img {
+            height: 38px;
+            width: auto;
+            border-radius: 8px;
         }
 
         .logo-badge {
-            background: linear-gradient(135deg, #3b82f6, #10b981);
+            background: var(--gradient-accent);
             color: white;
-            padding: 4px 8px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 28px;
+            gap: 22px;
             list-style: none;
         }
 
@@ -82,12 +124,40 @@
             color: var(--text-muted);
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             transition: color 0.2s ease;
         }
 
         .nav-links a:hover {
             color: #fff;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-mhrgl {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 143, 208, 0.15);
+            border: 1px solid rgba(0, 143, 208, 0.4);
+            color: #38bdf8;
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.86rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-mhrgl:hover {
+            background: rgba(0, 143, 208, 0.25);
+            border-color: #38bdf8;
+            color: #fff;
+            transform: translateY(-1px);
         }
 
         .btn-github {
@@ -97,48 +167,73 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: #fff;
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.86rem;
             transition: all 0.2s ease;
         }
 
         .btn-github:hover {
-            background: #27354a;
-            border-color: #475569;
+            background: #1e2c45;
+            border-color: #38bdf8;
         }
 
-        /* Hero Section */
         .hero {
-            padding: 100px 8% 80px;
+            padding: 80px 6% 60px;
             text-align: center;
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 143, 208, 0.18) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .hero-tag {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
+            gap: 10px;
+            padding: 6px 18px;
             border-radius: 30px;
-            background: rgba(37, 99, 235, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
+            background: rgba(0, 143, 208, 0.12);
+            border: 1px solid rgba(0, 143, 208, 0.3);
+            color: #38bdf8;
             font-size: 0.85rem;
             font-weight: 600;
             margin-bottom: 24px;
         }
 
+        .hero-tag a {
+            color: #10b981;
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
         .hero h1 {
-            font-size: 3.5rem;
+            font-size: 3.8rem;
             font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.15;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
             margin-bottom: 24px;
-            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            background: linear-gradient(180deg, #ffffff 10%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 span {
+            background: var(--gradient-accent);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -146,15 +241,17 @@
         .hero p {
             font-size: 1.25rem;
             color: var(--text-muted);
-            max-width: 780px;
+            max-width: 880px;
             margin: 0 auto 36px;
+            line-height: 1.7;
         }
 
         .hero-actions {
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 14px;
             flex-wrap: wrap;
+            margin-bottom: 48px;
         }
 
         .btn-primary {
@@ -163,18 +260,19 @@
             gap: 10px;
             background: var(--primary);
             color: #fff;
-            padding: 14px 28px;
+            padding: 14px 30px;
             border-radius: 10px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1rem;
             text-decoration: none;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 24px rgba(0, 143, 208, 0.4);
         }
 
         .btn-primary:hover {
             background: var(--primary-hover);
             transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 143, 208, 0.5);
         }
 
         .btn-secondary {
@@ -184,7 +282,7 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: #fff;
-            padding: 14px 28px;
+            padding: 14px 26px;
             border-radius: 10px;
             font-weight: 600;
             font-size: 1rem;
@@ -193,29 +291,35 @@
         }
 
         .btn-secondary:hover {
-            background: #27354a;
-            border-color: #64748b;
+            background: #1e2c45;
+            border-color: #38bdf8;
+            transform: translateY(-1px);
         }
 
-        /* Quick Install Terminal */
         .terminal-container {
-            max-width: 820px;
-            margin: 50px auto 0;
-            background: #090d16;
+            max-width: 880px;
+            margin: 0 auto;
+            background: #070c14;
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
             text-align: left;
         }
 
         .terminal-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            background: #141c2e;
+            justify-content: space-between;
+            padding: 12px 18px;
+            background: #0f1826;
             border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dots {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .terminal-dot {
@@ -229,53 +333,333 @@
         .dot-green { background: #10b981; }
 
         .terminal-title {
-            margin-left: 8px;
             font-size: 0.8rem;
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
         }
 
+        .terminal-copy {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.2s;
+        }
+
+        .terminal-copy:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
         .terminal-body {
             padding: 24px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.95rem;
-            color: #38bdf8;
-            line-height: 1.7;
+            font-size: 0.94rem;
+            line-height: 1.75;
+            color: #e2e8f0;
         }
 
-        .terminal-comment {
-            color: #64748b;
-        }
+        .terminal-comment { color: #64748b; }
+        .terminal-cmd { color: #38bdf8; font-weight: 600; }
+        .terminal-success { color: #10b981; }
+        .terminal-yellow { color: #f59e0b; }
 
-        /* Features Section */
-        .features {
-            padding: 100px 8%;
-            background: #0b1120;
+        section {
+            padding: 90px 6%;
             border-top: 1px solid var(--border);
         }
 
         .section-header {
             text-align: center;
-            max-width: 700px;
-            margin: 0 auto 60px;
+            max-width: 860px;
+            margin: 0 auto 55px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: rgba(0, 143, 208, 0.15);
+            border: 1px solid rgba(0, 143, 208, 0.3);
+            color: #38bdf8;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin-bottom: 16px;
         }
 
         .section-header h2 {
-            font-size: 2.3rem;
-            font-weight: 700;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
             margin-bottom: 16px;
+            color: #fff;
         }
 
         .section-header p {
             color: var(--text-muted);
+            font-size: 1.15rem;
+            line-height: 1.65;
+        }
+
+        .rationale-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 26px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .rationale-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 32px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .rationale-card:hover {
+            border-color: #008FD0;
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(0, 143, 208, 0.15);
+        }
+
+        .rationale-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(0, 143, 208, 0.18);
+            border: 1px solid rgba(0, 143, 208, 0.35);
+            color: #38bdf8;
+            font-weight: 800;
             font-size: 1.1rem;
+            margin-bottom: 18px;
+        }
+
+        .rationale-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+
+        .rationale-block {
+            margin-bottom: 14px;
+        }
+
+        .rationale-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .label-problem { color: #f87171; }
+        .label-solution { color: #34d399; }
+        .label-impact { color: #38bdf8; }
+
+        .rationale-text {
+            color: var(--text-muted);
+            font-size: 0.93rem;
+            line-height: 1.6;
+        }
+
+        .arch-diagram-box {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #080d17;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 34px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow-x: auto;
+        }
+
+        .arch-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-width: 760px;
+        }
+
+        .arch-layer {
+            background: #0f1826;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 22px;
+        }
+
+        .arch-layer-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .arch-node-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .arch-node {
+            background: #162238;
+            border: 1px solid #223555;
+            border-radius: 10px;
+            padding: 12px 16px;
+            transition: all 0.2s;
+        }
+
+        .arch-node:hover {
+            border-color: #38bdf8;
+            background: #1c2b47;
+        }
+
+        .arch-node-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .arch-node-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .arch-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            font-size: 0.88rem;
+            font-weight: 600;
+            gap: 8px;
+        }
+
+        .android-showcase {
+            background: #0a101d;
+        }
+
+        .mobile-container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 48px;
+            align-items: center;
+            max-width: 1220px;
+            margin: 0 auto;
+        }
+
+        .mobile-content h3 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 18px;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .mobile-content p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin-bottom: 24px;
+            line-height: 1.7;
+        }
+
+        .mobile-features-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .mobile-feat-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .mobile-feat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(0, 143, 208, 0.2);
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .mobile-feat-text strong {
+            display: block;
+            color: #fff;
+            font-size: 0.98rem;
+            margin-bottom: 2px;
+        }
+
+        .mobile-feat-text span {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .mobile-screens-wrapper {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .phone-mockup {
+            width: 31%;
+            max-width: 220px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border: 2px solid #223555;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            background: #000;
+        }
+
+        .phone-mockup:hover {
+            transform: translateY(-8px) scale(1.03);
+            border-color: #38bdf8;
+            z-index: 2;
+        }
+
+        .phone-mockup img {
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 28px;
-            max-width: 1200px;
+            gap: 26px;
+            max-width: 1240px;
             margin: 0 auto;
         }
 
@@ -283,12 +667,12 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 32px;
+            padding: 30px;
             transition: all 0.25s ease;
         }
 
         .feature-card:hover {
-            border-color: #475569;
+            border-color: #38bdf8;
             transform: translateY(-4px);
         }
 
@@ -296,212 +680,883 @@
             width: 48px;
             height: 48px;
             border-radius: 10px;
-            background: rgba(37, 99, 235, 0.2);
+            background: rgba(0, 143, 208, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .feature-card h3 {
-            font-size: 1.3rem;
-            font-weight: 600;
+            font-size: 1.25rem;
+            font-weight: 700;
             margin-bottom: 12px;
+            color: #fff;
         }
 
         .feature-card p {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.94rem;
             line-height: 1.6;
         }
 
-        /* Architecture Matrix */
-        .tech-stack {
-            padding: 80px 8%;
-            text-align: center;
-        }
-
-        .stack-badges {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-top: 30px;
-        }
-
-        .badge-item {
-            background: var(--card-bg);
+        .table-container {
+            max-width: 1050px;
+            margin: 0 auto;
+            overflow-x: auto;
+            background: #090e17;
             border: 1px solid var(--border);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 0.9rem;
+            border-radius: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.94rem;
+        }
+
+        th, td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #1a273d;
+        }
+
+        th {
+            background: #101929;
+            color: #cbd5e1;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        td.highlight {
+            background: rgba(0, 143, 208, 0.08);
+            color: #38bdf8;
             font-weight: 600;
         }
 
-        /* Footer */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 40px 8%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            flex-wrap: wrap;
-            gap: 20px;
+        .developer-section {
+            background: radial-gradient(circle at center, rgba(0, 143, 208, 0.12) 0%, rgba(9, 14, 23, 0.9) 70%);
         }
 
-        footer a {
-            color: #60a5fa;
+        .dev-card {
+            max-width: 920px;
+            margin: 0 auto;
+            background: var(--gradient-card);
+            border: 1px solid rgba(0, 143, 208, 0.4);
+            border-radius: 20px;
+            padding: 44px;
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 36px;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0, 143, 208, 0.15);
+        }
+
+        .dev-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #008FD0, #10b981);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            font-weight: 800;
+            box-shadow: 0 8px 24px rgba(0, 143, 208, 0.4);
+        }
+
+        .dev-info h3 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .dev-domain {
+            display: inline-block;
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 14px;
             text-decoration: none;
         }
 
+        .dev-domain:hover {
+            text-decoration: underline;
+        }
+
+        .dev-bio {
+            color: var(--text-muted);
+            font-size: 0.96rem;
+            line-height: 1.65;
+            margin-bottom: 20px;
+        }
+
+        .dev-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .dev-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .dev-btn-main {
+            background: var(--primary);
+            color: white;
+        }
+
+        .dev-btn-main:hover {
+            background: var(--primary-hover);
+        }
+
+        .dev-btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #cbd5e1;
+        }
+
+        .dev-btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 50px 6% 36px;
+            background: #060a10;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            max-width: 1240px;
+            margin: 0 auto 40px;
+        }
+
+        .footer-brand h4 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .footer-col h5 {
+            color: #fff;
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-col a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: #38bdf8;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #141f30;
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #64748b;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+            gap: 16px;
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        .footer-bottom a {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+
+        .footer-bottom a:hover {
+            color: #38bdf8;
+        }
+
+        @media (max-width: 980px) {
+            .hero h1 { font-size: 2.8rem; }
+            .mobile-container { grid-template-columns: 1fr; }
+            .mobile-screens-wrapper { margin-top: 30px; }
+            .dev-card { grid-template-columns: 1fr; text-align: center; }
+            .dev-avatar { margin: 0 auto; }
+            .dev-links { justify-content: center; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
+            .hero h1 { font-size: 2.2rem; }
             .nav-links { display: none; }
-            footer { flex-direction: column; text-align: center; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .phone-mockup { width: 45%; }
+            .phone-mockup:last-child { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header Navigation -->
+    <div class="top-banner">
+        🚀 AiPBX v1.0 LTS is Live — Turnkey open-source enterprise telephony. 
+        Architected by <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a>
+    </div>
+
     <nav>
         <a href="#" class="logo">
-            <img src="logo.png" alt="AI PBX" style="height: 38px; width: auto; border-radius: 6px;">
+            <img src="logo.png" alt="AI PBX Logo">
             <span>AI PBX</span>
-            <span class="logo-badge">Open Source</span>
+            <span class="logo-badge">LTS</span>
         </a>
         <ul class="nav-links">
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#rationale">Why &amp; How</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#android">Android App</a></li>
             <li><a href="#features">Features</a></li>
             <li><a href="#install">Quick Install</a></li>
-            <li><a href="#tech">Tech Stack</a></li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/ARCHITECTURE.md">Architecture</a></li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/INSTALL.md">Documentation</a></li>
+            <li><a href="#developer">mhrgl.com</a></li>
+            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a></li>
         </ul>
-        <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-            GitHub
-        </a>
+        <div class="nav-actions">
+            <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl">
+                🌐 mhrgl.com
+            </a>
+            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                GitHub
+            </a>
+        </div>
     </nav>
 
-    <!-- Hero -->
-    <header class="hero">
+    <header class="hero" id="overview">
         <div class="hero-tag">
-            <span>🚀 Modern Unified Communications Platform</span>
+            <span>✨ Open Source Enterprise Communications • Created by <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
         </div>
-        <h1>Enterprise IP PBX Telephony, Reimagined.</h1>
+        <h1>Enterprise IP Telephony, <span>Engineered with Purpose.</span></h1>
         <p>
-            An open-source, web-managed IP telephony powerhouse integrating Asterisk 22, WebRTC in-browser calls, Go instant messaging, and a native Android app.
+            A high-concurrency, web-managed IP PBX uniting Asterisk 22, Nginx L4 ALPN stream multiplexing, PHP 8 MVC, Go real-time instant messaging, and a native Android client.
         </p>
         <div class="hero-actions">
             <a href="#install" class="btn-primary">
                 ⚡ Quick Install
             </a>
-            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-secondary">
-                View on GitHub
+            <a href="#rationale" class="btn-secondary">
+                🧠 Why &amp; How We Built It
+            </a>
+            <a href="#android" class="btn-secondary">
+                📱 Android App
+            </a>
+            <a href="https://mhrgl.com" target="_blank" class="btn-secondary">
+                🌐 Visit mhrgl.com
             </a>
         </div>
 
-        <!-- Terminal Card -->
-        <div class="terminal-container" id="install">
+        <div class="terminal-container">
             <div class="terminal-header">
-                <span class="terminal-dot dot-red"></span>
-                <span class="terminal-dot dot-yellow"></span>
-                <span class="terminal-dot dot-green"></span>
-                <span class="terminal-title">bash — fresh install on Ubuntu LTS</span>
+                <div class="terminal-dots">
+                    <span class="terminal-dot dot-red"></span>
+                    <span class="terminal-dot dot-yellow"></span>
+                    <span class="terminal-dot dot-green"></span>
+                </div>
+                <span class="terminal-title">bash — Automated One-Command Installation (Ubuntu 22/24/26 LTS)</span>
+                <button class="terminal-copy" onclick="navigator.clipboard.writeText('git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx && cd /opt/aipbx && sudo bash install.sh'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000)">Copy</button>
             </div>
             <div class="terminal-body">
-                <span class="terminal-comment"># 1. Clone the repository</span><br>
-                git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx<br>
-                cd /opt/aipbx<br><br>
-                <span class="terminal-comment"># 2. Run automated fresh installer (auto-generates all passwords &amp; TLS)</span><br>
-                sudo bash install.sh<br>
+                <span class="terminal-comment"># 1. Clone the official repository</span><br>
+                <span class="terminal-cmd">git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx</span><br>
+                <span class="terminal-cmd">cd /opt/aipbx</span><br><br>
+                <span class="terminal-comment"># 2. Run turnkey automated installer (zero hardcoded passwords)</span><br>
+                <span class="terminal-cmd">sudo bash install.sh</span><br><br>
+                <span class="terminal-success">✔ Nginx L4 ALPN Stream Multiplexer configured on Port 443</span><br>
+                <span class="terminal-success">✔ Apache 2.4 Backend active on Port 80 &amp; 8443</span><br>
+                <span class="terminal-success">✔ Asterisk 22 PJSIP &amp; WebRTC running (endpoints synced)</span><br>
+                <span class="terminal-success">✔ Coturn TURNS media relay active on Port 5349</span><br>
+                <span class="terminal-success">✔ Go Real-Time WebSocket Chat service active on Port 8086</span><br>
+                <span class="terminal-yellow">★ Default Admin Extension 1000 provisioned &amp; ready out-of-the-box!</span>
             </div>
         </div>
     </header>
 
-    <!-- Features Section -->
-    <section class="features" id="features">
+    <section id="rationale">
         <div class="section-header">
-            <h2>Engineered for Reliability &amp; Control</h2>
+            <span class="section-badge">Engineering Deep Dive</span>
+            <h2>Architectural Rationale: Why &amp; How We Built It</h2>
+            <p>
+                Every engineering decision in AiPBX was made to resolve real-world pain points found in traditional PBX systems: restrictive firewalls, split identities, bloated dependencies, and security vulnerabilities.
+            </p>
+        </div>
+
+        <div class="rationale-grid">
+            <div class="rationale-card">
+                <div class="rationale-num">1</div>
+                <h3>Why Port 443 ALPN Multiplexing?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        Enterprise, university, and hotel firewalls block non-standard ports (5060 SIP, 8088 WS, 3478/5349 TURN). Remote workers and mobile users fail to establish WebRTC media behind these strict NATs.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        Nginx operates at L4 using <code>ssl_preread on</code> on Port 443. It inspects the TLS ClientHello ALPN string without decrypting: connections with ALPN (<code>h2</code>, <code>http/1.1</code>) go to Apache (8443); non-ALPN traffic goes to Coturn (5349).
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Web portal, mobile API, WebSocket signaling, and WebRTC TURNS media relay all share standard Port 443 without certificate duplication. 100% firewall traversal!
+                    </div>
+                </div>
+            </div>
+
+            <div class="rationale-card">
+                <div class="rationale-num">2</div>
+                <h3>Why Dedicated Port 80 for ACME?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        Let's Encrypt / Certbot renewal bots do NOT send ALPN extensions. If Port 80 unconditionally redirected ACME challenges to Port 443, Nginx would route them to Coturn, causing automated SSL renewals to permanently fail.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        Apache owns Port 80 directly. It serves <code>/.well-known/acme-challenge/</code> locally without redirection, while permanently 301-redirecting all standard browsing traffic to HTTPS.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Automated zero-touch Let's Encrypt certificate issuance and quarterly renewals execute seamlessly without manual administrator intervention.
+                    </div>
+                </div>
+            </div>
+
+            <div class="rationale-card">
+                <div class="rationale-num">3</div>
+                <h3>Why Dual-Endpoint Architecture?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        Traditional PBXs require separate extension numbers for desk phones (e.g. 1001) and softphones/mobile apps (e.g. 2001). This breaks call transfers, fragments CDR reporting, and confuses callers.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        A single extension (e.g. <code>1000</code>) controls dual PJSIP endpoints: <code>1000-sip</code> (hardware desk phone via UDP/TCP 5060) and <code>1000-mob-webrtc</code> (Android &amp; web softphone via WSS).
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Both endpoints ring simultaneously. If answered on mobile, the desk phone silences. Outbound calls show the exact same caller ID and CDR history is unified.
+                    </div>
+                </div>
+            </div>
+
+            <div class="rationale-card">
+                <div class="rationale-num">4</div>
+                <h3>Why Standalone Go Chat Service?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        PHP is stateless and request-driven. Maintaining persistent WebSocket connections in PHP exhausts server memory, introduces process locking, and scales poorly with concurrent chat users.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        Built an independent Go microservice with Gorilla WebSocket on Port 8086. It compiles to a self-contained static binary (<code>CGO_ENABLED=0</code>) requiring under 20MB RAM.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Supports thousands of concurrent connections with native Goroutines. Provides instant message delivery, typing indicators, read receipts, and file transfers with negligible CPU footprint.
+                    </div>
+                </div>
+            </div>
+
+            <div class="rationale-card">
+                <div class="rationale-num">5</div>
+                <h3>Why Native Kotlin + Headless WebRTC?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        Third-party Android native SIP SDKs (PJSIP C-wrappers, Linphone) bloat APKs to 40MB+, crash unpredictably across Android 12-16 vendor skins, and struggle with background Doze mode.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        Kotlin manages Android system integration (Foreground Service, Telecom, FCM wake-up, UI, SQLite, Chat, Logs), while a headless WebView executes a standard WebRTC engine (<code>phone_engine.html</code>).
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Featherweight 2.8 MB APK, 100% standards-compliant WebRTC Opus audio, zero native library crashes, and instantaneous incoming call wake-up even when the phone is asleep.
+                    </div>
+                </div>
+            </div>
+
+            <div class="rationale-card">
+                <div class="rationale-num">6</div>
+                <h3>Why Two-Tier MariaDB Privileges?</h3>
+                <div class="rationale-block">
+                    <div class="rationale-label label-problem">⚠ The Challenge</div>
+                    <div class="rationale-text">
+                        Most web portals use a single database account with full DDL rights. If an SQL injection exploit occurs, attackers can execute <code>DROP TABLE</code> or alter critical PBX configuration tables.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-solution">💡 Our Architectural Solution</div>
+                    <div class="rationale-text">
+                        Two separate database users: <code>aipbx_portal</code> only has DML rights (<code>SELECT, INSERT, UPDATE, DELETE</code>), while <code>aipbx_migrator</code> is used solely for DDL migrations.
+                    </div>
+                </div>
+                <div class="rationale-block">
+                    <div class="rationale-label label-impact">🚀 Real-World Impact</div>
+                    <div class="rationale-text">
+                        Even in worst-case application flaws, attackers cannot destroy schema structures or grant themselves elevated privileges.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture">
+        <div class="section-header">
+            <span class="section-badge">System Topology</span>
+            <h2>Unified Layered Architecture</h2>
+            <p>High-concurrency edge multiplexing passing cleanly to application and telephony engines.</p>
+        </div>
+
+        <div class="arch-diagram-box">
+            <div class="arch-flow">
+                <div class="arch-layer">
+                    <div class="arch-layer-title">
+                        <span>Layer 1: Client Interfaces</span>
+                        <span style="color:#38bdf8;">WebRTC · SIP · WebSocket · REST API</span>
+                    </div>
+                    <div class="arch-node-grid">
+                        <div class="arch-node">
+                            <div class="arch-node-name">📱 Android App</div>
+                            <div class="arch-node-desc">Kotlin + WebRTC (Build 30)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">💻 Browser Softphone</div>
+                            <div class="arch-node-desc">WebRTC Opus + SIP.js</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">☎ SIP Desk Phone</div>
+                            <div class="arch-node-desc">Hardware VoIP (Port 5060)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">🖥 Web Admin Portal</div>
+                            <div class="arch-node-desc">PHP 8 MVC Responsive UI</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-connector">
+                    <span>▼ TLS Port 443 / SIP Port 5060 / HTTP Port 80 ▼</span>
+                </div>
+
+                <div class="arch-layer" style="border-color: #008FD0;">
+                    <div class="arch-layer-title">
+                        <span>Layer 2: Edge Ingress — Nginx ALPN Multiplexer</span>
+                        <span style="color:#10b981;">Non-decrypting L4 TCP Stream Router</span>
+                    </div>
+                    <div class="arch-node-grid">
+                        <div class="arch-node" style="border-color: #008FD0;">
+                            <div class="arch-node-name">ALPN: http/1.1 or h2</div>
+                            <div class="arch-node-desc">Forwarded to Apache 2.4 (127.0.0.1:8443)</div>
+                        </div>
+                        <div class="arch-node" style="border-color: #10b981;">
+                            <div class="arch-node-name">ALPN: Empty / None</div>
+                            <div class="arch-node-desc">Forwarded to coturn TURNS (127.0.0.1:5349)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-connector">
+                    <span>▼ Decrypted TLS &amp; Internal Proxies ▼</span>
+                </div>
+
+                <div class="arch-layer">
+                    <div class="arch-layer-title">
+                        <span>Layer 3: Application &amp; Telephony Engines</span>
+                        <span style="color:#8b5cf6;">Core Business &amp; Voice Logic</span>
+                    </div>
+                    <div class="arch-node-grid">
+                        <div class="arch-node">
+                            <div class="arch-node-name">PHP 8 MVC (Apache)</div>
+                            <div class="arch-node-desc">Port 8443 / Admin Portal</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">Asterisk 22 PJSIP</div>
+                            <div class="arch-node-desc">Port 8088 (/ws) + 5060 (SIP)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">Go Chat Service</div>
+                            <div class="arch-node-desc">Port 8086 (/chat/ws)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">coturn Media Relay</div>
+                            <div class="arch-node-desc">Port 5349 (TURNS) + 3478</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-connector">
+                    <span>▼ High-Performance Data Access ▼</span>
+                </div>
+
+                <div class="arch-layer">
+                    <div class="arch-layer-title">
+                        <span>Layer 4: Data &amp; Security Layer</span>
+                        <span style="color:#f59e0b;">MariaDB 11 · Least Privilege · fail2ban</span>
+                    </div>
+                    <div class="arch-node-grid">
+                        <div class="arch-node">
+                            <div class="arch-node-name">MariaDB: aipbx_portal</div>
+                            <div class="arch-node-desc">Runtime DML (SELECT, INSERT, UPDATE, DELETE)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">MariaDB: aipbx_migrator</div>
+                            <div class="arch-node-desc">DDL Migrations (CREATE, ALTER, DROP)</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="arch-node-name">fail2ban Protection</div>
+                            <div class="arch-node-desc">SIP, SSH, and Portal brute-force jail</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="android-showcase" id="android">
+        <div class="mobile-container">
+            <div class="mobile-content">
+                <span class="section-badge">Mobile Companion</span>
+                <h3>Native Android App for Enterprise PBX</h3>
+                <p>
+                    AiPBX includes a first-class native Android application written in Kotlin. It transforms any smartphone into an enterprise extension with zero complex configurations.
+                </p>
+
+                <ul class="mobile-features-list">
+                    <li class="mobile-feat-item">
+                        <div class="mobile-feat-icon">⚡</div>
+                        <div class="mobile-feat-text">
+                            <strong>Instant FCM Background Wake-Up</strong>
+                            <span>Incoming calls trigger high-priority push notifications, waking the device from deep sleep with a native ringer.</span>
+                        </div>
+                    </li>
+                    <li class="mobile-feat-item">
+                        <div class="mobile-feat-icon">💬</div>
+                        <div class="mobile-feat-text">
+                            <strong>Built-in Team Chat Tab</strong>
+                            <span>Real-time instant messaging powered by Go WebSockets with typing indicators and image attachments.</span>
+                        </div>
+                    </li>
+                    <li class="mobile-feat-item">
+                        <div class="mobile-feat-icon">🔄</div>
+                        <div class="mobile-feat-text">
+                            <strong>Live Call Forwarding (CFU / CFB / CFNR)</strong>
+                            <span>Adjust call forward rules (Always, Busy, No-Answer) directly from the mobile settings in real time.</span>
+                        </div>
+                    </li>
+                    <li class="mobile-feat-item">
+                        <div class="mobile-feat-icon">📑</div>
+                        <div class="mobile-feat-text">
+                            <strong>In-App Diagnostics Log Viewer</strong>
+                            <span>Engineers can view, filter, and export full SIP, WebRTC, and HTTP network logs directly from the device.</span>
+                        </div>
+                    </li>
+                </ul>
+
+                <div>
+                    <a href="https://github.com/mahirgul/AiPBX/tree/main/android" target="_blank" class="btn-primary">
+                        View Android Source Code
+                    </a>
+                </div>
+            </div>
+
+            <div class="mobile-screens-wrapper">
+                <div class="phone-mockup">
+                    <img src="img/screenshot_dialer.png" alt="AiPBX Dialer Screen">
+                </div>
+                <div class="phone-mockup">
+                    <img src="img/screenshot_call.png" alt="AiPBX Active Call Screen">
+                </div>
+                <div class="phone-mockup">
+                    <img src="img/screenshot_contacts.png" alt="AiPBX Corporate Contacts Screen">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features">
+        <div class="section-header">
+            <span class="section-badge">Full Feature Set</span>
+            <h2>Comprehensive Enterprise Suite</h2>
             <p>Everything your enterprise needs for secure voice, messaging, and administration.</p>
         </div>
 
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">📞</div>
-                <h3>Dual-Endpoint PBX</h3>
-                <p>Seamless PJSIP architecture where every extension works simultaneously on standard SIP desk phones and WebRTC softphones.</p>
+                <h3>Advanced Call Routing</h3>
+                <p>Multi-level IVR, time conditions, DID mapping, ring groups, call queues, call transfers, and custom hold music streams.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">🌐</div>
-                <h3>WebRTC Softphone</h3>
-                <p>In-browser zero-install SIP phone powered by Opus HD audio and integrated coturn TURN/STUN NAT traversal.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📱</div>
-                <h3>Native Android App</h3>
-                <p>Full-featured Kotlin mobile application with FCM background wake-up, built-in real-time chat, and diagnostics log viewer.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <h3>Real-Time Chat Engine</h3>
-                <p>Lightning-fast instant messaging service built in Go with WebSocket event streaming, typing indicators, and read receipts.</p>
+                <h3>WebRTC In-Browser Softphone</h3>
+                <p>Zero-install browser phone with Opus HD audio, DTLS-SRTP encryption, and automatic coturn STUN/TURN NAT traversal.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">📠</div>
-                <h3>Digital Fax Center</h3>
-                <p>Inbound and outbound T.38 / G.711 fax server with browser WYSIWYG editor, PDF upload, auto-retry, and email forwarding.</p>
+                <h3>Digital Fax Server</h3>
+                <p>Inbound and outbound T.38 / G.711 fax center with browser WYSIWYG editor, PDF uploads, auto-retries, and email forwarding.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Flexible Ingress (Nginx / Apache)</h3>
-                <p>Enterprise edge reverse proxy options with TLS 1.3, HTTP/2, and long-lived WebSocket multiplexing for Asterisk SIP and Go Chat on unified port 443.</p>
+                <div class="feature-icon">📊</div>
+                <h3>Live Call Center Monitor</h3>
+                <p>Real-time queue monitoring, agent login/logout/pause status, live call timers, and browser-based call recording playback.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>Real-Time Instant Messaging</h3>
+                <p>High-concurrency Go WebSocket chat hub with typing status, delivery receipts, avatar support, and mobile push alerts.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">🔒</div>
-                <h3>Enterprise Security</h3>
-                <p>Least-privilege MariaDB separation (DML vs DDL), fail2ban protection, CSRF validation, and brute-force lockout.</p>
+                <h3>Hardened Security Core</h3>
+                <p>Two-tier MariaDB isolation, CSRF validation, brute-force IP lockout, fail2ban integration, and zero default passwords.</p>
             </div>
         </div>
     </section>
 
-    <!-- Tech Stack Matrix -->
-    <section class="tech-stack" id="tech">
+    <section>
         <div class="section-header">
-            <h2>Modern Technology Stack</h2>
-            <p>Built with battle-tested open-source components.</p>
+            <span class="section-badge">Comparison</span>
+            <h2>How AiPBX Compares</h2>
+            <p>Modern architecture built for contemporary cloud, mobile, and security requirements.</p>
         </div>
 
-        <div class="stack-badges">
-            <span class="badge-item">Asterisk 22 LTS</span>
-            <span class="badge-item">Nginx &amp; Apache 2.4 (Edge WSS Proxy)</span>
-            <span class="badge-item">PHP 8.x (Strict MVC + PHP-FPM)</span>
-            <span class="badge-item">MariaDB 11</span>
-            <span class="badge-item">Go (Gorilla WS)</span>
-            <span class="badge-item">Android (Kotlin)</span>
-            <span class="badge-item">coturn (TURN/STUN)</span>
-            <span class="badge-item">fail2ban</span>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature / Architecture</th>
+                        <th style="color:#38bdf8;">AiPBX</th>
+                        <th>FreePBX / Issabel</th>
+                        <th>Proprietary IP PBX</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>License</strong></td>
+                        <td class="highlight">100% Free &amp; Open Source (MIT)</td>
+                        <td>GPL with commercial modules</td>
+                        <td>Expensive per-user license</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Firewall Bypass (Port 443)</strong></td>
+                        <td class="highlight">Nginx L4 ALPN Stream Multiplexer</td>
+                        <td>Requires separate IP or non-standard ports</td>
+                        <td>Proprietary SBC required</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mobile Client</strong></td>
+                        <td class="highlight">Included (Native Kotlin + WebRTC + Chat)</td>
+                        <td>Paid add-on (Zulu/Sangoma Connect)</td>
+                        <td>Separate expensive app license</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Instant Messaging (Chat)</strong></td>
+                        <td class="highlight">High-performance Go WebSocket engine</td>
+                        <td>XMPP / Prosody (heavy memory)</td>
+                        <td>Third-party integration needed</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dual-Endpoint Extension</strong></td>
+                        <td class="highlight">Native (Desk Phone + Web/Mobile in parallel)</td>
+                        <td>Manual multi-contact workarounds</td>
+                        <td>Additional seat fee</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Zero Default Passwords</strong></td>
+                        <td class="highlight">Cryptographically random for all services</td>
+                        <td>Static defaults common</td>
+                        <td>Varies by vendor</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div>
-            &copy; 2026 <strong>Mahir Gül</strong> &amp; AiPBX Contributors. Released under the <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE">MIT License</a>.
+    <section id="install">
+        <div class="section-header">
+            <span class="section-badge">Deployment</span>
+            <h2>Deploy in Less Than 5 Minutes</h2>
+            <p>Automated turnkey installer tested on Ubuntu 22.04, 24.04, and 26.04 LTS.</p>
         </div>
-        <div>
-            <a href="https://github.com/mahirgul/AiPBX">GitHub Repository</a> •
-            <a href="https://github.com/mahirgul/AiPBX/blob/main/INSTALL.md">Installation Guide</a> •
-            <a href="https://github.com/mahirgul/AiPBX/blob/main/ARCHITECTURE.md">Architecture</a>
+
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <span class="terminal-dot dot-red"></span>
+                    <span class="terminal-dot dot-yellow"></span>
+                    <span class="terminal-dot dot-green"></span>
+                </div>
+                <span class="terminal-title">Root Shell (Ubuntu LTS)</span>
+            </div>
+            <div class="terminal-body">
+                <span class="terminal-comment"># Prerequisites: Fresh Ubuntu LTS server with 2GB+ RAM and root access</span><br><br>
+                <span class="terminal-comment"># Step 1: Clone the repository</span><br>
+                <span class="terminal-cmd">git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx</span><br>
+                <span class="terminal-cmd">cd /opt/aipbx</span><br><br>
+                <span class="terminal-comment"># Step 2: Execute turnkey installation</span><br>
+                <span class="terminal-cmd">sudo bash install.sh</span><br><br>
+                <span class="terminal-comment"># Step 3: View generated credentials anytime</span><br>
+                <span class="terminal-cmd">cat /root/aipbx-credentials.txt</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="developer-section" id="developer">
+        <div class="dev-card">
+            <div class="dev-avatar">
+                MG
+            </div>
+            <div class="dev-info">
+                <h3>Mahir Gül</h3>
+                <a href="https://mhrgl.com" target="_blank" class="dev-domain">🌐 https://mhrgl.com</a>
+                <p class="dev-bio">
+                    Software engineer, systems architect, and creator of <strong>AiPBX</strong>. Passionate about high-concurrency communications, VoIP telephony, WebRTC, secure network infrastructure, and open-source software that empowers enterprises without vendor lock-in.
+                </p>
+                <div class="dev-links">
+                    <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-main">
+                        Visit mhrgl.com
+                    </a>
+                    <a href="https://www.mhrgl.com/privacy" target="_blank" class="dev-btn dev-btn-outline">
+                        Privacy Policy
+                    </a>
+                    <a href="https://github.com/mahirgul" target="_blank" class="dev-btn dev-btn-outline">
+                        GitHub Profile
+                    </a>
+                    <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="dev-btn dev-btn-outline">
+                        Star on GitHub ⭐
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h4><img src="logo.png" alt="AiPBX Logo" style="height: 24px; border-radius: 4px;"> AI PBX</h4>
+                <p>
+                    Modern open-source enterprise IP PBX and Unified Communications platform. Engineered for zero-friction firewall traversal, high concurrency, and complete telephony control.
+                </p>
+                <p>
+                    Created &amp; maintained by <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h5>Architecture</h5>
+                <ul>
+                    <li><a href="#rationale">Why &amp; How</a></li>
+                    <li><a href="#architecture">Ingress &amp; ALPN</a></li>
+                    <li><a href="#features">Dual-Endpoint PJSIP</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/ARCHITECTURE.md" target="_blank">Full Spec (Markdown)</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Components</h5>
+                <ul>
+                    <li><a href="#android">Android Mobile App</a></li>
+                    <li><a href="#features">WebRTC Softphone</a></li>
+                    <li><a href="#features">Go WebSocket Chat</a></li>
+                    <li><a href="#features">Digital Fax Server</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Links &amp; Developer</h5>
+                <ul>
+                    <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
+                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">Privacy Policy</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Repository</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/INSTALL.md" target="_blank">Install Documentation</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT License</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>
+                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Contributors. Released under the MIT License.
+            </div>
+            <div>
+                Built with Asterisk 22, Nginx, Apache, PHP 8, Go &amp; Kotlin.
+            </div>
         </div>
     </footer>
 
