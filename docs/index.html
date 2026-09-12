@@ -55,23 +55,28 @@
             overflow-x: hidden;
         }
 
+        /* Top Announcement */
         .top-banner {
             background: linear-gradient(90deg, #0284c7 0%, #0d9488 100%);
             color: white;
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.84rem;
+            font-weight: 500;
             text-align: center;
-            padding: 7px 16px;
-            letter-spacing: 0.02em;
+            padding: 7px 14px;
+            line-height: 1.4;
         }
 
         .top-banner a {
             color: #fff;
             text-decoration: underline;
             font-weight: 700;
-            margin-left: 6px;
+            margin-left: 4px;
         }
 
+        .banner-desktop { display: inline; }
+        .banner-mobile { display: none; }
+
+        /* Desktop Navigation */
         nav {
             display: flex;
             justify-content: space-between;
@@ -82,24 +87,27 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: rgba(9, 14, 23, 0.88);
+            background: rgba(9, 14, 23, 0.92);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             font-size: 1.35rem;
             font-weight: 800;
             color: #fff;
             text-decoration: none;
             letter-spacing: -0.02em;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .logo img {
-            height: 38px;
+            height: 36px;
             width: auto;
             border-radius: 8px;
+            flex-shrink: 0;
         }
 
         .logo-badge {
@@ -126,6 +134,7 @@
             font-weight: 500;
             font-size: 0.92rem;
             transition: color 0.2s ease;
+            white-space: nowrap;
         }
 
         .nav-links a:hover {
@@ -135,13 +144,14 @@
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
         .btn-mhrgl {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             background: rgba(0, 143, 208, 0.15);
             border: 1px solid rgba(0, 143, 208, 0.4);
             color: #38bdf8;
@@ -151,6 +161,8 @@
             font-weight: 600;
             font-size: 0.86rem;
             transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .btn-mhrgl:hover {
@@ -173,6 +185,8 @@
             font-weight: 600;
             font-size: 0.86rem;
             transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .btn-github:hover {
@@ -180,6 +194,131 @@
             border-color: #38bdf8;
         }
 
+        /* Hamburger Toggle Button */
+        .mobile-toggle-btn {
+            display: none;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #38bdf8;
+        }
+
+        .mobile-toggle-btn span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: #fff;
+            border-radius: 2px;
+            transition: all 0.25s;
+        }
+
+        /* Mobile Drawer & Backdrop */
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            max-width: 85vw;
+            height: 100vh;
+            background: #0d1524;
+            border-left: 1px solid var(--border);
+            z-index: 2000;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+        }
+
+        .mobile-drawer.open {
+            right: 0;
+        }
+
+        .mobile-drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .mobile-drawer-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+
+        .mobile-drawer-close:hover { color: #fff; }
+
+        .mobile-nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .mobile-nav-item {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.98rem;
+            font-weight: 600;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .mobile-nav-item:hover {
+            color: #38bdf8;
+            background: rgba(0, 143, 208, 0.1);
+        }
+
+        .mobile-drawer-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .mobile-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Hero */
         .hero {
             padding: 80px 6% 60px;
             text-align: center;
@@ -296,6 +435,7 @@
             transform: translateY(-1px);
         }
 
+        /* Terminal Window */
         .terminal-container {
             max-width: 880px;
             margin: 0 auto;
@@ -368,6 +508,7 @@
         .terminal-success { color: #10b981; }
         .terminal-yellow { color: #f59e0b; }
 
+        /* Section Layout */
         section {
             padding: 90px 6%;
             border-top: 1px solid var(--border);
@@ -407,6 +548,7 @@
             line-height: 1.65;
         }
 
+        /* Architectural Rationale */
         .rationale-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -478,6 +620,7 @@
             line-height: 1.6;
         }
 
+        /* Architecture Map */
         .arch-diagram-box {
             max-width: 1100px;
             margin: 0 auto;
@@ -557,6 +700,7 @@
             gap: 8px;
         }
 
+        /* Android Showcase */
         .android-showcase {
             background: #0a101d;
         }
@@ -655,6 +799,7 @@
             display: block;
         }
 
+        /* Features */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -701,6 +846,7 @@
             line-height: 1.6;
         }
 
+        /* Table */
         .table-container {
             max-width: 1050px;
             margin: 0 auto;
@@ -739,6 +885,7 @@
             font-weight: 600;
         }
 
+        /* Developer */
         .developer-section {
             background: radial-gradient(circle at center, rgba(0, 143, 208, 0.12) 0%, rgba(9, 14, 23, 0.9) 70%);
         }
@@ -836,6 +983,7 @@
             color: #fff;
         }
 
+        /* Footer */
         footer {
             border-top: 1px solid var(--border);
             padding: 50px 6% 36px;
@@ -917,6 +1065,7 @@
             color: #38bdf8;
         }
 
+        /* Responsive Breakpoints */
         @media (max-width: 980px) {
             .hero h1 { font-size: 2.8rem; }
             .mobile-container { grid-template-columns: 1fr; }
@@ -928,21 +1077,113 @@
         }
 
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.2rem; }
+            .banner-desktop { display: none; }
+            .banner-mobile { display: inline; font-size: 0.78rem; }
+            .top-banner { padding: 6px 10px; }
+
+            nav {
+                padding: 12px 4%;
+            }
             .nav-links { display: none; }
-            .footer-grid { grid-template-columns: 1fr; }
-            .phone-mockup { width: 45%; }
+            .desktop-only { display: none; }
+            .mobile-toggle-btn { display: flex; }
+
+            .logo {
+                font-size: 1.15rem;
+                gap: 8px;
+            }
+            .logo img {
+                height: 30px;
+            }
+            .logo-badge {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
+
+            .btn-mhrgl {
+                padding: 6px 10px;
+                font-size: 0.78rem;
+            }
+
+            .hero {
+                padding: 44px 4% 36px;
+            }
+            .hero-tag {
+                max-width: 96%;
+                font-size: 0.76rem;
+                padding: 5px 12px;
+                line-height: 1.45;
+                margin-bottom: 20px;
+            }
+            .hero h1 {
+                font-size: 2.05rem;
+                line-height: 1.18;
+                margin-bottom: 16px;
+            }
+            .hero p {
+                font-size: 0.96rem;
+                line-height: 1.6;
+                margin-bottom: 26px;
+                padding: 0 4px;
+            }
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                max-width: 320px;
+                margin: 0 auto 34px;
+            }
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                justify-content: center;
+                padding: 12px 20px;
+                font-size: 0.94rem;
+            }
+
+            .terminal-container {
+                margin: 0 2px;
+                border-radius: 10px;
+            }
+            .terminal-header {
+                padding: 10px 14px;
+            }
+            .terminal-body {
+                padding: 16px 12px;
+                font-size: 0.8rem;
+                line-height: 1.6;
+                overflow-x: auto;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+            .section-header p {
+                font-size: 0.96rem;
+            }
+
+            .rationale-grid {
+                grid-template-columns: 1fr;
+            }
+            .rationale-card {
+                padding: 24px;
+            }
+
+            .phone-mockup { width: 48%; }
             .phone-mockup:last-child { display: none; }
+
+            .footer-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Top Announcement -->
     <div class="top-banner">
-        🚀 AiPBX v1.0 LTS is Live — Turnkey open-source enterprise telephony. 
-        Architected by <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a>
+        <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS is Live</strong> — Turnkey open-source enterprise telephony. Architected by <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+        <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • By <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
     </div>
 
+    <!-- Navigation -->
     <nav>
         <a href="#" class="logo">
             <img src="logo.png" alt="AI PBX Logo">
@@ -963,13 +1204,50 @@
             <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl">
                 🌐 mhrgl.com
             </a>
-            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github">
+            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github desktop-only">
                 <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
                 GitHub
             </a>
+            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Toggle Navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </nav>
 
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-drawer" id="mobileDrawer">
+        <div class="mobile-drawer-header">
+            <div class="logo">
+                <img src="logo.png" alt="AI PBX Logo" style="height: 28px;">
+                <span>AI PBX</span>
+                <span class="logo-badge">LTS</span>
+            </div>
+            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">&times;</button>
+        </div>
+        <ul class="mobile-nav-links">
+            <li><a href="#overview" class="mobile-nav-item">🏠 Overview</a></li>
+            <li><a href="#rationale" class="mobile-nav-item">🧠 Why &amp; How (Neden ve Nasıl?)</a></li>
+            <li><a href="#architecture" class="mobile-nav-item">🏗 System Architecture</a></li>
+            <li><a href="#android" class="mobile-nav-item">📱 Android App</a></li>
+            <li><a href="#features" class="mobile-nav-item">⚡ Features</a></li>
+            <li><a href="#install" class="mobile-nav-item">💻 Quick Install</a></li>
+            <li><a href="#developer" class="mobile-nav-item">🌐 About Developer (mhrgl.com)</a></li>
+            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">🤝 Contributing Guide</a></li>
+        </ul>
+        <div class="mobile-drawer-actions">
+            <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center;">
+                🌐 Visit mhrgl.com
+            </a>
+            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
+                ⭐ View on GitHub
+            </a>
+        </div>
+    </div>
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+    <!-- Hero -->
     <header class="hero" id="overview">
         <div class="hero-tag">
             <span>✨ Open Source Enterprise Communications • Created by <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
@@ -993,6 +1271,7 @@
             </a>
         </div>
 
+        <!-- Terminal Card -->
         <div class="terminal-container">
             <div class="terminal-header">
                 <div class="terminal-dots">
@@ -1019,6 +1298,7 @@
         </div>
     </header>
 
+    <!-- SECTION 1: ARCHITECTURAL RATIONALE: WHY & HOW (Neyi Neden Yaptık?) -->
     <section id="rationale">
         <div class="section-header">
             <span class="section-badge">Engineering Deep Dive</span>
@@ -1029,6 +1309,7 @@
         </div>
 
         <div class="rationale-grid">
+            <!-- Decision 1 -->
             <div class="rationale-card">
                 <div class="rationale-num">1</div>
                 <h3>Why Port 443 ALPN Multiplexing?</h3>
@@ -1052,6 +1333,7 @@
                 </div>
             </div>
 
+            <!-- Decision 2 -->
             <div class="rationale-card">
                 <div class="rationale-num">2</div>
                 <h3>Why Dedicated Port 80 for ACME?</h3>
@@ -1075,6 +1357,7 @@
                 </div>
             </div>
 
+            <!-- Decision 3 -->
             <div class="rationale-card">
                 <div class="rationale-num">3</div>
                 <h3>Why Dual-Endpoint Architecture?</h3>
@@ -1098,6 +1381,7 @@
                 </div>
             </div>
 
+            <!-- Decision 4 -->
             <div class="rationale-card">
                 <div class="rationale-num">4</div>
                 <h3>Why Standalone Go Chat Service?</h3>
@@ -1121,6 +1405,7 @@
                 </div>
             </div>
 
+            <!-- Decision 5 -->
             <div class="rationale-card">
                 <div class="rationale-num">5</div>
                 <h3>Why Native Kotlin + Headless WebRTC?</h3>
@@ -1144,6 +1429,7 @@
                 </div>
             </div>
 
+            <!-- Decision 6 -->
             <div class="rationale-card">
                 <div class="rationale-num">6</div>
                 <h3>Why Two-Tier MariaDB Privileges?</h3>
@@ -1169,6 +1455,7 @@
         </div>
     </section>
 
+    <!-- SECTION 2: ARCHITECTURE TOPOLOGY -->
     <section id="architecture">
         <div class="section-header">
             <span class="section-badge">System Topology</span>
@@ -1281,6 +1568,7 @@
         </div>
     </section>
 
+    <!-- SECTION 3: ANDROID MOBILE APP SHOWCASE -->
     <section class="android-showcase" id="android">
         <div class="mobile-container">
             <div class="mobile-content">
@@ -1342,6 +1630,7 @@
         </div>
     </section>
 
+    <!-- SECTION 4: FEATURES MATRIX -->
     <section id="features">
         <div class="section-header">
             <span class="section-badge">Full Feature Set</span>
@@ -1388,6 +1677,7 @@
         </div>
     </section>
 
+    <!-- SECTION 5: COMPARISON TABLE -->
     <section>
         <div class="section-header">
             <span class="section-badge">Comparison</span>
@@ -1447,6 +1737,7 @@
         </div>
     </section>
 
+    <!-- SECTION 6: QUICK INSTALL -->
     <section id="install">
         <div class="section-header">
             <span class="section-badge">Deployment</span>
@@ -1476,6 +1767,7 @@
         </div>
     </section>
 
+    <!-- SECTION 7: DEVELOPER & MHRGL.COM -->
     <section class="developer-section" id="developer">
         <div class="dev-card">
             <div class="dev-avatar">
@@ -1505,6 +1797,7 @@
         </div>
     </section>
 
+    <!-- Footer -->
     <footer>
         <div class="footer-grid">
             <div class="footer-brand">
@@ -1559,6 +1852,32 @@
             </div>
         </div>
     </footer>
+
+    <!-- Mobile Drawer Script -->
+    <script>
+        const mobileToggleBtn = document.getElementById('mobileToggleBtn');
+        const mobileDrawer = document.getElementById('mobileDrawer');
+        const mobileDrawerClose = document.getElementById('mobileDrawerClose');
+        const mobileBackdrop = document.getElementById('mobileBackdrop');
+        const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+
+        function openMenu() {
+            mobileDrawer.classList.add('open');
+            mobileBackdrop.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMenu() {
+            mobileDrawer.classList.remove('open');
+            mobileBackdrop.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', openMenu);
+        if (mobileDrawerClose) mobileDrawerClose.addEventListener('click', closeMenu);
+        if (mobileBackdrop) mobileBackdrop.addEventListener('click', closeMenu);
+        mobileNavItems.forEach(item => item.addEventListener('click', closeMenu));
+    </script>
 
 </body>
 </html>
