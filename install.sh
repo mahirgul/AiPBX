@@ -101,10 +101,10 @@ echo ""
 # ============================================================================
 step "2. Generating Secure Random Credentials"
 
-# Generate strong random password
+# Generate strong random password (reads limited bytes from /dev/urandom to avoid SIGPIPE under pipefail)
 gen_pass() {
     local len="${1:-20}"
-    LC_ALL=C tr -dc 'A-Za-z0-9!@#%^&*' < /dev/urandom | head -c "$len"
+    head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9!@#%^&*' | head -c "$len"
 }
 
 # Generate hex secret
