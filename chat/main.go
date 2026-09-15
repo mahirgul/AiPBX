@@ -25,6 +25,7 @@ func main() {
 	_ = os.MkdirAll(cfg.UploadDir+"/images", 0755)
 	_ = os.MkdirAll(cfg.UploadDir+"/thumbs", 0755)
 	_ = os.MkdirAll(cfg.UploadDir+"/docs", 0755)
+	_ = os.MkdirAll(cfg.UploadDir+"/avatars", 0755)
 
 	hub := NewHub()
 	go hub.Run()
@@ -40,6 +41,22 @@ func main() {
 		mux.HandleFunc(prefix+"/api/contacts", server.authMiddleware(server.HandleContacts))
 		mux.HandleFunc(prefix+"/api/conversations", server.authMiddleware(server.HandleConversations))
 		mux.HandleFunc(prefix+"/api/conversations/direct", server.authMiddleware(server.HandleCreateDirectConversation))
+		mux.HandleFunc(prefix+"/api/conversations/group", server.authMiddleware(func(w http.ResponseWriter, r *http.Request, user *User) {
+			if r.Method == http.MethodPost {
+				server.HandleCreateGroup(w, r, user)
+			} else if r.Method == http.MethodGet {
+				server.HandleGetGroupDetails(w, r, user)
+			} else {
+				writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+			}
+		}))
+		mux.HandleFunc(prefix+"/api/conversations/group/update", server.authMiddleware(server.HandleUpdateGroup))
+		mux.HandleFunc(prefix+"/api/conversations/group/members/add", server.authMiddleware(server.HandleAddGroupMembers))
+		mux.HandleFunc(prefix+"/api/conversations/group/members/remove", server.authMiddleware(server.HandleRemoveGroupMember))
+		mux.HandleFunc(prefix+"/api/conversations/group/members/role", server.authMiddleware(server.HandleUpdateGroupMemberRole))
+		mux.HandleFunc(prefix+"/api/conversations/group/leave", server.authMiddleware(server.HandleLeaveGroup))
+		mux.HandleFunc(prefix+"/api/conversations/group/delete", server.authMiddleware(server.HandleDeleteGroup))
+
 		mux.HandleFunc(prefix+"/api/messages", server.authMiddleware(func(w http.ResponseWriter, r *http.Request, user *User) {
 			if r.Method == http.MethodPost {
 				server.HandleSendMessage(w, r, user)

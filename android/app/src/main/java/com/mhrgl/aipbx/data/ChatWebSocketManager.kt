@@ -3,6 +3,7 @@ package com.mhrgl.aipbx.data
 import android.util.Log
 import com.google.gson.Gson
 import com.mhrgl.aipbx.model.ChatMessage
+import com.mhrgl.aipbx.model.ChatConversation
 import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONObject
@@ -14,6 +15,12 @@ interface ChatEventListener {
     fun onPresence(extension: String, isOnline: Boolean) {}
     fun onTyping(conversationId: Int, fromName: String, isTyping: Boolean) {}
     fun onMessagesRead(conversationId: Int, readerExt: String, lastMessageId: Long) {}
+    fun onGroupCreated(conversation: ChatConversation) {}
+    fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {}
+    fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {}
+    fun onGroupMemberRemoved(conversationId: Int, extension: String, actor: String) {}
+    fun onGroupRoleUpdated(conversationId: Int, extension: String, role: String, actor: String) {}
+    fun onGroupDeleted(conversationId: Int) {}
     fun onConnectionStateChanged(isConnected: Boolean) {}
 }
 
@@ -166,6 +173,52 @@ class ChatWebSocketManager private constructor() {
                             val readerExt = root.optString("reader_ext")
                             val lastId = root.optLong("last_message_id")
                             for (l in listeners) l.onMessagesRead(convId, readerExt, lastId)
+                        }
+                        "group_created" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val conv = gson.fromJson(dataObj.toString(), ChatConversation::class.java)
+                            if (conv != null) {
+                                for (l in listeners) l.onGroupCreated(conv)
+                            }
+                        }
+                        "group_updated" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            val title = dataObj.optString("title")
+                            val avatarUrl = dataObj.optString("avatar_url")
+                            val description = dataObj.optString("description")
+                            for (l in listeners) l.onGroupUpdated(convId, title, avatarUrl, description)
+                        }
+                        "group_member_added" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            val membersArr = dataObj.optJSONArray("members")
+                            val members = mutableListOf<String>()
+                            if (membersArr != null) {
+                                for (i in 0 until membersArr.length()) members.add(membersArr.getString(i))
+                            }
+                            val actor = dataObj.optString("actor")
+                            for (l in listeners) l.onGroupMemberAdded(convId, members, actor)
+                        }
+                        "group_member_removed" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            val ext = dataObj.optString("extension")
+                            val actor = dataObj.optString("actor")
+                            for (l in listeners) l.onGroupMemberRemoved(convId, ext, actor)
+                        }
+                        "group_role_updated" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            val ext = dataObj.optString("extension")
+                            val role = dataObj.optString("role")
+                            val actor = dataObj.optString("actor")
+                            for (l in listeners) l.onGroupRoleUpdated(convId, ext, role, actor)
+                        }
+                        "group_deleted" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            for (l in listeners) l.onGroupDeleted(convId)
                         }
                     }
                 } catch (e: Exception) {

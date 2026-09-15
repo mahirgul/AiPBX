@@ -14,6 +14,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import org.json.JSONArray
 import com.mhrgl.aipbx.model.*
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -461,6 +462,275 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                         Result.success(res)
                     } else {
                         Result.failure(Exception(res?.error ?: "Dosya yüklenemedi (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun createGroupChat(
+        baseUrl: String,
+        token: String,
+        title: String,
+        description: String? = null,
+        avatarUrl: String? = null,
+        members: List<String>
+    ): Result<ChatConversation> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group"
+                val jsonArr = JSONArray()
+                members.forEach { jsonArr.put(it) }
+
+                val jsonBody = JSONObject().apply {
+                    put("title", title)
+                    if (!description.isNullOrEmpty()) put("description", description)
+                    if (!avatarUrl.isNullOrEmpty()) put("avatar_url", avatarUrl)
+                    put("members", jsonArr)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GroupChatResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success && res.conversation != null) {
+                        Result.success(res.conversation)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Grup oluşturulamadı (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun getGroupDetails(baseUrl: String, token: String, convId: Int): Result<ChatConversation> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group?conversation_id=$convId"
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .get()
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GroupChatResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success && res.conversation != null) {
+                        Result.success(res.conversation)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Grup detayları alınamadı (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun updateGroupInfo(
+        baseUrl: String,
+        token: String,
+        convId: Int,
+        title: String,
+        avatarUrl: String? = null,
+        description: String? = null
+    ): Result<ChatConversation> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/update"
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("title", title)
+                    if (avatarUrl != null) put("avatar_url", avatarUrl)
+                    if (description != null) put("description", description)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GroupChatResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success && res.conversation != null) {
+                        Result.success(res.conversation)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Grup güncellenemedi (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun addGroupMembers(
+        baseUrl: String,
+        token: String,
+        convId: Int,
+        extensions: List<String>
+    ): Result<List<String>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/members/add"
+                val jsonArr = JSONArray()
+                extensions.forEach { jsonArr.put(it) }
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("extensions", jsonArr)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GroupMembersAddedResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success) {
+                        Result.success(res.added ?: emptyList())
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Üyeler eklenemedi (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun removeGroupMember(baseUrl: String, token: String, convId: Int, extension: String): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/members/remove"
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("extension", extension)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GenericChatActionResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success) {
+                        Result.success(true)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Üye çıkarılamadı (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun updateGroupMemberRole(baseUrl: String, token: String, convId: Int, extension: String, role: String): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/members/role"
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("extension", extension)
+                    put("role", role)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GenericChatActionResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success) {
+                        Result.success(true)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Yetki değiştirilemedi (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun leaveGroup(baseUrl: String, token: String, convId: Int): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/leave"
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GenericChatActionResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success) {
+                        Result.success(true)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Gruptan ayrılınamadı (HTTP ${response.code})"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun deleteGroup(baseUrl: String, token: String, convId: Int): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/chat/api/conversations/group/delete"
+
+                val jsonBody = JSONObject().apply {
+                    put("conversation_id", convId)
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val res = gson.fromJson(body, GenericChatActionResponse::class.java)
+                    if (response.isSuccessful && res != null && res.success) {
+                        Result.success(true)
+                    } else {
+                        Result.failure(Exception(res?.error ?: "Grup silinemedi (HTTP ${response.code})"))
                     }
                 }
             } catch (e: Exception) {

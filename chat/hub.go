@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -137,7 +138,7 @@ func (h *Hub) SendToExtension(ext string, msg []byte) bool {
 	return true
 }
 
-func (h *Hub) BroadcastToConversation(convID int, msg []byte, senderExt string) {
+func (h *Hub) BroadcastToConversation(convID int, msg []byte, excludeExt string) {
 	participants, err := GetParticipants(convID)
 	if err != nil {
 		log.Printf("[Hub] Error fetching participants for conv %d: %v", convID, err)
@@ -145,6 +146,9 @@ func (h *Hub) BroadcastToConversation(convID int, msg []byte, senderExt string) 
 	}
 
 	for _, ext := range participants {
+		if excludeExt != "" && ext == excludeExt {
+			continue
+		}
 		h.SendToExtension(ext, msg)
 	}
 }
@@ -286,6 +290,9 @@ func (c *Client) handleSendMessage(in *InMessage) {
 		"data":  saved,
 	})
 
+	conv, _ := GetConversationByID(convID)
+	isGroup := conv != nil && conv.Type == "group"
+
 	for _, ext := range participants {
 		if ext == c.user.Extension {
 			continue
@@ -310,13 +317,25 @@ func (c *Client) handleSendMessage(in *InMessage) {
 			senderTitle = "Dahili " + c.user.Extension
 		}
 
-		TriggerFcmPush(ext, senderTitle, bodyPreview, "new_message", map[string]string{
-			"conversation_id": strconv.Itoa(convID),
-			"sender_ext":      c.user.Extension,
-			"sender_name":     senderTitle,
-			"msg_id":          strconv.FormatInt(saved.ID, 10),
-			"msg_type":        saved.MsgType,
-		})
+		pushTitle := senderTitle
+		pushBody := bodyPreview
+		extra := map[string]string{
+			"conversation_id":   strconv.Itoa(convID),
+			"sender_ext":        c.user.Extension,
+			"sender_name":       senderTitle,
+			"msg_id":            strconv.FormatInt(saved.ID, 10),
+			"msg_type":          saved.MsgType,
+			"conversation_type": "direct",
+		}
+
+		if isGroup {
+			pushTitle = conv.Title
+			pushBody = fmt.Sprintf("%s: %s", senderTitle, bodyPreview)
+			extra["conversation_type"] = "group"
+			extra["group_title"] = conv.Title
+		}
+
+		TriggerFcmPush(ext, pushTitle, pushBody, "new_message", extra)
 
 		_ = delivered
 	}

@@ -15,14 +15,21 @@ import com.mhrgl.aipbx.model.ChatMessage
 
 class ChatMessageAdapter(
     private val myExtension: String,
-    private val baseUrl: String
-) : RecyclerView.Adapter<ChatMessageAdapter.MessageViewHolder>() {
+    private val baseUrl: String,
+    private var isGroup: Boolean = false
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val messages = mutableListOf<ChatMessage>()
 
     companion object {
         private const val TYPE_ME = 1
         private const val TYPE_OTHER = 2
+        private const val TYPE_SYSTEM = 3
+    }
+
+    fun setIsGroup(group: Boolean) {
+        this.isGroup = group
+        notifyDataSetChanged()
     }
 
     fun submitList(list: List<ChatMessage>) {
@@ -38,27 +45,50 @@ class ChatMessageAdapter(
 
     override fun getItemViewType(position: Int): Int {
         val m = messages[position]
+        if (m.msgType == "system") return TYPE_SYSTEM
         val isMe = m.isMe || m.senderExt == myExtension
         return if (isMe) TYPE_ME else TYPE_OTHER
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
-        val layoutRes = if (viewType == TYPE_ME) {
-            R.layout.item_chat_message_me
-        } else {
-            R.layout.item_chat_message_other
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return when (viewType) {
+            TYPE_SYSTEM -> {
+                val view = inflater.inflate(R.layout.item_chat_message_system, parent, false)
+                SystemViewHolder(view)
+            }
+            TYPE_ME -> {
+                val view = inflater.inflate(R.layout.item_chat_message_me, parent, false)
+                MessageViewHolder(view, true)
+            }
+            else -> {
+                val view = inflater.inflate(R.layout.item_chat_message_other, parent, false)
+                MessageViewHolder(view, false)
+            }
         }
-        val view = LayoutInflater.from(parent.context).inflate(layoutRes, parent, false)
-        return MessageViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
-        holder.bind(messages[position])
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val msg = messages[position]
+        if (holder is SystemViewHolder) {
+            holder.bind(msg)
+        } else if (holder is MessageViewHolder) {
+            holder.bind(msg)
+        }
     }
 
     override fun getItemCount(): Int = messages.size
 
-    inner class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class SystemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val tvSystemMessage: TextView = itemView.findViewById(R.id.tvSystemMessage)
+
+        fun bind(m: ChatMessage) {
+            tvSystemMessage.text = m.message ?: ""
+        }
+    }
+
+    inner class MessageViewHolder(itemView: View, private val isMe: Boolean) : RecyclerView.ViewHolder(itemView) {
+        private val tvSenderName: TextView? = itemView.findViewById(R.id.tvSenderName)
         private val tvMessage: TextView = itemView.findViewById(R.id.tvMessage)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val ivImage: ImageView = itemView.findViewById(R.id.ivImage)
@@ -68,6 +98,17 @@ class ChatMessageAdapter(
 
         fun bind(m: ChatMessage) {
             val ctx = itemView.context
+
+            // Sender name in group chat for other users
+            if (!isMe && tvSenderName != null) {
+                if (isGroup && m.senderName.isNotEmpty()) {
+                    tvSenderName.visibility = View.VISIBLE
+                    tvSenderName.text = m.senderName
+                    tvSenderName.setTextColor(getDeterministicColor(m.senderExt))
+                } else {
+                    tvSenderName.visibility = View.GONE
+                }
+            }
 
             // Text message
             if (m.message.isNullOrEmpty()) {
@@ -111,6 +152,19 @@ class ChatMessageAdapter(
             }
 
             tvTime.text = formatTime(m.createdAt)
+        }
+
+        private fun getDeterministicColor(ext: String): Int {
+            val palette = intArrayOf(
+                0xFF2563EB.toInt(), 0xFF7C3AED.toInt(), 0xFFDB2777.toInt(),
+                0xFFEA580C.toInt(), 0xFF059669.toInt(), 0xFF0891B2.toInt(),
+                0xFF4F46E5.toInt(), 0xFFD97706.toInt()
+            )
+            var hash = 0
+            for (c in ext) {
+                hash = (hash * 31 + c.code) and 0x7FFFFFFF
+            }
+            return palette[hash % palette.size]
         }
 
         private fun resolveMediaUrl(path: String): String {
