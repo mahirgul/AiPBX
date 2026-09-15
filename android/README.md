@@ -1,99 +1,142 @@
-# AI PBX Android Telefon Uygulaması
+# AI PBX Android Kurumsal İletişim Uygulaması
 
-Bu proje, kurum içi **Asterisk Web PBX** santral sistemiyle tam entegre çalışan, **Google Cloud / Firebase bağımsız**, güvenli ve kesintisiz Android mobil softphone uygulamasıdır.
+> **Sürüm**: v1.0.31 (Build 32)  
+> **Paket Adı**: `com.mhrgl.AiPBX`  
+> **Hedef Android Sürümü**: Android 8.0 (API 26) – Android 16 (API 36)  
+> **Yayın Durumu**: Google Play Console (Kapalı Test / Closed Testing Track) & Doğrudan İmzalı APK  
 
----
-
-## 🌟 Öne Çıkan Özellikler
-
-* 🔒 **%100 Bağımsız ve Güvenli (Zero Cloud Dependency):**
-  * Hiçbir Google Cloud, Firebase veya harici 3. parti bulut servisi kullanılmaz.
-  * Tüm sinyalleşme ve ses akışı doğrudan kurumunuzun sunucusu üzerinden şifreli (**WSS / TLS / TURNS**) olarak gerçekleşir.
-* 🌐 **Dinamik Sunucu URL Yapılandırması:**
-  * Uygulama ilk açılışta sunucu adresini ister.
-  * Farklı santral kurulumları ve domain/IP adresleri için kolayca değiştirilebilir.
-  * Sunucu erişilebilirliği otomatik olarak test edilir (`GET /api/mobile/ping.php`).
-* 🔑 **Kolay Giriş ve Otomatik Yapılandırma:**
-  * Santral kullanıcı adı / dahili numarası ve web şifresiyle tek adımda giriş.
-  * Sunucudan dinamik WebRTC/SIP kimlik bilgileri, coturn TURNS şifreleri ve dahili ayarları otomatik çekilir.
-* 📱 **Ekran Kapalıyken Kesintisiz Bağlantı (Background Resilience):**
-  * **Foreground Service (Ön Plan Servisi):** Android Doze Mode veya agresif pil tasarrufu tarafından uygulamanın kapatılmasını önler.
-  * **WakeLock & WifiLock:** Ekran kapalıyken işlemci ve Wi-Fi bağlantısının uykuya dalmasını engeller.
-  * **Otomatik Başlatma (BootReceiver):** Telefon yeniden başlatıldığında servis arka planda otomatik olarak ayağa kalkar.
-  * **Kilit Ekranı Uyandırma:** Gelen aramalarda telefon ekranı anında uyanır (`TurnScreenOn` / `ShowWhenLocked`) ve tam ekran çağrı arayüzü belirir.
-* 📞 **Gelişmiş Telefon Özellikleri:**
-  * Modern tuş takımı (0-9, *, #) ve canlı arama alanı.
-  * Görüşme ekranı: Mikrofon susturma (Mute), Hoparlör (Speakerphone), Çağrıyı Bekletme (Hold) ve Görüşme Sayacı.
-  * Yakınlık Sensörü (Proximity Sensor): Telefon kulağa götürüldüğünde ekranı otomatik kapatarak yanlış dokunmaları önler.
+Bu proje, kurum içi **Asterisk 22 Web PBX** santral sistemiyle tam entegre çalışan, **harici bulut bağımlılığı olmayan**, güvenli, WebRTC tabanlı ve çok fonksiyonlu yerel (native) Android kurumsal iletişim uygulamasıdır.
 
 ---
 
-## 🚀 Kurulum ve Telefona Yükleme
+## 🌟 Temel Yetenekler ve Mimari
 
-### 1. Hazır APK Dosyası
-Proje kök dizininde hazır derlenmiş APK dosyası bulunmaktadır:
-* **[`ai-pbx-phone.apk`](file:///Z:/rustProjects/androidPhone/ai-pbx-phone.apk)** (~7.2 MB)
-
-### 2. Telefona Yükleme Yöntemleri
-1. **USB ile Doğrudan (En Hızlı):**
-   * Telefonunuzu bilgisayara USB kablosuyla bağlayın (ve Geliştirici Seçenekleri > USB Hata Ayıklama açık olsun).
-   * Terminalden tek komutla yükleyin:
-     ```cmd
-     adb install -r ai-pbx-phone.apk
-     ```
-2. **Dosya Transferi ile:**
-   * `ai-pbx-phone.apk` dosyasını telefonunuza atın (Bluetooth, WhatsApp Kendine Mesaj, Telegram veya USB Dosya Aktarımı).
-   * Telefonun Dosyalar uygulamasından APK'ya dokunup **"Yükle"** deyin (Gerekirse *"Bilinmeyen kaynaklardan yüklemeye izin ver"* seçeneğini onaylayın).
+### 1. 5 Sekmeli Bütünleşik Ana Ekran (`DialerActivity`)
+Uygulama, tüm iletişim ihtiyaçlarını tek bir modern ana aktivite altında 5 ana sekmede toplar:
+1. **📞 Tuşlar (Dialer):**
+   - Hızlı arama alanı, 0-9, *, # DTMF tuşları ve çağrı kontrolü.
+   - Aktif görüşme ekranı (`CallActivity`): Sessize alma (Mute), Hoparlör (Speaker), Bekletme (Hold), Aktarım ve Çağrı Süre Sayacı.
+   - Kilit ekranında gelen çağrıyı anında uyandırma (`IncomingCallActivity`, `TurnScreenOn` / `ShowWhenLocked`).
+2. **📊 Geçmiş (Call History):**
+   - Sunucu CDR kayıtları ile tam senkronize çağrı listesi.
+   - Hızlı yön filtreleme çipleri: *Tümü*, *Cevapsız*, *Gelen*, *Giden*.
+   - Tek dokunuşla geri arama desteği.
+3. **👥 Rehber (Contacts):**
+   - Santraldeki tüm dahilileri (50+ dahili) otomatik senkronize eden kurumsal rehber.
+   - Anlık çevrimiçi/çevrimdışı varlık (presence) takibi (yeşil/gri durum noktaları).
+   - Departman ve rol rozetleri (`admin`, `cc_agent`, `standard_user` vb.).
+4. **💬 Sohbet (Chat & Group Chat):**
+   - **Bireysel (1-to-1) Sohbet:** Dahililer arası anlık metin, fotoğraf ve belge paylaşımı.
+   - **Çok Kullanıcılı Grup Sohbeti:** 256 kişiye kadar ekip ve departman grup odaları.
+   - **Hızlı Grup Kurulumu:** `+ Yeni Grup` butonu ve rehberden çoklu üye seçici (`ContactSelectionAdapter`).
+   - **Gelişmiş Sohbet Filtreleme:** *Tümü*, *Bireysel*, *Gruplar* filtre çipleri ile anlık geçiş.
+   - **Grup Yönetim Modalı:** Katılımcı listesi, yönetici rolleri (`admin`/`member`), üye ekleme/çıkarma, grup başlığı düzenleme ve ayrılma.
+   - **Görsel Ayrım:** Grup rozetleri (`Grup`), mor/indigo avatar ikonları (`👥`) ve grup mesajlarında algoritmik renkli gönderen isimleri (`getDeterministicColor`).
+   - **Sistem Bildirimleri:** Üye katıldı/ayrıldı/çıkarıldı durumları için özel biçimlendirilmiş sistem balonları.
+5. **⚙️ Santral (Features & Diagnostics):**
+   - Rahatsız Etmeyin (DND) kontrolü.
+   - Çağrı Yönlendirme (Her Zaman, Meşgulde, Cevapsızda) ve çalma süre eşikleri (10–45 sn).
+   - Dahili sistem log görüntüleyicisi (`LogViewerActivity` & `AppLogManager`) ile anlık Logcat inceleme ve e-posta/dosya paylaşımı.
 
 ---
 
-## 🛠️ Yeniden Derleme (Rebuild)
-
-Kodda bir değişiklik yaptığınızda yeni bir APK üretmek için:
-* Kök dizindeki **`build.bat`** dosyasına çift tıklamanız yeterlidir.
-* Veya komut satırından:
-  ```powershell
-  gradle --no-daemon assembleDebug
-  ```
+### 2. Güvenlik & WebRTC Ses Motoru
+* 🔒 **Sıfır Bulut Bağımlılığı:** Tüm sinyalleşme doğrudan kendi kurum santraliniz üzerinden şifreli (**WSS / TLS / DTLS-SRTP**) olarak yürütülür.
+* 🛡️ **Kısıtlayıcı Ağ ve Güvenlik Duvarı Aşımı:** Kurumsal ağlarda UDP engelli olsa bile Port 443 üzerinden **coturn TURNS** ile kesintisiz ses geçişi.
+* 🎙️ **Opus HD Voice:** Düşük bant genişliğinde bile yüksek kaliteli, kristal netliğinde ses iletimi.
 
 ---
 
-## 📂 Proje Mimarisi
+### 3. Arka Plan Kararlılığı & Push Bildirimleri
+* **Foreground Service (`PbxForegroundService`):** Android Doze Mode veya agresif pil tasarrufunun bağlantıyı kesmesini önleyen kalıcı ön plan servisi.
+* **Firebase Cloud Messaging (FCM):** Uygulama tamamen kapalıyken dahi gelen çağrılar ve grup/bireysel sohbet mesajları için anlık uyandırma bildirimi.
+* **Konuşma Düzeyinde Bildirim Gruplama:** Grup ve bireysel sohbet bildirimleri bildirim panelinde otomatik olarak konuşma bazında kümelenir.
+
+---
+
+## 🛠️ Derleme ve Dağıtım (Build & Deployment)
+
+### Gereksinimler
+- Android SDK 36 (Build Tools 36.0.0)
+- Java 17 / OpenJDK 17
+- Gradle 8.x (Gradle Wrapper dahildir)
+
+### 1. Birim Testlerini Çalıştırma
+```bash
+cd /home/pbx/android
+./gradlew testReleaseUnitTest
+```
+
+### 2. İmzalı Release APK Derleme
+```bash
+./gradlew assembleRelease
+```
+* Çıktı: `app/build/outputs/apk/release/app-release.apk` (~2.8 MB)
+* Otomatik olarak `release.keystore` anahtarıyla imzalanır ve zipalign edilir.
+
+### 3. İmzalı Release App Bundle (AAB) Derleme
+```bash
+./gradlew bundleRelease
+```
+* Çıktı: `app/build/outputs/bundle/release/app-release.aab` (~4.2 MB)
+
+### 4. Google Play Console'a Yükleme
+Proje kök dizinindeki otomatik Google Play API betiği ile Kapalı Test kanalına tek komutla yüklenir:
+```bash
+python3 upload_to_play_console.py alpha completed
+```
+* Sürüm kodu (`versionCode: 32`) ve sürüm adı (`versionName: "1.0.31"`) `build.gradle.kts` üzerinden otomatik okunur.
+* Çok dilli sürüm notları (tr-TR ve en-US) Google Play API üzerinden otomatik kaydedilir ve onaylanır.
+
+### 5. Doğrudan Web İndirme Bağlantısı
+Üretilen APK, kullanıcıların doğrudan indirebilmesi için web sunucusuna kopyalanır:
+```bash
+cp app/build/outputs/apk/release/app-release.apk /home/pbx/web/aipbx-latest.apk
+```
+* Web İndirme URL: `https://<santral-adresi>/aipbx-latest.apk`
+
+---
+
+## 📂 Dizin Yapısı
 
 ```
-Z:\rustProjects\androidPhone\
-├── ai-pbx-phone.apk                # Hazır kurulabilir Android APK dosyası
-├── build.bat                       # Tek tıkla APK derleme betiği
+android/
 ├── app/
-│   ├── src/main/
-│   │   ├── AndroidManifest.xml     # VoIP izinleri, servisler ve ekran tanımları
-│   │   ├── assets/
-│   │   │   ├── jssip.min.js        # PBX sunucusundaki resmi JsSIP kütüphanesi
-│   │   │   └── phone_engine.html   # Headless WebRTC/SIP arka plan motoru
-│   │   ├── java/com/mhrgl/aipbx/
-│   │   │   ├── data/
-│   │   │   │   ├── ApiClient.kt    # Sunucu Ping ve Giriş REST API istemcisi
-│   │   │   │   └── AppPreferences.kt # Sunucu URL ve kimlik yerel saklayıcısı
-│   │   │   ├── engine/
-│   │   │   │   └── SipWebRtcEngine.kt # JsSIP WebRTC çağrı köprüsü
-│   │   │   ├── model/
-│   │   │   │   └── Models.kt       # Veri modelleri ve çağrı durumları
-│   │   │   ├── service/
-│   │   │   │   ├── BootReceiver.kt # Telefon açıldığında servisi başlatıcı
-│   │   │   │   └── PbxForegroundService.kt # Arka plan canlı tutma ve bildirim servisi
-│   │   │   └── ui/
-│   │   │       ├── ServerSetupActivity.kt # Ekran 1: Dinamik Sunucu URL Ayarı
-│   │   │       ├── LoginActivity.kt       # Ekran 2: Kullanıcı Giriş Ekranı
-│   │   │       ├── DialerActivity.kt      # Ekran 3: Tuş Takımı & Arama Ekranı
-│   │   │       ├── CallActivity.kt        # Ekran 4: Aktif Görüşme Ekranı
-│   │   │       └── IncomingCallActivity.kt # Ekran 5: Kilit Ekranı Gelen Çağrı
-│   │   └── res/                    # Tasarımlar, renkler, sesler ve vektör ikonlar
+│   ├── build.gradle.kts          # Sürüm (v1.0.31 Build 32) ve bağımlılık tanımları
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml # VoIP izinleri, servisler ve ekranlar
+│       │   ├── java/com/mhrgl/aipbx/
+│       │   │   ├── data/
+│       │   │   │   ├── ApiClient.kt            # REST API (Giriş, Rehber, Grup Chat vb.)
+│       │   │   │   ├── AppPreferences.kt       # Yerel ayarlar ve oturum verileri
+│       │   │   │   ├── ChatWebSocketManager.kt # Go Chat WebSocket istemcisi ve olay dinleyicisi
+│       │   │   │   └── SimpleImageLoader.kt    # Hafif görsel önbellekleyici
+│       │   │   ├── engine/
+│       │   │   │   └── SipWebRtcEngine.kt      # Headless WebRTC JsSIP ses motoru
+│       │   │   ├── model/
+│       │   │   │   └── Models.kt               # Veri modelleri (Grup, Mesaj, Rehber, CDR vb.)
+│       │   │   ├── service/
+│       │   │   │   ├── AiPbxFirebaseMessagingService.kt # FCM Push yöneticisi
+│       │   │   │   ├── BootReceiver.kt                 # Cihaz açılış tetikleyicisi
+│       │   │   │   └── PbxForegroundService.kt         # Kalıcı VoIP ön plan servisi
+│       │   │   └── ui/
+│       │   │       ├── CallActivity.kt             # Aktif Görüşme Ekranı
+│       │   │       ├── ChatActivity.kt             # Grup & Bireysel Sohbet Ekranı
+│       │   │       ├── ChatConversationAdapter.kt  # Sohbet listesi adaptörü (Grup rozetli)
+│       │   │       ├── ChatListActivity.kt         # Bağımsız Sohbet Aktivitesi
+│       │   │       ├── ChatMessageAdapter.kt       # Mesaj balonları & sistem olayları
+│       │   │       ├── ContactSelectionAdapter.kt  # Gruba üye ekleme seçim adaptörü
+│       │   │       ├── ContactsAdapter.kt          # Kurumsal rehber adaptörü
+│       │   │       ├── DialerActivity.kt           # Ana 5 Sekmeli Aktivite (Tuşlar, Sohbet vb.)
+│       │   │       ├── GroupParticipantAdapter.kt  # Grup katılımcıları & yönetici menüsü
+│       │   │       ├── IncomingCallActivity.kt     # Gelen çağrı kilit ekranı
+│       │   │       ├── LoginActivity.kt            # Kullanıcı oturum açma ekranı
+│       │   │       ├── LogViewerActivity.kt        # Canlı log ve arıza teşhis ekranı
+│       │   │       └── ServerSetupActivity.kt      # Sunucu adresi yapılandırma
+│       │   └── res/                                # Layout, renkler, ikonlar ve animasyonlar
+│       └── test/                                   # Model ve iş mantığı birim testleri
+├── release.keystore              # Üretim imzalama anahtarı
+├── upload_to_play_console.py     # Google Play Console API otomatik yayınlama betiği
+└── README.md                     # Android dokümantasyonu
 ```
-
----
-
-## 🌐 Sunucu Entegrasyonu (`10.8.0.10`)
-
-Sunucu üzerinde `/var/www/html/api/mobile/` dizinine eklenen uç noktalar:
-1. `GET /api/mobile/ping.php`: Sunucu adresi doğrulama ve sağlık kontrolü.
-2. `POST /api/mobile/login.php`: Güvenli kullanıcı doğrulaması ve dinamik SIP/WebRTC + TURNS kimlik üretimi.
