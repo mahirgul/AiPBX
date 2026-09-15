@@ -54,7 +54,7 @@ class PushSettingsController extends BaseController
         $settings = PushSettingsRepository::currentSettings();
         $devices = PushSettingsRepository::activeMobileDevices();
 
-        $page_title = 'Mobil Bildirim Ayarları';
+        $page_title = 'Mobil Bildirim';
         $active_page = 'push_settings.php';
 
         require_once dirname(__DIR__) . '/../header.php';

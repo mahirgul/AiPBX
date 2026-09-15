@@ -46,7 +46,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-bell" style="color: var(--primary);"></i> Mobil Bildirim Ayarları (Push Notifications)
+            <i class="fas fa-bell" style="color: var(--primary);"></i> Mobil Bildirim
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('pushHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>

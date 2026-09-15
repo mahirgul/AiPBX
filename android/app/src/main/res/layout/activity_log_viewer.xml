@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Sistem &amp; Tanı Logları"
+            android:text="Tanı Logları"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />

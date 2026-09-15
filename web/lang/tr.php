@@ -307,7 +307,7 @@ return [
     'ivr.add_entry_tooltip' => 'Tuşlama Ekle / Güncelle',
 
     // Extensions (Dahili Abone Yönetimi)
-    'extensions.title' => 'Dahili Abone Yönetimi',
+    'extensions.title' => 'Dahili Yönetimi',
     'extensions.sync_all_tooltip' => 'Tüm Dahili Konfigürasyonlarını Yeniden Üret & PJSIP Reload',
     'extensions.new_tooltip' => 'Yeni Dahili Ekle',
     'extensions.help_title' => 'Dahili Abone Yönetimi Rehberi',
@@ -365,7 +365,7 @@ return [
     'extensions.field_active' => 'Hesap & PJSIP Abonesi Aktif',
 
     // Queues (Kuyruk Yönetimi)
-    'queues.title' => 'Kuyruk Yönetimi',
+    'queues.title' => 'Kuyruklar',
     'queues.new_tooltip' => 'Yeni Ekle',
     'queues.help_title' => 'Asterisk Yerleşik Kuyruk Yöneticisi Rehberi',
     'queues.help_body' => 'Gelen çağrıların temsilciler arasında yerleşik Asterisk motoru (`app_queue`) ile dağıtılmasını sağlar.',
@@ -431,7 +431,7 @@ return [
     'queues.leavewhenempty_no' => 'Hayır (Beklemeye Devam Et)',
     'queues.leavewhenempty_yes' => 'Evet (Müşteriyi Çıkar)',
     'queues.leavewhenempty_strict' => 'Strict (Mola/Meşgulde de Çıkar)',
-    'queues.section_timeout' => 'Zaman Aşımı, Yönlendirme &amp; Ses Kaydı',
+    'queues.section_timeout' => 'Zaman Aşımı &amp; Yönlendirme',
     'queues.field_max_wait_seconds' => 'Max Bekleme Süresi (Kuyrukta Toplam, sn)',
     'queues.max_wait_help' => 'Arayan bu süre boyunca cevaplanmazsa aşağıdaki aksiyon devreye girer.',
     'queues.field_fallback_action' => 'Zaman Aşımı Aksiyonu',
@@ -442,10 +442,10 @@ return [
     'queues.select_placeholder' => '-- Seçin --',
     'queues.field_record_enabled' => 'Ses Kaydı (MixMonitor)',
     'queues.record_enabled_label' => 'Bu kuyruğa gelen çağrıları otomatik kaydet',
-    'queues.section_members' => 'Kuyruğa Atanacak Temsilciler &amp; Yöneticiler (Dahili Kullanıcılar)',
+    'queues.section_members' => 'Temsilciler &amp; Yöneticiler',
     'queues.role_admin' => 'Yönetici (Admin)',
     'queues.role_agent' => 'Temsilci',
-    'queues.section_supervisors' => 'Kuyruk Yöneticileri (Supervisors) - Çoklu Seçilebilir (Her Kullanıcı Atanabilir)',
+    'queues.section_supervisors' => 'Kuyruk Yöneticileri',
     'queues.role_manager' => 'Yönetici',
     'queues.role_user' => 'Kullanıcı',
     'queues.supervisors_help' => 'Bu kuyruğu yönetme, canlı takibini yapma ve temsilcilerini izleme yetkisine sahip yöneticiler (herhangi bir dahili kullanıcısı seçilebilir).',
@@ -505,8 +505,8 @@ return [
     'sounds.download' => 'İndir',
 
     // Feature Codes (Star Code Yönetimi)
-    'fc.title' => 'Feature Code Yönetimi',
-    'fc.header_title' => 'Feature Code (Star Code) Yönetimi',
+    'fc.title' => 'Feature Code\'lar',
+    'fc.header_title' => 'Feature Code Yönetimi',
     'fc.help_title' => 'Feature Code Modülü Rehberi',
     'fc.help_body' => 'Telefondan tuşlanan (<code>*78</code> gibi) kısayol kodlarını yönetir: Rahatsız Etme (DND), Çağrı Yönlendirme, Gruptan/Belirli Dahiliden Çağrı Çekme, Çağrı Dinleme (Spy), Kuyruk ID ile Kuyruğa Giriş/Çıkış (<code>*81&lt;kuyruk id&gt;</code> / <code>*80&lt;kuyruk id&gt;</code> — kuyruk ID\'leri <a href="/queues">Kuyruklar</a> sayfasındaki #ID sütunundadır).',
     'fc.help_body2' => 'Her kodun <strong>kodu</strong> (normal kodlar <code>*</code>, değişken parametreli kodlar <code>_*</code> ile başlamalı) ve <strong>hangi rollerin kullanabileceği</strong> (boş = herkes) değiştirilebilir. Davranışın kendisi (ne yaptığı) sabittir — yeni bir davranış türü eklenemez, sadece bu kodlar düzenlenebilir.',
@@ -531,7 +531,7 @@ return [
 
     // End Call (Çağrı Sonlandırma)
     'end_call.title' => 'Çağrı Sonlandırma',
-    'end_call.header_title' => 'Çağrı Sonlandırma Seçenekleri',
+    'end_call.header_title' => 'Çağrı Sonlandırma',
     'end_call.new_tooltip' => 'Yeni Ekle',
     'end_call.help_title' => 'Çağrıyı Sonlandır Modülü Rehberi',
     'end_call.help_body' => 'Gelen çağrıların sonlandırılma kurallarını ve eylemlerini dinamik olarak yönetir.',
@@ -652,7 +652,7 @@ return [
     'cc_supervisor.col_status' => 'Durum',
     'cc_supervisor.col_action' => 'Eylem',
     'cc_supervisor.no_waiting_calls' => 'Kuyruklarda bekleyen çağrı bulunmuyor.',
-    'cc_supervisor.agent_status_title' => 'Temsilci Durumları & Mola Takibi',
+    'cc_supervisor.agent_status_title' => 'Temsilci Durumları',
     'cc_supervisor.col_extension' => 'Dahili',
     'cc_supervisor.col_agent_name' => 'Temsilci Adı',
     'cc_supervisor.col_active_queues' => 'Aktif Kuyruklar',
@@ -667,7 +667,7 @@ return [
     'pause_reports.stat_total_duration' => 'Toplam Mola Süresi',
     'pause_reports.stat_avg_duration' => 'Ortalama Mola Süresi',
     'pause_reports.stat_top_reason' => 'En Çok Kullanılan Mola',
-    'pause_reports.header_title' => 'Temsilci Mola Raporları',
+    'pause_reports.header_title' => 'Mola Raporları',
     'pause_reports.help_title' => 'Mola Raporları Rehberi',
     'pause_reports.help_body' => 'Çağrı merkezi temsilcilerinin (3001-3009) mola giriş/çıkış hareketlerini, mola nedenlerini (Yemek, Çay, Toplantı, İzin) ve toplam mola sürelerini analiz etmenizi sağlar.',
     'pause_reports.field_start_date' => 'Başlangıç Tarihi',
@@ -698,7 +698,7 @@ return [
     'queue_logs.stat_abandoned' => 'Terk Edilen (Abandon)',
     'queue_logs.stat_avg_wait' => 'Ort. Bekleme Süresi',
     'queue_logs.stat_ring_no_answer' => 'Cevapsız Çaldırma',
-    'queue_logs.header_title' => 'Kuyruk Olay Logları',
+    'queue_logs.header_title' => 'Kuyruk Logları',
     'queue_logs.refresh_tooltip' => 'Yenile',
     'queue_logs.help_title' => 'Kuyruk Logları Rehberi',
     'queue_logs.help_body' => 'Asterisk <code>queue_log</code> ham verilerini canlı olarak filtreler.',
@@ -741,7 +741,7 @@ return [
     'queue_logs.detail_raw_data' => 'Data',
 
     // CDR Reports (Çağrı Raporları & Ses Kayıtları)
-    'cdr_reports.title' => 'Çağrı Raporları & Ses Kayıtları',
+    'cdr_reports.title' => 'Çağrı Raporları',
     'cdr_reports.stat_total' => 'Toplam Çağrı',
     'cdr_reports.stat_total_desc' => 'Sorgulanan Arama',
     'cdr_reports.stat_answered' => 'Cevaplanan Çağrı',
@@ -866,7 +866,7 @@ return [
 
     // Fax Sent (Giden Fakslar)
     'fax_sent.title' => 'Giden Fakslar',
-    'fax_sent.header_title' => 'Giden Faks Gönderim Geçmişi',
+    'fax_sent.header_title' => 'Giden Fakslar',
     'fax_sent.help_title' => 'Giden Fakslar Rehberi',
     'fax_sent.help_body' => 'Gönderdiğiniz tüm faksların başarı durumlarını (SUCCESS / FAILED), sayfa sayılarını ve gönderilen belgeleri arşivden incelemenizi sağlar.',
     'fax_sent.col_sender' => 'Gönderen',
@@ -1031,8 +1031,8 @@ return [
     'system_users.save_role' => 'Rolü Kaydet',
 
     // Roles (Kullanıcı Rolleri & İzin Yönetimi)
-    'roles.title' => 'Kullanıcı Rolleri & İzin Yönetimi',
-    'roles.header_title' => 'Kullanıcı Rolleri & Modül İzin Yönetimi',
+    'roles.title' => 'Kullanıcı Rolleri',
+    'roles.header_title' => 'Kullanıcı Rolleri',
     'roles.new_tooltip' => 'Yeni Rol Oluştur',
     'roles.help_title' => 'Rol & İzin Yönetimi Rehberi',
     'roles.help_body' => 'Kullanıcı gruplarının sistem modüllerine (Görüntüleme, Erişim, Düzenleme, Silme) erişim izinlerini detaylı olarak yapılandırır.',
@@ -1117,7 +1117,7 @@ return [
 
     // Asterisk Settings (Santral Ayarları)
     'asterisk_settings.title' => 'Santral Ayarları',
-    'asterisk_settings.section1_title' => 'PJSIP & Global İletişim Ayarları',
+    'asterisk_settings.section1_title' => 'PJSIP & İletişim Ayarları',
     'asterisk_settings.help_title' => 'Santral Yapılandırma Rehberi',
     'asterisk_settings.help_body' => 'PBX genel seçeneklerini, SIP Trunk IP/Port tanımlarını, WebRTC WSS portlarını, zil sesi ve ses kodlayıcı tercihlerini yapılandırır. Marka & logo ayarları artık ayrı bir sayfada (Yönetim &rarr; Marka & Görünüm).',
     'asterisk_settings.field_wss_port' => 'WebRTC Port (WSS)',
@@ -1292,7 +1292,7 @@ return [
     'sidebar.item_fax_send' => 'Faks Gönder',
     'sidebar.item_fax_sent' => 'Giden Fakslar',
     'sidebar.group_cc' => 'Çağrı Merkezi',
-    'sidebar.item_cc_board_unified' => 'Pano & Kuyruk İzleme',
+    'sidebar.item_cc_board_unified' => 'Pano & İzleme',
     'sidebar.item_cc_board_unified_tooltip' => 'Canlı Çağrı Merkezi Panosu ve Kuyruk İzleme',
     'sidebar.item_cc_supervisor' => 'Kuyruk İzleme',
     'sidebar.item_cc_board_tooltip' => 'Çağrı Merkezi Panosu',
@@ -1368,7 +1368,7 @@ return [
 
     // Uygula (ertelenmiş Asterisk reload) sayfası
     'pending_sync.title' => 'Bekleyen Değişiklikler',
-    'pending_sync.header_title' => 'Bekleyen Değişiklikler — Uygula',
+    'pending_sync.header_title' => 'Bekleyen Değişiklikler',
     'pending_sync.help_title' => 'Bu sayfa ne işe yarar?',
     'pending_sync.help_body' => 'PBX ayarlarında yapılan değişiklikler kaydedildiği anda Asterisk\'e yansıtılmıyor — burada listelenip bekliyor. Birden fazla değişiklik yapıp hepsini tek seferde, size uygun bir anda "Gönder" ile uygulayabilirsiniz. Hangi admin gönderirse gönderesin tüm bekleyen değişiklikler uygulanır.',
     'pending_sync.empty' => 'Şu an bekleyen bir değişiklik yok — her şey Asterisk\'e yansıtılmış durumda.',
@@ -1435,7 +1435,7 @@ return [
 
     // Firewall (Güvenlik)
     'firewall.title' => 'Firewall',
-    'firewall.header_title' => 'Firewall (firewalld) Yönetimi',
+    'firewall.header_title' => 'Firewall Yönetimi',
     'firewall.service_active' => 'Servis Aktif',
     'firewall.service_inactive' => 'Servis Kapalı',
     'firewall.help_title' => 'Firewall Yönetimi Rehberi',
@@ -1459,7 +1459,7 @@ return [
 
     // Fail2ban (Güvenlik)
     'fail2ban.title' => 'Fail2ban',
-    'fail2ban.header_title' => 'Fail2ban Jail Yönetimi',
+    'fail2ban.header_title' => 'Fail2ban Yönetimi',
     'fail2ban.help_title' => 'Fail2ban Yönetimi Rehberi',
     'fail2ban.help_body' => 'Başarısız giriş denemesi/saldırı tespitine göre otomatik IP banlayan jail\'leri görüntüler. Yanlışlıkla banlanan bir IP\'yi tek tıkla serbest bırakabilir, ban süresi/deneme limiti gibi ayarları düzenleyebilir ve asla banlanmaması gereken IP/subnet\'leri beyaz listeye ekleyebilirsiniz.',
     'fail2ban.no_jails' => 'Aktif bir fail2ban jail\'i bulunamadı.',
@@ -1493,7 +1493,7 @@ return [
     'asterisk_settings.rtp_restart_warning' => 'Katı RTP ayarı "Uygula" ile devreye girer. Ancak PORT ARALIĞI değişikliği için Asterisk\'in tam yeniden başlatılması gerekir — port havuzu modül yüklenirken bir kez ayrılır.',
 
     // T.38 UDPTL (faks medya) ayarlari
-    'asterisk_settings.udptl_section_title' => 'T.38 UDPTL (Faks Medya) Ayarları',
+    'asterisk_settings.udptl_section_title' => 'T.38 UDPTL Ayarları',
     'asterisk_settings.udptl_help_body' => 'T.38 faks paketlerinin (UDPTL) hangi port aralığından akacağını ve hata düzeltme (FEC / Checksum) parametrelerini belirler. Bu dosya (<code>/etc/asterisk/udptl.conf</code>) panelden dinamik üretilir.',
     'asterisk_settings.field_udptl_start' => 'UDPTL Başlangıç Portu',
     'asterisk_settings.udptl_start_help' => 'T.38 faks veri akışları için başlangıç portu (varsayılan: 4100).',
