@@ -22,6 +22,16 @@ function toggleNavGroup(groupId) {
     }
 }
 
+function updateSidebarToggleIcon(isOpen) {
+    const icon = document.getElementById('header-sidebar-toggle-icon') || document.querySelector('#header-sidebar-toggle i');
+    if (!icon) return;
+    if (isOpen) {
+        icon.className = 'fas fa-chevron-left';
+    } else {
+        icon.className = 'fas fa-chevron-right';
+    }
+}
+
 function toggleSidebar(e) {
     if (e) {
         e.stopPropagation();
@@ -37,6 +47,7 @@ function toggleSidebar(e) {
             if (isMobileOpen) overlay.classList.add('active');
             else overlay.classList.remove('active');
         }
+        updateSidebarToggleIcon(isMobileOpen);
         return;
     }
 
@@ -44,6 +55,7 @@ function toggleSidebar(e) {
     const isCollapsed = sidebar.classList.toggle('collapsed');
     localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
     document.cookie = "sidebar_collapsed=" + (isCollapsed ? "true" : "false") + "; path=/; max-age=31536000";
+    updateSidebarToggleIcon(!isCollapsed);
 }
 
 /**
@@ -61,6 +73,7 @@ function toggleMobileSidebar() {
     } else {
         sidebar.classList.add('mobile-open');
         if (overlay) overlay.classList.add('active');
+        updateSidebarToggleIcon(true);
     }
 }
 
@@ -69,6 +82,7 @@ function closeMobileSidebar() {
     const overlay = document.getElementById('mobile-sidebar-overlay');
     if (sidebar) sidebar.classList.remove('mobile-open');
     if (overlay) overlay.classList.remove('active');
+    updateSidebarToggleIcon(false);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -76,8 +90,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (sidebar) {
         // Restore saved sidebar state
-        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+        const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+        if (isCollapsed) {
             sidebar.classList.add('collapsed');
+            updateSidebarToggleIcon(false);
+        } else {
+            updateSidebarToggleIcon(true);
         }
     }
 });

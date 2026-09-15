@@ -7,16 +7,14 @@ require_once __DIR__ . '/../src/asterisk_sync.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Sadece admin veya pending_sync düzenleme yetkisi olanlar uygulayabilir
-if (!hasModulePermission('pending_sync', 'edit') && ($_SESSION['user_role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmuyor.']);
-    return;
-}
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
+    if (!hasModulePermission('pending_sync', 'view') && ($_SESSION['user_role'] ?? '') !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmuyor.']);
+        return;
+    }
     $action = $_GET['action'] ?? 'count';
     if ($action === 'count') {
         $count = getPendingSyncCount();
@@ -34,6 +32,12 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    if (!hasModulePermission('pending_sync', 'edit') && ($_SESSION['user_role'] ?? '') !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmuyor.']);
+        return;
+    }
+
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true) ?: [];
 

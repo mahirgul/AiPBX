@@ -19,9 +19,11 @@
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('soundHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="openUploadSoundModal()" title="<?php echo t('sounds.new_tooltip'); ?>">
-                    <i class="fas fa-file-audio"></i>
-                </button>
+                <?php if (hasModulePermission('sounds', 'edit')): ?>
+                    <button class="btn btn-primary btn-sm" onclick="openUploadSoundModal()" title="<?php echo t('sounds.new_tooltip'); ?>">
+                        <i class="fas fa-file-audio"></i>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -110,9 +112,11 @@
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('mohHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="openMohModal()" title="<?php echo t('sounds.new_moh_tooltip'); ?>">
-                    <i class="fas fa-plus-circle"></i>
-                </button>
+                <?php if (hasModulePermission('sounds', 'edit')): ?>
+                    <button class="btn btn-primary btn-sm" onclick="openMohModal()" title="<?php echo t('sounds.new_moh_tooltip'); ?>">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 

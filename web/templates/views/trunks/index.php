@@ -7,9 +7,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('trunkHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateTrunkModal()" title="Yeni Ekle">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('trunks', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateTrunkModal()" title="Yeni Ekle">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

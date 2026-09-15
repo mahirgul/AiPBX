@@ -11,7 +11,7 @@ $theme = $_SESSION['theme'] ?? 'light';
 $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
-$is_dashboard_active = in_array($active_page, ['dashboard.php', 'index.php', 'my_phone.php', 'cdr_reports.php', 'reports.php']);
+$is_dashboard_active = in_array($active_page, ['dashboard.php', 'index.php', 'my_phone.php', 'chat.php', 'cdr_reports.php', 'reports.php']);
 $is_trunk_active = in_array($active_page, ['trunks.php', 'did_routes.php', 'outbound_routes.php']);
 $is_pbx_active = in_array($active_page, ['time_conditions.php', 'ivrs.php', 'extensions.php', 'queues.php', 'sounds.php', 'end_call.php']);
 $is_admin_active = in_array($active_page, ['system_users.php', 'roles.php', 'asterisk_settings.php', 'brand_settings.php', 'fax_mail_settings.php', 'fax_settings.php', 'pending_sync.php', 'audit_log.php', 'push_settings.php']);
@@ -20,9 +20,10 @@ $is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc
 $is_security_active = in_array($active_page, ['firewall.php', 'fail2ban.php']);
 
 // Module Visibility Checks via RBAC
+$can_view_dashboard_group = hasModulePermission('dashboard', 'view') || hasModulePermission('my_phone', 'view') || hasModulePermission('chat', 'view') || hasModulePermission('cdr_reports', 'view') || hasModulePermission('cc_reports', 'view');
 $can_view_trunks_group = hasModulePermission('trunks', 'view') || hasModulePermission('did_routes', 'view') || hasModulePermission('outbound_routes', 'view');
 $can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModulePermission('ivrs', 'view') || hasModulePermission('extensions', 'view') || hasModulePermission('queues', 'view') || hasModulePermission('sounds', 'view') || hasModulePermission('end_call', 'view');
-$can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('audit_log', 'view');
+$can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('pending_sync', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('audit_log', 'view');
 $can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
 $can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view');
 // Firewall/fail2ban HER ZAMAN admin-only (auth.php circuit-breaker) — grup
@@ -57,6 +58,18 @@ if ($is_spa_request) {
     echo '<div id="spa-page-data" data-title="' . htmlspecialchars(($page_title ?? '') . ' - ' . $site_title) . '" data-page="' . htmlspecialchars($active_page) . '" data-pending-sync-count="' . (int)$pending_sync_count_for_spa . '"></div>';
     return;
 }
+$is_cc_agent = ($user['role'] === 'cc_agent');
+if (!$is_cc_agent && !empty($user['extension'])) {
+    $stmt_top = $db->query("SELECT members_json FROM pbx_queues WHERE is_active = 1");
+    $q_mems = $stmt_top ? $stmt_top->fetchAll(PDO::FETCH_COLUMN) : [];
+    foreach ($q_mems as $mj) {
+        $m_arr = json_decode($mj ?? '[]', true) ?: [];
+        if (in_array((string)$user['extension'], array_map('strval', $m_arr))) {
+            $is_cc_agent = true;
+            break;
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="tr" data-theme="<?php echo htmlspecialchars($theme); ?>">
@@ -89,6 +102,7 @@ if ($is_spa_request) {
         })();
         window.CSRF_TOKEN = "<?php echo getCSRFToken(); ?>";
         window.CURRENT_USER_EXT = "<?php echo htmlspecialchars($user['extension'] ?? ''); ?>";
+        window.IS_CC_AGENT = <?php echo $is_cc_agent ? 'true' : 'false'; ?>;
         // WebSocket yolu sys_settings'ten gelir (kodda statik değer yok)
         window.PORTAL_WS_PATH = "<?php echo htmlspecialchars(getSystemSetting('pjsip_ws_path', '/ws')); ?>";
         // SIP parolası sayfa kaynağına gömülmez; /api/sip_credentials.php üzerinden lazım olduğunda alınır

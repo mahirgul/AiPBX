@@ -12,6 +12,10 @@
  * UI Component Helpers for Centralized Single-Point UI Management
  */
 function uiSaveButton($title = 'Kaydet', $extra_attr = '', $icon = 'fa-save') {
+    $module = getModuleKeyForPage();
+    if (!hasModulePermission($module, 'edit')) {
+        return '';
+    }
     return '<button type="submit" class="btn btn-primary" title="' . htmlspecialchars($title, ENT_QUOTES) . '" ' . $extra_attr . '><i class="fas ' . htmlspecialchars($icon, ENT_QUOTES) . '"></i><span class="btn-label">' . htmlspecialchars($title, ENT_QUOTES) . '</span></button>';
 }
 
@@ -21,9 +25,12 @@ function uiCancelButton($onclick = '', $title = 'İptal') {
 }
 
 function uiModalFooter($close_fn = '', $save_title = 'Kaydet', $save_attr = '', $save_icon = 'fa-save') {
+    $module = getModuleKeyForPage();
+    $can_edit = hasModulePermission($module, 'edit');
+    $close_label = $can_edit ? 'İptal' : 'Kapat';
     return '<div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">' .
-               uiCancelButton($close_fn, 'İptal') .
-               uiSaveButton($save_title, $save_attr, $save_icon) .
+               uiCancelButton($close_fn, $close_label) .
+               ($can_edit ? uiSaveButton($save_title, $save_attr, $save_icon) : '') .
            '</div>';
 }
 
@@ -34,9 +41,16 @@ function uiModalFooter($close_fn = '', $save_title = 'Kaydet', $save_attr = '', 
  */
 function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle_status') {
     $active = ((int)$isActive === 1);
-    $btnClass = $active ? 'btn-success' : 'btn-danger';
     $icon = $active ? 'fa-check-circle' : 'fa-times-circle';
     $label = $active ? 'Aktif' : 'Pasif';
+    $module = getModuleKeyForPage();
+    if (!hasModulePermission($module, 'edit')) {
+        $badgeClass = $active ? 'badge-success' : 'badge-danger';
+        return '<span class="badge ' . $badgeClass . '" style="padding: 3px 8px; font-size: 11px;">'
+            . '<i class="fas ' . $icon . '"></i> ' . $label
+            . '</span>';
+    }
+    $btnClass = $active ? 'btn-success' : 'btn-danger';
     return '<form method="POST" autocomplete="off" style="display:inline;">'
         . '<input type="hidden" name="csrf_token" value="' . getCSRFToken() . '">'
         . '<input type="hidden" name="' . htmlspecialchars($toggleField) . '" value="1">'
@@ -52,6 +66,10 @@ function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle
  * fields after the id field, in insertion order, without needing their own copy of this form.
  */
 function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $title = 'Sil', $icon = 'fa-trash-alt', array $extraHidden = [], $formStyle = 'display:inline;') {
+    $module = getModuleKeyForPage();
+    if (!hasModulePermission($module, 'delete') && !hasModulePermission($module, 'edit')) {
+        return '';
+    }
     $extraHtml = '';
     foreach ($extraHidden as $name => $val) {
         $extraHtml .= '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($val) . '">';
@@ -72,6 +90,12 @@ function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = 'Bu kay
  * uiRowActions() wrapper.
  */
 function uiEditButton(array $row, $editJsFn, $title = 'Düzenle', $icon = 'fa-edit', $btnClass = 'btn-secondary') {
+    $module = getModuleKeyForPage();
+    $can_edit = hasModulePermission($module, 'edit');
+    if (!$can_edit) {
+        $title = 'Görüntüle';
+        $icon = 'fa-eye';
+    }
     $rowJson = json_encode($row, JSON_HEX_APOS | JSON_HEX_QUOT);
     return '<button class="btn ' . htmlspecialchars($btnClass) . ' btn-sm" onclick=\'' . $editJsFn . '(' . $rowJson . ')\' title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '"></i></button>';
 }
@@ -82,6 +106,10 @@ function uiEditButton(array $row, $editJsFn, $title = 'Düzenle', $icon = 'fa-ed
  * where deletion is conditionally disabled (e.g. end_call.php's built-in hangup/busy/congestion).
  */
 function uiRowActions(array $row, $editJsFn, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $deleteTitle = 'Sil', $deleteIcon = 'fa-trash-alt', $editTitle = 'Düzenle', $editIcon = 'fa-edit', array $extraHidden = [], $showDelete = true, $editBtnClass = 'btn-secondary') {
+    $module = getModuleKeyForPage();
+    if (!hasModulePermission($module, 'delete') && !hasModulePermission($module, 'edit')) {
+        $showDelete = false;
+    }
     $id = $row['id'] ?? '';
     $html = '<div class="table-actions-cell">' . uiEditButton($row, $editJsFn, $editTitle, $editIcon, $editBtnClass);
     if ($showDelete) {

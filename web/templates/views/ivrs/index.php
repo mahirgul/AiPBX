@@ -8,9 +8,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('ivrHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateIvrModal()" title="Yeni Ekle">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('ivrs', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateIvrModal()" title="Yeni Ekle">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

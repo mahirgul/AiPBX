@@ -388,16 +388,34 @@ function check_lint(): void
         fail('lint', 'lint_lang.php', trim(implode(' | ', array_slice($o2, -6))));
     }
 
-    // 3) Kendi JS dosyalarımızda süslü parantez dengesi (vendor/min hariç).
-    //    Kaba ama ucuz bir "yarım kalmış düzenleme" göstergesi.
+    // 3) JS sözdizimi (vendor/min hariç).
+    //
+    //    `node --check` gerçek bir ayrıştırıcıdır. Önceden burada yalnızca
+    //    süslü parantez sayımı vardı; o, sözdizimi hatasının çoğunu KAÇIRIR
+    //    (dengeli parantezle de bozuk JS yazılabilir). 2026-09-15'te
+    //    header_phone.js'e yapılan bir düzenleme bu yüzden ayrıştırıcıdan
+    //    geçmeden commit edildi — node kurulu değildi.
+    //
+    //    node yoksa eski kaba sayım yedek olarak korunur: kontrol hiç
+    //    çalışmamasındansa zayıf çalışsın.
     $n++;
+    exec('command -v node 2>/dev/null', $nodeOut, $nodeRet);
+    $hasNode = ($nodeRet === 0 && !empty($nodeOut));
     foreach (glob(SMOKE_ROOT . '/assets/js/*.js') as $f) {
         if (preg_match('/\.min\.js$/', basename($f))) { continue; }
-        $src = file_get_contents($f);
-        $open = substr_count($src, '{');
-        $close = substr_count($src, '}');
-        if ($open !== $close) {
-            fail('lint', basename($f), "suslu parantez dengesi bozuk ({ $open / } $close)");
+        if ($hasNode) {
+            $o3 = [];
+            exec('node --check ' . escapeshellarg($f) . ' 2>&1', $o3, $ret3);
+            if ($ret3 !== 0) {
+                fail('lint', basename($f), 'node --check: ' . trim(implode(' | ', array_slice($o3, 0, 3))));
+            }
+        } else {
+            $src = file_get_contents($f);
+            $open = substr_count($src, '{');
+            $close = substr_count($src, '}');
+            if ($open !== $close) {
+                fail('lint', basename($f), "suslu parantez dengesi bozuk ({ $open / } $close) [node yok]");
+            }
         }
     }
 

@@ -43,7 +43,7 @@
                             <td style="text-align: right;">
                                 <?php if ($is_protected): ?>
                                     <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('firewall.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
-                                <?php else: ?>
+                                <?php elseif (hasModulePermission('firewall', 'delete') || hasModulePermission('firewall', 'edit')): ?>
                                     <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('firewall.remove_confirm'), ENT_QUOTES); ?>');">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="remove_port_rule" value="1">
@@ -61,7 +61,7 @@
                             <td style="text-align: right;">
                                 <?php if ($is_protected): ?>
                                     <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('firewall.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
-                                <?php else: ?>
+                                <?php elseif (hasModulePermission('firewall', 'delete') || hasModulePermission('firewall', 'edit')): ?>
                                     <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('firewall.remove_confirm'), ENT_QUOTES); ?>');">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="remove_rich_rule" value="1">
@@ -78,6 +78,7 @@
     </div>
 </div>
 
+<?php if (hasModulePermission('firewall', 'edit')): ?>
 <div class="card" style="max-width: 560px;">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('firewall.add_rule_title'); ?></div>
@@ -111,3 +112,4 @@
         </button>
     </form>
 </div>
+<?php endif; ?>

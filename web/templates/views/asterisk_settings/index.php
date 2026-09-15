@@ -358,7 +358,9 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
-        <i class="fas fa-save"></i>
-    </button>
+    <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
+            <i class="fas fa-save"></i>
+        </button>
+    <?php endif; ?>
 </form>

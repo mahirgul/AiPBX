@@ -7,7 +7,7 @@ class ChatController extends BaseController
     public static function index(): void
     {
         requireLogin();
-        static::requireModule('dashboard', 'view');
+        static::requireModule('chat', 'view');
 
         $user = getCurrentUser();
         $ext = trim($user['extension'] ?? '');

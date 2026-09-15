@@ -18,9 +18,6 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <div class="brand-title"><?php echo htmlspecialchars($brand_title); ?></div>
             <div class="brand-sub"><?php echo htmlspecialchars($brand_sub); ?></div>
         </div>
-        <button type="button" class="sidebar-close-btn" onclick="toggleSidebar(event)" title="<?php echo t('sidebar.toggle_tooltip'); ?>">
-            <i class="fas fa-chevron-left"></i>
-        </button>
     </div>
 
     <?php
@@ -65,7 +62,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
 
     <ul class="nav-menu">
         <!-- 1. Kontrol Paneli / Dashboard Menüsü -->
-        <?php if (hasModulePermission('dashboard', 'view')): ?>
+        <?php if ($can_view_dashboard_group): ?>
             <li class="nav-group <?php echo ($is_dashboard_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-dashboard">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-dashboard')" title="<?php echo t('sidebar.group_dashboard'); ?>">
                     <span class="toggle-title">
@@ -74,21 +71,27 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
                 <ul class="nav-submenu">
-                    <li>
-                        <a href="/dashboard" class="nav-link <?php echo $active_page === 'dashboard.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_dashboard_overview'); ?>">
-                            <i class="fas fa-tachometer-alt"></i> <span class="nav-text"><?php echo t('sidebar.item_dashboard_overview'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/my-phone" class="nav-link <?php echo $active_page === 'my_phone.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_my_phone'); ?>">
-                            <i class="fas fa-phone-volume"></i> <span class="nav-text"><?php echo t('sidebar.item_my_phone'); ?></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/chat" class="nav-link <?php echo $active_page === 'chat.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_chat'); ?>">
-                            <i class="fas fa-comments"></i> <span class="nav-text"><?php echo t('sidebar.item_chat'); ?></span>
-                        </a>
-                    </li>
+                    <?php if (hasModulePermission('dashboard', 'view')): ?>
+                        <li>
+                            <a href="/dashboard" class="nav-link <?php echo $active_page === 'dashboard.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_dashboard_overview'); ?>">
+                                <i class="fas fa-tachometer-alt"></i> <span class="nav-text"><?php echo t('sidebar.item_dashboard_overview'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('my_phone', 'view')): ?>
+                        <li>
+                            <a href="/my-phone" class="nav-link <?php echo $active_page === 'my_phone.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_my_phone'); ?>">
+                                <i class="fas fa-phone-volume"></i> <span class="nav-text"><?php echo t('sidebar.item_my_phone'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('chat', 'view')): ?>
+                        <li>
+                            <a href="/chat" class="nav-link <?php echo $active_page === 'chat.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_chat'); ?>">
+                                <i class="fas fa-comments"></i> <span class="nav-text"><?php echo t('sidebar.item_chat'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                     <?php if (hasModulePermission('cdr_reports', 'view') || hasModulePermission('cc_reports', 'view')): ?>
                         <li>
                             <a href="/cdr-reports" class="nav-link <?php echo ($active_page === 'cdr_reports.php' || $active_page === 'reports.php') ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_cdr_reports'); ?>">
