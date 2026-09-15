@@ -75,7 +75,7 @@
                                     <?php else: ?>
                                         <span style="color: var(--text-muted); font-size: 11px;"><?php echo t('fax_sent.no_file'); ?></span>
                                     <?php endif; ?>
-                                    <?php if ($fax['status'] === 'FAILED'): ?>
+                                    <?php if ($fax['status'] === 'FAILED' && hasModulePermission('fax_sent', 'edit')): ?>
                                         <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fax_sent.resend_confirm'), ENT_QUOTES); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="resend_sent_fax" value="1">
@@ -85,6 +85,7 @@
                                             </button>
                                         </form>
                                     <?php endif; ?>
+                                    <?php if (hasModulePermission('fax_sent', 'delete')): ?>
                                     <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fax_sent.delete_confirm'), ENT_QUOTES); ?>');">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_sent_fax" value="1">
@@ -93,6 +94,7 @@
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

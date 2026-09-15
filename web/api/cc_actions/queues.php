@@ -127,7 +127,18 @@ if ($action === 'get_supervisor_agents') {
                 'queue_title' => $q_title,
                 'status_key' => $st_info['status_key'],
                 'in_queue' => $st_info['in_queue'],
-                'is_paused' => $st_info['is_paused']
+                'is_paused' => (bool)$st_info['is_paused'],
+
+                // cc_board (templates/views/cc_board/index.php) BU alanlari okur:
+                // is_in_call -> "Görüşmede", is_paused -> "Molada",
+                // is_logged_in -> "Boşta", hicbiri yoksa "Çevrimdışı".
+                // Uretilmedikleri surece hepsi undefined kalip her temsilci
+                // "Çevrimdışı" gorunuyordu (2026-09-15).
+                // cc_supervisor eski alanlari (queue_name/in_queue/status_key)
+                // kullandigi icin onlar KORUNDU.
+                'is_logged_in' => (bool)$st_info['in_queue'],
+                'is_in_call' => ($st_info['status_key'] === 'BUSY'),
+                'queues' => [$q_name],
             ];
         }
     }

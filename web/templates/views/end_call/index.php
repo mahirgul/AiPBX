@@ -7,9 +7,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('endCallHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateHangupModal()" title="<?php echo t('end_call.new_tooltip'); ?>">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('end_call', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateHangupModal()" title="<?php echo t('end_call.new_tooltip'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

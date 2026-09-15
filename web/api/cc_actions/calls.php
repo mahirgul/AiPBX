@@ -61,16 +61,21 @@ if ($action === 'transfer') {
     }
     // Asıl aktarma tarayıcıda JsSIP session.refer() ile zaten yapılır;
     // bu, sinyalleşme başarısız olursa devreye giren AMI yedeğidir.
-    $channels = findAgentChannels($user_ext);
-    if (empty($channels)) {
-        echo json_encode(['success' => false, 'error' => 'Aktif çağrı kanalı bulunamadı']);
+    //
+    // YÖNLENDİRİLECEK KANAL ARAYANINKİDİR, temsilcininki DEĞİL.
+    // Eskiden findAgentChannels() ile bulunan TÜM temsilci kanalları
+    // (PJSIP cihaz bacağı + Local çiftinin iki yarısı) tek tek Redirect
+    // ediliyordu. Tek kanallı Redirect o kanalı köprüden çeker; arayan
+    // ortada kalır, Queue() uygulamasından düşer ve `h` uzantısında
+    // kapanır — 2026-09-15 canlı logunda temsilci 8915'e giderken aynı
+    // saniyede arayan Hangup yedi.
+    $caller_channel = findCallerChannelForAgent($user_ext);
+    if (empty($caller_channel)) {
+        echo json_encode(['success' => false, 'error' => 'Aktarılacak çağrı bulunamadı']);
         exit;
     }
-    $ok = false;
-    foreach ($channels as $ch) {
-        $res = sendAMICommand("Action: Redirect\r\nChannel: $ch\r\nContext: cc-internal\r\nExten: $to\r\nPriority: 1\r\n\r\n");
-        if ($res && strpos($res, 'Response: Success') !== false) $ok = true;
-    }
+    $res = sendAMICommand("Action: Redirect\r\nChannel: $caller_channel\r\nContext: cc-internal\r\nExten: $to\r\nPriority: 1\r\n\r\n");
+    $ok = ($res && strpos($res, 'Response: Success') !== false);
     echo json_encode(['success' => $ok, 'message' => $ok ? "Çağrı $to numarasına aktarılıyor..." : 'Aktarma komutu başarısız oldu']);
     exit;
 }

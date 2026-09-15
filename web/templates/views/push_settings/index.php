@@ -119,14 +119,17 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
             </div>
         </div>
 
+        <?php if (hasModulePermission('push_settings', 'edit')): ?>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
             <button type="submit" name="save_push_settings" class="btn btn-primary">
                 <i class="fas fa-save"></i> Ayarları Kaydet
             </button>
         </div>
+        <?php endif; ?>
     </form>
 </div>
 
+<?php if (hasModulePermission('push_settings', 'edit')): ?>
 <!-- Push Test Card -->
 <div class="card" style="margin-top: 24px;">
     <div class="card-header">
@@ -168,6 +171,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         <div id="testResultBox" style="display: none; margin-top: 16px;"></div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 function toggleModuleHelp(boxId) {

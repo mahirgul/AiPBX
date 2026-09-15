@@ -477,9 +477,15 @@ $search = $search ?? '';
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
-                        <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
-                    </button>
+                    <?php if (hasModulePermission('my_phone', 'edit')): ?>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                            <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                            <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
+                        </button>
+                    <?php endif; ?>
                 </form>
             </div>
 
@@ -495,7 +501,7 @@ $search = $search ?? '';
                         <i class="fas fa-microphone"></i> <?php echo t('phone_settings.field_mic'); ?>
                     </label>
                     <select id="my_phone_mic_select" class="form-control" onchange="savePhoneMicDevice(this.value)" style="font-size: 12.5px;">
-                        <option value="default"><?php echo t('phone_settings.loading'); ?></option>
+                        <option value="default">Sistem Varsayılanı</option>
                     </select>
                 </div>
 
@@ -506,7 +512,7 @@ $search = $search ?? '';
                     </label>
                     <div style="display: flex; gap: 8px;">
                         <select id="my_phone_speaker_select" class="form-control" onchange="savePhoneSpeakerDevice(this.value)" style="flex: 1; font-size: 12.5px;">
-                            <option value="default"><?php echo t('phone_settings.loading'); ?></option>
+                            <option value="default">Sistem Varsayılanı</option>
                         </select>
                         <button type="button" class="btn btn-secondary" onclick="testPhoneSpeaker()" title="<?php echo t('phone_settings.test_sound_tooltip'); ?>" style="padding: 0 14px;">
                             <i class="fas fa-play"></i>
@@ -688,6 +694,9 @@ function switchMyPhoneTab(tabName) {
         }
         history.replaceState(null, "", "/my-phone?tab=settings");
         localStorage.setItem("my_phone_active_tab", "settings");
+        if (typeof loadMyPhoneAudioDevices === "function") {
+            loadMyPhoneAudioDevices();
+        }
     } else {
         if (paneHistory) paneHistory.style.display = "block";
         if (paneSettings) paneSettings.style.display = "none";
@@ -760,56 +769,19 @@ function updateVolSlider(val) {
     }
 }
 
-// Sayfa yüklendiğinde aygıt listesini doldur ve aktif sekmeyi ayarla
-document.addEventListener("DOMContentLoaded", function() {
-    // URL parametresinde tab belirtilmişse veya localStorage'da kayıtlıysa
+function loadMyPhoneAudioDevices() {
+    if (typeof populatePhoneDeviceSelects === "function") {
+        populatePhoneDeviceSelects();
+    }
+}
+
+function initMyPhone() {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get("tab");
-    if (tabParam === "settings") {
+    if (tabParam === "settings" || (!tabParam && localStorage.getItem("my_phone_active_tab") === "settings")) {
         switchMyPhoneTab("settings");
-    } else if (!tabParam && localStorage.getItem("my_phone_active_tab") === "settings") {
-        switchMyPhoneTab("settings");
-    }
-
-    // Ses aygıtlarını listele
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        navigator.mediaDevices.enumerateDevices().then(function(devices) {
-            const micSelect = document.getElementById("my_phone_mic_select");
-            const spkSelect = document.getElementById("my_phone_speaker_select");
-            const curMic = localStorage.getItem("phone_mic_device_id") || "default";
-            const curSpk = localStorage.getItem("phone_speaker_device_id") || "default";
-
-            if (micSelect) micSelect.innerHTML = "";
-            if (spkSelect) spkSelect.innerHTML = "";
-
-            let micIdx = 1, spkIdx = 1;
-            devices.forEach(function(d) {
-                if (d.kind === "audioinput" && micSelect) {
-                    const opt = document.createElement("option");
-                    opt.value = d.deviceId;
-                    opt.text = d.label || ("Mikrofon " + micIdx++);
-                    if (d.deviceId === curMic) opt.selected = true;
-                    micSelect.appendChild(opt);
-                } else if (d.kind === "audiooutput" && spkSelect) {
-                    const opt = document.createElement("option");
-                    opt.value = d.deviceId;
-                    opt.text = d.label || ("Hoparlör " + spkIdx++);
-                    if (d.deviceId === curSpk) opt.selected = true;
-                    spkSelect.appendChild(opt);
-                }
-            });
-        }).catch(function(e) {
-            console.warn("Ses aygıtları alınamadı:", e);
-        });
-    }
-
-    // Ses seviyesi slider'ını senkronize et
-    const curVol = localStorage.getItem("phone_ring_volume");
-    if (curVol !== null) {
-        const slider = document.getElementById("my_phone_ring_slider");
-        const lbl = document.getElementById("my-phone-vol-label");
-        if (slider) slider.value = curVol;
-        if (lbl) lbl.textContent = curVol + "%";
+    } else {
+        loadMyPhoneAudioDevices();
     }
 
     // WebRTC durumunu softphone ile senkronize et
@@ -822,6 +794,17 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     syncMyPhoneWebrtc();
-    setInterval(syncMyPhoneWebrtc, 1000);
-});
+    if (!window._myPhoneSyncInterval) {
+        window._myPhoneSyncInterval = setInterval(syncMyPhoneWebrtc, 1000);
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMyPhone);
+} else {
+    initMyPhone();
+}
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener("devicechange", loadMyPhoneAudioDevices);
+}
 </script>

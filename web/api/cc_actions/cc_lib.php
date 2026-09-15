@@ -72,6 +72,79 @@ function findAgentChannels($ext) {
 }
 
 /**
+ * Transfer için ARAYANIN kanalını bulur.
+ *
+ * 2026-09-15'te ölçülen hata: transfer, TEMSİLCİNİN kanalını Redirect
+ * ediyordu. Tek kanallı Redirect o kanalı köprüden çeker; arayan ortada
+ * kalır, Queue() uygulamasından düşer ve `h` uzantısında kapanır. Canlı
+ * logda temsilci 8915'e giderken aynı saniyede arayan Hangup yedi.
+ *
+ * Zorluk: kuyruk çağrılarında araya Local kanal çifti girer ve (MixMonitor
+ * + Queue 'tT' yüzünden) optimize edilip yoldan çekilmez:
+ *
+ *   köprü A:  PJSIP/3002-webrtc  +  Local/3002@from-internal-pbx;2
+ *   köprü B:  Local/3002@from-internal-pbx;1  +  PJSIP/ccisgw   <- arayan
+ *
+ * Bu yüzden köprü zinciri Local çifti aşılarak yürünür.
+ *
+ * @param string     $ext   temsilcinin dahilisi
+ * @param array|null $lines "core show channels concise" satırları (test için)
+ * @return string|null arayanın kanal adı, bulunamazsa null
+ */
+function findCallerChannelForAgent($ext, $lines = null) {
+    $ext = preg_replace('/[^0-9]/', '', $ext);
+    if ($ext === '') return null;
+
+    if ($lines === null) {
+        $lines = [];
+        @exec("asterisk -rx " . escapeshellarg("core show channels concise"), $lines);
+    }
+
+    // "core show channels concise" 14 sütunludur ve '!' ile ayrılır
+    // (bkz. Asterisk main/cli.c CONCISE_FORMAT_STRING): [12] köprü kimliği.
+    $kopru = [];
+    $koprudekiler = [];
+    foreach ($lines as $l) {
+        $c = explode('!', $l);
+        if (count($c) < 14 || $c[0] === '') continue;
+        $kopru[$c[0]] = $c[12];
+        if ($c[12] !== '') $koprudekiler[$c[12]][] = $c[0];
+    }
+
+    $koprudekiEs = function ($kanal) use ($kopru, $koprudekiler) {
+        $b = $kopru[$kanal] ?? '';
+        if ($b === '') return null;
+        foreach ($koprudekiler[$b] ?? [] as $k) {
+            if ($k !== $kanal) return $k;
+        }
+        return null;
+    };
+
+    $cihazDeseni = '#^PJSIP/' . preg_quote($ext, '#') . '-(sip|webrtc|mob-webrtc)-#';
+    $kendiDeseni = '#^(PJSIP/' . preg_quote($ext, '#') . '-|Local/' . preg_quote($ext, '#') . '@)#';
+
+    foreach (array_keys($kopru) as $kanal) {
+        if (!preg_match($cihazDeseni, $kanal)) continue;
+
+        $es = $koprudekiEs($kanal);
+        if ($es === null) continue;
+
+        // Local çifti araya girmişse diğer yarısının köprüsüne geç.
+        if (preg_match('#^(Local/.*);2$#', $es, $m)) {
+            $es = $koprudekiEs($m[1] . ';1');
+            if ($es === null) continue;
+        }
+
+        // Temsilcinin kendi bacakları arayan olamaz.
+        if (preg_match($kendiDeseni, $es)) continue;
+
+        return $es;
+    }
+
+    return null;
+}
+
+/**
  * cc_pause_logs üzerinde ajan başına ATOMİK işlem garantisi.
  * Aynı ajan için eşzamanlı iki istek (iki sekme/cihaz, çift tıklama) UPDATE+INSERT
  * çiftini yarışa sokabilir (TOCTOU) — MySQL adlandırılmış kilidiyle serileştirilir.

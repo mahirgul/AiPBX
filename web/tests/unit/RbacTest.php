@@ -97,4 +97,27 @@ final class RbacTest extends TestCase
             $this->assertFalse(hasModulePermission($modul, 'access'));
         }
     }
+
+    /**
+     * Sadece İzleyici (read_only_admin) kuralı:
+     * DB'de açıkça izin verilse dahi ASLA hiçbir modülde düzenleme ('edit')
+     * veya silme ('delete') yapamaz. Sadece izleyici olarak kalmalıdır.
+     */
+    public function testReadOnlyAdminHicbirModuldeDuzenlemeVeSilmeYapamaz(): void
+    {
+        $_SESSION['user_role'] = 'read_only_admin';
+        $modules = ['trunks', 'extensions', 'queues', 'asterisk_settings', 'brand_settings', 'pending_sync', 'push_settings', 'fax_send', 'fax_sent', 'my_phone', 'chat'];
+
+        foreach ($modules as $m) {
+            $this->assertFalse(
+                hasModulePermission($m, 'edit'),
+                "read_only_admin '{$m}' modulunde edit yapabiliyor — Izleyici ayar yapamamali!"
+            );
+            $this->assertFalse(
+                hasModulePermission($m, 'delete'),
+                "read_only_admin '{$m}' modulunde delete yapabiliyor — Izleyici silme yapamamali!"
+            );
+        }
+    }
 }
+

@@ -69,29 +69,6 @@ body {
     box-shadow: none !important;
 }
 
-/* Sidebar İçi Kapatma Butonu (Brand içinde) */
-.sidebar-close-btn {
-    margin-left: auto;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.sidebar-close-btn:hover {
-    background: var(--bg-card-hover);
-    color: var(--primary);
-    border-color: var(--primary);
-}
 
 /* Topbar Sidebar Toggle Butonu */
 .sidebar-toggle-btn {

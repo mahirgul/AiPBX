@@ -93,9 +93,15 @@
             </div>
         </div>
 
+        <?php if (hasModulePermission('fax_send', 'edit')): ?>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('fax_send.send_tooltip'); ?>">
             <i class="fas fa-paper-plane"></i>
         </button>
+        <?php else: ?>
+        <div style="margin-top: 15px; padding: 12px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 13px;">
+            <i class="fas fa-info-circle"></i> <?php echo t('common.readonly_mode', 'Sadece izleyici modundasınız; faks gönderimi yapamazsınız.'); ?>
+        </div>
+        <?php endif; ?>
     </form>
 </div>
 

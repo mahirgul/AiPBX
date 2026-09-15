@@ -60,9 +60,14 @@ class RoleService {
             // aynı kısıtlama uygulanır, ki izin matrisi ekranı admin-olmayan bir
             // role bu iki modül için yanıltıcı bir "izinli" görünümü göstermesin.
             $locked_admin_only_modules = ['roles', 'system_users'];
+            $locked_admin_only_edit_modules = ['firewall', 'fail2ban', 'push_settings'];
             foreach ($modulesDefinition as $mod_key => $mod_info) {
                 if (in_array($mod_key, $locked_admin_only_modules, true) && $role_key !== 'admin') {
                     $can_view = $can_access = $can_edit = $can_delete = 0;
+                } elseif (in_array($mod_key, $locked_admin_only_edit_modules, true) && $role_key !== 'admin') {
+                    $can_view = isset($perms_post[$mod_key]['view']) ? 1 : 0;
+                    $can_access = isset($perms_post[$mod_key]['access']) ? 1 : 0;
+                    $can_edit = $can_delete = 0; // Sudo / API sırrı içeren modüller admin dışına açılamaz
                 } else {
                     $can_view = isset($perms_post[$mod_key]['view']) ? 1 : 0;
                     $can_access = isset($perms_post[$mod_key]['access']) ? 1 : 0;

@@ -7,9 +7,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('outboundHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateRouteModal()" title="Yeni Ekle">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('outbound_routes', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateRouteModal()" title="Yeni Ekle">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

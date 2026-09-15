@@ -148,13 +148,17 @@
             <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;"><?php echo t('brand_settings.live_preview'); ?></span>
             <button type="button" class="btn" id="preview_btn_primary" style="background: <?php echo htmlspecialchars($s['brand_color_primary'] ?: 'var(--primary)'); ?>; color: #fff;"><?php echo t('brand_settings.primary_button'); ?></button>
             <button type="button" class="btn" id="preview_btn_secondary" style="background: <?php echo htmlspecialchars($s['brand_color_secondary'] ?: 'var(--secondary)'); ?>; color: #fff;"><?php echo t('brand_settings.secondary_button'); ?></button>
-            <button type="button" class="btn btn-secondary" onclick="resetBrandColors()" style="margin-left: auto;"><i class="fas fa-undo"></i> <?php echo t('brand_settings.reset_colors'); ?></button>
+            <?php if (hasModulePermission('brand_settings', 'edit')): ?>
+                <button type="button" class="btn btn-secondary" onclick="resetBrandColors()" style="margin-left: auto;"><i class="fas fa-undo"></i> <?php echo t('brand_settings.reset_colors'); ?></button>
+            <?php endif; ?>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('brand_settings.save'); ?>">
-        <i class="fas fa-save"></i> <?php echo t('brand_settings.save'); ?>
-    </button>
+    <?php if (hasModulePermission('brand_settings', 'edit')): ?>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('brand_settings.save'); ?>">
+            <i class="fas fa-save"></i> <?php echo t('brand_settings.save'); ?>
+        </button>
+    <?php endif; ?>
 </form>
 
 <script>
