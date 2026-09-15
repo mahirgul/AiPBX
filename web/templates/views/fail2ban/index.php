@@ -83,7 +83,7 @@
                     <label class="form-label"><?php echo t('fail2ban.field_maxretry'); ?></label>
                     <input type="number" name="maxretry" class="form-control" value="<?php echo (int) $j['maxretry']; ?>" min="1" required>
                 </div>
-                <button type="submit" class="btn btn-primary" title="<?php echo t('fail2ban.save_config_tooltip'); ?>"><i class="fas fa-save"></i></button>
+                <button type="submit" class="btn btn-primary" title="<?php echo t('fail2ban.save_config_tooltip'); ?>" style="height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;"><i class="fas fa-save"></i> <span class="d-md-none"><?php echo t('fail2ban.save_config_tooltip'); ?></span></button>
             </div>
         </form>
         <?php endif; ?>

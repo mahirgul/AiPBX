@@ -23,8 +23,101 @@ $filter = $filter ?? 'all';
 $search = $search ?? '';
 ?>
 
+<style>
+.my-phone-header-card {
+    padding: 12px 18px;
+    border-left: 4px solid var(--primary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.my-phone-badges-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+}
+.my-phone-filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg-input);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.my-phone-filter-buttons {
+    display: inline-flex;
+    gap: 4px;
+    background: var(--bg-card);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.my-phone-settings-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+.my-phone-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .my-phone-header-card {
+        padding: 12px 14px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+    .my-phone-badges-wrapper {
+        width: 100% !important;
+        gap: 6px !important;
+    }
+    .my-phone-badges-wrapper .badge {
+        padding: 4px 7px !important;
+        font-size: 11px !important;
+    }
+    .my-phone-filter-bar {
+        padding: 10px 12px !important;
+        gap: 8px !important;
+    }
+    .my-phone-filter-buttons {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .my-phone-filter-buttons button {
+        flex: 1 1 auto !important;
+        padding: 6px 8px !important;
+        white-space: nowrap !important;
+        font-size: 11.5px !important;
+    }
+    .my-phone-search-wrapper {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    #tab-pane-history {
+        padding: 14px 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .my-phone-modes-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
 <!-- 1. Üst Dahili & Durum Çubuğu -->
-    <div class="card mb-3" style="padding: 12px 18px; border-left: 4px solid var(--primary); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+    <div class="card mb-3 my-phone-header-card">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
                 <i class="fas fa-phone-alt"></i>
@@ -46,7 +139,7 @@ $search = $search ?? '';
             </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11.5px;">
+        <div class="my-phone-badges-wrapper">
             <!-- WebRTC Durum Rozeti -->
             <?php $isWebrtcOnline = ($webrtcStatus && stripos($webrtcStatus, 'not in use') !== false); ?>
             <span id="my-phone-webrtc-pill" class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
@@ -123,12 +216,12 @@ $search = $search ?? '';
             </div>
 
             <!-- Filtreleme & Arama Çubuğu (CDR Raporları ile Birebir Uyumlu) -->
-            <form method="GET" action="/my-phone" id="myPhoneFilterForm" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: var(--bg-input); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <form method="GET" action="/my-phone" id="myPhoneFilterForm" class="my-phone-filter-bar">
                 <input type="hidden" name="tab" value="history">
                 <input type="hidden" name="filter" id="myPhoneFilterInput" value="<?php echo htmlspecialchars($filter); ?>">
 
                 <!-- Yön Filtre Butonları -->
-                <div style="display: inline-flex; gap: 4px; background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div class="my-phone-filter-buttons">
                     <button type="button" onclick="setMyPhoneFilter('all')" class="btn btn-xs <?php echo $filter === 'all' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px;">
                         <?php echo t('my_phone.filter_all'); ?>
                     </button>
@@ -144,7 +237,7 @@ $search = $search ?? '';
                 </div>
 
                 <!-- Arama Kutusu -->
-                <div style="position: relative; flex: 1; min-width: 200px; max-width: 380px;">
+                <div class="my-phone-search-wrapper" style="position: relative; flex: 1; min-width: 200px; max-width: 380px;">
                     <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
                     <input type="text" name="q" value="<?php echo htmlspecialchars($search); ?>" class="form-control form-control-sm" placeholder="Numara veya kişi adı ara..." style="padding-left: 32px; border-radius: 8px;">
                 </div>
@@ -169,7 +262,7 @@ $search = $search ?? '';
                             <th><?php echo t('my_phone.col_date'); ?></th>
                             <th><?php echo t('my_phone.col_direction'); ?></th>
                             <th><?php echo t('my_phone.col_party'); ?></th>
-                            <th><?php echo t('my_phone.col_device'); ?></th>
+                            <th class="col-hide-mobile"><?php echo t('my_phone.col_device'); ?></th>
                             <th><?php echo t('my_phone.col_duration'); ?></th>
                             <th><?php echo t('my_phone.col_status'); ?></th>
                             <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
@@ -253,7 +346,7 @@ $search = $search ?? '';
                                     </td>
 
                                     <!-- Cihaz -->
-                                    <td>
+                                    <td class="col-hide-mobile">
                                         <?php if ($dev === 'mobil'): ?>
                                             <span class="badge" style="background: rgba(13, 202, 240, 0.15); color: #087990; border: 1px solid rgba(13, 202, 240, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                                                 <i class="fas fa-mobile-alt"></i> Mobil
@@ -321,7 +414,7 @@ $search = $search ?? '';
         </div>
 
         <!-- TAB 2: TELEFON & CİHAZ AYARLARI (Geniş 3 Kolonlu Izgara Düzeni) -->
-        <div id="tab-pane-settings" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; align-items: start;">
+        <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
             
             <!-- Kart 1: Telefon & Yönlendirme Ayarları -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
@@ -430,7 +523,7 @@ $search = $search ?? '';
                             <?php echo t('my_phone.phone_modes_desc'); ?>
                         </small>
 
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div class="my-phone-modes-grid">
                             <!-- Web (Tarayıcı) -->
                             <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
                                 <input type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary);">

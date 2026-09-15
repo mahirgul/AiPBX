@@ -34,7 +34,7 @@ $destOptionsCache = [];
                     <th class="col-hide-mobile"><?php echo t('did.col_desc'); ?></th>
                     <th><?php echo t('did.col_target'); ?></th>
                     <th><?php echo t('did.col_detail'); ?></th>
-                    <th><?php echo t('did.col_recording'); ?></th>
+                    <th class="col-hide-mobile"><?php echo t('did.col_recording'); ?></th>
                     <th><?php echo t('did.col_status'); ?></th>
                     <th class="text-right"><?php echo t('did.col_actions'); ?></th>
                 </tr>
@@ -66,7 +66,7 @@ $destOptionsCache = [];
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td class="col-hide-mobile">
                                 <?php if (!empty($r['record_call'])): ?>
                                     <span class="badge badge-danger"><i class="fas fa-microphone"></i> <?php echo t('did.recording_forced'); ?></span>
                                 <?php else: ?>
