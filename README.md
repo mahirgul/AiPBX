@@ -98,7 +98,7 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Presence & Delivery Receipts** — Real-time typing indicators, read receipts, and online status tracking
 - **FCM Push Notifications** — Background notifications with conversation grouping for both direct and group messages
 
-### 📱 Android App (Build 32 · v1.0.31)
+### 📱 Android App (Build 33 · v1.0.32)
 - **Native Kotlin** application with zero external cloud dependencies
 - **PJSIP + WebRTC** dual engine with Opus HD audio & DTLS-SRTP encryption
 - **FCM Push & Persistent Foreground Service** — instantaneous wake-up for incoming calls
