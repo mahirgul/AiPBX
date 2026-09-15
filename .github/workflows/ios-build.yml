@@ -82,8 +82,8 @@ jobs:
         run: |
           mkdir -p build/Payload
           cp -r build/AiPBX.xcarchive/Products/Applications/AiPBX.app build/Payload/
-          cd build && zip -r AiPBX-unsigned.ipa Payload
-          cd DerivedData/Build/Products/Release-iphonesimulator && zip -r ../../../../build/AiPBX-Simulator.zip AiPBX.app
+          (cd build && zip -r AiPBX-unsigned.ipa Payload)
+          (cd build/DerivedData/Build/Products/Release-iphonesimulator && zip -r "$GITHUB_WORKSPACE/ios/build/AiPBX-Simulator.zip" AiPBX.app)
 
       - name: Upload iOS App Artifacts
         uses: actions/upload-artifact@v4
