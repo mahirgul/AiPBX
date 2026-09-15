@@ -7,16 +7,18 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('extHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <form method="POST" autocomplete="off" style="display:inline;">
-                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-                <input type="hidden" name="sync_all_extensions" value="1">
-                <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
-                    <i class="fas fa-sync-alt"></i>
+            <?php if (hasModulePermission('extensions', 'edit')): ?>
+                <form method="POST" autocomplete="off" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                    <input type="hidden" name="sync_all_extensions" value="1">
+                    <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </form>
+                <button class="btn btn-primary btn-sm" onclick="openCreateExtensionModal()" title="<?php echo t('extensions.new_tooltip'); ?>">
+                    <i class="fas fa-plus-circle"></i>
                 </button>
-            </form>
-            <button class="btn btn-primary btn-sm" onclick="openCreateExtensionModal()" title="<?php echo t('extensions.new_tooltip'); ?>">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php endif; ?>
         </div>
     </div>
 

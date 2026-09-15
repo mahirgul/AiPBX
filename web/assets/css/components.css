@@ -1330,8 +1330,7 @@ body.auth-body {
     }
 
     .mobile-menu-btn,
-    .header-phone-status-pill,
-    .header-phone-mode-switcher {
+    .header-phone-status-pill {
         flex-shrink: 0;
     }
 

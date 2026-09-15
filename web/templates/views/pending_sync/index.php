@@ -63,11 +63,13 @@ $action_label_map = [
                 </div>
             <?php endforeach; ?>
 
-            <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                <button type="submit" class="btn btn-primary" onclick="return confirm('<?php echo htmlspecialchars(t('pending_sync.confirm_apply'), ENT_QUOTES); ?>');">
-                    <i class="fas fa-paper-plane"></i> <?php echo t('pending_sync.submit_button'); ?>
-                </button>
-            </div>
+            <?php if (hasModulePermission('pending_sync', 'edit')): ?>
+                <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('<?php echo htmlspecialchars(t('pending_sync.confirm_apply'), ENT_QUOTES); ?>');">
+                        <i class="fas fa-paper-plane"></i> <?php echo t('pending_sync.submit_button'); ?>
+                    </button>
+                </div>
+            <?php endif; ?>
         </form>
     <?php endif; ?>
 </div>

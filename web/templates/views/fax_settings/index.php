@@ -6,9 +6,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSettingsHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateFaxDidModal()" title="<?php echo t('fax_settings.new_tooltip'); ?>">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('fax_settings', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateFaxDidModal()" title="<?php echo t('fax_settings.new_tooltip'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

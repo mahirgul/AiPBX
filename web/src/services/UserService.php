@@ -176,9 +176,15 @@ class UserService {
                     DBHelper::update('pbx_queues', $update_data, 'id', $q['id']);
                 }
 
-                // Remove from live Asterisk queues
-                @exec("asterisk -rx " . escapeshellarg("queue remove member Local/$ext@from-internal-pbx/n from queue_cc"), $out);
-                @exec("asterisk -rx " . escapeshellarg("queue remove member PJSIP/$ext from queue_cc"), $out);
+                // Remove from all live Asterisk queues
+                require_once __DIR__ . '/../queue_helper.php';
+                $db_q = getDB();
+                $stmt_all_q = $db_q->query("SELECT queue_name FROM pbx_queues WHERE is_active = 1");
+                if ($stmt_all_q) {
+                    foreach ($stmt_all_q->fetchAll(PDO::FETCH_COLUMN) as $qn) {
+                        QueueHelper::setMembership($ext, $qn, false);
+                    }
+                }
                 markPendingSync('extensions', 'extension', $ext, "Dahili: {$ext} (kullanıcı silindi)", 'delete', $_SESSION['user_id'] ?? null);
                 return "Kullanıcı hesabı silindi! Etkili olması için Uygula sayfasından gönderin.";
             }

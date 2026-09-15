@@ -192,6 +192,8 @@ fi
 
 rm -rf /var/www/html
 ln -sf "$INSTALL_DIR/web" /var/www/html
+ln -sf "$INSTALL_DIR/web/bin/feature_code_action.php" /usr/local/bin/feature_code_action.php
+chmod 755 "$INSTALL_DIR/web/bin/feature_code_action.php"
 
 mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing

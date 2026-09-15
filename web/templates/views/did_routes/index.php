@@ -11,9 +11,11 @@ $destOptionsCache = [];
             <button type="button" class="btn-help" onclick="toggleModuleHelp('didHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateDidModal()" title="Yeni Ekle">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('did_routes', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateDidModal()" title="Yeni Ekle">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

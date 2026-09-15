@@ -27,10 +27,82 @@ function __syncFeatureCodesBody() {
         if ($code === '' || $key === '') continue;
 
         $conf .= "; " . toCleanAscii($c['title']) . " ({$key})\n";
-        $conf .= "exten => {$code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
-
         $allowed = trim($c['allowed_roles'] ?? '');
         $gated = $allowed !== '';
+
+        if ($key === 'queue_login' || $key === 'queue_logout') {
+            $base_code = rtrim(ltrim($code, '_'), '.X');
+            $pattern_code = '_' . $base_code . '.';
+            $prefix_len = strlen($base_code);
+            $action = ($key === 'queue_login') ? 'queue_login' : 'queue_logout';
+
+            // 1. Doğrudan kod tuşlandığında (*81 / *80): Temsilcinin atanmış olduğu tüm kuyruklara giriş/çıkış
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - tum kuyruklar)\n";
+            $conf .= "exten => {$base_code},1,NoOp(Feature Code {$key} (all queues) by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_base)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_base),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} all &)\n";
+            $conf .= " same => n,Answer()\n";
+            if ($key === 'queue_login') {
+                $conf .= " same => n,Playback(queue-agentlogin-success)\n";
+                $conf .= " same => n,GotoIf(\$[\"\${PLAYBACKSTATUS}\" = \"SUCCESS\"]?login_all_done)\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n(login_all_done),Wait(2)\n";
+                $conf .= " same => n,Hangup()\n\n";
+            } else {
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(0.2)\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(2)\n";
+                $conf .= " same => n,Hangup()\n\n";
+            }
+
+            // 2. Belirli kuyruk no/id tuşlandığında (*81<kuyruk> / *80<kuyruk>): Belirli kuyruğa giriş/çıkış
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - belirli kuyruk)\n";
+            $conf .= "exten => {$pattern_code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_pat)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(2)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_pat),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,Set(QID=\${EXTEN:{$prefix_len}})\n";
+            $conf .= " same => n,GotoIf(\$[\"\${QID}\" = \"\"]?{$key}_empty)\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} \${QID} &)\n";
+            $conf .= " same => n,Answer()\n";
+            if ($key === 'queue_login') {
+                $conf .= " same => n,Playback(queue-agentlogin-success)\n";
+                $conf .= " same => n,GotoIf(\$[\"\${PLAYBACKSTATUS}\" = \"SUCCESS\"]?login_pat_done)\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n(login_pat_done),Wait(2)\n";
+                $conf .= " same => n,Hangup()\n";
+            } else {
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(0.2)\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(2)\n";
+                $conf .= " same => n,Hangup()\n";
+            }
+            $conf .= " same => n({$key}_empty),Playback(beep)\n";
+            $conf .= " same => n,Wait(2)\n";
+            $conf .= " same => n,Hangup()\n\n";
+            continue;
+        }
+
+        $conf .= "; " . toCleanAscii($c['title']) . " ({$key})\n";
+        $conf .= "exten => {$code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
+
         if ($gated) {
             $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
             $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
@@ -82,22 +154,6 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 break;
 
-            case 'queue_login':
-            case 'queue_logout':
-                // Kod bir desen ("_*81." gibi) — baştaki '_' ve sondaki joker karakter(ler)
-                // ("." veya "X") atılınca kalan sabit önek uzunluğu, tuşlanan geri kalan
-                // basamakların (${EXTEN:N}) kuyruk ID'si (pbx_queues.id) olarak alınacağı yeri belirler.
-                $prefix_len = strlen(rtrim(ltrim($code, '_'), '.X'));
-                $action = ($key === 'queue_login') ? 'queue_login' : 'queue_logout';
-                $conf .= " same => n,Set(QID=\${EXTEN:{$prefix_len}})\n";
-                $conf .= " same => n,GotoIf(\$[\"\${QID}\" = \"\"]?{$key}_empty)\n";
-                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} \${QID} &)\n";
-                $conf .= " same => n,Answer()\n";
-                $conf .= " same => n,Playback(beep)\n";
-                $conf .= " same => n,Hangup()\n";
-                $conf .= " same => n({$key}_empty),Playback(beep)\n";
-                $conf .= " same => n,Hangup()\n";
-                break;
 
             case 'spy':
                 $conf .= " same => n,Answer()\n";

@@ -7,9 +7,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('queueHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateQueueModal()" title="<?php echo t('queues.new_tooltip'); ?>">
-                <i class="fas fa-plus-circle"></i>
-            </button>
+            <?php if (hasModulePermission('queues', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateQueueModal()" title="<?php echo t('queues.new_tooltip'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

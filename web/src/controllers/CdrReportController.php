@@ -6,6 +6,9 @@ class CdrReportController extends BaseController
     public static function index(): void
     {
         requireLogin();
+        if (!hasModulePermission('cdr_reports', 'view') && !hasModulePermission('cc_reports', 'view')) {
+            static::requireModule('cdr_reports', 'view');
+        }
 
         $user = getCurrentUser();
         $role = $_SESSION['user_role'] ?? 'fax_user';

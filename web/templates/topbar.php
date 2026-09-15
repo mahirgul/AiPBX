@@ -5,8 +5,11 @@
 ?>
 <header class="top-bar">
     <div class="top-bar-left">
+<?php
+$is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar_collapsed'] === 'true');
+?>
         <button type="button" class="sidebar-toggle-btn" id="header-sidebar-toggle" onclick="toggleSidebar(event)" title="<?php echo t('sidebar.toggle_tooltip'); ?>">
-            <i class="fas fa-bars"></i>
+            <i class="fas <?php echo $is_collapsed_cookie ? 'fa-chevron-right' : 'fa-chevron-left'; ?>" id="header-sidebar-toggle-icon"></i>
         </button>
 
         <!-- Live Phone Status Badge (tıklanınca Telefon Ayarları modalı açılır) -->
@@ -15,53 +18,9 @@
             <span class="status-text" id="header-status-text"><?php echo htmlspecialchars($user['extension'] ?: '3000'); ?></span>
         </div>
 
-        <!-- Header Phone Mode Switcher (WebRTC vs Desk/SIP Phone) - Icon Only -->
-        <?php 
-        $user_modes = parsePhoneModes($user['allowed_phone_mode'] ?? 'both');
-        $can_web = in_array('web', $user_modes, true);
-        $can_sip = in_array('sip', $user_modes, true);
-        $can_mob = in_array('mobil', $user_modes, true);
-        ?>
-        <?php if ($can_web && $can_sip): ?>
-            <div class="header-phone-mode-switcher" style="display: flex; align-items: center; gap: 2px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px 4px; flex-shrink: 0;" title="<?php echo t('topbar.phone_mode_selector_tooltip'); ?>">
-                <button type="button" id="header-mode-webrtc" onclick="setHeaderPhoneMode('webrtc')" class="btn btn-xs" style="border-radius: 16px; padding: 4px 9px; font-size: 13px; border: none; cursor: pointer;" title="<?php echo t('topbar.webrtc_mode_tooltip'); ?>">
-                    <i class="fas fa-laptop"></i>
-                </button>
-                <button type="button" id="header-mode-sip" onclick="setHeaderPhoneMode('sip')" class="btn btn-xs" style="border-radius: 16px; padding: 4px 9px; font-size: 13px; border: none; cursor: pointer;" title="<?php echo t('topbar.sip_mode_tooltip'); ?>">
-                    <i class="fas fa-phone-alt"></i>
-                </button>
-            </div>
-        <?php elseif ($can_sip && !$can_web): ?>
-            <span class="badge badge-info" style="font-size: 13px; padding: 5px 9px; flex-shrink: 0;" title="<?php echo t('topbar.sip_only_badge_tooltip'); ?>">
-                <i class="fas fa-phone-alt"></i>
-            </span>
-        <?php elseif ($can_web && !$can_sip): ?>
-            <span class="badge badge-primary" style="font-size: 13px; padding: 5px 9px; flex-shrink: 0;" title="<?php echo t('topbar.webrtc_only_badge_tooltip'); ?>">
-                <i class="fas fa-laptop"></i>
-            </span>
-        <?php elseif ($can_mob): ?>
-            <span class="badge badge-success" style="font-size: 13px; padding: 5px 9px; flex-shrink: 0;" title="Mobil Uygulama Aktif">
-                <i class="fas fa-mobile-alt"></i>
-            </span>
-        <?php endif; ?>
 
         <!-- Header Break Selection Dropdown (STRICTLY FOR CALL CENTER AGENTS) -->
-        <?php 
-        $is_cc_agent = ($user['role'] === 'cc_agent');
-        if (!$is_cc_agent && !empty($user['extension'])) {
-            $db_top = getDB();
-            $stmt_top = $db_top->query("SELECT members_json FROM pbx_queues WHERE is_active = 1");
-            $q_mems = $stmt_top->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($q_mems as $mj) {
-                $m_arr = json_decode($mj ?? '[]', true) ?: [];
-                if (in_array((string)$user['extension'], array_map('strval', $m_arr))) {
-                    $is_cc_agent = true;
-                    break;
-                }
-            }
-        }
-        if ($is_cc_agent): 
-        ?>
+        <?php if (!empty($is_cc_agent)): ?>
             <div class="header-break-wrapper" style="flex-shrink: 0;">
                 <select id="header-break-select" onchange="handleHeaderBreakChange(this.value)" class="form-control" style="padding: 2px 8px; font-size: 11px; font-weight: 600; height: 26px; border-radius: 13px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer;" title="<?php echo t('topbar.break_selector_tooltip'); ?>">
                     <option value="" style="color: var(--success); font-weight: 700;"><?php echo t('topbar.break_working'); ?></option>
@@ -131,6 +90,7 @@
                         <i class="fas fa-tasks"></i> <?php echo t('topbar.pending_changes_title'); ?> (<span id="header-sync-dropdown-count"><?php echo $pending_sync_count; ?></span>)
                     </div>
                     
+                    <?php if (hasModulePermission('pending_sync', 'edit')): ?>
                     <button type="button" class="header-sync-dropdown-item" onclick="executeDirectPendingSync(event)">
                         <div class="sync-item-icon sync-item-icon-direct">
                             <i class="fas fa-bolt"></i>
@@ -140,6 +100,7 @@
                             <div class="sync-item-desc"><?php echo t('topbar.direct_apply_desc'); ?></div>
                         </div>
                     </button>
+                    <?php endif; ?>
 
                     <a href="/pending-sync" class="header-sync-dropdown-item" onclick="closeHeaderSyncDropdown()">
                         <div class="sync-item-icon sync-item-icon-review">

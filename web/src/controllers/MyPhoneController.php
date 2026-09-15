@@ -8,7 +8,7 @@ class MyPhoneController extends BaseController
     public static function index(): void
     {
         requireLogin();
-        static::requireModule('dashboard', 'view');
+        static::requireModule('my_phone', 'view');
 
         $user = getCurrentUser();
         $userId = (int)($user['id'] ?? 0);

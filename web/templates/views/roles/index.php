@@ -137,16 +137,57 @@ $group_slugs = RoleRepository::groupSlugs();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($modules_definition as $m_key => $m_info):
-                                $group_slug = $group_slugs[$m_info['group']] ?? 'general';
+                            <?php 
+                            $last_group = null;
+                            $group_icons = [
+                                'Genel'            => 'fas fa-layer-group',
+                                'Dış Hat Yönetimi' => 'fas fa-network-wired',
+                                'PBX Yönetimi'     => 'fas fa-server',
+                                'Yönetim'          => 'fas fa-cog',
+                                'Güvenlik'         => 'fas fa-shield-alt',
+                                'Faks Sistemi'     => 'fas fa-fax',
+                                'Çağrı Merkezi'    => 'fas fa-headset',
+                            ];
+                            $group_colors = [
+                                'Genel'            => 'var(--primary)',
+                                'Dış Hat Yönetimi' => 'var(--secondary)',
+                                'PBX Yönetimi'     => '#8b5cf6',
+                                'Yönetim'          => 'var(--warning)',
+                                'Güvenlik'         => 'var(--danger)',
+                                'Faks Sistemi'     => 'var(--teal)',
+                                'Çağrı Merkezi'    => 'var(--success)',
+                            ];
+
+                            foreach ($modules_definition as $m_key => $m_info):
+                                $group_name = $m_info['group'];
+                                $group_slug = $group_slugs[$group_name] ?? 'general';
+                                $is_new_group = ($last_group !== null && $last_group !== $group_name);
+                                if ($last_group === null || $is_new_group):
+                                    $last_group = $group_name;
+                                    $icon = $group_icons[$group_name] ?? 'fas fa-folder';
+                                    $color = $group_colors[$group_name] ?? 'var(--primary)';
                             ?>
-                                <tr>
-                                    <td>
+                                <tr class="perm-group-header-row" style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
+                                    <td colspan="6" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                                            <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                <i class="<?php echo $icon; ?>" style="color: <?php echo $color; ?>; font-size: 13px;"></i>
+                                                <span><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?></span>
+                                            </span>
+                                            <span style="font-size: 11px; font-weight: 600; color: <?php echo $color; ?>; background: rgba(255, 255, 255, 0.04); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                                <?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                                <tr class="perm-module-row">
+                                    <td style="padding-left: 24px;">
                                         <strong style="color: var(--text-main);"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
-                                        <div style="font-size: 11px; color: var(--text-muted);"><?php echo $m_key; ?></div>
+                                        <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
                                     </td>
                                     <td>
-                                        <span class="badge badge-secondary"><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $m_info['group'])); ?></span>
+                                        <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-size: 11px; border: 1px solid var(--border-color); font-weight: 500;"><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $m_info['group'])); ?></span>
                                     </td>
                                     <td style="text-align: center;">
                                         <input type="checkbox" name="perms[<?php echo $m_key; ?>][view]" value="1" class="perm-cb perm-view" id="p_<?php echo $m_key; ?>_view">

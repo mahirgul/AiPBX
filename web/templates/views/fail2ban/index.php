@@ -48,13 +48,15 @@
                             <tr>
                                 <td style="font-family: monospace;"><?php echo htmlspecialchars($ip); ?></td>
                                 <td style="text-align: right;">
-                                    <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.unban_confirm'), ENT_QUOTES); ?>');">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                        <input type="hidden" name="unban_ip" value="1">
-                                        <input type="hidden" name="jail" value="<?php echo htmlspecialchars($j['name']); ?>">
-                                        <input type="hidden" name="ip" value="<?php echo htmlspecialchars($ip); ?>">
-                                        <button type="submit" class="btn btn-warning btn-sm" title="<?php echo t('fail2ban.unban_tooltip'); ?>"><i class="fas fa-unlock"></i></button>
-                                    </form>
+                                    <?php if (hasModulePermission('fail2ban', 'edit')): ?>
+                                        <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.unban_confirm'), ENT_QUOTES); ?>');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                            <input type="hidden" name="unban_ip" value="1">
+                                            <input type="hidden" name="jail" value="<?php echo htmlspecialchars($j['name']); ?>">
+                                            <input type="hidden" name="ip" value="<?php echo htmlspecialchars($ip); ?>">
+                                            <button type="submit" class="btn btn-warning btn-sm" title="<?php echo t('fail2ban.unban_tooltip'); ?>"><i class="fas fa-unlock"></i></button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -63,6 +65,7 @@
             </table>
         </div>
 
+        <?php if (hasModulePermission('fail2ban', 'edit')): ?>
         <form method="POST" autocomplete="off" style="padding: 16px 20px; border-top: 1px solid var(--border-color);">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <input type="hidden" name="update_jail_config" value="1">
@@ -83,6 +86,7 @@
                 <button type="submit" class="btn btn-primary" title="<?php echo t('fail2ban.save_config_tooltip'); ?>"><i class="fas fa-save"></i></button>
             </div>
         </form>
+        <?php endif; ?>
     </div>
 <?php endforeach; ?>
 
@@ -99,7 +103,7 @@
                         <td style="text-align: right;">
                             <?php if ($is_protected): ?>
                                 <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('fail2ban.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
-                            <?php else: ?>
+                            <?php elseif (hasModulePermission('fail2ban', 'edit')): ?>
                                 <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.remove_ignoreip_confirm'), ENT_QUOTES); ?>');">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                     <input type="hidden" name="remove_ignoreip" value="1">
@@ -113,6 +117,7 @@
             </tbody>
         </table>
     </div>
+    <?php if (hasModulePermission('fail2ban', 'edit')): ?>
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px; display: flex; gap: 10px; align-items: flex-end;">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
         <input type="hidden" name="add_ignoreip" value="1">
@@ -122,4 +127,5 @@
         </div>
         <button type="submit" class="btn btn-primary" style="padding: 10px 16px;"><i class="fas fa-plus"></i></button>
     </form>
+    <?php endif; ?>
 </div>

@@ -21,9 +21,11 @@
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="openCreateTcModal()" title="Yeni Ekle">
-                    <i class="fas fa-plus-circle"></i>
-                </button>
+                <?php if (hasModulePermission('time_conditions', 'edit')): ?>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateTcModal()" title="Yeni Ekle">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -123,9 +125,11 @@
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="openCreateTgModal()" title="Yeni Ekle">
-                    <i class="fas fa-plus-circle"></i>
-                </button>
+                <?php if (hasModulePermission('time_conditions', 'edit')): ?>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateTgModal()" title="Yeni Ekle">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 

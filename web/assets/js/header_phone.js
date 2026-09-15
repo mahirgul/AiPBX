@@ -10,6 +10,58 @@
 // tek, çalıştığı doğrulanmış yol bırakıldı.
 var HEADER_PHONE_ICE_SERVERS = [];
 
+// TURN kimligi 1 SAAT gecerlidir (bkz. api/sip_credentials.php:
+// username = (time()+3600) + ":" + dahili). Eskiden yalnizca sayfa
+// yuklenirken bir kez alinip bir daha tazelenmiyordu. Bir cagri merkezi
+// sekmesi saatlerce acik kaldigi icin kimlik oluyor ve coturn TURN
+// kimligini reddediyor:
+//
+//   check_stun_auth: Cannot find credentials of user <1789423958:19000>
+//   ... error 401: Unauthorized
+//   peer usage: rp=0, rb=0, sp=0, sb=0      <- roleden SIFIR paket
+//
+// Sonuc: medya rolesi hic kurulmuyor, cagri bastan sona sessiz kaliyor ve
+// Asterisk rtp_timeout ile kanali kapatiyor. 2026-09-15 olcumu: 19000'in
+// kimligi 40 dakika, 3002'ninki 17 dakika gecmisti.
+//
+// Kimlik artik periyodik tazeleniyor. Dizi YERINDE guncellenir: pcConfig
+// her cagrida bu diziyi okudugu icin (headerPhoneMakeCall ve gelen cagri
+// cevaplama) cagri anina ek istek/gecikme eklemeye gerek yoktur.
+var HEADER_PHONE_TURN_INDEX = -1;
+var HEADER_PHONE_TURN_TIMER = null;
+const HEADER_PHONE_TURN_REFRESH_MS = 30 * 60 * 1000; // 30 dk < 1 saatlik omur
+
+function applyHeaderPhoneTurn(turn) {
+    if (!turn || !turn.urls) return;
+    const entry = { urls: turn.urls, username: turn.username, credential: turn.credential };
+    if (HEADER_PHONE_TURN_INDEX >= 0) {
+        HEADER_PHONE_ICE_SERVERS[HEADER_PHONE_TURN_INDEX] = entry;
+    } else {
+        HEADER_PHONE_TURN_INDEX = HEADER_PHONE_ICE_SERVERS.push(entry) - 1;
+    }
+}
+
+function refreshHeaderPhoneTurn() {
+    fetch("/api/sip_credentials.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRF-Token": window.CSRF_TOKEN || ""
+        },
+        body: "csrf_token=" + encodeURIComponent(window.CSRF_TOKEN || "")
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.success && data.turn) applyHeaderPhoneTurn(data.turn);
+    })
+    .catch(err => console.warn("TURN kimligi tazelenemedi:", err));
+}
+
+function startHeaderPhoneTurnRefresh() {
+    if (HEADER_PHONE_TURN_TIMER) return;
+    HEADER_PHONE_TURN_TIMER = setInterval(refreshHeaderPhoneTurn, HEADER_PHONE_TURN_REFRESH_MS);
+}
+
 var headerPhoneDigits = window.headerPhoneDigits || "";
 var headerJsSipUA = window.headerJsSipUA || null;
 var headerJsSipSession = window.headerJsSipSession || null;
@@ -231,13 +283,10 @@ function initHeaderWebRTCPhone() {
         }
         if (data.turn && data.turn.urls) {
             // Dış ağdan / symmetric NAT arkasından arayanlar için TURN rölesi
-            // (STUN tek başına yetmiyor). Kimlik bilgisi zaman-sınırlı, her
-            // sayfa yüklemesinde taze üretilir (bkz. api/sip_credentials.php).
-            HEADER_PHONE_ICE_SERVERS.push({
-                urls: data.turn.urls,
-                username: data.turn.username,
-                credential: data.turn.credential
-            });
+            // (STUN tek başına yetmiyor). Kimlik zaman-sınırlıdır (1 saat),
+            // bu yüzden sayfa açık kaldığı sürece periyodik tazelenir.
+            applyHeaderPhoneTurn(data.turn);
+            startHeaderPhoneTurnRefresh();
         }
         initHeaderJsSIPPhone(data.extension || window.CURRENT_USER_EXT || "", data.sip_username || "", data.sip_password);
     })
@@ -329,6 +378,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
             headerSipRegistered = true;
             console.log("JsSIP: Registered successfully as " + webrtcUsername);
             updateHeaderPhoneStatus("ÇEVRİMİÇİ (WebRTC)", "var(--success)");
+            syncAgentAutoLogin();
         });
 
         headerJsSipUA.on("unregistered", () => {
@@ -348,16 +398,6 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
             headerJsSipSession = session;
 
             // Stream / Media Attachment
-            // NOT: Giden aramalarda JsSIP _createRTCConnection() (ve içinde
-            // senkron olarak emit edilen 'peerconnection' olayı) UA'nın
-            // 'newRTCSession' olayını ateşlemeden ÖNCE çalışır — yani BURADA
-            // session.on("peerconnection", ...) ile dinleyici eklemek giden
-            // aramalarda HER ZAMAN GEÇ KALIR, olay kaçırılır (ontrack hiç
-            // bağlanmaz, alınan ses asla çalınmaz). Giden aramalar için asıl
-            // bağlama headerPhoneMakeCall()'daki eventHandlers seçeneğiyle
-            // (call() çağrılmadan önce) yapılıyor. Gelen aramalarda ise
-            // peerconnection ancak session.accept() sonrasında oluşturulduğu
-            // için bu satır zamanında yetişiyor — o yüzden burada da kalıyor.
             session.on("peerconnection", (e) => attachPeerConnectionHandlers(e.peerconnection));
 
             if (session.direction === "incoming") {
@@ -367,6 +407,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 updateHeaderPhoneStatus("GELEN ÇAĞRI: " + remoteId, "var(--warning)");
                 playRingtone();
                 showDesktopNotification(remoteId);
+                startTitleBlink(remoteId);
+                showIncomingCallBanner(remoteId);
             } else {
                 updateHeaderPhoneStatus("ARANIYOR...", "var(--warning)");
             }
@@ -374,10 +416,6 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
             session.on("progress", () => {
                 if (session.direction === "outgoing") {
                     updateHeaderPhoneStatus("ÇALIYOR...", "var(--warning)");
-                    // Asterisk 180 Ringing'i SDP/erken medya OLMADAN gönderiyor
-                    // (r bayrağı sadece sinyalleşmeyi garanti ediyor, RTP ile ses
-                    // göndermiyor) — çevirme tonunu arayan taraf yerel olarak
-                    // çalmalı, önceden bu hiç yapılmıyordu.
                     playRingback();
                 }
             });
@@ -387,6 +425,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 stopRingtone();
                 stopRingback();
                 clearDesktopNotification();
+                stopTitleBlink();
+                hideIncomingCallBanner();
                 updateHeaderPhoneStatus("GÖRÜŞÜLÜYOR (WebRTC)", "var(--success)");
                 if (window.notify) window.notify.success("Çağrı cevaplandı");
             });
@@ -396,6 +436,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 stopRingtone();
                 stopRingback();
                 clearDesktopNotification();
+                stopTitleBlink();
+                hideIncomingCallBanner();
                 updateHeaderPhoneStatus("GÖRÜŞÜLÜYOR (WebRTC)", "var(--success)");
             });
 
@@ -472,6 +514,14 @@ function headerPhoneAnswerCall() {
     try {
         headerJsSipSession.answer(options);
         updateHeaderPhoneStatus("GÖRÜŞÜLÜYOR (WebRTC)", "var(--success)");
+        hideIncomingCallBanner();
+
+        // Temsilci başka bir sayfadaysa, çağrı kopmadan müşteri ve not ekranına (cc-agent) SPA ile geç
+        if (window.IS_CC_AGENT && !window.location.pathname.startsWith('/cc-agent')) {
+            if (typeof window.loadSPAPage === 'function') {
+                window.loadSPAPage('/cc-agent', true);
+            }
+        }
     } catch (e) {
         console.error("JsSIP Answer error:", e);
         headerPhoneHangup();
@@ -500,6 +550,8 @@ function headerPhoneHangup() {
     stopRingtone();
     stopRingback();
     clearDesktopNotification();
+    stopTitleBlink();
+    hideIncomingCallBanner();
 
     if (headerJsSipSession && !headerJsSipSession.isEnded()) {
         try {
@@ -715,8 +767,13 @@ function isSpeakerSelectionSupported() {
 function applySavedSpeakerDevice() {
     const savedId = localStorage.getItem("phone_speaker_device_id");
     const remoteAudio = document.getElementById("globalRemoteAudio");
-    if (savedId && savedId !== "default" && remoteAudio && typeof remoteAudio.setSinkId === "function") {
-        remoteAudio.setSinkId(savedId).catch(err => console.warn("Kayıtlı hoparlör ayarlanamadı:", err));
+    if (savedId && savedId !== "default") {
+        if (remoteAudio && typeof remoteAudio.setSinkId === "function") {
+            remoteAudio.setSinkId(savedId).catch(err => console.warn("Kayıtlı hoparlör ayarlanamadı:", err));
+        }
+        if (ringerAudio && typeof ringerAudio.setSinkId === "function") {
+            ringerAudio.setSinkId(savedId).catch(err => console.warn("Kayıtlı zil hoparlörü ayarlanamadı:", err));
+        }
     }
 }
 
@@ -737,7 +794,8 @@ function closePhoneSettingsModal() {
 }
 
 function populatePhoneDeviceSelects() {
-    const micSelect = document.getElementById("phone_mic_select");
+    const micSelects = [document.getElementById("phone_mic_select"), document.getElementById("my_phone_mic_select")].filter(Boolean);
+    const spkSelects = [document.getElementById("phone_speaker_select"), document.getElementById("my_phone_speaker_select")].filter(Boolean);
     const spkWrapper = document.getElementById("phone_speaker_select_wrapper");
     const spkUnsupported = document.getElementById("phone_speaker_unsupported");
     const speakerSupported = isSpeakerSelectionSupported();
@@ -750,53 +808,81 @@ function populatePhoneDeviceSelects() {
         const savedVol = parseFloat(localStorage.getItem("phone_ring_volume"));
         volSlider.value = isNaN(savedVol) ? 100 : Math.round(savedVol * 100);
     }
+    const myVolSlider = document.getElementById("my_phone_ring_slider");
+    const myVolLabel = document.getElementById("my-phone-vol-label");
+    if (myVolSlider) {
+        const savedVol = parseFloat(localStorage.getItem("phone_ring_volume"));
+        const pct = isNaN(savedVol) ? 100 : Math.round(savedVol * 100);
+        myVolSlider.value = pct;
+        if (myVolLabel) myVolLabel.textContent = pct + "%";
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-        if (micSelect) micSelect.innerHTML = '<option value="default">Tarayıcı desteklemiyor</option>';
+        micSelects.forEach(s => s.innerHTML = '<option value="default">Sistem Varsayılanı</option>');
+        spkSelects.forEach(s => s.innerHTML = '<option value="default">Sistem Varsayılanı</option>');
         return;
     }
 
-    // Cihaz etiketleri (label) izin verilmeden önce genelde boş gelir; kısa bir
-    // getUserMedia isteğiyle mikrofon izni zaten alınmışsa etiketler açılır.
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        stream.getTracks().forEach(t => t.stop());
-        return navigator.mediaDevices.enumerateDevices();
-    }).catch(() => navigator.mediaDevices.enumerateDevices())
-    .then(devices => {
+    const applyDevices = (devices) => {
         const savedMic = localStorage.getItem("phone_mic_device_id") || "default";
         const savedSpk = localStorage.getItem("phone_speaker_device_id") || "default";
 
-        if (micSelect) {
+        if (micSelects.length > 0) {
             let html = '<option value="default">Sistem Varsayılanı</option>';
-            devices.filter(d => d.kind === "audioinput").forEach((d, i) => {
-                const label = d.label || ("Mikrofon " + (i + 1));
+            let micIdx = 1;
+            devices.filter(d => d.kind === "audioinput").forEach(d => {
+                const label = d.label || ("Mikrofon " + (micIdx++));
                 html += '<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === savedMic ? " selected" : "") + '>' + escapeHtml(label) + '</option>';
             });
-            micSelect.innerHTML = html;
+            micSelects.forEach(s => s.innerHTML = html);
         }
 
-        const spkSelect = document.getElementById("phone_speaker_select");
-        if (spkSelect && speakerSupported) {
+        if (spkSelects.length > 0) {
             let html = '<option value="default">Sistem Varsayılanı</option>';
-            devices.filter(d => d.kind === "audiooutput").forEach((d, i) => {
-                const label = d.label || ("Hoparlör " + (i + 1));
+            let spkIdx = 1;
+            devices.filter(d => d.kind === "audiooutput").forEach(d => {
+                const label = d.label || ("Hoparlör " + (spkIdx++));
                 html += '<option value="' + escapeHtml(d.deviceId) + '"' + (d.deviceId === savedSpk ? " selected" : "") + '>' + escapeHtml(label) + '</option>';
             });
-            spkSelect.innerHTML = html;
+            spkSelects.forEach(s => s.innerHTML = html);
+        }
+    };
+
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+        const hasLabels = devices.some(d => (d.kind === "audioinput" || d.kind === "audiooutput") && d.label);
+        if (hasLabels) {
+            applyDevices(devices);
+        } else if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                stream.getTracks().forEach(t => t.stop());
+                return navigator.mediaDevices.enumerateDevices();
+            }).catch(() => navigator.mediaDevices.enumerateDevices())
+            .then(applyDevices);
+        } else {
+            applyDevices(devices);
         }
     }).catch(err => {
         console.warn("Cihaz listesi alınamadı:", err);
-        if (micSelect) micSelect.innerHTML = '<option value="default">Cihaz listesi alınamadı (mikrofon izni gerekli)</option>';
+        micSelects.forEach(s => s.innerHTML = '<option value="default">Sistem Varsayılanı</option>');
+        spkSelects.forEach(s => s.innerHTML = '<option value="default">Sistem Varsayılanı</option>');
     });
 }
 
 function savePhoneMicDevice(val) {
     localStorage.setItem("phone_mic_device_id", val);
+    const m1 = document.getElementById("phone_mic_select");
+    const m2 = document.getElementById("my_phone_mic_select");
+    if (m1 && m1.value !== val) m1.value = val;
+    if (m2 && m2.value !== val) m2.value = val;
     if (window.notify) window.notify.success("Mikrofon tercihi kaydedildi. Bir sonraki aramada geçerli olacak.");
 }
 
 function savePhoneSpeakerDevice(val) {
     localStorage.setItem("phone_speaker_device_id", val);
+    const s1 = document.getElementById("phone_speaker_select");
+    const s2 = document.getElementById("my_phone_speaker_select");
+    if (s1 && s1.value !== val) s1.value = val;
+    if (s2 && s2.value !== val) s2.value = val;
     applySavedSpeakerDevice();
     if (window.notify) window.notify.success("Hoparlör tercihi kaydedildi.");
 }
@@ -805,11 +891,18 @@ function savePhoneRingVolume(val) {
     const vol = Math.min(100, Math.max(0, parseInt(val, 10) || 0)) / 100;
     localStorage.setItem("phone_ring_volume", String(vol));
     applyRingVolume();
+    const v1 = document.getElementById("phone_ring_volume_slider");
+    const v2 = document.getElementById("my_phone_ring_slider");
+    const pct = Math.round(vol * 100);
+    if (v1 && parseInt(v1.value, 10) !== pct) v1.value = pct;
+    if (v2 && parseInt(v2.value, 10) !== pct) v2.value = pct;
+    const lbl = document.getElementById("my-phone-vol-label");
+    if (lbl) lbl.textContent = pct + "%";
 }
 
 function testPhoneSpeaker() {
-    const spkSelect = document.getElementById("phone_speaker_select");
-    const savedId = spkSelect ? spkSelect.value : (localStorage.getItem("phone_speaker_device_id") || "default");
+    const spkSelect = document.getElementById("phone_speaker_select") || document.getElementById("my_phone_speaker_select");
+    const savedId = (spkSelect && spkSelect.value) ? spkSelect.value : (localStorage.getItem("phone_speaker_device_id") || "default");
     const testAudio = new Audio(window.WEBRTC_RING_OUTGOING_URL || "/assets/sounds/ring1.mp3");
     testAudio.volume = parseFloat(localStorage.getItem("phone_ring_volume")) || 1;
     if (savedId && savedId !== "default" && typeof testAudio.setSinkId === "function") {
@@ -860,25 +953,91 @@ function stopRingback() {
     } catch (e) {}
 }
 
+var _origDocTitle = document.title;
+var _titleBlinkInterval = null;
+
+function startTitleBlink(callerInfo) {
+    if (_titleBlinkInterval) return;
+    _origDocTitle = document.title;
+    let toggle = false;
+    _titleBlinkInterval = setInterval(() => {
+        document.title = toggle ? "📞 GELEN ÇAĞRI: " + (callerInfo || "Santral") : "🔔 ÇAĞRI GELİYOR!";
+        toggle = !toggle;
+    }, 800);
+}
+
+function stopTitleBlink() {
+    if (_titleBlinkInterval) {
+        clearInterval(_titleBlinkInterval);
+        _titleBlinkInterval = null;
+        document.title = _origDocTitle;
+    }
+}
+
+function showIncomingCallBanner(caller) {
+    let banner = document.getElementById("globalIncomingCallBanner");
+    if (!banner) {
+        banner = document.createElement("div");
+        banner.id = "globalIncomingCallBanner";
+        banner.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 999999; background: var(--bg-card, #ffffff); border: 2px solid var(--primary, #0284c7); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 16px 20px; min-width: 320px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;";
+        document.body.appendChild(banner);
+    }
+    const safeCaller = escapeHtml(caller || "Santral Çağrısı");
+    banner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(34, 197, 94, 0.15); color: var(--success, #22c55e); display: flex; align-items: center; justify-content: center; font-size: 20px;" class="header-btn-pulse">
+                <i class="fas fa-phone-volume"></i>
+            </div>
+            <div style="flex: 1; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--warning, #f59e0b); text-transform: uppercase; letter-spacing: 0.5px;">Gelen Çağrı</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--text-main, #1e293b); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${safeCaller}</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 4px;">
+            <button type="button" class="btn btn-success" onclick="headerPhoneAnswerCall()" style="flex: 1; padding: 9px 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-phone"></i> Cevapla
+            </button>
+            <button type="button" class="btn btn-danger" onclick="headerPhoneRejectCall()" style="flex: 1; padding: 9px 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-phone-slash"></i> Reddet
+            </button>
+        </div>
+    `;
+    banner.style.display = "flex";
+}
+
+function hideIncomingCallBanner() {
+    const banner = document.getElementById("globalIncomingCallBanner");
+    if (banner) {
+        banner.style.display = "none";
+    }
+}
+
+function syncAgentAutoLogin() {
+    if (window.IS_CC_AGENT) {
+        // Temsilci bu oturumda elle çıkış yaptıysa otomatik girişi zorlama
+        if (sessionStorage.getItem('cc_agent_manual_logout') === '1') {
+            return;
+        }
+        UIHelper.ccPost('auto_login', { last_queues: '[]' }).catch(() => {});
+    }
+}
+
 function showDesktopNotification(callerInfo) {
-    if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-    }
-    if ("Notification" in window && Notification.permission === "granted") {
-        try {
-            if (activeCallNotification) activeCallNotification.close();
-            activeCallNotification = new Notification("📞 GELEN ÇAĞRI: " + (callerInfo || "Santral Araması"), {
-                body: "Çağrıyı üst çubuktan yanıtlayabilirsiniz.",
-                icon: "/favicon.ico",
-                tag: "ai_pbx_call",
-                requireInteraction: true
-            });
-            activeCallNotification.onclick = function() {
-                window.focus();
-                activeCallNotification.close();
-            };
-        } catch (e) {}
-    }
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    try {
+        if (activeCallNotification) activeCallNotification.close();
+        activeCallNotification = new Notification("📞 GELEN ÇAĞRI: " + (callerInfo || "Santral Araması"), {
+            body: "Gelen çağrıyı yanıtlamak için tıklayın.",
+            icon: "/favicon.ico",
+            tag: "ai_pbx_call",
+            requireInteraction: true
+        });
+        activeCallNotification.onclick = function() {
+            window.focus();
+            headerPhoneAnswerCall();
+            activeCallNotification.close();
+        };
+    } catch (e) {}
 }
 
 function clearDesktopNotification() {
@@ -951,6 +1110,8 @@ function headerPhoneResetUI() {
     stopRingtone();
     stopRingback();
     clearDesktopNotification();
+    stopTitleBlink();
+    hideIncomingCallBanner();
     updateHoldButtonUI(false);
     updateHeaderPhoneStatus(headerSipRegistered ? "ÇEVRİMİÇİ (WebRTC)" : "HAZIR", headerSipRegistered ? "var(--success)" : "var(--text-muted)");
     headerPhoneClear();
@@ -1076,8 +1237,55 @@ function toggleUserProfileDropdown(e) {
 }
 
 // =========================================================================
-// 8. EVENT LISTENERS
+// 8. EVENT LISTENERS & BACKGROUND WATCHDOG
 // =========================================================================
+
+function ensureNotificationPermission() {
+    if ("Notification" in window && Notification.permission === "default") {
+        try {
+            Notification.requestPermission().catch(() => {});
+        } catch (e) {}
+    }
+}
+
+document.addEventListener("click", function _unlockAudioAndNotify() {
+    ensureNotificationPermission();
+    if (ringerAudio) {
+        try {
+            const p = ringerAudio.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    ringerAudio.pause();
+                    ringerAudio.currentTime = 0;
+                }).catch(() => {});
+            }
+        } catch (e) {}
+    }
+    const remote = document.getElementById("globalRemoteAudio");
+    if (remote) {
+        try { remote.play().catch(() => {}); } catch (e) {}
+    }
+    document.removeEventListener("click", _unlockAudioAndNotify);
+}, { once: true });
+
+// WebRTC Bağlantı ve Kayıt İzleme (Arka plandaki sekmelerde WebSocket düşerse otomatik toparlar)
+setInterval(() => {
+    if (headerJsSipUA) {
+        if (!headerJsSipUA.isConnected()) {
+            try { headerJsSipUA.start(); } catch (e) {}
+        } else if (!headerSipRegistered) {
+            try { headerJsSipUA.register(); } catch (e) {}
+        }
+    }
+}, 15000);
+
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && headerJsSipUA) {
+        if (!headerSipRegistered) {
+            try { headerJsSipUA.register(); } catch (e) {}
+        }
+    }
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     updateHeaderPhoneModeUI();
@@ -1086,6 +1294,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initHeaderWebRTCPhone();
     applyRingVolume();
     applySavedSpeakerDevice();
+    syncAgentAutoLogin();
 });
 
 document.addEventListener("click", function(e) {

@@ -77,6 +77,11 @@ function loadAgentQueues() {
 }
 
 function toggleQueueStatus(qName, doLogin) {
+    if (!doLogin) {
+        sessionStorage.setItem('cc_agent_manual_logout', '1');
+    } else {
+        sessionStorage.removeItem('cc_agent_manual_logout');
+    }
     UIHelper.ccPost('toggle_queue', { queue_name: qName, login: doLogin })
     .then(data => {
         if (data.success) {
@@ -302,12 +307,18 @@ function submitCallNote() {
 function initAgentPage() {
     if (!document.getElementById('agent-queues-list')) return;
 
-    // cc_auto_queue_login ayarı açıksa, atanmış tüm kuyruklara otomatik giriş yap
-    UIHelper.ccPost('auto_login', { last_queues: '[]' }).finally(() => {
+    // cc_auto_queue_login ayarı açıksa ve temsilci bu oturumda elle çıkış yapmadıysa otomatik giriş yap
+    if (!sessionStorage.getItem('cc_agent_manual_logout')) {
+        UIHelper.ccPost('auto_login', { last_queues: '[]' }).finally(() => {
+            loadAgentQueues();
+            loadLiveCalls();
+            loadCdrs();
+        });
+    } else {
         loadAgentQueues();
         loadLiveCalls();
         loadCdrs();
-    });
+    }
 
     // F5 sonrası WebRTC kaydının yeniden kurulması saniyeler alabilir;
     // ilk 3 saniyede sık yenileme ile doğru duruma hızlı yakınsa
@@ -333,23 +344,6 @@ function initAgentPage() {
             clearInterval(agentTimerInterval);
         }
     }, 5000);
-
-    // Asterisk yeniden başlatılırsa (Dashboard'daki "Servisi Yeniden Başlat"
-    // veya sunucu reboot'u) dinamik kuyruk üyeliği sıfırlanır — sayfa açık
-    // kalan bir temsilci sekmesi bunu sayfayı yenilemeden fark edemez, o ana
-    // kadar arayan hattı boş bulur (2026-08-23 incelemesinde bulunan kör
-    // nokta). auto_login zaten kendi başına idempotent (DB'deki atama
-    // listesine göre ekler/çıkarır, mola durumunu korur) — periyodik
-    // tekrarlamak sekme açık kalsa bile en geç 1 dakika içinde kendi kendini
-    // onarır, sayfa yenilemesine bağımlı kalmaz.
-    if (agentAutoLoginInterval) clearInterval(agentAutoLoginInterval);
-    agentAutoLoginInterval = setInterval(() => {
-        if (document.getElementById('agent-queues-list')) {
-            UIHelper.ccPost('auto_login', { last_queues: '[]' });
-        } else {
-            clearInterval(agentAutoLoginInterval);
-        }
-    }, 60000);
 }
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {

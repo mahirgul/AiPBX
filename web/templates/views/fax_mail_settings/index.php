@@ -109,8 +109,10 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 16px;" title="<?php echo t('fax_mail_settings.save_tooltip'); ?>">
-            <i class="fas fa-save"></i>
-        </button>
+        <?php if (hasModulePermission('fax_mail_settings', 'edit')): ?>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 16px;" title="<?php echo t('fax_mail_settings.save_tooltip'); ?>">
+                <i class="fas fa-save"></i>
+            </button>
+        <?php endif; ?>
     </form>
 </div>

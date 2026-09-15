@@ -55,6 +55,35 @@ function __syncInboundDialplanBody() {
         $conf .= " same => n,Goto(app-timecondition-1,s,1)\n\n";
     }
 
+    // ------------------------------------------------------------------
+    // Kapanma tonu algilamasi (in-band disconnect supervision)
+    //
+    // Bazi hatlarda karsi santral cagrinin kapandigini SINYALLE bildirmez;
+    // bunun yerine ses yoluna kadansli mesgul tonu basar. CCIS uzerinden
+    // gelen sehir hatti cagrilarinda olculdu (2026-09-15): arayan kapattiktan
+    // sonra NEC 110 ms ton / 90 ms sessizlik kadansiyla tonu cagri bitene
+    // kadar caliyor, ama tek bir CCIS mesaji gondermiyor. Ton algilanmazsa
+    // cagri ayakta kalir, IVR/kuyruk devam eder ve temsilciye BOS CAGRI duser.
+    //
+    // Bu context'i kullanan trunk'larda ton algilanir algilanmaz cagri
+    // kapatilir. Trunk'in "Context" alani buna ayarlanarak devreye alinir;
+    // digerleri etkilenmez.
+    $conf .= "; --- Kapanma tonu algilayan gelen rota sarmalayicisi ---\n";
+    $conf .= "[from-trunk-kapanma-tonu]\n";
+    $conf .= "exten => _X.,1,NoOp(Kapanma tonu algilayicisi devrede - DID \${EXTEN})\n";
+    // 'r' SART: algilayici varsayilan olarak HER IKI YONU dinler. Onceki
+    // surumde verilmemisti ve Asterisk'in arayana GONDERDIGI sesi (IVR
+    // anonsu, kuyruk calma tonu) kadansli ton sanip cagriyi kapatiyordu
+    // (2026-09-15, iki yanlis pozitif: biri anonsun 7. saniyesinde, biri
+    // kuyruk calmaya basladiktan 4 sn sonra). Yalnizca KARSI TARAFTAN
+    // GELEN ses denetlenmeli.
+    $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
+    $conf .= " same => n,Goto(from-trunk-inbound,\${EXTEN},1)\n\n";
+
+    $conf .= "[kapanma-tonu]\n";
+    $conf .= "exten => s,1,NoOp(Kapanma tonu algilandi - cagri kapatiliyor)\n";
+    $conf .= " same => n,Hangup()\n\n";
+
     return writeConfWithRollback('extensions_inbound.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Gelen Rota senkronizasyonu');
     }, 'Gelen Rota senkronizasyonu');

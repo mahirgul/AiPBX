@@ -14,6 +14,15 @@ if (!$user || empty($user['extension'])) {
     exit;
 }
 
+if (!hasModulePermission('chat', 'access') && !hasModulePermission('chat', 'view')) {
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Sohbet modülüne erişim yetkiniz bulunmamaktadır.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $token = generateMobileToken($user);
 
 echo json_encode([

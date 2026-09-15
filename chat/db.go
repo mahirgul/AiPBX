@@ -122,7 +122,7 @@ func GetContacts(currentExt string) ([]Contact, error) {
 		           WHERE p.extension = ?
 		       ), 0) AS unread_count
 		FROM sys_users u
-		WHERE u.is_active = 1 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ?
+		WHERE u.is_active = 1 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ? AND u.role != 'fax_user'
 		ORDER BY (u.extension REGEXP '^[0-9]+$') DESC, CAST(u.extension AS UNSIGNED) ASC, u.extension ASC
 	`
 	rows, err := db.Query(query, currentExt, currentExt)

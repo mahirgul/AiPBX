@@ -12,6 +12,10 @@ class PushSettingsController extends BaseController
         // Handle AJAX Test Push
         if (isset($_GET['action']) && $_GET['action'] === 'test_push') {
             header('Content-Type: application/json; charset=utf-8');
+            if (!hasModulePermission('push_settings', 'edit')) {
+                echo json_encode(['success' => false, 'message' => 'Bu işlem için yetkiniz bulunmamaktadır.']);
+                exit;
+            }
             $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
             if (!verifyCSRFToken($csrf)) {
                 echo json_encode(['success' => false, 'message' => 'Geçersiz güvenlik oturumu (CSRF).']);

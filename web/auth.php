@@ -104,8 +104,8 @@ function getModuleKeyForPage($page = null) {
     }
     $map = [
         'dashboard.php'         => 'dashboard',
-        'my_phone.php'          => 'dashboard',
-        'chat.php'              => 'dashboard',
+        'my_phone.php'          => 'my_phone',
+        'chat.php'              => 'chat',
         'trunks.php'            => 'trunks',
         'did_routes.php'        => 'did_routes',
         'outbound_routes.php'   => 'outbound_routes',
@@ -183,21 +183,29 @@ function getRolePermissionsMap($role_key = null) {
 function hasModulePermission($module_key, $action = 'access') {
     $role = $_SESSION['user_role'] ?? '';
 
-    // 'roles' ve 'system_users' modülleri SİMETRİK bir circuit-breaker altında:
+    // 'roles', 'system_users', 'firewall' ve 'fail2ban' modülleri SİMETRİK bir circuit-breaker altında:
     // admin HER ZAMAN erişebilir (roller sayfası kilitlenirse admin kendini geri
     // kurtaramaz), admin OLMAYAN hiçbir rol ASLA erişemez — sys_role_permissions
     // tablosunda bu iki modül için ne yazarsa yazsın (roles.php'nin izin matrisi
     // formu bunları sıradan bir modül gibi sunduğu için yanlışlıkla/"Tümünü Seç"
     // ile bir role kullanıcı/rol yönetim yetkisi verilip tam yetki yükseltmesine
     // (kendi rolünü admin yapma) yol açabiliyordu — 2026-08-21 denetiminde bulundu).
-    // Diğer TÜM modüllerde admin de roles.php'de yapılandırılan DB izinlerine tabidir
-    // (aksi halde admin rolünün erişimini bir modülde kapatmak hiçbir işe yaramıyordu).
-    // 'firewall' ve 'fail2ban' de aynı circuit-breaker'a eklendi (2026-08-31,
-    // kullanıcı isteği — Güvenlik menüsü): bu iki sayfa gerçek sudo ile sistem
-    // firewall/fail2ban durumunu değiştirebiliyor, roles.php üzerinden yanlışlıkla
-    // admin-olmayan bir role açılması ASLA olmamalı.
-    // 'push_settings' de admin ile sınırlıdır (Google Cloud Servis Hesabı JSON özel anahtarı barındırır).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'push_settings'], true)) {
+    // 'firewall' ve 'fail2ban' de aynı circuit-breaker'a dahildir (2026-08-31 / 2026-09-01
+    // RbacTest): bu sayfalar gerçek sudo çalıştırır, admin dışındaki hiçbir role ASLA açılamaz.
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban'], true)) {
+        return $role === 'admin';
+    }
+
+    // Sadece İzleyici (read_only_admin) kuralı: Kesinlikle hiçbir modülde ayar (edit) veya silme (delete) yapamaz!
+    // Kullanıcı talebi doğrultusunda: "sadece izleyici olarak kalmalı ayar yapamamalı."
+    if ($role === 'read_only_admin' && ($action === 'edit' || $action === 'delete')) {
+        return false;
+    }
+
+    // 'push_settings' modülü:
+    // Google Cloud Servis Hesabı JSON özel anahtarı barındırır.
+    // Düzenleme ('edit') ve silme ('delete') işlemleri SADECE 'admin' rolüne açıktır.
+    if ($module_key === 'push_settings' && ($action === 'edit' || $action === 'delete')) {
         return $role === 'admin';
     }
 

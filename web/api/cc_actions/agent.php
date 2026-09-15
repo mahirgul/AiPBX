@@ -5,12 +5,26 @@ require_once __DIR__ . '/../../src/queue_helper.php';
 
 if ($action === 'login') {
     if (!empty($user_ext)) {
-        if (!QueueHelper::isAssignedMember($user_ext, 'queue_cc')) {
-            echo json_encode(['success' => false, 'error' => "Dahili numaranız ($user_ext) Çağrı Merkezi (queue_cc) kuyruğuna tanımlı değildir!"]);
+        $stmt = $db->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
+        $assigned = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $q_row) {
+            $mems = json_decode($q_row['members_json'] ?? '[]', true) ?: [];
+            if (in_array((string)$user_ext, array_map('strval', $mems))) {
+                $assigned[] = $q_row['queue_name'];
+            }
+        }
+
+        if (empty($assigned)) {
+            echo json_encode(['success' => false, 'error' => "Dahili numaranız ($user_ext) herhangi bir aktif kuyruğa tanımlı değildir!"]);
             exit;
         }
 
-        QueueHelper::setMembership($user_ext, 'queue_cc', true);
+        $target_q = trim($_POST['queue_name'] ?? '');
+        $queues_to_join = (!empty($target_q) && in_array($target_q, $assigned)) ? [$target_q] : $assigned;
+
+        foreach ($queues_to_join as $qn) {
+            QueueHelper::setMembership($user_ext, $qn, true);
+        }
 
         // Close any lingering active break logs
         $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
@@ -22,7 +36,15 @@ if ($action === 'login') {
 
 if ($action === 'logout') {
     if (!empty($user_ext)) {
-        QueueHelper::setMembership($user_ext, 'queue_cc', false);
+        $stmt = $db->query("SELECT queue_name FROM pbx_queues WHERE is_active = 1");
+        $all_q = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+        $target_q = trim($_POST['queue_name'] ?? '');
+        $queues_to_leave = (!empty($target_q)) ? [$target_q] : $all_q;
+
+        foreach ($queues_to_leave as $qn) {
+            QueueHelper::setMembership($user_ext, $qn, false);
+        }
 
         // Close any active break log
         $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
@@ -39,13 +61,11 @@ if ($action === 'pause') {
     if (!empty($user_ext)) {
         // Asterisk CLI "reason" argümanı boşluk içerdiğinde ("Yemek Molası"
         // gibi) tırnaksız gönderilirse CLI parser'ı bunu birden fazla
-        // argüman sanıp komutu reddediyor (Usage: hatası) — pause hiç
-        // uygulanmıyordu ama DB'ye "PAUSED" yazıldığı için arayüzde mola
-        // görünüyor, gerçekte Asterisk hâlâ üye üzerinden çağrı dağıtıyordu.
+        // argüman sanıp komutu reddediyor (Usage: hatası).
         $reason_cli = str_replace('"', '', $reason);
-        // Pause in Asterisk queue
-        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n queue queue_cc reason \"$reason_cli\""), $out);
-        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$user_ext queue queue_cc reason \"$reason_cli\""), $out);
+        // Asterisk: Belirli bir kuyruk adı verilmediğinde üyenin dahil olduğu TÜM kuyruklarda mola verilir
+        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n reason \"$reason_cli\""), $out);
+        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$user_ext reason \"$reason_cli\""), $out);
 
         withAgentPauseLock($db, $user_ext, function() use ($db, $user_ext, $user_name, $reason) {
             try {
@@ -69,9 +89,9 @@ if ($action === 'pause') {
 
 if ($action === 'unpause') {
     if (!empty($user_ext)) {
-        // Unpause in Asterisk queue
-        @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$user_ext@from-internal-pbx/n queue queue_cc"), $out);
-        @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$user_ext queue queue_cc"), $out);
+        // Asterisk: Belirli bir kuyruk adı verilmediğinde üyenin dahil olduğu TÜM kuyruklarda moladan dönülür
+        @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$user_ext@from-internal-pbx/n"), $out);
+        @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$user_ext"), $out);
 
         // Complete active break log
         withAgentPauseLock($db, $user_ext, function() use ($db, $user_ext) {
