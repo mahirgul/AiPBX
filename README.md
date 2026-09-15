@@ -98,13 +98,18 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Presence & Delivery Receipts** — Real-time typing indicators, read receipts, and online status tracking
 - **FCM Push Notifications** — Background notifications with conversation grouping for both direct and group messages
 
-### 📱 Android App (Build 31 · v1.0.30)
+### 📱 Android App (Build 32 · v1.0.31)
 - **Native Kotlin** application with zero external cloud dependencies
 - **PJSIP + WebRTC** dual engine with Opus HD audio & DTLS-SRTP encryption
 - **FCM Push & Persistent Foreground Service** — instantaneous wake-up for incoming calls
-- **Instant Messaging & Group Chat** — Go-based WebSocket backend with 1-to-1 direct messaging, multi-user group chat rooms, media attachments, and real-time synchronization
+- **Full Group Chat & Instant Messaging** — Direct 1-to-1 messaging, multi-user group chat rooms, quick group creation (`+ Yeni Grup`), conversation filter chips (All, Direct, Groups), participant management, admin roles, and real-time WebSocket updates
 - **Corporate Directory & Live Presence** — 50+ extensions with live status & 1-tap dialing
 - **Detailed Call History & In-App Log Viewer** — full diagnostics and call filtering
+- **Available on Google Play Console** — automated Closed Testing track pipeline and direct signed APK downloads
+
+### 📲 Mobile-First Web Management Portal
+- **WhatsApp/Telegram-Style Master-Detail Chat** — Fluid responsive navigation on smartphones (`<= 768px`) with hardware/browser back-button popstate support
+- **Optimized Mobile Views** — Touch-friendly responsive layouts for My Phone (`/my_phone`), Role Permission Matrix (`/roles`), Mobile Push Settings (`/push-settings`), and Pending Sync (`/pending-sync`)
 
 <p align="center">
   <img src="docs/img/app_dialer.jpg" width="18%" alt="Dialer">
