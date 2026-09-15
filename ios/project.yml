@@ -1,0 +1,31 @@
+name: AiPBX
+options:
+  bundleIdPrefix: com.mhrgl
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+targets:
+  AiPBX:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: AiPBX
+    settings:
+      base:
+        PRODUCT_NAME: AiPBX
+        PRODUCT_BUNDLE_IDENTIFIER: com.mhrgl.AiPBX
+        INFOPLIST_FILE: AiPBX/Resources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - sdk: WebKit.framework
+      - sdk: AVFoundation.framework
+      - sdk: CallKit.framework
+      - sdk: UserNotifications.framework

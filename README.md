@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Open-Source Enterprise IP PBX Management Portal & Unified Communications</strong><br>
-  Asterisk 22 · PHP 8 · MariaDB · WebRTC · Instant Messaging · Android App
+  Asterisk 22 · PHP 8 · MariaDB · WebRTC · Instant Messaging · Android & iOS Apps
 </p>
 
 <p align="center">
@@ -107,6 +107,15 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Detailed Call History & In-App Log Viewer** — full diagnostics and call filtering
 - **Available on Google Play Console** — automated Closed Testing track pipeline and direct signed APK downloads
 
+### 🍎 iOS App (SwiftUI & CallKit)
+- **Native SwiftUI** modern application for iPhone & iPad (iOS 16.0+)
+- **Embedded WebRTC Voice Engine** with zero external cloud dependencies
+- **CallKit & AudioSession Integration** — Native iOS lock-screen incoming calls, audio routing, speaker and mute
+- **Full Group Chat & Direct Messaging** — Instant messaging, multi-party group rooms, contact picker, and real-time WebSocket communication
+- **Corporate Directory & Live Presence** — 50+ extensions with live presence indicators and 1-tap call/chat
+- **PBX Features & In-App Diagnostics** — DND, Call Forwarding, live log viewer, and log sharing via iOS ShareSheet
+- **Automated GitHub Actions CI/CD** — compiled automatically on macOS runners into unsigned `.ipa` and Simulator `.zip` artifacts
+
 ### 📲 Mobile-First Web Management Portal
 - **WhatsApp/Telegram-Style Master-Detail Chat** — Fluid responsive navigation on smartphones (`<= 768px`) with hardware/browser back-button popstate support
 - **Optimized Mobile Views** — Touch-friendly responsive layouts for My Phone (`/my_phone`), Role Permission Matrix (`/roles`), Mobile Push Settings (`/push-settings`), and Pending Sync (`/pending-sync`)
@@ -162,6 +171,10 @@ AiPBX/
 │   └── app/src/main/
 │       └── java/com/mhrgl/aipbx/
 │
+├── ios/                    # Swift & SwiftUI iOS App (GitHub Actions CI/CD)
+│   ├── AiPBX/              # App, Models, Services, Views, Resources
+│   └── AiPBX.xcodeproj/    # Xcode project & schemes
+│
 ├── chat/                   # Go WebSocket Chat Service
 │   ├── main.go
 │   ├── hub.go              # WebSocket hub
@@ -189,6 +202,7 @@ AiPBX/
 | Database | MariaDB (Phinx migrations) |
 | Chat | Go + gorilla/websocket |
 | Android | Kotlin, PJSIP, WebRTC, FCM |
+| iOS | Swift 5.9, SwiftUI, WebKit, CallKit, Combine |
 | WebRTC | coturn TURN/STUN, DTLS-SRTP, Opus |
 | Security | fail2ban, RBAC, CSRF, CAPTCHA |
 
