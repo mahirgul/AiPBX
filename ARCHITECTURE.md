@@ -181,6 +181,11 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 - **Strict Read-Only Viewer Mode (`read_only_admin`)**: All form submissions, destructive API endpoints, and modal modification triggers are denied at the controller layer and visually disabled in the UI.
 - **Self-Service Boundaries**: `standard_user` is restricted to personal softphone settings (`my_phone`), extension chat (`chat`), and their own CDRs; system `fax_user` accounts are automatically excluded from interactive chat directories.
 
+### 4.4 Mobile-First Responsive UX & Adaptive Layouts
+- **Master-Detail Sliding Navigation**: On mobile viewport widths (< 768px), dual-pane views such as `/chat` automatically collapse into single-screen sliding panels. Selecting a conversation slides the message history into view while hiding the conversation drawer.
+- **Browser History Integration (`popstate`)**: Mobile chat panel transitions push a state to HTML5 `history.pushState()`. Tapping the hardware or gesture Back button emits a `popstate` event, cleanly returning the user to the conversation list without reloading the page.
+- **Touch-Optimized Responsive Views**: Administrative pages (`my_phone`, `roles`, `push_settings`, and `pending_sync`) dynamically adapt from wide desktop data-grids into card-based and stacked form elements with large tap targets and contextual action bars.
+
 ---
 
 ## 5. Android Mobile Application (Kotlin)
@@ -190,13 +195,21 @@ Granular security policies are enforced via the `sys_role_permissions` database 
   1. `Tuşlar` (Dialer & Call Control)
   2. `Geçmiş` (Call History / CDR)
   3. `Rehber` (Enterprise Directory & Local Contacts)
-  4. `Sohbet` (Integrated Real-time Chat)
+  4. `Sohbet` (Integrated Real-time Chat with 1-to-1 and Multi-User Groups)
   5. `Santral` (PBX Features, System Diagnostics & Log Viewer)
 - **VoIP Subsystem**: Headless WebRTC WebView executing an optimized JsSIP engine with DTLS-SRTP.
+- **Group & Direct Chat Integration**:
+  - Full parity with Go chat backend: 1-to-1 direct messaging and multi-user group chat rooms.
+  - Conversation filtering chips (`ChatFilter.ALL`, `ChatFilter.DIRECT`, `ChatFilter.GROUP`).
+  - Deterministic sender color-coding algorithms and group role badges (`Yönetici` / `Üye`).
+  - Real-time event subscription via `ChatWebSocketManager` and `ChatEventListener` for incoming messages, typing notifications, and group lifecycle events.
+  - Interactive group management modal with multi-selection contact picker (`ContactSelectionAdapter`).
 - **Keepalive & Stability Engine**:
   - Mobile NAT keepalive ping every 30 seconds.
   - `register_expires` optimized to 300s.
   - Watchdog race-condition guards preventing spurious `DISCONNECTED` restarts.
+  - Foreground Service (`PbxForegroundService`) with ongoing status notification for high-reliability background survival.
+  - Firebase Cloud Messaging (FCM) wakeup service with conversation-level notification grouping.
 - **Diagnostics System**: Integrated [`AppLogManager`](file:///home/pbx/android/app/src/main/java/com/mhrgl/aipbx/util/AppLogManager.kt) capturing runtime system parameters and Logcat traces with one-click export/sharing.
 
 ---
