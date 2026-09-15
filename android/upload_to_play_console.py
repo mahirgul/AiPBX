@@ -86,11 +86,11 @@ def upload_bundle():
         release_notes = [
             {
                 'language': 'tr-TR',
-                'text': 'Sohbet özelliği ana ekranda sekmeler arasına entegre edildi. Arka plan bağlantı kararlılığı artırıldı. Santral sekmesine sistem loglarını inceleme ve indirme desteği eklendi.'
+                'text': 'Grup sohbeti özelliği eklendi: Grup oluşturma, rehberden üye ekleme/çıkarma, yönetici rolleri ve anlık sistem bildirimleri. Arka plan grup bildirimleri ve mesajlaşma arayüzü iyileştirildi.'
             },
             {
                 'language': 'en-US',
-                'text': 'Integrated chat tab into main navigation. Enhanced background connection stability. Added diagnostic log viewer and export feature to PBX tab.'
+                'text': 'Added Group Chat feature: Group creation, add/remove members, admin roles, and real-time system notifications. Enhanced background group notifications and messaging UI.'
             }
         ]
 
