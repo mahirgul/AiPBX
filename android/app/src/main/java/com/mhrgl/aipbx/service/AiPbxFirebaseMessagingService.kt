@@ -41,13 +41,17 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
                 val body = data["body"] ?: "AI PBX test bildirimi başarıyla alındı."
                 showTestNotification(title, body)
             }
-            "new_message" -> {
+            "new_message", "group_created", "group_member_added" -> {
                 val title = data["title"] ?: "Yeni Mesaj"
                 val body = data["body"] ?: "Yeni bir mesaj aldınız."
                 val convId = data["conversation_id"]?.toIntOrNull() ?: 0
+                val convType = data["conversation_type"] ?: "direct"
+                val isGroup = convType == "group"
                 val senderExt = data["sender_ext"] ?: ""
-                val senderName = data["sender_name"] ?: senderExt
-                showChatNotification(title, body, convId, senderExt, senderName)
+                val groupTitle = data["group_title"] ?: title
+                val targetName = if (isGroup) groupTitle else (data["sender_name"] ?: senderExt)
+                val targetExt = if (isGroup) "" else senderExt
+                showChatNotification(title, body, convId, targetExt, targetName, isGroup)
             }
             else -> {
                 Log.d(TAG, "Unknown push action: $action, ensuring service is alive")
@@ -56,14 +60,15 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun showChatNotification(title: String, body: String, convId: Int, senderExt: String, senderName: String) {
+    private fun showChatNotification(title: String, body: String, convId: Int, targetExt: String, targetName: String, isGroup: Boolean) {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
         val intent = Intent(this, com.mhrgl.aipbx.ui.ChatActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_CONV_ID, convId)
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_EXT, senderExt)
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_NAME, senderName)
+            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_EXT, targetExt)
+            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_NAME, targetName)
+            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_IS_GROUP, isGroup)
         }
         val pendingIntent = android.app.PendingIntent.getActivity(
             this,
@@ -77,6 +82,7 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
             .setContentText(body)
             .setSmallIcon(R.drawable.ic_chat)
             .setContentIntent(pendingIntent)
+            .setGroup("conv_$convId")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setDefaults(NotificationCompat.DEFAULT_ALL)

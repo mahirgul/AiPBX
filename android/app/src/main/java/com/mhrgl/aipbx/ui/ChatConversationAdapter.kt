@@ -41,20 +41,24 @@ class ChatConversationAdapter(
         private val tvUnreadBadge: TextView = itemView.findViewById(R.id.tvUnreadBadge)
 
         fun bind(item: ChatConversation) {
-            val displayName = item.targetName ?: item.targetExt ?: "Kullanıcı"
-            tvTargetName.text = displayName
+            val isGroup = item.type == "group"
 
-            val initial = displayName.take(1).uppercase()
-            tvAvatar.text = initial
-
-            vOnlineDot.setBackgroundResource(
-                if (item.targetOnline) R.drawable.circle_status else R.drawable.circle_status
-            )
-            vOnlineDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                if (item.targetOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
-            )
-
-            tvLastMessage.text = item.lastMessageText ?: "Sohbet başlatıldı"
+            if (isGroup) {
+                val displayName = item.title ?: "Grup Sohbeti"
+                tvTargetName.text = displayName
+                tvAvatar.text = "👥"
+                vOnlineDot.visibility = View.GONE
+                tvLastMessage.text = item.lastMessageText ?: "${item.memberCount} üye"
+            } else {
+                val displayName = item.targetName ?: item.targetExt ?: "Kullanıcı"
+                tvTargetName.text = displayName
+                tvAvatar.text = displayName.take(1).uppercase()
+                vOnlineDot.visibility = View.VISIBLE
+                vOnlineDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    if (item.targetOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
+                )
+                tvLastMessage.text = item.lastMessageText ?: "Sohbet başlatıldı"
+            }
 
             tvTime.text = formatChatTime(item.lastMessageAt)
 

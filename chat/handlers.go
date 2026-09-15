@@ -227,9 +227,11 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 		if !strings.HasPrefix(in.AttachmentURL, "/chat/media/images/") &&
 			!strings.HasPrefix(in.AttachmentURL, "/chat/media/docs/") &&
 			!strings.HasPrefix(in.AttachmentURL, "/chat/media/thumbs/") &&
+			!strings.HasPrefix(in.AttachmentURL, "/chat/media/avatars/") &&
 			!strings.HasPrefix(in.AttachmentURL, "/media/images/") &&
 			!strings.HasPrefix(in.AttachmentURL, "/media/docs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/thumbs/") {
+			!strings.HasPrefix(in.AttachmentURL, "/media/thumbs/") &&
+			!strings.HasPrefix(in.AttachmentURL, "/media/avatars/") {
 			writeJSONError(w, http.StatusBadRequest, "Geçersiz attachment_url formatı.")
 			return
 		}
@@ -267,6 +269,9 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 		"data":  saved,
 	})
 
+	conv, _ := GetConversationByID(convID)
+	isGroup := conv != nil && conv.Type == "group"
+
 	for _, ext := range participants {
 		if ext == user.Extension {
 			continue
@@ -289,13 +294,25 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 			senderTitle = "Dahili " + user.Extension
 		}
 
-		TriggerFcmPush(ext, senderTitle, bodyPreview, "new_message", map[string]string{
-			"conversation_id": strconv.Itoa(convID),
-			"sender_ext":      user.Extension,
-			"sender_name":     senderTitle,
-			"msg_id":          strconv.FormatInt(saved.ID, 10),
-			"msg_type":        saved.MsgType,
-		})
+		pushTitle := senderTitle
+		pushBody := bodyPreview
+		extra := map[string]string{
+			"conversation_id":   strconv.Itoa(convID),
+			"sender_ext":        user.Extension,
+			"sender_name":       senderTitle,
+			"msg_id":            strconv.FormatInt(saved.ID, 10),
+			"msg_type":          saved.MsgType,
+			"conversation_type": "direct",
+		}
+
+		if isGroup {
+			pushTitle = conv.Title
+			pushBody = fmt.Sprintf("%s: %s", senderTitle, bodyPreview)
+			extra["conversation_type"] = "group"
+			extra["group_title"] = conv.Title
+		}
+
+		TriggerFcmPush(ext, pushTitle, pushBody, "new_message", extra)
 	}
 
 	saved.IsMe = true
@@ -423,9 +440,19 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	var publicURL string
 	var thumbURL string
 
+	uploadType := r.URL.Query().Get("type")
+	if uploadType == "" {
+		uploadType = r.FormValue("type")
+	}
+
 	if isImage {
-		subDir = "images"
-		publicURL = "/chat/media/images/" + savedFileName
+		if uploadType == "avatar" {
+			subDir = "avatars"
+			publicURL = "/chat/media/avatars/" + savedFileName
+		} else {
+			subDir = "images"
+			publicURL = "/chat/media/images/" + savedFileName
+		}
 
 		// Hedef dizini doğrula
 		targetDir := filepath.Join(s.cfg.UploadDir, subDir)
@@ -582,4 +609,448 @@ func (s *Server) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	go client.writePump()
 	go client.readPump()
+}
+
+// POST /chat/api/conversations/group (CH-G1, CH-G2, CH-G3, CH-G4)
+func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		Title       string   `json:"title"`
+		AvatarURL   string   `json:"avatar_url"`
+		Description string   `json:"description"`
+		Members     []string `json:"members"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek gövdesi.")
+		return
+	}
+
+	body.Title = strings.TrimSpace(body.Title)
+	if body.Title == "" {
+		writeJSONError(w, http.StatusBadRequest, "Grup adı zorunludur.")
+		return
+	}
+
+	conv, sysMsg, err := CreateGroupConversation(body.Title, user.Extension, body.AvatarURL, body.Description, body.Members)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Katılımcılara bildirim
+	participants, _ := GetParticipants(conv.ID)
+	createdPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_created",
+		"data":  conv,
+	})
+	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "new_message",
+		"data":  sysMsg,
+	})
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, createdPayload)
+		s.hub.SendToExtension(ext, sysMsgPayload)
+
+		// Eklenen üyelere FCM bildirim ("gruba eklendiniz")
+		if ext != user.Extension {
+			pushTitle := conv.Title
+			pushBody := fmt.Sprintf("%s sizi \"%s\" grubuna ekledi", user.FullName, conv.Title)
+			TriggerFcmPush(ext, pushTitle, pushBody, "group_created", map[string]string{
+				"conversation_id":   strconv.Itoa(conv.ID),
+				"conversation_type": "group",
+				"group_title":       conv.Title,
+			})
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success":      true,
+		"conversation": conv,
+	})
+}
+
+// GET /chat/api/conversations/group?conversation_id=X (CH-G1)
+func (s *Server) HandleGetGroupDetails(w http.ResponseWriter, r *http.Request, user *User) {
+	convIDStr := r.URL.Query().Get("conversation_id")
+	convID, err := strconv.Atoi(convIDStr)
+	if err != nil || convID <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz conversation_id.")
+		return
+	}
+
+	// CH-G1: Katılımcı kontrolü
+	isPart, err := IsParticipant(convID, user.Extension)
+	if err != nil || !isPart {
+		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
+		return
+	}
+
+	conv, err := GetGroupDetails(convID, user.Extension)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Grup detayları alınamadı: "+err.Error())
+		return
+	}
+
+	// Presence bilgilerini ekle
+	onlineCount := 0
+	for i := range conv.Participants {
+		conv.Participants[i].IsOnline = s.hub.IsOnline(conv.Participants[i].Extension)
+		if conv.Participants[i].IsOnline {
+			onlineCount++
+		}
+	}
+	conv.OnlineCount = onlineCount
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success":      true,
+		"conversation": conv,
+	})
+}
+
+// POST /chat/api/conversations/group/update (CH-G1, CH-G4)
+func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int    `json:"conversation_id"`
+		Title          string `json:"title"`
+		AvatarURL      string `json:"avatar_url"`
+		Description    string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Admin kontrolü
+	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
+	if err != nil || !isAdmin {
+		writeJSONError(w, http.StatusForbidden, "Grup bilgilerini güncellemek için yönetici olmalısınız.")
+		return
+	}
+
+	sysMsg, err := UpdateGroupInfo(body.ConversationID, user.Extension, body.Title, body.AvatarURL, body.Description)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	conv, _ := GetConversationByID(body.ConversationID)
+	participants, _ := GetParticipants(body.ConversationID)
+
+	updatePayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_updated",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+			"title":           body.Title,
+			"avatar_url":      body.AvatarURL,
+			"description":     body.Description,
+		},
+	})
+	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "new_message",
+		"data":  sysMsg,
+	})
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, updatePayload)
+		s.hub.SendToExtension(ext, sysMsgPayload)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success":      true,
+		"conversation": conv,
+	})
+}
+
+// POST /chat/api/conversations/group/members/add (CH-G1, CH-G2, CH-G3)
+func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int      `json:"conversation_id"`
+		Extensions     []string `json:"extensions"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || len(body.Extensions) == 0 {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Admin kontrolü
+	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
+	if err != nil || !isAdmin {
+		writeJSONError(w, http.StatusForbidden, "Grup üyesi eklemek için yönetici olmalısınız.")
+		return
+	}
+
+	added, sysMsg, err := AddGroupMembers(body.ConversationID, user.Extension, body.Extensions)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	conv, _ := GetConversationByID(body.ConversationID)
+	participants, _ := GetParticipants(body.ConversationID)
+
+	addedPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_member_added",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+			"members":         added,
+			"actor":           user.Extension,
+		},
+	})
+	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "new_message",
+		"data":  sysMsg,
+	})
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, addedPayload)
+		s.hub.SendToExtension(ext, sysMsgPayload)
+	}
+
+	// Eklenen kullanıcılara "gruba eklendiniz" bildirimi
+	title := ""
+	if conv != nil {
+		title = conv.Title
+	}
+	for _, ext := range added {
+		pushBody := fmt.Sprintf("%s sizi \"%s\" grubuna ekledi", user.FullName, title)
+		TriggerFcmPush(ext, title, pushBody, "group_member_added", map[string]string{
+			"conversation_id":   strconv.Itoa(body.ConversationID),
+			"conversation_type": "group",
+			"group_title":       title,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"added":   added,
+	})
+}
+
+// POST /chat/api/conversations/group/members/remove (CH-G1, CH-G6)
+func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int    `json:"conversation_id"`
+		Extension      string `json:"extension"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || body.Extension == "" {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Admin kontrolü
+	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
+	if err != nil || !isAdmin {
+		writeJSONError(w, http.StatusForbidden, "Gruptan üye çıkarmak için yönetici olmalısınız.")
+		return
+	}
+
+	sysMsg, err := RemoveGroupMember(body.ConversationID, user.Extension, body.Extension)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Olayı çıkarılan üyeye de bildir (sohbeti listeden düşürsün)
+	removedPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_member_removed",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+			"extension":       body.Extension,
+			"actor":           user.Extension,
+		},
+	})
+	s.hub.SendToExtension(body.Extension, removedPayload)
+
+	// Kalan katılımcılara bildir
+	participants, _ := GetParticipants(body.ConversationID)
+	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "new_message",
+		"data":  sysMsg,
+	})
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, removedPayload)
+		s.hub.SendToExtension(ext, sysMsgPayload)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+	})
+}
+
+// POST /chat/api/conversations/group/members/role (CH-G1)
+func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int    `json:"conversation_id"`
+		Extension      string `json:"extension"`
+		Role           string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || body.Extension == "" || (body.Role != "admin" && body.Role != "member") {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Admin kontrolü
+	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
+	if err != nil || !isAdmin {
+		writeJSONError(w, http.StatusForbidden, "Grup yetkilerini değiştirmek için yönetici olmalısınız.")
+		return
+	}
+
+	err = UpdateGroupMemberRole(body.ConversationID, user.Extension, body.Extension, body.Role)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	participants, _ := GetParticipants(body.ConversationID)
+	rolePayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_role_updated",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+			"extension":       body.Extension,
+			"role":            body.Role,
+			"actor":           user.Extension,
+		},
+	})
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, rolePayload)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+	})
+}
+
+// POST /chat/api/conversations/group/leave (CH-G1)
+func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int `json:"conversation_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Katılımcı kontrolü
+	isPart, err := IsParticipant(body.ConversationID, user.Extension)
+	if err != nil || !isPart {
+		writeJSONError(w, http.StatusForbidden, "Bu grubun aktif bir üyesi değilsiniz.")
+		return
+	}
+
+	sysMsg, err := LeaveGroup(body.ConversationID, user.Extension)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Ayrılan kullanıcıya bildir
+	leftPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_member_removed",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+			"extension":       user.Extension,
+			"actor":           user.Extension,
+		},
+	})
+	s.hub.SendToExtension(user.Extension, leftPayload)
+
+	// Kalan katılımcılara bildir
+	participants, _ := GetParticipants(body.ConversationID)
+	var sysMsgPayload []byte
+	if sysMsg != nil {
+		sysMsgPayload, _ = json.Marshal(map[string]interface{}{
+			"event": "new_message",
+			"data":  sysMsg,
+		})
+	}
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, leftPayload)
+		if sysMsgPayload != nil {
+			s.hub.SendToExtension(ext, sysMsgPayload)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+	})
+}
+
+// POST /chat/api/conversations/group/delete (CH-G1, CH-G7)
+func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user *User) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		return
+	}
+
+	var body struct {
+		ConversationID int `json:"conversation_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		return
+	}
+
+	// CH-G1: Admin kontrolü
+	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
+	if err != nil || !isAdmin {
+		writeJSONError(w, http.StatusForbidden, "Grubu silmek için yönetici olmalısınız.")
+		return
+	}
+
+	// Katılımcıları silmeden önce al
+	participants, _ := GetParticipants(body.ConversationID)
+
+	err = DeleteGroup(body.ConversationID, user.Extension)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Grup silinemedi: "+err.Error())
+		return
+	}
+
+	deletedPayload, _ := json.Marshal(map[string]interface{}{
+		"event": "group_deleted",
+		"data": map[string]interface{}{
+			"conversation_id": body.ConversationID,
+		},
+	})
+
+	for _, ext := range participants {
+		s.hub.SendToExtension(ext, deletedPayload)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+	})
 }

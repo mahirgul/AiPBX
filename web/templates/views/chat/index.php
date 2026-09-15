@@ -20,9 +20,14 @@ $token = $token ?? '';
                     <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-comments" style="color: var(--primary);"></i> Mesajlar
                     </h3>
-                    <span id="chat-ws-status-badge" class="badge" style="font-size: 11px; padding: 3px 8px; background: rgba(0,0,0,0.05); color: var(--text-muted); border-radius: 10px;">
-                        <i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 2px 8px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="openNewGroupModal()" title="Yeni Grup Oluştur">
+                            <i class="fas fa-users"></i> + Grup
+                        </button>
+                        <span id="chat-ws-status-badge" class="badge" style="font-size: 11px; padding: 3px 8px; background: rgba(0,0,0,0.05); color: var(--text-muted); border-radius: 10px;">
+                            <i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...
+                        </span>
+                    </div>
                 </div>
                 
                 <!-- Sekmeler: Sohbetler / Kişiler -->
@@ -91,8 +96,8 @@ $token = $token ?? '';
                 
                 <!-- Aktif Sohbet Başlığı -->
                 <div id="chat-header" style="padding: 12px 18px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div id="active-target-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; position: relative;">
+                    <div id="chat-header-info-btn" style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="handleHeaderClick()">
+                        <div id="active-target-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; position: relative; flex-shrink: 0; overflow: visible;">
                             <span id="active-target-initial">U</span>
                             <span id="active-target-status-dot" style="position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: #9ca3af; border: 2px solid var(--bg-card);"></span>
                         </div>
@@ -107,10 +112,13 @@ $token = $token ?? '';
                         </div>
                     </div>
                     
-                    <!-- Hızlı İşlemler: Ara / Kapat -->
+                    <!-- Hızlı İşlemler: Ara / Grup Bilgisi -->
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <button id="active-target-call-btn" class="btn btn-sm btn-outline-primary" title="Dahiliyi Ara" style="border-radius: 8px; padding: 6px 12px;" onclick="callTargetExtension()">
                             <i class="fas fa-phone-alt"></i> <span class="d-none d-md-inline" style="margin-left: 4px;">Ara</span>
+                        </button>
+                        <button id="active-group-info-btn" class="btn btn-sm btn-outline-secondary" title="Grup Bilgisi" style="display: none; border-radius: 8px; padding: 6px 12px;" onclick="openGroupInfoModal()">
+                            <i class="fas fa-info-circle"></i> <span class="d-none d-md-inline" style="margin-left: 4px;">Grup</span>
                         </button>
                     </div>
                 </div>
@@ -177,6 +185,147 @@ $token = $token ?? '';
     </div>
 </div>
 
+<!-- Yeni Grup Modal -->
+<div id="chat-new-group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;" onclick="closeNewGroupModal()">
+    <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-users" style="color: var(--primary);"></i> Yeni Grup Oluştur
+            </h4>
+            <button type="button" class="btn btn-sm" style="border: none; background: transparent; color: var(--text-muted); font-size: 16px; cursor: pointer;" onclick="closeNewGroupModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;">
+            <!-- Avatar ve Grup Adı -->
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div id="new-group-avatar-preview" style="position: relative; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; flex-shrink: 0; overflow: hidden;" onclick="document.getElementById('new-group-avatar-file').click()" title="Grup Resmi Seç (Opsiyonel)">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <input type="file" id="new-group-avatar-file" style="display: none;" accept="image/*" onchange="handleNewGroupAvatarSelect(event)">
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Grup Adı *</label>
+                    <input type="text" id="new-group-title" placeholder="Grup konusunu veya adını girin..." maxlength="100" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none;">
+                </div>
+            </div>
+
+            <!-- Grup Açıklaması -->
+            <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Açıklama (Opsiyonel)</label>
+                <input type="text" id="new-group-desc" placeholder="Grup açıklaması..." maxlength="255" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13px; outline: none;">
+            </div>
+
+            <!-- Üye Seçimi -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0;">Katılımcıları Seçin (<span id="new-group-selected-count">0</span> seçildi)</label>
+                </div>
+                <div style="position: relative; margin-bottom: 8px;">
+                    <i class="fas fa-search" style="position: absolute; left: 10px; top: 9px; color: var(--text-muted); font-size: 12px;"></i>
+                    <input type="text" id="new-group-search-contacts" placeholder="Kişilerde filtrele..." style="width: 100%; padding: 6px 10px 6px 30px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 12.5px; outline: none;" oninput="filterNewGroupContacts(this.value)">
+                </div>
+                <div id="new-group-contacts-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 2px;">
+                    <!-- Kişiler dinamik listelenecek -->
+                </div>
+            </div>
+        </div>
+        <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-main); display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="closeNewGroupModal()">İptal</button>
+            <button type="button" id="new-group-submit-btn" class="btn btn-sm btn-primary" onclick="submitCreateGroup()">
+                <i class="fas fa-check"></i> Grubu Oluştur
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Grup Bilgisi Modal -->
+<div id="chat-group-info-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;" onclick="closeGroupInfoModal()">
+    <div class="card" style="width: 100%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">
+                Grup Bilgisi
+            </h4>
+            <button type="button" class="btn btn-sm" style="border: none; background: transparent; color: var(--text-muted); font-size: 16px; cursor: pointer;" onclick="closeGroupInfoModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Grup Başlık Kartı -->
+            <div style="display: flex; align-items: center; gap: 14px; padding: 12px; background: var(--bg-main); border-radius: 10px;">
+                <div id="group-info-avatar-box" style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; overflow: hidden;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h4 id="group-info-title" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-word;">Grup</h4>
+                        <button id="group-info-edit-btn" class="btn btn-sm btn-outline-secondary" style="display: none; padding: 1px 6px; font-size: 11px; border-radius: 6px;" onclick="promptEditGroupInfo()" title="Grup Adını / Açıklamasını Düzenle">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </div>
+                    <p id="group-info-desc" style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); word-break: break-word;"></p>
+                    <div id="group-info-meta" style="margin-top: 4px; font-size: 11px; color: var(--text-muted);"></div>
+                </div>
+            </div>
+
+            <!-- Katılımcılar Başlığı & Üye Ekle Butonu -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
+                        Katılımcılar (<span id="group-info-members-count">0</span>)
+                    </span>
+                    <button id="group-info-add-member-btn" class="btn btn-sm btn-outline-primary" style="display: none; padding: 3px 10px; font-size: 11.5px; border-radius: 6px;" onclick="openAddMembersModal()">
+                        <i class="fas fa-user-plus"></i> Üye Ekle
+                    </button>
+                </div>
+                <div id="group-info-members-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; padding-right: 2px;">
+                    <!-- Üye listesi dinamik render edilecek -->
+                </div>
+            </div>
+        </div>
+        <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-main); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <button id="group-info-delete-btn" type="button" class="btn btn-sm btn-outline-danger" style="display: none;" onclick="confirmDeleteGroup()">
+                    <i class="fas fa-trash-alt"></i> Grubu Sil
+                </button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="confirmLeaveGroup()">
+                    <i class="fas fa-sign-out-alt"></i> Gruptan Ayrıl
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Üye Ekle Modal -->
+<div id="chat-add-members-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;" onclick="closeAddMembersModal()">
+    <div class="card" style="width: 100%; max-width: 420px; max-height: 80vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main);">
+                Gruba Üye Ekle
+            </h4>
+            <button type="button" class="btn btn-sm" style="border: none; background: transparent; color: var(--text-muted); font-size: 15px; cursor: pointer;" onclick="closeAddMembersModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+            <div style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 9px; color: var(--text-muted); font-size: 12px;"></i>
+                <input type="text" id="add-members-search" placeholder="Kişilerde filtrele..." style="width: 100%; padding: 6px 10px 6px 30px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 12.5px; outline: none;" oninput="filterAddMembersContacts(this.value)">
+            </div>
+            <div id="add-members-contacts-list" style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 2px;">
+                <!-- Eklenebilecek kişiler -->
+            </div>
+        </div>
+        <div style="padding: 10px 18px; border-top: 1px solid var(--border-color); background: var(--bg-main); display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="closeAddMembersModal()">İptal</button>
+            <button type="button" id="add-members-submit-btn" class="btn btn-sm btn-primary" onclick="submitAddMembers()">
+                <i class="fas fa-user-plus"></i> Ekle
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Global Chat Konfigürasyonu
 const CHAT_TOKEN = <?= json_encode($token, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
@@ -191,11 +340,13 @@ window._chatWsState = window._chatWsState || {
 };
 
 let currentConvId = null;
+let currentConv = null;
 let currentTargetExt = null;
 let conversations = [];
 let contacts = [];
 let currentTab = 'convs';
 let pendingUpload = null;
+let newGroupAvatarUrl = '';
 let typingTimeout = null;
 let isTypingSent = false;
 let audioCtx = null;
@@ -401,6 +552,49 @@ function handleWsEvent(evt) {
         if (currentConvId && evt.conversation_id === currentConvId) {
             markUiMessagesAsRead(evt.last_message_id);
         }
+
+    } else if (evt.event === 'group_created') {
+        loadConversations();
+
+    } else if (evt.event === 'group_updated') {
+        const data = evt.data || {};
+        if (currentConv && currentConv.id === data.conversation_id) {
+            currentConv.title = data.title;
+            currentConv.avatar_url = data.avatar_url;
+            currentConv.description = data.description;
+            document.getElementById('active-target-name').textContent = data.title;
+            if (data.avatar_url) {
+                document.getElementById('active-target-avatar').innerHTML = `<img src="${escapeHtml(sanitizeAttachmentUrl(data.avatar_url))}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
+        loadConversations();
+
+    } else if (evt.event === 'group_member_added' || evt.event === 'group_role_updated') {
+        const data = evt.data || {};
+        if (currentConv && currentConv.id === data.conversation_id) {
+            fetchGroupDetails(data.conversation_id);
+        }
+        loadConversations();
+
+    } else if (evt.event === 'group_member_removed') {
+        const data = evt.data || {};
+        if (data.extension === MY_EXT) {
+            if (currentConv && currentConv.id === data.conversation_id) {
+                closeActiveConversation();
+                alert('Bu gruptan çıkarıldınız veya ayrıldınız.');
+            }
+        } else if (currentConv && currentConv.id === data.conversation_id) {
+            fetchGroupDetails(data.conversation_id);
+        }
+        loadConversations();
+
+    } else if (evt.event === 'group_deleted') {
+        const data = evt.data || {};
+        if (currentConv && currentConv.id === data.conversation_id) {
+            closeActiveConversation();
+            alert('Bu grup yönetici tarafından silindi.');
+        }
+        loadConversations();
     }
 }
 
@@ -443,12 +637,13 @@ function renderConversationsList() {
     listEl.innerHTML = '';
 
     if (conversations.length === 0) {
-        listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Henüz bir sohbetiniz yok.<br>Rehberden bir dahili seçip mesajlaşabilirsiniz.</div>';
+        listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Henüz bir sohbetiniz yok.<br>Rehberden bir dahili seçip mesajlaşabilir veya Yeni Grup oluşturabilirsiniz.</div>';
         return;
     }
 
     conversations.forEach(c => {
         const isSelected = currentConvId === c.id;
+        const isGroup = c.type === 'group';
         const item = document.createElement('div');
         item.style.cssText = `
             display: flex; align-items: center; gap: 10px; padding: 10px 12px;
@@ -459,26 +654,45 @@ function renderConversationsList() {
         item.onmouseleave = () => { if (!isSelected) item.style.background = 'transparent'; };
         item.onclick = () => openConversation(c);
 
-        const initial = (c.target_name || c.target_ext || 'U').charAt(0).toUpperCase();
-        const onlineColor = c.target_online ? '#10b981' : '#9ca3af';
+        let avatarHtml = '';
+        if (isGroup) {
+            if (c.avatar_url) {
+                avatarHtml = `<img src="${escapeHtml(sanitizeAttachmentUrl(c.avatar_url))}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">`;
+            } else {
+                avatarHtml = `
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                `;
+            }
+        } else {
+            const initial = (c.target_name || c.target_ext || 'U').charAt(0).toUpperCase();
+            const onlineColor = c.target_online ? '#10b981' : '#9ca3af';
+            avatarHtml = `
+                <div style="position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                    ${initial}
+                    <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: ${onlineColor}; border: 2px solid var(--bg-card);"></span>
+                </div>
+            `;
+        }
+
+        const titleText = isGroup ? (c.title || 'Grup') : (c.target_name || c.target_ext);
+        const subtitleText = c.last_message_text || (isGroup ? `${c.member_count || 0} üye` : 'Sohbet başlatıldı');
 
         item.innerHTML = `
-            <div style="position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                ${initial}
-                <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: ${onlineColor}; border: 2px solid var(--bg-card);"></span>
-            </div>
+            ${avatarHtml}
             <div style="flex: 1; min-width: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                    <span style="font-size: 13.5px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${escapeHtml(c.target_name || c.target_ext)}
+                    <span style="font-size: 13.5px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;">
+                        ${isGroup ? '<i class="fas fa-users" style="font-size: 11px; color: #6366f1;"></i> ' : ''}${escapeHtml(titleText)}
                     </span>
-                    <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">
+                    <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px; flex-shrink: 0;">
                         ${c.last_message_at ? formatTime(c.last_message_at) : ''}
                     </span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                     <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
-                        ${escapeHtml(c.last_message_text || 'Sohbet başlatıldı')}
+                        ${escapeHtml(subtitleText)}
                     </span>
                     ${c.unread_count > 0 ? `<span class="badge" style="background: var(--primary); color: #fff; font-size: 10.5px; padding: 2px 6px; border-radius: 10px; font-weight: 700;">${c.unread_count}</span>` : ''}
                 </div>
@@ -579,21 +793,56 @@ async function startDirectChatWith(targetExt, targetName) {
 // 7. Konuşmayı Aç
 async function openConversation(conv) {
     currentConvId = conv.id;
-    currentTargetExt = conv.target_ext;
+    currentConv = conv;
+    currentTargetExt = conv.target_ext || '';
+    const isGroup = conv.type === 'group';
 
     document.getElementById('chat-empty-state').style.display = 'none';
     document.getElementById('chat-active-pane').style.display = 'flex';
 
-    // Header güncelle
-    const initial = (conv.target_name || conv.target_ext || 'U').charAt(0).toUpperCase();
-    document.getElementById('active-target-initial').textContent = initial;
-    document.getElementById('active-target-name').textContent = conv.target_name || conv.target_ext;
-    document.getElementById('active-target-ext').textContent = '#' + conv.target_ext;
+    const avatarBox = document.getElementById('active-target-avatar');
+    const nameEl = document.getElementById('active-target-name');
+    const extEl = document.getElementById('active-target-ext');
+    const statusDot = document.getElementById('active-target-status-dot');
+    const statusText = document.getElementById('active-target-status-text');
+    const callBtn = document.getElementById('active-target-call-btn');
+    const groupInfoBtn = document.getElementById('active-group-info-btn');
 
-    const isOnline = conv.target_online;
-    document.getElementById('active-target-status-dot').style.background = isOnline ? '#10b981' : '#9ca3af';
-    document.getElementById('active-target-status-text').textContent = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
-    document.getElementById('active-target-status-text').style.color = isOnline ? '#10b981' : 'var(--text-muted)';
+    if (isGroup) {
+        if (conv.avatar_url) {
+            avatarBox.style.background = 'transparent';
+            avatarBox.innerHTML = `<img src="${escapeHtml(sanitizeAttachmentUrl(conv.avatar_url))}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            avatarBox.innerHTML = `<i class="fas fa-users" style="font-size: 18px;"></i>`;
+            avatarBox.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+        }
+        statusDot.style.display = 'none';
+        nameEl.textContent = conv.title || 'Grup';
+        extEl.textContent = `${conv.member_count || 0} üye`;
+        extEl.style.background = 'rgba(99, 102, 241, 0.12)';
+        extEl.style.color = '#6366f1';
+        statusText.textContent = 'Grup bilgisi için tıklayın';
+        statusText.style.color = 'var(--text-muted)';
+        callBtn.style.display = 'none';
+        groupInfoBtn.style.display = 'inline-flex';
+
+        fetchGroupDetails(conv.id);
+    } else {
+        avatarBox.style.background = 'var(--primary)';
+        avatarBox.innerHTML = `
+            <span id="active-target-initial">${(conv.target_name || conv.target_ext || 'U').charAt(0).toUpperCase()}</span>
+            <span id="active-target-status-dot" style="position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: ${conv.target_online ? '#10b981' : '#9ca3af'}; border: 2px solid var(--bg-card);"></span>
+        `;
+        statusDot.style.display = 'block';
+        nameEl.textContent = conv.target_name || conv.target_ext;
+        extEl.textContent = '#' + conv.target_ext;
+        extEl.style.background = 'rgba(0,0,0,0.06)';
+        extEl.style.color = 'var(--text-muted)';
+        statusText.textContent = conv.target_online ? 'Çevrimiçi' : 'Çevrimdışı';
+        statusText.style.color = conv.target_online ? '#10b981' : 'var(--text-muted)';
+        callBtn.style.display = 'inline-flex';
+        groupInfoBtn.style.display = 'none';
+    }
 
     // Mesajları çek
     await loadMessages(conv.id);
@@ -631,6 +880,22 @@ async function loadMessages(convId) {
 // 8. Mesajı Ekrana Ekle
 function appendMessageToUI(msg) {
     const scrollEl = document.getElementById('chat-messages-scroll');
+
+    // Sistem mesajı görünümü
+    if (msg.msg_type === 'system') {
+        const sysRow = document.createElement('div');
+        sysRow.id = `chat-msg-${msg.id}`;
+        sysRow.style.cssText = `
+            align-self: center; margin: 6px 0; padding: 4px 14px;
+            background: rgba(0,0,0,0.05); color: var(--text-muted);
+            font-size: 11.5px; border-radius: 12px; max-width: 85%;
+            text-align: center; line-height: 1.4;
+        `;
+        sysRow.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 4px;"></i> ${escapeHtml(msg.message)}`;
+        scrollEl.appendChild(sysRow);
+        return;
+    }
+
     const isMe = msg.is_me || msg.sender_ext === MY_EXT;
 
     const msgRow = document.createElement('div');
@@ -675,8 +940,15 @@ function appendMessageToUI(msg) {
     const bubbleColor = isMe ? '#ffffff' : 'var(--text-main)';
     const bubbleBorder = isMe ? 'none' : '1px solid var(--border-color)';
 
+    const senderHeader = (currentConv && currentConv.type === 'group' && !isMe) ? `
+        <div style="font-size: 11px; font-weight: 700; color: ${getSenderColor(msg.sender_ext)}; margin-bottom: 3px;">
+            ${escapeHtml(msg.sender_name || ('#' + msg.sender_ext))}
+        </div>
+    ` : '';
+
     msgRow.innerHTML = `
         <div style="max-width: 75%; background: ${bubbleBg}; color: ${bubbleColor}; border: ${bubbleBorder}; border-radius: ${isMe ? '14px 14px 2px 14px' : '14px 14px 14px 2px'}; padding: 8px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+            ${senderHeader}
             ${contentHtml}
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10.5px; opacity: 0.8;">
                 <span>${formatTime(msg.created_at)}</span>
@@ -993,5 +1265,514 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// 18. Grup Yönetimi ve Yardımcı Fonksiyonlar
+function getSenderColor(ext) {
+    if (!ext) return '#3b82f6';
+    const colors = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2', '#4f46e5', '#d97706'];
+    let hash = 0;
+    for (let i = 0; i < ext.length; i++) {
+        hash = ext.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+function closeActiveConversation() {
+    currentConvId = null;
+    currentConv = null;
+    currentTargetExt = null;
+    document.getElementById('chat-active-pane').style.display = 'none';
+    document.getElementById('chat-empty-state').style.display = 'flex';
+    closeGroupInfoModal();
+}
+
+function handleHeaderClick() {
+    if (currentConv && currentConv.type === 'group') {
+        openGroupInfoModal();
+    }
+}
+
+function openNewGroupModal() {
+    document.getElementById('new-group-title').value = '';
+    document.getElementById('new-group-desc').value = '';
+    document.getElementById('new-group-search-contacts').value = '';
+    newGroupAvatarUrl = '';
+    document.getElementById('new-group-avatar-preview').innerHTML = '<i class="fas fa-camera"></i>';
+    document.getElementById('new-group-selected-count').textContent = '0';
+
+    const listEl = document.getElementById('new-group-contacts-list');
+    listEl.innerHTML = '';
+
+    if (contacts.length === 0) {
+        listEl.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px;">Rehberde kullanıcı bulunamadı.</div>';
+    } else {
+        contacts.forEach(u => {
+            const row = document.createElement('label');
+            row.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; margin: 0; user-select: none;';
+            row.onmouseenter = () => row.style.background = 'var(--bg-main)';
+            row.onmouseleave = () => row.style.background = 'transparent';
+            row.innerHTML = `
+                <input type="checkbox" value="${escapeHtml(u.extension)}" class="new-group-contact-cb" onchange="updateNewGroupSelectedCount()" style="cursor: pointer;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
+                    ${escapeHtml((u.full_name || u.extension).charAt(0).toUpperCase())}
+                </div>
+                <div style="flex: 1; min-width: 0; font-size: 13px; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    ${escapeHtml(u.full_name)} <span style="color: var(--text-muted); font-size: 11px;">(#${escapeHtml(u.extension)})</span>
+                </div>
+            `;
+            listEl.appendChild(row);
+        });
+    }
+
+    document.getElementById('chat-new-group-modal').style.display = 'flex';
+    document.getElementById('new-group-title').focus();
+}
+
+function closeNewGroupModal() {
+    document.getElementById('chat-new-group-modal').style.display = 'none';
+}
+
+function filterNewGroupContacts(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('#new-group-contacts-list > label');
+    rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+}
+
+function updateNewGroupSelectedCount() {
+    const checked = document.querySelectorAll('.new-group-contact-cb:checked');
+    document.getElementById('new-group-selected-count').textContent = checked.length;
+}
+
+async function handleNewGroupAvatarSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const res = await fetch('/chat/api/upload?type=avatar', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN },
+            body: formData
+        });
+        const json = await res.json();
+        if (json.success && json.attachment_url) {
+            newGroupAvatarUrl = json.attachment_url;
+            const safe = sanitizeAttachmentUrl(json.attachment_url);
+            document.getElementById('new-group-avatar-preview').innerHTML = `<img src="${escapeHtml(safe)}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        } else {
+            alert('Grup resmi yüklenemedi: ' + (json.error || 'Hata'));
+        }
+    } catch (e) {
+        alert('Resim yükleme hatası: ' + e.message);
+    } finally {
+        event.target.value = '';
+    }
+}
+
+async function submitCreateGroup() {
+    const title = document.getElementById('new-group-title').value.trim();
+    const desc = document.getElementById('new-group-desc').value.trim();
+    if (!title) {
+        alert('Lütfen bir grup adı girin.');
+        document.getElementById('new-group-title').focus();
+        return;
+    }
+
+    const checkedBoxes = document.querySelectorAll('.new-group-contact-cb:checked');
+    const members = [];
+    checkedBoxes.forEach(cb => members.push(cb.value));
+
+    const submitBtn = document.getElementById('new-group-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Oluşturuluyor...';
+
+    try {
+        const res = await fetch('/chat/api/conversations/group', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                description: desc,
+                avatar_url: newGroupAvatarUrl,
+                members: members
+            })
+        });
+        const json = await res.json();
+        if (json.success && json.conversation) {
+            closeNewGroupModal();
+            switchChatTab('convs');
+            openConversation(json.conversation);
+            loadConversations();
+        } else {
+            alert('Grup oluşturulamadı: ' + (json.error || 'Hata'));
+        }
+    } catch (e) {
+        alert('İstek hatası: ' + e.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Grubu Oluştur';
+    }
+}
+
+async function fetchGroupDetails(convId) {
+    try {
+        const res = await fetch(`/chat/api/conversations/group?conversation_id=${convId}`, {
+            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN }
+        });
+        const json = await res.json();
+        if (json.success && json.conversation) {
+            if (currentConv && currentConv.id === convId) {
+                currentConv = Object.assign(currentConv, json.conversation);
+                const count = currentConv.member_count || (currentConv.participants ? currentConv.participants.length : 0);
+                document.getElementById('active-target-ext').textContent = `${count} üye`;
+            }
+            return json.conversation;
+        }
+    } catch(e) {}
+    return null;
+}
+
+async function openGroupInfoModal() {
+    if (!currentConv || currentConv.type !== 'group') return;
+    const modal = document.getElementById('chat-group-info-modal');
+    modal.style.display = 'flex';
+
+    // Detayları çekip render et
+    const conv = await fetchGroupDetails(currentConv.id) || currentConv;
+    renderGroupInfo(conv);
+}
+
+function closeGroupInfoModal() {
+    document.getElementById('chat-group-info-modal').style.display = 'none';
+}
+
+function renderGroupInfo(conv) {
+    const avatarBox = document.getElementById('group-info-avatar-box');
+    if (conv.avatar_url) {
+        avatarBox.style.background = 'transparent';
+        avatarBox.innerHTML = `<img src="${escapeHtml(sanitizeAttachmentUrl(conv.avatar_url))}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    } else {
+        avatarBox.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+        avatarBox.innerHTML = '<i class="fas fa-users"></i>';
+    }
+
+    document.getElementById('group-info-title').textContent = conv.title || 'Grup';
+    document.getElementById('group-info-desc').textContent = conv.description || 'Açıklama belirtilmemiş.';
+    document.getElementById('group-info-meta').textContent = `Oluşturan: #${conv.created_by || ''} • ${conv.created_at ? formatTime(conv.created_at) : ''}`;
+
+    const isAdmin = conv.my_role === 'admin';
+    document.getElementById('group-info-edit-btn').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('group-info-add-member-btn').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('group-info-delete-btn').style.display = isAdmin ? 'inline-block' : 'none';
+
+    const participants = conv.participants || [];
+    document.getElementById('group-info-members-count').textContent = participants.length;
+
+    const listEl = document.getElementById('group-info-members-list');
+    listEl.innerHTML = '';
+
+    participants.forEach(p => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; background: var(--bg-card);';
+        row.onmouseenter = () => row.style.background = 'var(--bg-main)';
+        row.onmouseleave = () => row.style.background = 'var(--bg-card)';
+
+        const isMe = p.extension === MY_EXT;
+        const onlineColor = p.is_online ? '#10b981' : '#9ca3af';
+        const roleBadge = p.role === 'admin' 
+            ? '<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 10.5px; padding: 2px 6px; border-radius: 6px;">Yönetici</span>'
+            : '';
+
+        let actionsHtml = '';
+        if (isAdmin && !isMe) {
+            const toggleRoleAction = p.role === 'admin'
+                ? `<button class="btn btn-sm btn-outline-secondary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'member')" title="Yöneticiliği Kaldır"><i class="fas fa-user-minus"></i></button>`
+                : `<button class="btn btn-sm btn-outline-primary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'admin')" title="Yönetici Yap"><i class="fas fa-user-shield"></i></button>`;
+
+            actionsHtml = `
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    ${toggleRoleAction}
+                    <button class="btn btn-sm btn-outline-danger" style="padding: 1px 6px; font-size: 11px;" onclick="removeMemberFromGroup('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}')" title="Gruptan Çıkar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        row.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <div style="position: relative; width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">
+                    ${escapeHtml((p.full_name || p.extension).charAt(0).toUpperCase())}
+                    <span style="position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: ${onlineColor}; border: 1.5px solid var(--bg-card);"></span>
+                </div>
+                <div style="min-width: 0;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${escapeHtml(p.full_name)} ${isMe ? '<span style="color: var(--text-muted); font-size: 11px;">(Siz)</span>' : ''}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        #${escapeHtml(p.extension)}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                ${roleBadge}
+                ${actionsHtml}
+            </div>
+        `;
+        listEl.appendChild(row);
+    });
+}
+
+async function promptEditGroupInfo() {
+    if (!currentConv) return;
+    const newTitle = prompt('Grup Adı:', currentConv.title || '');
+    if (newTitle === null) return;
+    const trimmedTitle = newTitle.trim();
+    if (!trimmedTitle) {
+        alert('Grup adı boş olamaz.');
+        return;
+    }
+    const newDesc = prompt('Grup Açıklaması:', currentConv.description || '') || '';
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/update', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversation_id: currentConv.id,
+                title: trimmedTitle,
+                description: newDesc.trim(),
+                avatar_url: currentConv.avatar_url || ''
+            })
+        });
+        const json = await res.json();
+        if (json.success) {
+            currentConv.title = trimmedTitle;
+            currentConv.description = newDesc.trim();
+            document.getElementById('active-target-name').textContent = trimmedTitle;
+            renderGroupInfo(currentConv);
+            loadConversations();
+        } else {
+            alert('Güncelleme hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    }
+}
+
+function openAddMembersModal() {
+    if (!currentConv) return;
+    const modal = document.getElementById('chat-add-members-modal');
+    document.getElementById('add-members-search').value = '';
+    const listEl = document.getElementById('add-members-contacts-list');
+    listEl.innerHTML = '';
+
+    const currentMemberExts = new Set((currentConv.participants || []).map(p => p.extension));
+    const availableContacts = contacts.filter(u => !currentMemberExts.has(u.extension));
+
+    if (availableContacts.length === 0) {
+        listEl.innerHTML = '<div style="padding: 14px; text-align: center; color: var(--text-muted); font-size: 12px;">Eklenebilecek başka kullanıcı bulunmuyor.</div>';
+    } else {
+        availableContacts.forEach(u => {
+            const row = document.createElement('label');
+            row.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; margin: 0; user-select: none;';
+            row.onmouseenter = () => row.style.background = 'var(--bg-main)';
+            row.onmouseleave = () => row.style.background = 'transparent';
+            row.innerHTML = `
+                <input type="checkbox" value="${escapeHtml(u.extension)}" class="add-members-cb" style="cursor: pointer;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
+                    ${escapeHtml((u.full_name || u.extension).charAt(0).toUpperCase())}
+                </div>
+                <div style="flex: 1; min-width: 0; font-size: 13px; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                    ${escapeHtml(u.full_name)} <span style="color: var(--text-muted); font-size: 11px;">(#${escapeHtml(u.extension)})</span>
+                </div>
+            `;
+            listEl.appendChild(row);
+        });
+    }
+
+    modal.style.display = 'flex';
+}
+
+function closeAddMembersModal() {
+    document.getElementById('chat-add-members-modal').style.display = 'none';
+}
+
+function filterAddMembersContacts(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('#add-members-contacts-list > label');
+    rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+}
+
+async function submitAddMembers() {
+    if (!currentConv) return;
+    const checked = document.querySelectorAll('.add-members-cb:checked');
+    const exts = [];
+    checked.forEach(cb => exts.push(cb.value));
+
+    if (exts.length === 0) {
+        alert('Lütfen en az bir kişi seçin.');
+        return;
+    }
+
+    const btn = document.getElementById('add-members-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ekleniyor...';
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/members/add', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversation_id: currentConv.id,
+                extensions: exts
+            })
+        });
+        const json = await res.json();
+        if (json.success) {
+            closeAddMembersModal();
+            const updated = await fetchGroupDetails(currentConv.id);
+            if (updated) renderGroupInfo(updated);
+            loadConversations();
+        } else {
+            alert('Üye ekleme hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Ekle';
+    }
+}
+
+async function removeMemberFromGroup(targetExt, targetName) {
+    if (!currentConv) return;
+    if (!confirm(`${targetName || ('#' + targetExt)} kullanıcısını gruptan çıkarmak istediğinize emin misiniz?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/members/remove', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversation_id: currentConv.id,
+                extension: targetExt
+            })
+        });
+        const json = await res.json();
+        if (json.success) {
+            const updated = await fetchGroupDetails(currentConv.id);
+            if (updated) renderGroupInfo(updated);
+            loadConversations();
+        } else {
+            alert('Çıkarma hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    }
+}
+
+async function updateMemberRole(targetExt, targetName, newRole) {
+    if (!currentConv) return;
+    const roleText = newRole === 'admin' ? 'yönetici' : 'üye';
+    if (!confirm(`${targetName || ('#' + targetExt)} kullanıcısını ${roleText} yapmak istediğinize emin misiniz?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/members/role', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversation_id: currentConv.id,
+                extension: targetExt,
+                role: newRole
+            })
+        });
+        const json = await res.json();
+        if (json.success) {
+            const updated = await fetchGroupDetails(currentConv.id);
+            if (updated) renderGroupInfo(updated);
+        } else {
+            alert('Yetki değiştirme hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    }
+}
+
+async function confirmLeaveGroup() {
+    if (!currentConv) return;
+    if (!confirm(`"${currentConv.title}" grubundan ayrılmak istediğinize emin misiniz?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/leave', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ conversation_id: currentConv.id })
+        });
+        const json = await res.json();
+        if (json.success) {
+            closeActiveConversation();
+            loadConversations();
+        } else {
+            alert('Gruptan ayrılma hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    }
+}
+
+async function confirmDeleteGroup() {
+    if (!currentConv) return;
+    if (!confirm(`"${currentConv.title}" grubunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/chat/api/conversations/group/delete', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ conversation_id: currentConv.id })
+        });
+        const json = await res.json();
+        if (json.success) {
+            closeActiveConversation();
+            loadConversations();
+        } else {
+            alert('Grup silme hatası: ' + (json.error || 'Hata'));
+        }
+    } catch(e) {
+        alert('İstek hatası: ' + e.message);
+    }
 }
 </script>

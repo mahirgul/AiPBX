@@ -17,6 +17,20 @@
         android:paddingHorizontal="12dp"
         android:paddingVertical="8dp">
 
+        <!-- Sender Name (Group Chat) -->
+        <TextView
+            android:id="@+id/tvSenderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="Gönderen Adı"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <!-- Optional Image Attachment -->
         <ImageView
             android:id="@+id/ivImage"
