@@ -22,6 +22,9 @@ import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.data.ChatEventListener
 import com.mhrgl.aipbx.data.ChatWebSocketManager
 import com.mhrgl.aipbx.databinding.DialogNewChatBinding
+import com.mhrgl.aipbx.databinding.DialogNewGroupBinding
+import android.widget.Toast
+import androidx.appcompat.widget.PopupMenu
 import com.mhrgl.aipbx.model.ChatConversation
 import com.mhrgl.aipbx.model.ChatMessage
 import com.mhrgl.aipbx.model.ContactItem
@@ -87,12 +90,12 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             finish()
         }
 
-        findViewById<ImageButton>(R.id.btnNewChat).setOnClickListener {
-            showNewChatDialog()
+        findViewById<ImageButton>(R.id.btnNewChat).setOnClickListener { v ->
+            showNewChatMenu(v)
         }
 
-        findViewById<Button>(R.id.btnEmptyNewChat).setOnClickListener {
-            showNewChatDialog()
+        findViewById<Button>(R.id.btnEmptyNewChat).setOnClickListener { v ->
+            showNewChatMenu(v)
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -104,9 +107,32 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
         })
     }
 
+    private fun showNewChatMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "Bireysel Sohbet")
+        popup.menu.add(0, 2, 1, "Yeni Grup")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> {
+                    showNewChatDialog()
+                    true
+                }
+                2 -> {
+                    showNewGroupDialog()
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
     private fun setupRecyclerView() {
         adapter = ChatConversationAdapter { conv ->
-            ChatActivity.start(this, conv.id, conv.targetExt ?: "", conv.targetName)
+            val isGroup = conv.type == "group"
+            val targetExt = if (isGroup) "" else (conv.targetExt ?: "")
+            val displayName = if (isGroup) conv.title else conv.targetName
+            ChatActivity.start(this, conv.id, targetExt, displayName, isGroup)
         }
         rvConversations.layoutManager = LinearLayoutManager(this)
         rvConversations.adapter = adapter
@@ -151,6 +177,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             val matchedConversations = allConversations.filter {
                 SearchUtils.matches(it.targetName, q) ||
                 SearchUtils.matches(it.targetExt, q) ||
+                SearchUtils.matches(it.title, q) ||
                 SearchUtils.matches(it.lastMessageText, q)
             }
             displayList.addAll(matchedConversations)
@@ -238,7 +265,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
             val pickerAdapter = ChatContactPickerAdapter { selected ->
                 dialog.dismiss()
-                ChatActivity.start(this@ChatListActivity, 0, selected.extension, selected.name)
+                ChatActivity.start(this@ChatListActivity, 0, selected.extension, selected.name, false)
             }
 
             dialogBinding.rvNewChatContacts.layoutManager = LinearLayoutManager(this@ChatListActivity)
@@ -269,9 +296,141 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
         }
     }
 
+    private fun showNewGroupDialog() {
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl
+            if (sUrl.isEmpty()) return@launch
+            val token = prefs.token ?: return@launch
+
+            val contacts = if (allCorporateContacts.isNotEmpty()) {
+                allCorporateContacts
+            } else {
+                val res = apiClient.getContacts(sUrl, token)
+                val fetched = res.getOrNull()?.contacts ?: emptyList()
+                allCorporateContacts.clear()
+                allCorporateContacts.addAll(fetched)
+                fetched
+            }
+
+            val myExt = prefs.extension ?: ""
+            val otherContacts = contacts.filter { it.extension != myExt }
+
+            if (otherContacts.isEmpty()) {
+                AlertDialog.Builder(this@ChatListActivity)
+                    .setTitle("Yeni Grup")
+                    .setMessage("Gruba eklenebilecek başka dahili bulunamadı.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+                return@launch
+            }
+
+            val dialogBinding = DialogNewGroupBinding.inflate(layoutInflater)
+            val dialog = AlertDialog.Builder(this@ChatListActivity)
+                .setView(dialogBinding.root)
+                .create()
+
+            val selectionAdapter = ContactSelectionAdapter { selected ->
+                dialogBinding.tvSelectedCount.text = "Üye Seçin (${selected.size} seçildi):"
+            }
+
+            dialogBinding.rvGroupMembers.layoutManager = LinearLayoutManager(this@ChatListActivity)
+            dialogBinding.rvGroupMembers.adapter = selectionAdapter
+            selectionAdapter.submitList(otherContacts)
+
+            dialogBinding.etSearchMember.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                    selectionAdapter.filter(s?.toString() ?: "")
+                }
+                override fun afterTextChanged(s: Editable?) {}
+            })
+
+            dialogBinding.btnCancelNewGroup.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            dialogBinding.btnSubmitNewGroup.setOnClickListener {
+                val title = dialogBinding.etGroupTitle.text?.toString()?.trim() ?: ""
+                val desc = dialogBinding.etGroupDesc.text?.toString()?.trim()
+                val selectedMembers = selectionAdapter.getSelectedExtensions().toList()
+
+                if (title.isEmpty()) {
+                    Toast.makeText(this@ChatListActivity, "Grup adı zorunludur.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (selectedMembers.isEmpty()) {
+                    Toast.makeText(this@ChatListActivity, "En az 1 üye seçmelisiniz.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                dialogBinding.btnSubmitNewGroup.isEnabled = false
+                dialogBinding.btnSubmitNewGroup.text = "Oluşturuluyor..."
+
+                lifecycleScope.launch {
+                    val createRes = apiClient.createGroupChat(
+                        baseUrl = sUrl,
+                        token = token,
+                        title = title,
+                        description = if (desc.isNullOrEmpty()) null else desc,
+                        avatarUrl = null,
+                        members = selectedMembers
+                    )
+                    createRes.onSuccess { newConv ->
+                        dialog.dismiss()
+                        loadConversations()
+                        ChatActivity.start(
+                            context = this@ChatListActivity,
+                            convId = newConv.id,
+                            targetExt = "",
+                            targetName = newConv.title,
+                            isGroup = true
+                        )
+                    }.onFailure { err ->
+                        dialogBinding.btnSubmitNewGroup.isEnabled = true
+                        dialogBinding.btnSubmitNewGroup.text = "Grubu Oluştur"
+                        Toast.makeText(this@ChatListActivity, "Hata: ${err.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+
+            dialog.show()
+        }
+    }
+
     // --- ChatEventListener Callbacks ---
 
     override fun onNewMessage(message: ChatMessage) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
+    override fun onGroupCreated(conversation: ChatConversation) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
+    override fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
+    override fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
+    override fun onGroupMemberRemoved(conversationId: Int, extension: String, actor: String) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
+    override fun onGroupDeleted(conversationId: Int) {
         runOnUiThread {
             loadConversations()
         }

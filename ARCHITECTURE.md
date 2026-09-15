@@ -41,7 +41,7 @@
 │  Apache 2.4 (127.0.0.1:8443 with TLS Termination)     │            │
 │   ├── /                 ──► PHP 8 MVC Web Portal      │            │
 │   ├── /ws               ──► Asterisk WebRTC (8088/ws) │            │
-│   └── /chat/ws          ──► Go Messaging (9090/ws)    │            │
+│   └── /chat/ws          ──► Go Messaging (8086/ws)    │            │
 │                                                       │            │
 │  Port 80: HTTP Redirect & Certbot ACME HTTP-01 Pass   │            │
 └──────────┬────────────────────────┬───────────────────┘            │
@@ -120,7 +120,7 @@ Apache listens on Port 80 (`*:80`):
 Apache terminates TLS and acts as the internal application multiplexer:
 - **Web Portal**: Executes PHP 8 via `libapache2-mod-php` or PHP-FPM.
 - **Asterisk WebRTC SIP (`/ws`)**: Proxied via `mod_proxy_wstunnel` to `ws://127.0.0.1:8088/ws` with `timeout=3600`.
-- **Go Chat Hub (`/chat/ws`)**: Proxied via `mod_proxy_wstunnel` to `ws://127.0.0.1:9090/ws` with `timeout=3600 keepalive=On`.
+- **Go Chat Hub (`/chat/ws`)**: Proxied via `mod_proxy_wstunnel` to `ws://127.0.0.1:8086/ws` with `timeout=3600 keepalive=On`.
 
 ---
 
@@ -203,14 +203,20 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 
 ## 6. Real-Time Messaging Engine (Go)
 
-- High-throughput WebSocket server built in Go (`aipbx-chat`), running as a systemd service on `127.0.0.1:9090`.
+- High-throughput WebSocket server built in Go (`aipbx-chat`), running as a systemd service on `127.0.0.1:8086`.
 - Proxied via `/chat/ws` with TLS termination at Nginx / Apache.
 - Capabilities:
-  - 1-to-1 direct messaging and multi-user team rooms.
-  - Delivery and read receipts.
-  - Typing indicators.
-  - Online/offline user presence tracking.
-  - Direct message storage in MariaDB (`chat_messages` table).
+  - **Direct & Group Messaging**: 1-to-1 direct messaging and multi-user group chat rooms.
+  - **Group Management**:
+    - Group creation with custom title, description, and avatar.
+    - Role-based membership (`admin` and `member`) with up to 256 members per group.
+    - Admin actions: member invitation, removal, role promotion/demotion, and group deletion.
+    - Member self-service: leave group (with automatic admin reassignment if the last admin leaves).
+  - **System Audit Messages**: Real-time system notifications (`msg_type = 'system'`, `system_event`, `system_meta`) for member join/leave/removal/role updates.
+  - **Media & File Attachments**: Image compression, thumbnailing, and document sharing with fail-closed participant access validation (`CH-G5`).
+  - **Real-time Synchronization**: Instant event broadcasting (`group_created`, `group_updated`, `group_member_added`, `group_member_removed`, `group_role_updated`, `group_deleted`).
+  - **Presence & Receipts**: Online/offline presence tracking, typing indicators, and message read receipts.
+  - **Push Notifications**: Firebase Cloud Messaging (FCM) integration with conversation-level notification grouping.
 
 ---
 
@@ -236,7 +242,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 | **49152–65535** | UDP | coturn Relay | Relayed WebRTC Media Streams | Public |
 | **5038** | TCP | Asterisk AMI | Manager Interface (Call control, monitoring) | Localhost (127.0.0.1) |
 | **8088** | TCP | Asterisk HTTP | Internal WebRTC WebSocket backend | Localhost (127.0.0.1) |
-| **9090** | TCP | Go Chat Service | Internal Chat WebSocket backend | Localhost (127.0.0.1) |
+| **8086** | TCP | Go Chat Service | Internal Chat WebSocket backend | Localhost (127.0.0.1) |
 | **3306** | TCP | MariaDB | Database Server | Localhost (127.0.0.1) |
 
 ---

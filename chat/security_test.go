@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -173,4 +174,150 @@ func TestValidateUserToken(t *testing.T) {
 		t.Fatalf("ValidateBearerToken failed: %v", err)
 	}
 	t.Logf("Validated user: %s (Ext: %s)", user.FullName, user.Extension)
+}
+
+func TestGroupSecurityCH_G(t *testing.T) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Skip("Cannot load config for DB test")
+	}
+	if err := InitDB(cfg); err != nil {
+		t.Skip("Cannot connect to DB for test:", err)
+	}
+
+	// CH-G1: Non-existent or empty conversation/ext must return false
+	if ok, _ := IsGroupAdmin(0, "19000"); ok {
+		t.Fatal("IsGroupAdmin(0, ...) should return false")
+	}
+	if ok, _ := IsGroupAdmin(1, ""); ok {
+		t.Fatal("IsGroupAdmin(..., '') should return false")
+	}
+
+	// CH-G3: En fazla 256 üye sınırı
+	var excessiveMembers []string
+	for i := 0; i < 300; i++ {
+		excessiveMembers = append(excessiveMembers, fmt.Sprintf("ext%d", i))
+	}
+	_, _, err = CreateGroupConversation("Test Group", "19000", "", "", excessiveMembers)
+	if err == nil {
+		t.Fatal("CH-G3 violation: Expected error for group with >256 members")
+	}
+
+	// Find 2 real active users from DB
+	rows, err := db.Query("SELECT extension FROM sys_users WHERE is_active = 1 AND extension IS NOT NULL AND extension != '' AND role != 'fax_user' ORDER BY id ASC LIMIT 2")
+	if err != nil {
+		t.Skip("Cannot query sys_users:", err)
+	}
+	var exts []string
+	for rows.Next() {
+		var e string
+		if err := rows.Scan(&e); err == nil {
+			exts = append(exts, e)
+		}
+	}
+	rows.Close()
+
+	if len(exts) < 2 {
+		t.Skip("Need at least 2 active extensions for group test")
+	}
+
+	creatorExt := exts[0]
+	memberExt := exts[1]
+
+	// Create test group
+	conv, sysMsg, err := CreateGroupConversation("CH-G Test Group", creatorExt, "", "Description", []string{memberExt})
+	if err != nil {
+		t.Fatalf("CreateGroupConversation failed: %v", err)
+	}
+	defer func() {
+		_ = DeleteGroup(conv.ID, creatorExt)
+		_, _ = db.Exec("DELETE FROM chat_messages WHERE conversation_id = ?", conv.ID)
+		_, _ = db.Exec("DELETE FROM chat_participants WHERE conversation_id = ?", conv.ID)
+		_, _ = db.Exec("DELETE FROM chat_conversations WHERE id = ?", conv.ID)
+	}()
+
+	if sysMsg == nil || sysMsg.SystemEvent != "group_created" {
+		t.Fatalf("Expected group_created system message, got: %v", sysMsg)
+	}
+
+	// Verify creator is admin, member is not admin
+	creatorIsAdmin, _ := IsGroupAdmin(conv.ID, creatorExt)
+	if !creatorIsAdmin {
+		t.Fatal("Creator must be group admin")
+	}
+	memberIsAdmin, _ := IsGroupAdmin(conv.ID, memberExt)
+	if memberIsAdmin {
+		t.Fatal("Regular member must not be group admin")
+	}
+
+	// Verify both are participants
+	if isPart, _ := IsParticipant(conv.ID, creatorExt); !isPart {
+		t.Fatal("Creator must be participant")
+	}
+	if isPart, _ := IsParticipant(conv.ID, memberExt); !isPart {
+		t.Fatal("Added member must be participant")
+	}
+	if isPart, _ := IsParticipant(conv.ID, "nonexistent-ext"); isPart {
+		t.Fatal("Non-member must not be participant")
+	}
+
+	// CH-G1 Fail-closed: HTTP handler tests
+	srv := NewServer(cfg, NewHub())
+	nonMemberUser := &User{Extension: "99999", FullName: "Attacker"}
+
+	// 1. Non-member cannot get group details
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/conversations/group?conversation_id=%d", conv.ID), nil)
+	rr := httptest.NewRecorder()
+	srv.HandleGetGroupDetails(rr, req, nonMemberUser)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("CH-G1 violation: Expected 403 Forbidden for non-member GetGroupDetails, got %d", rr.Code)
+	}
+
+	// 2. Non-admin member cannot update group
+	memberUser := &User{Extension: memberExt, FullName: "Member"}
+	reqBody := fmt.Sprintf(`{"conversation_id":%d,"title":"Hacked Title"}`, conv.ID)
+	req, _ = http.NewRequest("POST", "/api/conversations/group/update", strings.NewReader(reqBody))
+	rr = httptest.NewRecorder()
+	srv.HandleUpdateGroup(rr, req, memberUser)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("CH-G1 violation: Expected 403 Forbidden for non-admin HandleUpdateGroup, got %d", rr.Code)
+	}
+
+	// 3. Non-admin member cannot remove others
+	reqBody = fmt.Sprintf(`{"conversation_id":%d,"extension":"%s"}`, conv.ID, creatorExt)
+	req, _ = http.NewRequest("POST", "/api/conversations/group/members/remove", strings.NewReader(reqBody))
+	rr = httptest.NewRecorder()
+	srv.HandleRemoveGroupMember(rr, req, memberUser)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("CH-G1 violation: Expected 403 Forbidden for non-admin HandleRemoveGroupMember, got %d", rr.Code)
+	}
+
+	// 4. CH-G6: Gruptan çıkarılan üye (left_at) sonrasında katılımcı sayılmaz
+	adminUser := &User{Extension: creatorExt, FullName: "Creator"}
+	reqBody = fmt.Sprintf(`{"conversation_id":%d,"extension":"%s"}`, conv.ID, memberExt)
+	req, _ = http.NewRequest("POST", "/api/conversations/group/members/remove", strings.NewReader(reqBody))
+	rr = httptest.NewRecorder()
+	srv.HandleRemoveGroupMember(rr, req, adminUser)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Admin failed to remove member: %d %s", rr.Code, rr.Body.String())
+	}
+
+	if isPart, _ := IsParticipant(conv.ID, memberExt); isPart {
+		t.Fatal("CH-G6 violation: Removed member should NOT be active participant")
+	}
+
+	// 5. Admin promotes member back, tests leave and last admin promotion
+	_, _, err = AddGroupMembers(conv.ID, creatorExt, []string{memberExt})
+	if err != nil {
+		t.Fatalf("Re-adding member failed: %v", err)
+	}
+	// Creator leaves group -> member should automatically be promoted to admin
+	_, err = LeaveGroup(conv.ID, creatorExt)
+	if err != nil {
+		t.Fatalf("Creator LeaveGroup failed: %v", err)
+	}
+	promotedAdmin, _ := IsGroupAdmin(conv.ID, memberExt)
+	if !promotedAdmin {
+		t.Fatal("Remaining member should have been promoted to admin after last admin left")
+	}
 }

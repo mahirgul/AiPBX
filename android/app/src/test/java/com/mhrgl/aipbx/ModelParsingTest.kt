@@ -269,4 +269,89 @@ class ModelParsingTest {
         assertEquals("image", m.msgType)
         assertEquals("/chat/media/images/fatura.jpg", m.attachmentUrl)
     }
+
+    @Test
+    fun testGroupChatModelsParsing() {
+        val groupDetailsJson = """
+            {
+                "success": true,
+                "conversation": {
+                    "id": 42,
+                    "type": "group",
+                    "title": "Yazılım Ekibi",
+                    "description": "Yazılım geliştirme grubu",
+                    "avatar_url": "/chat/media/avatars/group_42.jpg",
+                    "created_by": "1001",
+                    "member_count": 3,
+                    "online_count": 2,
+                    "my_role": "admin",
+                    "last_message_text": "Toplantı saat 15:00'te",
+                    "last_message_at": "2026-09-16 14:00:00",
+                    "unread_count": 0,
+                    "participants": [
+                        {
+                            "conversation_id": 42,
+                            "extension": "1001",
+                            "name": "Ali Veli",
+                            "role": "admin",
+                            "joined_at": "2026-09-16 10:00:00",
+                            "is_online": true
+                        },
+                        {
+                            "conversation_id": 42,
+                            "extension": "1002",
+                            "name": "Ahmet Yilmaz",
+                            "role": "member",
+                            "joined_at": "2026-09-16 10:05:00",
+                            "is_online": true
+                        },
+                        {
+                            "conversation_id": 42,
+                            "extension": "1003",
+                            "name": "Mehmet Demir",
+                            "role": "member",
+                            "joined_at": "2026-09-16 10:10:00",
+                            "is_online": false
+                        }
+                    ]
+                }
+            }
+        """.trimIndent()
+
+        val groupRes = gson.fromJson(groupDetailsJson, GroupChatResponse::class.java)
+        assertTrue(groupRes.success)
+        val conv = groupRes.conversation
+        assertNotNull(conv)
+        assertEquals(42, conv!!.id)
+        assertEquals("group", conv.type)
+        assertEquals("Yazılım Ekibi", conv.title)
+        assertEquals("admin", conv.myRole)
+        assertEquals(3, conv.memberCount)
+        assertEquals(2, conv.onlineCount)
+        assertEquals(3, conv.participants?.size)
+
+        val p1 = conv.participants!![0]
+        assertEquals("1001", p1.extension)
+        assertEquals("admin", p1.role)
+        assertTrue(p1.isOnline)
+
+        val sysMsgJson = """
+            {
+                "id": 200,
+                "conversation_id": 42,
+                "sender_ext": "1001",
+                "sender_name": "Ali Veli",
+                "msg_type": "system",
+                "message": "Ali Veli Ahmet Yilmaz kişisini ekledi",
+                "created_at": "2026-09-16 10:05:00",
+                "system_event": "member_added",
+                "system_meta": "{\"added\":[\"1002\"]}"
+            }
+        """.trimIndent()
+
+        val sysMsg = gson.fromJson(sysMsgJson, ChatMessage::class.java)
+        assertEquals(200L, sysMsg.id)
+        assertEquals("system", sysMsg.msgType)
+        assertEquals("member_added", sysMsg.systemEvent)
+    }
 }

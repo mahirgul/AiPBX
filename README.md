@@ -90,11 +90,19 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Resilient TURN/STUN** — 30-minute automatic credential renewal eliminates silent audio on extended shifts
 - **Opus + DTLS-SRTP** — high-quality, end-to-end encrypted audio
 
-### 📱 Android App (Build 30 · v1.0.29)
+### 💬 Real-Time Messaging & Group Chat
+- **1-to-1 & Multi-user Group Rooms** — Real-time team messaging powered by high-performance Go WebSocket daemon (`aipbx-chat`)
+- **Rich Group Management** — Create groups, assign admin roles, invite/remove participants (up to 256 members per group)
+- **Media & File Sharing** — Image compression, thumbnail generation, and secure attachment delivery
+- **System Audit Trail** — System-generated messages for member additions, removals, and role updates
+- **Presence & Delivery Receipts** — Real-time typing indicators, read receipts, and online status tracking
+- **FCM Push Notifications** — Background notifications with conversation grouping for both direct and group messages
+
+### 📱 Android App (Build 31 · v1.0.30)
 - **Native Kotlin** application with zero external cloud dependencies
 - **PJSIP + WebRTC** dual engine with Opus HD audio & DTLS-SRTP encryption
 - **FCM Push & Persistent Foreground Service** — instantaneous wake-up for incoming calls
-- **Instant Messaging (Chat)** — Go-based WebSocket backend with real-time conversations
+- **Instant Messaging & Group Chat** — Go-based WebSocket backend with 1-to-1 direct messaging, multi-user group chat rooms, media attachments, and real-time synchronization
 - **Corporate Directory & Live Presence** — 50+ extensions with live status & 1-tap dialing
 - **Detailed Call History & In-App Log Viewer** — full diagnostics and call filtering
 

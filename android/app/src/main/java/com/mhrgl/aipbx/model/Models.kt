@@ -149,13 +149,28 @@ data class ChatConversation(
     @SerializedName("type") val type: String,
     @SerializedName("direct_key") val directKey: String? = null,
     @SerializedName("title") val title: String? = null,
+    @SerializedName("avatar_url") val avatarUrl: String? = null,
+    @SerializedName("description") val description: String? = null,
     @SerializedName("created_by") val createdBy: String,
     @SerializedName("last_message_text") val lastMessageText: String? = null,
     @SerializedName("last_message_at") val lastMessageAt: String? = null,
     @SerializedName("unread_count") val unreadCount: Int = 0,
     @SerializedName("target_ext") val targetExt: String? = null,
     @SerializedName("target_name") val targetName: String? = null,
-    @SerializedName("target_online") val targetOnline: Boolean = false
+    @SerializedName("target_online") val targetOnline: Boolean = false,
+    @SerializedName("member_count") val memberCount: Int = 0,
+    @SerializedName("online_count") val onlineCount: Int = 0,
+    @SerializedName("my_role") val myRole: String? = null,
+    @SerializedName("participants") val participants: List<ChatParticipant>? = null
+)
+
+data class ChatParticipant(
+    @SerializedName("conversation_id") val conversationId: Int = 0,
+    @SerializedName("extension") val extension: String,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("role") val role: String = "member",
+    @SerializedName("joined_at") val joinedAt: String? = null,
+    @SerializedName("is_online") var isOnline: Boolean = false
 )
 
 data class ChatMessagesResponse(
@@ -175,7 +190,9 @@ data class ChatMessage(
     @SerializedName("file_size") val fileSize: Long = 0,
     @SerializedName("mime_type") val mimeType: String? = null,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("is_me") var isMe: Boolean = false
+    @SerializedName("is_me") var isMe: Boolean = false,
+    @SerializedName("system_event") val systemEvent: String? = null,
+    @SerializedName("system_meta") val systemMeta: String? = null
 )
 
 data class ChatUploadResponse(
@@ -192,5 +209,22 @@ data class ChatUploadResponse(
 data class DirectChatResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("conversation") val conversation: ChatConversation?
+)
+
+data class GroupChatResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("conversation") val conversation: ChatConversation?,
+    @SerializedName("error") val error: String? = null
+)
+
+data class GroupMembersAddedResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("added") val added: List<String>? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class GenericChatActionResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("error") val error: String? = null
 )
 
