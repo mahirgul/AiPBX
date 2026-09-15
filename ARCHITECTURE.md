@@ -145,6 +145,20 @@ Both endpoints share the same user extension number via Asterisk ring groups or 
 - **Faxing**: SpanDSP integration (`res_fax_spandsp`) with T.38 gateway and fallback to inband G.711 audio faxing.
 - **RTP Port Allocation**: Dedicated UDP range `10000-20000` with strict symmetrical RTP (`rtp_symmetric=yes`) to ensure two-way audio through corporate firewalls.
 
+### 3.4 In-Band Disconnect Supervision
+Legacy and analog trunks frequently fail to issue out-of-band signaling (e.g. SIP BYE / ISDN release) when remote callers hang up. To prevent channels from lingering indefinitely in IVR or queue loops:
+- Wrapper dialplan context `[from-trunk-kapanma-tonu]` activates Asterisk cadence-based busy tone detection:
+  ```ini
+  same => n,Set(TONE_DETECT(0,,bg(kapanma-tonu,s,1))=)
+  ```
+- Upon detecting regular busy cadence, execution branches immediately to `[kapanma-tonu]`, issuing a clean `Hangup()` and releasing all allocated bridges.
+
+### 3.5 Dynamic Star Code Execution Engine
+Asterisk feature codes (*81 queue login, *80 queue logout, *60 DND, *72 forward) interface directly with the database and live channels without requiring full dialplan regenerations:
+- `System(/usr/local/bin/feature_code_action.php ...)` asynchronously applies state changes to live Asterisk queues (`QueueHelper::setMembership`) and MariaDB.
+- Provides immediate audio verification (`queue-agentlogin-success` / double confirmation beeps).
+- Queue transfers implement bridge-traversal caller preservation (`findCallerChannelForAgent`), ensuring attended transfers redirect the caller channel rather than dropping the caller when separating the agent leg.
+
 ---
 
 ## 4. Web Management Portal (PHP 8 MVC)
@@ -162,9 +176,10 @@ Both endpoints share the same user extension number via Asterisk ring groups or 
 - If Asterisk reports a syntax error or reload failure, the changes are rolled back automatically to the previous working state.
 
 ### 4.3 Role-Based Access Control (RBAC)
-- **Superadmin**: Complete system configuration, network settings, trunk lines, and database maintenance.
-- **PBX Admin**: Extension management, IVR, queues, call recording playback, and call logs.
-- **Standard User**: Self-service WebRTC softphone, personal call history, voicemails, and chat.
+Granular security policies are enforced via the `sys_role_permissions` database matrix:
+- **Matrix Dimensions**: Roles (`admin`, `read_only_admin`, `cc_manager`, `cc_agent`, `standard_user`, `fax_user`) mapped against modules (`extensions`, `trunks`, `inbound_routes`, `outbound_routes`, `queues`, `ivrs`, `time_conditions`, `sounds`, `call_center`, `fax`, `my_phone`, `chat`, `settings`, etc.) with discrete flags: `can_view`, `can_access`, `can_edit`, `can_delete`.
+- **Strict Read-Only Viewer Mode (`read_only_admin`)**: All form submissions, destructive API endpoints, and modal modification triggers are denied at the controller layer and visually disabled in the UI.
+- **Self-Service Boundaries**: `standard_user` is restricted to personal softphone settings (`my_phone`), extension chat (`chat`), and their own CDRs; system `fax_user` accounts are automatically excluded from interactive chat directories.
 
 ---
 
@@ -203,7 +218,8 @@ Both endpoints share the same user extension number via Asterisk ring groups or 
 
 - **STUN/TURN**: Provides ICE candidates for WebRTC clients behind symmetric NATs or restrictive cellular carriers.
 - **Ports**: Port 3478 (STUN/TURN) and Port 5349 (TURNS over TLS).
-- **Dynamic Credentials**: Ephemeral username/password generation based on HMAC-SHA1 tokens tied to active user sessions.
+- **Dynamic Credentials**: Ephemeral username/password generation based on HMAC-SHA1 tokens tied to active user sessions via `/api/sip_credentials.php`.
+- **Client Keep-Alive & Renewal**: In-browser softphones (`header_phone.js`) automatically renew ephemeral coturn credentials in-place every 30 minutes, preventing media relay timeouts and silent audio during continuous, all-day agent shifts.
 
 ---
 
