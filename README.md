@@ -65,8 +65,9 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Trunk management** — dynamic PJSIP trunk configuration
 - **Call routing** — DID mapping, outbound routes, time conditions
 - **IVR** — multi-level voice menus with time-based routing
-- **Queue management** — call queues, agent login/logout, hold music
-- **Feature codes** — *72 call forward, *60 DND, *43 intercom, etc.
+- **Queue management** — call queues, dynamic agent login/logout, hold music
+- **Feature codes** — `*81` queue login (all or `*81<queue>`), `*80` queue logout, `*72` call forward, `*60` DND, `*43` intercom, `*88` spy/whisper
+- **In-band disconnect supervision** — cadence-based disconnect tone detection (`from-trunk-kapanma-tonu`) for analog/legacy trunks without out-of-band hangup signaling
 - **Auto-rollback** — failed Asterisk reloads are automatically reverted
 
 ### 📠 Fax System
@@ -77,15 +78,17 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Email notification** — incoming faxes forwarded by email automatically
 
 ### 📊 Call Center
-- **Real-time agent panel** — live queue status, active calls
-- **Agent login/logout/break** — web-controlled
+- **Real-time agent panel** — live queue status, active calls, agent break selector
+- **Dynamic queue login/logout** — via star codes (`*81`/`*80`) with audio confirmation (`queue-agentlogin-success` / beeps) or web UI
+- **Intelligent call transfer** — bridge-traversal caller preservation (`findCallerChannelForAgent`) prevents dropped lines during attended transfer
+- **Auto-desk navigation** — answering incoming queue calls in WebRTC automatically shifts SPA view to agent CRM/notes (`/cc-agent`)
 - **CDR reporting** — detailed call records, filtering, export
 - **Call recording playback** — listen to recordings in the browser
 
 ### 🌐 WebRTC Softphone
-- **In-browser SIP phone** — no additional software required
-- **TURN/STUN support** — works reliably behind NAT (coturn)
-- **Opus + DTLS-SRTP** — high-quality, encrypted audio
+- **In-browser SIP phone** — zero-install browser phone embedded directly in topbar
+- **Resilient TURN/STUN** — 30-minute automatic credential renewal eliminates silent audio on extended shifts
+- **Opus + DTLS-SRTP** — high-quality, end-to-end encrypted audio
 
 ### 📱 Android App (Build 30 · v1.0.29)
 - **Native Kotlin** application with zero external cloud dependencies
@@ -110,7 +113,7 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Ready-to-use Nginx template** — available in `conf/nginx/aipbx.conf.example`
 
 ### 🔒 Security
-- **RBAC** — role-based access control
+- **Granular RBAC** — modular role-permission matrix (`sys_role_permissions`) with strict read-only viewer mode, including `my_phone` and `chat` controls
 - **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban)
 - **CSRF protection** — token on every POST form
 - **fail2ban integration**
