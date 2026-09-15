@@ -3,7 +3,6 @@ options:
   bundleIdPrefix: com.mhrgl
   deploymentTarget:
     iOS: "16.0"
-  xcodeVersion: "15.0"
   createIntermediateGroups: true
 targets:
   AiPBX:
