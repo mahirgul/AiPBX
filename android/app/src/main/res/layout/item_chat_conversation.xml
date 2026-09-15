@@ -44,6 +44,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
@@ -57,6 +58,21 @@
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvGroupTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/chip_tab_btn_bg"
+                android:backgroundTint="#E0E7FF"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="1dp"
+                android:text="Grup"
+                android:textColor="#4338CA"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvTime"
