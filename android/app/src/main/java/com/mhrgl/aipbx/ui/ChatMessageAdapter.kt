@@ -39,6 +39,7 @@ class ChatMessageAdapter(
     }
 
     fun addMessage(msg: ChatMessage) {
+        if (msg.id > 0 && messages.any { it.id == msg.id }) return
         messages.add(msg)
         notifyItemInserted(messages.size - 1)
     }

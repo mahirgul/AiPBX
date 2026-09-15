@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.content.res.ColorStateList
+import androidx.core.content.ContextCompat
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
@@ -51,6 +53,8 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
     private val allConversations = mutableListOf<ChatConversation>()
     private val allCorporateContacts = mutableListOf<ContactItem>()
+    private enum class ChatFilter { ALL, DIRECT, GROUP }
+    private var chatFilterMode = ChatFilter.ALL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,12 +94,32 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             finish()
         }
 
-        findViewById<ImageButton>(R.id.btnNewChat).setOnClickListener { v ->
-            showNewChatMenu(v)
+        findViewById<ImageButton>(R.id.btnNewGroup).setOnClickListener {
+            showNewGroupDialog()
         }
 
-        findViewById<Button>(R.id.btnEmptyNewChat).setOnClickListener { v ->
-            showNewChatMenu(v)
+        findViewById<ImageButton>(R.id.btnNewChat).setOnClickListener {
+            showNewChatDialog()
+        }
+
+        findViewById<Button>(R.id.btnEmptyNewChat).setOnClickListener {
+            showNewChatDialog()
+        }
+
+        findViewById<Button>(R.id.btnEmptyNewGroup).setOnClickListener {
+            showNewGroupDialog()
+        }
+
+        findViewById<TextView>(R.id.btnFilterAll).setOnClickListener {
+            setChatFilter(ChatFilter.ALL)
+        }
+
+        findViewById<TextView>(R.id.btnFilterDirect).setOnClickListener {
+            setChatFilter(ChatFilter.DIRECT)
+        }
+
+        findViewById<TextView>(R.id.btnFilterGroups).setOnClickListener {
+            setChatFilter(ChatFilter.GROUP)
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -105,6 +129,29 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    private fun setChatFilter(filter: ChatFilter) {
+        chatFilterMode = filter
+        val colorActiveBg = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.primary))
+        val colorInactiveBg = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.card_bg))
+        val colorActiveText = ContextCompat.getColor(this, android.R.color.white)
+        val colorInactiveText = ContextCompat.getColor(this, R.color.text_secondary)
+
+        val btnAll = findViewById<TextView>(R.id.btnFilterAll)
+        val btnDirect = findViewById<TextView>(R.id.btnFilterDirect)
+        val btnGroups = findViewById<TextView>(R.id.btnFilterGroups)
+
+        btnAll.backgroundTintList = if (filter == ChatFilter.ALL) colorActiveBg else colorInactiveBg
+        btnAll.setTextColor(if (filter == ChatFilter.ALL) colorActiveText else colorInactiveText)
+
+        btnDirect.backgroundTintList = if (filter == ChatFilter.DIRECT) colorActiveBg else colorInactiveBg
+        btnDirect.setTextColor(if (filter == ChatFilter.DIRECT) colorActiveText else colorInactiveText)
+
+        btnGroups.backgroundTintList = if (filter == ChatFilter.GROUP) colorActiveBg else colorInactiveBg
+        btnGroups.setTextColor(if (filter == ChatFilter.GROUP) colorActiveText else colorInactiveText)
+
+        filterConversations(etSearch.text?.toString() ?: "")
     }
 
     private fun showNewChatMenu(anchor: View) {
@@ -170,11 +217,17 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
         val displayList = mutableListOf<ChatConversation>()
 
+        val baseList = when (chatFilterMode) {
+            ChatFilter.ALL -> allConversations
+            ChatFilter.DIRECT -> allConversations.filter { it.type != "group" }
+            ChatFilter.GROUP -> allConversations.filter { it.type == "group" }
+        }
+
         if (q.isEmpty()) {
-            displayList.addAll(allConversations)
+            displayList.addAll(baseList)
         } else {
             // 1. Var olan sohbetlerden eşleşenler
-            val matchedConversations = allConversations.filter {
+            val matchedConversations = baseList.filter {
                 SearchUtils.matches(it.targetName, q) ||
                 SearchUtils.matches(it.targetExt, q) ||
                 SearchUtils.matches(it.title, q) ||
@@ -183,36 +236,38 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             displayList.addAll(matchedConversations)
 
             // 2. Tüm kurumsal rehberden eşleşenler
-            val matchedContacts = allCorporateContacts.filter { contact ->
-                contact.extension != myExt && (
-                    SearchUtils.matches(contact.name, q) ||
-                    SearchUtils.matches(contact.extension, q) ||
-                    SearchUtils.matches(contact.role, q)
-                )
-            }
-
-            for (contact in matchedContacts) {
-                // Eğer bu dahili zaten eşleşen aktif sohbetlerde varsa mükerrer ekleme
-                val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
-                if (!alreadyInList) {
-                    val isOnline = contact.status.equals("online", true) ||
-                            contact.sipStatus.equals("online", true) ||
-                            contact.webrtcStatus.equals("online", true)
-                    displayList.add(
-                        ChatConversation(
-                            id = 0,
-                            type = "direct",
-                            directKey = null,
-                            title = null,
-                            createdBy = "",
-                            lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
-                            lastMessageAt = null,
-                            unreadCount = 0,
-                            targetExt = contact.extension,
-                            targetName = contact.name,
-                            targetOnline = isOnline
-                        )
+            if (chatFilterMode != ChatFilter.GROUP) {
+                val matchedContacts = allCorporateContacts.filter { contact ->
+                    contact.extension != myExt && (
+                        SearchUtils.matches(contact.name, q) ||
+                        SearchUtils.matches(contact.extension, q) ||
+                        SearchUtils.matches(contact.role, q)
                     )
+                }
+
+                for (contact in matchedContacts) {
+                    // Eğer bu dahili zaten eşleşen aktif sohbetlerde varsa mükerrer ekleme
+                    val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
+                    if (!alreadyInList) {
+                        val isOnline = contact.status.equals("online", true) ||
+                                contact.sipStatus.equals("online", true) ||
+                                contact.webrtcStatus.equals("online", true)
+                        displayList.add(
+                            ChatConversation(
+                                id = 0,
+                                type = "direct",
+                                directKey = null,
+                                title = null,
+                                createdBy = "",
+                                lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
+                                lastMessageAt = null,
+                                unreadCount = 0,
+                                targetExt = contact.extension,
+                                targetName = contact.name,
+                                targetOnline = isOnline
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -221,6 +276,23 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
         if (displayList.isEmpty()) {
             llEmptyState.visibility = View.VISIBLE
             rvConversations.visibility = View.GONE
+
+            val tvTitle = findViewById<TextView>(R.id.tvEmptyTitle)
+            val tvSubtitle = findViewById<TextView>(R.id.tvEmptySubtitle)
+            val btnNewChat = findViewById<Button>(R.id.btnEmptyNewChat)
+            val btnNewGroup = findViewById<Button>(R.id.btnEmptyNewGroup)
+
+            if (chatFilterMode == ChatFilter.GROUP) {
+                tvTitle?.text = "Henüz grup sohbeti yok"
+                tvSubtitle?.text = "Yeni bir grup oluşturarak ekibinizle anlık mesajlaşabilirsiniz."
+                btnNewChat?.visibility = View.GONE
+                btnNewGroup?.visibility = View.VISIBLE
+            } else {
+                tvTitle?.text = "Henüz bir sohbetiniz yok"
+                tvSubtitle?.text = "Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                btnNewChat?.visibility = View.VISIBLE
+                btnNewGroup?.visibility = View.VISIBLE
+            }
         } else {
             llEmptyState.visibility = View.GONE
             rvConversations.visibility = View.VISIBLE

@@ -86,11 +86,11 @@ def upload_bundle():
         release_notes = [
             {
                 'language': 'tr-TR',
-                'text': 'Grup sohbeti özelliği eklendi: Grup oluşturma, rehberden üye ekleme/çıkarma, yönetici rolleri ve anlık sistem bildirimleri. Arka plan grup bildirimleri ve mesajlaşma arayüzü iyileştirildi.'
+                'text': 'Grup sohbeti ana ekrana ve sohbet sekmesine tam entegre edildi: Hızlı grup oluşturma, arama/filtreleme (Tümü, Bireysel, Gruplar), katılımcı yönetimi ve anlık sistem bildirimleri.'
             },
             {
                 'language': 'en-US',
-                'text': 'Added Group Chat feature: Group creation, add/remove members, admin roles, and real-time system notifications. Enhanced background group notifications and messaging UI.'
+                'text': 'Full group chat integration in main navigation: Quick group creation, conversation filtering (All, Direct, Groups), participant management, and real-time updates.'
             }
         ]
 

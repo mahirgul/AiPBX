@@ -185,6 +185,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             vOnlineDot.visibility = View.GONE
 
             tvAvatar.text = "👥"
+            tvAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
             tvName.text = if (targetName.isNotEmpty()) targetName else "Grup Sohbeti"
             tvStatus.text = "Grup"
 
@@ -199,6 +200,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
 
             tvName.text = if (targetName.isNotEmpty()) "$targetName (#$targetExt)" else "Dahili #$targetExt"
             tvAvatar.text = targetName.take(1).uppercase()
+            tvAvatar.backgroundTintList = null
 
             btnCall.setOnClickListener {
                 if (targetExt.isNotEmpty()) {
@@ -213,7 +215,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     }
 
     private fun loadGroupDetails() {
-        if (!isGroup || convId <= 0) return
+        if (convId <= 0) return
         lifecycleScope.launch {
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch
@@ -221,10 +223,23 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val res = apiClient.getGroupDetails(sUrl, token, convId)
             res.onSuccess { conv ->
                 currentGroupDetails = conv
+                isGroup = true
                 runOnUiThread {
+                    adapter.setIsGroup(true)
+                    val tvAvatar = findViewById<TextView>(R.id.tvTargetAvatar)
+                    tvAvatar.text = "👥"
+                    tvAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
+                    findViewById<ImageButton>(R.id.btnCall).visibility = View.GONE
+                    findViewById<ImageButton>(R.id.btnGroupInfo).visibility = View.VISIBLE
+                    findViewById<View>(R.id.vTargetOnlineDot).visibility = View.GONE
                     findViewById<TextView>(R.id.tvTargetName).text = conv.title ?: "Grup Sohbeti"
                     findViewById<TextView>(R.id.tvTargetStatus).text =
                         "${conv.memberCount} üye, ${conv.onlineCount} çevrimiçi"
+
+                    val llHeader = findViewById<View>(R.id.llHeaderInfo)
+                    val btnGroupInfo = findViewById<ImageButton>(R.id.btnGroupInfo)
+                    btnGroupInfo.setOnClickListener { showGroupInfoDialog() }
+                    llHeader.setOnClickListener { showGroupInfoDialog() }
                 }
             }
         }
@@ -260,7 +275,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                 }
             } else if (convId > 0) {
                 loadMessages()
-                if (isGroup) loadGroupDetails()
+                if (isGroup || targetExt.isEmpty()) loadGroupDetails()
             }
         }
     }
@@ -378,6 +393,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val isAdmin = group.myRole.equals("admin", ignoreCase = true)
 
             // Populate view
+            binding.tvGroupInfoAvatar.text = "👥"
+            binding.tvGroupInfoAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
             binding.tvGroupInfoTitle.text = group.title ?: "Grup Sohbeti"
             binding.tvGroupInfoSubtitle.text = "${group.memberCount} üye • ${group.onlineCount} çevrimiçi"
             if (!group.description.isNullOrEmpty()) {
