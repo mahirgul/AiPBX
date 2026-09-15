@@ -1376,9 +1376,64 @@ body.auth-body {
     }
 }
 
-/* ===== Responsive Utility ===== */
+/* ===== Responsive Utility & Helpers ===== */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-inline { display: inline !important; }
+.d-inline-flex { display: inline-flex !important; }
+.d-flex { display: flex !important; }
+
+@media (min-width: 769px) {
+    .d-md-none { display: none !important; }
+    .d-md-block { display: block !important; }
+    .d-md-inline { display: inline !important; }
+    .d-md-inline-flex { display: inline-flex !important; }
+    .d-md-flex { display: flex !important; }
+}
+
 @media (max-width: 900px) {
     .col-hide-mobile {
-        display: none;
+        display: none !important;
     }
 }
+
+@media (max-width: 768px) {
+    .d-mobile-none { display: none !important; }
+    .d-mobile-block { display: block !important; }
+    .d-mobile-inline { display: inline !important; }
+    .d-mobile-inline-flex { display: inline-flex !important; }
+    .d-mobile-flex { display: flex !important; }
+
+    /* Mobilde Modalların Ekrana Tam ve Rahat Sığması */
+    .modal-overlay {
+        padding: 10px !important;
+    }
+    .modal-card {
+        width: 96% !important;
+        max-width: 96% !important;
+        margin: 8px auto !important;
+        border-radius: 12px !important;
+    }
+    .modal-header {
+        padding: 12px 16px !important;
+    }
+    .modal-body {
+        padding: 14px 16px !important;
+        max-height: 82dvh !important;
+    }
+    .modal-footer {
+        padding: 12px 16px !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    .modal-footer button {
+        flex: 1 1 auto !important;
+    }
+
+    /* Mobilde Yatay Tablo Kaydırma Pürüzsüzlüğü */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        border-radius: 8px;
+    }
+}
+

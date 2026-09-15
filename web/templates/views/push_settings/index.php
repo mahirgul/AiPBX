@@ -14,6 +14,35 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
     </div>
 <?php endif; ?>
 
+<style>
+.push-settings-form {
+    padding: 20px;
+}
+.push-test-body {
+    padding: 20px;
+}
+@media (max-width: 768px) {
+    .push-settings-form {
+        padding: 12px 14px !important;
+    }
+    .push-test-body {
+        padding: 12px 14px !important;
+    }
+    #fcmConfigSection {
+        padding: 12px 14px !important;
+    }
+    .push-save-actions {
+        justify-content: stretch !important;
+    }
+    .push-save-actions button {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+    }
+}
+</style>
+
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -35,7 +64,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         <p style="margin-bottom: 0;">FCM kullanmak istemiyorsanız Sağlayıcıyı <strong>"Yerel Altyapı (Sıfır Bağımlılık)"</strong> olarak bırakabilirsiniz. Bu durumda mobil uygulama Google ile hiçbir ağ teması kurmaz.</p>
     </div>
 
-    <form method="POST" autocomplete="off" style="padding: 20px;">
+    <form method="POST" autocomplete="off" class="push-settings-form">
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
         <input type="hidden" name="save_push_settings" value="1">
 
@@ -120,7 +149,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         </div>
 
         <?php if (hasModulePermission('push_settings', 'edit')): ?>
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <div class="push-save-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
             <button type="submit" name="save_push_settings" class="btn btn-primary">
                 <i class="fas fa-save"></i> Ayarları Kaydet
             </button>
@@ -137,7 +166,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
             <i class="fas fa-paper-plane" style="color: var(--success, #28a745);"></i> Test Bildirimi Gönder
         </div>
     </div>
-    <div style="padding: 20px;">
+    <div class="push-test-body">
         <p style="margin-top: 0; color: var(--text-muted); font-size: 13px;">
             Kayıtlı bir mobil cihaza doğrudan FCM uyanma sinyali göndererek yapılandırmanın sağlıklı çalıştığını test edebilirsiniz.
         </p>
