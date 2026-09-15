@@ -129,7 +129,7 @@ $group_slugs = RoleRepository::groupSlugs();
                         <thead>
                             <tr>
                                 <th><?php echo t('roles.col_module'); ?></th>
-                                <th><?php echo t('roles.col_group'); ?></th>
+                                <th class="col-hide-mobile"><?php echo t('roles.col_group'); ?></th>
                                 <th style="text-align: center;"><?php echo t('roles.col_perm_view'); ?></th>
                                 <th style="text-align: center;"><?php echo t('roles.col_perm_access'); ?></th>
                                 <th style="text-align: center;"><?php echo t('roles.col_perm_edit'); ?></th>
@@ -186,7 +186,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                         <strong style="color: var(--text-main);"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
                                         <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
                                     </td>
-                                    <td>
+                                    <td class="col-hide-mobile">
                                         <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-size: 11px; border: 1px solid var(--border-color); font-weight: 500;"><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $m_info['group'])); ?></span>
                                     </td>
                                     <td style="text-align: center;">

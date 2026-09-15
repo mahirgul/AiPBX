@@ -40,7 +40,7 @@
                     <th><?php echo t('extensions.col_fullname'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_username'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_type'); ?></th>
-                    <th><?php echo t('extensions.col_sip_password'); ?></th>
+                    <th class="col-hide-mobile"><?php echo t('extensions.col_sip_password'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_live_status'); ?></th>
                     <th><?php echo t('extensions.col_status'); ?></th>
                     <th class="text-right"><?php echo t('extensions.col_actions'); ?></th>
@@ -87,7 +87,7 @@
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
                                     <span class="text-muted" style="font-size: 12px;"><?php echo t('extensions.no_sip_registration'); ?></span>
                                 <?php elseif (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0 && empty($e['sip_password'])): ?>

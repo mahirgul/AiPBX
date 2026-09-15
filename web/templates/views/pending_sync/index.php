@@ -64,7 +64,20 @@ $action_label_map = [
             <?php endforeach; ?>
 
             <?php if (hasModulePermission('pending_sync', 'edit')): ?>
-                <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <style>
+                @media (max-width: 768px) {
+                    .pending-sync-submit-box {
+                        justify-content: stretch !important;
+                    }
+                    .pending-sync-submit-box button {
+                        width: 100% !important;
+                        justify-content: center !important;
+                        padding: 12px !important;
+                        font-size: 14px !important;
+                    }
+                }
+                </style>
+                <div class="pending-sync-submit-box" style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <button type="submit" class="btn btn-primary" onclick="return confirm('<?php echo htmlspecialchars(t('pending_sync.confirm_apply'), ENT_QUOTES); ?>');">
                         <i class="fas fa-paper-plane"></i> <?php echo t('pending_sync.submit_button'); ?>
                     </button>

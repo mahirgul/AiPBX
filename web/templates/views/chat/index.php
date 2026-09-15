@@ -7,12 +7,135 @@ $user = $user ?? [];
 $token = $token ?? '';
 ?>
 
-<div style="padding: 15px; height: calc(100vh - 120px); min-height: 580px; display: flex; flex-direction: column;">
+<style>
+.chat-container {
+    padding: 15px;
+    height: calc(100vh - 120px);
+    height: calc(100dvh - 120px);
+    min-height: 580px;
+    display: flex;
+    flex-direction: column;
+}
+.chat-card-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    padding: 0 !important;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    position: relative;
+    height: 100%;
+}
+.chat-sidebar {
+    width: 340px;
+    min-width: 280px;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    height: 100%;
+}
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main);
+    position: relative;
+    height: 100%;
+    min-width: 0;
+}
+.chat-mobile-back-btn {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .chat-container {
+        padding: 4px 6px !important;
+        height: calc(100dvh - 110px) !important;
+        min-height: 0 !important;
+    }
+    .chat-card-wrapper {
+        border-radius: 8px !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .chat-sidebar {
+        width: 100% !important;
+        min-width: 0 !important;
+        border-right: none !important;
+        display: flex !important;
+    }
+    .chat-main {
+        display: none !important;
+        width: 100% !important;
+    }
+    .chat-card-wrapper.is-chat-open .chat-sidebar {
+        display: none !important;
+    }
+    .chat-card-wrapper.is-chat-open .chat-main {
+        display: flex !important;
+        width: 100% !important;
+    }
+    .chat-mobile-back-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: var(--bg-main);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        cursor: pointer;
+        padding: 0;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    #chat-header {
+        padding: 8px 12px !important;
+    }
+    #chat-messages-scroll {
+        padding: 12px 10px !important;
+        gap: 8px !important;
+    }
+    .chat-input-bar {
+        padding: 8px 10px !important;
+        gap: 6px !important;
+    }
+    .chat-input-bar button {
+        width: 36px !important;
+        height: 36px !important;
+        flex-shrink: 0;
+    }
+    #chat-input-textarea {
+        font-size: 15px !important;
+        padding: 8px 10px !important;
+    }
+    #chat-new-group-modal > .card,
+    #chat-group-info-modal > .card,
+    #chat-add-members-modal > .card {
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 94vh !important;
+        margin: auto !important;
+    }
+    #chat-new-group-modal,
+    #chat-group-info-modal,
+    #chat-add-members-modal,
+    #chat-lightbox-modal {
+        padding: 10px !important;
+    }
+}
+</style>
+
+<div class="chat-container">
     <!-- Chat Card Container -->
-    <div class="card" style="flex: 1; display: flex; flex-direction: row; overflow: hidden; padding: 0; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+    <div class="card chat-card-wrapper">
         
         <!-- SOL PANEL: SOHBETLER VE REHBER -->
-        <div id="chat-sidebar" style="width: 340px; min-width: 280px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--bg-card);">
+        <div id="chat-sidebar" class="chat-sidebar">
             
             <!-- Sidebar Header & Arama -->
             <div style="padding: 14px 16px; border-bottom: 1px solid var(--border-color);">
@@ -75,7 +198,7 @@ $token = $token ?? '';
         </div>
 
         <!-- SAĞ PANEL: AKTİF SOHBET PENCERESİ -->
-        <div id="chat-main" style="flex: 1; display: flex; flex-direction: column; background: var(--bg-main); position: relative;">
+        <div id="chat-main" class="chat-main">
             
             <!-- Boş Durum (Sohbet Seçilmediğinde) -->
             <div id="chat-empty-state" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); padding: 30px; text-align: center;">
@@ -96,24 +219,30 @@ $token = $token ?? '';
                 
                 <!-- Aktif Sohbet Başlığı -->
                 <div id="chat-header" style="padding: 12px 18px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                    <div id="chat-header-info-btn" style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="handleHeaderClick()">
-                        <div id="active-target-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; position: relative; flex-shrink: 0; overflow: visible;">
-                            <span id="active-target-initial">U</span>
-                            <span id="active-target-status-dot" style="position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: #9ca3af; border: 2px solid var(--bg-card);"></span>
-                        </div>
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <h4 id="active-target-name" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main);">Kullanıcı</h4>
-                                <span id="active-target-ext" class="badge" style="background: rgba(0,0,0,0.06); color: var(--text-muted); font-size: 11px; border-radius: 6px; padding: 2px 6px;">#0000</span>
+                    <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
+                        <!-- Mobilde Geri Butonu -->
+                        <button type="button" id="chat-mobile-back-btn" class="chat-mobile-back-btn" onclick="closeActiveChatMobile()" title="Geri">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div id="chat-header-info-btn" style="display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; flex: 1; overflow: hidden;" onclick="handleHeaderClick()">
+                            <div id="active-target-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; position: relative; flex-shrink: 0; overflow: visible;">
+                                <span id="active-target-initial">U</span>
+                                <span id="active-target-status-dot" style="position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: #9ca3af; border: 2px solid var(--bg-card);"></span>
                             </div>
-                            <div id="active-target-status-text" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                                Çevrimdışı
+                            <div style="min-width: 0; flex: 1; overflow: hidden;">
+                                <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                                    <h4 id="active-target-name" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Kullanıcı</h4>
+                                    <span id="active-target-ext" class="badge" style="background: rgba(0,0,0,0.06); color: var(--text-muted); font-size: 11px; border-radius: 6px; padding: 2px 6px; flex-shrink: 0;">#0000</span>
+                                </div>
+                                <div id="active-target-status-text" style="font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    Çevrimdışı
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Hızlı İşlemler: Ara / Grup Bilgisi -->
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                         <button id="active-target-call-btn" class="btn btn-sm btn-outline-primary" title="Dahiliyi Ara" style="border-radius: 8px; padding: 6px 12px;" onclick="callTargetExtension()">
                             <i class="fas fa-phone-alt"></i> <span class="d-none d-md-inline" style="margin-left: 4px;">Ara</span>
                         </button>
@@ -146,26 +275,26 @@ $token = $token ?? '';
                 </div>
 
                 <!-- Mesaj Gönderme Kutusu -->
-                <div style="padding: 12px 18px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
+                <div class="chat-input-bar" style="padding: 12px 18px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
                     <!-- Gizli Dosya Seçiciler -->
                     <input type="file" id="chat-file-input" style="display: none;" onchange="handleFileSelected(event, 'file')" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
                     <input type="file" id="chat-photo-input" style="display: none;" onchange="handleFileSelected(event, 'image')" accept="image/*">
 
                     <!-- Ek Butonları -->
-                    <button type="button" class="btn btn-sm" title="Dosya / Belge Ekle" style="border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-muted); border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('chat-file-input').click()">
+                    <button type="button" class="btn btn-sm btn-icon" title="Dosya / Belge Ekle" style="border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-muted); border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('chat-file-input').click()">
                         <i class="fas fa-paperclip"></i>
                     </button>
-                    <button type="button" class="btn btn-sm" title="Fotoğraf Gönder" style="border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-muted); border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('chat-photo-input').click()">
+                    <button type="button" class="btn btn-sm btn-icon" title="Fotoğraf Gönder" style="border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-muted); border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('chat-photo-input').click()">
                         <i class="fas fa-camera"></i>
                     </button>
 
                     <!-- Metin Girdisi -->
-                    <div style="flex: 1; position: relative;">
-                        <textarea id="chat-input-textarea" rows="1" placeholder="Bir mesaj yazın... (Göndermek için Enter, yeni satır için Shift+Enter)" style="width: 100%; resize: none; max-height: 120px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none; line-height: 1.4;" onkeydown="handleInputKeydown(event)" oninput="handleInputTyping()"></textarea>
+                    <div style="flex: 1; position: relative; min-width: 0;">
+                        <textarea id="chat-input-textarea" rows="1" placeholder="Bir mesaj yazın..." style="width: 100%; resize: none; max-height: 120px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none; line-height: 1.4; box-sizing: border-box;" onkeydown="handleInputKeydown(event)" oninput="handleInputTyping()"></textarea>
                     </div>
 
                     <!-- Gönder Butonu -->
-                    <button id="chat-send-btn" type="button" class="btn btn-primary" title="Gönder" style="border-radius: 10px; width: 42px; height: 38px; display: flex; align-items: center; justify-content: center;" onclick="sendMessage()">
+                    <button id="chat-send-btn" type="button" class="btn btn-primary btn-icon" title="Gönder" style="border-radius: 10px; width: 42px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="sendMessage()">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
@@ -691,10 +820,10 @@ function renderConversationsList() {
                     </span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-                    <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
+                    <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;">
                         ${escapeHtml(subtitleText)}
                     </span>
-                    ${c.unread_count > 0 ? `<span class="badge" style="background: var(--primary); color: #fff; font-size: 10.5px; padding: 2px 6px; border-radius: 10px; font-weight: 700;">${c.unread_count}</span>` : ''}
+                    ${c.unread_count > 0 ? `<span class="badge" style="background: var(--primary); color: #fff; font-size: 10.5px; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 6px;">${c.unread_count}</span>` : ''}
                 </div>
             </div>
         `;
@@ -791,11 +920,22 @@ async function startDirectChatWith(targetExt, targetName) {
 }
 
 // 7. Konuşmayı Aç
-async function openConversation(conv) {
+async function openConversation(conv, pushHistory = true) {
     currentConvId = conv.id;
     currentConv = conv;
     currentTargetExt = conv.target_ext || '';
     const isGroup = conv.type === 'group';
+
+    // Mobilde konuşma görünümüne geç
+    const cardWrapper = document.querySelector('.chat-card-wrapper');
+    if (cardWrapper) {
+        cardWrapper.classList.add('is-chat-open');
+    }
+    if (pushHistory && window.innerWidth <= 768) {
+        try {
+            window.history.pushState({ chatActive: true, convId: conv.id }, '');
+        } catch (e) {}
+    }
 
     document.getElementById('chat-empty-state').style.display = 'none';
     document.getElementById('chat-active-pane').style.display = 'flex';
@@ -850,9 +990,37 @@ async function openConversation(conv) {
     // Listeyi yeniden render et (seçili arkaplanı güncellemek için)
     renderConversationsList();
 
-    // Textarea'ya odaklan
-    document.getElementById('chat-input-textarea').focus();
+    // Masaüstünde textarea'ya odaklan (mobilde klavyenin hemen açılıp ekranı kapatmaması için sadece > 768px)
+    if (window.innerWidth > 768) {
+        document.getElementById('chat-input-textarea').focus();
+    }
 }
+
+// Mobilde Aktif Sohbeti Kapatıp Listeye Dön
+function closeActiveChatMobile(popHistory = true) {
+    const cardWrapper = document.querySelector('.chat-card-wrapper');
+    if (cardWrapper) {
+        cardWrapper.classList.remove('is-chat-open');
+    }
+    currentConvId = null;
+    currentConv = null;
+    currentTargetExt = null;
+    document.getElementById('chat-empty-state').style.display = 'flex';
+    document.getElementById('chat-active-pane').style.display = 'none';
+    renderConversationsList();
+
+    if (popHistory && window.history.state && window.history.state.chatActive) {
+        window.history.back();
+    }
+}
+
+// Tarayıcı / Android Donanım Geri Tuşu Dinleyicisi
+window.addEventListener('popstate', (e) => {
+    const cardWrapper = document.querySelector('.chat-card-wrapper');
+    if (cardWrapper && cardWrapper.classList.contains('is-chat-open')) {
+        closeActiveChatMobile(false);
+    }
+});
 
 async function loadMessages(convId) {
     const scrollEl = document.getElementById('chat-messages-scroll');
@@ -911,7 +1079,7 @@ function appendMessageToUI(msg) {
         const safeUrl = sanitizeAttachmentUrl(msg.attachment_url);
         contentHtml = `
             <div style="cursor: pointer;" onclick="openSafeLightbox(this)" data-url="${escapeHtml(safeUrl)}">
-                <img src="${escapeHtml(safeUrl)}" alt="Fotoğraf" style="max-width: 260px; max-height: 260px; border-radius: 8px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <img src="${escapeHtml(safeUrl)}" alt="Fotoğraf" style="max-width: min(260px, 75vw); max-height: 260px; border-radius: 8px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             </div>
             ${msg.message ? `<div style="margin-top: 6px; font-size: 13.5px;">${escapeHtml(msg.message)}</div>` : ''}
         `;
@@ -922,7 +1090,7 @@ function appendMessageToUI(msg) {
         contentHtml = `
             <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px;">
                 <i class="fas fa-file-alt" style="font-size: 24px; color: var(--primary);"></i>
-                <div style="overflow: hidden; max-width: 180px;">
+                <div style="overflow: hidden; max-width: min(180px, 50vw);">
                     <div style="font-size: 13px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${safeName}</div>
                     <div style="font-size: 11px; opacity: 0.8;">${fileSizeStr}</div>
                 </div>
@@ -947,7 +1115,7 @@ function appendMessageToUI(msg) {
     ` : '';
 
     msgRow.innerHTML = `
-        <div style="max-width: 75%; background: ${bubbleBg}; color: ${bubbleColor}; border: ${bubbleBorder}; border-radius: ${isMe ? '14px 14px 2px 14px' : '14px 14px 14px 2px'}; padding: 8px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+        <div style="max-width: 85%; background: ${bubbleBg}; color: ${bubbleColor}; border: ${bubbleBorder}; border-radius: ${isMe ? '14px 14px 2px 14px' : '14px 14px 14px 2px'}; padding: 8px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
             ${senderHeader}
             ${contentHtml}
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10.5px; opacity: 0.8;">
