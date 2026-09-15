@@ -36,6 +36,7 @@ class ChatConversationAdapter(
         private val tvAvatar: TextView = itemView.findViewById(R.id.tvAvatar)
         private val vOnlineDot: View = itemView.findViewById(R.id.vOnlineDot)
         private val tvTargetName: TextView = itemView.findViewById(R.id.tvTargetName)
+        private val tvGroupTag: TextView = itemView.findViewById(R.id.tvGroupTag)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val tvLastMessage: TextView = itemView.findViewById(R.id.tvLastMessage)
         private val tvUnreadBadge: TextView = itemView.findViewById(R.id.tvUnreadBadge)
@@ -46,13 +47,17 @@ class ChatConversationAdapter(
             if (isGroup) {
                 val displayName = item.title ?: "Grup Sohbeti"
                 tvTargetName.text = displayName
+                tvGroupTag.visibility = View.VISIBLE
                 tvAvatar.text = "👥"
+                tvAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
                 vOnlineDot.visibility = View.GONE
                 tvLastMessage.text = item.lastMessageText ?: "${item.memberCount} üye"
             } else {
                 val displayName = item.targetName ?: item.targetExt ?: "Kullanıcı"
                 tvTargetName.text = displayName
+                tvGroupTag.visibility = View.GONE
                 tvAvatar.text = displayName.take(1).uppercase()
+                tvAvatar.backgroundTintList = null
                 vOnlineDot.visibility = View.VISIBLE
                 vOnlineDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
                     if (item.targetOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()

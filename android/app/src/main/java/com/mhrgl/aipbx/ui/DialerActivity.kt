@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import android.content.res.ColorStateList
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,6 +21,7 @@ import android.provider.ContactsContract
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.mhrgl.aipbx.databinding.DialogNewGroupBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,6 +58,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private val chatCorporateContacts = mutableListOf<ContactItem>()
 
     private var currentFilter = "all"
+    private enum class ChatFilter { ALL, DIRECT, GROUP }
+    private var chatFilterMode = ChatFilter.ALL
     private var isDndEnabled = false
     private var currentForwardAlways = ""
     private var currentForwardBusy = ""
@@ -672,7 +676,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     private fun setupChatTab() {
         chatAdapter = ChatConversationAdapter { conv ->
-            ChatActivity.start(this, conv.id, conv.targetExt ?: "", conv.targetName)
+            val isGroup = conv.type == "group"
+            val targetExt = if (isGroup) "" else (conv.targetExt ?: "")
+            val displayName = if (isGroup) (conv.title ?: "Grup Sohbeti") else (conv.targetName ?: conv.targetExt ?: "")
+            ChatActivity.start(this, conv.id, targetExt, displayName, isGroup)
         }
         binding.rvChatConversations.layoutManager = LinearLayoutManager(this)
         binding.rvChatConversations.adapter = chatAdapter
@@ -681,13 +688,52 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             showNewChatDialog()
         }
 
+        binding.btnNewGroup.setOnClickListener {
+            showNewGroupDialog()
+        }
+
         binding.btnChatEmptyNewChat.setOnClickListener {
             showNewChatDialog()
+        }
+
+        binding.btnChatEmptyNewGroup.setOnClickListener {
+            showNewGroupDialog()
+        }
+
+        binding.btnChatFilterAll.setOnClickListener {
+            setChatFilter(ChatFilter.ALL)
+        }
+
+        binding.btnChatFilterDirect.setOnClickListener {
+            setChatFilter(ChatFilter.DIRECT)
+        }
+
+        binding.btnChatFilterGroups.setOnClickListener {
+            setChatFilter(ChatFilter.GROUP)
         }
 
         binding.etChatSearch.doAfterTextChanged { text ->
             filterConversations(text?.toString() ?: "")
         }
+    }
+
+    private fun setChatFilter(filter: ChatFilter) {
+        chatFilterMode = filter
+        val colorActiveBg = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.primary))
+        val colorInactiveBg = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.card_bg))
+        val colorActiveText = ContextCompat.getColor(this, android.R.color.white)
+        val colorInactiveText = ContextCompat.getColor(this, R.color.text_secondary)
+
+        binding.btnChatFilterAll.backgroundTintList = if (filter == ChatFilter.ALL) colorActiveBg else colorInactiveBg
+        binding.btnChatFilterAll.setTextColor(if (filter == ChatFilter.ALL) colorActiveText else colorInactiveText)
+
+        binding.btnChatFilterDirect.backgroundTintList = if (filter == ChatFilter.DIRECT) colorActiveBg else colorInactiveBg
+        binding.btnChatFilterDirect.setTextColor(if (filter == ChatFilter.DIRECT) colorActiveText else colorInactiveText)
+
+        binding.btnChatFilterGroups.backgroundTintList = if (filter == ChatFilter.GROUP) colorActiveBg else colorInactiveBg
+        binding.btnChatFilterGroups.setTextColor(if (filter == ChatFilter.GROUP) colorActiveText else colorInactiveText)
+
+        filterConversations(binding.etChatSearch.text?.toString() ?: "")
     }
 
     private fun loadConversations() {
@@ -722,45 +768,54 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         val myExt = prefs.extension ?: ""
         val displayList = mutableListOf<ChatConversation>()
 
+        val baseList = when (chatFilterMode) {
+            ChatFilter.ALL -> allConversations
+            ChatFilter.DIRECT -> allConversations.filter { it.type != "group" }
+            ChatFilter.GROUP -> allConversations.filter { it.type == "group" }
+        }
+
         if (q.isEmpty()) {
-            displayList.addAll(allConversations)
+            displayList.addAll(baseList)
         } else {
-            val matchedConversations = allConversations.filter {
+            val matchedConversations = baseList.filter {
+                (it.type == "group" && SearchUtils.matches(it.title, q)) ||
                 SearchUtils.matches(it.targetName, q) ||
                 SearchUtils.matches(it.targetExt, q) ||
                 SearchUtils.matches(it.lastMessageText, q)
             }
             displayList.addAll(matchedConversations)
 
-            val matchedContacts = chatCorporateContacts.filter { contact ->
-                contact.extension != myExt && (
-                    SearchUtils.matches(contact.name, q) ||
-                    SearchUtils.matches(contact.extension, q) ||
-                    SearchUtils.matches(contact.role, q)
-                )
-            }
-
-            for (contact in matchedContacts) {
-                val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
-                if (!alreadyInList) {
-                    val isOnline = contact.status.equals("online", true) ||
-                            contact.sipStatus.equals("online", true) ||
-                            contact.webrtcStatus.equals("online", true)
-                    displayList.add(
-                        ChatConversation(
-                            id = 0,
-                            type = "direct",
-                            directKey = null,
-                            title = null,
-                            createdBy = "",
-                            lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
-                            lastMessageAt = null,
-                            unreadCount = 0,
-                            targetExt = contact.extension,
-                            targetName = contact.name,
-                            targetOnline = isOnline
-                        )
+            if (chatFilterMode != ChatFilter.GROUP) {
+                val matchedContacts = chatCorporateContacts.filter { contact ->
+                    contact.extension != myExt && (
+                        SearchUtils.matches(contact.name, q) ||
+                        SearchUtils.matches(contact.extension, q) ||
+                        SearchUtils.matches(contact.role, q)
                     )
+                }
+
+                for (contact in matchedContacts) {
+                    val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
+                    if (!alreadyInList) {
+                        val isOnline = contact.status.equals("online", true) ||
+                                contact.sipStatus.equals("online", true) ||
+                                contact.webrtcStatus.equals("online", true)
+                        displayList.add(
+                            ChatConversation(
+                                id = 0,
+                                type = "direct",
+                                directKey = null,
+                                title = null,
+                                createdBy = "",
+                                lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
+                                lastMessageAt = null,
+                                unreadCount = 0,
+                                targetExt = contact.extension,
+                                targetName = contact.name,
+                                targetOnline = isOnline
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -769,9 +824,119 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (displayList.isEmpty()) {
             binding.llChatEmptyState.visibility = View.VISIBLE
             binding.rvChatConversations.visibility = View.GONE
+
+            if (chatFilterMode == ChatFilter.GROUP) {
+                binding.tvChatEmptyTitle.text = "Henüz grup sohbeti yok"
+                binding.tvChatEmptySubtitle.text = "Yeni bir grup oluşturarak ekibinizle anlık mesajlaşabilirsiniz."
+                binding.btnChatEmptyNewChat.visibility = View.GONE
+                binding.btnChatEmptyNewGroup.visibility = View.VISIBLE
+            } else {
+                binding.tvChatEmptyTitle.text = "Henüz bir sohbetiniz yok"
+                binding.tvChatEmptySubtitle.text = "Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                binding.btnChatEmptyNewChat.visibility = View.VISIBLE
+                binding.btnChatEmptyNewGroup.visibility = View.VISIBLE
+            }
         } else {
             binding.llChatEmptyState.visibility = View.GONE
             binding.rvChatConversations.visibility = View.VISIBLE
+        }
+    }
+
+    private fun showNewGroupDialog() {
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl
+            if (sUrl.isEmpty()) return@launch
+            val token = prefs.token ?: return@launch
+
+            val contacts = if (chatCorporateContacts.isNotEmpty()) {
+                chatCorporateContacts
+            } else {
+                val res = apiClient.getContacts(sUrl, token)
+                val fetched = res.getOrNull()?.contacts ?: emptyList()
+                chatCorporateContacts.clear()
+                chatCorporateContacts.addAll(fetched)
+                fetched
+            }
+
+            val myExt = prefs.extension ?: ""
+            val otherContacts = contacts.filter { it.extension != myExt }
+
+            if (otherContacts.isEmpty()) {
+                AlertDialog.Builder(this@DialerActivity)
+                    .setTitle("Yeni Grup")
+                    .setMessage("Gruba eklenebilecek başka dahili bulunamadı.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+                return@launch
+            }
+
+            val dialogBinding = DialogNewGroupBinding.inflate(layoutInflater)
+            val dialog = AlertDialog.Builder(this@DialerActivity)
+                .setView(dialogBinding.root)
+                .create()
+
+            val selectionAdapter = ContactSelectionAdapter { selected ->
+                dialogBinding.tvSelectedCount.text = "Üye Seçin (${selected.size} seçildi):"
+            }
+
+            dialogBinding.rvGroupMembers.layoutManager = LinearLayoutManager(this@DialerActivity)
+            dialogBinding.rvGroupMembers.adapter = selectionAdapter
+            selectionAdapter.submitList(otherContacts)
+
+            dialogBinding.etSearchMember.doAfterTextChanged { s ->
+                selectionAdapter.filter(s?.toString() ?: "")
+            }
+
+            dialogBinding.btnCancelNewGroup.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            dialogBinding.btnSubmitNewGroup.setOnClickListener {
+                val title = dialogBinding.etGroupTitle.text?.toString()?.trim() ?: ""
+                val desc = dialogBinding.etGroupDesc.text?.toString()?.trim()
+                val selectedMembers = selectionAdapter.getSelectedExtensions().toList()
+
+                if (title.isEmpty()) {
+                    Toast.makeText(this@DialerActivity, "Grup adı zorunludur.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (selectedMembers.isEmpty()) {
+                    Toast.makeText(this@DialerActivity, "En az 1 üye seçmelisiniz.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                dialogBinding.btnSubmitNewGroup.isEnabled = false
+                dialogBinding.btnSubmitNewGroup.text = "Oluşturuluyor..."
+
+                lifecycleScope.launch {
+                    val createRes = apiClient.createGroupChat(
+                        baseUrl = sUrl,
+                        token = token,
+                        title = title,
+                        description = if (desc.isNullOrEmpty()) null else desc,
+                        avatarUrl = null,
+                        members = selectedMembers
+                    )
+                    createRes.onSuccess { newConv ->
+                        dialog.dismiss()
+                        loadConversations()
+                        ChatActivity.start(
+                            context = this@DialerActivity,
+                            convId = newConv.id,
+                            targetExt = "",
+                            targetName = newConv.title,
+                            isGroup = true
+                        )
+                    }.onFailure { err ->
+                        dialogBinding.btnSubmitNewGroup.isEnabled = true
+                        dialogBinding.btnSubmitNewGroup.text = "Grubu Oluştur"
+                        Toast.makeText(this@DialerActivity, "Hata: ${err.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+
+            dialog.show()
         }
     }
 
@@ -1158,6 +1323,61 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 loadConversations()
             }
             updateChatUnreadBadge()
+        }
+    }
+
+    override fun onGroupCreated(conversation: ChatConversation) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+            updateChatUnreadBadge()
+        }
+    }
+
+    override fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+        }
+    }
+
+    override fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+        }
+    }
+
+    override fun onGroupMemberRemoved(conversationId: Int, extension: String, actor: String) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+            updateChatUnreadBadge()
+        }
+    }
+
+    override fun onGroupRoleUpdated(conversationId: Int, extension: String, role: String, actor: String) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+        }
+    }
+
+    override fun onGroupDeleted(conversationId: Int) {
+        runOnUiThread {
+            if (currentTab == Tab.CHAT) loadConversations()
+            updateChatUnreadBadge()
+        }
+    }
+
+    override fun onPresence(extension: String, isOnline: Boolean) {
+        runOnUiThread {
+            var changed = false
+            for (i in 0 until allConversations.size) {
+                val c = allConversations[i]
+                if (c.targetExt == extension) {
+                    allConversations[i] = c.copy(targetOnline = isOnline)
+                    changed = true
+                }
+            }
+            if (changed) {
+                filterConversations(binding.etChatSearch.text?.toString() ?: "")
+            }
         }
     }
 }

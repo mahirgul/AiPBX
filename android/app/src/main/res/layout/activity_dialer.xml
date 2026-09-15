@@ -530,7 +530,7 @@
                     android:background="@drawable/card_rounded_bg"
                     android:drawableStart="@drawable/ic_contacts"
                     android:drawablePadding="8dp"
-                    android:hint="Sohbet veya dahili ara..."
+                    android:hint="Sohbet veya grup ara..."
                     android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:paddingHorizontal="12dp"
@@ -539,14 +539,75 @@
                     android:textSize="13sp" />
 
                 <ImageButton
-                    android:id="@+id/btnNewChat"
+                    android:id="@+id/btnNewGroup"
                     android:layout_width="38dp"
                     android:layout_height="38dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Yeni Grup"
+                    android:src="@drawable/ic_group"
+                    app:tint="@color/primary" />
+
+                <ImageButton
+                    android:id="@+id/btnNewChat"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Yeni Sohbet"
                     android:src="@drawable/ic_chat"
                     app:tint="@color/primary" />
+            </LinearLayout>
+
+            <!-- Chat Filter Chips (Tümü / Bireysel / Gruplar) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/card_bg"
+                android:elevation="1dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:id="@+id/btnChatFilterAll"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/chip_tab_btn_bg"
+                    android:backgroundTint="@color/primary"
+                    android:gravity="center"
+                    android:text="Tümü"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnChatFilterDirect"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/chip_tab_btn_bg"
+                    android:gravity="center"
+                    android:text="Bireysel"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnChatFilterGroups"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/chip_tab_btn_bg"
+                    android:gravity="center"
+                    android:text="Gruplar"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <FrameLayout
@@ -586,6 +647,7 @@
                         app:tint="@color/text_secondary" />
 
                     <TextView
+                        android:id="@+id/tvChatEmptyTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -595,23 +657,40 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvChatEmptySubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:gravity="center"
-                        android:text="Rehberden bir çalışma arkadaşınızı seçerek anlık mesajlaşmaya başlayabilirsiniz."
+                        android:text="Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
-                    <Button
-                        android:id="@+id/btnChatEmptyNewChat"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
-                        android:backgroundTint="@color/primary"
-                        android:text="Yeni Sohbet Başlat"
-                        android:textAllCaps="false"
-                        android:textColor="#FFFFFF" />
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnChatEmptyNewChat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:backgroundTint="@color/primary"
+                            android:text="Yeni Sohbet"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF" />
+
+                        <Button
+                            android:id="@+id/btnChatEmptyNewGroup"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="+ Yeni Grup"
+                            android:textAllCaps="false"
+                            android:textColor="@color/primary" />
+                    </LinearLayout>
                 </LinearLayout>
             </FrameLayout>
         </LinearLayout>
