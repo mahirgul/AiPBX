@@ -1,6 +1,6 @@
 # AI PBX Android Kurumsal İletişim Uygulaması
 
-> **Sürüm**: v1.0.31 (Build 32)  
+> **Sürüm**: v1.0.32 (Build 33)  
 > **Paket Adı**: `com.mhrgl.AiPBX`  
 > **Hedef Android Sürümü**: Android 8.0 (API 26) – Android 16 (API 36)  
 > **Yayın Durumu**: Google Play Console (Kapalı Test / Closed Testing Track) & Doğrudan İmzalı APK  
@@ -102,7 +102,7 @@ cp app/build/outputs/apk/release/app-release.apk /home/pbx/web/aipbx-latest.apk
 ```
 android/
 ├── app/
-│   ├── build.gradle.kts          # Sürüm (v1.0.31 Build 32) ve bağımlılık tanımları
+│   ├── build.gradle.kts          # Sürüm (v1.0.32 Build 33) ve bağımlılık tanımları
 │   └── src/
 │       ├── main/
 │       │   ├── AndroidManifest.xml # VoIP izinleri, servisler ve ekranlar

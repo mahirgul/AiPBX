@@ -86,11 +86,11 @@ def upload_bundle():
         release_notes = [
             {
                 'language': 'tr-TR',
-                'text': 'Grup sohbeti ana ekrana ve sohbet sekmesine tam entegre edildi: Hızlı grup oluşturma, arama/filtreleme (Tümü, Bireysel, Gruplar), katılımcı yönetimi ve anlık sistem bildirimleri.'
+                'text': 'Arayüz ve başlık metinleri optimize edildi: Santral ve yönlendirme sekmesindeki buton etiketleri kısaltıldı, ekran okunabilirliği artırıldı.'
             },
             {
                 'language': 'en-US',
-                'text': 'Full group chat integration in main navigation: Quick group creation, conversation filtering (All, Direct, Groups), participant management, and real-time updates.'
+                'text': 'UI and title labels optimized: Compact button labels in PBX and forwarding tab, improved screen readability.'
             }
         ]
 
