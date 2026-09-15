@@ -15,7 +15,6 @@ public final class CallKitManager: NSObject, CXProviderDelegate {
 
     private override init() {
         let configuration = CXProviderConfiguration()
-        configuration.localizedName = "AiPBX"
         configuration.supportsVideo = false
         configuration.maximumCallsPerCallGroup = 1
         configuration.supportedHandleTypes = [.generic]
