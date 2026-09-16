@@ -924,6 +924,233 @@
             line-height: 1.6;
         }
 
+        /* ===================================================
+           MOBILE DOWNLOADS HUB
+        =================================================== */
+        .mobile-downloads-hub {
+            margin-top: 42px;
+            background: linear-gradient(145deg, #0e172a 0%, #080d1a 100%);
+            border: 1.5px solid rgba(56, 189, 248, 0.25);
+            border-radius: 20px;
+            padding: 36px 30px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .downloads-hub-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .downloads-hub-header .hub-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .downloads-hub-header h3 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .downloads-hub-header p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            max-width: 680px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .downloads-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .download-card {
+            background: #111a2e;
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 26px 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+        }
+
+        .download-card.android:hover {
+            border-color: #10b981;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.15);
+        }
+
+        .download-card.ios:hover {
+            border-color: #a855f7;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(168, 85, 247, 0.15);
+        }
+
+        .download-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .download-card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .download-card.android .download-card-icon {
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .download-card.ios .download-card-icon {
+            background: rgba(168, 85, 247, 0.14);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .download-card-info h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .download-card-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .download-card.android .download-card-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .download-card.ios .download-card-badge {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+        }
+
+        .download-specs {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .download-specs li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            font-size: 0.88rem;
+        }
+
+        .download-actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-dl-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 13px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-dl-primary.android {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-dl-primary.android:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-dl-primary.ios {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-dl-primary.ios:hover {
+            background: linear-gradient(135deg, #9333ea 0%, #6d28d9 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-dl-sub {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-dl-sub:hover {
+            color: #fff;
+            border-color: #38bdf8;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .downloads-hub-note {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px dashed rgba(56, 189, 248, 0.3);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #94a3b8;
+            font-size: 0.84rem;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
         /* Features Section */
         .features-grid {
             display: grid;
@@ -1428,14 +1655,17 @@
             <li><a href="#overview">Overview</a></li>
             <li><a href="#rationale">Why &amp; How</a></li>
             <li><a href="#architecture">Architecture</a></li>
-            <li><a href="#android">Android App</a></li>
+            <li><a href="#apps">Mobile Apps</a></li>
             <li><a href="#features">Features</a></li>
             <li><a href="#install">Quick Install</a></li>
             <li><a href="#developer">mhrgl.com</a></li>
             <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a></li>
         </ul>
         <div class="nav-actions">
-            <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl">
+            <a href="#apps" class="btn-mhrgl" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">
+                📲 Mobil İndir
+            </a>
+            <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl desktop-only">
                 🌐 mhrgl.com
             </a>
             <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github desktop-only">
@@ -1462,20 +1692,20 @@
         </div>
         <ul class="mobile-nav-links">
             <li><a href="#overview" class="mobile-nav-item">🏠 Overview</a></li>
+            <li><a href="#apps" class="mobile-nav-item">📲 Mobil Uygulamalar (iOS &amp; Android)</a></li>
             <li><a href="#rationale" class="mobile-nav-item">🧠 Why &amp; How (Neden ve Nasıl?)</a></li>
             <li><a href="#architecture" class="mobile-nav-item">🏗 System Architecture</a></li>
-            <li><a href="#android" class="mobile-nav-item">📱 Android App (Build 33)</a></li>
             <li><a href="#features" class="mobile-nav-item">⚡ Features</a></li>
             <li><a href="#install" class="mobile-nav-item">💻 Quick Install</a></li>
             <li><a href="#developer" class="mobile-nav-item">🌐 About Developer (mhrgl.com)</a></li>
             <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">🤝 Contributing Guide</a></li>
         </ul>
         <div class="mobile-drawer-actions">
-            <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center;">
-                🌐 Visit mhrgl.com
+            <a href="#apps" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                📲 Mobil Uygulamaları İndir
             </a>
-            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
-                ⭐ View on GitHub
+            <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
+                🌐 Visit mhrgl.com
             </a>
         </div>
     </div>
@@ -1488,17 +1718,17 @@
         </div>
         <h1>Enterprise IP Telephony, <span>Engineered with Purpose.</span></h1>
         <p>
-            A high-concurrency, web-managed IP PBX uniting Asterisk 22, Nginx L4 ALPN stream multiplexing, PHP 8 MVC, Go real-time instant messaging, and a native Android client.
+            A high-concurrency, web-managed IP PBX uniting Asterisk 22, Nginx L4 ALPN stream multiplexing, PHP 8 MVC, Go real-time instant messaging, and native Android &amp; iOS clients.
         </p>
         <div class="hero-actions">
             <a href="#install" class="btn-primary">
                 ⚡ Quick Install
             </a>
+            <a href="#apps" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981;">
+                📱 Mobil Uygulamaları İndir (iOS &amp; Android)
+            </a>
             <a href="#rationale" class="btn-secondary">
                 🧠 Why &amp; How We Built It
-            </a>
-            <a href="#android" class="btn-secondary">
-                📱 Android App
             </a>
             <a href="https://mhrgl.com" target="_blank" class="btn-secondary">
                 🌐 Visit mhrgl.com
@@ -1802,14 +2032,15 @@
         </div>
     </section>
 
-    <!-- SECTION 3: REBUILT ANDROID SHOWCASE -->
-    <section class="android-showcase" id="android">
+    <!-- SECTION 3: REBUILT MOBILE SHOWCASE & DOWNLOADS HUB -->
+    <section class="android-showcase" id="apps">
+        <a id="android" style="display:block; position:relative; top:-80px; visibility:hidden;"></a>
         <div class="android-section-wrapper">
             <div class="section-header">
-                <span class="section-badge">📱 Mobile Client · Build 33 (v1.0.32)</span>
-                <h2>Native Android App for Enterprise PBX</h2>
+                <span class="section-badge">📱 Mobile Clients · Android &amp; iOS (v1.0.32)</span>
+                <h2>Native Android &amp; iOS Apps for Enterprise PBX</h2>
                 <p>
-                    A true enterprise softphone with zero external cloud dependencies. WebRTC HD Opus voice, live corporate extension directory, and real-time team chat right on your smartphone.
+                    A true enterprise softphone with zero external cloud dependencies. WebRTC HD Opus voice, live corporate extension directory, and real-time team chat right on your Apple iPhone and Android smartphones.
                 </p>
             </div>
 
@@ -1862,15 +2093,101 @@
                     </ul>
 
                     <div class="stage-actions">
-                        <a href="https://github.com/mahirgul/AiPBX/tree/main/android" target="_blank" class="btn-primary">
-                            📱 Android Kaynak Kodu
+                        <a href="downloads/aipbx-latest.apk" download class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981;">
+                            ⬇ Android APK İndir (v1.0.32)
                         </a>
-                        <a href="https://github.com/mahirgul/AiPBX/tree/main/ios" target="_blank" class="btn-secondary" style="border-color: #a855f7; color: #c084fc;">
-                            🍎 iOS (SwiftUI) Uygulaması
+                        <a href="downloads/AiPBX-unsigned.ipa" download class="btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); border-color: #a855f7;">
+                            ⬇ iOS IPA İndir (v1.0.0)
                         </a>
-                        <a href="https://github.com/mahirgul/AiPBX/blob/main/android/README.md" target="_blank" class="btn-secondary">
-                            📖 Android Kılavuzu
+                        <a href="https://github.com/mahirgul/AiPBX/releases/latest" target="_blank" class="btn-secondary">
+                            📦 GitHub Releases
                         </a>
+                        <a href="https://github.com/mahirgul/AiPBX/tree/main/android" target="_blank" class="btn-secondary">
+                            📱 Android Kodu
+                        </a>
+                        <a href="https://github.com/mahirgul/AiPBX/tree/main/ios" target="_blank" class="btn-secondary">
+                            🍎 iOS Kodu
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEDICATED MOBILE DOWNLOADS HUB -->
+            <div class="mobile-downloads-hub">
+                <div class="downloads-hub-header">
+                    <span class="hub-badge">🚀 Doğrudan Kurulum &amp; İndirme</span>
+                    <h3>Mobil İstemcileri İndirin</h3>
+                    <p>
+                        Santralinize dış hat veya iç ağ üzerinden doğrudan bağlanabilen, hiçbir üçüncü parti bulut servisine ihtiyaç duymayan güvenli yerel mobil istemciler.
+                    </p>
+                </div>
+
+                <div class="downloads-grid">
+                    <!-- Android Card -->
+                    <div class="download-card android">
+                        <div>
+                            <div class="download-card-header">
+                                <div class="download-card-icon">🤖</div>
+                                <div class="download-card-info">
+                                    <h4>Android İstemcisi</h4>
+                                    <span class="download-card-badge">v1.0.32 (Build 33) · İmzalı APK</span>
+                                </div>
+                            </div>
+                            <ul class="download-specs">
+                                <li><span>✔</span> <strong>Dosya Boyutu:</strong> ~2.8 MB (Hafif WebRTC mimarisi)</li>
+                                <li><span>✔</span> <strong>Uyumluluk:</strong> Android 8.0 (API 26) - Android 16 (API 36)</li>
+                                <li><span>✔</span> <strong>Özellikler:</strong> FCM Doze bypass, DTLS-SRTP, Arka Plan Servisi</li>
+                                <li><span>✔</span> <strong>Google Play:</strong> Kapalı Test (Closed Testing Track)</li>
+                            </ul>
+                        </div>
+                        <div class="download-actions-group">
+                            <a href="downloads/aipbx-latest.apk" download class="btn-dl-primary android">
+                                ⬇ Doğrudan APK İndir (2.8 MB)
+                            </a>
+                            <a href="https://github.com/mahirgul/AiPBX/releases/download/v1.0.32/aipbx-latest.apk" target="_blank" class="btn-dl-sub">
+                                📦 GitHub Release Üzerinden İndir
+                            </a>
+                            <a href="https://github.com/mahirgul/AiPBX/blob/main/android/README.md" target="_blank" class="btn-dl-sub">
+                                📖 Android Kurulum &amp; Kılavuz
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- iOS Card -->
+                    <div class="download-card ios">
+                        <div>
+                            <div class="download-card-header">
+                                <div class="download-card-icon">🍎</div>
+                                <div class="download-card-info">
+                                    <h4>iOS (Apple) İstemcisi</h4>
+                                    <span class="download-card-badge">v1.0.0 (Build 1) · SwiftUI &amp; CallKit</span>
+                                </div>
+                            </div>
+                            <ul class="download-specs">
+                                <li><span>✔</span> <strong>Dosya Boyutu:</strong> ~492 KB (Ultra hafif Swift paketi)</li>
+                                <li><span>✔</span> <strong>Uyumluluk:</strong> iOS 16.0+ (iPhone &amp; iPad)</li>
+                                <li><span>✔</span> <strong>Özellikler:</strong> CallKit yerel arama, WebRTC Opus, WebSocket Chat</li>
+                                <li><span>✔</span> <strong>Kurulum:</strong> AltStore, TrollStore, Sideloadly veya MDM</li>
+                            </ul>
+                        </div>
+                        <div class="download-actions-group">
+                            <a href="downloads/AiPBX-unsigned.ipa" download class="btn-dl-primary ios">
+                                ⬇ iOS IPA İndir (492 KB)
+                            </a>
+                            <a href="downloads/AiPBX-Simulator.zip" download class="btn-dl-sub">
+                                💻 Xcode Simülatör Paketi (.zip - 1.3 MB)
+                            </a>
+                            <a href="https://github.com/mahirgul/AiPBX/blob/main/ios/README.md" target="_blank" class="btn-dl-sub">
+                                📖 iOS Kurulum &amp; GitHub Actions CI
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="downloads-hub-note">
+                    <span style="font-size: 1.2rem;">💡</span>
+                    <div>
+                        <strong>Kurulum Notu:</strong> Android APK'sını indirip doğrudan telefonunuzda açarak (Bilinmeyen kaynaklara izin vererek) tek dokunuşla kurabilirsiniz. iOS IPA paketini AltStore, Sideloadly, TrollStore veya kurumunuzun Kurumsal MDM profiliyle iPhone/iPad cihazınıza anında yükleyebilirsiniz.
                     </div>
                 </div>
             </div>

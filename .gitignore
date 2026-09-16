@@ -59,6 +59,8 @@ xcuserdata/
 # === Web build/temp ===
 web/app.aab
 web/app.apk
+web/*.ipa
+web/aipbx-latest.apk
 web/.well-known/
 
 # === Logs / Temp ===
