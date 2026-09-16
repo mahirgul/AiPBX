@@ -84,10 +84,16 @@ switch ($action) {
                 fwrite(STDERR, "Dahili {$ext} bu kuyruga ({$queue_name}) atanmamis\n");
                 exit(1);
             }
+            if (!$join && QueueHelper::isStaticMember($ext, $queue_name)) {
+                fwrite(STDERR, "Dahili {$ext} bu kuyrukta ({$queue_name}) statik temsilci, cikis yapamaz\n");
+                exit(1);
+            }
             QueueHelper::setMembership($ext, $queue_name, $join);
         }
 
-        // Kuyruğa giriş veya çıkış yapıldığında aktif mola kaydı varsa kapat
+        // Kuyruğa giriş veya çıkış yapıldığında aktif mola kaydı varsa kapat.
+        // Çıkışta statik kuyruklarda hâlâ üye olduğundan (belki molada) kayıt açık kalır.
+        if (!$join && !empty(QueueHelper::staticQueuesOf($ext))) break;
         $stmt_close_pause = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt_close_pause->execute([$ext]);
         break;

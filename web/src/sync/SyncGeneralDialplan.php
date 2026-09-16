@@ -106,7 +106,7 @@ function __syncGeneralDialplanBody() {
     //
     // Burada Answer() yoktu; ReceiveFAX kanalı kendisi cevaplamaya çalışıyor
     // ve başarısız oluyordu:
-    //     WARNING res_fax.c: Channel 'PJSIP/neco-...' failed answer attempt.
+    //     WARNING res_fax.c: Channel 'PJSIP/<trunk>-...' failed answer attempt.
     // Sonuç: her gelen faks Status=FAILED, Pages=0 ile düşüyordu (2026-09-01'de
     // 78 çağrının tamamı). Wait(1), cevaplama ile faks tonu dinlemeye
     // başlamak arasında ses yolunun kurulmasına zaman tanır — tonun ilk
@@ -141,8 +141,8 @@ function __syncGeneralDialplanBody() {
     // boşsa (ör. eski/elle oluşturulmuş bir .call dosyası) sadece global başlık kullanılır.
     $conf .= " same => n,Set(FAXOPT(headerinfo)={$fax_header_info}\${IF(\$[\"\${FAX_SENDER_NAME}\" != \"\"]?\" - \"\${FAX_SENDER_NAME}:)})\n";
     // TSID = global önek + gönderen faks kullanıcısının dahilisi (FAX_SENDER, .call
-    // dosyasında zaten fax_send.php tarafından set ediliyor) — ör. önek 0370418 +
-    // dahili 9276 = 03704189276 (2026-08-31, kullanıcı isteği).
+    // dosyasında zaten fax_send.php tarafından set ediliyor) — ör. önek 0312555 +
+    // dahili 1234 = 03125551234 (2026-08-31, kullanıcı isteği).
     $conf .= " same => n,Set(FAXOPT(localstationid)={$fax_station_id}\${FAX_SENDER})\n";
     $conf .= " same => n,SendFAX(\${FAX_TIF_PATH},d,f)\n";
     $conf .= " same => n,Hangup()\n\n";
