@@ -32,12 +32,12 @@ $can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermiss
 $can_view_security_group = ($role === 'admin');
 
 // Fetch Dynamic Branding Settings
-$site_title = getSystemSetting('site_title', 'AI PBX Portalı');
-$brand_title = getSystemSetting('brand_title', 'AI PBX');
+$site_title = getSystemSetting('site_title', 'AiPBX');
+$brand_title = getSystemSetting('brand_title', 'AiPBX');
 $brand_sub = getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi');
-$site_logo_type = getSystemSetting('site_logo_type', 'icon');
+$site_logo_type = getSystemSetting('site_logo_type', 'image');
 $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
-$site_logo_image = getSystemSetting('site_logo_image', '');
+$site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
 $site_favicon_url = getSystemSetting('site_favicon_url', '');
 
 // SPA Single-Page App AJAX Buffer Interceptor

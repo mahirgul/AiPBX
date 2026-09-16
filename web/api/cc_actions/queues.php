@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../src/queue_helper.php';
 
 if ($action === 'get_queues') {
     // Fetch all active queues from database
-    $stmt = $db->query("SELECT id, queue_name, title, members_json FROM pbx_queues WHERE is_active = 1 ORDER BY queue_name ASC");
+    $stmt = $db->query("SELECT id, queue_name, title, members_json, static_members_json FROM pbx_queues WHERE is_active = 1 ORDER BY queue_name ASC");
     $db_queues = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Fetch Asterisk live queue member status
@@ -19,6 +19,7 @@ if ($action === 'get_queues') {
 
         $members = json_decode($q['members_json'] ?? '[]', true) ?: [];
         $is_assigned = in_array((string)$user_ext, array_map('strval', $members));
+        $is_static = in_array((string)$user_ext, QueueHelper::staticMembersOf($q), true);
 
         $in_queue = false;
         $is_paused = false;
@@ -36,6 +37,7 @@ if ($action === 'get_queues') {
             'queue_name' => $q_name,
             'title' => $q_title,
             'assigned' => $is_assigned,
+            'is_static' => $is_static,
             'in_queue' => $in_queue,
             'is_paused' => $is_paused,
             'device_offline' => $device_offline
@@ -162,6 +164,11 @@ if ($action === 'toggle_queue') {
     // Check if user is assigned to this queue
     if (!QueueHelper::isAssignedMember($user_ext, $q_name) && $do_login) {
         echo json_encode(['success' => false, 'error' => "Dahili numaranız ($user_ext) bu kuyruğa ($q_name) tanımlı değildir!"]);
+        exit;
+    }
+
+    if (!$do_login && QueueHelper::isStaticMember($user_ext, $q_name)) {
+        echo json_encode(['success' => false, 'error' => 'Bu kuyrukta statik temsilcisiniz; kuyruktan çıkamazsınız, sadece mola verebilirsiniz.']);
         exit;
     }
 

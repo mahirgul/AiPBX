@@ -118,6 +118,41 @@ class QueueHelper {
     }
 
     /**
+     * Statik temsilci: queues_pbx.conf'a "member =>" satırı olarak yazılır, Asterisk
+     * açıldığı anda kuyruktadır ve CLI/panel/feature code ile kuyruktan ÇIKARILAMAZ —
+     * sadece mola (pause) verebilir. Dinamik temsilci ise kuyruğa kendisi girip çıkar.
+     * static_members_json her zaman members_json'ın alt kümesidir (bkz. QueueService).
+     */
+    public static function staticMembersOf(array $q_row) {
+        $members = array_map('strval', json_decode($q_row['members_json'] ?? '[]', true) ?: []);
+        $static = array_map('strval', json_decode($q_row['static_members_json'] ?? '[]', true) ?: []);
+        return array_values(array_intersect($static, $members));
+    }
+
+    public static function isStaticMember($ext, $queue_name) {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT members_json, static_members_json FROM pbx_queues WHERE queue_name = ? AND is_active = 1");
+        $stmt->execute([$queue_name]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return false;
+        return in_array((string)$ext, self::staticMembersOf($row), true);
+    }
+
+    /**
+     * Dahilinin statik temsilci olduğu aktif kuyruk adları.
+     */
+    public static function staticQueuesOf($ext) {
+        $db = getDB();
+        $result = [];
+        foreach ($db->query("SELECT queue_name, members_json, static_members_json FROM pbx_queues WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if (in_array((string)$ext, self::staticMembersOf($row), true)) {
+                $result[] = $row['queue_name'];
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Bir dahiliyi canlı olarak bir kuyruğa ekler/çıkarır (asterisk -rx "queue add/remove
      * member ..."). Hem web panelindeki "Kuyruğa Gir/Çık" butonu (api/cc_actions/queues.php)
      * hem telefon feature code'ları (*81/*80, bkz. feature_code_action.php) bu tek yeri kullanır.
@@ -126,6 +161,15 @@ class QueueHelper {
         $ext = preg_replace('/[^0-9]/', '', (string)$ext);
         $queue_name = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$queue_name);
         if ($ext === '' || $queue_name === '') return false;
+
+        // Statik temsilci kuyruktan çıkarılamaz (Asterisk zaten "Not dynamic" diye
+        // reddeder); config'ten gelen üyeliğe dokunulmaz, false döner.
+        // Girişte ise sadece moladan çıkarılır (girişle birlikte mola kaydı da kapanıyor).
+        if (self::isStaticMember($ext, $queue_name)) {
+            if (!$join) return false;
+            @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
+            return true;
+        }
 
         if ($join) {
             @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty 0 as \"Temsilci $ext\" state_interface hint:$ext@from-internal-pbx"));

@@ -44,7 +44,9 @@ function loadAgentQueues() {
                 // doğru araç escapeHtml değil escapeJsAttr'dır — savunma derinliği
                 // için burada da tutarlı kullanılıyor (2026-08-21 denetiminde bulundu).
                 const safeQueueName = escapeJsAttr(q.queue_name);
-                const btnAction = q.in_queue
+                const btnAction = q.is_static
+                    ? `<span class="badge badge-info" title="Statik temsilci: kuyruktan çıkılamaz, sadece mola verilebilir"><i class="fas fa-thumbtack"></i> Statik</span>`
+                    : q.in_queue
                     ? `<button class="btn btn-danger btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 0)" title="Kuyruktan Çık"><i class="fas fa-sign-out-alt"></i> Çık</button>`
                     : `<button class="btn btn-success btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 1)" title="Kuyruğa Gir"><i class="fas fa-sign-in-alt"></i> Gir</button>`;
 

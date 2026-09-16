@@ -169,10 +169,9 @@ class FaxSendService {
         $sender_name = trim(preg_replace('/[\r\n]+/', ' ', $sender_row['full_name'] ?? ''));
         $sender_name_var = $sender_name !== '' ? "{$sender_name} ({$senderExt})" : $senderExt;
 
-        // Çağrı dosyası önceden HİÇ CallerID: belirtmiyordu — dış hatta (neco trunk)
-        // "Anonymous" olarak gidiyor ve trunk tarafından engelleniyordu (2026-08-31,
-        // kullanıcı canlıda fark etti). sys_users.cid_external (bir önceki oturumda
-        // tüm faks kullanıcıları için "0370418" + dahili olarak dolduruldu) burada
+        // Çağrı dosyası önceden HİÇ CallerID: belirtmiyordu — dış hatta
+        // "Anonymous" olarak gidiyor ve trunk tarafından engelleniyordu (2026-08-31).
+        // sys_users.cid_external (ör. şehir kodu/önek + dahili) burada
         // kullanılıyor. Boşsa (cid_external ayarlanmamışsa) dahilinin kendisine
         // düşülür (hiç CID göndermemekten iyidir).
         $sender_cid = preg_replace('/[^0-9]/', '', trim($sender_row['cid_external'] ?? ''));

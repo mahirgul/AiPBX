@@ -49,6 +49,16 @@ function __syncAllQueuesBody() {
             if ($v === '' || $v === null) continue;
             $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
         }
+
+        // Statik temsilciler: config'ten yüklenen üye Asterisk tarafından "dynamic"
+        // değildir, "queue remove member" ile çıkarılamaz, sadece pause edilebilir.
+        // Arayüz/interface/state_interface dinamik girişle (QueueHelper::setMembership)
+        // birebir aynı tutulur — yoksa aynı temsilci iki ayrı üye olarak görünürdü.
+        foreach (QueueHelper::staticMembersOf($q) as $s_ext) {
+            $s_ext = preg_replace('/[^0-9]/', '', $s_ext);
+            if ($s_ext === '') continue;
+            $conf .= "member => Local/{$s_ext}@from-internal-pbx/n,0,Temsilci {$s_ext},hint:{$s_ext}@from-internal-pbx\n";
+        }
         $conf .= "\n";
     }
 
@@ -60,8 +70,43 @@ function __syncAllQueuesBody() {
         }
     }
 
-    return writeConfWithRollback("queues_pbx.conf", $conf, function() {
+    $result = writeConfWithRollback("queues_pbx.conf", $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], 'Kuyruk senkronizasyonu');
     }, 'Kuyruk senkronizasyonu');
+
+    foreach ($queues as $q) {
+        purgeStaticFromPersistentMembers($q['queue_name'], QueueHelper::staticMembersOf($q));
+    }
+
+    return $result;
+}
+
+/**
+ * Dinamikken statiğe çevrilen temsilcinin eski kaydı astdb'deki
+ * Queue/PersistentMembers/<kuyruk> değerinde kalıyor (Asterisk bu değeri sadece
+ * dinamik üye eklenip çıkarıldığında yeniden yazar). Temizlenmezse Asterisk
+ * yeniden başladığında config'te artık olmayan (statikten çıkarılmış) temsilci
+ * dinamik üye olarak kuyruğa geri gelirdi. Değer "|" ile ayrılmış
+ * "interface;penalty;paused;..." kayıtlarından oluşur (app_queue dump_queue_members).
+ */
+function purgeStaticFromPersistentMembers($q_name, array $static_exts) {
+    if (empty($static_exts)) return;
+    @exec("asterisk -rx " . escapeshellarg("database get Queue/PersistentMembers $q_name"), $out);
+    $value = null;
+    foreach ($out ?: [] as $line) {
+        if (strpos($line, 'Value: ') === 0) $value = substr($line, 7);
+    }
+    if ($value === null || $value === '') return;
+
+    $static_ifaces = array_map(fn($e) => "Local/{$e}@from-internal-pbx/n", $static_exts);
+    $entries = explode('|', $value);
+    $kept = array_filter($entries, fn($entry) => !in_array(explode(';', $entry)[0], $static_ifaces, true));
+    if (count($kept) === count($entries)) return;
+
+    if (empty($kept)) {
+        @exec("asterisk -rx " . escapeshellarg("database del Queue/PersistentMembers $q_name"));
+    } else {
+        @exec("asterisk -rx " . escapeshellarg("database put Queue/PersistentMembers $q_name \"" . str_replace('"', '', implode('|', $kept)) . "\""));
+    }
 }
 

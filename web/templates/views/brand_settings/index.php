@@ -21,11 +21,11 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
             <div class="form-group">
                 <label class="form-label"><?php echo t('brand_settings.field_site_title'); ?></label>
-                <input type="text" name="site_title" class="form-control" value="<?php echo htmlspecialchars($s['site_title']); ?>" required placeholder="AI PBX Portalı">
+                <input type="text" name="site_title" class="form-control" value="<?php echo htmlspecialchars($s['site_title']); ?>" required placeholder="AiPBX">
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('brand_settings.field_brand_title'); ?></label>
-                <input type="text" name="brand_title" class="form-control" value="<?php echo htmlspecialchars($s['brand_title']); ?>" required placeholder="AI PBX">
+                <input type="text" name="brand_title" class="form-control" value="<?php echo htmlspecialchars($s['brand_title']); ?>" required placeholder="AiPBX">
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('brand_settings.field_brand_sub'); ?></label>
@@ -155,10 +155,18 @@
     </div>
 
     <?php if (hasModulePermission('brand_settings', 'edit')): ?>
+        <button type="submit" form="brandResetForm" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px; margin-bottom: 10px; font-weight: 600;" onclick="return confirm('<?php echo htmlspecialchars(t('brand_settings.reset_all_confirm'), ENT_QUOTES); ?>');">
+            <i class="fas fa-undo"></i> <?php echo t('brand_settings.reset_all'); ?>
+        </button>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('brand_settings.save'); ?>">
             <i class="fas fa-save"></i> <?php echo t('brand_settings.save'); ?>
         </button>
     <?php endif; ?>
+</form>
+
+<form method="POST" id="brandResetForm" data-no-spa="true" style="display: none;">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="reset_brand_settings" value="1">
 </form>
 
 <script>
