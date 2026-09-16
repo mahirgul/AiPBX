@@ -213,7 +213,7 @@ return [
     'outbound.field_group' => 'Rota Grubu',
     'outbound.group_help' => 'Bu rotayı hangi kullanıcı grubu kullanabilir. Varsayılan 1; faks kullanıcıları için ayrı bir grup (ör. 2) verebilirsiniz.',
     'outbound.field_internal' => 'Bu bir kurum içi (dahili) rotadır',
-    'outbound.internal_help' => 'İşaretlenirse bu rotadan giden aramalarda (Caller ID Maskeleme boşsa) arayan dahilinin "Dahili Arama CID" alanı kullanılır; işaretli değilse "Harici Arama CID" alanı kullanılır.',
+    'outbound.internal_help' => 'İşaretlenirse bu rota dahili/santraller arası sayılır; IVR doğrudan arama (allow direct dial) açıkken arayanlar bu rotadaki numaraları (şube/diğer santraller) tuşlayabilir. Ayrıca Dahili Arama CID kullanılır.',
     'outbound.field_active' => 'Giden Rota Aktif',
 
     // Time Conditions (Zaman Koşulları)
@@ -290,7 +290,7 @@ return [
     'ivr.field_max_failures' => 'Maks. Hatalı Tuşlama Sayısı',
     'ivr.max_failures_help' => 'Bu sayıya ulaşana kadar yanlış tuşlamada menü tekrar çalınır, sonra "Yanlış Tuşlama" hedefine gidilir.',
     'ivr.field_allow_direct_dial' => 'Menü Çalarken Doğrudan Dahili Aramaya İzin Ver',
-    'ivr.allow_direct_dial_help' => 'Açıksa, arayan menüyü dinlerken geçerli bir dahili numarasını doğrudan çevirebilir.',
+    'ivr.allow_direct_dial_help' => 'Açıksa, arayan menüyü dinlerken geçerli bir dahili numarasını veya santraller arası dahili dış hat rotasını (örn. 9998) doğrudan çevirebilir.',
     'ivr.field_digit_timeout' => 'Tuşlama Bekleme Süresi (Saniye)',
     'ivr.digit_timeout_help' => 'Rakamlar arasında veya doğrudan dahili çevirmede aktarım öncesi beklenecek süre (varsayılan: 3 sn).',
     'ivr.direct_dial_enabled' => 'Doğrudan Dahili Açık',
