@@ -19,6 +19,7 @@ final class IvrDialplanTest extends TestCase
             'max_failures' => 3,
             'language' => 'tr',
             'allow_direct_dial' => 0,
+            'digit_timeout' => 3,
             'timeout_dest_type' => 'hangup',
             'timeout_dest_id' => 0,
             'invalid_dest_type' => 'hangup',
@@ -53,6 +54,7 @@ final class IvrDialplanTest extends TestCase
             'max_failures' => 5,
             'language' => 'en',
             'allow_direct_dial' => 0,
+            'digit_timeout' => 3,
             'timeout_dest_type' => 'hangup',
             'timeout_dest_id' => 0,
             'invalid_dest_type' => 'hangup',
@@ -63,5 +65,86 @@ final class IvrDialplanTest extends TestCase
 
         $this->assertStringContainsString('Set(IVR2FAILS=$[0${IVR2FAILS} + 1])', $conf);
         $this->assertStringContainsString('GotoIf($[0${IVR2FAILS} < 5]?s,1)', $conf);
+    }
+
+    public function testIvrDirectDialDisabled(): void
+    {
+        $ivr = [
+            'id' => 3,
+            'title' => 'Direct Dial Off IVR',
+            'prompt_file' => 'custom/welcome',
+            'timeout_seconds' => 10,
+            'max_failures' => 3,
+            'language' => '',
+            'allow_direct_dial' => 0,
+            'digit_timeout' => 3,
+            'timeout_dest_type' => 'hangup',
+            'timeout_dest_id' => 0,
+            'invalid_dest_type' => 'hangup',
+            'invalid_dest_id' => 0,
+        ];
+
+        $exts = [
+            ['extension' => '1000', 'full_name' => 'Ahmet Yilmaz'],
+            ['extension' => '2000', 'full_name' => 'Mehmet Demir']
+        ];
+
+        $conf = buildIVRDialplanBlock($ivr, [], $exts);
+
+        $this->assertStringNotContainsString('exten => 1000', $conf,
+            'allow_direct_dial=0 iken dahili numaralar IVR dialplanina eklenmemeli');
+        $this->assertStringNotContainsString('exten => 2000', $conf);
+    }
+
+    public function testIvrDirectDialEnabledWithConfigurableTimeout(): void
+    {
+        $ivr = [
+            'id' => 4,
+            'title' => 'Direct Dial On IVR',
+            'prompt_file' => 'custom/welcome',
+            'timeout_seconds' => 15,
+            'max_failures' => 3,
+            'language' => '',
+            'allow_direct_dial' => 1,
+            'digit_timeout' => 5, // 5 saniye tuşlama bekleme süresi
+            'timeout_dest_type' => 'hangup',
+            'timeout_dest_id' => 0,
+            'invalid_dest_type' => 'hangup',
+            'invalid_dest_id' => 0,
+        ];
+
+        $entries = [
+            ['digit' => '1', 'dest_type' => 'hangup', 'dest_id' => 0]
+        ];
+
+        $exts = [
+            ['extension' => '1', 'full_name' => 'Cakisan Dahili 1'],
+            ['extension' => '1000', 'full_name' => 'Dahili 1000'],
+            ['extension' => '2000', 'full_name' => 'Dahili 2000']
+        ];
+
+        $internals = [
+            ['number' => '8000', 'label' => 'Satis Kuyrugu']
+        ];
+
+        $conf = buildIVRDialplanBlock($ivr, $entries, $exts, $internals);
+
+        // 1. Ayarlanan digit_timeout (5 sn) TIMEOUT(digit)'e yazılmalı
+        $this->assertStringContainsString('Set(TIMEOUT(digit)=5)', $conf,
+            'Ozel digit_timeout degeri Set(TIMEOUT(digit)=X) satirina yansitilmali');
+        $this->assertStringContainsString('Set(TIMEOUT(response)=15)', $conf);
+
+        // 2. Doğrudan dahili arama satırları
+        $this->assertStringContainsString('exten => 1000,1,NoOp(IVR 4 Direct Dial to Extension 1000)', $conf);
+        $this->assertStringContainsString(' same => n,Goto(from-internal-pbx,1000,1)', $conf);
+        $this->assertStringContainsString('exten => 2000,1,NoOp(IVR 4 Direct Dial to Extension 2000)', $conf);
+        $this->assertStringContainsString(' same => n,Goto(from-internal-pbx,2000,1)', $conf);
+
+        // 3. Dahili hedef numaraları (queue/ring group vs) da dahil olmalı
+        $this->assertStringContainsString('exten => 8000,1,NoOp(IVR 4 Direct Dial to Internal Target 8000)', $conf);
+        $this->assertStringContainsString(' same => n,Goto(from-internal-pbx,8000,1)', $conf);
+
+        // 4. Menü tuşu '1' ile çakışan dahili '1' atlanmalı (Reload çakışmasını engellemek için)
+        $this->assertStringNotContainsString('Direct Dial to Extension 1)', $conf);
     }
 }

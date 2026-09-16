@@ -7,6 +7,15 @@ function bindIvrDestinationSelectors() {
 }
 bindIvrDestinationSelectors();
 
+function toggleDirectDialTimeout() {
+    const cb = document.getElementById('modal_allow_direct_dial');
+    const dtInput = document.getElementById('modal_digit_timeout');
+    if (cb && dtInput) {
+        dtInput.disabled = !cb.checked;
+        dtInput.style.opacity = cb.checked ? '1' : '0.5';
+    }
+}
+
 function openCreateIvrModal() {
     bindIvrDestinationSelectors();
     document.getElementById('ivrModalTitle').innerHTML = '<i class="fas fa-microphone-alt" style="color: var(--primary);"></i> Yeni IVR Karşılama Menüsü Ekle';
@@ -24,6 +33,9 @@ function openCreateIvrModal() {
     if (actCb) actCb.checked = true;
     const directCb = document.getElementById('modal_allow_direct_dial');
     if (directCb) directCb.checked = true;
+    const digitTimeout = document.getElementById('modal_digit_timeout');
+    if (digitTimeout) digitTimeout.value = '3';
+    toggleDirectDialTimeout();
     const langSel = document.getElementById('modal_language');
     if (langSel) langSel.value = '';
 
@@ -55,6 +67,9 @@ function openEditIvrModal(ivr) {
     if (actCb) actCb.checked = (parseInt(ivr.is_active) === 1);
     const directCb = document.getElementById('modal_allow_direct_dial');
     if (directCb) directCb.checked = (parseInt(ivr.allow_direct_dial) === 1);
+    const digitTimeout = document.getElementById('modal_digit_timeout');
+    if (digitTimeout) digitTimeout.value = ivr.digit_timeout || '3';
+    toggleDirectDialTimeout();
     const langSel = document.getElementById('modal_language');
     if (langSel) langSel.value = ivr.language || '';
 

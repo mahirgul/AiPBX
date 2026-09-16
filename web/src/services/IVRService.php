@@ -25,6 +25,7 @@ class IVRService {
             // yakın döngüde tutabilir.
             $max_failures = max(1, min(10, intval($data['max_failures'] ?? 3)));
             $allow_direct_dial = isset($data['allow_direct_dial']) ? intval($data['allow_direct_dial']) : 0;
+            $digit_timeout = max(1, min(10, intval($data['digit_timeout'] ?? 3)));
 
             if (empty($title)) throw new \Exception("IVR başlığı zorunludur!");
 
@@ -44,6 +45,7 @@ class IVRService {
                 'timeout_seconds' => $timeout_seconds,
                 'max_failures' => $max_failures,
                 'allow_direct_dial' => $allow_direct_dial,
+                'digit_timeout' => $digit_timeout,
                 'timeout_dest_type' => $timeout_dest_type,
                 'timeout_dest_id' => $timeout_dest_id,
                 'invalid_dest_type' => $invalid_dest_type,

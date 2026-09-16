@@ -57,6 +57,11 @@
                             <div style="font-size: 11px; display: flex; flex-direction: column; gap: 4px;">
                                 <span><i class="fas fa-clock" style="color: var(--primary);"></i> <strong><?php echo sprintf(t('ivr.timeout_label'), intval($ivr['timeout_seconds'])); ?></strong> <?php echo IvrRepository::destBadge($ivr['timeout_dest_type'], $ivr['timeout_dest_id'], $destResolveCache); ?></span>
                                 <span><i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> <strong><?php echo t('ivr.invalid_label'); ?></strong> <?php echo IvrRepository::destBadge($ivr['invalid_dest_type'] ?? 'hangup', $ivr['invalid_dest_id'] ?? 'hangup', $destResolveCache); ?></span>
+                                <?php if (!empty($ivr['allow_direct_dial'])): ?>
+                                    <span style="color: var(--success);"><i class="fas fa-phone-volume"></i> <strong><?php echo t('ivr.direct_dial_enabled'); ?></strong> (<?php echo intval($ivr['digit_timeout'] ?? 3); ?>s)</span>
+                                <?php else: ?>
+                                    <span style="color: var(--text-muted);"><i class="fas fa-phone-slash"></i> <?php echo t('ivr.direct_dial_disabled'); ?></span>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <td class="col-hide-mobile">
@@ -138,22 +143,29 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
-                            <input type="checkbox" name="allow_direct_dial" id="modal_allow_direct_dial" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <input type="checkbox" name="allow_direct_dial" id="modal_allow_direct_dial" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleDirectDialTimeout()">
                             <span style="font-weight: 600;"><?php echo t('ivr.field_allow_direct_dial'); ?></span>
                         </label>
                         <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ivr.allow_direct_dial_help'); ?></small>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label"><i class="fas fa-language"></i> <?php echo t('ivr.field_language'); ?></label>
-                    <select name="language" id="modal_language" class="form-control">
-                        <option value=""><?php echo t('ivr.language_default'); ?></option>
-                        <?php foreach (getAvailableLanguages() as $lang_code): ?>
-                            <option value="<?php echo htmlspecialchars($lang_code); ?>"><?php echo htmlspecialchars(LANGUAGE_LABELS[$lang_code] ?? $lang_code); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ivr.language_help'); ?></small>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group" id="wrap_digit_timeout">
+                        <label class="form-label"><i class="fas fa-stopwatch"></i> <?php echo t('ivr.field_digit_timeout'); ?></label>
+                        <input type="number" name="digit_timeout" id="modal_digit_timeout" class="form-control" value="3" min="1" max="10">
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ivr.digit_timeout_help'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-language"></i> <?php echo t('ivr.field_language'); ?></label>
+                        <select name="language" id="modal_language" class="form-control">
+                            <option value=""><?php echo t('ivr.language_default'); ?></option>
+                            <?php foreach (getAvailableLanguages() as $lang_code): ?>
+                                <option value="<?php echo htmlspecialchars($lang_code); ?>"><?php echo htmlspecialchars(LANGUAGE_LABELS[$lang_code] ?? $lang_code); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ivr.language_help'); ?></small>
+                    </div>
                 </div>
 
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
