@@ -100,6 +100,54 @@ function __syncFeatureCodesBody() {
             continue;
         }
 
+        if ($key === 'queue_pause') {
+            $base_code = rtrim(ltrim($code, '_'), '.X');
+            $pattern_code = '_' . $base_code . '.';
+            $prefix_len = strlen($base_code);
+
+            // 1. Doğrudan kod tuşlandığında (*22): Varsayılan mola türü (1. mola)
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - varsayilan)\n";
+            $conf .= "exten => {$base_code},1,NoOp(Feature Code {$key} (default) by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_base)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_base),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} 1 &)\n";
+            $conf .= " same => n,Answer()\n";
+            $conf .= " same => n,Playback(beep)\n";
+            $conf .= " same => n,Wait(0.2)\n";
+            $conf .= " same => n,Playback(beep)\n";
+            $conf .= " same => n,Wait(1)\n";
+            $conf .= " same => n,Hangup()\n\n";
+
+            // 2. Mola ID ile tuşlandığında (*22<mola_id>, ör: *221, *222):
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - mola id ile)\n";
+            $conf .= "exten => {$pattern_code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_pat)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_pat),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,Set(REASON_ID=\${EXTEN:{$prefix_len}})\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} \${REASON_ID} &)\n";
+            $conf .= " same => n,Answer()\n";
+            $conf .= " same => n,Playback(beep)\n";
+            $conf .= " same => n,Wait(0.2)\n";
+            $conf .= " same => n,Playback(beep)\n";
+            $conf .= " same => n,Wait(1)\n";
+            $conf .= " same => n,Hangup()\n\n";
+            continue;
+        }
+
         $conf .= "; " . toCleanAscii($c['title']) . " ({$key})\n";
         $conf .= "exten => {$code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
 
@@ -162,6 +210,14 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,ChanSpy(PJSIP/\${SPYTARGET},b)\n";
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(spy_empty),Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                break;
+
+            case 'queue_unpause':
+                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_unpause \${CALLERID(num)} &)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(beep)\n";
+                $conf .= " same => n,Wait(1)\n";
                 $conf .= " same => n,Hangup()\n";
                 break;
 

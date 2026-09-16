@@ -518,7 +518,7 @@ return [
     'fc.title' => 'Feature Code\'lar',
     'fc.header_title' => 'Feature Code Yönetimi',
     'fc.help_title' => 'Feature Code Modülü Rehberi',
-    'fc.help_body' => 'Telefondan tuşlanan (<code>*78</code> gibi) kısayol kodlarını yönetir: Rahatsız Etme (DND), Çağrı Yönlendirme, Gruptan/Belirli Dahiliden Çağrı Çekme, Çağrı Dinleme (Spy), Kuyruk ID ile Kuyruğa Giriş/Çıkış (<code>*81&lt;kuyruk id&gt;</code> / <code>*80&lt;kuyruk id&gt;</code> — kuyruk ID\'leri <a href="/queues">Kuyruklar</a> sayfasındaki #ID sütunundadır).',
+    'fc.help_body' => 'Telefondan tuşlanan (<code>*78</code> gibi) kısayol kodlarını yönetir: Rahatsız Etme (DND), Çağrı Yönlendirme, Gruptan/Belirli Dahiliden Çağrı Çekme, Çağrı Dinleme (Spy), Kuyruk Giriş/Çıkış (<code>*81&lt;kuyruk id&gt;</code> / <code>*80&lt;kuyruk id&gt;</code>), Kuyruk Mola Al / Mola İptal (<code>*22&lt;mola id&gt;</code> / <code>*23</code>).',
     'fc.help_body2' => 'Her kodun <strong>kodu</strong> (normal kodlar <code>*</code>, değişken parametreli kodlar <code>_*</code> ile başlamalı) ve <strong>hangi rollerin kullanabileceği</strong> (boş = herkes) değiştirilebilir. Davranışın kendisi (ne yaptığı) sabittir — yeni bir davranış türü eklenemez, sadece bu kodlar düzenlenebilir.',
     'fc.help_body3' => 'Kullanıcılara "pickup group" (çağrı çekme grubu) ataması <a href="/system-users">Kullanıcı Yönetimi</a> sayfasından yapılır. Kimin DND/yönlendirme açık olduğunu görmek için <a href="/feature-codes-status">Aktif Feature Code\'lar</a> raporuna bakın.',
     'fc.col_title' => 'Başlık',

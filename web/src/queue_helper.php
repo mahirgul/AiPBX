@@ -180,4 +180,86 @@ class QueueHelper {
         }
         return true;
     }
+
+    /**
+     * Temsilciyi kuyruklarda mola durumuna alır (queue pause member).
+     * Hem web panelindeki "Mola" butonu hem telefon feature code'u (*22<mola_id>)
+     * bu ortak fonksiyonu kullanır.
+     *
+     * @param string|int $ext Dahili numara
+     * @param string $reason Mola nedeni (örn: "Yemek Molası")
+     * @param string|null $queue_name Belirli bir kuyruk adı veya null (tüm atanmış kuyruklar)
+     * @return bool
+     */
+    public static function pauseMember($ext, $reason = 'Mola', $queue_name = null) {
+        $ext = preg_replace('/[^0-9]/', '', (string)$ext);
+        if ($ext === '') return false;
+        $reason_cli = str_replace('"', '', trim($reason ?: 'Mola'));
+
+        $db = getDB();
+        $target_queues = [];
+        if (!empty($queue_name)) {
+            $target_queues = [preg_replace('/[^a-zA-Z0-9_-]/', '', $queue_name)];
+        } else {
+            $stmt = $db->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $q_row) {
+                $mems = json_decode($q_row['members_json'] ?? '[]', true) ?: [];
+                if (in_array($ext, array_map('strval', $mems), true)) {
+                    $target_queues[] = $q_row['queue_name'];
+                }
+            }
+        }
+
+        // Global pause
+        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n"));
+        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext"));
+
+        // Her aktif kuyruk için reason parametresiyle pause
+        foreach ($target_queues as $qn) {
+            @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n queue $qn reason \"$reason_cli\""));
+            @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext queue $qn reason \"$reason_cli\""));
+        }
+
+        // Temsilcinin adını sys_users'tan al
+        $stmt_user = $db->prepare("SELECT full_name FROM sys_users WHERE extension = ?");
+        $stmt_user->execute([$ext]);
+        $agent_name = $stmt_user->fetchColumn() ?: "Temsilci $ext";
+
+        // cc_pause_logs tablosuna kaydet
+        $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
+        $stmt_close->execute([$ext]);
+
+        $stmt_insert = $db->prepare("INSERT INTO cc_pause_logs (agent_extension, agent_name, pause_reason, start_time, status) VALUES (?, ?, ?, NOW(), 'PAUSED')");
+        $stmt_insert->execute([$ext, $agent_name, $reason_cli]);
+
+        return true;
+    }
+
+    /**
+     * Temsilciyi moladan çıkarır (queue unpause member).
+     *
+     * @param string|int $ext Dahili numara
+     * @param string|null $queue_name Belirli bir kuyruk adı veya null (tüm kuyruklar)
+     * @return bool
+     */
+    public static function unpauseMember($ext, $queue_name = null) {
+        $ext = preg_replace('/[^0-9]/', '', (string)$ext);
+        if ($ext === '') return false;
+
+        $db = getDB();
+        if (!empty($queue_name)) {
+            $qn = preg_replace('/[^a-zA-Z0-9_-]/', '', $queue_name);
+            @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $qn"));
+            @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$ext queue $qn"));
+        } else {
+            @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n"));
+            @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$ext"));
+        }
+
+        // cc_pause_logs kaydını kapat
+        $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
+        $stmt_close->execute([$ext]);
+
+        return true;
+    }
 }
