@@ -102,6 +102,7 @@ class RouteService {
             ]);
 
             markPendingSync('outbound_dialplan', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return "Giden Rota '{$route_name}' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
         });
     }
@@ -112,6 +113,7 @@ class RouteService {
             $route_name = DBHelper::fetchColumn("SELECT route_name FROM pbx_outbound_routes WHERE id = ?", [$route_id]);
             DBHelper::delete('pbx_outbound_routes', 'id', $route_id);
             markPendingSync('outbound_dialplan', 'outbound_route', $route_name ?: ('id_' . $route_id), "Giden Rota: " . ($route_name ?: $route_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'outbound_route', $route_name ?: ('id_' . $route_id), "Giden Rota: " . ($route_name ?: $route_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
             return "Giden Rota silindi! Etkili olması için Uygula sayfasından gönderin.";
         });
     }

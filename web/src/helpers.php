@@ -159,6 +159,9 @@ class PBXHelper {
                             'update', $_SESSION['user_id'] ?? null);
                     }
                 }
+                if ($table === 'pbx_outbound_routes') {
+                    markPendingSync('ivrs', $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
+                }
                 return "Kayıt durumu {$status_text} olarak güncellendi! Etkili olması için Uygula sayfasından gönderin.";
             }
             return "Kayıt durumu {$status_text} olarak güncellendi!";

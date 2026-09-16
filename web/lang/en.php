@@ -213,7 +213,7 @@ return [
     'outbound.field_group' => 'Route Group',
     'outbound.group_help' => 'Which user group may use this route. Default 1; use a separate group (e.g. 2) for fax users.',
     'outbound.field_internal' => 'This is an internal (in-house) route',
-    'outbound.internal_help' => 'If checked, outgoing calls on this route (when Caller ID override is empty) use the caller\'s "Internal Call CID" field; if unchecked, the "External Call CID" field is used.',
+    'outbound.internal_help' => 'If checked, this route is treated as internal/tie-line (accessible via IVR direct dial) and uses the Internal Call CID.',
     'outbound.field_active' => 'Outbound Route Active',
 
     // Time Conditions
@@ -290,7 +290,7 @@ return [
     'ivr.field_max_failures' => 'Max. Failed Attempts',
     'ivr.max_failures_help' => 'The menu is replayed on wrong entries until this count is reached, then the caller is sent to the "Invalid Entry" target.',
     'ivr.field_allow_direct_dial' => 'Allow Direct Extension Dialing While Menu Plays',
-    'ivr.allow_direct_dial_help' => 'If enabled, callers can dial a valid extension directly while listening to the menu.',
+    'ivr.allow_direct_dial_help' => 'If enabled, callers can dial a valid extension or tie-line outbound route (e.g. 9998) directly while listening to the menu.',
     'ivr.field_digit_timeout' => 'Digit Inter-Timeout (Seconds)',
     'ivr.digit_timeout_help' => 'Duration to wait between dialed digits or before executing direct extension dial (default: 3s).',
     'ivr.direct_dial_enabled' => 'Direct Dial Enabled',
