@@ -31,7 +31,9 @@ INSERT INTO `pbx_feature_codes` VALUES
 (5,'pickup_directed','Belirli Dahiliden Çağrı Çekme','*21',NULL,1,'2026-08-19 20:56:03'),
 (6,'spy','Çağrı Dinleme (Spy)','*90','admin,cc_manager',1,'2026-08-19 20:56:03'),
 (7,'queue_login','Kuyruğa Giriş (Kuyruk ID ile, *81<id>)','_*81.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
-(8,'queue_logout','Kuyruktan Çıkış (Kuyruk ID ile, *80<id>)','_*80.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22');
+(8,'queue_logout','Kuyruktan Çıkış (Kuyruk ID ile, *80<id>)','_*80.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
+(9,'queue_pause','Kuyruk Mola Al (Mola ID ile, *22<id>)','_*22.','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41'),
+(10,'queue_unpause','Kuyruk Mola İptal / Dönüş (*23)','*23','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41');
 /*!40000 ALTER TABLE `pbx_feature_codes` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

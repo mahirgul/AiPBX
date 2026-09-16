@@ -33,7 +33,14 @@
                     <?php foreach ($codes as $fc): ?>
                         <tr>
                             <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($fc['title']); ?></td>
-                            <td><code style="font-size: 14px; font-weight: 700; color: var(--primary);"><?php echo htmlspecialchars(rtrim(ltrim($fc['code'], '_'), '.X') . (strpos($fc['code'], '_') === 0 ? '<kuyruk id>' : '')); ?></code></td>
+                            <td><code style="font-size: 14px; font-weight: 700; color: var(--primary);"><?php
+                                $clean_c = rtrim(ltrim($fc['code'], '_'), '.X');
+                                $suffix = '';
+                                if (strpos($fc['code'], '_') === 0) {
+                                    $suffix = ($fc['feature_key'] === 'queue_pause') ? '<mola id>' : '<kuyruk id>';
+                                }
+                                echo htmlspecialchars($clean_c . $suffix);
+                            ?></code></td>
                             <td class="col-hide-mobile">
                                 <?php if (!empty($fc['allowed_roles'])): ?>
                                     <?php foreach (explode(',', $fc['allowed_roles']) as $r): ?>

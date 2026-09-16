@@ -137,4 +137,49 @@ final class QueueMembershipTest extends TestCase
         // Dynamic member (2002) should NOT be statically written in queues.conf
         $this->assertStringNotContainsString('member => Local/2002@from-internal-pbx/n', $confContent);
     }
+
+    public function testQueuePauseAndUnpauseHelper(): void
+    {
+        $db = getDB();
+
+        // 1. Pause member with reason
+        $this->assertTrue(QueueHelper::pauseMember('2001', 'Yemek Molası'));
+
+        $row = $db->query("SELECT * FROM cc_pause_logs WHERE agent_extension = '2001' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($row);
+        $this->assertSame('PAUSED', $row['status']);
+        $this->assertSame('Yemek Molası', $row['pause_reason']);
+        $this->assertNull($row['end_time']);
+
+        // 2. Unpause member
+        $this->assertTrue(QueueHelper::unpauseMember('2001'));
+
+        $rowAfter = $db->query("SELECT * FROM cc_pause_logs WHERE id = " . intval($row['id']))->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('COMPLETED', $rowAfter['status']);
+        $this->assertNotNull($rowAfter['end_time']);
+    }
+
+    public function testSyncFeatureCodesGeneratesPauseAndUnpause(): void
+    {
+        require_once '/var/www/html/src/sync/SyncFeatureCodes.php';
+
+        syncFeatureCodes();
+
+        $confPath = ASTERISK_PBX_DIR . '/extensions_featurecodes.conf';
+        $this->assertFileExists($confPath);
+        $conf = (string)file_get_contents($confPath);
+
+        // *22 default pause
+        $this->assertStringContainsString('exten => *22,1,NoOp(Feature Code queue_pause (default)', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_pause ${CALLERID(num)} 1', $conf);
+
+        // *22<id> custom break reason
+        $this->assertStringContainsString('exten => _*22.,1,NoOp(Feature Code queue_pause', $conf);
+        $this->assertStringContainsString('Set(REASON_ID=${EXTEN:3})', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_pause ${CALLERID(num)} ${REASON_ID}', $conf);
+
+        // *23 unpause
+        $this->assertStringContainsString('exten => *23,1,NoOp(Feature Code queue_unpause', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_unpause ${CALLERID(num)}', $conf);
+    }
 }
