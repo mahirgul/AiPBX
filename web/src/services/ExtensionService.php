@@ -62,6 +62,8 @@ class ExtensionService {
                     markPendingSync('extensions', 'extension', $old_ext, "Dahili: {$old_ext} (numara değişti, kaldırıldı)", 'delete', $_SESSION['user_id'] ?? null);
                 }
                 markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 $msg = "{$extension} dahili abonesi güncellendi! Etkili olması için Uygula sayfasından gönderin.";
             } else {
                 // Yeni dahili abone: cihaz amaçlı minimal sistem kaydı oluştur
@@ -89,6 +91,8 @@ class ExtensionService {
                 ]);
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $sip_password, $sip_auth_digest);
                 markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'create', $_SESSION['user_id'] ?? null);
+                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 $msg = "{$extension} dahili abonesi oluşturuldu! Etkili olması için Uygula sayfasından gönderin.";
             }
             return $msg;
@@ -108,6 +112,8 @@ class ExtensionService {
             // Dahiliyi kaldır (kullanıcı hesabı korunur)
             DBHelper::update('sys_users', ['extension' => null, 'sip_password' => null], 'id', $user_id);
             markPendingSync('extensions', 'extension', $old_ext, "Dahili: {$old_ext} (kaldırıldı)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$old_ext} kaldırıldı)", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$old_ext} kaldırıldı)", 'update', $_SESSION['user_id'] ?? null);
             return "{$old_ext} dahilisi kaldırıldı (kullanıcı hesabı korundu)! Etkili olması için Uygula sayfasından gönderin.";
         });
     }
