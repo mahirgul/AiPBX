@@ -11,6 +11,7 @@
 # What this script does:
 #   - Generates strong random passwords for all services (no hardcoded defaults)
 #   - Asks for FQDN — uses Let's Encrypt if provided, self-signed if not
+#     (blank => local name "aipbx.local", published on the LAN via mDNS/avahi)
 #   - Installs: Asterisk, MariaDB, Apache2+PHP, coturn, Go+Chat, fail2ban
 #   - Creates a single admin user with a secure random password
 #   - Displays and saves all credentials at the end
@@ -59,7 +60,8 @@ echo -e "  Your server's IP address: ${YELLOW}$SERVER_IP${NC}"
 echo ""
 echo -e "  Enter your fully qualified domain name (FQDN) for HTTPS."
 echo -e "  Examples: ${CYAN}pbx.company.com${NC}, ${CYAN}voice.example.org${NC}"
-echo -e "  Leave blank to use IP address with a self-signed certificate."
+echo -e "  Leave blank for a local-only install: ${CYAN}aipbx.local${NC} + self-signed certificate"
+echo -e "  (the .local name is announced on the LAN via mDNS, no DNS record needed)."
 echo ""
 if [[ -n "${AIPBX_FQDN:-}" ]]; then
     PORTAL_DOMAIN_INPUT="$AIPBX_FQDN"
@@ -68,15 +70,20 @@ else
     read -r -p "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT 2>/dev/null || PORTAL_DOMAIN_INPUT=""
 fi
 
-if [[ -z "$PORTAL_DOMAIN_INPUT" ]]; then
-    PORTAL_DOMAIN="$SERVER_IP"
+if [[ -z "$PORTAL_DOMAIN_INPUT" || "${PORTAL_DOMAIN_INPUT,,}" == *.local ]]; then
+    # Yerel kurulum: Let's Encrypt .local için sertifika veremez; self-signed
+    # sertifika (SAN: alan adı + sunucu IP) üretilir, ad LAN'a mDNS ile duyurulur.
+    PORTAL_DOMAIN="${PORTAL_DOMAIN_INPUT:-aipbx.local}"
+    PORTAL_DOMAIN="${PORTAL_DOMAIN,,}"
     USE_SELFSIGNED=true
     USE_LETSENCRYPT=false
-    warn "No FQDN provided. A self-signed TLS certificate will be generated."
+    USE_MDNS=true
+    warn "Local install: ${PORTAL_DOMAIN} with a self-signed TLS certificate."
     warn "Browsers will show a security warning — this is normal for self-signed certs."
 else
     PORTAL_DOMAIN="$PORTAL_DOMAIN_INPUT"
     USE_SELFSIGNED=false
+    USE_MDNS=false
     echo ""
     echo -e "  Domain set to: ${GREEN}$PORTAL_DOMAIN${NC}"
     echo ""
@@ -171,6 +178,8 @@ apt-get install -y \
   certbot \
   python3-certbot-apache \
   openssl \
+  avahi-daemon \
+  avahi-utils \
   2>&1 | tail -5
 
 ok "System packages installed"
@@ -349,11 +358,16 @@ if [[ "$USE_SELFSIGNED" == "true" ]]; then
     info "Generating self-signed TLS certificate..."
     mkdir -p /etc/ssl/aipbx
 
+    # Tarayıcılar CN'e bakmaz, sadece subjectAltName'e bakar — SAN olmadan
+    # sertifika "kabul et" dense bile WSS/TURNS bağlantılarında reddedilir.
+    CERT_SAN="DNS:${PORTAL_DOMAIN},IP:${SERVER_IP}"
+    if [[ "$PORTAL_DOMAIN" =~ ^[0-9.]+$ ]]; then CERT_SAN="IP:${SERVER_IP}"; fi
     openssl req -x509 -nodes -days 3650 \
         -newkey rsa:2048 \
         -keyout /etc/ssl/aipbx/aipbx.key \
         -out /etc/ssl/aipbx/aipbx.crt \
-        -subj "/C=TR/ST=Istanbul/L=Istanbul/O=AI PBX/OU=IT/CN=${PORTAL_DOMAIN}" \
+        -subj "/C=TR/ST=Istanbul/L=Istanbul/O=AiPBX/OU=IT/CN=${PORTAL_DOMAIN}" \
+        -addext "subjectAltName=${CERT_SAN}" \
         2>/dev/null
 
     chmod 600 /etc/ssl/aipbx/aipbx.key
@@ -362,6 +376,28 @@ if [[ "$USE_SELFSIGNED" == "true" ]]; then
     CERT_FILE="/etc/ssl/aipbx/aipbx.crt"
     KEY_FILE="/etc/ssl/aipbx/aipbx.key"
     ok "Self-signed certificate generated (valid 10 years)"
+fi
+
+# Yerel .local adını LAN'a mDNS ile duyur (hostname'i değiştirmeden alias olarak).
+if [[ "${USE_MDNS:-false}" == "true" ]]; then
+    grep -qE "[[:space:]]${PORTAL_DOMAIN}([[:space:]]|$)" /etc/hosts || echo "127.0.0.1 ${PORTAL_DOMAIN}" >> /etc/hosts
+    cat > /etc/systemd/system/aipbx-mdns.service << MDNS
+[Unit]
+Description=AiPBX mDNS alias (${PORTAL_DOMAIN} -> ${SERVER_IP})
+After=avahi-daemon.service network-online.target
+Requires=avahi-daemon.service
+
+[Service]
+ExecStart=/usr/bin/avahi-publish -a -R ${PORTAL_DOMAIN} ${SERVER_IP}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+MDNS
+    systemctl daemon-reload
+    systemctl enable --now avahi-daemon aipbx-mdns 2>/dev/null || true
+    ok "mDNS alias published: ${PORTAL_DOMAIN} -> ${SERVER_IP}"
 fi
 
 # Generate Asterisk DTLS certificate (WebRTC)
@@ -605,6 +641,8 @@ use-auth-secret
 static-auth-secret=${TURN_SECRET}
 realm=${PORTAL_DOMAIN}
 server-name=${PORTAL_DOMAIN}
+cert=/etc/coturn/aipbx.crt
+pkey=/etc/coturn/aipbx.key
 no-cli
 no-multicast-peers
 stale-nonce=600
@@ -614,7 +652,15 @@ min-port=49152
 max-port=65535
 TURNCONF
 
+# coturn "turnserver" kullanıcısıyla çalışır; root'a ait 600 anahtarı okuyamaz.
+mkdir -p /etc/coturn
+cp -L "$CERT_FILE" /etc/coturn/aipbx.crt
+cp -L "$KEY_FILE" /etc/coturn/aipbx.key
+chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
+chmod 640 /etc/coturn/aipbx.key
+
 mkdir -p /var/log/turnserver
+chown turnserver:turnserver /var/log/turnserver 2>/dev/null || true
 systemctl restart coturn 2>/dev/null || true
 systemctl enable coturn 2>/dev/null || true
 

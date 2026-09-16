@@ -25,6 +25,10 @@ class QueueController extends BaseController
 
         $queues = QueueRepository::allOrderedById();
         $all_agents = QueueRepository::extensionAgents();
+        $queue_agents = QueueRepository::queueAgents();
+        $queue_managers = QueueRepository::queueManagers();
+        $legacy_agents = QueueRepository::assignedOutsideRole('members_json', QueueRepository::AGENT_ROLES);
+        $legacy_managers = QueueRepository::assignedOutsideRole('supervisors_json', QueueRepository::MANAGER_ROLES);
         $moh_classes = QueueRepository::activeMohClasses();
 
         $page_title = t('queues.title');
@@ -32,6 +36,10 @@ class QueueController extends BaseController
         static::render('queues/index', [
             'queues' => $queues,
             'all_agents' => $all_agents,
+            'queue_agents' => $queue_agents,
+            'queue_managers' => $queue_managers,
+            'legacy_agents' => $legacy_agents,
+            'legacy_managers' => $legacy_managers,
             'moh_classes' => $moh_classes,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';

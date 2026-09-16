@@ -35,20 +35,32 @@ if ($action === 'login') {
 }
 
 if ($action === 'logout') {
+    $static_q = [];
     if (!empty($user_ext)) {
         $stmt = $db->query("SELECT queue_name FROM pbx_queues WHERE is_active = 1");
         $all_q = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
         $target_q = trim($_POST['queue_name'] ?? '');
-        $queues_to_leave = (!empty($target_q)) ? [$target_q] : $all_q;
+        $static_q = QueueHelper::staticQueuesOf($user_ext);
+        if (!empty($target_q) && in_array($target_q, $static_q, true)) {
+            echo json_encode(['success' => false, 'error' => 'Bu kuyrukta statik temsilcisiniz; kuyruktan çıkamazsınız, sadece mola verebilirsiniz.']);
+            exit;
+        }
+        $queues_to_leave = array_diff((!empty($target_q)) ? [$target_q] : $all_q, $static_q);
 
         foreach ($queues_to_leave as $qn) {
             QueueHelper::setMembership($user_ext, $qn, false);
         }
 
-        // Close any active break log
-        $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
-        $stmt->execute([$user_ext]);
+        // Statik olduğu kuyruklarda hâlâ üye (ve belki molada) — mola kaydı açık kalmalı.
+        if (empty($static_q)) {
+            $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
+            $stmt->execute([$user_ext]);
+        }
+    }
+    if (!empty($static_q)) {
+        echo json_encode(['success' => true, 'message' => 'Dinamik kuyruklardan çıkış yapıldı. Statik temsilcisi olduğunuz kuyruklarda kalmaya devam ediyorsunuz.']);
+        exit;
     }
     echo json_encode(['success' => true, 'message' => 'Kuyruktan çıkış yapıldı']);
     exit;

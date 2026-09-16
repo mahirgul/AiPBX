@@ -135,7 +135,7 @@ class AsteriskHelper {
     }
 
     /**
-     * Get live PJSIP endpoint statuses (e.g. 3001-sip => Not in use, neco => Not in use).
+     * Get live PJSIP endpoint statuses (e.g. 3001-sip => Not in use, main_trunk => Not in use).
      * 2026-08-19 düzeltmesi: `pjsip show endpoints` her satırı `<name>/<CID>` biçiminde basar
      * (ör. `3001-sip/3001`) ve durum "Not in use" gibi BİRDEN FAZLA kelime olabilir. Eski regex
      * yalnızca ilk kelimeyi ("Not") yakalıyor ve `/<CID>` sonekini anahtara dahil ediyordu — bu

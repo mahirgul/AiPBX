@@ -11,10 +11,11 @@ class BrandSettingsService {
     public static function defaults(): array
     {
         return [
-            'site_title' => 'AI PBX Portalı',
-            'brand_title' => 'AI PBX',
+            'site_title' => 'AiPBX',
+            'brand_title' => 'AiPBX',
             'brand_sub' => 'Santral & Çağrı Merkezi',
-            'site_logo_type' => 'icon',
+            // Boş site_logo_image = AiPBX varsayılan logosu (BRAND_DEFAULT_LOGO_URL).
+            'site_logo_type' => 'image',
             'site_logo_icon' => 'fa-network-wired',
             'site_logo_image' => '',
             'site_favicon_url' => '',
@@ -80,6 +81,31 @@ class BrandSettingsService {
         return self::UPLOAD_URL . '/' . $baseName . '.' . $ext . '?v=' . time();
     }
 
+    /**
+     * Tüm marka ayarlarını (başlıklar, logo, favicon, renkler) AiPBX varsayılanlarına
+     * döndürür ve yüklenmiş logo/favicon dosyalarını siler.
+     * @return array{success:bool, message?:string, error?:string}
+     */
+    public static function resetToDefaults(array $post): array
+    {
+        if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
+            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+        }
+        try {
+            foreach (array_merge(glob(self::uploadDir() . '/logo.*') ?: [], glob(self::uploadDir() . '/favicon.*') ?: []) as $old) {
+                @unlink($old);
+            }
+            $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+            foreach (self::defaults() as $k => $v) {
+                $stmt->execute([$k, $v]);
+            }
+            writeAuditLog(null, 'brand_settings', 'general', 'Marka & Görünüm Ayarları varsayılana döndürüldü', 'update', $_SESSION['user_id'] ?? null);
+            return ['success' => true, 'message' => 'Marka & görünüm ayarları AiPBX varsayılanlarına döndürüldü!'];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public static function isValidHexColor($v)
     {
         return $v === '' || preg_match('/^#[0-9A-Fa-f]{6}$/', $v);
@@ -111,7 +137,7 @@ class BrandSettingsService {
                 'site_title' => trim($post['site_title'] ?? $defaults['site_title']) ?: $defaults['site_title'],
                 'brand_title' => trim($post['brand_title'] ?? $defaults['brand_title']) ?: $defaults['brand_title'],
                 'brand_sub' => trim($post['brand_sub'] ?? $defaults['brand_sub']) ?: $defaults['brand_sub'],
-                'site_logo_type' => (($post['site_logo_type'] ?? 'icon') === 'image') ? 'image' : 'icon',
+                'site_logo_type' => (($post['site_logo_type'] ?? 'image') === 'icon') ? 'icon' : 'image',
                 'site_logo_icon' => trim($post['site_logo_icon'] ?? $defaults['site_logo_icon']) ?: $defaults['site_logo_icon'],
                 'site_logo_image' => $current['site_logo_image'],
                 'site_favicon_url' => $current['site_favicon_url'],

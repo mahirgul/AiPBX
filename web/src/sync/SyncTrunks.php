@@ -94,7 +94,7 @@ function __syncAllTrunksBody() {
         // ZORUNDA. Asterisk'in registrar'ı, endpoint'in aors= listesindeki adları
         // kaydolan isimle karşılaştırıyor; eşleşme yoksa REGISTER'a 404 Not Found
         // dönüyor ve logda "AOR '' not found for endpoint 'x'" yazıyor.
-        // 2026-09-01'de canlıda tam olarak bu yaşandı: aors=neco iken NEC 'nec2'
+        // 2026-09-01'de canlıda tam olarak bu yaşandı: aors=<trunk adı> iken NEC 'nec2'
         // olarak kaydoluyordu. (Aynı tuzak daha önce dahili SIP hesaplarında da
         // görülmüştü — orada da endpoint SECTION adı aranıyor, numara değil.)
         // IP modunda böyle bir kısıt yok; AOR adı trunk adı olarak kalır.

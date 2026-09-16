@@ -259,7 +259,7 @@ def make_real_contacts():
     contacts = [
         ("Prof. Dr. Ahmet Yılmaz", "1001", "Rektörlük", "online"),
         ("Doç. Dr. Selin Demir", "1002", "Mühendislik Fakültesi", "online"),
-        ("Santral Operatörü", "9998", "Dış Hat Trunk (Neco)", "busy"),
+        ("Santral Operatörü", "9998", "Dış Hat Trunk", "busy"),
         ("Bilgi İşlem Daire Bşk.", "1100", "BİDB Çağrı Merkezi", "online"),
         ("Genel Sekreterlik", "1005", "Yönetim Kurulu", "offline"),
         ("Öğrenci İşleri D.B.", "1200", "Öğrenci Hizmetleri", "online"),
