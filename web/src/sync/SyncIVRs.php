@@ -76,8 +76,8 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = []) {
 
     $conf .= "; Invalid Destination - {$max_failures} basarisiz denemeye kadar menu tekrarlanir\n";
     $conf .= "exten => i,1,NoOp(IVR {$ivr_id} Invalid Digit)\n";
-    $conf .= " same => n,Set({$fail_var}=\$[\${{$fail_var}:-0}+1])\n";
-    $conf .= " same => n,GotoIf(\$[\${{$fail_var}} < {$max_failures}]?s,1)\n";
+    $conf .= " same => n,Set({$fail_var}=\$[0\${{$fail_var}} + 1])\n";
+    $conf .= " same => n,GotoIf(\$[0\${{$fail_var}} < {$max_failures}]?s,1)\n";
     $conf .= " same => n,NoOp(IVR {$ivr_id} Max Invalid Attempts ({$max_failures}) Reached -> {$ivr['invalid_dest_type']})\n";
     $conf .= buildDestinationLines($ivr['invalid_dest_type'], $ivr['invalid_dest_id']) . "\n\n";
 
