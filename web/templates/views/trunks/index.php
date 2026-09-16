@@ -110,7 +110,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_trunk_name'); ?></label>
-                            <input type="text" name="trunk_name" id="modal_trunk_name" class="form-control" placeholder="neco" required>
+                            <input type="text" name="trunk_name" id="modal_trunk_name" class="form-control" placeholder="main_trunk" required>
                         </div>
 
                         <div class="form-group">

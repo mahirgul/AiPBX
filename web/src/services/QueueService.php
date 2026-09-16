@@ -11,9 +11,9 @@ class QueueService {
             $queue_name = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['queue_name'] ?? ''));
             $title = trim($data['title'] ?? $queue_name);
             $strategy = trim($data['strategy'] ?? 'rrmemory');
-            $timeout = intval($data['timeout'] ?: 15);
-            $retry = intval($data['retry'] ?: 5);
-            $wrapup = intval($data['wrapuptime'] ?: 10);
+            $timeout = intval($data['timeout'] ?? 15) ?: 15;
+            $retry = intval($data['retry'] ?? 5) ?: 5;
+            $wrapup = intval($data['wrapuptime'] ?? 10) ?: 10;
             $musicclass = trim($data['musicclass'] ?? 'default');
             $maxlen = intval($data['maxlen'] ?? 0);
             $announce_frequency = intval($data['announce_frequency'] ?? 30);
@@ -21,7 +21,7 @@ class QueueService {
             $joinempty = trim($data['joinempty'] ?? 'yes');
             $leavewhenempty = trim($data['leavewhenempty'] ?? 'no');
             $ringinuse = trim($data['ringinuse'] ?? 'no');
-            $max_wait_seconds = intval($data['max_wait_seconds'] ?: 300);
+            $max_wait_seconds = intval($data['max_wait_seconds'] ?? 300) ?: 300;
             $fallback_action = trim($data['fallback_action'] ?? 'hangup');
             $fallback_target = preg_replace('/[^0-9]/', '', trim($data['fallback_target'] ?? '')) ?: null;
             $record_enabled = isset($data['record_enabled']) ? 1 : 0;
@@ -35,7 +35,29 @@ class QueueService {
             if ($fallback_action === 'forward' && empty($fallback_target)) {
                 throw new \Exception("Zaman Aşımı Aksiyonu \"Dahiliye Yönlendir\" seçildiğinde bir Yönlendirme Dahilisi seçmelisiniz!");
             }
-            $selected_members = $data['members'] ?? [];
+            // Her temsilci için member_mode[ext] = '' (atanmamış) | 'dynamic' | 'static'.
+            $selected_members = [];
+            $selected_static = [];
+            if (isset($data['member_mode']) && is_array($data['member_mode'])) {
+                foreach ($data['member_mode'] as $m_ext => $mode) {
+                    $m_ext = preg_replace('/[^0-9]/', '', (string)$m_ext);
+                    if ($m_ext === '' || !in_array($mode, ['dynamic', 'static'], true)) continue;
+                    $selected_members[] = $m_ext;
+                    if ($mode === 'static') $selected_static[] = $m_ext;
+                }
+            } elseif (isset($data['members']) && is_array($data['members'])) {
+                foreach ($data['members'] as $m_ext) {
+                    $m_ext = preg_replace('/[^0-9]/', '', (string)$m_ext);
+                    if ($m_ext !== '') $selected_members[] = $m_ext;
+                }
+                $static_candidates = is_array($data['static_members'] ?? null) ? $data['static_members'] : [];
+                foreach ($static_candidates as $s_ext) {
+                    $s_ext = preg_replace('/[^0-9]/', '', (string)$s_ext);
+                    if ($s_ext !== '' && in_array($s_ext, $selected_members, true)) {
+                        $selected_static[] = $s_ext;
+                    }
+                }
+            }
             $selected_supervisors = $data['supervisors'] ?? [];
             if (!is_array($selected_supervisors)) $selected_supervisors = [];
             if (empty($selected_supervisors) && !empty($data['supervisor_extension'])) {
@@ -52,6 +74,7 @@ class QueueService {
 
 
             $members_json = json_encode(array_values($selected_members));
+            $static_members_json = json_encode(array_values($selected_static));
             $supervisors_json = json_encode(array_values($selected_supervisors));
             $primary_supervisor = !empty($selected_supervisors) ? $selected_supervisors[0] : null;
 
@@ -77,6 +100,7 @@ class QueueService {
                 'record_enabled' => $record_enabled,
                 'record_format' => $record_format,
                 'members_json' => $members_json,
+                'static_members_json' => $static_members_json,
                 'supervisors_json' => $supervisors_json,
                 'supervisor_extension' => $primary_supervisor,
                 'internal_number' => $internal_number !== '' ? $internal_number : null,

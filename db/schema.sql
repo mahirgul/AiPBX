@@ -726,7 +726,7 @@ DROP TABLE IF EXISTS `sip`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sip` (
-  `id` varchar(50) NOT NULL COMMENT 'Extension number or Trunk ID (e.g., 101, trunk_kbu)',
+  `id` varchar(50) NOT NULL COMMENT 'Extension number or Trunk ID (e.g., 101, trunk_main)',
   `keyword` varchar(50) NOT NULL COMMENT 'PJSIP directive key (e.g., secret, context, transport, allow)',
   `data` varchar(255) NOT NULL DEFAULT '' COMMENT 'PJSIP directive value',
   `flags` int(11) NOT NULL DEFAULT 0 COMMENT 'Sorting / Grouping order flag',
@@ -773,7 +773,7 @@ CREATE TABLE `sys_did_mappings` (
   `did_extension` varchar(20) DEFAULT NULL,
   `department_name` varchar(100) NOT NULL,
   `notification_email` varchar(120) DEFAULT '',
-  `header_info` varchar(100) DEFAULT 'Karabuk University Fax',
+  `header_info` varchar(100) DEFAULT 'AI PBX Fax Server',
   `assigned_user_id` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
@@ -968,7 +968,7 @@ CREATE TABLE `sys_users` (
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`kbu_migrator`@`localhost` SQL SECURITY DEFINER */
+/*!50013 DEFINER=`aipbx_migrator`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `cdrs` AS select `c`.`id` AS `id`,`c`.`uniqueid` AS `call_id`,`c`.`src` AS `caller_num`,case when `c`.`lastapp` = 'ReceiveFAX' then 'Gelen Faks' when `c`.`lastapp` = 'SendFAX' then 'Giden Faks' when `c`.`lastapp` = 'Queue' then substring_index(`c`.`lastdata`,',',1) when `d`.`title` is not null then `d`.`title` when `c`.`dcontext` = 'from-internal-pbx' then 'Dahili Görüşme' else concat('Gelen Rota: ',coalesce(nullif(`c`.`did`,''),`c`.`dst`)) end AS `queue_name`,case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when nullif(`c`.`did`,'') is not null then `c`.`did` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end AS `agent_extension`,`u`.`full_name` AS `agent_name`,`c`.`calldate` AS `start_time`,`c`.`calldate` + interval greatest(`c`.`duration` - `c`.`billsec`,0) second AS `answer_time`,`c`.`calldate` + interval `c`.`duration` second AS `end_time`,greatest(`c`.`duration`,`c`.`billsec`) AS `duration`,`c`.`billsec` AS `billsec`,greatest(`c`.`duration`,`c`.`billsec`) - `c`.`billsec` AS `ring_sec`,`c`.`disposition` AS `status`,case when `c`.`userfield` is not null and `c`.`userfield` <> '' then `c`.`userfield` when `c`.`lastapp` = 'ReceiveFAX' then substring_index(`c`.`lastdata`,',',1) else '' end AS `recording_path`,`c`.`calldate` AS `created_at`,`c`.`channel` AS `channel`,`c`.`dstchannel` AS `dstchannel`,case when `c`.`dstchannel` like '%-mob-webrtc%' then 'mobil' when `c`.`dstchannel` like '%-webrtc%' then 'webrtc' when `c`.`dstchannel` like '%-sip%' then 'sip' when `c`.`channel` like '%-mob-webrtc%' then 'mobil' when `c`.`channel` like '%-webrtc%' then 'webrtc' when `c`.`channel` like '%-sip%' then 'sip' else '' end AS `device_type` from ((`asteriskcdr` `c` left join `sys_users` `u` on(`u`.`extension` = case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end)) left join `pbx_dids` `d` on(`d`.`did_number` = coalesce(nullif(`c`.`did`,''),`c`.`dst`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;

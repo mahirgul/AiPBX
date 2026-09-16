@@ -157,7 +157,7 @@ class UserService {
                 SIPHelper::deleteSettings($ext);
                 // Sanitize pbx_queues members_json and supervisors_json
                 $db = getDB();
-                $queues = $db->query("SELECT id, members_json, supervisors_json, supervisor_extension FROM pbx_queues")->fetchAll(PDO::FETCH_ASSOC);
+                $queues = $db->query("SELECT id, queue_name, members_json, static_members_json, supervisors_json, supervisor_extension FROM pbx_queues")->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($queues as $q) {
                     $m_list = json_decode($q['members_json'] ?? '[]', true) ?: [];
                     $s_list = json_decode($q['supervisors_json'] ?? '[]', true) ?: [];
@@ -165,10 +165,18 @@ class UserService {
                     $m_new = array_values(array_diff(array_map('strval', $m_list), [(string)$ext]));
                     $s_new = array_values(array_diff(array_map('strval', $s_list), [(string)$ext]));
                     
+                    $st_list = array_map('strval', json_decode($q['static_members_json'] ?? '[]', true) ?: []);
+                    $st_new = array_values(array_diff($st_list, [(string)$ext]));
+
                     $update_data = [
                         'members_json' => json_encode($m_new),
+                        'static_members_json' => json_encode($st_new),
                         'supervisors_json' => json_encode($s_new)
                     ];
+                    // Statik üye queues_pbx.conf'ta "member =>" satırı; config yeniden üretilmeli.
+                    if (count($st_new) !== count($st_list)) {
+                        markPendingSync('queues', 'queue', $q['queue_name'], "Kuyruk: {$q['queue_name']} (statik temsilci {$ext} silindi)", 'update', $_SESSION['user_id'] ?? null);
+                    }
                     if ((string)$q['supervisor_extension'] === (string)$ext) {
                         $update_data['supervisor_extension'] = !empty($s_new) ? $s_new[0] : null;
                     }

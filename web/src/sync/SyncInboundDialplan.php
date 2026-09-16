@@ -52,7 +52,9 @@ function __syncInboundDialplanBody() {
         $conf .= "exten => _X.,1,NoOp(Fallback Inbound Call for DID \${EXTEN})\n";
         $conf .= " same => n,Set(CDR(did)=\${EXTEN})\n";
         $conf .= " same => n,Set(CDR(direction)=inbound)\n";
-        $conf .= " same => n,Goto(app-timecondition-1,s,1)\n\n";
+        // Hiç Gelen Rota tanımlı değilken var olmayabilecek bir context'e (ör. eski
+        // sabit "app-timecondition-1") Goto yapmak çağrıyı hata ile düşürürdü.
+        $conf .= " same => n,Hangup(1)\n\n";
     }
 
     // ------------------------------------------------------------------

@@ -54,7 +54,7 @@ function openCreateQueueModal() {
     if (actCb) actCb.checked = true;
 
     // Uncheck all agent & supervisor checkboxes
-    document.querySelectorAll('.modal-agent-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.modal-agent-mode').forEach(sel => sel.value = '');
     document.querySelectorAll('.modal-supervisor-checkbox').forEach(cb => cb.checked = false);
 
     const modal = document.getElementById('queueModal');
@@ -123,8 +123,16 @@ function openEditQueueModal(item) {
         members = JSON.parse(item.members_json || '[]');
     } catch(e) { members = []; }
 
-    document.querySelectorAll('.modal-agent-checkbox').forEach(cb => {
-        cb.checked = members.includes(cb.value);
+    let staticMembers = [];
+    try {
+        staticMembers = JSON.parse(item.static_members_json || '[]');
+    } catch(e) { staticMembers = []; }
+    members = members.map(String);
+    staticMembers = staticMembers.map(String);
+
+    document.querySelectorAll('.modal-agent-mode').forEach(sel => {
+        const ext = sel.dataset.ext;
+        sel.value = !members.includes(ext) ? '' : (staticMembers.includes(ext) ? 'static' : 'dynamic');
     });
 
     // Check assigned supervisor checkboxes
@@ -137,7 +145,7 @@ function openEditQueueModal(item) {
     }
 
     document.querySelectorAll('.modal-supervisor-checkbox').forEach(cb => {
-        cb.checked = supervisors.includes(cb.value);
+        cb.checked = supervisors.map(String).includes(cb.value);
     });
 
     const modal = document.getElementById('queueModal');

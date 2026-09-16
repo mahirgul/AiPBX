@@ -191,6 +191,9 @@ function verifyCSRFToken($token) {
 }
 
 // Fetch System Setting Value with Fallback Default
+// Marka & Görünüm'de logo resmi yüklenmemişse / varsayılana dönülünce kullanılan AiPBX logosu.
+const BRAND_DEFAULT_LOGO_URL = '/assets/images/aipbx-logo.png';
+
 function getSystemSetting($key, $default = '') {
     try {
         $db = getDB();

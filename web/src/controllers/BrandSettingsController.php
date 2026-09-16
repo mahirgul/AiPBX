@@ -13,6 +13,9 @@ class BrandSettingsController extends BaseController
         if (static::isPost() && isset($_POST['save_brand_settings'])) {
             $res = BrandSettingsService::saveSettings($_POST);
             if ($res['success']) $message = $res['message']; else $error = $res['error'];
+        } elseif (static::isPost() && isset($_POST['reset_brand_settings'])) {
+            $res = BrandSettingsService::resetToDefaults($_POST);
+            if ($res['success']) $message = $res['message']; else $error = $res['error'];
         }
 
         $defaults = BrandSettingsService::defaults();
@@ -20,7 +23,7 @@ class BrandSettingsController extends BaseController
         $s = array_merge($defaults, $current_db_settings);
 
         // site_logo_image/site_favicon_url'deki eski ?v= cache-bust parametresini önizlemede tekrarlamamak için ayıkla
-        $logo_preview_url = $s['site_logo_image'] ? preg_replace('/\?.*$/', '', $s['site_logo_image']) . '?v=' . time() : '';
+        $logo_preview_url = $s['site_logo_image'] ? preg_replace('/\?.*$/', '', $s['site_logo_image']) . '?v=' . time() : BRAND_DEFAULT_LOGO_URL;
         $favicon_preview_url = $s['site_favicon_url'] ? preg_replace('/\?.*$/', '', $s['site_favicon_url']) . '?v=' . time() : '';
 
         $page_title = t('brand_settings.title');

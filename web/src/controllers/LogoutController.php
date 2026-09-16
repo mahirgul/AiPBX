@@ -20,8 +20,11 @@ class LogoutController extends BaseController
                         QueueHelper::setMembership($ext, $qn, false);
                     }
                 }
-                $stmt_pause = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
-                $stmt_pause->execute([$ext]);
+                // Statik temsilci web oturumunu kapatsa da kuyrukta kalır; molası da sürer.
+                if (empty(QueueHelper::staticQueuesOf($ext))) {
+                    $stmt_pause = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
+                    $stmt_pause->execute([$ext]);
+                }
             } catch (\Throwable $e) {
                 error_log("Logout queue cleanup failed: " . $e->getMessage());
             }

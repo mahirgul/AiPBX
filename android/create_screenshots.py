@@ -288,7 +288,7 @@ def make_screenshot_4():
     contacts = [
         ("Prof. Dr. Ahmet Yılmaz", "1001", "Rektörlük", "online"),
         ("Doç. Dr. Selin Demir", "1002", "Mühendislik Fakültesi", "online"),
-        ("Santral Operatörü", "9998", "Dış Hat Trunk (Neco)", "busy"),
+        ("Santral Operatörü", "9998", "Dış Hat Trunk", "busy"),
         ("Bilgi İşlem Destek", "1100", "BİDB Çağrı Merkezi", "online"),
         ("Sekreterlik", "1005", "Genel Sekreterlik", "offline"),
         ("Öğrenci İşleri", "1200", "Öğrenci Daire Bşk.", "online"),

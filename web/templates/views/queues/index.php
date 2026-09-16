@@ -77,6 +77,9 @@
                             </td>
                             <td>
                                 <span class="badge badge-warning"><?php echo is_array($members) ? count($members) : 0; ?> <?php echo t('queues.agent_count_suffix'); ?></span>
+                                <?php $static_count = count(QueueHelper::staticMembersOf($q)); if ($static_count > 0): ?>
+                                    <span class="badge badge-info" title="<?php echo t('queues.member_mode_static'); ?>"><i class="fas fa-thumbtack"></i> <?php echo $static_count; ?></span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php echo uiStatusToggleForm($q['id'], $q['is_active'], 'queue_id'); ?>
@@ -296,41 +299,52 @@
                 </div>
                 <input type="hidden" name="record_format" value="wav">
 
-                <!-- 6. Temsilciler ve Yöneticiler -->
+                <!-- 6. Temsilciler (sadece Temsilci rolü) — Dinamik / Statik -->
                 <div class="form-group">
-                    <label class="form-label"><i class="fas fa-users-cog"></i> <?php echo t('queues.section_members'); ?></label>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 180px; overflow-y: auto; background: var(--bg-sidebar); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-                        <?php foreach ($all_agents as $agent):
-                            $is_admin = ($agent['role'] === 'admin');
-                            $role_badge = $is_admin ? '<span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px;">' . t('queues.role_admin') . '</span>' : '<span class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">' . t('queues.role_agent') . '</span>';
+                    <label class="form-label form-label-help">
+                        <span><i class="fas fa-users-cog"></i> <?php echo t('queues.section_members'); ?></span>
+                        <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.member_mode_help'); ?></span></span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; background: var(--bg-sidebar); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <?php if (empty($queue_agents)): ?>
+                            <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('queues.no_agents'); ?></span>
+                        <?php endif; ?>
+                        <?php foreach (array_merge($queue_agents, $legacy_agents) as $agent):
+                            $is_legacy = !in_array($agent['role'], QueueRepository::AGENT_ROLES, true);
                         ?>
-                            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 10px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
-                                <span style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" name="members[]" class="modal-agent-checkbox" value="<?php echo htmlspecialchars($agent['extension']); ?>">
+                            <div class="<?php echo $is_legacy ? 'modal-legacy-assignee' : ''; ?>" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>" data-kind="member" style="display: <?php echo $is_legacy ? 'none' : 'flex'; ?>; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 10px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     <strong><?php echo htmlspecialchars($agent['extension']); ?></strong> - <?php echo htmlspecialchars($agent['full_name']); ?>
+                                    <?php if ($is_legacy): ?><span class="badge badge-danger" style="font-size: 9px; padding: 2px 5px;" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($agent['role']); ?></span><?php endif; ?>
                                 </span>
-                                <?php echo $role_badge; ?>
-                            </label>
+                                <select name="member_mode[<?php echo htmlspecialchars($agent['extension']); ?>]" class="form-control modal-agent-mode" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>" style="width: auto; flex-shrink: 0; padding: 2px 6px; height: auto; font-size: 12px;">
+                                    <option value=""><?php echo t('queues.member_mode_none'); ?></option>
+                                    <option value="dynamic"><?php echo t('queues.member_mode_dynamic'); ?></option>
+                                    <option value="static"><?php echo t('queues.member_mode_static'); ?></option>
+                                </select>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
 
-                <!-- 7. Kuyruk Yöneticileri (Supervisors) - Çoklu Seçim (Tüm Kullanıcılar) -->
+                <!-- 7. Kuyruk Yöneticileri (sadece Kuyruk Yönetici rolü) - Çoklu Seçim -->
                 <div class="form-group" style="background: rgba(245, 158, 11, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 14px;">
                     <label class="form-label" style="font-weight: 700; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                         <i class="fas fa-user-shield"></i> <?php echo t('queues.section_supervisors'); ?>
                     </label>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 140px; overflow-y: auto; background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
-                        <?php foreach ($all_agents as $agent_user):
-                            $is_adm = ($agent_user['role'] === 'admin' || $agent_user['role'] === 'cc_manager');
-                            $u_badge = $is_adm ? '<span class="badge badge-warning" style="font-size: 9px; padding: 2px 5px;">' . t('queues.role_manager') . '</span>' : '<span class="badge badge-info" style="font-size: 9px; padding: 2px 5px;">' . t('queues.role_user') . '</span>';
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 140px; overflow-y: auto; background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <?php if (empty($queue_managers)): ?>
+                            <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('queues.no_managers'); ?></span>
+                        <?php endif; ?>
+                        <?php foreach (array_merge($queue_managers, $legacy_managers) as $manager):
+                            $is_legacy = !in_array($manager['role'], QueueRepository::MANAGER_ROLES, true);
                         ?>
-                            <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 5px 8px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
-                                <span style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" name="supervisors[]" class="modal-supervisor-checkbox" value="<?php echo htmlspecialchars($agent_user['extension']); ?>">
-                                    <strong><?php echo htmlspecialchars($agent_user['extension']); ?></strong> - <?php echo htmlspecialchars($agent_user['full_name']); ?>
+                            <label class="<?php echo $is_legacy ? 'modal-legacy-assignee' : ''; ?>" data-ext="<?php echo htmlspecialchars($manager['extension']); ?>" data-kind="supervisor" style="display: <?php echo $is_legacy ? 'none' : 'flex'; ?>; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; padding: 5px 8px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
+                                <input type="checkbox" name="supervisors[]" class="modal-supervisor-checkbox" value="<?php echo htmlspecialchars($manager['extension']); ?>">
+                                <span><strong><?php echo htmlspecialchars($manager['extension']); ?></strong> - <?php echo htmlspecialchars($manager['full_name']); ?>
+                                    <?php if ($manager['role'] === 'admin'): ?><span class="badge badge-warning" style="font-size: 9px; padding: 2px 5px;"><?php echo t('queues.role_admin'); ?></span><?php endif; ?>
+                                    <?php if ($is_legacy): ?><span class="badge badge-danger" style="font-size: 9px; padding: 2px 5px;" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($manager['role']); ?></span><?php endif; ?>
                                 </span>
-                                <?php echo $u_badge; ?>
                             </label>
                         <?php endforeach; ?>
                     </div>

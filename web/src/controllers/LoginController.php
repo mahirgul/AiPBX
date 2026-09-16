@@ -30,12 +30,12 @@ class LoginController extends BaseController
         $num2 = $_SESSION['captcha_num2'];
         $csrf_token = getCSRFToken();
 
-        $site_title = getSystemSetting('site_title', 'AI PBX Portalı');
-        $brand_title = getSystemSetting('brand_title', 'AI PBX');
+        $site_title = getSystemSetting('site_title', 'AiPBX');
+        $brand_title = getSystemSetting('brand_title', 'AiPBX');
         $brand_sub = getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi');
-        $site_logo_type = getSystemSetting('site_logo_type', 'icon');
+        $site_logo_type = getSystemSetting('site_logo_type', 'image');
         $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
-        $site_logo_image = getSystemSetting('site_logo_image', '');
+        $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
 
         static::render('login/index', [
