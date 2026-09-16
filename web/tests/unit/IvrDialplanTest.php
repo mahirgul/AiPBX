@@ -147,4 +147,51 @@ final class IvrDialplanTest extends TestCase
         // 4. Menü tuşu '1' ile çakışan dahili '1' atlanmalı (Reload çakışmasını engellemek için)
         $this->assertStringNotContainsString('Direct Dial to Extension 1)', $conf);
     }
+
+    public function testIvrDirectDialWithOutboundRoutes(): void
+    {
+        $ivr = [
+            'id' => 5,
+            'title' => 'Outbound Route Direct Dial IVR',
+            'prompt_file' => 'custom/welcome',
+            'timeout_seconds' => 10,
+            'max_failures' => 3,
+            'language' => '',
+            'allow_direct_dial' => 1,
+            'digit_timeout' => 4,
+            'timeout_dest_type' => 'hangup',
+            'timeout_dest_id' => 0,
+            'invalid_dest_type' => 'hangup',
+            'invalid_dest_id' => 0,
+        ];
+
+        $entries = [
+            ['digit' => '1', 'dest_type' => 'hangup', 'dest_id' => 0]
+        ];
+
+        $exts = [
+            ['extension' => '1000', 'full_name' => 'Dahili 1000']
+        ];
+
+        $routes = [
+            ['match_pattern' => '_[4-9]XXX', 'route_name' => 'dahili', 'is_internal' => 1],
+            ['match_pattern' => '9999', 'route_name' => 'Ozel Santral', 'is_internal' => 1],
+            ['match_pattern' => '_X.', 'route_name' => 'Genel Rota', 'is_internal' => 1], // Catch-all atlanmali
+            ['match_pattern' => '1', 'route_name' => 'Cakisan Rota', 'is_internal' => 1],   // Menu tusu '1' ile cakisan atlanmali
+        ];
+
+        $conf = buildIVRDialplanBlock($ivr, $entries, $exts, [], $routes);
+
+        // 1. Dahili santral rotaları (örn. 9998'in eşleştiği _[4-9]XXX) dialplan'a eklenmeli
+        $this->assertStringContainsString('exten => _[4-9]XXX,1,NoOp(IVR 5 Direct Dial to Outbound Route dahili: ${EXTEN})', $conf);
+        $this->assertStringContainsString('exten => 9999,1,NoOp(IVR 5 Direct Dial to Outbound Route Ozel Santral: ${EXTEN})', $conf);
+        $this->assertStringContainsString(' same => n,Goto(from-internal-pbx,${EXTEN},1)', $conf);
+
+        // 2. Tehlikeli catch-all (_X.) IVR menü tuşlarını bozmaması için eklenmemeli
+        $this->assertStringNotContainsString('exten => _X.', $conf);
+
+        // 3. Menü seçeneği (1) ile çakışan rota deseni atlanmalı
+        $this->assertStringNotContainsString('Direct Dial to Outbound Route Cakisan Rota', $conf);
+    }
 }
+
