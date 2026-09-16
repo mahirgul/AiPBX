@@ -518,7 +518,7 @@ return [
     'fc.title' => 'Feature Code Management',
     'fc.header_title' => 'Feature Code (Star Code) Management',
     'fc.help_title' => 'Feature Code Module Guide',
-    'fc.help_body' => 'Manages shortcut codes dialed from the phone (like <code>*78</code>): Do Not Disturb (DND), Call Forwarding, Group/Directed Call Pickup, Call Spy, Queue Login/Logout by Queue ID (<code>*81&lt;queue id&gt;</code> / <code>*80&lt;queue id&gt;</code> — queue IDs are in the #ID column on the <a href="/queues">Queues</a> page).',
+    'fc.help_body' => 'Manages shortcut codes dialed from the phone (like <code>*78</code>): Do Not Disturb (DND), Call Forwarding, Group/Directed Call Pickup, Call Spy, Queue Login/Logout (<code>*81&lt;queue id&gt;</code> / <code>*80&lt;queue id&gt;</code>), Queue Pause / Unpause (<code>*22&lt;break id&gt;</code> / <code>*23</code>).',
     'fc.help_body2' => 'Each code\'s <strong>code</strong> (regular codes must start with <code>*</code>, codes with a variable parameter with <code>_*</code>) and <strong>which roles can use it</strong> (blank = everyone) can be changed. The behavior itself (what it does) is fixed — no new behavior type can be added, only these codes can be edited.',
     'fc.help_body3' => 'Assigning a "pickup group" to users is done from the <a href="/system-users">User Management</a> page. To see who has DND/forwarding enabled, check the <a href="/feature-codes-status">Active Feature Codes</a> report.',
     'fc.col_title' => 'Title',

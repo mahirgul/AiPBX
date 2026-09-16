@@ -98,6 +98,33 @@ switch ($action) {
         $stmt_close_pause->execute([$ext]);
         break;
 
+    case 'queue_pause':
+        $needs_dialplan_sync = false;
+        $reason_id = trim($argv[3] ?? '');
+
+        // Sistemdeki tanımlı mola nedenlerini al
+        $stmt_reasons = $db->query("SELECT setting_value FROM sys_settings WHERE setting_key = 'cc_break_reasons'");
+        $reasons_raw = $stmt_reasons ? ($stmt_reasons->fetchColumn() ?: '') : '';
+        $reasons_list = array_values(array_filter(array_map('trim', explode(',', $reasons_raw))));
+
+        // Mola ID'sini (1, 2, 3...) ada eşle
+        $reason_name = 'Mola';
+        if (is_numeric($reason_id) && intval($reason_id) >= 1 && intval($reason_id) <= count($reasons_list)) {
+            $reason_name = $reasons_list[intval($reason_id) - 1];
+        } elseif (!empty($reason_id) && !is_numeric($reason_id)) {
+            $reason_name = $reason_id;
+        } elseif (!empty($reasons_list)) {
+            $reason_name = $reasons_list[0];
+        }
+
+        QueueHelper::pauseMember($ext, $reason_name);
+        break;
+
+    case 'queue_unpause':
+        $needs_dialplan_sync = false;
+        QueueHelper::unpauseMember($ext);
+        break;
+
     default:
         fwrite(STDERR, "Bilinmeyen aksiyon: {$action}\n");
         exit(1);
