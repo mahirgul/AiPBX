@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Sistem Mimarisi & Mühendislik Rasyoneli — AiPBX Kurumsal Santral</title>
+    <meta name="description" content="AiPBX katmanlı sistem mimarisi: Port 443 ALPN stream çoklayıcı, dual-endpoint PJSIP, Go WebSocket anlık mesajlaşma ve iki kademeli MariaDB güvenlik modeli.">
+    <meta name="author" content="Mahir Gül (mhrgl.com)">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Top Announcement -->
+    <div class="top-banner">
+        <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS Yayında</strong> — Açık kaynak yeni nesil kurumsal IP santral ve birleşik iletişim platformu. Mimari &amp; Geliştirme: <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+        <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav>
+        <a href="index.html" class="logo">
+            <img src="logo.png" alt="AI PBX Logo">
+            <span>AI PBX</span>
+            <span class="logo-badge">LTS</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="index.html" class="">Genel Bakış</a></li>
+            <li><a href="architecture.html" class="active">Mimari</a></li>
+            <li><a href="callcenter.html" class="">Çağrı Merkezi</a></li>
+            <li><a href="features.html" class="">Özellikler</a></li>
+            <li><a href="mobile-apps.html" class="">Mobil Uygulamalar</a></li>
+            <li class="nav-dropdown">
+                <button class="nav-dropdown-btn">Rehberler ▾</button>
+                <div class="nav-dropdown-menu">
+                    <a href="installation.html" class="nav-dropdown-item"><span class="item-icon">🚀</span> Kurulum &amp; Yönetim</a>
+                    <a href="callcenter.html" class="nav-dropdown-item"><span class="item-icon">🎧</span> Kuyruk &amp; Mola (*22/*23)</a>
+                    <a href="security.html" class="nav-dropdown-item"><span class="item-icon">🛡️</span> Güvenlik &amp; CCIS Gateway</a>
+                    <a href="api-docs.html" class="nav-dropdown-item"><span class="item-icon">🔌</span> REST API &amp; WebSocket</a>
+                    <a href="architecture.html#rationale" class="nav-dropdown-item"><span class="item-icon">🧠</span> Mühendislik Tercihleri</a>
+                </div>
+            </li>
+            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkı Sun</a></li>
+        </ul>
+        <div class="nav-actions">
+            <a href="mobile-apps.html" class="btn-mhrgl" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">
+                📲 Mobil İndir
+            </a>
+            <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl desktop-only">
+                🌐 mhrgl.com
+            </a>
+            <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github desktop-only">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                GitHub
+            </a>
+            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Menüyü Aç/Kapat">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Drawer -->
+    <div class="mobile-drawer" id="mobileDrawer">
+        <div class="mobile-drawer-header">
+            <div class="logo">
+                <img src="logo.png" alt="AI PBX Logo" style="height: 28px;">
+                <span>AI PBX</span>
+                <span class="logo-badge">LTS</span>
+            </div>
+            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Menüyü kapat">&times;</button>
+        </div>
+        <ul class="mobile-nav-links">
+            <li><a href="index.html" class="mobile-nav-item">🏠 Genel Bakış (Home)</a></li>
+            <li><a href="architecture.html" class="mobile-nav-item">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
+            <li><a href="callcenter.html" class="mobile-nav-item">🎧 Çağrı Merkezi &amp; Mola (*22/*23)</a></li>
+            <li><a href="features.html" class="mobile-nav-item">⚡ Santral Özellikleri &amp; Kodlar</a></li>
+            <li><a href="mobile-apps.html" class="mobile-nav-item">📲 Mobil Uygulamalar (Android &amp; iOS)</a></li>
+            <li><a href="installation.html" class="mobile-nav-item">🚀 Kurulum &amp; Yapılandırma</a></li>
+            <li><a href="security.html" class="mobile-nav-item">🛡️ Güvenlik &amp; CCIS Protokol Gateway</a></li>
+            <li><a href="api-docs.html" class="mobile-nav-item">🔌 REST API &amp; Geliştirici Kılavuzu</a></li>
+            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">🤝 Katkı Kılavuzu</a></li>
+        </ul>
+        <div class="mobile-drawer-actions">
+            <a href="mobile-apps.html" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                📲 Mobil İstemcileri İndir
+            </a>
+            <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
+                🌐 Mahir Gül (mhrgl.com)
+            </a>
+        </div>
+    </div>
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+    <div class="docs-layout">
+
+        <!-- Left Sidebar Navigation -->
+        <aside class="docs-sidebar">
+            <div class="sidebar-search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="sidebarSearch" placeholder="Dokümantasyonda ara...">
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-title">Platform &amp; Mimari</div>
+                <ul class="sidebar-menu">
+                    <li><a href="index.html">🏠 Genel Bakış (Overview)</a></li>
+                    <li><a href="architecture.html" class="active">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
+                    <li><a href="features.html" class="">⚡ Santral Modülleri</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-title">Çağrı Merkezi &amp; Kuyruk</div>
+                <ul class="sidebar-menu">
+                    <li><a href="callcenter.html" class="">🎧 Kuyruk Yönetimi</a></li>
+                    <li><a href="callcenter.html#break-codes" class="">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></a></li>
+                    <li><a href="callcenter.html#wallboard">📊 Canlı Wallboard &amp; SLA</a></li>
+                    <li><a href="callcenter.html#supervisor">👁️ Süpervizör &amp; Spy (*90)</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-title">Mobil İstemciler</div>
+                <ul class="sidebar-menu">
+                    <li><a href="mobile-apps.html" class="">📱 Android &amp; iOS İstemcileri</a></li>
+                    <li><a href="mobile-apps.html#downloads">⬇️ APK / IPA / Simulator</a></li>
+                    <li><a href="mobile-apps.html#android">🤖 Kotlin Native &amp; FCM Push</a></li>
+                    <li><a href="mobile-apps.html#ios">🍏 Swift &amp; CallKit</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-title">Yönetim &amp; Güvenlik</div>
+                <ul class="sidebar-menu">
+                    <li><a href="installation.html" class="">🚀 Hızlı Kurulum (install.sh)</a></li>
+                    <li><a href="installation.html#ports">🌐 Port &amp; Güvenlik Duvarı</a></li>
+                    <li><a href="security.html" class="">🛡️ Güvenlik &amp; Fail2ban</a></li>
+                    <li><a href="security.html#ccis">📠 NEC CCIS Protokol Gateway</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-title">Geliştirici &amp; API</div>
+                <ul class="sidebar-menu">
+                    <li><a href="api-docs.html" class="">🔌 REST API Endpoints</a></li>
+                    <li><a href="api-docs.html#websocket">💬 Go WebSocket Protokolü</a></li>
+                    <li><a href="api-docs.html#tests">🧪 PHPUnit Testleri (142 Test)</a></li>
+                </ul>
+            </div>
+        </aside>
+
+
+        <!-- Main Documentation Content -->
+        <main class="docs-content">
+            <div class="docs-breadcrumb">
+                <a href="index.html">Ana Sayfa</a> / <a href="architecture.html">Mimari</a> / <span>Sistem Tasarımı</span>
+            </div>
+
+            <div class="docs-header">
+                <h1>🏗️ Sistem Mimarisi &amp; Mühendislik Rasyoneli</h1>
+                <p class="lead">
+                    AiPBX; kurumsal ağlardaki sıkı güvenlik duvarı engellerini, WebRTC medya aktarım zorluklarını, çoklu cihaz karmaşasını ve yüksek eşzamanlı anlık mesajlaşma ihtiyaçlarını çözmek için özel olarak mimarilendirilmiştir.
+                </p>
+            </div>
+
+            <!-- Section 1: Katmanlı Mimari -->
+            <section class="docs-section" id="overview">
+                <h2>1. Bütünleşik Katmanlı Mimari (Layered Topology)</h2>
+                <p>
+                    AiPBX, modüler ve gevşek bağlı (loosely coupled) çok katmanlı bir yapı üzerine inşa edilmiştir. İstemcilerden gelen tüm trafik tek bir noktada karşılanır ve protokol seviyesinde yönlendirilir:
+                </p>
+
+                <div class="docs-code-box">
+                    <div class="docs-code-header">
+                        <span>ASCII Mimari Topolojisi</span>
+                    </div>
+                    <div class="docs-code-body">
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                      İSTEMCİ KATMANI                                    │
+│   ┌───────────────────────────────┐               ┌─────────────────────────────────┐   │
+│   │     Android Mobil Uygulama    │               │    WebRTC Tarayıcı İstemcisi    │   │
+│   │     (Kotlin + WebRTC / SIP)   │               │   (Webphone + Yönetim Paneli)   │   │
+│   └───────────────┬───────────────┘               └────────────────┬────────────────┘   │
+└───────────────────┼────────────────────────────────────────────────┼────────────────────┘
+                    │ HTTPS / WSS / TURNS (Tek Port: 443)            │ HTTPS / WSS / TURNS
+                    ▼                                                ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    KENAR GİRİŞ: NGINX PORT 443 ALPN ÇOKLAYICI (L4)                      │
+│   Nginx TCP Stream modülü (ssl_preread on) — Paketi çözmeden SNI/ALPN inceler:          │
+│                                                                                         │
+│   ├── [ ALPN Var ] (http/1.1, h2: Web Tarayıcılar, REST API, Mobil Uygulama API)        │
+│   │     └──► Apache 2.4 TLS Sonlandırma Noktasına (127.0.0.1:8443)                      │
+│   │                                                                                     │
+│   └── [ ALPN Yok ] (WebRTC TURNS Medya Aktarımı - Kurumsal Güvenlik Duvarı Aşımı)       │
+│         └──► Coturn TURNS Servisine (127.0.0.1:5349)                                    │
+└───────────────────────────────────┬────────────────────────────────┬────────────────────┘
+                                    │                                │
+                     [ ALPN Var ]   │                                │   [ ALPN Yok ]
+                                    ▼                                ▼
+┌───────────────────────────────────────────────────────┐ ┌─────────────────────────────┐
+│          UYGULAMA VE WEBSOCKET PROXY KATMANI          │ │        COTURN RELAY         │
+│  Apache 2.4 (127.0.0.1:8443 TLS Sonlandırma)          │ │  TURNS Sunucusu (Port 5349) │
+│   ├── /                 ──► PHP 8 MVC Portali         │ │  Sıfır Medya Kaybı İçin     │
+│   ├── /ws               ──► Asterisk WebRTC (8088/ws) │ │  Simetrik NAT Aşımı         │
+│   └── /chat/ws          ──► Go Chat Motoru (8086/ws)  │ └─────────────────────────────┘
+│                                                       │
+│  Port 80: Yalnızca HTTP->HTTPS Yönlendirme ve         │
+│           Let's Encrypt ACME HTTP-01 Doğrulama        │
+└──────────┬────────────────────────┬───────────────────┘
+           │                        │
+           ▼                        ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│      PHP 8 MVC      │  │     Asterisk 22     │
+│     Web Yönetim     │  │    Telefoni &amp; Medya │
+│   (Güvenli Portal)  │  │    (PJSIP / WebRTC) │
+└──────────┬──────────┘  └──────────┬──────────┘
+           │                        │
+           │     AMI (Port 5038)    │
+           ├────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       VERİ KATMANI                                      │
+│  MariaDB 11 (utf8mb4_unicode_ci) — İki Kademeli Yetkilendirme Modeli:                    │
+│   ├── aipbx_portal   (Çalışma Zamanı: Yalnızca SELECT, INSERT, UPDATE, DELETE)           │
+│   └── aipbx_migrator (Şema Geçişleri: Phinx DDL Migration Yetkisi)                     │
+└─────────────────────────────────────────────────────────────────────────────────────────┘</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Port 443 ALPN Çoklama -->
+            <section class="docs-section" id="alpn">
+                <h2>2. Neden Port 443 ALPN Stream Çoklama?</h2>
+                <p>
+                    Geleneksel VoIP santral kurulumlarında SIP sinyalleşmesi için UDP 5060, WebRTC WSS için 8089, STUN/TURN için 3478 veya 5349 gibi çok sayıda harici port açılması zorunludur. Ancak bankalar, hastaneler, üniversiteler ve kurumsal plaza ağları <strong>Port 80 ve 443 dışındaki tüm giden portları katı güvenlik duvarları (Firewall) ile bloke eder</strong>.
+                </p>
+                
+                <div class="callout callout-success">
+                    <span class="callout-icon">💡</span>
+                    <div class="callout-body">
+                        <strong>AiPBX Çözümü:</strong> Nginx Layer 4 (L4) Stream modülü ve <code>ssl_preread on</code> direktifi sayesinde, TLS el sıkışmasındaki (ClientHello) <em>Application-Layer Protocol Negotiation (ALPN)</em> baytlarını inceler. SSL sertifikasını çözmeden şifreli trafiği alt servislere dağıtır.
+                    </div>
+                </div>
+
+                <h3>Nginx L4 Stream Yapılandırması:</h3>
+                <div class="docs-code-box">
+                    <div class="docs-code-header">
+                        <span>/etc/nginx/nginx.conf (L4 Stream Bloğu)</span>
+                        <button class="docs-code-copy">Kopyala</button>
+                    </div>
+                    <div class="docs-code-body">
+<pre><code>stream {
+    map $ssl_preread_alpn_protocols $upstream_backend {
+        # Standart web tarayıcılar, mobil REST API çağrıları
+        "~*http"        apache_https;
+        "~*h2"          apache_https;
+        
+        # WebRTC TURNS medya trafiği (ALPN göndermez)
+        default         coturn_turns;
+    }
+
+    upstream apache_https {
+        server 127.0.0.1:8443;
+    }
+
+    upstream coturn_turns {
+        server 127.0.0.1:5349;
+    }
+
+    server {
+        listen 443;
+        proxy_pass $upstream_backend;
+        ssl_preread on;
+        proxy_connect_timeout 5s;
+        proxy_timeout 3600s;
+    }
+}</code></pre>
+                    </div>
+                </div>
+                <p>
+                    Bu sayede kullanıcı ister mobil veri (4G/5G) üzerinden, ister en sıkı kurumsal Wi-Fi ağından bağlansın; ek hiçbir VPN kurmadan tek bir <code>https://santral.sirket.com</code> adresi üzerinden hem web paneline girer, hem sesli görüşme yapar, hem de sohbet eder.
+                </p>
+            </section>
+
+            <!-- Section 3: Dual-Endpoint PJSIP -->
+            <section class="docs-section" id="dual-endpoint">
+                <h2>3. Dual-Endpoint PJSIP ve WebRTC Mimarisi</h2>
+                <p>
+                    Piyasadaki birçok hazır PBX dağıtımı (FreePBX, Issabel vb.) tek bir dahili için aynı anda hem donanımsal masa telefonunu hem de WebRTC tarayıcıyı bağlamakta zorlanır. NAT arkasındaki masa telefonu ile WebRTC'nin şifreleme ve medya taşıma gereksinimleri taban tabana zıttır:
+                </p>
+                <ul>
+                    <li><strong>WebRTC (Tarayıcı &amp; Mobil):</strong> WSS taşıyıcı, DTLS-SRTP şifreleme, ICE adayları, AVPF profil ve Opus ses kodeği gerektirir.</li>
+                    <li><strong>Masa Telefonu (IP Phone / ATA):</strong> UDP veya TLS taşıyıcı, SDES-SRTP veya şifresiz RTP, SAVP/RTP profil ve G.711u/a kodeği kullanır.</li>
+                </ul>
+
+                <p>
+                    AiPBX bu sorunu <strong>Dual-Endpoint Eşlemesi</strong> ile çözer. Dahili <code>1000</code> oluşturulduğunda sistem veritabanında iki ayrı PJSIP profili açar:
+                </p>
+
+                <div class="docs-table-wrapper">
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>Endpoint ID</th>
+                                <th>Kullanım Amacı</th>
+                                <th>Taşıyıcı &amp; Port</th>
+                                <th>Şifreleme &amp; Kodek</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-pill">1000</span></td>
+                                <td>Donanım IP Telefon / Masaüstü SIP</td>
+                                <td>UDP / TLS (Port 5060/5061)</td>
+                                <td>SDES-SRTP / G.711a, G.722, G.729</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-pill">1000-webrtc</span></td>
+                                <td>Web Tarayıcı &amp; Native Mobil İstemci</td>
+                                <td>WSS (Port 443 ALPN / 8089)</td>
+                                <td>DTLS-SRTP + ICE / Opus (HD Ses)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-info">
+                    <span class="callout-icon">📞</span>
+                    <div class="callout-body">
+                        <strong>Çatal Zil (Forked Ringing):</strong> Dışarıdan 1000 nolu dahili arandığında Asterisk dialplanı <code>Dial(PJSIP/1000&amp;PJSIP/1000-webrtc,30)</code> komutuyla hem kullanıcının masasındaki IP telefonu hem de cebindeki mobil uygulamayı aynı anda çaldırır. İlk cevaplanan cihaz çağrıyı alır, diğeri sessizce kapanır.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Go WebSocket Chat Motoru -->
+            <section class="docs-section" id="go-chat">
+                <h2>4. Neden Bağımsız Go Real-Time WebSocket Servisi?</h2>
+                <p>
+                    PHP; kısa ömürlü HTTP istek-yanıt (Request-Response) yaşam döngüsü için mükemmel ve kararlıdır, ancak on binlerce eşzamanlı istemcinin açık tuttuğu uzun süreli (persistent) WebSocket bağlantılarını yönetmek için optimize edilmemiştir. Node.js ise ek JavaScript çalıştırma ortamı ve bellek maliyeti getirir.
+                </p>
+                <p>
+                    AiPBX, santral içi bireysel ve çok katılımcılı grup sohbet motorunu saf <strong>Go (Golang)</strong> ile geliştirmiştir (<code>/opt/aipbx/bin/aipbx-chat</code>):
+                </p>
+                <ul>
+                    <li><strong>Mikro Bellek Ayak İzi:</strong> 10.000 aktif eşzamanlı WebSocket istemcisi yalnızca ~28 MB RAM tüketir.</li>
+                    <li><strong>Goroutine Tabanlı Eşzamanlılık:</strong> Her bağlantı için ağır işletim sistemi iş parçacığı yerine hafif Go kanalları kullanılır.</li>
+                    <li><strong>Sıfır Dış Bağımlılık:</strong> Tek bir statik ikili dosya (binary) olarak derlenir, sunucuda ek paket veya framework kurulumu gerektirmez.</li>
+                    <li><strong>Anlık Varlık (Presence) ve Yazıyor Bildirimi:</strong> Kullanıcının çevrimiçi durumu, okundu bilgisi ve grup mesajları milisaniye mertebesinde dağıtılır.</li>
+                </ul>
+            </section>
+
+            <!-- Section 5: Asterisk Atomik Senkronizasyon -->
+            <section class="docs-section" id="sync-pipeline">
+                <h2>5. Asterisk Yapılandırma Senkronizasyon Döngüsü</h2>
+                <p>
+                    AiPBX'te Asterisk yapılandırma dosyaları asla elle düzenlenmez. Veritabanı (MariaDB), sistemin tek ve mutlak gerçeklik kaynağıdır (Single Source of Truth). Bir ayar değiştirildiğinde aşağıdaki atomik döngü işletilir:
+                </p>
+
+                <div class="docs-code-box">
+                    <div class="docs-code-header">
+                        <span>Yapılandırma &amp; Otomatik Geri Alma (Rollback) Akışı</span>
+                    </div>
+                    <div class="docs-code-body">
+<pre><code>Web UI / REST API İstek
+        │
+        ▼
+Controller Yetki ve Doğrulama
+        │
+        ▼
+Service Veritabanına Yazar (MariaDB DML)
+        │
+        ▼
+Sync Generator (src/sync/*.php)
+        ├── 1. Mevcut .conf dosyasının .bak yedeğini alır
+        ├── 2. DB'den son güncel veriyi sorgular ve /etc/asterisk/pbx/*.conf dosyasına yazar
+        └── 3. Asterisk'e yeniden yükleme komutu gönderir (dialplan reload, queue reload...)
+                │
+                ├── [ BAŞARILI ] ──► Audit log kaydı düşülür, .bak dosyası temizlenir.
+                └── [ HATA ]     ──► OTOMATİK ROLLBACK: Eski .bak anında geri yüklenir,
+                                     servis kesintisi %100 önlenir ve hata loglanır.</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 6: İki Kademeli Veritabanı Güvenliği -->
+            <section class="docs-section" id="db-security">
+                <h2>6. İki Kademeli MariaDB Güvenlik Modeli</h2>
+                <p>
+                    SQL enjeksiyonu veya web açıkları durumunda veritabanı şemasının tahrif edilmesini önlemek amacıyla, çalışma zamanı ve şema göçü kullanıcıları kesin sınırlarla ayrılmıştır:
+                </p>
+
+                <div class="docs-table-wrapper">
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>Kullanıcı Adı</th>
+                                <th>Kullanım Alanı</th>
+                                <th>Sahip Olduğu SQL Yetkileri</th>
+                                <th>Kısıtlanan Yetkiler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="code-pill">aipbx_portal</span></td>
+                                <td>PHP Web Paneli &amp; REST API</td>
+                                <td><span class="tag-badge tag-green">SELECT, INSERT, UPDATE, DELETE</span></td>
+                                <td>DROP, ALTER, CREATE, GRANT (Yasak)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="code-pill">aipbx_migrator</span></td>
+                                <td>Phinx Veritabanı Göçleri (CLI)</td>
+                                <td><span class="tag-badge tag-blue">CREATE, ALTER, INDEX, DROP</span></td>
+                                <td>Yalnızca yerel konsoldan göç anında çağrılır</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Pagination -->
+            <div class="docs-pagination">
+                <a href="index.html" class="pagination-btn">
+                    <span class="pagination-label">← Önceki</span>
+                    <span class="pagination-title">Genel Bakış (Home)</span>
+                </a>
+                <a href="callcenter.html" class="pagination-btn next">
+                    <span class="pagination-label">Sonraki →</span>
+                    <span class="pagination-title">Çağrı Merkezi &amp; Mola Kodları</span>
+                </a>
+            </div>
+        </main>
+
+        <!-- Right Sticky Table of Contents -->
+        <div class="docs-toc">
+            <div class="toc-title">Bu Sayfada</div>
+            <ul class="toc-list">
+                <li><a href="#overview">1. Bütünleşik Mimari</a></li>
+                <li><a href="#alpn">2. Port 443 ALPN Çoklama</a></li>
+                <li><a href="#dual-endpoint">3. Dual-Endpoint PJSIP</a></li>
+                <li><a href="#go-chat">4. Go WebSocket Chat</a></li>
+                <li><a href="#sync-pipeline">5. Asterisk Sync Döngüsü</a></li>
+                <li><a href="#db-security">6. Veritabanı Güvenliği</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Universal Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h4><img src="logo.png" alt="AiPBX Logo" style="height: 24px; border-radius: 4px;"> AI PBX</h4>
+                <p>
+                    Açık kaynak, yüksek eşzamanlılıklı kurumsal IP PBX ve Birleşik İletişim Platformu. Kısıtlayıcı güvenlik duvarlarını aşan Port 443 ALPN mimarisi, Asterisk 22, WebRTC, Go WebSocket sohbet motoru ve yerel mobil istemciler.
+                </p>
+                <p>
+                    Proje Mimarı &amp; Geliştirici: <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h5>Mimari &amp; Çözümler</h5>
+                <ul>
+                    <li><a href="architecture.html">Port 443 ALPN Stream</a></li>
+                    <li><a href="architecture.html#dual-endpoint">Dual-Endpoint PJSIP</a></li>
+                    <li><a href="callcenter.html">Çağrı Merkezi &amp; Kuyruk</a></li>
+                    <li><a href="callcenter.html#break-codes">Mola Kodları (*22/*23)</a></li>
+                    <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Bileşenler &amp; İndirme</h5>
+                <ul>
+                    <li><a href="mobile-apps.html">Android APK v1.0.32</a></li>
+                    <li><a href="mobile-apps.html#ios">iOS Swift &amp; CallKit</a></li>
+                    <li><a href="features.html#webrtc">WebRTC Tarayıcı Telefonu</a></li>
+                    <li><a href="features.html#fax">Dijital Faks Sunucusu</a></li>
+                    <li><a href="api-docs.html">REST API &amp; Webhook</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Bağlantılar &amp; Belgelendirme</h5>
+                <ul>
+                    <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
+                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">Gizlilik Politikası</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Deposu</a></li>
+                    <li><a href="installation.html">Kurulum Kılavuzu</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkıda Bulunma</a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT Lisansı</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>
+                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Katkıcıları. MIT Lisansı ile sunulmaktadır.
+            </div>
+            <div>
+                Asterisk 22, Nginx L4, Apache 2.4, MariaDB 11, PHP 8, Go &amp; Kotlin ile geliştirilmiştir.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Shared Main Script -->
+    <script src="js/main.js"></script>
+</body>
+</html>
