@@ -55,8 +55,9 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: Configure Keystore & Signing
         id: prep_signing
@@ -70,17 +71,16 @@ jobs:
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Decoding release keystore from secrets..."
             echo "$KEYSTORE_BASE64" | base64 -d > release-key.jks
-            cat <<EOF > keystore.properties
-          storeFile=release-key.jks
-          storePassword=$KEYSTORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          EOF
+            echo "storeFile=release-key.jks" > keystore.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> keystore.properties
+            echo "keyAlias=$KEY_ALIAS" >> keystore.properties
+            echo "keyPassword=$KEY_PASSWORD" >> keystore.properties
             echo "has_keystore=true" >> $GITHUB_OUTPUT
             echo "Release keystore configured successfully."
           else
-            echo "Warning: ANDROID_KEYSTORE_BASE64 secret not found."
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret bulunamadı! Lütfen GitHub repo Settings -> Secrets and variables -> Actions altına ekleyin."
             echo "has_keystore=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
       - name: Grant execute permission for gradlew
