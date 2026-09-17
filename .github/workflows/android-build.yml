@@ -107,15 +107,25 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          SHOULD_UPLOAD: ${{ inputs.upload_to_play != false }}
+          IS_PUSH: ${{ github.event_name == 'push' }}
+          INPUT_UPLOAD: ${{ inputs.upload_to_play }}
         run: |
-          if [ -n "$PLAY_KEY_JSON" ] && [ "$SHOULD_UPLOAD" = "true" ]; then
+          echo "GitHub Event: ${{ github.event_name }}"
+          if [ -n "$PLAY_KEY_JSON" ]; then
+            echo "Google Play Service Account Secret: MEVCUT"
+          else
+            echo "Google Play Service Account Secret: BULUNAMADI"
+          fi
+
+          if [ -z "$PLAY_KEY_JSON" ]; then
+            echo "::warning::PLAY_STORE_JSON_KEY secret bulunamadı! Google Play Console yüklemesi atlanıyor."
+            echo "can_upload=false" >> $GITHUB_OUTPUT
+          elif [ "$IS_PUSH" = "true" ] || [ "$INPUT_UPLOAD" = "true" ] || [ -z "$INPUT_UPLOAD" ]; then
+            echo "Google Play yükleme şartları sağlandı -> Upload başlatılacak."
             echo "can_upload=true" >> $GITHUB_OUTPUT
           else
+            echo "upload_to_play=false seçildiği için yükleme atlanıyor."
             echo "can_upload=false" >> $GITHUB_OUTPUT
-            if [ -z "$PLAY_KEY_JSON" ]; then
-              echo "Notice: PLAY_STORE_JSON_KEY secret is not configured. Skipping Google Play upload."
-            fi
           fi
 
       - name: Set up Python for Play Console Upload
