@@ -11,7 +11,17 @@ import re
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-KEY_FILE = os.path.join(BASE_DIR, 'hosting-1-491712-4626c13e8f8b.json')
+KEY_FILE = os.environ.get('PLAY_STORE_JSON_KEY_FILE') or os.path.join(BASE_DIR, 'hosting-1-491712-4626c13e8f8b.json')
+if not os.path.exists(KEY_FILE):
+    import glob
+    candidates = (
+        glob.glob(os.path.join(BASE_DIR, 'hosting-*.json')) +
+        glob.glob(os.path.join(BASE_DIR, '*service-account*.json')) +
+        glob.glob(os.path.join(BASE_DIR, 'play-*.json'))
+    )
+    if candidates:
+        KEY_FILE = candidates[0]
+
 PACKAGE_NAME = 'com.mhrgl.AiPBX'
 AAB_PATH = os.path.join(BASE_DIR, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab')
 TRACK = sys.argv[1] if len(sys.argv) > 1 else 'alpha'
@@ -79,6 +89,23 @@ def upload_bundle():
                     raise upload_err
             else:
                 raise upload_err
+
+        # --- PROGUARD MAPPING YUKLEME ---
+        mapping_path = os.path.join(BASE_DIR, 'app', 'build', 'outputs', 'mapping', 'release', 'mapping.txt')
+        if os.path.exists(mapping_path) and version_code:
+            try:
+                print(f"3b. ProGuard mapping dosyasi yukleniyor ({mapping_path})...")
+                mapping_media = MediaFileUpload(mapping_path, mimetype='application/octet-stream')
+                service.edits().deobfuscationfiles().upload(
+                    packageName=PACKAGE_NAME,
+                    editId=edit_id,
+                    deobfuscationFileType='proguard',
+                    versionCode=version_code,
+                    media_body=mapping_media
+                ).execute()
+                print("    Mapping dosyasi basariyla yuklendi.")
+            except Exception as map_err:
+                print(f"    Mapping yukleme uyarisi (zorunlu degil): {map_err}")
 
         # --- TRACK ATAMA ---
         track_label = "Kapali Test / Closed Testing" if TRACK == "alpha" else TRACK

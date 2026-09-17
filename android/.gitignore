@@ -13,3 +13,4 @@ captures/
 .externalNativeBuild/
 .cxx/
 __pycache__/
+print_github_secrets.sh
