@@ -1,12 +1,31 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en" data-lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Kurumsal Santral Özellikleri & Modüller — AiPBX Kurumsal Santral</title>
-    <meta name="description" content="AiPBX santral modülleri: Çok seviyeli IVR, gelen ve giden çağrı yönlendirme, WebRTC tarayıcı telefonu, dijital faks sunucusu ve tüm özellik kodları.">
+    <title>Enterprise PBX Features & Modules — AiPBX</title>
+    <meta name="description" content="AiPBX telephony suite: Multi-level IVR, DID inbound and outbound routing, in-browser WebRTC softphone, digital fax server, and complete star codes directory.">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
     
+    <!-- Synchronous Language Auto-Detection (Zero Flicker) -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('aipbx_lang');
+            var lang = saved;
+            if (!lang) {
+                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
+                lang = 'en';
+                for (var i = 0; i < navLangs.length; i++) {
+                    var l = (navLangs[i] || '').toLowerCase();
+                    if (l.indexOf('tr') === 0) { lang = 'tr'; break; }
+                    if (l.indexOf('de') === 0) { lang = 'de'; break; }
+                }
+            }
+            document.documentElement.setAttribute('data-lang', lang);
+            document.documentElement.lang = lang;
+        })();
+    </script>
+
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -18,18 +37,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Stylesheet -->
+    <!-- Shared Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Top Announcement -->
+    <!-- Top Announcement Banner -->
     <div class="top-banner">
-        <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS Yayında</strong> — Açık kaynak yeni nesil kurumsal IP santral ve birleşik iletişim platformu. Mimari &amp; Geliştirme: <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
-        <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        <div data-lang="tr">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS Yayında</strong> — Açık kaynak yeni nesil kurumsal IP santral ve birleşik iletişim platformu. Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
+        <div data-lang="en">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS is Live</strong> — Modern open-source enterprise IP telephony &amp; unified communications. Architected by <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • By <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
+        <div data-lang="de">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS ist Live</strong> — Moderne Open-Source Enterprise IP-Telefonie &amp; Unified Communications. Entwickelt von <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Von <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
     </div>
 
-    <!-- Main Navigation -->
+    <!-- Main Navigation Bar -->
     <nav>
         <a href="index.html" class="logo">
             <img src="logo.png" alt="AI PBX Logo">
@@ -37,35 +66,136 @@
             <span class="logo-badge">LTS</span>
         </a>
         <ul class="nav-links">
-            <li><a href="index.html" class="">Genel Bakış</a></li>
-            <li><a href="architecture.html" class="">Mimari</a></li>
-            <li><a href="callcenter.html" class="">Çağrı Merkezi</a></li>
-            <li><a href="features.html" class="active">Özellikler</a></li>
-            <li><a href="mobile-apps.html" class="">Mobil Uygulamalar</a></li>
+            <li>
+                <a href="index.html" class="">
+                    <span data-lang="tr">Genel Bakış</span>
+                    <span data-lang="en">Overview</span>
+                    <span data-lang="de">Übersicht</span>
+                </a>
+            </li>
+            <li>
+                <a href="architecture.html" class="">
+                    <span data-lang="tr">Mimari</span>
+                    <span data-lang="en">Architecture</span>
+                    <span data-lang="de">Architektur</span>
+                </a>
+            </li>
+            <li>
+                <a href="callcenter.html" class="">
+                    <span data-lang="tr">Çağrı Merkezi</span>
+                    <span data-lang="en">Call Center</span>
+                    <span data-lang="de">Callcenter</span>
+                </a>
+            </li>
+            <li>
+                <a href="features.html" class="active">
+                    <span data-lang="tr">Özellikler</span>
+                    <span data-lang="en">Features</span>
+                    <span data-lang="de">Funktionen</span>
+                </a>
+            </li>
+            <li>
+                <a href="mobile-apps.html" class="">
+                    <span data-lang="tr">Mobil Uygulamalar</span>
+                    <span data-lang="en">Mobile Apps</span>
+                    <span data-lang="de">Mobil-Apps</span>
+                </a>
+            </li>
             <li class="nav-dropdown">
-                <button class="nav-dropdown-btn">Rehberler ▾</button>
+                <button class="nav-dropdown-btn">
+                    <span data-lang="tr">Rehberler ▾</span>
+                    <span data-lang="en">Guides ▾</span>
+                    <span data-lang="de">Handbuch ▾</span>
+                </button>
                 <div class="nav-dropdown-menu">
-                    <a href="installation.html" class="nav-dropdown-item"><span class="item-icon">🚀</span> Kurulum &amp; Yönetim</a>
-                    <a href="callcenter.html" class="nav-dropdown-item"><span class="item-icon">🎧</span> Kuyruk &amp; Mola (*22/*23)</a>
-                    <a href="security.html" class="nav-dropdown-item"><span class="item-icon">🛡️</span> Güvenlik &amp; CCIS Gateway</a>
-                    <a href="api-docs.html" class="nav-dropdown-item"><span class="item-icon">🔌</span> REST API &amp; WebSocket</a>
-                    <a href="architecture.html#rationale" class="nav-dropdown-item"><span class="item-icon">🧠</span> Mühendislik Tercihleri</a>
+                    <a href="installation.html" class="nav-dropdown-item">
+                        <span class="item-icon">🚀</span>
+                        <span data-lang="tr">Kurulum &amp; Yönetim</span>
+                        <span data-lang="en">Installation Guide</span>
+                        <span data-lang="de">Installation &amp; Setup</span>
+                    </a>
+                    <a href="callcenter.html#break-codes" class="nav-dropdown-item">
+                        <span class="item-icon">🎧</span>
+                        <span data-lang="tr">Kuyruk &amp; Mola (*22/*23)</span>
+                        <span data-lang="en">Queues &amp; Breaks (*22/*23)</span>
+                        <span data-lang="de">Warteschlange &amp; Pause (*22/*23)</span>
+                    </a>
+                    <a href="security.html" class="nav-dropdown-item">
+                        <span class="item-icon">🛡️</span>
+                        <span data-lang="tr">Güvenlik &amp; CCIS Gateway</span>
+                        <span data-lang="en">Security &amp; CCIS Gateway</span>
+                        <span data-lang="de">Sicherheit &amp; CCIS-Gateway</span>
+                    </a>
+                    <a href="api-docs.html" class="nav-dropdown-item">
+                        <span class="item-icon">🔌</span>
+                        <span data-lang="tr">REST API &amp; WebSocket</span>
+                        <span data-lang="en">REST API &amp; WebSocket</span>
+                        <span data-lang="de">REST-API &amp; WebSocket</span>
+                    </a>
+                    <a href="architecture.html#alpn" class="nav-dropdown-item">
+                        <span class="item-icon">🧠</span>
+                        <span data-lang="tr">ALPN Çoklayıcı Detayı</span>
+                        <span data-lang="en">Port 443 ALPN Deep Dive</span>
+                        <span data-lang="de">Port 443 ALPN Deep Dive</span>
+                    </a>
                 </div>
             </li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkı Sun</a></li>
+            <li>
+                <a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">
+                    <span data-lang="tr">Katkı Sun</span>
+                    <span data-lang="en">Contribute</span>
+                    <span data-lang="de">Mitwirken</span>
+                </a>
+            </li>
         </ul>
+
         <div class="nav-actions">
+            <!-- Top-Right Language Switcher (TR / EN / DE) -->
+            <div class="lang-selector" id="langSelector">
+                <button class="lang-btn" id="langSelectorBtn" aria-label="Select Language">
+                    <span class="lang-flag" id="currentLangFlag">🌐</span>
+                    <span class="lang-code" id="currentLangCode">EN</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-option" data-set-lang="tr">
+                        <span class="flag">🇹🇷</span>
+                        <span>Türkçe</span>
+                        <span class="check">✓</span>
+                    </button>
+                    <button class="lang-option" data-set-lang="en">
+                        <span class="flag">🇬🇧</span>
+                        <span>English</span>
+                        <span class="check">✓</span>
+                    </button>
+                    <button class="lang-option" data-set-lang="de">
+                        <span class="flag">🇩🇪</span>
+                        <span>Deutsch</span>
+                        <span class="check">✓</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download Button -->
             <a href="mobile-apps.html" class="btn-mhrgl" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">
-                📲 Mobil İndir
+                <span data-lang="tr">📲 Mobil İndir</span>
+                <span data-lang="en">📲 Download App</span>
+                <span data-lang="de">📲 App Laden</span>
             </a>
+
+            <!-- Developer Site -->
             <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl desktop-only">
                 🌐 mhrgl.com
             </a>
+
+            <!-- GitHub Repo -->
             <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github desktop-only">
                 <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
                 GitHub
             </a>
-            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Menüyü Aç/Kapat">
+
+            <!-- Mobile Toggle Button -->
+            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Toggle Menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -73,7 +203,7 @@
         </div>
     </nav>
 
-    <!-- Mobile Drawer -->
+    <!-- Mobile Navigation Drawer -->
     <div class="mobile-drawer" id="mobileDrawer">
         <div class="mobile-drawer-header">
             <div class="logo">
@@ -81,22 +211,86 @@
                 <span>AI PBX</span>
                 <span class="logo-badge">LTS</span>
             </div>
-            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Menüyü kapat">&times;</button>
+            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">&times;</button>
         </div>
+
+        <!-- Mobile Language Bar -->
+        <div class="mobile-lang-bar">
+            <button class="mobile-lang-btn" data-set-lang="tr">🇹🇷 TR</button>
+            <button class="mobile-lang-btn" data-set-lang="en">🇬🇧 EN</button>
+            <button class="mobile-lang-btn" data-set-lang="de">🇩🇪 DE</button>
+        </div>
+
         <ul class="mobile-nav-links">
-            <li><a href="index.html" class="mobile-nav-item">🏠 Genel Bakış (Home)</a></li>
-            <li><a href="architecture.html" class="mobile-nav-item">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
-            <li><a href="callcenter.html" class="mobile-nav-item">🎧 Çağrı Merkezi &amp; Mola (*22/*23)</a></li>
-            <li><a href="features.html" class="mobile-nav-item">⚡ Santral Özellikleri &amp; Kodlar</a></li>
-            <li><a href="mobile-apps.html" class="mobile-nav-item">📲 Mobil Uygulamalar (Android &amp; iOS)</a></li>
-            <li><a href="installation.html" class="mobile-nav-item">🚀 Kurulum &amp; Yapılandırma</a></li>
-            <li><a href="security.html" class="mobile-nav-item">🛡️ Güvenlik &amp; CCIS Protokol Gateway</a></li>
-            <li><a href="api-docs.html" class="mobile-nav-item">🔌 REST API &amp; Geliştirici Kılavuzu</a></li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">🤝 Katkı Kılavuzu</a></li>
+            <li>
+                <a href="index.html" class="mobile-nav-item">
+                    <span data-lang="tr">🏠 Genel Bakış (Home)</span>
+                    <span data-lang="en">🏠 Overview (Home)</span>
+                    <span data-lang="de">🏠 Übersicht (Home)</span>
+                </a>
+            </li>
+            <li>
+                <a href="architecture.html" class="mobile-nav-item">
+                    <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
+                    <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
+                    <span data-lang="de">🏗️ Systemarchitektur &amp; ALPN</span>
+                </a>
+            </li>
+            <li>
+                <a href="callcenter.html" class="mobile-nav-item">
+                    <span data-lang="tr">🎧 Çağrı Merkezi &amp; Mola (*22/*23)</span>
+                    <span data-lang="en">🎧 Call Center &amp; Breaks (*22/*23)</span>
+                    <span data-lang="de">🎧 Callcenter &amp; Pausen (*22/*23)</span>
+                </a>
+            </li>
+            <li>
+                <a href="features.html" class="mobile-nav-item">
+                    <span data-lang="tr">⚡ Santral Özellikleri &amp; Kodlar</span>
+                    <span data-lang="en">⚡ PBX Features &amp; Codes</span>
+                    <span data-lang="de">⚡ PBX-Funktionen &amp; Codes</span>
+                </a>
+            </li>
+            <li>
+                <a href="mobile-apps.html" class="mobile-nav-item">
+                    <span data-lang="tr">📲 Mobil Uygulamalar (Android &amp; iOS)</span>
+                    <span data-lang="en">📲 Mobile Apps (Android &amp; iOS)</span>
+                    <span data-lang="de">📲 Mobil-Apps (Android &amp; iOS)</span>
+                </a>
+            </li>
+            <li>
+                <a href="installation.html" class="mobile-nav-item">
+                    <span data-lang="tr">🚀 Kurulum &amp; Yapılandırma</span>
+                    <span data-lang="en">🚀 Installation &amp; Setup</span>
+                    <span data-lang="de">🚀 Installation &amp; Einrichtung</span>
+                </a>
+            </li>
+            <li>
+                <a href="security.html" class="mobile-nav-item">
+                    <span data-lang="tr">🛡️ Güvenlik &amp; CCIS Protokol Gateway</span>
+                    <span data-lang="en">🛡️ Security &amp; CCIS Gateway</span>
+                    <span data-lang="de">🛡️ Sicherheit &amp; CCIS-Gateway</span>
+                </a>
+            </li>
+            <li>
+                <a href="api-docs.html" class="mobile-nav-item">
+                    <span data-lang="tr">🔌 REST API &amp; Geliştirici Kılavuzu</span>
+                    <span data-lang="en">🔌 REST API &amp; Developer Guide</span>
+                    <span data-lang="de">🔌 REST-API &amp; Entwickler-Guide</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">
+                    <span data-lang="tr">🤝 Katkı Kılavuzu</span>
+                    <span data-lang="en">🤝 Contributing Guide</span>
+                    <span data-lang="de">🤝 Mitwirkungs-Guide</span>
+                </a>
+            </li>
         </ul>
         <div class="mobile-drawer-actions">
             <a href="mobile-apps.html" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                📲 Mobil İstemcileri İndir
+                <span data-lang="tr">📲 Mobil İstemcileri İndir</span>
+                <span data-lang="en">📲 Download Mobile Apps</span>
+                <span data-lang="de">📲 Mobile Apps Herunterladen</span>
             </a>
             <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
                 🌐 Mahir Gül (mhrgl.com)
@@ -111,54 +305,182 @@
         <aside class="docs-sidebar">
             <div class="sidebar-search">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="sidebarSearch" placeholder="Dokümantasyonda ara...">
+                <input type="text" id="sidebarSearch" placeholder="Dokümantasyonda ara... / Search...">
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Platform &amp; Mimari</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Platform &amp; Mimari</span>
+                    <span data-lang="en">Platform &amp; Architecture</span>
+                    <span data-lang="de">Plattform &amp; Architektur</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="index.html">🏠 Genel Bakış (Overview)</a></li>
-                    <li><a href="architecture.html" class="">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
-                    <li><a href="features.html" class="active">⚡ Santral Modülleri</a></li>
+                    <li>
+                        <a href="index.html">
+                            <span data-lang="tr">🏠 Genel Bakış (Overview)</span>
+                            <span data-lang="en">🏠 Overview (Home)</span>
+                            <span data-lang="de">🏠 Übersicht (Home)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="architecture.html" class="">
+                            <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
+                            <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
+                            <span data-lang="de">🏗️ Architektur &amp; ALPN</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="features.html" class="active">
+                            <span data-lang="tr">⚡ Santral Modülleri</span>
+                            <span data-lang="en">⚡ PBX Modules</span>
+                            <span data-lang="de">⚡ PBX-Module</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Çağrı Merkezi &amp; Kuyruk</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Çağrı Merkezi &amp; Kuyruk</span>
+                    <span data-lang="en">Call Center &amp; Queues</span>
+                    <span data-lang="de">Callcenter &amp; Warteschlangen</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="callcenter.html" class="">🎧 Kuyruk Yönetimi</a></li>
-                    <li><a href="callcenter.html#break-codes" class="">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></a></li>
-                    <li><a href="callcenter.html#wallboard">📊 Canlı Wallboard &amp; SLA</a></li>
-                    <li><a href="callcenter.html#supervisor">👁️ Süpervizör &amp; Spy (*90)</a></li>
+                    <li>
+                        <a href="callcenter.html" class="">
+                            <span data-lang="tr">🎧 Kuyruk Yönetimi</span>
+                            <span data-lang="en">🎧 Queue Operations</span>
+                            <span data-lang="de">🎧 Warteschlangen-Betrieb</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#break-codes" class="">
+                            <span data-lang="tr">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></span>
+                            <span data-lang="en">⏸️ Break Codes (*22/*23) <span class="sidebar-badge">New</span></span>
+                            <span data-lang="de">⏸️ Pausencodes (*22/*23) <span class="sidebar-badge">Neu</span></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#wallboard">
+                            <span data-lang="tr">📊 Canlı Wallboard &amp; SLA</span>
+                            <span data-lang="en">📊 Live Wallboard &amp; SLA</span>
+                            <span data-lang="de">📊 Live-Wallboard &amp; SLA</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#supervisor">
+                            <span data-lang="tr">👁️ Süpervizör &amp; Spy (*90)</span>
+                            <span data-lang="en">👁️ Supervisor &amp; Spy (*90)</span>
+                            <span data-lang="de">👁️ Supervisor &amp; Spy (*90)</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Mobil İstemciler</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Mobil İstemciler</span>
+                    <span data-lang="en">Mobile Clients</span>
+                    <span data-lang="de">Mobile Clients</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="mobile-apps.html" class="">📱 Android &amp; iOS İstemcileri</a></li>
-                    <li><a href="mobile-apps.html#downloads">⬇️ APK / IPA / Simulator</a></li>
-                    <li><a href="mobile-apps.html#android">🤖 Kotlin Native &amp; FCM Push</a></li>
-                    <li><a href="mobile-apps.html#ios">🍏 Swift &amp; CallKit</a></li>
+                    <li>
+                        <a href="mobile-apps.html" class="">
+                            <span data-lang="tr">📱 Android &amp; iOS İstemcileri</span>
+                            <span data-lang="en">📱 Android &amp; iOS Clients</span>
+                            <span data-lang="de">📱 Android &amp; iOS Clients</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#downloads">
+                            <span data-lang="tr">⬇️ APK / IPA / Simulator</span>
+                            <span data-lang="en">⬇️ APK / IPA / Simulator</span>
+                            <span data-lang="de">⬇️ APK / IPA / Simulator</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#android">
+                            <span data-lang="tr">🤖 Kotlin Native &amp; FCM Push</span>
+                            <span data-lang="en">🤖 Kotlin Native &amp; FCM Push</span>
+                            <span data-lang="de">🤖 Kotlin Native &amp; FCM-Push</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#ios">
+                            <span data-lang="tr">🍏 Swift &amp; CallKit</span>
+                            <span data-lang="en">🍏 Swift &amp; CallKit</span>
+                            <span data-lang="de">🍏 Swift &amp; CallKit</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Yönetim &amp; Güvenlik</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Yönetim &amp; Güvenlik</span>
+                    <span data-lang="en">Admin &amp; Security</span>
+                    <span data-lang="de">Admin &amp; Sicherheit</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="installation.html" class="">🚀 Hızlı Kurulum (install.sh)</a></li>
-                    <li><a href="installation.html#ports">🌐 Port &amp; Güvenlik Duvarı</a></li>
-                    <li><a href="security.html" class="">🛡️ Güvenlik &amp; Fail2ban</a></li>
-                    <li><a href="security.html#ccis">📠 NEC CCIS Protokol Gateway</a></li>
+                    <li>
+                        <a href="installation.html" class="">
+                            <span data-lang="tr">🚀 Hızlı Kurulum (install.sh)</span>
+                            <span data-lang="en">🚀 Quick Install (install.sh)</span>
+                            <span data-lang="de">🚀 Schnellinstallation (install.sh)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="installation.html#ports">
+                            <span data-lang="tr">🌐 Port &amp; Güvenlik Duvarı</span>
+                            <span data-lang="en">🌐 Ports &amp; Firewall</span>
+                            <span data-lang="de">🌐 Ports &amp; Firewall</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="security.html" class="">
+                            <span data-lang="tr">🛡️ Güvenlik &amp; Fail2ban</span>
+                            <span data-lang="en">🛡️ Security &amp; Fail2ban</span>
+                            <span data-lang="de">🛡️ Sicherheit &amp; Fail2ban</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="security.html#ccis">
+                            <span data-lang="tr">📠 NEC CCIS Protokol Gateway</span>
+                            <span data-lang="en">📠 NEC CCIS Protocol Gateway</span>
+                            <span data-lang="de">📠 NEC CCIS Protokoll-Gateway</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Geliştirici &amp; API</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Geliştirici &amp; API</span>
+                    <span data-lang="en">Developer &amp; API</span>
+                    <span data-lang="de">Entwickler &amp; API</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="api-docs.html" class="">🔌 REST API Endpoints</a></li>
-                    <li><a href="api-docs.html#websocket">💬 Go WebSocket Protokolü</a></li>
-                    <li><a href="api-docs.html#tests">🧪 PHPUnit Testleri (142 Test)</a></li>
+                    <li>
+                        <a href="api-docs.html" class="">
+                            <span data-lang="tr">🔌 REST API Referansı</span>
+                            <span data-lang="en">🔌 REST API Reference</span>
+                            <span data-lang="de">🔌 REST-API Referenz</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="api-docs.html#websocket">
+                            <span data-lang="tr">💬 Go WebSocket Protokolü</span>
+                            <span data-lang="en">💬 Go WebSocket Protocol</span>
+                            <span data-lang="de">💬 Go WebSocket Protokoll</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="api-docs.html#tests">
+                            <span data-lang="tr">🧪 PHPUnit Testleri (142 Test)</span>
+                            <span data-lang="en">🧪 PHPUnit Test Suite</span>
+                            <span data-lang="de">🧪 PHPUnit Test-Suite</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </aside>
@@ -167,52 +489,112 @@
         <!-- Main Documentation Content -->
         <main class="docs-content">
             <div class="docs-breadcrumb">
-                <a href="index.html">Ana Sayfa</a> / <a href="features.html">Özellikler</a> / <span>Santral Yetenekleri</span>
+                <a href="index.html">
+                    <span data-lang="tr">Ana Sayfa</span>
+                    <span data-lang="en">Home</span>
+                    <span data-lang="de">Startseite</span>
+                </a> / 
+                <a href="features.html">
+                    <span data-lang="tr">Özellikler</span>
+                    <span data-lang="en">Features</span>
+                    <span data-lang="de">Funktionen</span>
+                </a> / 
+                <span>
+                    <span data-lang="tr">Santral Yetenekleri</span>
+                    <span data-lang="en">PBX Capabilities</span>
+                    <span data-lang="de">PBX-Leistungsumfang</span>
+                </span>
             </div>
 
             <div class="docs-header">
-                <h1>⚡ Kurumsal Santral Özellikleri &amp; Modüller</h1>
-                <p class="lead">
-                    AiPBX; küçük işletmelerden binlerce dahiliye sahip büyük holdinglere kadar tüm kurumsal iletişim ihtiyaçlarını karşılayan, modern ve zengin bir modül ekosistemine sahiptir.
+                <h1>
+                    <span data-lang="tr">⚡ Kurumsal Santral Özellikleri &amp; Modüller</span>
+                    <span data-lang="en">⚡ Enterprise PBX Features &amp; Modules</span>
+                    <span data-lang="de">⚡ Enterprise PBX-Funktionen &amp; Module</span>
+                </h1>
+                <p class="lead" data-lang="tr">
+                    AiPBX; küçük işletmelerden binlerce dahiliye sahip büyük kurumlara kadar tüm kurumsal iletişim ihtiyaçlarını karşılayan, modern ve zengin bir modül ekosistemine sahiptir.
+                </p>
+                <p class="lead" data-lang="en">
+                    AiPBX delivers a comprehensive suite of enterprise telephony features: multi-level IVRs, rule-based DID routing, in-browser softphones, T.38 digital faxing, and modular star codes.
+                </p>
+                <p class="lead" data-lang="de">
+                    AiPBX bietet ein umfassendes Portfolio moderner Unternehmens-Telefonie: Mehrstufige Sprachmenüs, regelbasiertes DID-Routing, Browser-Softphone, T.38-Digitalfax und Stern-Codes.
                 </p>
             </div>
 
             <!-- Section 1: Dahili Yönetimi -->
             <section class="docs-section" id="extensions">
-                <h2>1. Dahili (Extension) Yönetimi</h2>
-                <p>
-                    AiPBX dahili sistemi, Asterisk 22 PJSIP yığını üzerine kuruludur. Kullanıcılar ister masalarındaki donanımsal IP telefondan, ister tarayıcı üzerinden, ister mobil cihazlarından aynı dahili numarasıyla görüşme yapabilirler:
-                </p>
+                <h2>
+                    <span data-lang="tr">1. Dahili (Extension) Yönetimi</span>
+                    <span data-lang="en">1. Extension Management</span>
+                    <span data-lang="de">1. Nebenstellen-Verwaltung</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        AiPBX dahili sistemi, Asterisk 22 PJSIP yığını üzerine kuruludur. Kullanıcılar ister masalarındaki donanımsal IP telefondan, ister tarayıcı üzerinden, ister mobil cihazlarından aynı dahili numarasıyla görüşme yapabilirler:
+                    </p>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        AiPBX extensions are powered by Asterisk 22 PJSIP. Users can place and receive calls using their single extension number across physical desk phones, web browsers, and native mobile apps:
+                    </p>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        AiPBX-Nebenstellen basieren auf Asterisk 22 PJSIP. Benutzer können unter ihrer einheitlichen Durchwahl über Tischtelefone, Web-Browser und native Mobil-Apps telefonieren:
+                    </p>
+                </div>
 
                 <div class="docs-table-wrapper">
                     <table class="docs-table">
                         <thead>
                             <tr>
-                                <th>Dahili Tipi</th>
-                                <th>Protokol &amp; Taşıyıcı</th>
-                                <th>Kullanım Alanı</th>
+                                <th>
+                                    <span data-lang="tr">Dahili Tipi</span>
+                                    <span data-lang="en">Extension Type</span>
+                                    <span data-lang="de">Nebenstellentyp</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Protokol &amp; Taşıyıcı</span>
+                                    <span data-lang="en">Protocol &amp; Transport</span>
+                                    <span data-lang="de">Protokoll &amp; Transport</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Kullanım Alanı</span>
+                                    <span data-lang="en">Target Devices</span>
+                                    <span data-lang="de">Zielgeräte</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Donanım SIP Dahili</strong></td>
+                                <td><strong>Hardware SIP Phone</strong></td>
                                 <td>SIP / PJSIP (UDP, TCP, TLS)</td>
-                                <td>Yealink, Fanvil, Grandstream, Cisco vb. masaüstü IP telefonlar, telsiz DECT telefonlar ve ATA adaptörleri.</td>
+                                <td>Yealink, Fanvil, Grandstream, Cisco, Snom, Gigaset DECT.</td>
                             </tr>
                             <tr>
                                 <td><strong>WebRTC Webphone</strong></td>
-                                <td>WSS (WebSocket Secure) + DTLS-SRTP</td>
-                                <td>Web tarayıcısı (Chrome, Edge, Firefox, Safari) üzerinden sıfır eklenti ile doğrudan telefon görüşmesi.</td>
+                                <td>WSS (Port 443 ALPN) + DTLS-SRTP</td>
+                                <td>
+                                    <span data-lang="tr">Eklentisiz Chrome, Edge, Firefox, Safari tarayıcı aramaları.</span>
+                                    <span data-lang="en">Zero-plugin browser calling in Chrome, Edge, Firefox, Safari.</span>
+                                    <span data-lang="de">Plugin-freies Telefonieren im Browser (Chrome, Edge, Firefox, Safari).</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Mobil Uygulama Dahili</strong></td>
-                                <td>WSS / TURNS + Push Notification</td>
-                                <td>AiPBX Android (Kotlin) ve iOS (Swift) yerel uygulamaları ile cep telefonunda dahili santral kullanımı.</td>
+                                <td><strong>Mobile Client</strong></td>
+                                <td>WSS / TURNS + FCM / APNs Push</td>
+                                <td>AiPBX Android (Kotlin) &amp; iOS (Swift) native apps.</td>
                             </tr>
                             <tr>
-                                <td><strong>Faks Dahili</strong></td>
+                                <td><strong>Digital Fax</strong></td>
                                 <td>T.38 / Spooler</td>
-                                <td>Gelen faksları PDF olarak e-postaya yönlendiren dijital faks dahili tipi.</td>
+                                <td>
+                                    <span data-lang="tr">Gelen faksları PDF olarak e-postaya ileten dijital faks dahili.</span>
+                                    <span data-lang="en">Digital fax extension routing inbound faxes as PDF to email.</span>
+                                    <span data-lang="de">Digitale Fax-Nebenstelle zur Weiterleitung eingehender Faxe als PDF.</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -221,194 +603,351 @@
 
             <!-- Section 2: Çok Seviyeli IVR -->
             <section class="docs-section" id="ivr">
-                <h2>2. Çok Seviyeli Sesli Yanıt Sistemi (IVR)</h2>
-                <p>
-                    Arayan müşterileri karşılayan, departmanlara yönlendiren ve mesai saati kontrolleri uygulayan esnek sesli yanıt ağacı:
-                </p>
-                <ul>
-                    <li><strong>Sonsuz Derinlikte Alt Menüler:</strong> "Satış için 1'e, Destek için 2'ye..." sonrasında alt departmanlara kırılan çok katmanlı ağaç yapısı.</li>
-                    <li><strong>Rakam Tuşlama Zaman Aşımı (Digit Timeout):</strong> Arayan kişinin tuşlama yapması için tanınan bekleme süresi (1–15 saniye) hassasiyetle ayarlanabilir.</li>
-                    <li><strong>Doğrudan Dahili Arama (Direct Dial):</strong> Karşılama anonsu çalarken arayan müşteri dahili numarayı (örn: 1005) biliyorsa menüyü beklemeden doğrudan tuşlayarak ilgili kişiye bağlanabilir.</li>
-                    <li><strong>Geçersiz / Zaman Aşımı Yönlendirmesi:</strong> Yanlış tuşlama yapıldığında veya hiçbir şey tuşlanmadığında çağrının operatöre veya kuyruğa aktarılması.</li>
-                    <li><strong>Mesai &amp; Tatil Koşulları:</strong> Hafta içi/hafta sonu çalışma saatleri ve resmi tatiller için özel anonslar ve gece nöbetçi yönlendirmeleri.</li>
-                </ul>
+                <h2>
+                    <span data-lang="tr">2. Çok Seviyeli Sesli Yanıt Sistemi (IVR)</span>
+                    <span data-lang="en">2. Multi-Level Interactive Voice Response (IVR)</span>
+                    <span data-lang="de">2. Mehrstufiges Sprachmenü (IVR)</span>
+                </h2>
+                <div data-lang="tr">
+                    <ul>
+                        <li><strong>Sonsuz Derinlikte Alt Menüler:</strong> Departmanlara ve dillere göre kırılan çok katmanlı ağaç yapısı.</li>
+                        <li><strong>Rakam Tuşlama Zaman Aşımı (Digit Timeout):</strong> Tuşlama yapılması için tanınan bekleme süresi (1–15 saniye) hassasiyetle ayarlanabilir.</li>
+                        <li><strong>Doğrudan Dahili Arama (Direct Dial):</strong> Anons çalarken dahiliyi bilen arayan doğrudan tuşlama yaparak hedefe bağlanabilir.</li>
+                        <li><strong>Geçersiz Tuşlama &amp; Zaman Aşımı:</strong> Hatalı tuşlamalarda veya yanıtsızlıkta operatöre veya kuyruğa güvenli yönlendirme.</li>
+                        <li><strong>Mesai &amp; Tatil Koşulları:</strong> Çalışma saatleri ve resmi tatiller için özel anonslar ve gece nöbetçi yönlendirmeleri.</li>
+                    </ul>
+                </div>
+                <div data-lang="en">
+                    <ul>
+                        <li><strong>Unlimited Sub-Menus:</strong> Multi-tiered routing tree for departments, languages, and locations.</li>
+                        <li><strong>Digit Timeout Parameter:</strong> Configurable wait duration (1–15 seconds) for customer DTMF input.</li>
+                        <li><strong>Direct Extension Dialing:</strong> Callers who know their party's extension can dial it at any time during the prompt.</li>
+                        <li><strong>Timeout &amp; Invalid Fallbacks:</strong> Safe routing to operators or voicemails on invalid input or timeout.</li>
+                        <li><strong>Business Hours &amp; Holidays:</strong> Automated switching between working hours, lunch breaks, and holidays.</li>
+                    </ul>
+                </div>
+                <div data-lang="de">
+                    <ul>
+                        <li><strong>Unbegrenzte Untermenüs:</strong> Mehrstufiger Verteilungsbaum nach Abteilungen, Sprachen und Standorten.</li>
+                        <li><strong>Ziffern-Timeout-Parameter:</strong> Einstellbare Wartezeit (1–15 Sekunden) für DTMF-Tastatureingaben.</li>
+                        <li><strong>Direkte Durchwahl:</strong> Anrufer mit bekannter Durchwahlnummer können diese jederzeit direkt eingeben.</li>
+                        <li><strong>Timeout- &amp; Fehleingabe-Fallback:</strong> Zuverlässige Weiterleitung an die Zentrale bei Falscheingabe.</li>
+                        <li><strong>Geschäftszeiten &amp; Feiertage:</strong> Automatische Umschaltung zwischen Tag-, Nacht- und Feiertagsmodus.</li>
+                    </ul>
+                </div>
             </section>
 
             <!-- Section 3: Gelen & Giden Arama Yönlendirme -->
             <section class="docs-section" id="routing">
-                <h2>3. Gelen (DID) ve Giden Arama Yönlendirme</h2>
-                <p>
-                    Gelişmiş kurumsal rota motoru; gelen ve giden çağrıları maliyet, hat durumu ve arayan numara bazında akıllıca dağıtır:
-                </p>
-
+                <h2>
+                    <span data-lang="tr">3. Gelen (DID) ve Giden Arama Yönlendirme</span>
+                    <span data-lang="en">3. Inbound (DID) &amp; Outbound Call Routing</span>
+                    <span data-lang="de">3. Eingehendes (DID) &amp; Ausgehendes Routing</span>
+                </h2>
                 <div class="docs-table-wrapper">
                     <table class="docs-table">
                         <thead>
                             <tr>
-                                <th>Yönlendirme Modülü</th>
-                                <th>Yetenekler &amp; Filtreler</th>
+                                <th>
+                                    <span data-lang="tr">Modül</span>
+                                    <span data-lang="en">Routing Tier</span>
+                                    <span data-lang="de">Routing-Ebene</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Yetenekler &amp; Filtreler</span>
+                                    <span data-lang="en">Capabilities &amp; Logic</span>
+                                    <span data-lang="de">Funktionsumfang</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Gelen Rota (Inbound DID)</strong></td>
-                                <td>Türk Telekom, Superonline, Netgsm vb. operatörlerden gelen dış hat numaralarını (DID) Regex ile eşler. Departman, IVR, kuyruk veya doğrudan dahiliye yönlendirir.</td>
+                                <td><strong>Inbound DID Routes</strong></td>
+                                <td>
+                                    <span data-lang="tr">Türk Telekom, Netgsm vb. dış hat numaralarını Regex ile eşler; IVR, kuyruk veya doğrudan dahiliye yönlendirir.</span>
+                                    <span data-lang="en">Regex pattern matching for external telecom provider DIDs; routes to IVRs, queues, or ring groups.</span>
+                                    <span data-lang="de">Regex-Musterabgleich für Telefonnummern (DIDs); leitet an IVR, Warteschlangen oder Gruppen weiter.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Giden Rota (Outbound Routes)</strong></td>
-                                <td>Dahili veya departman bazlı dış arama kuralları. Şehiriçi (0212), Şehirlerarası (0312), GSM (05XX) veya Uluslararası (00) arama yetkilendirmesi.</td>
+                                <td><strong>Outbound Routes</strong></td>
+                                <td>
+                                    <span data-lang="tr">Dahili ve departman bazlı giden çağrı kuralları (Şehiriçi, GSM, Uluslararası yetki ayrımı).</span>
+                                    <span data-lang="en">Department-level outbound dial rules (Local, Mobile, International permissions).</span>
+                                    <span data-lang="de">Abteilungsbezogene Wahlregeln (Ortsnetz, Mobilfunk, Auslandssperren).</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Yedekli Trunk Geçişi (Trunk Failover)</strong></td>
-                                <td>Ana SIP Trunk operatöründe arıza veya bakiye yetersizliği olduğunda çağrıyı kesmeden otomatik olarak 2. veya 3. yedek trunk üzerinden dışarı çıkartır.</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Arayan Numara Manipülasyonu (CID)</strong></td>
-                                <td>Giden çağrıda santralin kurumsal ana numarasını (DID) zorunlu olarak dış hatta gösterir.</td>
+                                <td><strong>Trunk Failover</strong></td>
+                                <td>
+                                    <span data-lang="tr">Birincil hatta arıza veya kesinti olduğunda otomatik olarak 2. ve 3. yedek trunk'a geçiş yapar.</span>
+                                    <span data-lang="en">Automatic failover to secondary and tertiary SIP trunks if primary trunk is unavailable.</span>
+                                    <span data-lang="de">Automatischer Wechsel zu sekundären SIP-Trunks bei Leitungsstörungen.</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- Section 4: WebRTC Tarayıcı Telefonu -->
+            <!-- Section 4: WebRTC Softphone -->
             <section class="docs-section" id="webrtc">
-                <h2>4. WebRTC Tarayıcı Telefonu (In-Browser Softphone)</h2>
-                <p>
-                    AiPBX web arayüzünde tam teşekküllü bir WebRTC yumuşak telefon (softphone) gömülü olarak gelir. Harici bir SIP programı (MicroSIP, Zoiper vb.) kurmaya gerek yoktur:
-                </p>
-                <ul>
-                    <li><strong>Opus HD Ses Kodeği:</strong> Düşük internet hızlarında bile kristal netliğinde insan sesi.</li>
-                    <li><strong>DTMF Tuş Takımı:</strong> Harici santrallerde veya banka menülerinde anında tuşlama.</li>
-                    <li><strong>Çağrı Kontrolleri:</strong> Bekletme (Hold), Sessize alma (Mute), Aktarma (Transfer: Kör aktarım &amp; Ön görüşmeli aktarım).</li>
-                    <li><strong>Ses Aygıtı Seçici:</strong> Kullanıcının kulaklık, mikrofon ve hoparlör donanımlarını tarayıcı içinden seçebilmesi.</li>
-                </ul>
+                <h2>
+                    <span data-lang="tr">4. WebRTC Tarayıcı Telefonu (Softphone)</span>
+                    <span data-lang="en">4. WebRTC In-Browser Softphone</span>
+                    <span data-lang="de">4. WebRTC Browser-Softphone</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        AiPBX web yönetim paneline gömülü WebRTC telefonu ile ek hiçbir uygulama yüklemeden doğrudan görüşme yapabilirsiniz:
+                    </p>
+                    <ul>
+                        <li><strong>Opus HD Ses:</strong> Bant genişliği dalgalanmalarında bile yüksek kaliteli insan sesi.</li>
+                        <li><strong>DTMF Tuş Takımı:</strong> Sesli yanıtlarda anında tuşlama.</li>
+                        <li><strong>Gelişmiş Kontroller:</strong> Bekletme (Hold), Sessize alma (Mute), Aktarma (Blind &amp; Attended Transfer).</li>
+                        <li><strong>Ses Donanımı Seçimi:</strong> Kulaklık ve mikrofon aygıtlarını tarayıcı içinden değiştirme.</li>
+                    </ul>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        A native WebRTC softphone is integrated directly into the web management portal:
+                    </p>
+                    <ul>
+                        <li><strong>Opus HD Audio:</strong> Crystal-clear voice quality adapting dynamically to network conditions.</li>
+                        <li><strong>DTMF Keypad:</strong> Instant in-call touch-tone dialing.</li>
+                        <li><strong>Call Controls:</strong> Hold, Mute, Blind Transfer, and Attended (Warm) Transfer.</li>
+                        <li><strong>Audio Device Selector:</strong> Select headset, microphone, and speakers dynamically.</li>
+                    </ul>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        Ein voll ausgestattetes WebRTC-Softphone ist direkt im Web-Management-Portal integriert:
+                    </p>
+                    <ul>
+                        <li><strong>Opus HD Audio:</strong> Erstklassige Sprachqualität mit automatischer Bitraten-Anpassung.</li>
+                        <li><strong>DTMF-Tastatur:</strong> Sofortige Tonwahl für Sprachmenüs.</li>
+                        <li><strong>Gesprächssteuerung:</strong> Halten, Stummschalten, Weiterleiten (Direkt &amp; mit Rücksprache).</li>
+                        <li><strong>Audiogeräteauswahl:</strong> Dynamische Auswahl von Headset, Mikrofon und Lautsprecher.</li>
+                    </ul>
+                </div>
             </section>
 
-            <!-- Section 5: Dijital Faks Sunucusu -->
+            <!-- Section 5: Dijital Faks -->
             <section class="docs-section" id="fax">
-                <h2>5. Dijital Faks Sunucusu (FoIP / T.38)</h2>
-                <p>
-                    Geleneksel kağıt faks cihazlarına ve masraflı faks hatlarına son:
-                </p>
-                <ul>
-                    <li><strong>Gelen Faks (Fax-to-Email):</strong> Gelen faks sinyali T.38 veya TDM üzerinden algılanır, otomatik olarak PDF dosyasına dönüştürülür ve belirlenen e-posta adreslerine iliştirilerek gönderilir. Web panelinde faks arşivi tutulur.</li>
-                    <li><strong>Giden Faks (Web-to-Fax):</strong> Web arayüzünden hedef telefon numarası girilip PDF dosyası yüklenir; Asterisk spooler motoru arayarak faksı karşı tarafa otomatik iletir ve teslim raporu üretir.</li>
-                </ul>
+                <h2>
+                    <span data-lang="tr">5. Dijital Faks Sunucusu (FoIP / T.38)</span>
+                    <span data-lang="en">5. Digital Fax Server (FoIP / T.38)</span>
+                    <span data-lang="de">5. Digitaler Faxserver (FoIP / T.38)</span>
+                </h2>
+                <div data-lang="tr">
+                    <ul>
+                        <li><strong>Gelen Faks (Fax-to-Email):</strong> Gelen fakslar otomatik olarak PDF'e dönüştürülür ve e-posta adreslerine iletilir.</li>
+                        <li><strong>Giden Faks (Web-to-Fax):</strong> Web panelinden PDF yüklenip numara girilerek otomatik gönderim sağlanır.</li>
+                    </ul>
+                </div>
+                <div data-lang="en">
+                    <ul>
+                        <li><strong>Inbound Fax (Fax-to-Email):</strong> Incoming T.38 faxes are digitized into PDF documents and delivered via email.</li>
+                        <li><strong>Outbound Fax (Web-to-Fax):</strong> Upload PDF documents via web dashboard; Asterisk spools and transmits with delivery receipts.</li>
+                    </ul>
+                </div>
+                <div data-lang="de">
+                    <ul>
+                        <li><strong>Eingehendes Fax (Fax-to-Email):</strong> Eingehende T.38-Faxe werden als PDF digitalisiert und per E-Mail zugestellt.</li>
+                        <li><strong>Ausgehendes Fax (Web-to-Fax):</strong> PDF-Upload im Web-Dashboard zum automatischen Faxversand mit Sendeprotokoll.</li>
+                    </ul>
+                </div>
             </section>
 
-            <!-- Section 6: Özellik Kodları Tablosu -->
+            <!-- Section 6: Yıldız Kodlar Tablosu -->
             <section class="docs-section" id="feature-codes">
-                <h2>6. Santral Özellik Kodları (Feature Codes / Yıldız Kodlar)</h2>
-                <p>
-                    Masaüstü IP telefondan veya mobil uygulamadan tuşlanabilen kısayol kodları listesi:
-                </p>
-
+                <h2>
+                    <span data-lang="tr">6. Santral Özellik Kodları (Feature Codes / Yıldız Kodlar)</span>
+                    <span data-lang="en">6. Feature Codes (Star Codes Directory)</span>
+                    <span data-lang="de">6. Leistungsmerkmale (Stern-Codes)</span>
+                </h2>
                 <div class="docs-table-wrapper">
                     <table class="docs-table">
                         <thead>
                             <tr>
-                                <th>Kod</th>
-                                <th>Özellik Adı</th>
-                                <th>Yetkili Roller</th>
-                                <th>İşlev Açıklaması</th>
+                                <th>Code</th>
+                                <th>
+                                    <span data-lang="tr">Özellik Adı</span>
+                                    <span data-lang="en">Feature Name</span>
+                                    <span data-lang="de">Funktion</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Roller</span>
+                                    <span data-lang="en">Allowed Roles</span>
+                                    <span data-lang="de">Erlaubte Rollen</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Açıklama</span>
+                                    <span data-lang="en">Description</span>
+                                    <span data-lang="de">Beschreibung</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td><span class="code-pill">*78</span></td>
-                                <td>Rahatsız Etmeyin (DND Aç)</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Dahiliyi meşgule alır, gelen çağrılar çalmaz.</td>
+                                <td>DND Enable</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Rahatsız Etmeyin modunu açar.</span>
+                                    <span data-lang="en">Enables Do Not Disturb.</span>
+                                    <span data-lang="de">Aktiviert 'Bitte nicht stören'.</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td><span class="code-pill">*79</span></td>
-                                <td>Rahatsız Etmeyin (DND Kapat)</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Dahiliyi normal çağrı almaya geri açar.</td>
+                                <td>DND Disable</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Rahatsız Etmeyin modunu kapatır.</span>
+                                    <span data-lang="en">Disables Do Not Disturb.</span>
+                                    <span data-lang="de">Deaktiviert 'Bitte nicht stören'.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><span class="code-pill">*72&lt;numara&gt;</span></td>
-                                <td>Çağrı Yönlendirme (Aç)</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Gelen aramaları tuşlanan harici veya dahili numaraya yönlendirir.</td>
+                                <td><span class="code-pill">*72&lt;number&gt;</span></td>
+                                <td>Call Forward</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Gelen aramaları girilen numaraya yönlendirir.</span>
+                                    <span data-lang="en">Forwards calls to the dialed number.</span>
+                                    <span data-lang="de">Leitet Anrufe an die gewählte Nummer weiter.</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td><span class="code-pill">*73</span></td>
-                                <td>Çağrı Yönlendirme (Kapat)</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Aktif çağrı yönlendirmesini iptal eder.</td>
+                                <td>Cancel Forward</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Aktif çağrı yönlendirmesini iptal eder.</span>
+                                    <span data-lang="en">Cancels active call forwarding.</span>
+                                    <span data-lang="de">Hebt aktive Anrufweiterschaltung auf.</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td><span class="code-pill">*8</span></td>
-                                <td>Gruptan Çağrı Çekme (Pickup)</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Aynı gruptaki çalan başka bir dahiliyi kendi telefonuna çeker.</td>
+                                <td>Group Pickup</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Grupta çalan çağrıyı kendi telefonuna çeker.</span>
+                                    <span data-lang="en">Picks up a ringing call within your pickup group.</span>
+                                    <span data-lang="de">Nimmt einen Anruf innerhalb der Anrufgruppe heran.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><span class="code-pill">*21&lt;dahili&gt;</span></td>
-                                <td>Belirli Dahiliden Çağrı Çekme</td>
-                                <td>Tüm Kullanıcılar</td>
-                                <td>Numarası belirtilen çalan dahiliyi doğrudan kendi telefonuna çeker.</td>
+                                <td><span class="code-pill">*21&lt;ext&gt;</span></td>
+                                <td>Directed Pickup</td>
+                                <td>All / Tümü</td>
+                                <td>
+                                    <span data-lang="tr">Belirtilen dahilide çalan çağrıyı çeker.</span>
+                                    <span data-lang="en">Picks up a ringing call on a specific extension.</span>
+                                    <span data-lang="de">Nimmt den Anruf einer bestimmten Nebenstelle heran.</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td><span class="code-pill">*90</span></td>
-                                <td>Çağrı Dinleme (Spy)</td>
-                                <td>Admin, CC Manager</td>
-                                <td>Hedef dahilinin aktif görüşmesini süpervizör olarak dinler.</td>
+                                <td>Call Spy</td>
+                                <td>admin, cc_manager</td>
+                                <td>
+                                    <span data-lang="tr">Aktif görüşmeyi süpervizör olarak dinler.</span>
+                                    <span data-lang="en">Enters ChanSpy audio monitoring mode.</span>
+                                    <span data-lang="de">Schaltet Supervisor-Mithören auf ein Gespräch.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><span class="code-pill">*81&lt;kuyruk_id&gt;</span></td>
-                                <td>Kuyruğa Giriş (Login)</td>
-                                <td>Admin, CC Manager, Agent</td>
-                                <td>Dinamik temsilcinin belirtilen çağrı merkezi kuyruğuna katılması.</td>
+                                <td><span class="code-pill">*81&lt;qid&gt;</span></td>
+                                <td>Queue Login</td>
+                                <td>admin, cc_manager, cc_agent</td>
+                                <td>
+                                    <span data-lang="tr">Dinamik temsilci kuyruğa giriş yapar.</span>
+                                    <span data-lang="en">Logs dynamic agent into queue.</span>
+                                    <span data-lang="de">Meldet dynamischen Agenten an Warteschlange an.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><span class="code-pill">*80&lt;kuyruk_id&gt;</span></td>
-                                <td>Kuyruktan Çıkış (Logout)</td>
-                                <td>Admin, CC Manager, Agent</td>
-                                <td>Dinamik temsilcinin kuyruktan ayrılması.</td>
+                                <td><span class="code-pill">*80&lt;qid&gt;</span></td>
+                                <td>Queue Logout</td>
+                                <td>admin, cc_manager, cc_agent</td>
+                                <td>
+                                    <span data-lang="tr">Dinamik temsilci kuyruktan çıkar.</span>
+                                    <span data-lang="en">Logs dynamic agent out of queue.</span>
+                                    <span data-lang="de">Meldet dynamischen Agenten von Warteschlange ab.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><span class="code-pill">*22&lt;mola_id&gt;</span></td>
-                                <td>Kuyruk Mola Al (Pause)</td>
-                                <td>Admin, CC Manager, Agent, User</td>
-                                <td>Temsilciyi tüm kuyruklarda mola durumuna alır (Çift bip tonu).</td>
+                                <td><span class="code-pill">*22&lt;reason&gt;</span></td>
+                                <td>Queue Pause</td>
+                                <td>admin, cc_manager, cc_agent, user</td>
+                                <td>
+                                    <span data-lang="tr">Mola durumuna geçer (Çift bip sesi).</span>
+                                    <span data-lang="en">Pauses agent across all queues (Double beep).</span>
+                                    <span data-lang="de">Pausiert Agenten in allen Warteschlangen (Doppel-Piep).</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td><span class="code-pill">*23</span></td>
-                                <td>Kuyruk Mola İptal (Unpause)</td>
-                                <td>Admin, CC Manager, Agent, User</td>
-                                <td>Temsilciyi moladan çıkarır, çağrı almaya açar (Tek bip tonu).</td>
+                                <td>Queue Unpause</td>
+                                <td>admin, cc_manager, cc_agent, user</td>
+                                <td>
+                                    <span data-lang="tr">Moladan çıkar, çağrı almaya açılır (Tek bip).</span>
+                                    <span data-lang="en">Unpauses agent, ready for calls (Single beep).</span>
+                                    <span data-lang="de">Beendet Pause, Agent wieder anrufbereit (Einzel-Piep).</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- Pagination -->
+
             <div class="docs-pagination">
                 <a href="callcenter.html" class="pagination-btn">
-                    <span class="pagination-label">← Önceki</span>
-                    <span class="pagination-title">Çağrı Merkezi &amp; Mola Kodları</span>
+                    <span class="pagination-label">
+                        <span data-lang="tr">← Önceki</span>
+                        <span data-lang="en">← Previous</span>
+                        <span data-lang="de">← Zurück</span>
+                    </span>
+                    <span class="pagination-title">
+                        <span data-lang="tr">Çağrı Merkezi</span>
+                        <span data-lang="en">Call Center</span>
+                        <span data-lang="de">Callcenter</span>
+                    </span>
                 </a>
                 <a href="mobile-apps.html" class="pagination-btn next">
-                    <span class="pagination-label">Sonraki →</span>
-                    <span class="pagination-title">Mobil Uygulamalar (Android &amp; iOS)</span>
+                    <span class="pagination-label">
+                        <span data-lang="tr">Sonraki →</span>
+                        <span data-lang="en">Next →</span>
+                        <span data-lang="de">Weiter →</span>
+                    </span>
+                    <span class="pagination-title">
+                        <span data-lang="tr">Mobil Uygulamalar</span>
+                        <span data-lang="en">Mobile Apps</span>
+                        <span data-lang="de">Mobil-Apps</span>
+                    </span>
                 </a>
             </div>
+    
         </main>
 
         <!-- Right Sticky Table of Contents -->
         <div class="docs-toc">
-            <div class="toc-title">Bu Sayfada</div>
+            <div class="toc-title">
+                <span data-lang="tr">Bu Sayfada</span>
+                <span data-lang="en">On This Page</span>
+                <span data-lang="de">Auf dieser Seite</span>
+            </div>
             <ul class="toc-list">
-                <li><a href="#extensions">1. Dahili Yönetimi</a></li>
-                <li><a href="#ivr">2. Çok Seviyeli IVR</a></li>
-                <li><a href="#routing">3. Arama Yönlendirme</a></li>
+                <li><a href="#extensions">1. Extension Management</a></li>
+                <li><a href="#ivr">2. Multi-Level IVR</a></li>
+                <li><a href="#routing">3. Call Routing</a></li>
                 <li><a href="#webrtc">4. WebRTC Softphone</a></li>
-                <li><a href="#fax">5. Dijital Faks Sunucusu</a></li>
-                <li><a href="#feature-codes">6. Özellik Kodları (* Kodlar)</a></li>
+                <li><a href="#fax">5. Digital Fax</a></li>
+                <li><a href="#feature-codes">6. Feature Codes (* Codes)</a></li>
             </ul>
         </div>
     </div>
@@ -418,55 +957,98 @@
         <div class="footer-grid">
             <div class="footer-brand">
                 <h4><img src="logo.png" alt="AiPBX Logo" style="height: 24px; border-radius: 4px;"> AI PBX</h4>
-                <p>
+                
+                <p data-lang="tr">
                     Açık kaynak, yüksek eşzamanlılıklı kurumsal IP PBX ve Birleşik İletişim Platformu. Kısıtlayıcı güvenlik duvarlarını aşan Port 443 ALPN mimarisi, Asterisk 22, WebRTC, Go WebSocket sohbet motoru ve yerel mobil istemciler.
                 </p>
+                <p data-lang="en">
+                    Open-source, high-concurrency enterprise IP PBX and Unified Communications platform. Featuring Port 443 ALPN multiplexing for restrictive firewalls, Asterisk 22, WebRTC, Go WebSocket chat, and native mobile apps.
+                </p>
+                <p data-lang="de">
+                    Open-Source Enterprise IP-Telefonanlage und Unified Communications Plattform mit hoher Nebenstellen-Kapazität. Port 443 ALPN-Multiplexing für restriktive Firewalls, Asterisk 22, WebRTC, Go-Chat und native Mobil-Apps.
+                </p>
+
                 <p>
-                    Proje Mimarı &amp; Geliştirici: <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>
+                    <span data-lang="tr">Proje Mimarı &amp; Geliştirici:</span>
+                    <span data-lang="en">Architect &amp; Lead Developer:</span>
+                    <span data-lang="de">Architektur &amp; Entwickler:</span>
+                    <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>
                 </p>
             </div>
 
             <div class="footer-col">
-                <h5>Mimari &amp; Çözümler</h5>
+                <h5>
+                    <span data-lang="tr">Mimari &amp; Çözümler</span>
+                    <span data-lang="en">Architecture &amp; Solutions</span>
+                    <span data-lang="de">Architektur &amp; Lösungen</span>
+                </h5>
                 <ul>
                     <li><a href="architecture.html">Port 443 ALPN Stream</a></li>
                     <li><a href="architecture.html#dual-endpoint">Dual-Endpoint PJSIP</a></li>
-                    <li><a href="callcenter.html">Çağrı Merkezi &amp; Kuyruk</a></li>
-                    <li><a href="callcenter.html#break-codes">Mola Kodları (*22/*23)</a></li>
+                    <li><a href="callcenter.html">
+                        <span data-lang="tr">Çağrı Merkezi &amp; Kuyruk</span>
+                        <span data-lang="en">Call Center &amp; Queues</span>
+                        <span data-lang="de">Callcenter &amp; Warteschlange</span>
+                    </a></li>
+                    <li><a href="callcenter.html#break-codes">
+                        <span data-lang="tr">Mola Kodları (*22/*23)</span>
+                        <span data-lang="en">Break Codes (*22/*23)</span>
+                        <span data-lang="de">Pausencodes (*22/*23)</span>
+                    </a></li>
                     <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
                 </ul>
             </div>
 
             <div class="footer-col">
-                <h5>Bileşenler &amp; İndirme</h5>
+                <h5>
+                    <span data-lang="tr">Bileşenler &amp; İndirme</span>
+                    <span data-lang="en">Components &amp; Downloads</span>
+                    <span data-lang="de">Komponenten &amp; Downloads</span>
+                </h5>
                 <ul>
-                    <li><a href="mobile-apps.html">Android APK v1.0.32</a></li>
+                    <li><a href="mobile-apps.html">Android APK (v1.0.32)</a></li>
                     <li><a href="mobile-apps.html#ios">iOS Swift &amp; CallKit</a></li>
-                    <li><a href="features.html#webrtc">WebRTC Tarayıcı Telefonu</a></li>
-                    <li><a href="features.html#fax">Dijital Faks Sunucusu</a></li>
-                    <li><a href="api-docs.html">REST API &amp; Webhook</a></li>
+                    <li><a href="features.html#webrtc">WebRTC Softphone</a></li>
+                    <li><a href="features.html#fax">Digital Fax Server</a></li>
+                    <li><a href="api-docs.html">REST API &amp; Webhooks</a></li>
                 </ul>
             </div>
 
             <div class="footer-col">
-                <h5>Bağlantılar &amp; Belgelendirme</h5>
+                <h5>
+                    <span data-lang="tr">Bağlantılar &amp; Belgelendirme</span>
+                    <span data-lang="en">Links &amp; Documentation</span>
+                    <span data-lang="de">Links &amp; Dokumentation</span>
+                </h5>
                 <ul>
                     <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
-                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">Gizlilik Politikası</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Deposu</a></li>
-                    <li><a href="installation.html">Kurulum Kılavuzu</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkıda Bulunma</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT Lisansı</a></li>
+                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">
+                        <span data-lang="tr">Gizlilik Politikası</span>
+                        <span data-lang="en">Privacy Policy</span>
+                        <span data-lang="de">Datenschutzerklärung</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Repository</a></li>
+                    <li><a href="installation.html">
+                        <span data-lang="tr">Kurulum Kılavuzu</span>
+                        <span data-lang="en">Install Guide</span>
+                        <span data-lang="de">Installationsanleitung</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">
+                        <span data-lang="tr">Katkıda Bulunma</span>
+                        <span data-lang="en">Contributing</span>
+                        <span data-lang="de">Mitwirken</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT License</a></li>
                 </ul>
             </div>
         </div>
 
         <div class="footer-bottom">
             <div>
-                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Katkıcıları. MIT Lisansı ile sunulmaktadır.
+                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Contributors. Released under the MIT License.
             </div>
             <div>
-                Asterisk 22, Nginx L4, Apache 2.4, MariaDB 11, PHP 8, Go &amp; Kotlin ile geliştirilmiştir.
+                Asterisk 22, Nginx L4, Apache 2.4, MariaDB 11, PHP 8, Go &amp; Kotlin.
             </div>
         </div>
     </footer>

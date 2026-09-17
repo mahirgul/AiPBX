@@ -1,12 +1,31 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en" data-lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Güvenlik Sertleştirme & NEC CCIS Protokol Gateway — AiPBX Kurumsal Santral</title>
-    <meta name="description" content="AiPBX güvenlik katmanları: Fail2ban saldırı önleme, TLS 1.3/SRTP şifreleme ve tescilli NEC UNIVERGE SV8100/SV8300/SV8500 CCIS sinyalleşme protokolü tersine mühendislik rehberi.">
+    <title>Security Hardening & NEC CCIS Protocol Gateway — AiPBX</title>
+    <meta name="description" content="AiPBX security defense layers: Fail2ban brute-force protection, TLS 1.3/SRTP encryption, and proprietary NEC UNIVERGE SV8100/SV8300/SV8500 CCIS protocol reverse engineering.">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
     
+    <!-- Synchronous Language Auto-Detection (Zero Flicker) -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('aipbx_lang');
+            var lang = saved;
+            if (!lang) {
+                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
+                lang = 'en';
+                for (var i = 0; i < navLangs.length; i++) {
+                    var l = (navLangs[i] || '').toLowerCase();
+                    if (l.indexOf('tr') === 0) { lang = 'tr'; break; }
+                    if (l.indexOf('de') === 0) { lang = 'de'; break; }
+                }
+            }
+            document.documentElement.setAttribute('data-lang', lang);
+            document.documentElement.lang = lang;
+        })();
+    </script>
+
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -18,18 +37,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Stylesheet -->
+    <!-- Shared Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Top Announcement -->
+    <!-- Top Announcement Banner -->
     <div class="top-banner">
-        <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS Yayında</strong> — Açık kaynak yeni nesil kurumsal IP santral ve birleşik iletişim platformu. Mimari &amp; Geliştirme: <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
-        <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        <div data-lang="tr">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS Yayında</strong> — Açık kaynak yeni nesil kurumsal IP santral ve birleşik iletişim platformu. Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Geliştirici: <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
+        <div data-lang="en">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS is Live</strong> — Modern open-source enterprise IP telephony &amp; unified communications. Architected by <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • By <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
+        <div data-lang="de">
+            <span class="banner-desktop">🚀 <strong>AiPBX v1.0 LTS ist Live</strong> — Moderne Open-Source Enterprise IP-Telefonie &amp; Unified Communications. Entwickelt von <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a></span>
+            <span class="banner-mobile">🚀 <strong>AiPBX v1.0 LTS</strong> • Von <a href="https://mhrgl.com" target="_blank">Mahir Gül</a></span>
+        </div>
     </div>
 
-    <!-- Main Navigation -->
+    <!-- Main Navigation Bar -->
     <nav>
         <a href="index.html" class="logo">
             <img src="logo.png" alt="AI PBX Logo">
@@ -37,35 +66,136 @@
             <span class="logo-badge">LTS</span>
         </a>
         <ul class="nav-links">
-            <li><a href="index.html" class="">Genel Bakış</a></li>
-            <li><a href="architecture.html" class="">Mimari</a></li>
-            <li><a href="callcenter.html" class="">Çağrı Merkezi</a></li>
-            <li><a href="features.html" class="">Özellikler</a></li>
-            <li><a href="mobile-apps.html" class="">Mobil Uygulamalar</a></li>
+            <li>
+                <a href="index.html" class="">
+                    <span data-lang="tr">Genel Bakış</span>
+                    <span data-lang="en">Overview</span>
+                    <span data-lang="de">Übersicht</span>
+                </a>
+            </li>
+            <li>
+                <a href="architecture.html" class="">
+                    <span data-lang="tr">Mimari</span>
+                    <span data-lang="en">Architecture</span>
+                    <span data-lang="de">Architektur</span>
+                </a>
+            </li>
+            <li>
+                <a href="callcenter.html" class="">
+                    <span data-lang="tr">Çağrı Merkezi</span>
+                    <span data-lang="en">Call Center</span>
+                    <span data-lang="de">Callcenter</span>
+                </a>
+            </li>
+            <li>
+                <a href="features.html" class="">
+                    <span data-lang="tr">Özellikler</span>
+                    <span data-lang="en">Features</span>
+                    <span data-lang="de">Funktionen</span>
+                </a>
+            </li>
+            <li>
+                <a href="mobile-apps.html" class="">
+                    <span data-lang="tr">Mobil Uygulamalar</span>
+                    <span data-lang="en">Mobile Apps</span>
+                    <span data-lang="de">Mobil-Apps</span>
+                </a>
+            </li>
             <li class="nav-dropdown">
-                <button class="nav-dropdown-btn">Rehberler ▾</button>
+                <button class="nav-dropdown-btn">
+                    <span data-lang="tr">Rehberler ▾</span>
+                    <span data-lang="en">Guides ▾</span>
+                    <span data-lang="de">Handbuch ▾</span>
+                </button>
                 <div class="nav-dropdown-menu">
-                    <a href="installation.html" class="nav-dropdown-item"><span class="item-icon">🚀</span> Kurulum &amp; Yönetim</a>
-                    <a href="callcenter.html" class="nav-dropdown-item"><span class="item-icon">🎧</span> Kuyruk &amp; Mola (*22/*23)</a>
-                    <a href="security.html" class="nav-dropdown-item"><span class="item-icon">🛡️</span> Güvenlik &amp; CCIS Gateway</a>
-                    <a href="api-docs.html" class="nav-dropdown-item"><span class="item-icon">🔌</span> REST API &amp; WebSocket</a>
-                    <a href="architecture.html#rationale" class="nav-dropdown-item"><span class="item-icon">🧠</span> Mühendislik Tercihleri</a>
+                    <a href="installation.html" class="nav-dropdown-item">
+                        <span class="item-icon">🚀</span>
+                        <span data-lang="tr">Kurulum &amp; Yönetim</span>
+                        <span data-lang="en">Installation Guide</span>
+                        <span data-lang="de">Installation &amp; Setup</span>
+                    </a>
+                    <a href="callcenter.html#break-codes" class="nav-dropdown-item">
+                        <span class="item-icon">🎧</span>
+                        <span data-lang="tr">Kuyruk &amp; Mola (*22/*23)</span>
+                        <span data-lang="en">Queues &amp; Breaks (*22/*23)</span>
+                        <span data-lang="de">Warteschlange &amp; Pause (*22/*23)</span>
+                    </a>
+                    <a href="security.html" class="nav-dropdown-item">
+                        <span class="item-icon">🛡️</span>
+                        <span data-lang="tr">Güvenlik &amp; CCIS Gateway</span>
+                        <span data-lang="en">Security &amp; CCIS Gateway</span>
+                        <span data-lang="de">Sicherheit &amp; CCIS-Gateway</span>
+                    </a>
+                    <a href="api-docs.html" class="nav-dropdown-item">
+                        <span class="item-icon">🔌</span>
+                        <span data-lang="tr">REST API &amp; WebSocket</span>
+                        <span data-lang="en">REST API &amp; WebSocket</span>
+                        <span data-lang="de">REST-API &amp; WebSocket</span>
+                    </a>
+                    <a href="architecture.html#alpn" class="nav-dropdown-item">
+                        <span class="item-icon">🧠</span>
+                        <span data-lang="tr">ALPN Çoklayıcı Detayı</span>
+                        <span data-lang="en">Port 443 ALPN Deep Dive</span>
+                        <span data-lang="de">Port 443 ALPN Deep Dive</span>
+                    </a>
                 </div>
             </li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkı Sun</a></li>
+            <li>
+                <a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">
+                    <span data-lang="tr">Katkı Sun</span>
+                    <span data-lang="en">Contribute</span>
+                    <span data-lang="de">Mitwirken</span>
+                </a>
+            </li>
         </ul>
+
         <div class="nav-actions">
+            <!-- Top-Right Language Switcher (TR / EN / DE) -->
+            <div class="lang-selector" id="langSelector">
+                <button class="lang-btn" id="langSelectorBtn" aria-label="Select Language">
+                    <span class="lang-flag" id="currentLangFlag">🌐</span>
+                    <span class="lang-code" id="currentLangCode">EN</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-option" data-set-lang="tr">
+                        <span class="flag">🇹🇷</span>
+                        <span>Türkçe</span>
+                        <span class="check">✓</span>
+                    </button>
+                    <button class="lang-option" data-set-lang="en">
+                        <span class="flag">🇬🇧</span>
+                        <span>English</span>
+                        <span class="check">✓</span>
+                    </button>
+                    <button class="lang-option" data-set-lang="de">
+                        <span class="flag">🇩🇪</span>
+                        <span>Deutsch</span>
+                        <span class="check">✓</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download Button -->
             <a href="mobile-apps.html" class="btn-mhrgl" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">
-                📲 Mobil İndir
+                <span data-lang="tr">📲 Mobil İndir</span>
+                <span data-lang="en">📲 Download App</span>
+                <span data-lang="de">📲 App Laden</span>
             </a>
+
+            <!-- Developer Site -->
             <a href="https://mhrgl.com" target="_blank" class="btn-mhrgl desktop-only">
                 🌐 mhrgl.com
             </a>
+
+            <!-- GitHub Repo -->
             <a href="https://github.com/mahirgul/AiPBX" target="_blank" class="btn-github desktop-only">
                 <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
                 GitHub
             </a>
-            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Menüyü Aç/Kapat">
+
+            <!-- Mobile Toggle Button -->
+            <button class="mobile-toggle-btn" id="mobileToggleBtn" aria-label="Toggle Menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -73,7 +203,7 @@
         </div>
     </nav>
 
-    <!-- Mobile Drawer -->
+    <!-- Mobile Navigation Drawer -->
     <div class="mobile-drawer" id="mobileDrawer">
         <div class="mobile-drawer-header">
             <div class="logo">
@@ -81,22 +211,86 @@
                 <span>AI PBX</span>
                 <span class="logo-badge">LTS</span>
             </div>
-            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Menüyü kapat">&times;</button>
+            <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">&times;</button>
         </div>
+
+        <!-- Mobile Language Bar -->
+        <div class="mobile-lang-bar">
+            <button class="mobile-lang-btn" data-set-lang="tr">🇹🇷 TR</button>
+            <button class="mobile-lang-btn" data-set-lang="en">🇬🇧 EN</button>
+            <button class="mobile-lang-btn" data-set-lang="de">🇩🇪 DE</button>
+        </div>
+
         <ul class="mobile-nav-links">
-            <li><a href="index.html" class="mobile-nav-item">🏠 Genel Bakış (Home)</a></li>
-            <li><a href="architecture.html" class="mobile-nav-item">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
-            <li><a href="callcenter.html" class="mobile-nav-item">🎧 Çağrı Merkezi &amp; Mola (*22/*23)</a></li>
-            <li><a href="features.html" class="mobile-nav-item">⚡ Santral Özellikleri &amp; Kodlar</a></li>
-            <li><a href="mobile-apps.html" class="mobile-nav-item">📲 Mobil Uygulamalar (Android &amp; iOS)</a></li>
-            <li><a href="installation.html" class="mobile-nav-item">🚀 Kurulum &amp; Yapılandırma</a></li>
-            <li><a href="security.html" class="mobile-nav-item">🛡️ Güvenlik &amp; CCIS Protokol Gateway</a></li>
-            <li><a href="api-docs.html" class="mobile-nav-item">🔌 REST API &amp; Geliştirici Kılavuzu</a></li>
-            <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">🤝 Katkı Kılavuzu</a></li>
+            <li>
+                <a href="index.html" class="mobile-nav-item">
+                    <span data-lang="tr">🏠 Genel Bakış (Home)</span>
+                    <span data-lang="en">🏠 Overview (Home)</span>
+                    <span data-lang="de">🏠 Übersicht (Home)</span>
+                </a>
+            </li>
+            <li>
+                <a href="architecture.html" class="mobile-nav-item">
+                    <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
+                    <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
+                    <span data-lang="de">🏗️ Systemarchitektur &amp; ALPN</span>
+                </a>
+            </li>
+            <li>
+                <a href="callcenter.html" class="mobile-nav-item">
+                    <span data-lang="tr">🎧 Çağrı Merkezi &amp; Mola (*22/*23)</span>
+                    <span data-lang="en">🎧 Call Center &amp; Breaks (*22/*23)</span>
+                    <span data-lang="de">🎧 Callcenter &amp; Pausen (*22/*23)</span>
+                </a>
+            </li>
+            <li>
+                <a href="features.html" class="mobile-nav-item">
+                    <span data-lang="tr">⚡ Santral Özellikleri &amp; Kodlar</span>
+                    <span data-lang="en">⚡ PBX Features &amp; Codes</span>
+                    <span data-lang="de">⚡ PBX-Funktionen &amp; Codes</span>
+                </a>
+            </li>
+            <li>
+                <a href="mobile-apps.html" class="mobile-nav-item">
+                    <span data-lang="tr">📲 Mobil Uygulamalar (Android &amp; iOS)</span>
+                    <span data-lang="en">📲 Mobile Apps (Android &amp; iOS)</span>
+                    <span data-lang="de">📲 Mobil-Apps (Android &amp; iOS)</span>
+                </a>
+            </li>
+            <li>
+                <a href="installation.html" class="mobile-nav-item">
+                    <span data-lang="tr">🚀 Kurulum &amp; Yapılandırma</span>
+                    <span data-lang="en">🚀 Installation &amp; Setup</span>
+                    <span data-lang="de">🚀 Installation &amp; Einrichtung</span>
+                </a>
+            </li>
+            <li>
+                <a href="security.html" class="mobile-nav-item">
+                    <span data-lang="tr">🛡️ Güvenlik &amp; CCIS Protokol Gateway</span>
+                    <span data-lang="en">🛡️ Security &amp; CCIS Gateway</span>
+                    <span data-lang="de">🛡️ Sicherheit &amp; CCIS-Gateway</span>
+                </a>
+            </li>
+            <li>
+                <a href="api-docs.html" class="mobile-nav-item">
+                    <span data-lang="tr">🔌 REST API &amp; Geliştirici Kılavuzu</span>
+                    <span data-lang="en">🔌 REST API &amp; Developer Guide</span>
+                    <span data-lang="de">🔌 REST-API &amp; Entwickler-Guide</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank" class="mobile-nav-item">
+                    <span data-lang="tr">🤝 Katkı Kılavuzu</span>
+                    <span data-lang="en">🤝 Contributing Guide</span>
+                    <span data-lang="de">🤝 Mitwirkungs-Guide</span>
+                </a>
+            </li>
         </ul>
         <div class="mobile-drawer-actions">
             <a href="mobile-apps.html" class="dev-btn dev-btn-main" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                📲 Mobil İstemcileri İndir
+                <span data-lang="tr">📲 Mobil İstemcileri İndir</span>
+                <span data-lang="en">📲 Download Mobile Apps</span>
+                <span data-lang="de">📲 Mobile Apps Herunterladen</span>
             </a>
             <a href="https://mhrgl.com" target="_blank" class="dev-btn dev-btn-outline" style="width: 100%; justify-content: center;">
                 🌐 Mahir Gül (mhrgl.com)
@@ -111,121 +305,276 @@
         <aside class="docs-sidebar">
             <div class="sidebar-search">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="sidebarSearch" placeholder="Dokümantasyonda ara...">
+                <input type="text" id="sidebarSearch" placeholder="Dokümantasyonda ara... / Search...">
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Platform &amp; Mimari</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Platform &amp; Mimari</span>
+                    <span data-lang="en">Platform &amp; Architecture</span>
+                    <span data-lang="de">Plattform &amp; Architektur</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="index.html">🏠 Genel Bakış (Overview)</a></li>
-                    <li><a href="architecture.html" class="">🏗️ Sistem Mimarisi &amp; ALPN</a></li>
-                    <li><a href="features.html" class="">⚡ Santral Modülleri</a></li>
+                    <li>
+                        <a href="index.html">
+                            <span data-lang="tr">🏠 Genel Bakış (Overview)</span>
+                            <span data-lang="en">🏠 Overview (Home)</span>
+                            <span data-lang="de">🏠 Übersicht (Home)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="architecture.html" class="">
+                            <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
+                            <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
+                            <span data-lang="de">🏗️ Architektur &amp; ALPN</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="features.html" class="">
+                            <span data-lang="tr">⚡ Santral Modülleri</span>
+                            <span data-lang="en">⚡ PBX Modules</span>
+                            <span data-lang="de">⚡ PBX-Module</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Çağrı Merkezi &amp; Kuyruk</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Çağrı Merkezi &amp; Kuyruk</span>
+                    <span data-lang="en">Call Center &amp; Queues</span>
+                    <span data-lang="de">Callcenter &amp; Warteschlangen</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="callcenter.html" class="">🎧 Kuyruk Yönetimi</a></li>
-                    <li><a href="callcenter.html#break-codes" class="">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></a></li>
-                    <li><a href="callcenter.html#wallboard">📊 Canlı Wallboard &amp; SLA</a></li>
-                    <li><a href="callcenter.html#supervisor">👁️ Süpervizör &amp; Spy (*90)</a></li>
+                    <li>
+                        <a href="callcenter.html" class="">
+                            <span data-lang="tr">🎧 Kuyruk Yönetimi</span>
+                            <span data-lang="en">🎧 Queue Operations</span>
+                            <span data-lang="de">🎧 Warteschlangen-Betrieb</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#break-codes" class="">
+                            <span data-lang="tr">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></span>
+                            <span data-lang="en">⏸️ Break Codes (*22/*23) <span class="sidebar-badge">New</span></span>
+                            <span data-lang="de">⏸️ Pausencodes (*22/*23) <span class="sidebar-badge">Neu</span></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#wallboard">
+                            <span data-lang="tr">📊 Canlı Wallboard &amp; SLA</span>
+                            <span data-lang="en">📊 Live Wallboard &amp; SLA</span>
+                            <span data-lang="de">📊 Live-Wallboard &amp; SLA</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="callcenter.html#supervisor">
+                            <span data-lang="tr">👁️ Süpervizör &amp; Spy (*90)</span>
+                            <span data-lang="en">👁️ Supervisor &amp; Spy (*90)</span>
+                            <span data-lang="de">👁️ Supervisor &amp; Spy (*90)</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Mobil İstemciler</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Mobil İstemciler</span>
+                    <span data-lang="en">Mobile Clients</span>
+                    <span data-lang="de">Mobile Clients</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="mobile-apps.html" class="">📱 Android &amp; iOS İstemcileri</a></li>
-                    <li><a href="mobile-apps.html#downloads">⬇️ APK / IPA / Simulator</a></li>
-                    <li><a href="mobile-apps.html#android">🤖 Kotlin Native &amp; FCM Push</a></li>
-                    <li><a href="mobile-apps.html#ios">🍏 Swift &amp; CallKit</a></li>
+                    <li>
+                        <a href="mobile-apps.html" class="">
+                            <span data-lang="tr">📱 Android &amp; iOS İstemcileri</span>
+                            <span data-lang="en">📱 Android &amp; iOS Clients</span>
+                            <span data-lang="de">📱 Android &amp; iOS Clients</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#downloads">
+                            <span data-lang="tr">⬇️ APK / IPA / Simulator</span>
+                            <span data-lang="en">⬇️ APK / IPA / Simulator</span>
+                            <span data-lang="de">⬇️ APK / IPA / Simulator</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#android">
+                            <span data-lang="tr">🤖 Kotlin Native &amp; FCM Push</span>
+                            <span data-lang="en">🤖 Kotlin Native &amp; FCM Push</span>
+                            <span data-lang="de">🤖 Kotlin Native &amp; FCM-Push</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="mobile-apps.html#ios">
+                            <span data-lang="tr">🍏 Swift &amp; CallKit</span>
+                            <span data-lang="en">🍏 Swift &amp; CallKit</span>
+                            <span data-lang="de">🍏 Swift &amp; CallKit</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Yönetim &amp; Güvenlik</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Yönetim &amp; Güvenlik</span>
+                    <span data-lang="en">Admin &amp; Security</span>
+                    <span data-lang="de">Admin &amp; Sicherheit</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="installation.html" class="">🚀 Hızlı Kurulum (install.sh)</a></li>
-                    <li><a href="installation.html#ports">🌐 Port &amp; Güvenlik Duvarı</a></li>
-                    <li><a href="security.html" class="active">🛡️ Güvenlik &amp; Fail2ban</a></li>
-                    <li><a href="security.html#ccis">📠 NEC CCIS Protokol Gateway</a></li>
+                    <li>
+                        <a href="installation.html" class="">
+                            <span data-lang="tr">🚀 Hızlı Kurulum (install.sh)</span>
+                            <span data-lang="en">🚀 Quick Install (install.sh)</span>
+                            <span data-lang="de">🚀 Schnellinstallation (install.sh)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="installation.html#ports">
+                            <span data-lang="tr">🌐 Port &amp; Güvenlik Duvarı</span>
+                            <span data-lang="en">🌐 Ports &amp; Firewall</span>
+                            <span data-lang="de">🌐 Ports &amp; Firewall</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="security.html" class="active">
+                            <span data-lang="tr">🛡️ Güvenlik &amp; Fail2ban</span>
+                            <span data-lang="en">🛡️ Security &amp; Fail2ban</span>
+                            <span data-lang="de">🛡️ Sicherheit &amp; Fail2ban</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="security.html#ccis">
+                            <span data-lang="tr">📠 NEC CCIS Protokol Gateway</span>
+                            <span data-lang="en">📠 NEC CCIS Protocol Gateway</span>
+                            <span data-lang="de">📠 NEC CCIS Protokoll-Gateway</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <div class="sidebar-group">
-                <div class="sidebar-title">Geliştirici &amp; API</div>
+                <div class="sidebar-title">
+                    <span data-lang="tr">Geliştirici &amp; API</span>
+                    <span data-lang="en">Developer &amp; API</span>
+                    <span data-lang="de">Entwickler &amp; API</span>
+                </div>
                 <ul class="sidebar-menu">
-                    <li><a href="api-docs.html" class="">🔌 REST API Endpoints</a></li>
-                    <li><a href="api-docs.html#websocket">💬 Go WebSocket Protokolü</a></li>
-                    <li><a href="api-docs.html#tests">🧪 PHPUnit Testleri (142 Test)</a></li>
+                    <li>
+                        <a href="api-docs.html" class="">
+                            <span data-lang="tr">🔌 REST API Referansı</span>
+                            <span data-lang="en">🔌 REST API Reference</span>
+                            <span data-lang="de">🔌 REST-API Referenz</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="api-docs.html#websocket">
+                            <span data-lang="tr">💬 Go WebSocket Protokolü</span>
+                            <span data-lang="en">💬 Go WebSocket Protocol</span>
+                            <span data-lang="de">💬 Go WebSocket Protokoll</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="api-docs.html#tests">
+                            <span data-lang="tr">🧪 PHPUnit Testleri (142 Test)</span>
+                            <span data-lang="en">🧪 PHPUnit Test Suite</span>
+                            <span data-lang="de">🧪 PHPUnit Test-Suite</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </aside>
 
-
-        <!-- Main Documentation Content -->
         <main class="docs-content">
             <div class="docs-breadcrumb">
-                <a href="index.html">Ana Sayfa</a> / <a href="security.html">Güvenlik</a> / <span>Sertleştirme &amp; CCIS Gateway</span>
+                <a href="index.html">
+                    <span data-lang="tr">Ana Sayfa</span><span data-lang="en">Home</span><span data-lang="de">Startseite</span>
+                </a> / 
+                <a href="security.html">
+                    <span data-lang="tr">Güvenlik</span><span data-lang="en">Security</span><span data-lang="de">Sicherheit</span>
+                </a> / 
+                <span>
+                    <span data-lang="tr">Sertleştirme &amp; CCIS</span><span data-lang="en">Hardening &amp; CCIS</span><span data-lang="de">Härtung &amp; CCIS</span>
+                </span>
             </div>
 
             <div class="docs-header">
-                <h1>🛡️ Güvenlik Sertleştirme &amp; NEC CCIS Protokol Gateway</h1>
-                <p class="lead">
-                    AiPBX; kurumsal VoIP ağlarının karşılaştığı SIP brute-force saldırılarını, yetkisiz çağrı başlatma girişimlerini ve dinleme tehditlerini bertaraf eden çok katmanlı savunma mekanizmalarına sahiptir. Ayrıca tescilli <strong>NEC UNIVERGE CCIS</strong> protokolünü modern IP dünyasıyla birleştiren kurumsal ağ geçidi mimarisi sunar.
+                <h1>
+                    <span data-lang="tr">🛡️ Güvenlik Sertleştirme &amp; NEC CCIS Protokol Gateway</span>
+                    <span data-lang="en">🛡️ Security Hardening &amp; NEC CCIS Protocol Gateway</span>
+                    <span data-lang="de">🛡️ Sicherheitshärtung &amp; NEC CCIS Protokoll-Gateway</span>
+                </h1>
+                <p class="lead" data-lang="tr">
+                    AiPBX; kurumsal VoIP ağlarının karşılaştığı SIP brute-force saldırılarını ve dinleme tehditlerini bertaraf eden çok katmanlı savunma mekanizmalarına sahiptir. Ayrıca tescilli <strong>NEC UNIVERGE CCIS</strong> protokolünü modern IP dünyasıyla birleştiren kurumsal ağ geçidi mimarisi sunar.
+                </p>
+                <p class="lead" data-lang="en">
+                    AiPBX incorporates multi-tier defense mechanisms against brute-force VoIP scanners and packet sniffers. It also features a protocol-level gateway for bridging legacy <strong>NEC UNIVERGE CCIS</strong> PBXs with Asterisk 22 WebRTC.
+                </p>
+                <p class="lead" data-lang="de">
+                    AiPBX bietet mehrschichtige Abwehrmechanismen gegen Brute-Force-Scans und Abhörversuche. Zudem integriert es ein Protokoll-Gateway zur Anbindung klassischer <strong>NEC UNIVERGE CCIS</strong>-Anlagen an Asterisk 22 WebRTC.
                 </p>
             </div>
 
-            <!-- Section 1: Çok Katmanlı Güvenlik -->
             <section class="docs-section" id="defense">
-                <h2>1. Çok Katmanlı Savunma Mimarisi (Defense-in-Depth)</h2>
-                <p>
-                    AiPBX sisteminde güvenlik tek bir bileşene emanet edilmez; ağ, taşıma, uygulama ve veritabanı katmanlarında ayrı ayrı sertleştirme uygulanır:
-                </p>
-
+                <h2>
+                    <span data-lang="tr">1. Çok Katmanlı Savunma Mimarisi (Defense-in-Depth)</span>
+                    <span data-lang="en">1. Defense-in-Depth Architecture</span>
+                    <span data-lang="de">1. Mehrstufige Sicherheitsarchitektur</span>
+                </h2>
                 <div class="docs-table-wrapper">
                     <table class="docs-table">
                         <thead>
                             <tr>
-                                <th>Katman</th>
-                                <th>Uygulanan Güvenlik Politikası</th>
-                                <th>Sağlanan Koruma</th>
+                                <th>
+                                    <span data-lang="tr">Katman</span><span data-lang="en">Security Tier</span><span data-lang="de">Sicherheits-Ebene</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Uygulanan Güvenlik Politikası</span><span data-lang="en">Enforced Policy</span><span data-lang="de">Angewandte Richtlinie</span>
+                                </th>
+                                <th>
+                                    <span data-lang="tr">Sağlanan Koruma</span><span data-lang="en">Mitigated Threat</span><span data-lang="de">Schutzwirkung</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Ağ Katmanı (L4)</strong></td>
-                                <td>Nginx L4 Stream + ALPN Filtreleme</td>
-                                <td>Dışarıya açık port sayısını asgariye indirir. Rastgele port taramalarını boşa çıkarır.</td>
+                                <td><strong>Edge L4 Stream</strong></td>
+                                <td>Nginx L4 Stream + ALPN Inspection</td>
+                                <td>
+                                    <span data-lang="tr">Gereksiz portları kapatır, rastgele port taramalarını boşa çıkarır.</span>
+                                    <span data-lang="en">Minimizes attack surface by tunneling over port 443; drops unauthorized probes.</span>
+                                    <span data-lang="de">Minimiert Angriffsfläche durch Bündelung auf Port 443.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Taşıma Katmanı (TLS/SRTP)</strong></td>
+                                <td><strong>Transport Encryption</strong></td>
                                 <td>TLS 1.3, DTLS-SRTP, SDES-SRTP, TURNS</td>
-                                <td>Ağ üzerindeki paket yakalama (Sniffing, Wireshark) saldırılarında sesin ve şifrelerin dinlenmesini önler.</td>
+                                <td>
+                                    <span data-lang="tr">Paket dinleme (Sniffing, Wireshark) saldırılarında sesin dinlenmesini önler.</span>
+                                    <span data-lang="en">Prevents audio eavesdropping and credential sniffing across public networks.</span>
+                                    <span data-lang="de">Verhindert Abhören von Sprachdaten und Zugangsdaten im Netzwerk.</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Giriş &amp; Hız Sınırı</strong></td>
-                                <td>Fail2ban PBX Jails + Nginx Rate Limiting</td>
-                                <td>Saniyede onlarca kez şifre deneyen botnet ve SIP tarayıcılarını (friendly-scanner, sipvicious) anında banlar.</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Veritabanı Katmanı</strong></td>
-                                <td>İki Kademeli Ayrıcalık (Least Privilege)</td>
-                                <td>Web arayüzünde olası bir açık durumunda dahi veritabanı tablolarının silinmesini (DROP) engeller.</td>
+                                <td><strong>Rate Limiting &amp; Jails</strong></td>
+                                <td>Fail2ban PBX Jails + Nginx Leaky Bucket</td>
+                                <td>
+                                    <span data-lang="tr">SIP brute-force botlarını ve şifre deneyen tarayıcıları anında banlar.</span>
+                                    <span data-lang="en">Instantly bans SIP brute-force bots and aggressive scanners (sipvicious).</span>
+                                    <span data-lang="de">Sperrt SIP-Brute-Force-Bots und Scanner automatisch via iptables.</span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- Section 2: Fail2ban Entegrasyonu -->
             <section class="docs-section" id="fail2ban">
-                <h2>2. Fail2ban PBX Jails &amp; Otomatik Engelleme</h2>
-                <p>
-                    Sistemde Asterisk PJSIP, Apache web sunucusu ve SSH için önceden yapılandırılmış özel Fail2ban kuralları aktiftir:
-                </p>
-
+                <h2>
+                    <span data-lang="tr">2. Fail2ban PBX Jails &amp; Otomatik Engelleme</span>
+                    <span data-lang="en">2. Fail2ban PBX Jails &amp; Automated Banning</span>
+                    <span data-lang="de">2. Fail2ban PBX-Jails &amp; Automatische Sperren</span>
+                </h2>
                 <div class="docs-code-box">
                     <div class="docs-code-header">
                         <span>/etc/fail2ban/jail.d/asterisk.conf</span>
@@ -238,157 +587,97 @@ action   = iptables-allports[name=ASTERISK, protocol=all]
 logpath  = /var/log/asterisk/messages
 maxretry = 5
 findtime = 600
-bantime  = 86400
-
-[aipbx-web-auth]
-enabled  = true
-filter   = aipbx-web
-action   = iptables-multiport[name=AIPBX-WEB, port="http,https,8443"]
-logpath  = /var/log/aipbx/audit.log
-maxretry = 4
-findtime = 300
-bantime  = 43200</code></pre>
-                    </div>
-                </div>
-
-                <div class="callout callout-warning">
-                    <span class="callout-icon">⚡</span>
-                    <div class="callout-body">
-                        <strong>Akıllı Beyaz Liste (Whitelist):</strong> Kurumsal merkez IP'leri, VPN ağ geçitleri ve SIP operatör trunk adresleri otomatik olarak beyaz listeye alınır; böylece personelin yanlış şifre girmesi durumunda şirketin genel IP'sinin engellenmesi önlenir.
+bantime  = 86400</code></pre>
                     </div>
                 </div>
             </section>
 
-            <!-- Section 3: NEC CCIS Protokolü & Gateway -->
             <section class="docs-section" id="ccis">
-                <h2>3. NEC UNIVERGE CCIS Protokolü ve Gateway (ccisgw) Rehberi</h2>
-                <p>
-                    <strong>CCIS (Common Channel Interoffice Signaling)</strong>; NEC tarafından kurumsal santral ağlarında (SV8100, SV8300, SV8500, NEAX) santraller arası özellik şeffaflığı (feature transparency) sağlamak amacıyla ITU-T SS7 No.7 / ISUP ve ITU-T Q.931 (ISDN DSS1) standartları harmanlanarak geliştirilmiş özel bir hibrit protokoldür.
-                </p>
-
-                <h3>3.1. Ağ Topolojisi ve Temel Kavramlar:</h3>
-                <div class="docs-code-box">
-                    <div class="docs-code-header">
-                        <span>NEC CCIS Sinyalleşme ve Ses Yolu Mimarisi</span>
-                    </div>
-                    <div class="docs-code-body">
-<pre><code>+-----------------------------------+                     +-----------------------------------+
-|      NEC PBX (Node A / OPC)       |                     |      NEC PBX (Node B / DPC)       |
-|                                   |                     |                                   |
-|  [Ses Kanalı 1 (B1)] ===========> | === Ses Yolu =====> | ====> [Ses Kanalı 1 (B1)]         |
-|  [Ses Kanalı 2 (B2)] ===========> |    (TDM / RTP)      | ====> [Ses Kanalı 2 (B2)]         |
-|  [Ses Kanalı N (Bn)] ===========> |                     | ====> [Ses Kanalı N (Bn)]         |
-|                                   |                     |                                   |
-|  [Ortak Sinyal Kanalı (CCH)] <--> | <-- CCIS-MSU Link-> | <---> [Ortak Sinyal Kanalı (CCH)] |
-|                                   |    (HDLC / TCP/IP)  |                                   |
-+-----------------------------------+                     +-----------------------------------+</code></pre>
-                    </div>
+                <h2>
+                    <span data-lang="tr">3. NEC UNIVERGE CCIS Protokolü &amp; Gateway Rehberi</span>
+                    <span data-lang="en">3. NEC UNIVERGE CCIS Protocol &amp; Gateway Guide</span>
+                    <span data-lang="de">3. NEC UNIVERGE CCIS Protokoll- &amp; Gateway-Handbuch</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        <strong>CCIS (Common Channel Interoffice Signaling)</strong>; NEC tarafından kurumsal santral ağlarında (SV8100, SV8300, SV8500, NEAX) santraller arası özellik şeffaflığı (feature transparency) sağlamak amacıyla ITU-T SS7 No.7 / ISUP ve ITU-T Q.931 (ISDN DSS1) standartları harmanlanarak geliştirilmiş özel bir hibrit protokoldür.
+                    </p>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        <strong>CCIS (Common Channel Interoffice Signaling)</strong> is NEC's proprietary inter-PBX signaling protocol (used on SV8100, SV8300, SV8500, NEAX). It blends ITU-T SS7 No.7 / ISUP and ITU-T Q.931 (ISDN DSS1) to achieve seamless feature transparency across multi-site enterprise topologies.
+                    </p>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        <strong>CCIS (Common Channel Interoffice Signaling)</strong> ist NECs proprietäres Vernetzungsprotokoll (eingesetzt in SV8100, SV8300, SV8500, NEAX). Es kombiniert ITU-T SS7 No.7 / ISUP mit ITU-T Q.931 (ISDN DSS1) für standortübergreifende Leistungstransparenz.
+                    </p>
                 </div>
 
-                <ul>
-                    <li><strong>Signaling Point (SP):</strong> Ağdaki her bir santral bağımsız bir sinyalleşme noktasıdır.</li>
-                    <li><strong>Point Code (PC / FPC):</strong> Santralin benzersiz kurumsal kimlik numarasıdır (Originating Point Code - OPC, Destination Point Code - DPC, Fusion Point Code - FPC: 1 - 253).</li>
-                    <li><strong>Common Channel (CCH / FCCH):</strong> Ses kanallarından bağımsız ayrılmış ortak sinyalleşme kanalıdır (TDM'de Kanal 16, IP'de TCP soketi).</li>
-                    <li><strong>CIC (Circuit Identification Code):</strong> Sinyalin hangi ses kanalına (B-kanal veya RTP) ait olduğunu belirten 12-bit / 16-bit devre kodudur.</li>
-                </ul>
-
-                <h3>3.2. Katman 2 (Data Link) Çerçeveleme:</h3>
-                <p>
-                    Katman 2 seviyesinde bağlantı bütünlüğü özel HDLC çerçeveleme ile denetlenir:
-                </p>
-                <ul>
-                    <li><code>Frame Delimiter</code>: Başlangıç ve bitiş baytı (<code>0x7E</code> veya NEC özel L2 belirteci).</li>
-                    <li><code>Length Indicator (LI)</code>: Takip eden paketin bayt uzunluğu.</li>
-                    <li><code>Sequence Numbers</code>: İleri ve geri sıra numaraları (FSN / BSN) ile kayıpsız teslimat.</li>
-                    <li><code>L2 Checksum</code>: Çerçeve bütünlük doğrulaması.</li>
-                </ul>
-
-                <h3>3.3. Katman 3 Sinyalleşme Birimi (CCIS-MSU Header):</h3>
                 <div class="docs-code-box">
                     <div class="docs-code-header">
-                        <span>CCIS-MSU (Message Signaling Unit) Paket Formatı</span>
+                        <span>CCIS-MSU Packet Structure</span>
                     </div>
                     <div class="docs-code-body">
 <pre><code>Byte 0        Byte 1        Byte 2        Byte 3        Byte 4        Byte 5..N
 +-------------+-------------+-------------+-------------+-------------+---------------+
-|     SIO     |     DPC     |     OPC     |     CIC     |  Msg Type   | Parametreler  |
-|  (Sub-Srv)  | (Hedef PC)  | (Kaynak PC) | (Devre Kodu)| (CSTS Kodu) | (Caller/Called|
+|     SIO     |     DPC     |     OPC     |     CIC     |  Msg Type   | Parameters    |
+|  (Sub-Srv)  | (Dest PC)   | (Orig PC)   | (Circuit ID)| (CSTS Code) | (Caller/Called|
 +-------------+-------------+-------------+-------------+-------------+---------------+</code></pre>
                     </div>
-                </div>
-
-                <h3>3.4. Çağrı Durum Makinesi (CSTS):</h3>
-                <div class="docs-table-wrapper">
-                    <table class="docs-table">
-                        <thead>
-                            <tr>
-                                <th>Mesaj Tipi (Msg Type)</th>
-                                <th>CSTS Durumu</th>
-                                <th>SIP Eşdeğeri</th>
-                                <th>İşlev Açıklaması</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="code-pill">0x01</span> (IAM)</td>
-                                <td>Initial Address Message</td>
-                                <td><code>INVITE</code></td>
-                                <td>Yeni çağrı başlatma isteği, arayan ve aranan numara bilgisi.</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-pill">0x06</span> (ACM)</td>
-                                <td>Address Complete Message</td>
-                                <td><code>180 Ringing</code></td>
-                                <td>Hedef telefonun çaldığını bildiren geri bildirim sinyali.</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-pill">0x09</span> (ANC)</td>
-                                <td>Answer Charge / Connect</td>
-                                <td><code>200 OK</code></td>
-                                <td>Hedef telefonun açıldığını ve konuşmanın başladığını bildirir.</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-pill">0x0C</span> (REL)</td>
-                                <td>Release Message</td>
-                                <td><code>BYE / CANCEL</code></td>
-                                <td>Çağrıyı sonlandırma isteği.</td>
-                            </tr>
-                            <tr>
-                                <td><span class="code-pill">0x10</span> (RLC)</td>
-                                <td>Release Complete</td>
-                                <td><code>200 OK (BYE)</code></td>
-                                <td>Devrenin boşaltıldığını ve yeni çağrıya hazır olduğunu onaylar.</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
 
                 <div class="callout callout-info">
                     <span class="callout-icon">🌉</span>
                     <div class="callout-body">
-                        <strong>AiPBX CCIS Gateway (ccisgw) Avantajı:</strong> Kurumunuzda kurulu bulunan eski NEC SV8100/SV8300/SV8500 santrallerini çöpe atmak zorunda kalmazsınız. AiPBX CCIS Gateway mimarisi sayesinde NEC santraldeki dahililer ile AiPBX üzerindeki mobil WebRTC kullanıcıları dahili numaralarıyla birbirini ücretsiz arayabilir ve çağrı aktarabilir.
+                        <div data-lang="tr">
+                            <strong>AiPBX CCIS Gateway (ccisgw) Avantajı:</strong> Kurumunuzda kurulu bulunan eski NEC SV8100/SV8300/SV8500 santrallerini çöpe atmak zorunda kalmazsınız. AiPBX CCIS Gateway mimarisi sayesinde NEC santraldeki dahililer ile AiPBX üzerindeki mobil WebRTC kullanıcıları dahili numaralarıyla birbirini ücretsiz arayabilir.
+                        </div>
+                        <div data-lang="en">
+                            <strong>The AiPBX CCIS Gateway Advantage:</strong> Protect existing investments in legacy NEC SV8100/SV8300/SV8500 PBXs. The AiPBX CCIS Gateway interfaces legacy CCIS nodes with Asterisk 22, enabling seamless peer-to-peer extension dialing between legacy desk sets and modern smartphone WebRTC softphones.
+                        </div>
+                        <div data-lang="de">
+                            <strong>Der AiPBX CCIS-Gateway-Vorteil:</strong> Schützen Sie Ihre bestehenden Investitionen in NEC SV8100/SV8300/SV8500 Anlagen. Das AiPBX CCIS-Gateway verbindet klassische CCIS-Knoten mit Asterisk 22 und ermöglicht kostenlose Durchwahlgespräche zwischen alten Tischapparaten und modernen Smartphone-WebRTC-Apps.
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Pagination -->
             <div class="docs-pagination">
                 <a href="installation.html" class="pagination-btn">
-                    <span class="pagination-label">← Önceki</span>
-                    <span class="pagination-title">Kurulum &amp; Yönetim</span>
+                    <span class="pagination-label">
+                        <span data-lang="tr">← Önceki</span>
+                        <span data-lang="en">← Previous</span>
+                        <span data-lang="de">← Zurück</span>
+                    </span>
+                    <span class="pagination-title">
+                        <span data-lang="tr">Kurulum Rehberi</span>
+                        <span data-lang="en">Install Guide</span>
+                        <span data-lang="de">Installationsanleitung</span>
+                    </span>
                 </a>
                 <a href="api-docs.html" class="pagination-btn next">
-                    <span class="pagination-label">Sonraki →</span>
-                    <span class="pagination-title">REST API &amp; Geliştirici Kılavuzu</span>
+                    <span class="pagination-label">
+                        <span data-lang="tr">Sonraki →</span>
+                        <span data-lang="en">Next →</span>
+                        <span data-lang="de">Weiter →</span>
+                    </span>
+                    <span class="pagination-title">
+                        <span data-lang="tr">REST API & Dev</span>
+                        <span data-lang="en">REST API & Dev</span>
+                        <span data-lang="de">REST-API & Dev</span>
+                    </span>
                 </a>
             </div>
+    
         </main>
 
-        <!-- Right Sticky Table of Contents -->
         <div class="docs-toc">
-            <div class="toc-title">Bu Sayfada</div>
+            <div class="toc-title">
+                <span data-lang="tr">Bu Sayfada</span><span data-lang="en">On This Page</span><span data-lang="de">Auf dieser Seite</span>
+            </div>
             <ul class="toc-list">
-                <li><a href="#defense">1. Çok Katmanlı Güvenlik</a></li>
+                <li><a href="#defense">1. Defense-in-Depth</a></li>
                 <li><a href="#fail2ban">2. Fail2ban Jails</a></li>
                 <li><a href="#ccis">3. NEC CCIS Gateway</a></li>
             </ul>
@@ -400,55 +689,98 @@ bantime  = 43200</code></pre>
         <div class="footer-grid">
             <div class="footer-brand">
                 <h4><img src="logo.png" alt="AiPBX Logo" style="height: 24px; border-radius: 4px;"> AI PBX</h4>
-                <p>
+                
+                <p data-lang="tr">
                     Açık kaynak, yüksek eşzamanlılıklı kurumsal IP PBX ve Birleşik İletişim Platformu. Kısıtlayıcı güvenlik duvarlarını aşan Port 443 ALPN mimarisi, Asterisk 22, WebRTC, Go WebSocket sohbet motoru ve yerel mobil istemciler.
                 </p>
+                <p data-lang="en">
+                    Open-source, high-concurrency enterprise IP PBX and Unified Communications platform. Featuring Port 443 ALPN multiplexing for restrictive firewalls, Asterisk 22, WebRTC, Go WebSocket chat, and native mobile apps.
+                </p>
+                <p data-lang="de">
+                    Open-Source Enterprise IP-Telefonanlage und Unified Communications Plattform mit hoher Nebenstellen-Kapazität. Port 443 ALPN-Multiplexing für restriktive Firewalls, Asterisk 22, WebRTC, Go-Chat und native Mobil-Apps.
+                </p>
+
                 <p>
-                    Proje Mimarı &amp; Geliştirici: <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>
+                    <span data-lang="tr">Proje Mimarı &amp; Geliştirici:</span>
+                    <span data-lang="en">Architect &amp; Lead Developer:</span>
+                    <span data-lang="de">Architektur &amp; Entwickler:</span>
+                    <a href="https://mhrgl.com" target="_blank" style="color: #38bdf8; font-weight: 600;">Mahir Gül (mhrgl.com)</a>
                 </p>
             </div>
 
             <div class="footer-col">
-                <h5>Mimari &amp; Çözümler</h5>
+                <h5>
+                    <span data-lang="tr">Mimari &amp; Çözümler</span>
+                    <span data-lang="en">Architecture &amp; Solutions</span>
+                    <span data-lang="de">Architektur &amp; Lösungen</span>
+                </h5>
                 <ul>
                     <li><a href="architecture.html">Port 443 ALPN Stream</a></li>
                     <li><a href="architecture.html#dual-endpoint">Dual-Endpoint PJSIP</a></li>
-                    <li><a href="callcenter.html">Çağrı Merkezi &amp; Kuyruk</a></li>
-                    <li><a href="callcenter.html#break-codes">Mola Kodları (*22/*23)</a></li>
+                    <li><a href="callcenter.html">
+                        <span data-lang="tr">Çağrı Merkezi &amp; Kuyruk</span>
+                        <span data-lang="en">Call Center &amp; Queues</span>
+                        <span data-lang="de">Callcenter &amp; Warteschlange</span>
+                    </a></li>
+                    <li><a href="callcenter.html#break-codes">
+                        <span data-lang="tr">Mola Kodları (*22/*23)</span>
+                        <span data-lang="en">Break Codes (*22/*23)</span>
+                        <span data-lang="de">Pausencodes (*22/*23)</span>
+                    </a></li>
                     <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
                 </ul>
             </div>
 
             <div class="footer-col">
-                <h5>Bileşenler &amp; İndirme</h5>
+                <h5>
+                    <span data-lang="tr">Bileşenler &amp; İndirme</span>
+                    <span data-lang="en">Components &amp; Downloads</span>
+                    <span data-lang="de">Komponenten &amp; Downloads</span>
+                </h5>
                 <ul>
-                    <li><a href="mobile-apps.html">Android APK v1.0.32</a></li>
+                    <li><a href="mobile-apps.html">Android APK (v1.0.32)</a></li>
                     <li><a href="mobile-apps.html#ios">iOS Swift &amp; CallKit</a></li>
-                    <li><a href="features.html#webrtc">WebRTC Tarayıcı Telefonu</a></li>
-                    <li><a href="features.html#fax">Dijital Faks Sunucusu</a></li>
-                    <li><a href="api-docs.html">REST API &amp; Webhook</a></li>
+                    <li><a href="features.html#webrtc">WebRTC Softphone</a></li>
+                    <li><a href="features.html#fax">Digital Fax Server</a></li>
+                    <li><a href="api-docs.html">REST API &amp; Webhooks</a></li>
                 </ul>
             </div>
 
             <div class="footer-col">
-                <h5>Bağlantılar &amp; Belgelendirme</h5>
+                <h5>
+                    <span data-lang="tr">Bağlantılar &amp; Belgelendirme</span>
+                    <span data-lang="en">Links &amp; Documentation</span>
+                    <span data-lang="de">Links &amp; Dokumentation</span>
+                </h5>
                 <ul>
                     <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
-                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">Gizlilik Politikası</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Deposu</a></li>
-                    <li><a href="installation.html">Kurulum Kılavuzu</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">Katkıda Bulunma</a></li>
-                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT Lisansı</a></li>
+                    <li><a href="https://www.mhrgl.com/privacy" target="_blank">
+                        <span data-lang="tr">Gizlilik Politikası</span>
+                        <span data-lang="en">Privacy Policy</span>
+                        <span data-lang="de">Datenschutzerklärung</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX" target="_blank">GitHub Repository</a></li>
+                    <li><a href="installation.html">
+                        <span data-lang="tr">Kurulum Kılavuzu</span>
+                        <span data-lang="en">Install Guide</span>
+                        <span data-lang="de">Installationsanleitung</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md" target="_blank">
+                        <span data-lang="tr">Katkıda Bulunma</span>
+                        <span data-lang="en">Contributing</span>
+                        <span data-lang="de">Mitwirken</span>
+                    </a></li>
+                    <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank">MIT License</a></li>
                 </ul>
             </div>
         </div>
 
         <div class="footer-bottom">
             <div>
-                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Katkıcıları. MIT Lisansı ile sunulmaktadır.
+                &copy; 2026 <strong>Mahir Gül</strong> (<a href="https://mhrgl.com" target="_blank">mhrgl.com</a>) &amp; AiPBX Contributors. Released under the MIT License.
             </div>
             <div>
-                Asterisk 22, Nginx L4, Apache 2.4, MariaDB 11, PHP 8, Go &amp; Kotlin ile geliştirilmiştir.
+                Asterisk 22, Nginx L4, Apache 2.4, MariaDB 11, PHP 8, Go &amp; Kotlin.
             </div>
         </div>
     </footer>
