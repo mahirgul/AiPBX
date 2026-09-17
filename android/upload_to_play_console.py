@@ -100,7 +100,7 @@ def upload_bundle():
                     packageName=PACKAGE_NAME,
                     editId=edit_id,
                     deobfuscationFileType='proguard',
-                    versionCode=version_code,
+                    apkVersionCode=version_code,
                     media_body=mapping_media
                 ).execute()
                 print("    Mapping dosyasi basariyla yuklendi.")
