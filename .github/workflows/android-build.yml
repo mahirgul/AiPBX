@@ -1,0 +1,153 @@
+name: Android Build & Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-*.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'android/**'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Google Play Track (alpha = Closed Testing, internal = Internal Testing, beta = Open Testing, production = Production)'
+        required: true
+        default: 'alpha'
+        type: choice
+        options:
+          - alpha
+          - internal
+          - beta
+          - production
+      upload_to_play:
+        description: 'Upload AAB to Google Play Console'
+        required: true
+        type: boolean
+        default: true
+      release_status:
+        description: 'Release Status (completed = Publish immediately, draft = Save as Draft for review)'
+        required: true
+        default: 'completed'
+        type: choice
+        options:
+          - completed
+          - draft
+          - inProgress
+          - halted
+
+jobs:
+  build:
+    name: Build Android App & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure Keystore & Signing
+        id: prep_signing
+        working-directory: ./android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding release keystore from secrets..."
+            echo "$KEYSTORE_BASE64" | base64 -d > release-key.jks
+            cat <<EOF > keystore.properties
+          storeFile=release-key.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            echo "Release keystore configured successfully."
+          else
+            echo "Warning: ANDROID_KEYSTORE_BASE64 secret not found."
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Grant execute permission for gradlew
+        working-directory: ./android
+        run: chmod +x gradlew
+
+      - name: Build Android Release Bundle (AAB) & APK
+        working-directory: ./android
+        run: |
+          ./gradlew bundleRelease assembleRelease --stacktrace
+
+      - name: Upload Android Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AiPBX-Android-Release
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/mapping/release/mapping.txt
+          retention-days: 14
+
+      - name: Check Google Play Upload Eligibility
+        id: check_upload
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          SHOULD_UPLOAD: ${{ inputs.upload_to_play != false }}
+        run: |
+          if [ -n "$PLAY_KEY_JSON" ] && [ "$SHOULD_UPLOAD" = "true" ]; then
+            echo "can_upload=true" >> $GITHUB_OUTPUT
+          else
+            echo "can_upload=false" >> $GITHUB_OUTPUT
+            if [ -z "$PLAY_KEY_JSON" ]; then
+              echo "Notice: PLAY_STORE_JSON_KEY secret is not configured. Skipping Google Play upload."
+            fi
+          fi
+
+      - name: Set up Python for Play Console Upload
+        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Google API Client
+        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        run: |
+          pip install --upgrade google-api-python-client google-auth
+
+      - name: Deploy AAB to Google Play Console
+        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        working-directory: ./android
+        env:
+          PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
+        run: |
+          echo "$PLAY_KEY_JSON" > play-service-account.json
+          export PLAY_STORE_JSON_KEY_FILE="play-service-account.json"
+          
+          TRACK="${{ inputs.track || 'alpha' }}"
+          STATUS="${{ inputs.release_status || 'completed' }}"
+          
+          echo "=========================================="
+          echo "Uploading AAB to Google Play Console..."
+          echo "Track: $TRACK"
+          echo "Desired Status: $STATUS"
+          echo "=========================================="
+          
+          python3 upload_to_play_console.py "$TRACK" "$STATUS"
+          
+          # Clean up service account file
+          rm -f play-service-account.json
