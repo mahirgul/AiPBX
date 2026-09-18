@@ -4,7 +4,17 @@
  */
 $is_teams_enabled = !empty($settings['teams_enabled']) && $settings['teams_enabled'] !== '0';
 $is_webhook_enabled = !empty($settings['teams_webhook_enabled']) && $settings['teams_webhook_enabled'] !== '0';
-$cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
+$cert = $certInfo ?? ['exists' => false, 'message' => t('ms_teams.cert_not_checked')];
+
+if (!$cert['exists']) {
+    $cert_badge_text = $cert['message'] ?? t('ms_teams.cert_not_found');
+} elseif (!empty($cert['is_expired'])) {
+    $cert_badge_text = sprintf(t('ms_teams.cert_expired'), abs((int)($cert['days_remaining'] ?? 0)));
+} elseif (!empty($cert['is_expiring_soon'])) {
+    $cert_badge_text = sprintf(t('ms_teams.cert_expiring_soon'), (int)($cert['days_remaining'] ?? 0));
+} else {
+    $cert_badge_text = sprintf(t('ms_teams.cert_valid'), (int)($cert['days_remaining'] ?? 0));
+}
 ?>
 
 <?php if (!empty($message)): ?>
@@ -114,47 +124,47 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div class="card-title" style="display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700;">
             <i class="fab fa-microsoft" style="color: #6264a7; font-size: 22px;"></i>
-            <span>Microsoft Teams Entegrasyonu</span>
+            <span><?php echo t('ms_teams.title'); ?></span>
             <?php if ($is_teams_enabled): ?>
-                <span class="teams-header-badge badge-active"><i class="fas fa-check-circle"></i> Direct Routing Aktif</span>
+                <span class="teams-header-badge badge-active"><i class="fas fa-check-circle"></i> <?php echo t('ms_teams.badge_dr_active'); ?></span>
             <?php else: ?>
-                <span class="teams-header-badge badge-inactive"><i class="fas fa-pause-circle"></i> Direct Routing Pasif</span>
+                <span class="teams-header-badge badge-inactive"><i class="fas fa-pause-circle"></i> <?php echo t('ms_teams.badge_dr_inactive'); ?></span>
             <?php endif; ?>
             <?php if ($is_webhook_enabled): ?>
-                <span class="teams-header-badge badge-active"><i class="fas fa-bell"></i> Webhook Açık</span>
+                <span class="teams-header-badge badge-active"><i class="fas fa-bell"></i> <?php echo t('ms_teams.badge_webhook_active'); ?></span>
             <?php endif; ?>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleTeamsHelp()" title="Rehber">
-            <i class="fas fa-question-circle"></i> Yardım & Rehber
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleTeamsHelp()" title="<?php echo t('ms_teams.guide'); ?>">
+            <i class="fas fa-question-circle"></i> <?php echo t('ms_teams.help_and_guide'); ?>
         </button>
     </div>
 
     <!-- Rehber Kutusu -->
     <div class="module-help-box" id="teamsHelpBox" style="margin: 16px 20px 0 20px; display: none; padding: 16px; background: rgba(98, 100, 167, 0.08); border-left: 4px solid #6264a7; border-radius: 4px;">
-        <h4 style="color: #464775; margin-top: 0;"><i class="fab fa-microsoft"></i> Microsoft Teams Entegrasyon Rehberi</h4>
+        <h4 style="color: #464775; margin-top: 0;"><i class="fab fa-microsoft"></i> <?php echo t('ms_teams.guide_title'); ?></h4>
         <p style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
-            AiPBX, Microsoft Teams ile iki farklı seviyede haberleşebilir:
+            <?php echo t('ms_teams.guide_intro'); ?>
         </p>
         <ul style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
-            <li><strong>1. Direct Routing (SBC / SIP Bağlantısı):</strong> Teams kullanıcılarının masaüstü/mobil Teams uygulamasındaki numaratörden (Dialpad) dahili ve harici aramalar yapmasını/karşılamasını sağlar. TLS (Port 5061), SRTP ve geçerli bir genel SSL sertifikası (Let's Encrypt vb.) gerektirir.</li>
-            <li><strong>2. Webhook & Kanal Bildirimleri:</strong> Cevapsız çağrılar, sesli mesajlar, gelen fakslar ve çağrı merkezi alarmlarını Teams kanalına anlık interaktif kart (Adaptive Card) olarak gönderir. Ek lisans gerektirmez.</li>
-            <li><strong>3. Otomatik PowerShell Oluşturucu:</strong> "PowerShell Rehberi" sekmesinden santral ayarlarınıza göre otomatik hazırlanmış komutları tek tıkla kopyalayıp Microsoft 365 yönetici terminalinde çalıştırabilirsiniz.</li>
+            <li><strong><?php echo t('ms_teams.guide_dr_title'); ?></strong> <?php echo t('ms_teams.guide_dr_desc'); ?></li>
+            <li><strong><?php echo t('ms_teams.guide_webhook_title'); ?></strong> <?php echo t('ms_teams.guide_webhook_desc'); ?></li>
+            <li><strong><?php echo t('ms_teams.guide_ps_title'); ?></strong> <?php echo t('ms_teams.guide_ps_desc'); ?></li>
         </ul>
     </div>
 
     <!-- Sekmeler (Tabs) -->
     <div class="teams-tabs">
         <button type="button" class="teams-tab-btn <?php echo $active_tab === 'direct_routing' ? 'active' : ''; ?>" onclick="openTeamsTab('direct_routing')">
-            <i class="fas fa-network-wired"></i> <span>Direct Routing (SBC)</span>
+            <i class="fas fa-network-wired"></i> <span><?php echo t('ms_teams.tab_direct_routing'); ?></span>
         </button>
         <button type="button" class="teams-tab-btn <?php echo $active_tab === 'users' ? 'active' : ''; ?>" onclick="openTeamsTab('users')">
-            <i class="fas fa-users-cog"></i> <span>Kullanıcı Eşleştirme (<?php echo count($mappings); ?>)</span>
+            <i class="fas fa-users-cog"></i> <span><?php echo t('ms_teams.tab_users'); ?> (<?php echo count($mappings); ?>)</span>
         </button>
         <button type="button" class="teams-tab-btn <?php echo $active_tab === 'webhooks' ? 'active' : ''; ?>" onclick="openTeamsTab('webhooks')">
-            <i class="fas fa-paper-plane"></i> <span>Webhook & Bildirimler</span>
+            <i class="fas fa-paper-plane"></i> <span><?php echo t('ms_teams.tab_webhooks'); ?></span>
         </button>
         <button type="button" class="teams-tab-btn <?php echo $active_tab === 'powershell' ? 'active' : ''; ?>" onclick="openTeamsTab('powershell')">
-            <i class="fas fa-terminal"></i> <span>M365 PowerShell Rehberi</span>
+            <i class="fas fa-terminal"></i> <span><?php echo t('ms_teams.tab_powershell'); ?></span>
         </button>
     </div>
 
@@ -168,47 +178,47 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;">Direct Routing Durumu</label>
+                    <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.dr_status'); ?></label>
                     <select name="teams_enabled" class="form-control" <?php echo !$can_edit ? 'disabled' : ''; ?>>
-                        <option value="1" <?php echo ($settings['teams_enabled'] === '1') ? 'selected' : ''; ?>>Aktif (Microsoft Teams SIP Bağlantısı Açık)</option>
-                        <option value="0" <?php echo ($settings['teams_enabled'] === '0') ? 'selected' : ''; ?>>Devre Dışı (Pasif)</option>
+                        <option value="1" <?php echo ($settings['teams_enabled'] === '1') ? 'selected' : ''; ?>><?php echo t('ms_teams.dr_status_enabled'); ?></option>
+                        <option value="0" <?php echo ($settings['teams_enabled'] === '0') ? 'selected' : ''; ?>><?php echo t('ms_teams.dr_status_disabled'); ?></option>
                     </select>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Aktif olduğunda Asterisk TLS 5061 portu Microsoft PSTN Hub sunucularına yanıt verir.</small>
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ms_teams.dr_status_help'); ?></small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;">SBC FQDN / Domain Adı <span style="color: var(--danger);">*</span></label>
-                    <input type="text" name="teams_domain" class="form-control" value="<?php echo htmlspecialchars($settings['teams_domain']); ?>" placeholder="örn: sbc.sirketiniz.com" <?php echo !$can_edit ? 'disabled' : ''; ?>>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Microsoft 365 Domain yönetiminde doğrulanmış ve bu sunucunun statik IP'sine yönlendirilmiş FQDN.</small>
+                    <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.sbc_fqdn'); ?> <span style="color: var(--danger);">*</span></label>
+                    <input type="text" name="teams_domain" class="form-control" value="<?php echo htmlspecialchars($settings['teams_domain']); ?>" placeholder="<?php echo t('ms_teams.sbc_fqdn_placeholder'); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ms_teams.sbc_fqdn_help'); ?></small>
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;">SIP TLS Portu</label>
+                    <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.sip_tls_port'); ?></label>
                     <input type="number" name="teams_sip_port" class="form-control" value="<?php echo htmlspecialchars($settings['teams_sip_port'] ?: '5061'); ?>" min="1" max="65535" <?php echo !$can_edit ? 'disabled' : ''; ?>>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Microsoft Teams Direct Routing standardı port <strong>5061</strong>'dir.</small>
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ms_teams.sip_tls_port_help'); ?></small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;">SBC Tanımlayıcı Adı (İsteğe Bağlı)</label>
-                    <input type="text" name="teams_sbc_name" class="form-control" value="<?php echo htmlspecialchars($settings['teams_sbc_name']); ?>" placeholder="AiPBX-SBC-Gateway" <?php echo !$can_edit ? 'disabled' : ''; ?>>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Microsoft Teams yönetim merkezinde görünecek açıklayıcı isim.</small>
+                    <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.sbc_name'); ?></label>
+                    <input type="text" name="teams_sbc_name" class="form-control" value="<?php echo htmlspecialchars($settings['teams_sbc_name']); ?>" placeholder="<?php echo t('ms_teams.sbc_name_placeholder'); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ms_teams.sbc_name_help'); ?></small>
                 </div>
             </div>
 
             <!-- Sertifika Durumu ve Yolları -->
             <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 18px; margin-bottom: 24px;">
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-lock" style="color: var(--success);"></i> SIP TLS & Güvenlik Sertifikası
+                    <i class="fas fa-lock" style="color: var(--success);"></i> <?php echo t('ms_teams.tls_section_title'); ?>
                 </h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600;">TLS Sertifika Dosya Yolu (.crt / .pem)</label>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600;"><?php echo t('ms_teams.tls_cert_path'); ?></label>
                         <input type="text" name="teams_tls_cert_path" class="form-control" value="<?php echo htmlspecialchars($settings['teams_tls_cert_path']); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600;">Özel Anahtar Dosya Yolu (.key)</label>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600;"><?php echo t('ms_teams.tls_key_path'); ?></label>
                         <input type="text" name="teams_tls_key_path" class="form-control" value="<?php echo htmlspecialchars($settings['teams_tls_key_path']); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                     </div>
                 </div>
@@ -218,16 +228,16 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <div>
                             <span class="badge badge-<?php echo htmlspecialchars($cert['color'] ?? 'secondary'); ?>" style="font-size: 12px; padding: 4px 8px;">
-                                <?php echo htmlspecialchars($cert['message'] ?? 'Bilinmiyor'); ?>
+                                <?php echo htmlspecialchars($cert_badge_text); ?>
                             </span>
                             <?php if (!empty($cert['cn'])): ?>
                                 <strong style="margin-left: 8px; font-size: 13px;">CN: <?php echo htmlspecialchars($cert['cn']); ?></strong>
-                                <span style="color: var(--text-muted); font-size: 12px;">(Sağlayıcı: <?php echo htmlspecialchars($cert['issuer']); ?>)</span>
+                                <span style="color: var(--text-muted); font-size: 12px;">(<?php echo t('ms_teams.cert_issuer'); ?>: <?php echo htmlspecialchars($cert['issuer']); ?>)</span>
                             <?php endif; ?>
                         </div>
                         <?php if (!empty($cert['valid_to'])): ?>
                             <div style="font-size: 12px; color: var(--text-muted);">
-                                Son Geçerlilik: <strong><?php echo htmlspecialchars($cert['valid_to']); ?></strong>
+                                <?php echo t('ms_teams.cert_valid_until'); ?>: <strong><?php echo htmlspecialchars($cert['valid_to']); ?></strong>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -237,10 +247,10 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <!-- Microsoft PSTN Hub Proxy Bilgi Kartı -->
             <div style="background: rgba(98, 100, 167, 0.05); border: 1px solid rgba(98, 100, 167, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
                 <h5 style="margin: 0 0 10px 0; color: #464775; font-size: 14px; font-weight: 700;">
-                    <i class="fas fa-globe"></i> Microsoft Teams Global SIP Proxy Adresleri
+                    <i class="fas fa-globe"></i> <?php echo t('ms_teams.proxy_title'); ?>
                 </h5>
                 <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                    Sunucunuzun güvenlik duvarında (Firewall) bu Microsoft IP bloklarına SIP (5061/TCP) ve Medya (10000-20000/UDP) erişimi açık olmalıdır:
+                    <?php echo t('ms_teams.proxy_desc'); ?>
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px;">
                     <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">sip.pstnhub.microsoft.com:5061</code>
@@ -252,7 +262,7 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <?php if ($can_edit): ?>
                 <div style="display: flex; justify-content: flex-end;">
                     <button type="submit" class="btn btn-teams" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">
-                        <i class="fas fa-save"></i> Direct Routing Ayarlarını Kaydet
+                        <i class="fas fa-save"></i> <?php echo t('ms_teams.save_dr_settings'); ?>
                     </button>
                 </div>
             <?php endif; ?>
@@ -265,14 +275,14 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
     <div id="tab-users" class="teams-tab-pane <?php echo $active_tab === 'users' ? 'active' : ''; ?>">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
-                <h4 style="margin: 0; font-size: 16px; font-weight: 700;">Dahili & Microsoft Teams Kullanıcı Eşleştirmeleri</h4>
+                <h4 style="margin: 0; font-size: 16px; font-weight: 700;"><?php echo t('ms_teams.users_title'); ?></h4>
                 <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">
-                    Hangi AiPBX dahili abonesinin hangi Microsoft 365 Teams kullanıcısı ile konuşacağını buradan yönetin.
+                    <?php echo t('ms_teams.users_desc'); ?>
                 </p>
             </div>
             <?php if ($can_edit): ?>
                 <button type="button" class="btn btn-teams btn-sm" onclick="openMappingModal()">
-                    <i class="fas fa-plus"></i> Yeni Eşleştirme Ekle
+                    <i class="fas fa-plus"></i> <?php echo t('ms_teams.btn_new_mapping'); ?>
                 </button>
             <?php endif; ?>
         </div>
@@ -281,14 +291,14 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <table class="table mapping-table" style="margin-bottom: 0;">
                 <thead style="background: var(--bg-surface, #f8fafc);">
                     <tr>
-                        <th style="width: 140px;">Dahili No</th>
-                        <th>Kullanıcı Adı</th>
-                        <th>Teams UPN / E-posta</th>
-                        <th>Harici Telefon (E.164)</th>
-                        <th style="text-align: center; width: 100px;">Direct Route</th>
-                        <th>Notlar</th>
+                        <th style="width: 140px;"><?php echo t('ms_teams.col_ext'); ?></th>
+                        <th><?php echo t('ms_teams.col_user_name'); ?></th>
+                        <th><?php echo t('ms_teams.col_upn'); ?></th>
+                        <th><?php echo t('ms_teams.col_phone'); ?></th>
+                        <th style="text-align: center; width: 100px;"><?php echo t('ms_teams.col_direct_route'); ?></th>
+                        <th><?php echo t('ms_teams.col_notes'); ?></th>
                         <?php if ($can_edit || $can_delete): ?>
-                            <th style="text-align: right; width: 120px;">İşlemler</th>
+                            <th style="text-align: right; width: 120px;"><?php echo t('ms_teams.col_actions'); ?></th>
                         <?php endif; ?>
                     </tr>
                 </thead>
@@ -297,7 +307,7 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
                                 <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
-                                Henüz hiçbir kullanıcı eşleştirmesi yapılmamış. "Yeni Eşleştirme Ekle" butonuna basarak ilk aboneyi bağlayabilirsiniz.
+                                <?php echo t('ms_teams.empty_mappings'); ?>
                             </td>
                         </tr>
                     <?php else: ?>
@@ -320,9 +330,9 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
                                 </td>
                                 <td style="text-align: center;">
                                     <?php if (!empty($m['direct_routing_enabled'])): ?>
-                                        <span class="badge badge-success" style="font-size: 11px;">Aktif</span>
+                                        <span class="badge badge-success" style="font-size: 11px;"><?php echo t('ms_teams.status_active'); ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary" style="font-size: 11px;">Pasif</span>
+                                        <span class="badge badge-secondary" style="font-size: 11px;"><?php echo t('ms_teams.status_inactive'); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="color: var(--text-muted); font-size: 13px;">
@@ -332,12 +342,12 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
                                     <td style="text-align: right;">
                                         <div style="display: inline-flex; gap: 6px;">
                                             <?php if ($can_edit): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick='editMapping(<?php echo json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="Düzenle">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick='editMapping(<?php echo json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo t('ms_teams.btn_edit'); ?>">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                             <?php endif; ?>
                                             <?php if ($can_delete): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, '<?php echo htmlspecialchars($m['extension'], ENT_QUOTES); ?>')" title="Sil">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, '<?php echo htmlspecialchars($m['extension'], ENT_QUOTES); ?>')" title="<?php echo t('ms_teams.btn_delete'); ?>">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php endif; ?>
@@ -362,32 +372,32 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
 
             <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; color: #464775; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-plug"></i> Teams Gelen Webhook (Incoming Webhook) Bağlantısı
+                    <i class="fas fa-plug"></i> <?php echo t('ms_teams.webhook_section_title'); ?>
                 </h4>
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                    Microsoft Teams'de ilgili kanalın ayarlarından (Bağlayıcılar / Connectors) <strong>"Gelen Web kancası (Incoming Webhook)"</strong> oluşturup URL adresini buraya yapıştırın.
+                    <?php echo t('ms_teams.webhook_section_desc'); ?>
                 </p>
 
                 <div style="display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: start;">
                     <div class="form-group">
-                        <label class="form-label" style="font-weight: 600;">Webhook Durumu</label>
+                        <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.webhook_status'); ?></label>
                         <select name="teams_webhook_enabled" id="webhookEnabledSelect" class="form-control" <?php echo !$can_edit ? 'disabled' : ''; ?>>
-                            <option value="1" <?php echo ($settings['teams_webhook_enabled'] === '1') ? 'selected' : ''; ?>>Aktif (Bildirimler Gönderilsin)</option>
-                            <option value="0" <?php echo ($settings['teams_webhook_enabled'] === '0') ? 'selected' : ''; ?>>Devre Dışı</option>
+                            <option value="1" <?php echo ($settings['teams_webhook_enabled'] === '1') ? 'selected' : ''; ?>><?php echo t('ms_teams.webhook_status_enabled'); ?></option>
+                            <option value="0" <?php echo ($settings['teams_webhook_enabled'] === '0') ? 'selected' : ''; ?>><?php echo t('ms_teams.webhook_status_disabled'); ?></option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" style="font-weight: 600;">Teams Webhook URL Adresi</label>
+                        <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.webhook_url'); ?></label>
                         <div style="display: flex; gap: 8px;">
-                            <input type="url" name="teams_webhook_url" id="teamsWebhookUrlInput" class="form-control" value="<?php echo htmlspecialchars($settings['teams_webhook_url']); ?>" placeholder="https://sirket.webhook.office.com/webhookb2/..." <?php echo !$can_edit ? 'disabled' : ''; ?>>
+                            <input type="url" name="teams_webhook_url" id="teamsWebhookUrlInput" class="form-control" value="<?php echo htmlspecialchars($settings['teams_webhook_url']); ?>" placeholder="<?php echo t('ms_teams.webhook_url_placeholder'); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                             <?php if ($can_edit): ?>
                                 <button type="button" class="btn btn-outline-secondary" id="btnTestWebhook" onclick="testTeamsWebhook()" style="white-space: nowrap;">
-                                    <i class="fas fa-paper-plane"></i> Test Et
+                                    <i class="fas fa-paper-plane"></i> <?php echo t('ms_teams.btn_test'); ?>
                                 </button>
                             <?php endif; ?>
                         </div>
-                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Teams kanalında üretilen güvenli URL adresi.</small>
+                        <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('ms_teams.webhook_url_help'); ?></small>
                     </div>
                 </div>
 
@@ -397,47 +407,47 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <!-- Bildirim Olayları (Event Toggles) -->
             <div style="background: #ffffff; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; margin-bottom: 16px;">
-                    <i class="fas fa-bell" style="color: var(--primary);"></i> Teams Kanalına İletilecek Bildirim Olayları
+                    <i class="fas fa-bell" style="color: var(--primary);"></i> <?php echo t('ms_teams.events_title'); ?>
                 </h4>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" name="teams_notify_missed_calls" value="1" <?php echo !empty($settings['teams_notify_missed_calls']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
                         <div>
-                            <strong>Cevapsız Çağrı Bildirimleri</strong>
-                            <div style="font-size: 12px; color: var(--text-muted);">Müşteri çağrıyı yanıtlamadan kapattığında arayan numara ve kuyruk bilgisi iletilir.</div>
+                            <strong><?php echo t('ms_teams.event_missed_calls'); ?></strong>
+                            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ms_teams.event_missed_calls_desc'); ?></div>
                         </div>
                     </label>
 
                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" name="teams_notify_voicemail" value="1" <?php echo !empty($settings['teams_notify_voicemail']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
                         <div>
-                            <strong>Sesli Mesaj (Voicemail) Bildirimleri</strong>
-                            <div style="font-size: 12px; color: var(--text-muted);">Abonenin sesli mesaj kutusuna yeni bir mesaj bırakıldığında kanala haber verilir.</div>
+                            <strong><?php echo t('ms_teams.event_voicemail'); ?></strong>
+                            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ms_teams.event_voicemail_desc'); ?></div>
                         </div>
                     </label>
 
                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" name="teams_notify_queue_alerts" value="1" <?php echo !empty($settings['teams_notify_queue_alerts']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
                         <div>
-                            <strong>Kuyruk & Çağrı Merkezi Alarmları</strong>
-                            <div style="font-size: 12px; color: var(--text-muted);">Bekleyen çağrı sayısı veya bekleme süresi kritik eşiği aştığında uyarı kartı düşer.</div>
+                            <strong><?php echo t('ms_teams.event_queue_alerts'); ?></strong>
+                            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ms_teams.event_queue_alerts_desc'); ?></div>
                         </div>
                     </label>
 
                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" name="teams_notify_fax" value="1" <?php echo !empty($settings['teams_notify_fax']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
                         <div>
-                            <strong>Gelen Dijital Faks Bildirimleri</strong>
-                            <div style="font-size: 12px; color: var(--text-muted);">Yeni bir faks alındığında gönderen ve sayfa sayısı bilgisi Teams'e gönderilir.</div>
+                            <strong><?php echo t('ms_teams.event_fax'); ?></strong>
+                            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ms_teams.event_fax_desc'); ?></div>
                         </div>
                     </label>
 
                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" name="teams_notify_cdr_summary" value="1" <?php echo !empty($settings['teams_notify_cdr_summary']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
                         <div>
-                            <strong>Günlük CDR Çağrı Özeti</strong>
-                            <div style="font-size: 12px; color: var(--text-muted);">Günün sonunda toplam arama, cevaplanan ve kaçan çağrı istatistik kartı atılır.</div>
+                            <strong><?php echo t('ms_teams.event_cdr_summary'); ?></strong>
+                            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ms_teams.event_cdr_summary_desc'); ?></div>
                         </div>
                     </label>
                 </div>
@@ -446,7 +456,7 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <?php if ($can_edit): ?>
                 <div style="display: flex; justify-content: flex-end;">
                     <button type="submit" class="btn btn-teams" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">
-                        <i class="fas fa-save"></i> Webhook Ayarlarını Kaydet
+                        <i class="fas fa-save"></i> <?php echo t('ms_teams.save_webhook_settings'); ?>
                     </button>
                 </div>
             <?php endif; ?>
@@ -459,17 +469,17 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
     <div id="tab-powershell" class="teams-tab-pane <?php echo $active_tab === 'powershell' ? 'active' : ''; ?>">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
-                <h4 style="margin: 0; font-size: 16px; font-weight: 700;">Microsoft 365 Teams PowerShell Yapılandırma Scripti</h4>
+                <h4 style="margin: 0; font-size: 16px; font-weight: 700;"><?php echo t('ms_teams.ps_title'); ?></h4>
                 <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">
-                    AiPBX santralinizdeki domain ve kullanıcı eşleştirmelerine göre dinamik oluşturulmuş tam komut seti.
+                    <?php echo t('ms_teams.ps_desc'); ?>
                 </p>
             </div>
             <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyPowerShellScript()">
-                    <i class="fas fa-copy"></i> Panoya Kopyala
+                    <i class="fas fa-copy"></i> <?php echo t('ms_teams.btn_copy'); ?>
                 </button>
                 <a href="/ms-teams?action=download_powershell" class="btn btn-sm btn-teams">
-                    <i class="fas fa-download"></i> Scripti İndir (.ps1)
+                    <i class="fas fa-download"></i> <?php echo t('ms_teams.btn_download_ps'); ?>
                 </a>
             </div>
         </div>
@@ -478,26 +488,26 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
 
         <div style="margin-top: 20px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 18px;">
             <h5 style="margin-top: 0; font-size: 14px; font-weight: 700;">
-                <i class="fas fa-info-circle" style="color: var(--primary);"></i> PowerShell İle Kurulum Adımları
+                <i class="fas fa-info-circle" style="color: var(--primary);"></i> <?php echo t('ms_teams.ps_steps_title'); ?>
             </h5>
             <ol style="font-size: 13px; line-height: 1.7; margin-bottom: 0; padding-left: 20px;">
-                <li>Windows bilgisayarınızda PowerShell'i <strong>Yönetici Olarak (Run as Administrator)</strong> açın.</li>
-                <li>Yukarıdaki scripti indirin veya panoya kopyalayıp çalıştırın.</li>
-                <li>Gelen tarayıcı penceresinde <strong>Microsoft 365 Global / Teams Yöneticisi</strong> hesabınızla oturum açın.</li>
-                <li>Script tamamlandığında Microsoft Teams Direct Routing bağlantınız devreye girecektir (Microsoft sunucularında yayılması ~15-30 dakika sürebilir).</li>
+                <li><?php echo t('ms_teams.ps_step_1'); ?></li>
+                <li><?php echo t('ms_teams.ps_step_2'); ?></li>
+                <li><?php echo t('ms_teams.ps_step_3'); ?></li>
+                <li><?php echo t('ms_teams.ps_step_4'); ?></li>
             </ol>
         </div>
     </div>
 </div>
 
 <!-- ========================================== -->
-    <!-- KULLANICI EŞLEŞTİRME MODALI (Modal)       -->
+<!-- KULLANICI EŞLEŞTİRME MODALI (Modal)       -->
 <!-- ========================================== -->
 <div class="modal fade" id="mappingModal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5); position: fixed; inset: 0; z-index: 9999; overflow-y: auto;">
     <div style="max-width: 540px; margin: 60px auto; background: var(--bg-card, #ffffff); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
         <div style="padding: 16px 20px; background: #6264a7; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
             <h5 style="margin: 0; font-weight: 700; font-size: 16px;" id="mappingModalTitle">
-                <i class="fas fa-user-plus"></i> Yeni Teams Eşleştirmesi
+                <i class="fas fa-user-plus"></i> <?php echo t('ms_teams.modal_new_title'); ?>
             </h5>
             <button type="button" onclick="closeMappingModal()" style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;">&times;</button>
         </div>
@@ -507,9 +517,9 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
             <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 600;">AiPBX Dahili Numarası <span style="color: var(--danger);">*</span></label>
+                <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.modal_ext_label'); ?> <span style="color: var(--danger);">*</span></label>
                 <select name="extension" id="mapExtension" class="form-control" required>
-                    <option value="">-- Dahili Seçiniz --</option>
+                    <option value=""><?php echo t('ms_teams.modal_select_ext'); ?></option>
                     <?php foreach ($extensions as $ext): ?>
                         <option value="<?php echo htmlspecialchars($ext['extension']); ?>">
                             <?php echo htmlspecialchars($ext['extension'] . ' - ' . $ext['full_name'] . ($ext['email'] ? ' (' . $ext['email'] . ')' : '')); ?>
@@ -519,36 +529,36 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 600;">Microsoft Teams Kullanıcı Adı (UPN / E-posta) <span style="color: var(--danger);">*</span></label>
-                <input type="email" name="teams_upn" id="mapTeamsUpn" class="form-control" placeholder="örn: ahmet@sirketiniz.com" required>
-                <small style="color: var(--text-muted); font-size: 12px;">Kullanıcının Microsoft 365 oturum açma e-posta adresi.</small>
+                <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.modal_upn_label'); ?> <span style="color: var(--danger);">*</span></label>
+                <input type="email" name="teams_upn" id="mapTeamsUpn" class="form-control" placeholder="<?php echo t('ms_teams.modal_upn_placeholder'); ?>" required>
+                <small style="color: var(--text-muted); font-size: 12px;"><?php echo t('ms_teams.modal_upn_help'); ?></small>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 600;">E.164 Telefon Numarası (Opsiyonel)</label>
-                <input type="text" name="phone_number" id="mapPhoneNumber" class="form-control" placeholder="örn: +902129990011 veya +101">
-                <small style="color: var(--text-muted); font-size: 12px;">Teams numaratöründe görünecek DID veya E.164 formatında numara.</small>
+                <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.modal_phone_label'); ?></label>
+                <input type="text" name="phone_number" id="mapPhoneNumber" class="form-control" placeholder="<?php echo t('ms_teams.modal_phone_placeholder'); ?>">
+                <small style="color: var(--text-muted); font-size: 12px;"><?php echo t('ms_teams.modal_phone_help'); ?></small>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-                <label class="form-label" style="font-weight: 600;">Direct Routing Durumu</label>
+                <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.modal_dr_label'); ?></label>
                 <select name="direct_routing_enabled" id="mapDirectRouting" class="form-control">
-                    <option value="1">Aktif (Sesli Arama Açık)</option>
-                    <option value="0">Pasif</option>
+                    <option value="1"><?php echo t('ms_teams.modal_dr_enabled'); ?></option>
+                    <option value="0"><?php echo t('ms_teams.modal_dr_disabled'); ?></option>
                 </select>
             </div>
 
             <div class="form-group" style="margin-bottom: 18px;">
-                <label class="form-label" style="font-weight: 600;">Açıklama / Notlar</label>
-                <input type="text" name="notes" id="mapNotes" class="form-control" placeholder="Örn: Satış Departmanı Yöneticisi">
+                <label class="form-label" style="font-weight: 600;"><?php echo t('ms_teams.modal_notes_label'); ?></label>
+                <input type="text" name="notes" id="mapNotes" class="form-control" placeholder="<?php echo t('ms_teams.modal_notes_placeholder'); ?>">
             </div>
 
             <div id="modalAlert" style="display: none; margin-bottom: 14px;"></div>
 
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary" onclick="closeMappingModal()">İptal</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="closeMappingModal()"><?php echo t('ms_teams.btn_cancel'); ?></button>
                 <button type="submit" class="btn btn-teams" id="btnSaveMapping">
-                    <i class="fas fa-save"></i> Kaydet
+                    <i class="fas fa-save"></i> <?php echo t('ms_teams.btn_save'); ?>
                 </button>
             </div>
         </form>
@@ -556,6 +566,22 @@ $cert = $certInfo ?? ['exists' => false, 'message' => 'Kontrol edilmedi'];
 </div>
 
 <script>
+window.MS_TEAMS_I18N = {
+    modal_new_title: <?php echo json_encode(t('ms_teams.modal_new_title'), JSON_UNESCAPED_UNICODE); ?>,
+    modal_edit_title: <?php echo json_encode(t('ms_teams.modal_edit_title'), JSON_UNESCAPED_UNICODE); ?>,
+    btn_save: <?php echo json_encode(t('ms_teams.btn_save'), JSON_UNESCAPED_UNICODE); ?>,
+    saving: <?php echo json_encode(t('ms_teams.saving'), JSON_UNESCAPED_UNICODE); ?>,
+    sending: <?php echo json_encode(t('ms_teams.sending'), JSON_UNESCAPED_UNICODE); ?>,
+    btn_test: <?php echo json_encode(t('ms_teams.btn_test'), JSON_UNESCAPED_UNICODE); ?>,
+    delete_confirm: <?php echo json_encode(t('ms_teams.js_delete_confirm'), JSON_UNESCAPED_UNICODE); ?>,
+    enter_webhook_url: <?php echo json_encode(t('ms_teams.js_enter_webhook_url'), JSON_UNESCAPED_UNICODE); ?>,
+    copied: <?php echo json_encode(t('ms_teams.js_copied'), JSON_UNESCAPED_UNICODE); ?>,
+    copy_failed: <?php echo json_encode(t('ms_teams.js_copy_failed'), JSON_UNESCAPED_UNICODE); ?>,
+    delete_failed: <?php echo json_encode(t('ms_teams.js_delete_failed'), JSON_UNESCAPED_UNICODE); ?>,
+    conn_error: <?php echo json_encode(t('ms_teams.js_conn_error'), JSON_UNESCAPED_UNICODE); ?>,
+    test_failed: <?php echo json_encode(t('ms_teams.js_test_failed'), JSON_UNESCAPED_UNICODE); ?>
+};
+
 function openTeamsTab(tabName) {
     document.querySelectorAll('.teams-tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.teams-tab-pane').forEach(pane => pane.classList.remove('active'));
@@ -581,7 +607,7 @@ function toggleTeamsHelp() {
 function openMappingModal() {
     document.getElementById('mappingForm').reset();
     document.getElementById('mapId').value = '';
-    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> Yeni Teams Eşleştirmesi';
+    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> ' + window.MS_TEAMS_I18N.modal_new_title;
     document.getElementById('modalAlert').style.display = 'none';
     document.getElementById('mappingModal').style.display = 'block';
 }
@@ -593,7 +619,7 @@ function editMapping(item) {
     document.getElementById('mapPhoneNumber').value = item.phone_number || '';
     document.getElementById('mapDirectRouting').value = item.direct_routing_enabled ? '1' : '0';
     document.getElementById('mapNotes').value = item.notes || '';
-    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> Eşleştirmeyi Düzenle (' + item.extension + ')';
+    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> ' + window.MS_TEAMS_I18N.modal_edit_title.replace('%s', item.extension);
     document.getElementById('modalAlert').style.display = 'none';
     document.getElementById('mappingModal').style.display = 'block';
 }
@@ -610,7 +636,7 @@ function submitMappingForm(e) {
     const btn = document.getElementById('btnSaveMapping');
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + window.MS_TEAMS_I18N.saving;
 
     fetch('/ms-teams?action=save_mapping', {
         method: 'POST',
@@ -620,26 +646,27 @@ function submitMappingForm(e) {
     .then(r => r.json())
     .then(data => {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Kaydet';
+        btn.innerHTML = '<i class="fas fa-save"></i> ' + window.MS_TEAMS_I18N.btn_save;
         if (data.success) {
             window.location.href = '/ms-teams?tab=users';
         } else {
             alertBox.className = 'alert alert-danger';
-            alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || data.message || 'Hata oluştu.');
+            alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.conn_error);
             alertBox.style.display = 'block';
         }
     })
     .catch(err => {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Kaydet';
+        btn.innerHTML = '<i class="fas fa-save"></i> ' + window.MS_TEAMS_I18N.btn_save;
         alertBox.className = 'alert alert-danger';
-        alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Sunucuyla iletişim hatası: ' + err;
+        alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
         alertBox.style.display = 'block';
     });
 }
 
 function deleteMapping(id, ext) {
-    if (!confirm(ext + ' numaralı dahili eşleştirmesini silmek istediğinizden emin misiniz?')) {
+    const confirmMsg = window.MS_TEAMS_I18N.delete_confirm.replace('%s', ext);
+    if (!confirm(confirmMsg)) {
         return;
     }
 
@@ -658,10 +685,10 @@ function deleteMapping(id, ext) {
             const row = document.getElementById('mapping-row-' + id);
             if (row) row.remove();
         } else {
-            alert(data.message || 'Silme işlemi başarısız.');
+            alert(data.message || window.MS_TEAMS_I18N.delete_failed);
         }
     })
-    .catch(err => alert('Silme hatası: ' + err));
+    .catch(err => alert(window.MS_TEAMS_I18N.conn_error + err));
 }
 
 function testTeamsWebhook() {
@@ -670,12 +697,12 @@ function testTeamsWebhook() {
     const btn = document.getElementById('btnTestWebhook');
 
     if (!url) {
-        alert('Lütfen test edilecek Webhook URL adresini giriniz.');
+        alert(window.MS_TEAMS_I18N.enter_webhook_url);
         return;
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + window.MS_TEAMS_I18N.sending;
     resBox.style.display = 'none';
 
     const formData = new FormData();
@@ -690,31 +717,31 @@ function testTeamsWebhook() {
     .then(r => r.json())
     .then(data => {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Et';
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
         resBox.style.display = 'block';
         if (data.success) {
             resBox.className = 'alert alert-success';
             resBox.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
         } else {
             resBox.className = 'alert alert-danger';
-            resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || data.message || 'Test başarısız.');
+            resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.test_failed);
         }
     })
     .catch(err => {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Et';
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
         resBox.style.display = 'block';
         resBox.className = 'alert alert-danger';
-        resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Bağlantı hatası: ' + err;
+        resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
     });
 }
 
 function copyPowerShellScript() {
     const code = document.getElementById('powerShellCodeBlock').innerText;
     navigator.clipboard.writeText(code).then(() => {
-        alert('PowerShell komutları panoya kopyalandı!');
+        alert(window.MS_TEAMS_I18N.copied);
     }).catch(err => {
-        alert('Kopyalama başarısız, lütfen elle seçip kopyalayınız: ' + err);
+        alert(window.MS_TEAMS_I18N.copy_failed + err);
     });
 }
 </script>
