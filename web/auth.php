@@ -236,6 +236,24 @@ function hasModulePermission($module_key, $action = 'access') {
 }
 
 /**
+ * Detect if an incoming POST request is an entity deletion action
+ */
+function isPostDeleteRequest(): bool {
+    foreach ($_POST as $k => $v) {
+        if (str_starts_with($k, 'delete_') || str_starts_with($k, 'remove_') || $k === 'delete') {
+            return true;
+        }
+    }
+    $req_action = $_POST['action'] ?? $_GET['action'] ?? '';
+    if ($req_action !== '') {
+        if (str_starts_with($req_action, 'delete_') || str_starts_with($req_action, 'remove_') || $req_action === 'delete') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Guard function to enforce module permissions on pages
  */
 function requireModulePermission($module_key, $action = 'access') {
@@ -245,13 +263,23 @@ function requireModulePermission($module_key, $action = 'access') {
     // oradaki yorum) — burada ayrı bir koşulsuz admin kısayoluna gerek yok.
     $allowed = hasModulePermission($module_key, $action);
 
-    // Block POST mutation if user lacks edit permission
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hasModulePermission($module_key, 'edit')) {
-        if (function_exists('notify')) {
-            notify("Bu modülde değişiklik / kaydetme yetkiniz bulunmamaktadır.", "danger");
+    // Block POST mutation if user lacks edit or delete permission
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isPostDeleteRequest()) {
+            if (!hasModulePermission($module_key, 'delete')) {
+                if (function_exists('notify')) {
+                    notify("Bu modülde silme yetkiniz bulunmamaktadır.", "danger");
+                }
+                header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
+                exit;
+            }
+        } elseif (!hasModulePermission($module_key, 'edit')) {
+            if (function_exists('notify')) {
+                notify("Bu modülde değişiklik / kaydetme yetkiniz bulunmamaktadır.", "danger");
+            }
+            header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
+            exit;
         }
-        header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
-        exit;
     }
 
     if (!$allowed) {
@@ -282,12 +310,22 @@ function requireRole($allowed_roles) {
 
     $module_key = getModuleKeyForPage();
     if (hasModulePermission($module_key, 'access')) {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hasModulePermission($module_key, 'edit')) {
-            if (function_exists('notify')) {
-                notify("Bu sayfada değişiklik yapma / kaydetme yetkiniz bulunmamaktadır.", "danger");
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (isPostDeleteRequest()) {
+                if (!hasModulePermission($module_key, 'delete')) {
+                    if (function_exists('notify')) {
+                        notify("Bu sayfada silme yetkiniz bulunmamaktadır.", "danger");
+                    }
+                    header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
+                    exit;
+                }
+            } elseif (!hasModulePermission($module_key, 'edit')) {
+                if (function_exists('notify')) {
+                    notify("Bu sayfada değişiklik yapma / kaydetme yetkiniz bulunmamaktadır.", "danger");
+                }
+                header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
+                exit;
             }
-            header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
-            exit;
         }
         return;
     }

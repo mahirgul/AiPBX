@@ -4,7 +4,7 @@ class PauseReportController extends BaseController
 {
     public static function index(): void
     {
-        static::requireRole(['admin', 'cc_agent']);
+        static::requireRole(['admin', 'cc_manager', 'cc_agent']);
 
         $user = getCurrentUser();
         $role = $_SESSION['user_role'] ?? 'fax_user';

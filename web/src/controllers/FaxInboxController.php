@@ -19,8 +19,12 @@ class FaxInboxController extends BaseController
         $error = '';
 
         if (static::isPost() && isset($_POST['delete_fax'])) {
-            $res = FaxInboxService::deleteFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_ext, $user_id);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            if (!hasModulePermission('fax_inbox', 'delete')) {
+                $error = 'Faks silme yetkiniz bulunmamaktadır.';
+            } else {
+                $res = FaxInboxService::deleteFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_ext, $user_id);
+                if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            }
         }
 
         $page = max(1, intval($_GET['page'] ?? 1));

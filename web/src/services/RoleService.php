@@ -55,12 +55,12 @@ class RoleService {
 
             // Update Permissions Matrix
             $perms_post = $data['perms'] ?? [];
-            // 'roles'/'system_users' auth.php'de admin dışı hiçbir role ASLA
-            // açılmıyor (bkz. hasModulePermission() circuit-breaker) — burada da
-            // aynı kısıtlama uygulanır, ki izin matrisi ekranı admin-olmayan bir
-            // role bu iki modül için yanıltıcı bir "izinli" görünümü göstermesin.
-            $locked_admin_only_modules = ['roles', 'system_users'];
-            $locked_admin_only_edit_modules = ['firewall', 'fail2ban', 'push_settings'];
+            // 'roles'/'system_users'/'firewall'/'fail2ban'/'mail_settings' auth.php'de
+            // admin dışı hiçbir role ASLA açılmıyor (bkz. hasModulePermission() circuit-breaker)
+            // — burada da aynı kısıtlama uygulanır, ki izin matrisi ekranı admin-olmayan bir
+            // role bu modüller için yanıltıcı bir "izinli" görünümü göstermesin.
+            $locked_admin_only_modules = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'];
+            $locked_admin_only_edit_modules = ['push_settings'];
             foreach ($modulesDefinition as $mod_key => $mod_info) {
                 if (in_array($mod_key, $locked_admin_only_modules, true) && $role_key !== 'admin') {
                     $can_view = $can_access = $can_edit = $can_delete = 0;

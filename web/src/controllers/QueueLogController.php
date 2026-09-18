@@ -4,7 +4,7 @@ class QueueLogController extends BaseController
 {
     public static function index(): void
     {
-        static::requireRole('admin');
+        static::requireRole(['admin', 'cc_manager']);
 
         $agent_map = QueueLogRepository::agentMap();
 
