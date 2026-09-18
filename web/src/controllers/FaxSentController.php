@@ -14,11 +14,19 @@ class FaxSentController extends BaseController
         $error = '';
 
         if (static::isPost() && isset($_POST['delete_sent_fax'])) {
-            $res = FaxSentService::deleteSentFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            if (!hasModulePermission('fax_sent', 'delete')) {
+                $error = 'Faks silme yetkiniz bulunmamaktadır.';
+            } else {
+                $res = FaxSentService::deleteSentFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
+                if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            }
         } elseif (static::isPost() && isset($_POST['resend_sent_fax'])) {
-            $res = FaxSentService::resendFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            if (!hasModulePermission('fax_sent', 'edit')) {
+                $error = 'Faks yeniden gönderme yetkiniz bulunmamaktadır.';
+            } else {
+                $res = FaxSentService::resendFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
+                if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            }
         }
 
         $sent_faxes = FaxSentRepository::listForUser($user_role, $user_id);

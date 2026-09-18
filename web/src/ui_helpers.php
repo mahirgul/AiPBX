@@ -67,7 +67,7 @@ function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle
  */
 function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $title = 'Sil', $icon = 'fa-trash-alt', array $extraHidden = [], $formStyle = 'display:inline;') {
     $module = getModuleKeyForPage();
-    if (!hasModulePermission($module, 'delete') && !hasModulePermission($module, 'edit')) {
+    if (!hasModulePermission($module, 'delete')) {
         return '';
     }
     $extraHtml = '';
@@ -107,7 +107,7 @@ function uiEditButton(array $row, $editJsFn, $title = 'Düzenle', $icon = 'fa-ed
  */
 function uiRowActions(array $row, $editJsFn, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $deleteTitle = 'Sil', $deleteIcon = 'fa-trash-alt', $editTitle = 'Düzenle', $editIcon = 'fa-edit', array $extraHidden = [], $showDelete = true, $editBtnClass = 'btn-secondary') {
     $module = getModuleKeyForPage();
-    if (!hasModulePermission($module, 'delete') && !hasModulePermission($module, 'edit')) {
+    if (!hasModulePermission($module, 'delete')) {
         $showDelete = false;
     }
     $id = $row['id'] ?? '';
