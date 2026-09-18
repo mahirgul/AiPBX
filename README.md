@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://aipbx.bid">🌐 <strong>Official Website: aipbx.bid</strong></a> • <a href="https://mahirgul.github.io/AiPBX/">Documentation</a>
+  <a href="https://aipbx.bid">🌐 <strong>Official Website & Documentation: aipbx.bid</strong></a>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
   <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Website-aipbx.bid-blue?logo=google-chrome" alt="Website"></a>
-  <a href="https://mahirgul.github.io/AiPBX/"><img src="https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github" alt="GitHub Pages"></a>
+  <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Docs-aipbx.bid-success?logo=google-chrome" alt="Docs"></a>
 </p>
 
 <p align="center">
