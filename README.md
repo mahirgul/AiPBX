@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://mahirgul.github.io/AiPBX/">
+  <a href="https://aipbx.bid">
     <img src="docs/logo.png" alt="AI PBX Logo" width="130">
   </a>
 </p>
@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://mahirgul.github.io/AiPBX/">🌐 <strong>Official Website & Documentation: mahirgul.github.io/AiPBX</strong></a>
+  <a href="https://aipbx.bid">🌐 <strong>Official Website & Documentation: aipbx.bid</strong></a>
 </p>
 
 <p align="center">
@@ -22,14 +22,15 @@
   <img src="https://img.shields.io/badge/Web_Server-Nginx%20%7C%20Apache-blue?logo=nginx" alt="Nginx & Apache">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
-  <a href="https://mahirgul.github.io/AiPBX/"><img src="https://img.shields.io/badge/GitHub%20Pages-Live-success?logo=github" alt="GitHub Pages"></a>
+  <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Website-aipbx.bid-blue?logo=google-chrome" alt="Website"></a>
+  <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Docs-aipbx.bid-success?logo=google-chrome" alt="Docs"></a>
 </p>
 
 <p align="center">
   <a href="#quick-install">Quick Install</a> •
   <a href="#features">Features</a> •
   <a href="#architecture">Architecture</a> •
-  <a href="https://mahirgul.github.io/AiPBX/">Website</a> •
+  <a href="https://aipbx.bid">Website</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -97,6 +98,12 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **System Audit Trail** — System-generated messages for member additions, removals, and role updates
 - **Presence & Delivery Receipts** — Real-time typing indicators, read receipts, and online status tracking
 - **FCM Push Notifications** — Background notifications with conversation grouping for both direct and group messages
+
+### 💼 Microsoft Teams Integration
+- **Direct Routing (SBC / SIP TLS 5061)** — Native connection to Microsoft Phone System with TLS mutual authentication and SRTP
+- **User & Extension Mapping** — Link PBX extensions with Microsoft 365 UPNs and E.164 phone numbers
+- **Incoming Webhooks & Adaptive Cards** — Real-time Teams channel notifications for missed calls, voicemails, queue alarms, and incoming faxes
+- **Dynamic M365 PowerShell Generator** — Ready-to-execute PowerShell setup scripts generated dynamically from your PBX configuration
 
 ### 📱 Android App (Build 33 · v1.0.32)
 - **Native Kotlin** application with zero external cloud dependencies
