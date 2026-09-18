@@ -280,24 +280,165 @@ function updateScreenDisplay(index, lang) {
     }
 }
 
-// 2. Language Management (TR / EN / DE)
-function setLanguage(lang, isAuto = false) {
-    if (!['tr', 'en', 'de'].includes(lang)) lang = 'en';
+// 2. Multilingual Page Meta Information (Dynamic Title & Description for SEO)
+const pageMetaTranslations = {
+    'index': {
+        tr: {
+            title: 'AiPBX — Açık Kaynak Kurumsal IP Santral & PBX Telefon Sistemi | Asterisk 22 & WebRTC',
+            desc: 'AiPBX; Asterisk 22, Nginx L4 ALPN stream çoklama, WebRTC, Go WebSocket sohbet motoru ve yerel Android/iOS mobil softphone istemcilerini birleştiren modern, açık kaynak kurumsal IP santral sistemidir.'
+        },
+        en: {
+            title: 'AiPBX — Modern Open Source Enterprise IP Telephony | Asterisk 22 & WebRTC',
+            desc: 'AiPBX is an enterprise-grade open-source IP PBX uniting Asterisk 22, Nginx L4 ALPN stream multiplexing, WebRTC, Go chat engine, and native mobile clients.'
+        },
+        de: {
+            title: 'AiPBX — Moderne Open-Source Enterprise IP-Telefonanlage | Asterisk 22 & WebRTC',
+            desc: 'AiPBX ist eine leistungsstarke Open-Source Enterprise IP-Telefonanlage mit Asterisk 22, Nginx L4 ALPN-Stream-Multiplexing, WebRTC, Go-Chat und nativen mobilen Apps.'
+        }
+    },
+    'features': {
+        tr: {
+            title: 'Santral Özellikleri & Modüller — IVR, Ses Kayıt, Konferans, Faks | AiPBX',
+            desc: 'AiPBX kurumsal santral modülleri: Çok seviyeli sesli yanıt sistemi (IVR), DID hat yönlendirme, otomatik ses kaydı, WebRTC softphone, dijital faks ve santral yıldız kodları.'
+        },
+        en: {
+            title: 'Enterprise PBX Features & Modules — IVR, Recording, Fax | AiPBX',
+            desc: 'AiPBX telephony suite: Multi-level IVR, DID inbound/outbound routing, in-browser WebRTC softphone, digital fax server, and star codes directory.'
+        },
+        de: {
+            title: 'Enterprise PBX-Funktionen & Module — IVR, Aufnahme, Fax | AiPBX',
+            desc: 'AiPBX Telefonie-Suite: Mehrstufiges IVR, DID-Routing, browserbasierter WebRTC-Softphone, digitaler Faxserver und vollständige Sterncodes.'
+        }
+    },
+    'callcenter': {
+        tr: {
+            title: 'Çağrı Merkezi Çözümleri — ACD Kuyruk, Mola Kodları (*22/*23), Wallboard | AiPBX',
+            desc: 'AiPBX çağrı merkezi altyapısı: Statik ve dinamik temsilciler, *22 mola ve *23 moladan dönüş kodları, anlık canlı duvar panosu (wallboard) ve *90 süpervizör çağrı dinleme.'
+        },
+        en: {
+            title: 'Call Center & Queue Operations — ACD, Break Codes (*22/*23), Wallboard | AiPBX',
+            desc: 'AiPBX enterprise call center capabilities: Static and dynamic members, *22 pause and *23 unpause break codes, live wallboard, and *90 supervisor call spy.'
+        },
+        de: {
+            title: 'Callcenter & Warteschlangen — ACD, Pausencodes (*22/*23), Wallboard | AiPBX',
+            desc: 'AiPBX Callcenter-Lösungen: Statische und dynamische Agenten, *22 Pausen- und *23 Wiederaufnahmecodes, Live-Wallboard und *90 Supervisor-Mithören.'
+        }
+    },
+    'mobile-apps': {
+        tr: {
+            title: 'Mobil Softphone Uygulamaları — Android APK & iOS WebRTC PBX | AiPBX',
+            desc: 'AiPBX yerel mobil uygulamaları: Android Kotlin ve iOS Swift, WebRTC Opus HD ses kalitesi, arka plan push bildirimleri, doğrudan APK indirme ve sıfır yapılandırma.'
+        },
+        en: {
+            title: 'Enterprise Mobile Apps (Android & iOS) — WebRTC Softphone | AiPBX',
+            desc: 'AiPBX native mobile communications: Android Kotlin and iOS Swift, WebRTC Opus HD voice, background push wake-up, and direct APK download.'
+        },
+        de: {
+            title: 'Enterprise Mobil-Apps (Android & iOS) — WebRTC Softphone | AiPBX',
+            desc: 'AiPBX native mobile Kommunikation: Android Kotlin und iOS Swift, WebRTC Opus HD-Audio, Hintergrund-Push-Aufweckung und direkte APK-Downloads.'
+        }
+    },
+    'architecture': {
+        tr: {
+            title: 'Sistem Mimarisi & ALPN Çoklama — Asterisk 22, Nginx L4, WebRTC | AiPBX',
+            desc: 'AiPBX katmanlı sistem mimarisi: Port 443 ALPN stream çoklama, PJSIP çift uç nokta WebRTC mimarisi, bağımsız Go WebSocket anlık mesajlaşma ve iki katmanlı MariaDB modeli.'
+        },
+        en: {
+            title: 'System Architecture & ALPN Multiplexing — Asterisk 22, Nginx L4 | AiPBX',
+            desc: 'AiPBX layered architecture: Port 443 ALPN stream multiplexing, dual-endpoint PJSIP WebRTC, Go WebSocket chat engine, and two-tier MariaDB security model.'
+        },
+        de: {
+            title: 'Systemarchitektur & ALPN-Multiplexing — Asterisk 22, Nginx L4 | AiPBX',
+            desc: 'AiPBX Schichtenarchitektur: Port 443 ALPN-Stream-Multiplexing, Dual-Endpoint PJSIP WebRTC, Go WebSocket-Chat und zweistufige MariaDB-Sicherheit.'
+        }
+    },
+    'installation': {
+        tr: {
+            title: 'Kurulum ve Yönetim Rehberi — Debian & Ubuntu Asterisk PBX Dağıtımı | AiPBX',
+            desc: 'AiPBX otomatik anahtar teslim kurulum kılavuzu: Ubuntu LTS ve Debian gereksinimleri, tek komutla install.sh scripti, port ve güvenlik duvarı kuralları, ilk yapılandırma.'
+        },
+        en: {
+            title: 'Installation & Administration Guide — Turnkey Deployment | AiPBX',
+            desc: 'AiPBX automated turnkey deployment guide: Ubuntu LTS & Debian requirements, install.sh walkthrough, firewall rules, and initial provisioning.'
+        },
+        de: {
+            title: 'Installations- & Administrationshandbuch — Turnkey-Setup | AiPBX',
+            desc: 'AiPBX automatisierte Komplettinstallation: Ubuntu LTS & Debian Voraussetzungen, install.sh Schritt-für-Schritt, Firewall-Regeln und Konfiguration.'
+        }
+    },
+    'security': {
+        tr: {
+            title: 'Santral Güvenliği & CCIS Gateway — Fail2ban, TLS 1.3, SRTP Şifreleme | AiPBX',
+            desc: 'AiPBX güvenlik savunma katmanları: Fail2ban kaba kuvvet saldırı koruması, TLS 1.3 ve SRTP ses şifreleme, NEC UNIVERGE SV8100/SV8300/SV8500 CCIS protokol gateway entegrasyonu.'
+        },
+        en: {
+            title: 'Security Hardening & CCIS Protocol Gateway — TLS 1.3, Fail2ban | AiPBX',
+            desc: 'AiPBX security defense layers: Fail2ban brute-force protection, TLS 1.3/SRTP encryption, and proprietary NEC UNIVERGE SV8100/SV8300/SV8500 CCIS protocol gateway.'
+        },
+        de: {
+            title: 'Sicherheitshärtung & CCIS-Protokoll-Gateway — TLS 1.3, Fail2ban | AiPBX',
+            desc: 'AiPBX Sicherheitsebenen: Fail2ban Brute-Force-Schutz, TLS 1.3/SRTP-Verschlüsselung und NEC UNIVERGE SV8100/SV8300/SV8500 CCIS-Protokoll-Gateway.'
+        }
+    },
+    'api-docs': {
+        tr: {
+            title: 'REST API & WebSocket Dokümantasyonu — Geliştirici Kılavuzu & Entegrasyon | AiPBX',
+            desc: 'AiPBX geliştirici referansı: REST API uç noktaları, Go anlık WebSocket mesajlaşma şeması, PHP 8 MVC mimarisi ve PHPUnit otomatik test paketi ile santral entegrasyonu.'
+        },
+        en: {
+            title: 'REST API & WebSocket Developer Reference — Integrations | AiPBX',
+            desc: 'AiPBX developer reference: REST API endpoints, Go real-time WebSocket chat schema, PHP 8 MVC architecture, and PHPUnit automated test suite.'
+        },
+        de: {
+            title: 'REST-API & WebSocket Entwickler-Referenz — Integrationen | AiPBX',
+            desc: 'AiPBX Entwickler-Referenz: REST-API-Endpunkte, Go-Echtzeit-WebSocket-Nachrichtenschema, PHP 8 MVC-Architektur und automatisierte PHPUnit-Tests.'
+        }
+    },
+    'msteams': {
+        tr: {
+            title: 'Microsoft Teams Entegrasyonu & Direct Routing — Asterisk 22 SBC Gateway | AiPBX',
+            desc: 'AiPBX Microsoft Teams Direct Routing entegrasyonu: Asterisk 22 PJSIP SBC altyapısı, SIP TLS ve SRTP ses şifreleme, Microsoft 365 PowerShell yapılandırması ve Teams kanal bildirimleri.'
+        },
+        en: {
+            title: 'Microsoft Teams Direct Routing & SBC Gateway — Asterisk 22 | AiPBX',
+            desc: 'AiPBX Microsoft Teams Direct Routing: Asterisk 22 PJSIP SBC gateway, SIP TLS and SRTP media encryption, Microsoft 365 PowerShell setup, and Teams webhook alerts.'
+        },
+        de: {
+            title: 'Microsoft Teams Direct Routing & SBC-Gateway — Asterisk 22 | AiPBX',
+            desc: 'AiPBX Microsoft Teams Direct Routing: Asterisk 22 PJSIP SBC-Gateway, SIP TLS und SRTP Sprachverschlüsselung, Microsoft 365 PowerShell-Setup und Teams-Webhooks.'
+        }
+    }
+};
+
+// 3. Language Management (TR / EN / DE)
+function setLanguage(lang) {
+    if (!['tr', 'en', 'de'].includes(lang)) lang = 'tr';
 
     document.documentElement.setAttribute('data-lang', lang);
     document.documentElement.lang = lang;
 
-    if (!isAuto) {
+    try {
         localStorage.setItem('aipbx_lang', lang);
+    } catch(e) {}
+
+    // Update document title and meta description dynamically
+    let rawPage = window.location.pathname.split('/').pop() || 'index.html';
+    let pageKey = rawPage.replace('.html', '') || 'index';
+    if (!pageMetaTranslations[pageKey]) pageKey = 'index';
+    
+    if (pageMetaTranslations[pageKey] && pageMetaTranslations[pageKey][lang]) {
+        document.title = pageMetaTranslations[pageKey][lang].title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', pageMetaTranslations[pageKey][lang].desc);
     }
 
     // Update Desktop Button text & flag
     const flagEl = document.getElementById('currentLangFlag');
     const codeEl = document.getElementById('currentLangCode');
-    const flags = { tr: '🇹🇷', en: '🇬🇧', de: '🇩🇪' };
+    const flags = { tr: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="22" height="15"><rect width="1200" height="800" fill="#E30A17"/><circle cx="480" cy="400" r="200" fill="#fff"/><circle cx="520" cy="400" r="160" fill="#E30A17"/><polygon fill="#fff" points="583,400 641,335 600,400 641,465" transform="rotate(18,610,400)"/></svg>', en: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="22" height="15"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>', de: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="22" height="15"><rect width="900" height="600" fill="#fff"/><rect width="900" height="200" fill="#ed2939"/><rect y="400" width="900" height="200" fill="#ed2939"/></svg>' };
     const codes = { tr: 'TR', en: 'EN', de: 'DE' };
 
-    if (flagEl) flagEl.innerText = flags[lang] || '🌐';
+    if (flagEl) flagEl.innerHTML = flags[lang] || '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
     if (codeEl) codeEl.innerText = codes[lang] || lang.toUpperCase();
 
     // Update Dropdown active states
@@ -318,33 +459,9 @@ function setLanguage(lang, isAuto = false) {
 
 // Initialize on DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Language Initialization & Auto-Detection
-    const savedLang = localStorage.getItem('aipbx_lang');
-    if (savedLang) {
-        setLanguage(savedLang);
-    } else {
-        const navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
-        let detected = 'en';
-        for (const l of navLangs) {
-            const clean = (l || '').toLowerCase();
-            if (clean.startsWith('tr')) { detected = 'tr'; break; }
-            if (clean.startsWith('de')) { detected = 'de'; break; }
-        }
-        setLanguage(detected, true);
-
-        // Optional Geo-IP hint in background
-        try {
-            fetch('https://ipapi.co/json/')
-                .then(r => r.json())
-                .then(data => {
-                    if (!localStorage.getItem('aipbx_lang') && data && data.country_code) {
-                        const cc = data.country_code.toUpperCase();
-                        if (['TR', 'AZ'].includes(cc)) setLanguage('tr', true);
-                        else if (['DE', 'AT', 'CH'].includes(cc)) setLanguage('de', true);
-                    }
-                }).catch(() => {});
-        } catch(e) {}
-    }
+    // 1. Synchronize UI with already active language applied synchronously in <head>
+    const activeLang = document.documentElement.getAttribute('data-lang') || localStorage.getItem('aipbx_lang') || 'tr';
+    setLanguage(activeLang);
 
     // Language Dropdown Toggle
     const langSelector = document.getElementById('langSelector');
@@ -466,4 +583,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, { passive: true });
     }
+
+    // GeoIP-based language detection via Cloudflare
+    if (!localStorage.getItem('aipbx_lang')) {
+        fetch('/cdn-cgi/trace')
+            .then(function(r) { return r.text(); })
+            .then(function(t) {
+                var m = t.match(/loc=([A-Z]{2})/);
+                if (m) {
+                    var cc = m[1];
+                    var geoLang = 'en';
+                    if (cc === 'TR' || cc === 'AZ') geoLang = 'tr';
+                    else if (cc === 'AT' || cc === 'DE' || cc === 'CH' || cc === 'LI') geoLang = 'de';
+                    var current = document.documentElement.getAttribute('data-lang');
+                    if (current !== geoLang) {
+                        setLanguage(geoLang);
+                    }
+                }
+            })
+            .catch(function() {});
+    }
+
 });

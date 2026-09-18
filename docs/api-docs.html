@@ -1,30 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" data-lang="en">
+<html lang="tr" data-lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>REST API & Developer Reference — AiPBX</title>
-    <meta name="description" content="AiPBX developer reference: REST API endpoints, Go real-time WebSocket chat schema, PHP 8 MVC architecture, and PHPUnit automated test suite.">
+    <title>REST API &amp; WebSocket Dokümantasyonu — Geliştirici Kılavuzu &amp; Entegrasyon | AiPBX</title>
+    <meta name="description" content="AiPBX geliştirici referansı: REST API uç noktaları, Go anlık WebSocket mesajlaşma şeması, PHP 8 MVC mimarisi ve PHPUnit otomatik test paketi ile santral entegrasyonu.">
+    <meta name="keywords" content="santral api, asterisk rest api, websocket çağrı bildirimi, voip api entegrasyonu, telephony api docs, crm santral entegrasyonu, aipbx api">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
-    
-    <!-- Synchronous Language Auto-Detection (Zero Flicker) -->
-    <script>
-        (function() {
-            var saved = localStorage.getItem('aipbx_lang');
-            var lang = saved;
-            if (!lang) {
-                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
-                lang = 'en';
-                for (var i = 0; i < navLangs.length; i++) {
-                    var l = (navLangs[i] || '').toLowerCase();
-                    if (l.indexOf('tr') === 0) { lang = 'tr'; break; }
-                    if (l.indexOf('de') === 0) { lang = 'de'; break; }
-                }
-            }
-            document.documentElement.setAttribute('data-lang', lang);
-            document.documentElement.lang = lang;
-        })();
-    </script>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://aipbx.bid/api-docs.html">
+
+    <!-- Multilingual Hreflang Tags -->
+    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/api-docs.html">
+    <link rel="alternate" hreflang="en" href="https://aipbx.bid/api-docs.html">
+    <link rel="alternate" hreflang="de" href="https://aipbx.bid/api-docs.html">
+    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/api-docs.html">
+
+    <!-- Open Graph / Social -->
+    <meta property="og:site_name" content="AiPBX — Modern Open Source Enterprise IP Telephony">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://aipbx.bid/api-docs.html">
+    <meta property="og:title" content="AiPBX REST API &amp; WebSocket Dokümantasyonu">
+    <meta property="og:description" content="REST API uç noktaları, kimlik doğrulama şeması ve gerçek zamanlı Go WebSocket olay bildirimleri kılavuzu.">
+    <meta property="og:image" content="https://aipbx.bid/img/feature_graphic.png">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="500">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="AiPBX API Dokümantasyonu">
+    <meta property="og:locale" content="tr_TR">
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@mhrgl">
+    <meta name="twitter:creator" content="@mhrgl">
+    <meta name="twitter:title" content="AiPBX REST API &amp; WebSocket Dokümantasyonu">
+    <meta name="twitter:description" content="Telefoni REST API ve WebSocket gerçek zamanlı olay entegrasyonu geliştirici rehberi.">
+    <meta name="twitter:image" content="https://aipbx.bid/img/feature_graphic.png">
+
+    <!-- Mobile & PWA Configuration -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="site.webmanifest">
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -35,10 +56,81 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
     
     <!-- Shared Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Synchronous Language Auto-Detection & Zero-Flicker Cloak -->
+    <style id="lang-cloak">
+        html[data-lang="tr"] [data-lang]:not([data-lang="tr"]),
+        html[data-lang="en"] [data-lang]:not([data-lang="en"]),
+        html[data-lang="de"] [data-lang]:not([data-lang="de"]) { display: none !important; }
+        html[data-lang="tr"] span[data-lang="tr"], html[data-lang="tr"] a[data-lang="tr"], html[data-lang="tr"] strong[data-lang="tr"], html[data-lang="tr"] em[data-lang="tr"], html[data-lang="tr"] code[data-lang="tr"],
+        html[data-lang="en"] span[data-lang="en"], html[data-lang="en"] a[data-lang="en"], html[data-lang="en"] strong[data-lang="en"], html[data-lang="en"] em[data-lang="en"], html[data-lang="en"] code[data-lang="en"],
+        html[data-lang="de"] span[data-lang="de"], html[data-lang="de"] a[data-lang="de"], html[data-lang="de"] strong[data-lang="de"], html[data-lang="de"] em[data-lang="de"], html[data-lang="de"] code[data-lang="de"] { display: inline !important; }
+    </style>
+    <script>
+        (function() {
+            var lang = localStorage.getItem('aipbx_lang');
+            if (!lang || !["tr", "en", "de"].includes(lang)) {
+                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || "tr"];
+                lang = "tr";
+                for (var i = 0; i < navLangs.length; i++) {
+                    var l = (navLangs[i] || "").toLowerCase();
+                    if (l.indexOf("tr") === 0) { lang = "tr"; break; }
+                    if (l.indexOf("de") === 0) { lang = "de"; break; }
+                    if (l.indexOf("en") === 0) { lang = "en"; break; }
+                }
+                try { localStorage.setItem("aipbx_lang", lang); } catch(e) {}
+            }
+            document.documentElement.setAttribute("data-lang", lang);
+            document.documentElement.lang = lang;
+        })();
+    </script>
+
+    <!-- Structured Data (Schema.org JSON-LD: BreadcrumbList & TechArticle/APIReference) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Ana Sayfa",
+              "item": "https://aipbx.bid/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "REST API & WebSocket",
+              "item": "https://aipbx.bid/api-docs.html"
+            }
+          ]
+        },
+        {
+          "@type": "TechArticle",
+          "headline": "AiPBX REST API and WebSocket Event Schema Documentation",
+          "description": "Developer reference for AiPBX telephony REST API endpoints, Go WebSocket real-time messaging schema, and CRM integration.",
+          "url": "https://aipbx.bid/api-docs.html",
+          "author": {
+            "@type": "Person",
+            "name": "Mahir Gül",
+            "url": "https://www.mhrgl.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "AiPBX",
+            "url": "https://aipbx.bid/"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
 
@@ -122,9 +214,9 @@
                     </a>
                     <a href="security.html" class="nav-dropdown-item">
                         <span class="item-icon">🛡️</span>
-                        <span data-lang="tr">Güvenlik &amp; CCIS Gateway</span>
-                        <span data-lang="en">Security &amp; CCIS Gateway</span>
-                        <span data-lang="de">Sicherheit &amp; CCIS-Gateway</span>
+                        <span data-lang="tr">Güvenlik</span>
+                        <span data-lang="en">Security</span>
+                        <span data-lang="de">Sicherheit</span>
                     </a>
                     <a href="api-docs.html" class="nav-dropdown-item">
                         <span class="item-icon">🔌</span>
@@ -153,24 +245,24 @@
             <!-- Top-Right Language Switcher (TR / EN / DE) -->
             <div class="lang-selector" id="langSelector">
                 <button class="lang-btn" id="langSelectorBtn" aria-label="Select Language">
-                    <span class="lang-flag" id="currentLangFlag">🌐</span>
+                    <span class="lang-flag" id="currentLangFlag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
                     <span class="lang-code" id="currentLangCode">EN</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="lang-dropdown" id="langDropdown">
                     <button class="lang-option" data-set-lang="tr">
-                        <span class="flag">🇹🇷</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="20" height="14"><rect width="1200" height="800" fill="#E30A17"/><circle cx="480" cy="400" r="200" fill="#fff"/><circle cx="520" cy="400" r="160" fill="#E30A17"/><polygon fill="#fff" points="583,400 641,335 600,400 641,465" transform="rotate(18,610,400)"/></svg></span>
                         <span>Türkçe</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="en">
-                        <span class="flag">🇬🇧</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="20" height="14"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></span>
                         <span>English</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="de">
-                        <span class="flag">🇩🇪</span>
-                        <span>Deutsch</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="20" height="14"><rect width="900" height="600" fill="#fff"/><rect width="900" height="200" fill="#ed2939"/><rect y="400" width="900" height="200" fill="#ed2939"/></svg></span>
+                        <span>Deutsch (AT)</span>
                         <span class="check">✓</span>
                     </button>
                 </div>
@@ -266,9 +358,9 @@
             </li>
             <li>
                 <a href="security.html" class="mobile-nav-item">
-                    <span data-lang="tr">🛡️ Güvenlik &amp; CCIS Protokol Gateway</span>
-                    <span data-lang="en">🛡️ Security &amp; CCIS Gateway</span>
-                    <span data-lang="de">🛡️ Sicherheit &amp; CCIS-Gateway</span>
+                    <span data-lang="tr">🛡️ Güvenlik</span>
+                    <span data-lang="en">🛡️ Security</span>
+                    <span data-lang="de">🛡️ Sicherheit</span>
                 </a>
             </li>
             <li>
@@ -444,10 +536,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="security.html#ccis">
-                            <span data-lang="tr">📠 NEC CCIS Protokol Gateway</span>
-                            <span data-lang="en">📠 NEC CCIS Protocol Gateway</span>
-                            <span data-lang="de">📠 NEC CCIS Protokoll-Gateway</span>
                         </a>
                     </li>
                 </ul>
@@ -649,9 +737,9 @@ bash bin/setup-test-db.sh
                         <span data-lang="de">← Zurück</span>
                     </span>
                     <span class="pagination-title">
-                        <span data-lang="tr">Güvenlik & CCIS</span>
-                        <span data-lang="en">Security & CCIS</span>
-                        <span data-lang="de">Sicherheit & CCIS</span>
+                        <span data-lang="tr">Güvenlik</span>
+                        <span data-lang="en">Security</span>
+                        <span data-lang="de">Sicherheit</span>
                     </span>
                 </a>
                 <a href="index.html" class="pagination-btn next">
@@ -725,7 +813,6 @@ bash bin/setup-test-db.sh
                         <span data-lang="en">Break Codes (*22/*23)</span>
                         <span data-lang="de">Pausencodes (*22/*23)</span>
                     </a></li>
-                    <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
                 </ul>
             </div>
 
@@ -751,7 +838,16 @@ bash bin/setup-test-db.sh
                     <span data-lang="de">Links &amp; Dokumentation</span>
                 </h5>
                 <ul>
-                    <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
+                    <li><a href="https://www.mhrgl.com" target="_blank">
+                        <span data-lang="tr">mhrgl.com (Geliştirici)</span>
+                        <span data-lang="en">mhrgl.com (Developer)</span>
+                        <span data-lang="de">mhrgl.com (Entwickler)</span>
+                    </a></li>
+                    <li><a href="https://www.mhrgl.com/projeler" target="_blank">
+                        <span data-lang="tr">mhrgl.com Portföy &amp; Projeler</span>
+                        <span data-lang="en">mhrgl.com Portfolio &amp; Projects</span>
+                        <span data-lang="de">mhrgl.com Portfolio &amp; Projekte</span>
+                    </a></li>
                     <li><a href="https://www.mhrgl.com/privacy" target="_blank">
                         <span data-lang="tr">Gizlilik Politikası</span>
                         <span data-lang="en">Privacy Policy</span>

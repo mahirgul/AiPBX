@@ -1,0 +1,35 @@
+{
+    "name": "AiPBX — Açık Kaynak Kurumsal IP Telefon Santrali",
+    "short_name": "AiPBX",
+    "description": "Asterisk 22, WebRTC, Nginx L4 ALPN stream multiplexing, ve yerel mobil softphone destekli kurumsal IP santral.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#0b1120",
+    "theme_color": "#0f172a",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "favicon-16x16.png",
+            "sizes": "16x16",
+            "type": "image/png"
+        },
+        {
+            "src": "favicon-32x32.png",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
+        {
+            "src": "apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

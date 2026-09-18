@@ -1,30 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" data-lang="en">
+<html lang="tr" data-lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Call Center & Queue Operations — AiPBX</title>
-    <meta name="description" content="AiPBX enterprise call center capabilities: Static and dynamic members, *22 pause and *23 unpause break codes, live wallboard, and *90 supervisor call spy.">
+    <title>Çağrı Merkezi Çözümleri — ACD Kuyruk, Mola Kodları (*22/*23), Wallboard | AiPBX</title>
+    <meta name="description" content="AiPBX çağrı merkezi altyapısı: Statik ve dinamik temsilciler, *22 mola ve *23 moladan dönüş kodları, anlık canlı duvar panosu (wallboard) ve *90 süpervizör çağrı dinleme.">
+    <meta name="keywords" content="çağrı merkezi santrali, acd kuyruk yönetimi, çağrı merkezi mola kodları, santral canlı duvar panosu, wallboard asterisk, çağrı dinleme fısıldama, call center pbx, supervisor call spy, aipbx">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
-    
-    <!-- Synchronous Language Auto-Detection (Zero Flicker) -->
-    <script>
-        (function() {
-            var saved = localStorage.getItem('aipbx_lang');
-            var lang = saved;
-            if (!lang) {
-                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
-                lang = 'en';
-                for (var i = 0; i < navLangs.length; i++) {
-                    var l = (navLangs[i] || '').toLowerCase();
-                    if (l.indexOf('tr') === 0) { lang = 'tr'; break; }
-                    if (l.indexOf('de') === 0) { lang = 'de'; break; }
-                }
-            }
-            document.documentElement.setAttribute('data-lang', lang);
-            document.documentElement.lang = lang;
-        })();
-    </script>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://aipbx.bid/callcenter.html">
+
+    <!-- Multilingual Hreflang Tags -->
+    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/callcenter.html">
+    <link rel="alternate" hreflang="en" href="https://aipbx.bid/callcenter.html">
+    <link rel="alternate" hreflang="de" href="https://aipbx.bid/callcenter.html">
+    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/callcenter.html">
+
+    <!-- Open Graph / Social -->
+    <meta property="og:site_name" content="AiPBX — Modern Open Source Enterprise IP Telephony">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://aipbx.bid/callcenter.html">
+    <meta property="og:title" content="AiPBX Çağrı Merkezi — ACD Kuyruk, Mola Kodları, Wallboard">
+    <meta property="og:description" content="ACD kuyruk dağıtımı, *22/*23 mola yönetimi, süpervizör çağrı dinleme (*90) ve gerçek zamanlı duvar panosu.">
+    <meta property="og:image" content="https://aipbx.bid/img/feature_graphic.png">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="500">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="AiPBX Çağrı Merkezi Çözümleri">
+    <meta property="og:locale" content="tr_TR">
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@mhrgl">
+    <meta name="twitter:creator" content="@mhrgl">
+    <meta name="twitter:title" content="AiPBX Çağrı Merkezi — ACD Kuyruk, Mola Kodları, Wallboard">
+    <meta name="twitter:description" content="ACD kuyruk dağıtımı, *22/*23 mola yönetimi, süpervizör çağrı dinleme (*90) ve gerçek zamanlı duvar panosu.">
+    <meta name="twitter:image" content="https://aipbx.bid/img/feature_graphic.png">
+
+    <!-- Mobile & PWA Configuration -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="site.webmanifest">
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -35,10 +56,78 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
     
     <!-- Shared Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Synchronous Language Auto-Detection & Zero-Flicker Cloak -->
+    <style id="lang-cloak">
+        html[data-lang="tr"] [data-lang]:not([data-lang="tr"]),
+        html[data-lang="en"] [data-lang]:not([data-lang="en"]),
+        html[data-lang="de"] [data-lang]:not([data-lang="de"]) { display: none !important; }
+        html[data-lang="tr"] span[data-lang="tr"], html[data-lang="tr"] a[data-lang="tr"], html[data-lang="tr"] strong[data-lang="tr"], html[data-lang="tr"] em[data-lang="tr"], html[data-lang="tr"] code[data-lang="tr"],
+        html[data-lang="en"] span[data-lang="en"], html[data-lang="en"] a[data-lang="en"], html[data-lang="en"] strong[data-lang="en"], html[data-lang="en"] em[data-lang="en"], html[data-lang="en"] code[data-lang="en"],
+        html[data-lang="de"] span[data-lang="de"], html[data-lang="de"] a[data-lang="de"], html[data-lang="de"] strong[data-lang="de"], html[data-lang="de"] em[data-lang="de"], html[data-lang="de"] code[data-lang="de"] { display: inline !important; }
+    </style>
+    <script>
+        (function() {
+            var lang = localStorage.getItem('aipbx_lang');
+            if (!lang || !["tr", "en", "de"].includes(lang)) {
+                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || "tr"];
+                lang = "tr";
+                for (var i = 0; i < navLangs.length; i++) {
+                    var l = (navLangs[i] || "").toLowerCase();
+                    if (l.indexOf("tr") === 0) { lang = "tr"; break; }
+                    if (l.indexOf("de") === 0) { lang = "de"; break; }
+                    if (l.indexOf("en") === 0) { lang = "en"; break; }
+                }
+                try { localStorage.setItem("aipbx_lang", lang); } catch(e) {}
+            }
+            document.documentElement.setAttribute("data-lang", lang);
+            document.documentElement.lang = lang;
+        })();
+    </script>
+
+    <!-- Structured Data (Schema.org JSON-LD: BreadcrumbList & SoftwareApplication) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Ana Sayfa",
+              "item": "https://aipbx.bid/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Çağrı Merkezi",
+              "item": "https://aipbx.bid/callcenter.html"
+            }
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "AiPBX Enterprise Call Center Suite",
+          "applicationCategory": "BusinessApplication, TelecommunicationsApplication",
+          "operatingSystem": "Linux, Android, iOS, Web",
+          "url": "https://aipbx.bid/callcenter.html",
+          "description": "Enterprise ACD queue management, agent break codes (*22/*23), supervisor call spy (*90), and live real-time wallboards.",
+          "author": {
+            "@type": "Person",
+            "name": "Mahir Gül",
+            "url": "https://www.mhrgl.com"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
 
@@ -122,9 +211,9 @@
                     </a>
                     <a href="security.html" class="nav-dropdown-item">
                         <span class="item-icon">🛡️</span>
-                        <span data-lang="tr">Güvenlik &amp; CCIS Gateway</span>
-                        <span data-lang="en">Security &amp; CCIS Gateway</span>
-                        <span data-lang="de">Sicherheit &amp; CCIS-Gateway</span>
+                        <span data-lang="tr">Güvenlik</span>
+                        <span data-lang="en">Security</span>
+                        <span data-lang="de">Sicherheit</span>
                     </a>
                     <a href="api-docs.html" class="nav-dropdown-item">
                         <span class="item-icon">🔌</span>
@@ -153,24 +242,24 @@
             <!-- Top-Right Language Switcher (TR / EN / DE) -->
             <div class="lang-selector" id="langSelector">
                 <button class="lang-btn" id="langSelectorBtn" aria-label="Select Language">
-                    <span class="lang-flag" id="currentLangFlag">🌐</span>
+                    <span class="lang-flag" id="currentLangFlag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
                     <span class="lang-code" id="currentLangCode">EN</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="lang-dropdown" id="langDropdown">
                     <button class="lang-option" data-set-lang="tr">
-                        <span class="flag">🇹🇷</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="20" height="14"><rect width="1200" height="800" fill="#E30A17"/><circle cx="480" cy="400" r="200" fill="#fff"/><circle cx="520" cy="400" r="160" fill="#E30A17"/><polygon fill="#fff" points="583,400 641,335 600,400 641,465" transform="rotate(18,610,400)"/></svg></span>
                         <span>Türkçe</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="en">
-                        <span class="flag">🇬🇧</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="20" height="14"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></span>
                         <span>English</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="de">
-                        <span class="flag">🇩🇪</span>
-                        <span>Deutsch</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="20" height="14"><rect width="900" height="600" fill="#fff"/><rect width="900" height="200" fill="#ed2939"/><rect y="400" width="900" height="200" fill="#ed2939"/></svg></span>
+                        <span>Deutsch (AT)</span>
                         <span class="check">✓</span>
                     </button>
                 </div>
@@ -266,9 +355,9 @@
             </li>
             <li>
                 <a href="security.html" class="mobile-nav-item">
-                    <span data-lang="tr">🛡️ Güvenlik &amp; CCIS Protokol Gateway</span>
-                    <span data-lang="en">🛡️ Security &amp; CCIS Gateway</span>
-                    <span data-lang="de">🛡️ Sicherheit &amp; CCIS-Gateway</span>
+                    <span data-lang="tr">🛡️ Güvenlik</span>
+                    <span data-lang="en">🛡️ Security</span>
+                    <span data-lang="de">🛡️ Sicherheit</span>
                 </a>
             </li>
             <li>
@@ -444,10 +533,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="security.html#ccis">
-                            <span data-lang="tr">📠 NEC CCIS Protokol Gateway</span>
-                            <span data-lang="en">📠 NEC CCIS Protocol Gateway</span>
-                            <span data-lang="de">📠 NEC CCIS Protokoll-Gateway</span>
                         </a>
                     </li>
                 </ul>
@@ -810,31 +895,46 @@
                 <div data-lang="tr">
                     <p>Sistem ayarlarında (<code>cc_break_reasons</code>) tanımlı mola nedenleri ID'lere sırayla eşlenir:</p>
                     <ul>
-                        <li><code>*221</code> $ightarrow$ <strong>1. Mola:</strong> Yemek Molası</li>
-                        <li><code>*222</code> $ightarrow$ <strong>2. Mola:</strong> Kısa Dinlenme / Çay Molası</li>
-                        <li><code>*223</code> $ightarrow$ <strong>3. Mola:</strong> Eğitim / Toplantı</li>
-                        <li><code>*224</code> $ightarrow$ <strong>4. Mola:</strong> Evrak / İdari İşler</li>
-                        <li><code>*225</code> $ightarrow$ <strong>5. Mola:</strong> Teknik Problem</li>
+                        <li><code>*221</code> $
+ightarrow$ <strong>1. Mola:</strong> Yemek Molası</li>
+                        <li><code>*222</code> $
+ightarrow$ <strong>2. Mola:</strong> Kısa Dinlenme / Çay Molası</li>
+                        <li><code>*223</code> $
+ightarrow$ <strong>3. Mola:</strong> Eğitim / Toplantı</li>
+                        <li><code>*224</code> $
+ightarrow$ <strong>4. Mola:</strong> Evrak / İdari İşler</li>
+                        <li><code>*225</code> $
+ightarrow$ <strong>5. Mola:</strong> Teknik Problem</li>
                     </ul>
                 </div>
                 <div data-lang="en">
                     <p>Configured reasons in <code>cc_break_reasons</code> map directly to dialed numeric digits:</p>
                     <ul>
-                        <li><code>*221</code> $ightarrow$ <strong>Reason 1:</strong> Lunch Break (Yemek Molası)</li>
-                        <li><code>*222</code> $ightarrow$ <strong>Reason 2:</strong> Short Rest / Coffee Break (Kısa Dinlenme)</li>
-                        <li><code>*223</code> $ightarrow$ <strong>Reason 3:</strong> Training / Meeting (Eğitim / Toplantı)</li>
-                        <li><code>*224</code> $ightarrow$ <strong>Reason 4:</strong> Back-Office / Admin (Evrak / İdari İşler)</li>
-                        <li><code>*225</code> $ightarrow$ <strong>Reason 5:</strong> Technical Issue (Teknik Problem)</li>
+                        <li><code>*221</code> $
+ightarrow$ <strong>Reason 1:</strong> Lunch Break (Yemek Molası)</li>
+                        <li><code>*222</code> $
+ightarrow$ <strong>Reason 2:</strong> Short Rest / Coffee Break (Kısa Dinlenme)</li>
+                        <li><code>*223</code> $
+ightarrow$ <strong>Reason 3:</strong> Training / Meeting (Eğitim / Toplantı)</li>
+                        <li><code>*224</code> $
+ightarrow$ <strong>Reason 4:</strong> Back-Office / Admin (Evrak / İdari İşler)</li>
+                        <li><code>*225</code> $
+ightarrow$ <strong>Reason 5:</strong> Technical Issue (Teknik Problem)</li>
                     </ul>
                 </div>
                 <div data-lang="de">
                     <p>Die in <code>cc_break_reasons</code> hinterlegten Gründe werden den Ziffern zugeordnet:</p>
                     <ul>
-                        <li><code>*221</code> $ightarrow$ <strong>Grund 1:</strong> Mittagspause (Yemek Molası)</li>
-                        <li><code>*222</code> $ightarrow$ <strong>Grund 2:</strong> Kaffeepause / Kurze Erholung (Kısa Dinlenme)</li>
-                        <li><code>*223</code> $ightarrow$ <strong>Grund 3:</strong> Schulung / Meeting (Eğitim / Toplantı)</li>
-                        <li><code>*224</code> $ightarrow$ <strong>Grund 4:</strong> Backoffice / Sachbearbeitung (Evrak / İdari İşler)</li>
-                        <li><code>*225</code> $ightarrow$ <strong>Grund 5:</strong> Technisches Problem (Teknik Problem)</li>
+                        <li><code>*221</code> $
+ightarrow$ <strong>Grund 1:</strong> Mittagspause (Yemek Molası)</li>
+                        <li><code>*222</code> $
+ightarrow$ <strong>Grund 2:</strong> Kaffeepause / Kurze Erholung (Kısa Dinlenme)</li>
+                        <li><code>*223</code> $
+ightarrow$ <strong>Grund 3:</strong> Schulung / Meeting (Eğitim / Toplantı)</li>
+                        <li><code>*224</code> $
+ightarrow$ <strong>Grund 4:</strong> Backoffice / Sachbearbeitung (Evrak / İdari İşler)</li>
+                        <li><code>*225</code> $
+ightarrow$ <strong>Grund 5:</strong> Technisches Problem (Teknik Problem)</li>
                     </ul>
                 </div>
             </section>
@@ -1084,7 +1184,6 @@
                         <span data-lang="en">Break Codes (*22/*23)</span>
                         <span data-lang="de">Pausencodes (*22/*23)</span>
                     </a></li>
-                    <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
                 </ul>
             </div>
 
@@ -1110,7 +1209,16 @@
                     <span data-lang="de">Links &amp; Dokumentation</span>
                 </h5>
                 <ul>
-                    <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
+                    <li><a href="https://www.mhrgl.com" target="_blank">
+                        <span data-lang="tr">mhrgl.com (Geliştirici)</span>
+                        <span data-lang="en">mhrgl.com (Developer)</span>
+                        <span data-lang="de">mhrgl.com (Entwickler)</span>
+                    </a></li>
+                    <li><a href="https://www.mhrgl.com/projeler" target="_blank">
+                        <span data-lang="tr">mhrgl.com Portföy &amp; Projeler</span>
+                        <span data-lang="en">mhrgl.com Portfolio &amp; Projects</span>
+                        <span data-lang="de">mhrgl.com Portfolio &amp; Projekte</span>
+                    </a></li>
                     <li><a href="https://www.mhrgl.com/privacy" target="_blank">
                         <span data-lang="tr">Gizlilik Politikası</span>
                         <span data-lang="en">Privacy Policy</span>
