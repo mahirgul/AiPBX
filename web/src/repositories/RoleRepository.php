@@ -44,6 +44,7 @@ class RoleRepository extends BaseRepository
             'cc_board'           => ['title' => 'Canlı Pano', 'group' => 'Çağrı Merkezi'],
             'pause_reports'      => ['title' => 'Mola Raporları', 'group' => 'Çağrı Merkezi'],
             'queue_logs'         => ['title' => 'Kuyruk Logları', 'group' => 'Çağrı Merkezi'],
+            'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Entegrasyonlar'],
         ];
     }
 
@@ -61,6 +62,7 @@ class RoleRepository extends BaseRepository
             'Güvenlik' => 'security',
             'Faks Sistemi' => 'fax_system',
             'Çağrı Merkezi' => 'call_center',
+            'Entegrasyonlar' => 'integrations',
         ];
     }
 

@@ -18,6 +18,7 @@ $is_admin_active = in_array($active_page, ['system_users.php', 'roles.php', 'ast
 $is_fax_active = in_array($active_page, ['fax_inbox.php', 'fax_send.php', 'fax_sent.php']);
 $is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc_board.php', 'queue_logs.php', 'pause_reports.php']);
 $is_security_active = in_array($active_page, ['firewall.php', 'fail2ban.php']);
+$is_teams_active = in_array($active_page, ['ms_teams.php']);
 
 // Module Visibility Checks via RBAC
 $can_view_dashboard_group = hasModulePermission('dashboard', 'view') || hasModulePermission('my_phone', 'view') || hasModulePermission('chat', 'view') || hasModulePermission('cdr_reports', 'view') || hasModulePermission('cc_reports', 'view');
@@ -26,6 +27,7 @@ $can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModul
 $can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('pending_sync', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('audit_log', 'view');
 $can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
 $can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view');
+$can_view_teams_group = hasModulePermission('ms_teams', 'view');
 // Firewall/fail2ban HER ZAMAN admin-only (auth.php circuit-breaker) — grup
 // görünürlüğü de doğrudan role kontrolüyle, roles.php'nin izin matrisinden
 // bağımsız (roles/system_users ile aynı desen).

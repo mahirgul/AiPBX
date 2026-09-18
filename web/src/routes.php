@@ -57,4 +57,5 @@ return [
     '/fax-inbox'       => ['controller' => FaxInboxController::class, 'action' => 'index', 'module' => 'fax_inbox.php'],
     '/fax-send'        => ['controller' => FaxSendController::class, 'action' => 'index', 'module' => 'fax_send.php'],
     '/fax-sent'        => ['controller' => FaxSentController::class, 'action' => 'index', 'module' => 'fax_sent.php'],
+    '/ms-teams'        => ['controller' => MsTeamsController::class, 'action' => 'index', 'module' => 'ms_teams.php'],
 ];
