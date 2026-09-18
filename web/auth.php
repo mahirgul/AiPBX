@@ -138,6 +138,7 @@ function getModuleKeyForPage($page = null) {
         'firewall.php'              => 'firewall',
         'fail2ban.php'              => 'fail2ban',
         'push_settings.php'         => 'push_settings',
+        'ms_teams.php'              => 'ms_teams',
     ];
     return $map[$page] ?? str_replace('.php', '', $page);
 }
