@@ -175,6 +175,9 @@ apt-get install -y \
   fail2ban \
   ghostscript \
   libtiff-tools \
+  postfix \
+  libsasl2-modules \
+  mailutils \
   certbot \
   python3-certbot-apache \
   openssl \
@@ -201,8 +204,28 @@ fi
 
 rm -rf /var/www/html
 ln -sf "$INSTALL_DIR/web" /var/www/html
-ln -sf "$INSTALL_DIR/web/bin/feature_code_action.php" /usr/local/bin/feature_code_action.php
-chmod 755 "$INSTALL_DIR/web/bin/feature_code_action.php"
+
+# Symlink helper binaries and dialplan scripts to /usr/local/bin
+for script in feature_code_action.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php; do
+    if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
+        ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
+        chmod 755 "$INSTALL_DIR/web/bin/$script"
+    fi
+done
+
+# AI PBX automated maintenance and queue sync crons
+cat > /etc/cron.d/aipbx << 'CRON'
+# AI PBX Automated Maintenance & Synchronization Crons
+# Asterisk Queue Log to MariaDB DB Synchronization
+* * * * * root /usr/local/bin/sync_queue_logs.php >/dev/null 2>&1
+
+# Daily fax retention & spool cleanup (fax_retention_days)
+15 3 * * * root /usr/local/bin/fax_cleanup.sh >/dev/null 2>&1
+
+# Outgoing fax pending sweep (detect unanswered / stale spool files)
+* * * * * root /usr/local/bin/fax_pending_sweep.sh >/dev/null 2>&1
+CRON
+chmod 644 /etc/cron.d/aipbx
 
 mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing
@@ -543,6 +566,32 @@ stream {\
 ' /etc/nginx/nginx.conf
 fi
 
+# Ubuntu 24.04/26.04+ systemd proc isolation drop-in (allow Apache/PHP to inspect /proc/meminfo and pgrep asterisk)
+mkdir -p /etc/systemd/system/apache2.service.d
+cat > /etc/systemd/system/apache2.service.d/override.conf << 'APACHEOVERRIDE'
+[Service]
+ProcSubset=all
+ProtectProc=default
+APACHEOVERRIDE
+systemctl daemon-reload
+
+# Allow web server (www-data) to access Asterisk control socket
+usermod -aG asterisk www-data
+
+# Sudoers permissions for AI PBX management (service restarts and postfix/asterisk controls)
+cat > /etc/sudoers.d/aipbx << 'SUDOOVERRIDE'
+www-data ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/sbin/asterisk, /usr/sbin/postconf, /usr/sbin/postmap, /usr/sbin/postfix
+asterisk ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/sbin/asterisk
+SUDOOVERRIDE
+chmod 440 /etc/sudoers.d/aipbx
+
+# Postfix mail service initialization
+touch /etc/postfix/sasl_passwd
+chown root:www-data /etc/postfix/sasl_passwd
+chmod 660 /etc/postfix/sasl_passwd
+systemctl enable postfix
+systemctl restart postfix
+
 systemctl restart apache2
 systemctl enable apache2
 
@@ -600,6 +649,14 @@ if [[ -f /etc/asterisk/asterisk.conf ]]; then
         sed -i 's/^;*defaultlanguage\s*=.*/defaultlanguage = tr/' /etc/asterisk/asterisk.conf
     else
         echo "defaultlanguage = tr" >> /etc/asterisk/asterisk.conf
+    fi
+    if ! grep -q "^\[files\]" /etc/asterisk/asterisk.conf; then
+        cat >> /etc/asterisk/asterisk.conf << 'EOF'
+
+[files]
+astctlpermissions = 0660
+astctlgroup = asterisk
+EOF
     fi
 fi
 
