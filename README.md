@@ -141,16 +141,26 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Unified Port 443** — multiplexes Asterisk WebRTC SIP (`/ws`) and Go Chat (`/chat/ws`)
 - **Ready-to-use Nginx template** — available in `conf/nginx/aipbx.conf.example`
 
+### 🔐 Two-Factor Authentication (2FA) & Passkeys (WebAuthn / FIDO2)
+- **Authenticator App Support (TOTP / RFC 6238)** — Compatible with Google Authenticator, Microsoft Authenticator, 1Password, Apple Passwords/Keychain, Authy, etc.
+- **100% Offline & Private QR Codes** — Embedded native SVG QR code generator runs entirely on-premise without external third-party CDN or Google Chart dependencies (ideal for air-gapped PBX intranets).
+- **Single-Use Backup Recovery Codes** — Generates 8 cryptographically hashed emergency recovery codes (`XXXX-XXXX`) with instant clipboard copy and `.txt` file export.
+- **FIDO2 / WebAuthn Passkeys** — One-click passwordless and biometric authentication using Apple Touch ID / Face ID, Windows Hello, Android Biometrics, or hardware security keys (YubiKey, SoloKey).
+- **Two-Step Login Flow (`/login-2fa`)** — Automatic redirection upon password verification with clock drift tolerance ($\pm 30$ seconds) and recovery code fallback.
+- **Direct Passkey Login Button** — Log in with a single tap directly from the login page without entering passwords.
+- **Self-Service Security Center (`/security`)** — Accessible from the footer profile menu for every authenticated user to manage 2FA, register/delete passkeys, and change passwords.
+- **Admin Emergency 2FA Reset** — Dedicated 2FA status indicator and instant reset button in System Users (`/system-users`) if an employee loses their device.
+
 ### 🔒 Security
-- **Granular RBAC** — modular role-permission matrix (`sys_role_permissions`) with strict read-only viewer mode, including `my_phone` and `chat` controls
-- **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban)
-- **CSRF protection** — token on every POST form
-- **fail2ban integration**
-- **Firewall management** — control firewalld/fail2ban from the web UI
-- **Credentials served via API** — never embedded in page source
+- **Optional Multi-Factor & Passkeys** — Hardware-grade FIDO2 / WebAuthn passkeys and RFC 6238 TOTP authenticators.
+- **Granular RBAC** — modular role-permission matrix (`sys_role_permissions`) with strict read-only viewer mode, including `my_phone` and `chat` controls.
+- **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban).
+- **CSRF protection** — token on every POST form.
+- **fail2ban integration** & **Firewall management** — control firewalld and fail2ban directly from the web UI.
+- **Credentials served via API** — never embedded in page source.
 
 ### 🌍 Multi-language
-- Turkish 🇹🇷 and English 🇬🇧 (1,300+ translation keys)
+- Turkish 🇹🇷 and English 🇬🇧 (1,740+ translation keys with 100% parity)
 - Easy to extend with the `t()` function
 
 ---
@@ -164,14 +174,14 @@ AiPBX/
 │
 ├── web/                    # PHP MVC Web Portal
 │   ├── src/
-│   │   ├── controllers/    # 35 page controllers
-│   │   ├── services/       # 24 business logic services
+│   │   ├── controllers/    # 37 page controllers
+│   │   ├── services/       # 26 business logic services
 │   │   ├── repositories/   # 28 database repositories
 │   │   └── sync/           # 13 Asterisk config generators
-│   ├── templates/views/    # 34 PHP view templates
-│   ├── api/                # REST API layer
+│   ├── templates/views/    # 36 PHP view templates
+│   ├── api/                # REST API layer (WebAuthn, call control, WebRTC creds)
 │   ├── assets/             # CSS, JS, fonts
-│   ├── lang/               # Language files (tr/en)
+│   ├── lang/               # Language files (tr/en - 1,740+ keys)
 │   └── db/migrations/      # Phinx database migrations
 │
 ├── android/                # Kotlin Android App
@@ -211,7 +221,7 @@ AiPBX/
 | Android | Kotlin, PJSIP, WebRTC, FCM |
 | iOS | Swift 5.9, SwiftUI, WebKit, CallKit, Combine |
 | WebRTC | coturn TURN/STUN, DTLS-SRTP, Opus |
-| Security | fail2ban, RBAC, CSRF, CAPTCHA |
+| Security | WebAuthn (FIDO2 / Passkeys), TOTP 2FA, fail2ban, RBAC, CSRF, CAPTCHA |
 
 ---
 
