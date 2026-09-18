@@ -109,10 +109,10 @@ class MsTeamsRepository extends BaseRepository
         $notes = trim($data['notes'] ?? '');
 
         if ($extension === '') {
-            return ['success' => false, 'error' => 'Dahili numarası zorunludur.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_ext_required')];
         }
         if ($teams_upn === '' || !filter_var($teams_upn, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'Geçerli bir Teams Kullanıcı Adı (UPN / E-posta) giriniz.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
         }
 
         // Benzersizlik kontrolleri
@@ -120,12 +120,12 @@ class MsTeamsRepository extends BaseRepository
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE extension = ? AND id != ?");
             $stmt->execute([$extension, $id]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'error' => "'{$extension}' dahili numarası zaten başka bir eşleştirmede kullanılıyor."];
+                return ['success' => false, 'error' => t('ms_teams.msg_err_ext_exists')];
             }
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE teams_upn = ? AND id != ?");
             $stmt->execute([$teams_upn, $id]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'error' => "'{$teams_upn}' kullanıcısı zaten başka bir dahili ile eşleştirilmiş."];
+                return ['success' => false, 'error' => t('ms_teams.msg_err_upn_exists')];
             }
 
             $updateStmt = $db->prepare("
@@ -134,17 +134,17 @@ class MsTeamsRepository extends BaseRepository
                 WHERE id = ?
             ");
             $updateStmt->execute([$extension, $teams_upn, $phone_number, $direct_routing_enabled, $notes, $id]);
-            return ['success' => true, 'message' => 'Eşleştirme başarıyla güncellendi.', 'id' => $id];
+            return ['success' => true, 'message' => t('ms_teams.msg_mapping_saved'), 'id' => $id];
         } else {
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE extension = ?");
             $stmt->execute([$extension]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'error' => "'{$extension}' dahili numarası zaten başka bir eşleştirmede kullanılıyor."];
+                return ['success' => false, 'error' => t('ms_teams.msg_err_ext_exists')];
             }
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE teams_upn = ?");
             $stmt->execute([$teams_upn]);
             if ($stmt->fetch()) {
-                return ['success' => false, 'error' => "'{$teams_upn}' kullanıcısı zaten başka bir dahili ile eşleştirilmiş."];
+                return ['success' => false, 'error' => t('ms_teams.msg_err_upn_exists')];
             }
 
             $insertStmt = $db->prepare("
@@ -153,7 +153,7 @@ class MsTeamsRepository extends BaseRepository
             ");
             $insertStmt->execute([$extension, $teams_upn, $phone_number, $direct_routing_enabled, $notes]);
             $newId = (int)$db->lastInsertId();
-            return ['success' => true, 'message' => 'Yeni Teams eşleştirmesi başarıyla eklendi.', 'id' => $newId];
+            return ['success' => true, 'message' => t('ms_teams.msg_mapping_saved'), 'id' => $newId];
         }
     }
 

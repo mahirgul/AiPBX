@@ -19,12 +19,12 @@ class MsTeamsController extends BaseController
         if (isset($_GET['action']) && $_GET['action'] === 'test_webhook') {
             header('Content-Type: application/json; charset=utf-8');
             if (!hasModulePermission('ms_teams', 'edit')) {
-                echo json_encode(['success' => false, 'message' => 'Bu işlem için düzenleme yetkiniz bulunmamaktadır.']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_edit_perm')]);
                 exit;
             }
             $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
             if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => 'Geçersiz güvenlik oturumu (CSRF).']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
                 exit;
             }
 
@@ -43,12 +43,12 @@ class MsTeamsController extends BaseController
         if (isset($_GET['action']) && $_GET['action'] === 'save_mapping') {
             header('Content-Type: application/json; charset=utf-8');
             if (!hasModulePermission('ms_teams', 'edit')) {
-                echo json_encode(['success' => false, 'message' => 'Bu işlem için düzenleme yetkiniz bulunmamaktadır.']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_edit_perm')]);
                 exit;
             }
             $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
             if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => 'Geçersiz güvenlik oturumu (CSRF).']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
                 exit;
             }
 
@@ -61,26 +61,26 @@ class MsTeamsController extends BaseController
         if (isset($_GET['action']) && $_GET['action'] === 'delete_mapping') {
             header('Content-Type: application/json; charset=utf-8');
             if (!hasModulePermission('ms_teams', 'delete')) {
-                echo json_encode(['success' => false, 'message' => 'Bu işlem için silme yetkiniz bulunmamaktadır.']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_delete_perm')]);
                 exit;
             }
             $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
             if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => 'Geçersiz güvenlik oturumu (CSRF).']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
                 exit;
             }
 
             $id = (int)($_POST['id'] ?? 0);
             if ($id <= 0) {
-                echo json_encode(['success' => false, 'message' => 'Geçersiz kayıt ID.']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_id')]);
                 exit;
             }
 
             $deleted = MsTeamsRepository::deleteUserMapping($id);
             if ($deleted) {
-                echo json_encode(['success' => true, 'message' => 'Eşleştirme başarıyla silindi.']);
+                echo json_encode(['success' => true, 'message' => t('ms_teams.msg_delete_success')]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Eşleştirme silinirken hata oluştu.']);
+                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_delete_error')]);
             }
             exit;
         }
@@ -103,9 +103,9 @@ class MsTeamsController extends BaseController
         if (static::isPost()) {
             $csrf = $_POST['csrf_token'] ?? '';
             if (!verifyCSRFToken($csrf)) {
-                $error = 'Geçersiz form tokeni (CSRF). Lütfen sayfayı yenileyip tekrar deneyin.';
+                $error = t('ms_teams.msg_invalid_csrf');
             } elseif (!hasModulePermission('ms_teams', 'edit')) {
-                $error = 'Bu ayarları güncellemek için düzenleme yetkiniz bulunmamaktadır.';
+                $error = t('ms_teams.msg_no_edit_perm');
             } else {
                 if (isset($_POST['save_direct_routing'])) {
                     $res = MsTeamsService::saveDirectRoutingSettings($_POST);
@@ -133,7 +133,7 @@ class MsTeamsController extends BaseController
         $certInfo = MsTeamsService::inspectTlsCert($settings['teams_tls_cert_path'] ?? '');
         $powerShellScript = MsTeamsService::generatePowerShellScript($settings, $mappings);
 
-        $page_title = 'Microsoft Teams Entegrasyonu';
+        $page_title = t('ms_teams.title');
         $active_page = 'ms_teams.php';
 
         require_once dirname(__DIR__) . '/../header.php';
