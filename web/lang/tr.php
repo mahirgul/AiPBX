@@ -957,7 +957,7 @@ return [
     'fax_mail_settings.field_header_info' => 'Faks Başlık Yazısı (Header)',
     'fax_mail_settings.header_info_help' => 'Gönderilen faksların üst kısmında görünen kurum başlığı. Gönderen kişinin adı (ve dahilisi) her faksa <strong>otomatik olarak</strong> eklenir — burayı ayrıca değiştirmenize gerek yok.',
     'fax_mail_settings.field_station_id' => 'Yerel İstasyon Kimliği (TSID / Station ID)',
-    'fax_mail_settings.station_id_help' => 'Faks standardının (T.30) bir parçası — karşı taraftaki faks cihazının ekranında/dökümünde "gönderen kimliği" olarak görünür. Genellikle kurumun <strong>gerçek faks telefon numarası</strong> yazılır (ör. 0370 xxx xx xx), en fazla 20 karakter.',
+    'fax_mail_settings.station_id_help' => 'Faks standardının (T.30) bir parçası — karşı taraftaki faks cihazının ekranında/dökümünde "gönderen kimliği" olarak görünür. Genellikle kurumun <strong>gerçek faks telefon numarası</strong> veya adı yazılır (ör. +90 850 000 00 00 veya AiPBX), en fazla 20 karakter.',
     'fax_mail_settings.field_max_retries' => 'Faks Yeniden Deneme Sayısı',
     'fax_mail_settings.field_retry_time' => 'Denemeler Arası Süre (sn)',
     'fax_mail_settings.retry_time_help' => 'Meşgul/cevapsız durumda bir sonraki denemeden önce beklenecek süre.',
