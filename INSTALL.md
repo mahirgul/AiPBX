@@ -1,12 +1,12 @@
 # AI PBX — Installation & Deployment Guide
 
-This guide covers installing and configuring **AI PBX** on **Ubuntu 22.04 / 24.04 / 26.04 LTS**.
+This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 
 ---
 
 ## System Requirements
 
-- **Operating System**: Clean Ubuntu Server (22.04, 24.04, or 26.04 LTS x86_64)
+- **Operating System**: Clean Ubuntu Server (26.04 LTS x86_64)
 - **Minimum Specs**: 2 GB RAM, 2 vCPU, 15 GB SSD storage
 - **Recommended Specs (Production)**: 4 GB+ RAM, 4 vCPU, 40 GB+ NVMe SSD
 - **Network**: Static Public IPv4 and/or configured FQDN (e.g. `pbx.company.com`)

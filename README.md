@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu LTS">
+  <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/Web_Server-Nginx%20%7C%20Apache-blue?logo=nginx" alt="Nginx & Apache">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
@@ -53,7 +53,7 @@ The installer will:
 3. Install and configure everything (Asterisk, MariaDB, Apache2, coturn, Chat service)
 4. Display all credentials at the end and save them to `/root/aipbx-credentials.txt`
 
-> **Requirements**: Ubuntu 22.04 / 24.04 / 26.04 LTS · 2 GB RAM · 10 GB disk · root access
+> **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
 
 After install, open `https://<your-server>` in your browser and log in with the credentials shown.
 
