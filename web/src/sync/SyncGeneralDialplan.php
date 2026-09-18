@@ -132,7 +132,7 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,ExecIf(\$[\"\${FAX_FILE}\" != \"\"]?System(/usr/local/bin/process_incoming_fax.sh \"\${FAX_FILE}\" \"\${FAX_DID}\" \"\${FAX_CNUM}\" \"\${FAXOPT(pages)}\" \"\${FAXOPT(status)}\"))\n";
 
     $fax_header_info = toCleanAscii(getSystemSetting('fax_header_info', 'AI PBX Fax Server'));
-    $fax_station_id = toCleanAscii(getSystemSetting('fax_local_station_id', 'FAX37'));
+    $fax_station_id = toCleanAscii(getSystemSetting('fax_local_station_id', 'AiPBX'));
 
     $conf .= "\n; Native Outgoing FAX Context (SendFAX via Call Files)\n";
     $conf .= "[outbound-fax]\n";

@@ -19,7 +19,7 @@ class FaxMailSettingsService {
             'fax_email_tx_enabled'   => trim($data['fax_email_tx_enabled'] ?? 'yes'),
             'fax_retention_days'     => trim($data['fax_retention_days'] ?? '60'),
             'fax_header_info'        => trim($data['fax_header_info'] ?? 'AI PBX Fax Server'),
-            'fax_local_station_id'   => trim($data['fax_local_station_id'] ?? 'FAX37'),
+            'fax_local_station_id'   => trim($data['fax_local_station_id'] ?? 'AiPBX'),
             'fax_max_retries'        => trim($data['fax_max_retries'] ?? '3'),
             'fax_retry_time'         => trim($data['fax_retry_time'] ?? '60'),
             'fax_wait_time'          => trim($data['fax_wait_time'] ?? '30'),

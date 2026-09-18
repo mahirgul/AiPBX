@@ -75,7 +75,7 @@ INSERT INTO `sys_settings` VALUES
 ('fax_email_rx_enabled','yes'),
 ('fax_email_tx_enabled','yes'),
 ('fax_header_info','AI PBX Fax Server'),
-('fax_local_station_id','FAX37'),
+('fax_local_station_id','AiPBX'),
 ('fax_max_retries','3'),
 ('fax_retention_days','0'),
 ('fax_retry_time','60'),
