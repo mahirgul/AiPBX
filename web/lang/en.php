@@ -384,6 +384,7 @@ return [
     'queues.col_actions' => 'Actions',
     'queues.empty' => 'No queue has been defined yet',
     'queues.supervisor_badge_tooltip' => 'Queue Supervisor',
+    'queues.legacy_role_tooltip' => 'Legacy Role Definition',
     'queues.not_assigned' => 'Not Assigned',
     'queues.timing_ring' => 'Ring',
     'queues.timing_retry' => 'Retry',
@@ -1115,6 +1116,7 @@ return [
     'roles.module_cc_board' => 'Wallboard',
     'roles.module_pause_reports' => 'Pause Reports',
     'roles.module_queue_logs' => 'Queue Logs',
+    'roles.module_ms_teams' => 'Microsoft Teams',
 
     // Roles - Group names
     'roles.group_general' => 'General',
@@ -1124,6 +1126,7 @@ return [
     'roles.group_security' => 'Security',
     'roles.group_fax_system' => 'Fax System',
     'roles.group_call_center' => 'Call Center',
+    'roles.group_integrations' => 'Integrations',
 
     // Asterisk Settings
     'asterisk_settings.title' => 'PBX Settings',
@@ -1299,6 +1302,10 @@ return [
     'sidebar.item_firewall' => 'Firewall',
     'sidebar.item_fail2ban' => 'Fail2ban',
     'sidebar.item_audit_log' => 'Audit Log',
+    'sidebar.group_integrations' => 'Integrations',
+    'sidebar.item_ms_teams' => 'Microsoft Teams',
+    'sidebar.item_ms_teams_desc' => 'Microsoft Teams Direct Routing & Webhook Integration',
+    'sidebar.item_ms_teams_overview' => 'General Settings',
     'sidebar.group_fax' => 'Fax System',
     'sidebar.item_fax_inbox' => 'Incoming Faxes',
     'sidebar.item_fax_send' => 'Send Fax',
