@@ -34,7 +34,7 @@ class LoginService {
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password FROM sys_users WHERE username = ? OR extension = ?');
+        $stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret FROM sys_users WHERE username = ? OR extension = ?');
         $stmt->execute([$username, $username]);
         $user = $stmt->fetch();
 
@@ -54,6 +54,16 @@ class LoginService {
         }
 
         if ($is_authenticated) {
+            // İki Faktörlü Doğrulama (2FA) kontrolü
+            if (!empty($user['two_factor_enabled'])) {
+                session_regenerate_id(true);
+                $_SESSION['pending_2fa_user_id'] = $user['id'];
+                $_SESSION['pending_2fa_username'] = $user['username'];
+                $_SESSION['pending_2fa_full_name'] = $user['full_name'];
+                unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
+                return ['redirect' => '/login-2fa'];
+            }
+
             // Regenerate Session ID to prevent Session Fixation Attacks
             session_regenerate_id(true);
 
