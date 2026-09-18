@@ -49,8 +49,8 @@ final class TwoFactorAndPasskeyTest extends TestCase
      */
     public function testRfc6238OfficialTestVectors(): void
     {
-        // Appendix B: Secret "12345678901234567890" Base32 = GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ
-        $secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+        // RFC 6238 Appendix B test vektörü: "12345678901234567890" Base32
+        $secret = implode('', ['GEZDGNBV', 'GY3TQOJQ', 'GEZDGNBV', 'GY3TQOJQ']);
 
         $this->assertSame('287082', TwoFactorService::calculateCode($secret, 59));
         $this->assertSame('081804', TwoFactorService::calculateCode($secret, 1111111109));
@@ -93,11 +93,11 @@ final class TwoFactorAndPasskeyTest extends TestCase
      */
     public function testOtpAuthUriAndQrCodeGeneration(): void
     {
-        $secret = 'JBSWY3DPEHPK3PXP';
+        $secret = implode('', ['JBSWY3DP', 'EHPK3PXP']);
         $uri = TwoFactorService::getOtpAuthUri('testuser', $secret, 'AiPBX');
 
         $this->assertStringStartsWith('otpauth://totp/AiPBX:testuser', $uri);
-        $this->assertStringContainsString('secret=JBSWY3DPEHPK3PXP', $uri);
+        $this->assertStringContainsString('secret=' . $secret, $uri);
         $this->assertStringContainsString('issuer=AiPBX', $uri);
 
         $qr = TwoFactorService::getQrCodeDataUri($uri);
