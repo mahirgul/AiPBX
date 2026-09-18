@@ -76,6 +76,16 @@
             </button>
         </form>
 
+        <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><?php echo t('login.or_divider', 'VEYA'); ?></span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+
+        <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
+            <i class="fas fa-fingerprint" style="font-size: 16px;"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
+        </button>
+
         <?php
         $login_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $is_mobile_device = (bool) preg_match('/(android|iphone|ipad|ipod|mobile|phone|silk|blackberry|opera mini|windows phone)/i', $login_ua);
@@ -97,6 +107,100 @@
     <div class="footer-toast-container" id="footer-toast-container"></div>
     <script src="/assets/js/theme.js"></script>
     <script src="/assets/js/footer_notify.js"></script>
+
+    <script>
+        function base64urlToUint8Array(base64url) {
+            let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            const raw = atob(base64);
+            const bytes = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) {
+                bytes[i] = raw.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        async function loginWithPasskey() {
+            if (!window.PublicKeyCredential) {
+                if (window.notify) {
+                    window.notify.warning("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
+                } else {
+                    alert("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
+                }
+                return;
+            }
+
+            const btn = document.getElementById('btnPasskeyLogin');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Doğrulanıyor...';
+
+            try {
+                const optRes = await fetch('/api/passkey.php?action=auth-options');
+                const optData = await optRes.json();
+                if (!optData.success) {
+                    throw new Error(optData.error || 'Passkey seçenekleri alınamadı.');
+                }
+
+                const getArgs = optData.options;
+                getArgs.challenge = base64urlToUint8Array(getArgs.challenge);
+
+                if (getArgs.allowCredentials && getArgs.allowCredentials.length > 0) {
+                    getArgs.allowCredentials.forEach(c => {
+                        c.id = base64urlToUint8Array(c.id);
+                    });
+                }
+
+                const assertion = await navigator.credentials.get({ publicKey: getArgs });
+                if (!assertion) {
+                    throw new Error('Passkey doğrulaması iptal edildi.');
+                }
+
+                const payload = {
+                    action: 'auth-verify',
+                    id: assertion.id,
+                    clientDataJSON: arrayBufferToBase64(assertion.response.clientDataJSON),
+                    authenticatorData: arrayBufferToBase64(assertion.response.authenticatorData),
+                    signature: arrayBufferToBase64(assertion.response.signature),
+                };
+
+                const verifyRes = await fetch('/api/passkey.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.success) {
+                    if (window.notify) window.notify.success("Passkey doğrulandı! Giriş yapılıyor...");
+                    window.location.href = verifyData.redirect || '/dashboard';
+                } else {
+                    throw new Error(verifyData.error || 'Passkey doğrulanamadı.');
+                }
+            } catch (err) {
+                console.error(err);
+                if (window.notify) {
+                    window.notify.error(err.message || 'Passkey doğrulaması başarısız.');
+                } else {
+                    alert(err.message || 'Passkey doğrulaması başarısız.');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    </script>
 
     <?php if ($error): ?>
     <script>
