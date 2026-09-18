@@ -23,7 +23,7 @@ require_once '/var/www/html/auth.php';
  */
 final class RbacTest extends TestCase
 {
-    private const KILITLI = ['roles', 'system_users', 'firewall', 'fail2ban'];
+    private const KILITLI = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'];
 
     protected function setUp(): void
     {
@@ -54,7 +54,7 @@ final class RbacTest extends TestCase
 
     public static function kilitliModuller(): array
     {
-        return [['roles'], ['system_users'], ['firewall'], ['fail2ban']];
+        return [['roles'], ['system_users'], ['firewall'], ['fail2ban'], ['mail_settings']];
     }
 
     #[DataProvider('kilitliModuller')]
@@ -118,6 +118,58 @@ final class RbacTest extends TestCase
                 "read_only_admin '{$m}' modulunde delete yapabiliyor — Izleyici silme yapamamali!"
             );
         }
+    }
+
+    public function testIsPostDeleteRequestAlgilama(): void
+    {
+        $_POST = [];
+        $_GET = [];
+        $this->assertFalse(isPostDeleteRequest());
+
+        $_POST = ['save_trunk' => '1'];
+        $this->assertFalse(isPostDeleteRequest());
+
+        $_POST = ['delete_trunk' => '1'];
+        $this->assertTrue(isPostDeleteRequest());
+
+        $_POST = ['remove_extension' => '1'];
+        $this->assertTrue(isPostDeleteRequest());
+
+        $_POST = [];
+        $_POST['action'] = 'delete_mapping';
+        $this->assertTrue(isPostDeleteRequest());
+
+        $_POST = [];
+        $_GET['action'] = 'delete_mapping';
+        $this->assertTrue(isPostDeleteRequest());
+
+        $_POST = [];
+        $_GET = [];
+    }
+
+    public function testUiDeleteFormVeUiRowActionsSilmeYetkisiYoksaGorunmez(): void
+    {
+        require_once '/var/www/html/src/ui_helpers.php';
+
+        $db = getDB();
+        $db->prepare(
+            'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
+             VALUES (?, ?, 1, 1, 1, 0)'
+        )->execute(['editor_only', 'trunks']);
+
+        $_SESSION['user_role'] = 'editor_only';
+        $_SERVER['PHP_SELF'] = '/trunks.php';
+
+        $this->assertTrue(hasModulePermission('trunks', 'edit'));
+        $this->assertFalse(hasModulePermission('trunks', 'delete'));
+
+        // can_delete=0 olduğu için uiDeleteForm boş dönmeli
+        $html = uiDeleteForm(1, 'trunk_id', 'delete_trunk');
+        $this->assertSame('', $html, 'can_delete=0 olan kullaniciya uiDeleteForm silme butonu basmamali!');
+
+        // uiRowActions da silme butonunu içermemeli
+        $actionsHtml = uiRowActions(['id' => 1], 'openEditTrunkModal', 'trunk_id', 'delete_trunk');
+        $this->assertStringNotContainsString('delete_trunk', $actionsHtml);
     }
 }
 
