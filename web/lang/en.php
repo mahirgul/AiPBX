@@ -957,7 +957,7 @@ return [
     'fax_mail_settings.field_header_info' => 'Fax Header Text',
     'fax_mail_settings.header_info_help' => 'The institution header shown at the top of sent faxes. The sender\'s name (and extension) is <strong>automatically</strong> added to every fax — you do not need to change this separately.',
     'fax_mail_settings.field_station_id' => 'Local Station ID (TSID / Station ID)',
-    'fax_mail_settings.station_id_help' => 'Part of the fax standard (T.30) — appears as the "sender ID" on the receiving fax machine\'s display/printout. Usually the institution\'s <strong>actual fax phone number</strong> is used (e.g. 0370 xxx xx xx), max 20 characters.',
+    'fax_mail_settings.station_id_help' => 'Part of the fax standard (T.30) — appears as the "sender ID" on the receiving fax machine\'s display/printout. Usually the institution\'s <strong>actual fax phone number</strong> or name is used (e.g. +90 850 000 00 00 or AiPBX), max 20 characters.',
     'fax_mail_settings.field_max_retries' => 'Fax Retry Count',
     'fax_mail_settings.field_retry_time' => 'Time Between Retries (sec)',
     'fax_mail_settings.retry_time_help' => 'Time to wait before the next attempt if busy/no answer.',

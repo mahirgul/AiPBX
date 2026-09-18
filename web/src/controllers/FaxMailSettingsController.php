@@ -27,7 +27,7 @@ class FaxMailSettingsController extends BaseController
             'fax_tx_enabled' => $sys_settings['fax_email_tx_enabled'] ?? 'yes',
             'fax_retention' => $sys_settings['fax_retention_days'] ?? '60',
             'fax_header_info' => $sys_settings['fax_header_info'] ?? 'AI PBX Fax Server',
-            'fax_station_id' => $sys_settings['fax_local_station_id'] ?? 'FAX37',
+            'fax_station_id' => $sys_settings['fax_local_station_id'] ?? 'AiPBX',
             'fax_max_retries' => $sys_settings['fax_max_retries'] ?? '3',
             'fax_retry_time' => $sys_settings['fax_retry_time'] ?? '60',
             'fax_wait_time' => $sys_settings['fax_wait_time'] ?? '30',
