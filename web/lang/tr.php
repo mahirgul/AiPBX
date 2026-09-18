@@ -384,6 +384,7 @@ return [
     'queues.col_actions' => 'Eylemler',
     'queues.empty' => 'Henüz tanımlanmış bir kuyruk bulunamadı',
     'queues.supervisor_badge_tooltip' => 'Kuyruk Yöneticisi',
+    'queues.legacy_role_tooltip' => 'Eski Rol Tanımı',
     'queues.not_assigned' => 'Atanmadı',
     'queues.timing_ring' => 'Çalma',
     'queues.timing_retry' => 'Tekrar',
@@ -1115,6 +1116,7 @@ return [
     'roles.module_cc_board' => 'Canlı Pano',
     'roles.module_pause_reports' => 'Mola Raporları',
     'roles.module_queue_logs' => 'Kuyruk Logları',
+    'roles.module_ms_teams' => 'Microsoft Teams',
 
     // Roles - Group names
     'roles.group_general' => 'Genel',
@@ -1124,6 +1126,7 @@ return [
     'roles.group_security' => 'Güvenlik',
     'roles.group_fax_system' => 'Faks Sistemi',
     'roles.group_call_center' => 'Çağrı Merkezi',
+    'roles.group_integrations' => 'Entegrasyonlar',
 
     // Asterisk Settings (Santral Ayarları)
     'asterisk_settings.title' => 'Santral Ayarları',
@@ -1299,6 +1302,10 @@ return [
     'sidebar.item_firewall' => 'Firewall',
     'sidebar.item_fail2ban' => 'Fail2ban',
     'sidebar.item_audit_log' => 'Denetim Kayıtları',
+    'sidebar.group_integrations' => 'Entegrasyonlar',
+    'sidebar.item_ms_teams' => 'Microsoft Teams',
+    'sidebar.item_ms_teams_desc' => 'Microsoft Teams Direct Routing & Webhook Entegrasyonu',
+    'sidebar.item_ms_teams_overview' => 'Genel Yapılandırma',
     'sidebar.group_fax' => 'Faks Sistemi',
     'sidebar.item_fax_inbox' => 'Gelen Fakslar',
     'sidebar.item_fax_send' => 'Faks Gönder',
