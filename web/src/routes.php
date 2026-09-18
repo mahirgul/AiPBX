@@ -50,6 +50,7 @@ return [
     '/push-settings'   => ['controller' => PushSettingsController::class, 'action' => 'index', 'module' => 'push_settings.php'],
     '/fax-settings'    => ['controller' => FaxSettingsController::class, 'action' => 'index', 'module' => 'fax_settings.php'],
     '/fax-mail-settings' => ['controller' => FaxMailSettingsController::class, 'action' => 'index', 'module' => 'fax_mail_settings.php'],
+    '/mail-settings'   => ['controller' => MailSettingsController::class, 'action' => 'index', 'module' => 'mail_settings.php'],
     '/cdr-reports'     => ['controller' => CdrReportController::class, 'action' => 'index', 'module' => 'cdr_reports.php'],
     '/pause-reports'   => ['controller' => PauseReportController::class, 'action' => 'index', 'module' => 'pause_reports.php'],
     '/queue-logs'      => ['controller' => QueueLogController::class, 'action' => 'index', 'module' => 'queue_logs.php'],
