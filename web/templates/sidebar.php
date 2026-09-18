@@ -300,6 +300,25 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             </li>
         <?php endif; ?>
 
+        <!-- 4c. Entegrasyonlar Menüsü (Microsoft Teams) -->
+        <?php if ($can_view_teams_group): ?>
+            <li class="nav-group <?php echo ($is_teams_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-integrations">
+                <button class="nav-toggle-btn" onclick="toggleNavGroup('group-integrations')" title="<?php echo t('sidebar.group_integrations', 'Entegrasyonlar'); ?>">
+                    <span class="toggle-title">
+                        <i class="fab fa-microsoft" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.group_integrations', 'Entegrasyonlar'); ?></span>
+                    </span>
+                    <i class="fas fa-chevron-down chevron-icon"></i>
+                </button>
+                <ul class="nav-submenu">
+                    <li>
+                        <a href="/ms-teams" class="nav-link <?php echo $active_page === 'ms_teams.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ms_teams', 'Microsoft Teams'); ?>">
+                            <i class="fab fa-windows" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.item_ms_teams', 'Microsoft Teams'); ?></span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        <?php endif; ?>
+
         <!-- 5. Faks Sistemi Menüsü -->
         <?php if ($can_view_fax_group): ?>
             <li class="nav-group <?php echo ($is_fax_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-fax">

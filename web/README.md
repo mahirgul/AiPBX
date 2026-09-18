@@ -1,15 +1,18 @@
 # AI PBX Portal
 
+Official Website & Documentation: [aipbx.bid](https://aipbx.bid)
+
 A self-hosted PBX / fax / call-center management portal built on **native Asterisk** (PJSIP + AMI + ODBC), **MariaDB**, and plain **PHP** (Modern MVC) — no proprietary GUI (FreePBX, Issabel, etc.) required. Built as a high-performance, modular **AI PBX** infrastructure.
 
 ## Features
 
 - **PBX management**: SIP/WebRTC extensions (dual-endpoint architecture), trunks (advanced PJSIP configuration & outbound caller name toggle), inbound/outbound routes, time conditions, IVR menus, feature codes (star codes), call queues (localized announcements), hangup actions.
+- **Microsoft Teams integration**: Direct Routing (SBC / SIP TLS 5061), user & extension mapping, incoming webhooks & adaptive cards, dynamic M365 PowerShell script generator.
 - **Call center**: live agent screen (WebRTC softphone in the browser), supervisor queue monitoring, wallboard, pause reports, queue logs.
 - **Fax**: inbound/outbound fax over native Asterisk trunks (T.38 / spandsp), direct PDF upload or browser WYSIWYG rich-text editor, per-department routing and email notification, sent/received archives, and failed fax retry.
 - **Admin & Security**: role-based access control (RBAC) with a per-module permission matrix, user management, branding/appearance customization, advanced PBX & SIP User Agent settings, integrated **Firewall (firewalld)** and **Fail2ban** management.
 - **Reliability & Rollback**: automatic backup of working Asterisk configurations before every reload, with instant rollback and audit logging if syntax validation or reload fails.
-- **Multi-language UI**: Turkish and English out of the box (`lang/tr.php`, `lang/en.php` with 1,300+ keys), independent from Asterisk's voice-prompt language setting.
+- **Multi-language UI**: Turkish and English out of the box (`lang/tr.php`, `lang/en.php` with 1,600+ keys), independent from Asterisk's voice-prompt language setting.
 - **CDR & recordings**: call detail records with waveform playback of recordings, scoped by role (agents see their own calls, supervisors/admins see full scope).
 
 ## Architecture
