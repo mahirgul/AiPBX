@@ -1,0 +1,71 @@
+# AiPBX — Modern Enterprise IP Telephony Static Documentation & Web
+DirectoryIndex index.html
+
+# 1. Canonical Domain & HTTPS Enforcement (SEO 301 Permanent Redirect)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Redirect www.aipbx.bid -> https://aipbx.bid (Canonical Apex Domain)
+    RewriteCond %{HTTP_HOST} ^www\.aipbx\.bid$ [NC]
+    RewriteRule ^(.*)$ https://aipbx.bid/$1 [R=301,L]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP_HOST} ^(www\.)?aipbx\.bid$ [NC]
+    RewriteRule ^(.*)$ https://aipbx.bid/$1 [R=301,L]
+
+    # Pretty URLs — transparently serve .html when extension is omitted
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+    RewriteRule ^([^/]+)/?$ $1.html [L]
+</IfModule>
+
+# 2. Modern MIME Types
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType application/xml .xml
+    AddType text/plain .txt
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+</IfModule>
+
+# 3. Security & Privacy Headers (SEO Trust & Protection)
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+</IfModule>
+
+# 4. Browser Caching & Performance (Google Core Web Vitals)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 2 days"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType application/manifest+json "access plus 1 week"
+    ExpiresByType application/xml "access plus 1 hour"
+    ExpiresByType text/xml "access plus 1 hour"
+    ExpiresByType text/plain "access plus 1 day"
+    ExpiresByType text/html "access plus 10 minutes"
+</IfModule>
+
+# 5. Gzip / Deflate Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+# 6. Custom Error Handling
+ErrorDocument 404 /index.html

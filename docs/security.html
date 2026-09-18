@@ -1,30 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" data-lang="en">
+<html lang="tr" data-lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Security Hardening & NEC CCIS Protocol Gateway — AiPBX</title>
-    <meta name="description" content="AiPBX security defense layers: Fail2ban brute-force protection, TLS 1.3/SRTP encryption, and proprietary NEC UNIVERGE SV8100/SV8300/SV8500 CCIS protocol reverse engineering.">
+    <title>Santral Güvenliği — Fail2ban, TLS 1.3, SRTP Şifreleme | AiPBX</title>
+    <meta name="description" content="AiPBX güvenlik savunma katmanları: Fail2ban kaba kuvvet saldırı koruması, TLS 1.3 ve SRTP ses şifreleme.">
+    <meta name="keywords" content="santral güvenliği, voip güvenlik önlemleri, fail2ban asterisk, srtp ses şifreleme, tls 1.3 sip, microsoft teams direct routing, santral protokol entegrasyonu, pbx security">
     <meta name="author" content="Mahir Gül (mhrgl.com)">
-    
-    <!-- Synchronous Language Auto-Detection (Zero Flicker) -->
-    <script>
-        (function() {
-            var saved = localStorage.getItem('aipbx_lang');
-            var lang = saved;
-            if (!lang) {
-                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || 'en'];
-                lang = 'en';
-                for (var i = 0; i < navLangs.length; i++) {
-                    var l = (navLangs[i] || '').toLowerCase();
-                    if (l.indexOf('tr') === 0) { lang = 'tr'; break; }
-                    if (l.indexOf('de') === 0) { lang = 'de'; break; }
-                }
-            }
-            document.documentElement.setAttribute('data-lang', lang);
-            document.documentElement.lang = lang;
-        })();
-    </script>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://aipbx.bid/security.html">
+
+    <!-- Multilingual Hreflang Tags -->
+    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/security.html">
+    <link rel="alternate" hreflang="en" href="https://aipbx.bid/security.html">
+    <link rel="alternate" hreflang="de" href="https://aipbx.bid/security.html">
+    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/security.html">
+
+    <!-- Open Graph / Social -->
+    <meta property="og:site_name" content="AiPBX — Modern Open Source Enterprise IP Telephony">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://aipbx.bid/security.html">
+    <meta property="og:title" content="AiPBX Güvenlik">
+    <meta property="og:description" content="Fail2ban kaba kuvvet koruması, TLS 1.3/SRTP şifreleme.">
+    <meta property="og:image" content="https://aipbx.bid/img/feature_graphic.png">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="500">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="AiPBX Güvenlik ve Protokol Gateway">
+    <meta property="og:locale" content="tr_TR">
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@mhrgl">
+    <meta name="twitter:creator" content="@mhrgl">
+    <meta name="twitter:title" content="AiPBX Güvenlik">
+    <meta name="twitter:description" content="VoIP güvenlik savunma katmanları ve Microsoft Teams Direct Routing.">
+    <meta name="twitter:image" content="https://aipbx.bid/img/feature_graphic.png">
+
+    <!-- Mobile & PWA Configuration -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="site.webmanifest">
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -35,10 +56,81 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
     
     <!-- Shared Stylesheet -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Synchronous Language Auto-Detection & Zero-Flicker Cloak -->
+    <style id="lang-cloak">
+        html[data-lang="tr"] [data-lang]:not([data-lang="tr"]),
+        html[data-lang="en"] [data-lang]:not([data-lang="en"]),
+        html[data-lang="de"] [data-lang]:not([data-lang="de"]) { display: none !important; }
+        html[data-lang="tr"] span[data-lang="tr"], html[data-lang="tr"] a[data-lang="tr"], html[data-lang="tr"] strong[data-lang="tr"], html[data-lang="tr"] em[data-lang="tr"], html[data-lang="tr"] code[data-lang="tr"],
+        html[data-lang="en"] span[data-lang="en"], html[data-lang="en"] a[data-lang="en"], html[data-lang="en"] strong[data-lang="en"], html[data-lang="en"] em[data-lang="en"], html[data-lang="en"] code[data-lang="en"],
+        html[data-lang="de"] span[data-lang="de"], html[data-lang="de"] a[data-lang="de"], html[data-lang="de"] strong[data-lang="de"], html[data-lang="de"] em[data-lang="de"], html[data-lang="de"] code[data-lang="de"] { display: inline !important; }
+    </style>
+    <script>
+        (function() {
+            var lang = localStorage.getItem('aipbx_lang');
+            if (!lang || !["tr", "en", "de"].includes(lang)) {
+                var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || "tr"];
+                lang = "tr";
+                for (var i = 0; i < navLangs.length; i++) {
+                    var l = (navLangs[i] || "").toLowerCase();
+                    if (l.indexOf("tr") === 0) { lang = "tr"; break; }
+                    if (l.indexOf("de") === 0) { lang = "de"; break; }
+                    if (l.indexOf("en") === 0) { lang = "en"; break; }
+                }
+                try { localStorage.setItem("aipbx_lang", lang); } catch(e) {}
+            }
+            document.documentElement.setAttribute("data-lang", lang);
+            document.documentElement.lang = lang;
+        })();
+    </script>
+
+    <!-- Structured Data (Schema.org JSON-LD: BreadcrumbList & TechArticle) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Ana Sayfa",
+              "item": "https://aipbx.bid/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Güvenlik",
+              "item": "https://aipbx.bid/security.html"
+            }
+          ]
+        },
+        {
+          "@type": "TechArticle",
+          "headline": "AiPBX Telephony Security Hardening and Microsoft Teams Direct Routing",
+          "description": "Multi-layer VoIP security defense: Fail2ban brute-force protection, TLS 1.3/SRTP encryption, and Microsoft Teams Direct Routing integration.",
+          "url": "https://aipbx.bid/security.html",
+          "author": {
+            "@type": "Person",
+            "name": "Mahir Gül",
+            "url": "https://www.mhrgl.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "AiPBX",
+            "url": "https://aipbx.bid/"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
 
@@ -122,9 +214,9 @@
                     </a>
                     <a href="security.html" class="nav-dropdown-item">
                         <span class="item-icon">🛡️</span>
-                        <span data-lang="tr">Güvenlik &amp; CCIS Gateway</span>
-                        <span data-lang="en">Security &amp; CCIS Gateway</span>
-                        <span data-lang="de">Sicherheit &amp; CCIS-Gateway</span>
+                        <span data-lang="tr">Güvenlik</span>
+                        <span data-lang="en">Security</span>
+                        <span data-lang="de">Sicherheit</span>
                     </a>
                     <a href="api-docs.html" class="nav-dropdown-item">
                         <span class="item-icon">🔌</span>
@@ -153,24 +245,24 @@
             <!-- Top-Right Language Switcher (TR / EN / DE) -->
             <div class="lang-selector" id="langSelector">
                 <button class="lang-btn" id="langSelectorBtn" aria-label="Select Language">
-                    <span class="lang-flag" id="currentLangFlag">🌐</span>
+                    <span class="lang-flag" id="currentLangFlag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
                     <span class="lang-code" id="currentLangCode">EN</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="lang-dropdown" id="langDropdown">
                     <button class="lang-option" data-set-lang="tr">
-                        <span class="flag">🇹🇷</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="20" height="14"><rect width="1200" height="800" fill="#E30A17"/><circle cx="480" cy="400" r="200" fill="#fff"/><circle cx="520" cy="400" r="160" fill="#E30A17"/><polygon fill="#fff" points="583,400 641,335 600,400 641,465" transform="rotate(18,610,400)"/></svg></span>
                         <span>Türkçe</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="en">
-                        <span class="flag">🇬🇧</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="20" height="14"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></span>
                         <span>English</span>
                         <span class="check">✓</span>
                     </button>
                     <button class="lang-option" data-set-lang="de">
-                        <span class="flag">🇩🇪</span>
-                        <span>Deutsch</span>
+                        <span class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="20" height="14"><rect width="900" height="600" fill="#fff"/><rect width="900" height="200" fill="#ed2939"/><rect y="400" width="900" height="200" fill="#ed2939"/></svg></span>
+                        <span>Deutsch (AT)</span>
                         <span class="check">✓</span>
                     </button>
                 </div>
@@ -266,9 +358,9 @@
             </li>
             <li>
                 <a href="security.html" class="mobile-nav-item">
-                    <span data-lang="tr">🛡️ Güvenlik &amp; CCIS Protokol Gateway</span>
-                    <span data-lang="en">🛡️ Security &amp; CCIS Gateway</span>
-                    <span data-lang="de">🛡️ Sicherheit &amp; CCIS-Gateway</span>
+                    <span data-lang="tr">🛡️ Güvenlik</span>
+                    <span data-lang="en">🛡️ Security</span>
+                    <span data-lang="de">🛡️ Sicherheit</span>
                 </a>
             </li>
             <li>
@@ -444,10 +536,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="security.html#ccis">
-                            <span data-lang="tr">📠 NEC CCIS Protokol Gateway</span>
-                            <span data-lang="en">📠 NEC CCIS Protocol Gateway</span>
-                            <span data-lang="de">📠 NEC CCIS Protokoll-Gateway</span>
                         </a>
                     </li>
                 </ul>
@@ -494,24 +582,21 @@
                     <span data-lang="tr">Güvenlik</span><span data-lang="en">Security</span><span data-lang="de">Sicherheit</span>
                 </a> / 
                 <span>
-                    <span data-lang="tr">Sertleştirme &amp; CCIS</span><span data-lang="en">Hardening &amp; CCIS</span><span data-lang="de">Härtung &amp; CCIS</span>
+                    <span data-lang="tr">Sertleştirme</span><span data-lang="en">Hardening</span><span data-lang="de">Härtung</span>
                 </span>
             </div>
 
             <div class="docs-header">
                 <h1>
-                    <span data-lang="tr">🛡️ Güvenlik Sertleştirme &amp; NEC CCIS Protokol Gateway</span>
-                    <span data-lang="en">🛡️ Security Hardening &amp; NEC CCIS Protocol Gateway</span>
-                    <span data-lang="de">🛡️ Sicherheitshärtung &amp; NEC CCIS Protokoll-Gateway</span>
                 </h1>
                 <p class="lead" data-lang="tr">
-                    AiPBX; kurumsal VoIP ağlarının karşılaştığı SIP brute-force saldırılarını ve dinleme tehditlerini bertaraf eden çok katmanlı savunma mekanizmalarına sahiptir. Ayrıca tescilli <strong>NEC UNIVERGE CCIS</strong> protokolünü modern IP dünyasıyla birleştiren kurumsal ağ geçidi mimarisi sunar.
+                    AiPBX; kurumsal VoIP ağlarının karşılaştığı SIP brute-force saldırılarını ve dinleme tehditlerini bertaraf eden çok katmanlı savunma mekanizmalarına sahiptir. Ayrıca Microsoft Teams Direct Routing entegrasyonu ile modern iş iletişimi platformlarıyla sorunsuz bağlantı sağlar.
                 </p>
                 <p class="lead" data-lang="en">
-                    AiPBX incorporates multi-tier defense mechanisms against brute-force VoIP scanners and packet sniffers. It also features a protocol-level gateway for bridging legacy <strong>NEC UNIVERGE CCIS</strong> PBXs with Asterisk 22 WebRTC.
+                    AiPBX incorporates multi-tier defense mechanisms against brute-force VoIP scanners and packet sniffers. It also features Microsoft Teams Direct Routing integration for seamless enterprise unified communications.
                 </p>
                 <p class="lead" data-lang="de">
-                    AiPBX bietet mehrschichtige Abwehrmechanismen gegen Brute-Force-Scans und Abhörversuche. Zudem integriert es ein Protokoll-Gateway zur Anbindung klassischer <strong>NEC UNIVERGE CCIS</strong>-Anlagen an Asterisk 22 WebRTC.
+                    AiPBX bietet mehrschichtige Abwehrmechanismen gegen Brute-Force-Scans und Abhörversuche. Zudem integriert es Microsoft Teams Direct Routing für nahtlose Unternehmenskommunikation.
                 </p>
             </div>
 
@@ -592,56 +677,6 @@ bantime  = 86400</code></pre>
                 </div>
             </section>
 
-            <section class="docs-section" id="ccis">
-                <h2>
-                    <span data-lang="tr">3. NEC UNIVERGE CCIS Protokolü &amp; Gateway Rehberi</span>
-                    <span data-lang="en">3. NEC UNIVERGE CCIS Protocol &amp; Gateway Guide</span>
-                    <span data-lang="de">3. NEC UNIVERGE CCIS Protokoll- &amp; Gateway-Handbuch</span>
-                </h2>
-                <div data-lang="tr">
-                    <p>
-                        <strong>CCIS (Common Channel Interoffice Signaling)</strong>; NEC tarafından kurumsal santral ağlarında (SV8100, SV8300, SV8500, NEAX) santraller arası özellik şeffaflığı (feature transparency) sağlamak amacıyla ITU-T SS7 No.7 / ISUP ve ITU-T Q.931 (ISDN DSS1) standartları harmanlanarak geliştirilmiş özel bir hibrit protokoldür.
-                    </p>
-                </div>
-                <div data-lang="en">
-                    <p>
-                        <strong>CCIS (Common Channel Interoffice Signaling)</strong> is NEC's proprietary inter-PBX signaling protocol (used on SV8100, SV8300, SV8500, NEAX). It blends ITU-T SS7 No.7 / ISUP and ITU-T Q.931 (ISDN DSS1) to achieve seamless feature transparency across multi-site enterprise topologies.
-                    </p>
-                </div>
-                <div data-lang="de">
-                    <p>
-                        <strong>CCIS (Common Channel Interoffice Signaling)</strong> ist NECs proprietäres Vernetzungsprotokoll (eingesetzt in SV8100, SV8300, SV8500, NEAX). Es kombiniert ITU-T SS7 No.7 / ISUP mit ITU-T Q.931 (ISDN DSS1) für standortübergreifende Leistungstransparenz.
-                    </p>
-                </div>
-
-                <div class="docs-code-box">
-                    <div class="docs-code-header">
-                        <span>CCIS-MSU Packet Structure</span>
-                    </div>
-                    <div class="docs-code-body">
-<pre><code>Byte 0        Byte 1        Byte 2        Byte 3        Byte 4        Byte 5..N
-+-------------+-------------+-------------+-------------+-------------+---------------+
-|     SIO     |     DPC     |     OPC     |     CIC     |  Msg Type   | Parameters    |
-|  (Sub-Srv)  | (Dest PC)   | (Orig PC)   | (Circuit ID)| (CSTS Code) | (Caller/Called|
-+-------------+-------------+-------------+-------------+-------------+---------------+</code></pre>
-                    </div>
-                </div>
-
-                <div class="callout callout-info">
-                    <span class="callout-icon">🌉</span>
-                    <div class="callout-body">
-                        <div data-lang="tr">
-                            <strong>AiPBX CCIS Gateway (ccisgw) Avantajı:</strong> Kurumunuzda kurulu bulunan eski NEC SV8100/SV8300/SV8500 santrallerini çöpe atmak zorunda kalmazsınız. AiPBX CCIS Gateway mimarisi sayesinde NEC santraldeki dahililer ile AiPBX üzerindeki mobil WebRTC kullanıcıları dahili numaralarıyla birbirini ücretsiz arayabilir.
-                        </div>
-                        <div data-lang="en">
-                            <strong>The AiPBX CCIS Gateway Advantage:</strong> Protect existing investments in legacy NEC SV8100/SV8300/SV8500 PBXs. The AiPBX CCIS Gateway interfaces legacy CCIS nodes with Asterisk 22, enabling seamless peer-to-peer extension dialing between legacy desk sets and modern smartphone WebRTC softphones.
-                        </div>
-                        <div data-lang="de">
-                            <strong>Der AiPBX CCIS-Gateway-Vorteil:</strong> Schützen Sie Ihre bestehenden Investitionen in NEC SV8100/SV8300/SV8500 Anlagen. Das AiPBX CCIS-Gateway verbindet klassische CCIS-Knoten mit Asterisk 22 und ermöglicht kostenlose Durchwahlgespräche zwischen alten Tischapparaten und modernen Smartphone-WebRTC-Apps.
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <div class="docs-pagination">
                 <a href="installation.html" class="pagination-btn">
@@ -679,7 +714,6 @@ bantime  = 86400</code></pre>
             <ul class="toc-list">
                 <li><a href="#defense">1. Defense-in-Depth</a></li>
                 <li><a href="#fail2ban">2. Fail2ban Jails</a></li>
-                <li><a href="#ccis">3. NEC CCIS Gateway</a></li>
             </ul>
         </div>
     </div>
@@ -727,7 +761,6 @@ bantime  = 86400</code></pre>
                         <span data-lang="en">Break Codes (*22/*23)</span>
                         <span data-lang="de">Pausencodes (*22/*23)</span>
                     </a></li>
-                    <li><a href="security.html#ccis">NEC CCIS Gateway</a></li>
                 </ul>
             </div>
 
@@ -753,7 +786,16 @@ bantime  = 86400</code></pre>
                     <span data-lang="de">Links &amp; Dokumentation</span>
                 </h5>
                 <ul>
-                    <li><a href="https://mhrgl.com" target="_blank">mhrgl.com</a></li>
+                    <li><a href="https://www.mhrgl.com" target="_blank">
+                        <span data-lang="tr">mhrgl.com (Geliştirici)</span>
+                        <span data-lang="en">mhrgl.com (Developer)</span>
+                        <span data-lang="de">mhrgl.com (Entwickler)</span>
+                    </a></li>
+                    <li><a href="https://www.mhrgl.com/projeler" target="_blank">
+                        <span data-lang="tr">mhrgl.com Portföy &amp; Projeler</span>
+                        <span data-lang="en">mhrgl.com Portfolio &amp; Projects</span>
+                        <span data-lang="de">mhrgl.com Portfolio &amp; Projekte</span>
+                    </a></li>
                     <li><a href="https://www.mhrgl.com/privacy" target="_blank">
                         <span data-lang="tr">Gizlilik Politikası</span>
                         <span data-lang="en">Privacy Policy</span>

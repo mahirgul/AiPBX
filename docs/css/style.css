@@ -5,13 +5,13 @@
             --accent: #10b981;
             --accent-purple: #8b5cf6;
             --accent-amber: #f59e0b;
-            --dark-bg: #090e17;
-            --dark-surface: #0f172a;
-            --card-bg: #141f33;
-            --card-border: #1e2e4a;
+            --dark-bg: #0f172a;
+            --dark-surface: #1e293b;
+            --card-bg: #1e293b;
+            --card-border: #334155;
             --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #243552;
+            --text-muted: #cbd5e1;
+            --border: #334155;
             --gradient-accent: linear-gradient(135deg, #008FD0 0%, #10b981 100%);
             --gradient-card: linear-gradient(180deg, rgba(20, 31, 51, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
         }
@@ -68,7 +68,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: rgba(9, 14, 23, 0.92);
+            background: rgba(15, 23, 42, 0.95);
         }
 
         .logo {
@@ -212,7 +212,7 @@
             width: 300px;
             max-width: 85vw;
             height: 100vh;
-            background: #0d1524;
+            background: #1e293b;
             border-left: 1px solid var(--border);
             z-index: 2000;
             padding: 24px;
@@ -421,7 +421,7 @@
         .terminal-container {
             max-width: 880px;
             margin: 0 auto;
-            background: #070c14;
+            background: #0f172a;
             border: 1px solid var(--border);
             border-radius: 14px;
             overflow: hidden;
@@ -434,7 +434,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 18px;
-            background: #0f1826;
+            background: #1e293b;
             border-bottom: 1px solid var(--border);
         }
 
@@ -624,7 +624,7 @@
         }
 
         .arch-layer {
-            background: #0f1826;
+            background: #1e293b;
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 18px 22px;
@@ -872,7 +872,7 @@
         }
 
         .af-card {
-            background: #0d1524;
+            background: #1e293b;
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 24px;
@@ -1198,11 +1198,11 @@
 
         th, td {
             padding: 16px 20px;
-            border-bottom: 1px solid #1a273d;
+            border-bottom: 1px solid #334155;
         }
 
         th {
-            background: #101929;
+            background: #1e293b;
             color: #cbd5e1;
             font-weight: 700;
             text-transform: uppercase;
@@ -1320,7 +1320,7 @@
         footer {
             border-top: 1px solid var(--border);
             padding: 50px 6% 36px;
-            background: #060a10;
+            background: #0f172a;
         }
 
         .footer-grid {
@@ -1376,7 +1376,7 @@
         }
 
         .footer-bottom {
-            border-top: 1px solid #141f30;
+            border-top: 1px solid #334155;
             padding-top: 24px;
             display: flex;
             justify-content: space-between;
@@ -1648,7 +1648,7 @@
     top: 100%;
     left: -20px;
     width: 260px;
-    background: #0d1524;
+    background: #1e293b;
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px;
@@ -1745,7 +1745,7 @@
 
 .sidebar-search input {
     width: 100%;
-    background: #0d1524;
+    background: #1e293b;
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 8px 12px 8px 34px;
@@ -1984,7 +1984,7 @@
 }
 
 .docs-code-header {
-    background: #0d1524;
+    background: #1e293b;
     padding: 8px 16px;
     display: flex;
     justify-content: space-between;
@@ -2033,7 +2033,7 @@
     margin: 24px 0;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: #0d1524;
+    background: #1e293b;
 }
 
 .docs-table {
@@ -2149,7 +2149,7 @@
     gap: 4px;
     padding: 14px 20px;
     border-radius: 10px;
-    background: #0d1524;
+    background: #1e293b;
     border: 1px solid var(--border);
     color: #fff;
     text-decoration: none;
@@ -2259,7 +2259,7 @@
     top: calc(100% + 8px);
     right: 0;
     width: 175px;
-    background: #0d1524;
+    background: #1e293b;
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 6px;
@@ -2366,3 +2366,25 @@ html[data-lang="de"] a[data-lang="de"],
 html[data-lang="de"] strong[data-lang="de"],
 html[data-lang="de"] em[data-lang="de"],
 html[data-lang="de"] code[data-lang="de"] { display: inline !important; }
+
+/* SVG Flag Rendering */
+.lang-flag svg, .flag svg {
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.lang-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    min-height: 15px;
+}
+
+.flag {
+    display: inline-flex;
+    align-items: center;
+    min-width: 20px;
+}
