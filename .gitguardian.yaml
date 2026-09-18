@@ -1,0 +1,5 @@
+# GitGuardian security scanner configuration
+version: 2
+paths-ignore:
+  - 'web/tests/**'
+  - 'tests/**'
