@@ -208,6 +208,7 @@ mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing
 mkdir -p /var/spool/asterisk/monitor
 mkdir -p /var/lib/asterisk/sounds/custom
+mkdir -p /var/lib/asterisk/sounds/tr
 mkdir -p /var/lib/asterisk/moh
 mkdir -p /var/lib/aipbx/chat_files
 mkdir -p /etc/asterisk/pbx
@@ -581,6 +582,29 @@ write = originate,call,agent
 writetimeout = 5000
 MANAGER
 
+# Install Asterisk Sound Prompts (Turkish & WebRTC/IVR custom sounds)
+info "Installing Asterisk sound prompts (Turkish & WebRTC/IVR sounds)..."
+mkdir -p /var/lib/asterisk/sounds/custom /var/lib/asterisk/sounds/tr
+
+if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
+    cp -a "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
+fi
+
+if [[ -d "$INSTALL_DIR/sounds/tr" ]]; then
+    cp -a "$INSTALL_DIR/sounds/tr/"* /var/lib/asterisk/sounds/tr/
+fi
+
+# Set default language to Turkish in asterisk.conf
+if [[ -f /etc/asterisk/asterisk.conf ]]; then
+    if grep -q "defaultlanguage" /etc/asterisk/asterisk.conf; then
+        sed -i 's/^;*defaultlanguage\s*=.*/defaultlanguage = tr/' /etc/asterisk/asterisk.conf
+    else
+        echo "defaultlanguage = tr" >> /etc/asterisk/asterisk.conf
+    fi
+fi
+
+chown -R asterisk:asterisk /var/lib/asterisk/sounds/
+chmod -R 755 /var/lib/asterisk/sounds/
 chown -R asterisk:asterisk /etc/asterisk/
 
 systemctl restart asterisk

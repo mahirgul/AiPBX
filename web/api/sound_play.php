@@ -11,8 +11,17 @@ if (empty($file)) {
 
 $path = SOUNDS_CUSTOM_DIR . "/$file.wav";
 if (!file_exists($path)) {
-    http_response_code(404);
-    die('Sound file not found');
+    $fallback = dirname(__DIR__, 2) . "/sounds/custom/$file.wav";
+    if (file_exists($fallback)) {
+        if (!is_dir(SOUNDS_CUSTOM_DIR)) {
+            @mkdir(SOUNDS_CUSTOM_DIR, 0755, true);
+        }
+        @copy($fallback, $path);
+        $path = file_exists($path) ? $path : $fallback;
+    } else {
+        http_response_code(404);
+        die('Sound file not found');
+    }
 }
 
 if (isset($_GET['download']) && $_GET['download'] == 1) {
