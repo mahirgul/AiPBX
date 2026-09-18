@@ -419,6 +419,7 @@ function setLanguage(lang) {
 
     try {
         localStorage.setItem('aipbx_lang', lang);
+        localStorage.setItem('aipbx_user_lang', lang);
     } catch(e) {}
 
     // Update document title and meta description dynamically
@@ -584,8 +585,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: true });
     }
 
-    // GeoIP-based language detection via Cloudflare
-    if (!localStorage.getItem('aipbx_lang')) {
+    // GeoIP-based language detection via Cloudflare (runs if user hasn't explicitly chosen)
+    if (!localStorage.getItem('aipbx_user_lang')) {
         fetch('/cdn-cgi/trace')
             .then(function(r) { return r.text(); })
             .then(function(t) {
@@ -598,6 +599,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     var current = document.documentElement.getAttribute('data-lang');
                     if (current !== geoLang) {
                         setLanguage(geoLang);
+                        // Remove manual flag so it doesn't lock as manual
+                        localStorage.removeItem('aipbx_user_lang');
                     }
                 }
             })
