@@ -35,10 +35,10 @@
         }
 
         html, body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--dark-bg);
-    color: var(--text-main);
-    line-height: 1.65;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    scroll-behavior: smooth;
 }
 
         body {
@@ -46,6 +46,7 @@
     background-color: var(--dark-bg);
     color: var(--text-main);
     line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
 }
 
         /* Top Announcement */
@@ -435,75 +436,40 @@
 
         /* Terminal Window */
         .terminal-container {
-            max-width: 880px;
-            margin: 0 auto;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-            text-align: left;
-        }
-
-        .terminal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 18px;
-            background: #1e293b;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .terminal-dots {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .terminal-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .dot-red { background: #ef4444; }
-        .dot-yellow { background: #f59e0b; }
-        .dot-green { background: #10b981; }
-
-        .terminal-title {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .terminal-copy {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #cbd5e1;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            font-family: 'JetBrains Mono', monospace;
-            transition: all 0.2s;
-        }
-
-        .terminal-copy:hover {
-            background: rgba(255, 255, 255, 0.16);
-            color: #fff;
-        }
-
-        .terminal-body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--dark-bg);
-    color: var(--text-main);
-    line-height: 1.65;
+    max-width: 860px;
+    margin: 0 auto;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    text-align: left;
 }
 
-        .terminal-comment { color: #64748b; }
-        .terminal-cmd { color: #38bdf8; font-weight: 600; }
-        .terminal-success { color: #10b981; }
-        .terminal-yellow { color: #f59e0b; }
+.terminal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.terminal-body {
+    padding: 22px 24px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.86rem;
+    line-height: 1.85;
+    background: #0f172a;
+    color: #cbd5e1;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.terminal-comment { color: #64748b; }
+.terminal-cmd { color: #38bdf8; font-weight: 600; }
+.terminal-success { color: #34d399; font-weight: 500; }
+.terminal-yellow { color: #fbbf24; font-weight: 600; }
 
         /* Section Layout */
         section {
@@ -1595,6 +1561,7 @@
     background-color: var(--dark-bg);
     color: var(--text-main);
     line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
 }
 
             .section-header {
@@ -2094,6 +2061,7 @@
     background-color: var(--dark-bg);
     color: var(--text-main);
     line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
 }
 
 .callout-body strong {
@@ -2168,6 +2136,7 @@
     background-color: var(--dark-bg);
     color: var(--text-main);
     line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
 }
 
 .docs-code-body code {
