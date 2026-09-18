@@ -15,7 +15,7 @@
                     <?php endif; ?>
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    <?php echo t('dashboard.extensions_label'); ?>: <strong style="color: var(--primary);"><?php echo $online_pjsip_count; ?> / <?php echo $ext_count; ?> <?php echo t('dashboard.online_suffix'); ?></strong> | <?php echo t('dashboard.mail_relay'); ?>: <strong style="color: var(--success);"><?php echo htmlspecialchars($mail_relay_host ?? t('dashboard.not_configured')); ?></strong>
+                    <?php echo t('dashboard.extensions_label'); ?>: <strong style="color: var(--primary);"><?php echo $online_pjsip_count; ?> / <?php echo $ext_count; ?> <?php echo t('dashboard.online_suffix'); ?></strong> | <?php echo t('dashboard.mail_relay'); ?>: <strong style="color: <?php echo !empty($mail_relay_host) ? 'var(--success)' : 'var(--text-muted)'; ?>;"><?php echo htmlspecialchars($mail_relay_host ?? t('dashboard.not_configured')); ?></strong>
                 </div>
             </div>
         </div>

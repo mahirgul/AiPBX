@@ -57,9 +57,18 @@ class DashboardRepository extends BaseRepository
     public static function getSystemMetrics(): array
     {
         exec('pgrep asterisk', $ast_pids);
+
+        $db_relay = getSystemSetting('mail_relay_host', '');
+        if (!empty($db_relay)) {
+            $db_port = getSystemSetting('mail_smtp_port', '25');
+            $mail_relay_display = '[' . $db_relay . ']:' . $db_port;
+        } else {
+            $mail_relay_display = trim((string)shell_exec('postconf -h relayhost 2>/dev/null')) ?: null;
+        }
+
         return [
             'is_asterisk_running' => !empty($ast_pids),
-            'mail_relay_host' => trim((string)shell_exec('postconf -h relayhost 2>/dev/null')) ?: null,
+            'mail_relay_host' => $mail_relay_display,
             'ram_info' => trim((string)shell_exec("free -m | awk '/Mem:/ {print $3\" / \"$2\" MB (\"int($3/$2*100)\"%)\"}'")) ?: 'N/A',
             'disk_info' => trim((string)shell_exec("df -h / | awk 'NR==2 {print $3\" / \"$2\" (\"$5\")\"}'")) ?: 'N/A',
             'uptime_info' => trim((string)shell_exec('uptime -p')) ?: 'N/A',
