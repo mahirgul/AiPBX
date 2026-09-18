@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 # AI PBX — Ubuntu LTS Fresh Install Script
-# Supported: Ubuntu 22.04 / 24.04 / 26.04 LTS
+# Supported: Ubuntu 26.04 LTS
 #
 # Usage:
 #   git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx

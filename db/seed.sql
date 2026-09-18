@@ -1,9 +1,4 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19-11.8.6-MariaDB, for debian-linux-gnu (x86_64)
---
--- Host: localhost    Database: asterisk
--- ------------------------------------------------------
--- Server version	11.8.6-MariaDB-5ubuntu0.1 from Ubuntu
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -15,10 +10,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
-
---
--- Dumping data for table `pbx_feature_codes`
---
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_feature_codes` WRITE;
@@ -39,10 +30,6 @@ UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
---
--- Dumping data for table `pbx_hangup_actions`
---
-
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_hangup_actions` WRITE;
 /*!40000 ALTER TABLE `pbx_hangup_actions` DISABLE KEYS */;
@@ -55,9 +42,46 @@ UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
---
--- Dumping data for table `sys_settings`
---
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
+LOCK TABLES `pbx_moh_classes` WRITE;
+/*!40000 ALTER TABLE `pbx_moh_classes` DISABLE KEYS */;
+INSERT INTO `pbx_moh_classes` VALUES
+(1,'default','/var/lib/asterisk/moh','files','alpha',1,'2026-08-10 11:54:57'),
+(2,'custom','/var/lib/asterisk/moh/custom','files','alpha',1,'2026-08-10 11:54:57');
+/*!40000 ALTER TABLE `pbx_moh_classes` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
+
+SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
+LOCK TABLES `pjsipsettings` WRITE;
+/*!40000 ALTER TABLE `pjsipsettings` DISABLE KEYS */;
+INSERT INTO `pjsipsettings` VALUES
+('bindaddr','0.0.0.0',1,0),
+('bindport','5060',1,0),
+('externip_val','',1,0),
+('localnet_0','192.168.100.0',1,0),
+('localnet_1','10.8.0.0',1,0),
+('netmask_0','255.255.255.0',1,0),
+('netmask_1','255.255.255.0',1,0),
+('tcp_bindaddr','0.0.0.0',1,0),
+('tcp_bindport','5060',1,0),
+('tcp_enabled','1',1,0),
+('tls_bindaddr','0.0.0.0',1,0),
+('tls_bindport','5061',1,0),
+('tls_cert_file','/etc/asterisk/keys/fullchain.pem',1,0),
+('tls_enabled','1',1,0),
+('tls_priv_key_file','/etc/asterisk/keys/privkey.pem',1,0),
+('wss_bindaddr','0.0.0.0',1,0),
+('wss_bindport','8089',1,0),
+('wss_enabled','1',1,0),
+('ws_bindaddr','0.0.0.0',1,0),
+('ws_bindport','8088',1,0),
+('ws_enabled','1',1,0);
+/*!40000 ALTER TABLE `pjsipsettings` ENABLE KEYS */;
+UNLOCK TABLES;
+COMMIT;
+SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_settings` WRITE;
@@ -85,7 +109,7 @@ INSERT INTO `sys_settings` VALUES
 ('pjsip_external_dial_timeout','60'),
 ('pjsip_external_ip',''),
 ('pjsip_internal_dial_timeout','30'),
-('pjsip_local_net',''),
+('pjsip_local_net','192.168.100.0/24,10.8.0.0/24'),
 ('pjsip_qualify_frequency','60'),
 ('pjsip_qualify_frequency_mobile','0'),
 ('pjsip_rtp_symmetric','yes'),
@@ -113,6 +137,19 @@ INSERT INTO `sys_settings` VALUES
 ('site_logo_type','image'),
 ('site_title','AiPBX'),
 ('system_default_language','tr'),
+('teams_domain',''),
+('teams_enabled','0'),
+('teams_notify_cdr_summary','0'),
+('teams_notify_fax','1'),
+('teams_notify_missed_calls','1'),
+('teams_notify_queue_alerts','1'),
+('teams_notify_voicemail','1'),
+('teams_sbc_name',''),
+('teams_sip_port','5061'),
+('teams_tls_cert_path','/etc/asterisk/keys/teams_cert.pem'),
+('teams_tls_key_path','/etc/asterisk/keys/teams_key.pem'),
+('teams_webhook_enabled','0'),
+('teams_webhook_url',''),
 ('udptl_checksums','yes'),
 ('udptl_end','4999'),
 ('udptl_fec_entries','3'),
@@ -129,10 +166,6 @@ UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 
---
--- Dumping data for table `sys_roles`
---
-
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_roles` WRITE;
 /*!40000 ALTER TABLE `sys_roles` DISABLE KEYS */;
@@ -146,10 +179,6 @@ INSERT INTO `sys_roles` VALUES
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
--- Dumping data for table `sys_role_permissions`
---
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_role_permissions` WRITE;
@@ -281,15 +310,21 @@ INSERT INTO `sys_role_permissions` VALUES
 (287,'admin','brand_settings',1,1,1,1,'2026-08-21 10:23:37'),
 (294,'admin','queue_monitor',1,1,1,1,'2026-08-21 10:23:37'),
 (295,'admin','cc_board',1,1,1,1,'2026-08-21 10:23:37'),
-(351,'admin','push_settings',1,1,1,1,'2026-09-05 23:16:30');
+(351,'admin','push_settings',1,1,1,1,'2026-09-05 23:16:30'),
+(352,'admin','my_phone',1,1,1,1,'2026-09-15 11:17:54'),
+(353,'admin','chat',1,1,1,1,'2026-09-15 11:17:54'),
+(354,'read_only_admin','my_phone',1,1,0,0,'2026-09-15 11:17:54'),
+(355,'read_only_admin','chat',1,1,0,0,'2026-09-15 11:17:54'),
+(356,'admin','ms_teams',1,1,1,1,'2026-09-18 07:30:29'),
+(357,'read_only_admin','ms_teams',1,1,0,0,'2026-09-18 07:30:29'),
+(376,'admin','pending_sync',1,1,1,1,'2026-09-18 08:10:51'),
+(377,'admin','audit_log',1,1,1,1,'2026-09-18 08:10:51'),
+(381,'admin','firewall',1,1,1,1,'2026-09-18 07:48:47'),
+(382,'admin','fail2ban',1,1,1,1,'2026-09-18 07:48:47');
 /*!40000 ALTER TABLE `sys_role_permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
-
---
--- Dumping data for table `phinx_migrations`
---
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `phinx_migrations` WRITE;
@@ -315,7 +350,14 @@ INSERT INTO `phinx_migrations` VALUES
 (20260905180000,'AddInternalNumberToPbxEntities','2026-09-04 20:54:54','2026-09-04 20:54:58',0),
 (20260906170000,'CreateChatTables','2026-09-06 10:31:19','2026-09-06 10:31:19',0),
 (20260906210000,'UpdateSysMobileDevicesFcmAndPushType','2026-09-06 14:53:27','2026-09-06 14:53:27',0),
-(20260907140000,'ExpandAllowedPhoneMode','2026-09-07 07:25:06','2026-09-07 07:25:06',0);
+(20260907140000,'ExpandAllowedPhoneMode','2026-09-07 07:25:06','2026-09-07 07:25:06',0),
+(20260915031500,'AddMyPhoneAndChatToRolePermissions','2026-09-15 11:17:54','2026-09-15 11:17:54',0),
+(20260916090000,'AddChatGroupSupport','2026-09-15 11:19:13','2026-09-15 11:19:13',0),
+(20260916130000,'AddDigitTimeoutToPbxIvrs','2026-09-16 12:40:28','2026-09-16 12:40:28',0),
+(20260916160000,'AddStaticMembersToPbxQueues','2026-09-16 15:36:51','2026-09-16 15:36:51',0),
+(20260916210000,'AddQueuePauseFeatureCodes','2026-09-16 20:26:41','2026-09-16 20:26:41',0),
+(20260918080000,'CreateTeamsIntegrationTables','2026-09-18 07:30:29','2026-09-18 07:30:29',0),
+(20260918123500,'CreateTwoFactorAndPasskeyTables','2026-09-18 12:25:38','2026-09-18 12:25:38',0);
 /*!40000 ALTER TABLE `phinx_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -329,4 +371,3 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-09-09  6:29:28
