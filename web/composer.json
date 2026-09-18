@@ -21,6 +21,8 @@
         ]
     },
     "require": {
-        "mpdf/mpdf": "^8.3"
+        "mpdf/mpdf": "^8.3",
+        "chillerlan/php-qrcode": "^6.0",
+        "lbuchs/webauthn": "^2.2"
     }
 }

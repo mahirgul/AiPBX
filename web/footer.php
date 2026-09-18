@@ -133,6 +133,10 @@ if ($is_spa_request) {
                             <?php echo strtoupper($next_lang); ?>
                         </a>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
+                        <a href="/security" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent; color: var(--primary); text-align: center; text-decoration: none;" title="<?php echo t('sidebar.security_settings', 'Güvenlik & 2FA'); ?>">
+                            <i class="fas fa-shield-alt"></i>
+                        </a>
+                        <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
                         <a href="/logout" data-no-spa="true" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent; color: var(--danger); text-align: center; text-decoration: none;" title="<?php echo t('sidebar.logout_tooltip'); ?>">
                             <i class="fas fa-sign-out-alt"></i>
                         </a>

@@ -36,13 +36,14 @@
                     <th><?php echo t('system_users.col_role'); ?></th>
                     <th><?php echo t('system_users.col_extension'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('system_users.col_permissions'); ?></th>
+                    <th>2FA</th>
                     <th><?php echo t('system_users.col_status'); ?></th>
                     <th class="text-right"><?php echo t('system_users.col_actions'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($users)): ?>
-                    <?php echo uiTableEmptyRow(9, t('system_users.empty'), 'fa-users-cog'); ?>
+                    <?php echo uiTableEmptyRow(10, t('system_users.empty'), 'fa-users-cog'); ?>
                 <?php else: ?>
                     <?php foreach ($users as $u):
                         $role_label = htmlspecialchars($u['role_name'] ?? $u['role']);
@@ -53,18 +54,18 @@
                             <td class="col-hide-mobile" style="font-weight: 700; color: var(--text-main);">
                                 <i class="fas fa-user-circle"></i> <?php echo htmlspecialchars($u['username']); ?>
                             </td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($u['full_name']); ?></td>
-                            <td class="col-hide-mobile"><?php echo htmlspecialchars($u['email'] ?: '-'); ?></td>
+                            <td><?php echo htmlspecialchars($u['full_name']); ?></td>
+                            <td class="col-hide-mobile"><?php echo htmlspecialchars($u['email'] ?? ''); ?></td>
                             <td>
-                                <span class="role-tag <?php echo htmlspecialchars($role_class); ?>">
+                                <span class="role-badge <?php echo $role_class; ?>">
                                     <?php echo $role_label; ?>
                                 </span>
                             </td>
                             <td>
-                                <?php if ($u['extension']): ?>
-                                    <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo t('system_users.ext_prefix'); ?> <?php echo htmlspecialchars($u['extension']); ?></span>
+                                <?php if (!empty($u['extension'])): ?>
+                                    <span class="badge badge-info"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($u['extension']); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('system_users.no_extension'); ?></span>
+                                    <span class="text-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <td class="col-hide-mobile">
@@ -76,10 +77,31 @@
                                 <?php endif; ?>
                             </td>
                             <td>
+                                <?php if (!empty($u['two_factor_enabled'])): ?>
+                                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700; font-size: 11px;" title="<?php echo t('system_users.2fa_active_tooltip', '2FA Aktif'); ?>">
+                                        <i class="fas fa-lock"></i> Aktif
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-size: 11px;" title="<?php echo t('system_users.2fa_inactive_tooltip', '2FA Kapalı'); ?>">
+                                        <i class="fas fa-unlock-alt"></i> Kapalı
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
                                 <?php echo uiStatusToggleForm($u['id'], $u['is_active'], 'user_id'); ?>
                             </td>
                             <td class="text-right">
                                 <div class="table-actions-cell">
+                                    <?php if (!empty($u['two_factor_enabled'])): ?>
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm', '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                                            <input type="hidden" name="reset_2fa" value="1">
+                                            <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
+                                            <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('system_users.reset_2fa_tooltip', '2FA Sıfırla'); ?>" style="color: var(--warning);">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                     <button class="btn btn-secondary btn-sm" onclick='openResetUserModal(<?php echo $u['id']; ?>, "<?php echo htmlspecialchars($u['username'], ENT_QUOTES); ?>")' title="<?php echo t('system_users.reset_password_tooltip'); ?>">
                                         <i class="fas fa-key"></i>
                                     </button>

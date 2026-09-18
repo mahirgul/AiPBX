@@ -72,7 +72,8 @@ function check_routes(?string $onlyRoute = null): void
     // Ön koşulu olmadan MEŞRU şekilde yönlendiren rotalar: sayfa üretmemeleri
     // doğru davranış, sadece "fatal/PHP hatası yok" kontrol edilir.
     // /force-reset → $_SESSION['pending_reset_user_id'] yoksa /login'e gider.
-    $REDIRECT_OK = ['/force-reset'];
+    // /login-2fa   → $_SESSION['pending_2fa_user_id'] yoksa /login'e gider.
+    $REDIRECT_OK = ['/force-reset', '/login-2fa'];
 
     // Tam sayfa için alt sınır. /reset-password token'sız hâlde ~1700 bayt
     // meşru bir form basıyor; eşik bunun altında ama gerçekten boş/yarım
@@ -279,6 +280,7 @@ function check_conventions(): void
     //    erişilebilir olmalı, onlarda yetki kontrolü aramak yanlış olur.
     $ANONIM_CONTROLLER = [
         'LoginController.php',
+        'TwoFactorLoginController.php',
         'LogoutController.php',
         'ForceResetController.php',
         'ResetPasswordController.php',

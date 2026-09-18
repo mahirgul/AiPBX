@@ -21,6 +21,11 @@ abstract class BaseController
         requireRole($allowedRoles);
     }
 
+    protected static function requireLogin(): void
+    {
+        requireLogin();
+    }
+
     protected static function isPost(): bool
     {
         return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
