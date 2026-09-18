@@ -17,7 +17,8 @@
         "classmap": [
             "src/core/",
             "src/controllers/",
-            "src/repositories/"
+            "src/repositories/",
+            "src/services/"
         ]
     },
     "require": {

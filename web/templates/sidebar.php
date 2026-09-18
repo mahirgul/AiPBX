@@ -258,6 +258,13 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if (hasModulePermission('mail_settings', 'view')): ?>
+                        <li>
+                            <a href="/mail-settings" class="nav-link <?php echo $active_page === 'mail_settings.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_mail_settings', 'E-Posta & Relay'); ?>">
+                                <i class="fas fa-envelope-open-text"></i> <span class="nav-text"><?php echo t('sidebar.item_mail_settings', 'E-Posta & Relay'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                     <?php if (hasModulePermission('pending_sync', 'view')): ?>
                         <li>
                             <a href="/pending-sync" class="nav-link <?php echo $active_page === 'pending_sync.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_pending_sync'); ?>">
