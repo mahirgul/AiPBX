@@ -1,0 +1,6 @@
+Contact: https://www.mhrgl.com
+Expires: 2028-12-31T23:59:59.000Z
+Preferred-Languages: tr, en, de
+Canonical: https://aipbx.bid/.well-known/security.txt
+Policy: https://github.com/mahirgul/AiPBX
+Acknowledgments: https://aipbx.bid/security.html

@@ -1,0 +1,36 @@
+# Robots.txt for AiPBX (https://aipbx.bid)
+# Modern Open-Source Enterprise IP PBX & Telephony Platform
+
+User-agent: *
+Allow: /
+
+# Allow indexing of all media and documentation assets
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /img/
+Allow: /logo.png
+Allow: /apple-touch-icon.png
+Allow: /favicon*.png
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Restrict raw download packages directory from indexing if applicable
+Disallow: /downloads/
+
+# XML Sitemap Location
+Sitemap: https://aipbx.bid/sitemap.xml
