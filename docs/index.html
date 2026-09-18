@@ -236,14 +236,11 @@
     </script>
 </head>
 <body>
-    <div class="top-banner">
-        <span class="banner-desktop"><i class="fa-solid fa-sparkles"></i> <strong>AiPBX v1.0 LTS</strong> — 
-            <span data-lang="tr">Açık Kaynak Kurumsal IP Santral &amp; Birleşik İletişim Platformu</span>
-            <span data-lang="en">Open-Source Enterprise IP PBX &amp; Unified Communications</span>
-            <span data-lang="de">Open-Source Enterprise IP-Telefonie &amp; Unified Communications</span>
-            • <a href="https://mhrgl.com" target="_blank">Mahir Gül (mhrgl.com)</a>
-        </span>
-        <span class="banner-mobile"><strong>AiPBX LTS</strong> • <a href="https://mhrgl.com" target="_blank">mhrgl.com</a></span>
+    <div class="redirect-box">
+        <h2>AiPBX Resmi Web Sitesi</h2>
+        <p>Sayfamız yeni resmi adresimize taşınmıştır. Otomatik olarak yönlendiriliyorsunuz...</p>
+        <p><a href="https://aipbx.bid/">https://aipbx.bid/</a></p>
+        <div class="spinner"></div>
     </div>
 
     <!-- Main Navigation Bar -->
@@ -498,7 +495,7 @@
                 <span data-lang="de"><i class="fa-solid fa-sitemap" style="margin-right:6px;"></i>Architektur &amp; Rationale</span>
             </a>
             <a href="https://mhrgl.com" target="_blank" class="btn-secondary">
-                🌐 mhrgl.com
+                <i class="fa-solid fa-globe" style="margin-right:6px;"></i>mhrgl.com
             </a>
         </div>
 
@@ -529,493 +526,188 @@
         </div>
     </header>
 
-    <!-- MULTI-PAGE DOCUMENTATION PORTAL HUB -->
-    
-    <!-- KEY FEATURES FLOWING SLIDER / MARQUEE TICKER -->
-    <section class="features-ticker-section" id="key-features-ticker">
-        <div class="features-ticker-header">
-            <span class="section-badge" style="background: rgba(0, 143, 208, 0.15); border: 1px solid rgba(0, 143, 208, 0.3); color: #38bdf8;">
-                <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px;"></i>
-                <span data-lang="tr">Öne Çıkan Güçlü Kabiliyetler</span>
-                <span data-lang="en">Core Capabilities &amp; Highlights</span>
-                <span data-lang="de">Zentrale Leistungsmerkmale</span>
-            </span>
-            <h2 style="font-size: 2rem; color: #fff; margin-top: 12px; font-weight: 800; letter-spacing: -0.02em;">
-                <span data-lang="tr">Yeni Nesil Kurumsal İletişim Ekosistemi</span>
-                <span data-lang="en">Next-Generation Unified Communications</span>
-                <span data-lang="de">Unternehmenskommunikation der nächsten Generation</span>
-            </h2>
-            <p style="color: #cbd5e1; font-size: 0.96rem; margin-top: 6px;">
-                <span data-lang="tr">Tüm kritik santral, ses, video ve mobil özellikleri tek bir açık kaynak çatı altında kesintisiz çalışır:</span>
-                <span data-lang="en">All mission-critical PBX, voice, messaging, and mobile features running seamlessly under one open-source roof:</span>
-                <span data-lang="de">Alle geschäftskritischen PBX-, Sprach-, Messaging- und Mobilfunktionen unter einem Dach vereint:</span>
-            </p>
-        </div>
-
-        <div class="ticker-wrapper" aria-label="Key Features Slider">
-            <div class="ticker-track">
-                <!-- Card 1: Microsoft Teams -->
-                <a href="msteams.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(98, 100, 167, 0.2); color: #8183c9;">
-                            <i class="fa-brands fa-microsoft"></i>
-                        </div>
-                        <span class="tag-badge" style="background: rgba(98, 100, 167, 0.2); color: #a4a6e8; border: 1px solid rgba(98, 100, 167, 0.4);">Direct Routing</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Microsoft Teams Entegrasyonu</span>
-                        <span data-lang="en">Microsoft Teams Integration</span>
-                        <span data-lang="de">Microsoft Teams Anbindung</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">PJSIP SBC altyapısı ile Teams kullanıcıları ve santral dahilileri arasında 0 TL ücretsiz görüşme &amp; PowerShell oluşturucu.</span>
-                        <span data-lang="en">PJSIP SBC gateway enabling $0 internal calling between Teams users and PBX extensions with automated PowerShell scripts.</span>
-                        <span data-lang="de">PJSIP-SBC-Gateway für kostenlose interne Gespräche zwischen Teams-Nutzern und Nebenstellen inklusive PowerShell-Skripten.</span>
-                    </p>
-                </a>
-
-                <!-- Card 2: Asterisk 22 LTS -->
-                <a href="architecture.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">
-                            <i class="fa-solid fa-server"></i>
-                        </div>
-                        <span class="tag-badge tag-blue">Asterisk 22</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Asterisk 22 LTS &amp; PJSIP</span>
-                        <span data-lang="en">Asterisk 22 LTS &amp; PJSIP</span>
-                        <span data-lang="de">Asterisk 22 LTS &amp; PJSIP</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Dual-endpoint mimarisi ile fiziksel masa telefonu ve WebRTC tarayıcı/mobil istemciyi aynı dahili numarada sorunsuz çoklama.</span>
-                        <span data-lang="en">Dual-endpoint architecture running hardware deskphones and WebRTC softphones on the exact same extension simultaneously.</span>
-                        <span data-lang="de">Dual-Endpoint-Architektur für parallelen Betrieb von Tischtelefonen und WebRTC-Apps auf derselben Durchwahl.</span>
-                    </p>
-                </a>
-
-                <!-- Card 3: Port 443 ALPN -->
-                <a href="architecture.html#alpn" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
-                            <i class="fa-solid fa-network-wired"></i>
-                        </div>
-                        <span class="tag-badge tag-green">Port 443 ALPN</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">L4 ALPN Stream Çoklayıcı</span>
-                        <span data-lang="en">L4 ALPN Stream Multiplexer</span>
-                        <span data-lang="de">L4 ALPN Stream-Multiplexer</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Tek 443 portu üzerinden Nginx L4 stream ile SIP TLS, WebRTC WSS, Go Chat ve HTTPS trafiğini sıfır firewall engeliyle yönetme.</span>
-                        <span data-lang="en">Unified Port 443 multiplexing SIP TLS, WebRTC WSS, Go Chat, and HTTPS without firewall port restrictions.</span>
-                        <span data-lang="de">Zentraler Port 443 bündelt SIP TLS, WebRTC WSS, Go-Chat und HTTPS ohne Firewall-Beschränkungen.</span>
-                    </p>
-                </a>
-
-                <!-- Card 4: Yerel Mobil Softphone -->
-                <a href="mobile-apps.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
-                            <i class="fa-solid fa-mobile-screen-button"></i>
-                        </div>
-                        <span class="tag-badge tag-amber">Android &amp; iOS</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Yerel Mobil Softphone</span>
-                        <span data-lang="en">Native Mobile Softphone</span>
-                        <span data-lang="de">Native Mobile Softphones</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Kotlin ve SwiftUI ile geliştirilmiş, FCM &amp; Apple CallKit entegrasyonlu, ekran kilitliyken bile anında çalan yerel softphone.</span>
-                        <span data-lang="en">Native Kotlin &amp; SwiftUI clients with FCM &amp; Apple CallKit support, ringing instantly even when phone is locked.</span>
-                        <span data-lang="de">Native Kotlin- &amp; SwiftUI-Apps mit FCM &amp; Apple CallKit für sofortige Signalisierung bei gesperrtem Bildschirm.</span>
-                    </p>
-                </a>
-
-                <!-- Card 5: Çağrı Merkezi -->
-                <a href="callcenter.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(236, 72, 153, 0.2); color: #f472b6;">
-                            <i class="fa-solid fa-headset"></i>
-                        </div>
-                        <span class="tag-badge" style="background: rgba(236,72,153,0.2); color:#f472b6; border:1px solid rgba(236,72,153,0.4);">Call Center</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Canlı Çağrı Merkezi Paneli</span>
-                        <span data-lang="en">Real-Time Call Center</span>
-                        <span data-lang="de">Live-Callcenter-Panel</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Canlı kuyruk izleme, *81/*80 ajan oturum ve mola kodları, ses kayıtlarını tarayıcıda dinleme ve detaylı CDR analitiği.</span>
-                        <span data-lang="en">Live queue monitoring, dynamic *81/*80 agent break codes, in-browser call recording playback, and detailed CDR analytics.</span>
-                        <span data-lang="de">Live-Warteschlangenüberwachung, dynamische *81/*80 Pausencodes, Audio-Wiedergabe im Browser und detaillierte CDR-Berichte.</span>
-                    </p>
-                </a>
-
-                <!-- Card 6: Go WebSocket Chat -->
-                <a href="architecture.html#chat" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa;">
-                            <i class="fa-solid fa-comments"></i>
-                        </div>
-                        <span class="tag-badge tag-purple">Go WebSocket</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Gerçek Zamanlı Sohbet Motoru</span>
-                        <span data-lang="en">Real-Time Team Messaging</span>
-                        <span data-lang="de">Echtzeit-Team-Chat</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Yüksek eşzamanlı Go mikroservisi (aipbx-chat) ile 1-e-1 ve grup odaları, dosya transferi, yazıyor göstergesi ve bildirimler.</span>
-                        <span data-lang="en">High-concurrency Go microservice powering 1-on-1 and group chat rooms, file transfers, typing indicators, and push alerts.</span>
-                        <span data-lang="de">Hochperformanter Go-Microservice für Direktnachrichten, Gruppenräume, Dateitransfer, Tippanzeige und Push-Nachrichten.</span>
-                    </p>
-                </a>
-
-                <!-- Card 7: Web Faks -->
-                <a href="features.html#fax" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee;">
-                            <i class="fa-solid fa-fax"></i>
-                        </div>
-                        <span class="tag-badge" style="background: rgba(6,182,212,0.2); color:#22d3ee; border:1px solid rgba(6,182,212,0.4);">T.38 Fax</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Web Faks Sistemi</span>
-                        <span data-lang="en">Web Fax Solution</span>
-                        <span data-lang="de">Integriertes Web-Fax</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Tarayıcı içi WYSIWYG faks editörü, PDF yükle &amp; gönder, otomatik yeniden deneme ve gelen faksları e-postaya iletme.</span>
-                        <span data-lang="en">In-browser WYSIWYG fax composer, PDF upload &amp; send, auto-retry mechanism, and inbound fax-to-email routing.</span>
-                        <span data-lang="de">Browser-basierter WYSIWYG-Faxeditor, PDF-Upload, automatische Wiederholungsversuche und Fax-an-E-Mail-Weiterleitung.</span>
-                    </p>
-                </a>
-
-                <!-- Card 8: Güvenlik & Fail2ban -->
-                <a href="security.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">
-                            <i class="fa-solid fa-shield-halved"></i>
-                        </div>
-                        <span class="tag-badge tag-red">Hardened</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Fail2ban &amp; Güvenlik</span>
-                        <span data-lang="en">Fail2ban &amp; Security</span>
-                        <span data-lang="de">Fail2ban &amp; Sicherheit</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">SIP kaba kuvvet saldırı engelleme, 15 dk IP ban, TLS 1.3 ve SRTP ses şifreleme ile tam kurumsal veri güvenliği.</span>
-                        <span data-lang="en">SIP brute-force defense, automatic 15-min IP lockouts, TLS 1.3 signaling and SRTP voice media encryption.</span>
-                        <span data-lang="de">Schutz vor SIP-Brute-Force-Angriffen, automatische IP-Sperren, TLS 1.3 Signalisierung und SRTP Sprachverschlüsselung.</span>
-                    </p>
-                </a>
-
-                <!-- REPEATED CARDS FOR SEAMLESS CONTINUOUS INFINITE SCROLL -->
-                <!-- Duplicate Card 1: Microsoft Teams -->
-                <a href="msteams.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(98, 100, 167, 0.2); color: #8183c9;">
-                            <i class="fa-brands fa-microsoft"></i>
-                        </div>
-                        <span class="tag-badge" style="background: rgba(98, 100, 167, 0.2); color: #a4a6e8; border: 1px solid rgba(98, 100, 167, 0.4);">Direct Routing</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Microsoft Teams Entegrasyonu</span>
-                        <span data-lang="en">Microsoft Teams Integration</span>
-                        <span data-lang="de">Microsoft Teams Anbindung</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">PJSIP SBC altyapısı ile Teams kullanıcıları ve santral dahilileri arasında 0 TL ücretsiz görüşme &amp; PowerShell oluşturucu.</span>
-                        <span data-lang="en">PJSIP SBC gateway enabling $0 internal calling between Teams users and PBX extensions with automated PowerShell scripts.</span>
-                        <span data-lang="de">PJSIP-SBC-Gateway für kostenlose interne Gespräche zwischen Teams-Nutzern und Nebenstellen inklusive PowerShell-Skripten.</span>
-                    </p>
-                </a>
-
-                <!-- Duplicate Card 2: Asterisk 22 LTS -->
-                <a href="architecture.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">
-                            <i class="fa-solid fa-server"></i>
-                        </div>
-                        <span class="tag-badge tag-blue">Asterisk 22</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Asterisk 22 LTS &amp; PJSIP</span>
-                        <span data-lang="en">Asterisk 22 LTS &amp; PJSIP</span>
-                        <span data-lang="de">Asterisk 22 LTS &amp; PJSIP</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Dual-endpoint mimarisi ile fiziksel masa telefonu ve WebRTC tarayıcı/mobil istemciyi aynı dahili numarada sorunsuz çoklama.</span>
-                        <span data-lang="en">Dual-endpoint architecture running hardware deskphones and WebRTC softphones on the exact same extension simultaneously.</span>
-                        <span data-lang="de">Dual-Endpoint-Architektur für parallelen Betrieb von Tischtelefonen und WebRTC-Apps auf derselben Durchwahl.</span>
-                    </p>
-                </a>
-
-                <!-- Duplicate Card 3: Port 443 ALPN -->
-                <a href="architecture.html#alpn" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
-                            <i class="fa-solid fa-network-wired"></i>
-                        </div>
-                        <span class="tag-badge tag-green">Port 443 ALPN</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">L4 ALPN Stream Çoklayıcı</span>
-                        <span data-lang="en">L4 ALPN Stream Multiplexer</span>
-                        <span data-lang="de">L4 ALPN Stream-Multiplexer</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Tek 443 portu üzerinden Nginx L4 stream ile SIP TLS, WebRTC WSS, Go Chat ve HTTPS trafiğini sıfır firewall engeliyle yönetme.</span>
-                        <span data-lang="en">Unified Port 443 multiplexing SIP TLS, WebRTC WSS, Go Chat, and HTTPS without firewall port restrictions.</span>
-                        <span data-lang="de">Zentraler Port 443 bündelt SIP TLS, WebRTC WSS, Go-Chat und HTTPS ohne Firewall-Beschränkungen.</span>
-                    </p>
-                </a>
-
-                <!-- Duplicate Card 4: Yerel Mobil Softphone -->
-                <a href="mobile-apps.html" class="ticker-card">
-                    <div class="ticker-card-top">
-                        <div class="ticker-card-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
-                            <i class="fa-solid fa-mobile-screen-button"></i>
-                        </div>
-                        <span class="tag-badge tag-amber">Android &amp; iOS</span>
-                    </div>
-                    <h3 class="ticker-card-title">
-                        <span data-lang="tr">Yerel Mobil Softphone</span>
-                        <span data-lang="en">Native Mobile Softphone</span>
-                        <span data-lang="de">Native Mobile Softphones</span>
-                    </h3>
-                    <p class="ticker-card-desc">
-                        <span data-lang="tr">Kotlin ve SwiftUI ile geliştirilmiş, FCM &amp; Apple CallKit entegrasyonlu, ekran kilitliyken bile anında çalan yerel softphone.</span>
-                        <span data-lang="en">Native Kotlin &amp; SwiftUI clients with FCM &amp; Apple CallKit support, ringing instantly even when phone is locked.</span>
-                        <span data-lang="de">Native Kotlin- &amp; SwiftUI-Apps mit FCM &amp; Apple CallKit für sofortige Signalisierung bei gesperrtem Bildschirm.</span>
-                    </p>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <section id="docs-hub" style="padding: 50px 6%; background: var(--dark-bg); border-bottom: 1px solid var(--border);">
-        <div style="max-width: 1300px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <span class="section-badge" style="background: rgba(0, 143, 208, 0.15); border: 1px solid rgba(0, 143, 208, 0.3); color: #38bdf8; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">
-                    <span data-lang="tr">Çok Sayfalı Bilgi Merkezi</span>
-                    <span data-lang="en">Multi-Page Documentation Hub</span>
-                    <span data-lang="de">Mehrseitiges Dokumentationszentrum</span>
+        <!-- CORE CAPABILITIES & DOCUMENTATION HUB -->
+    <section id="features-hub" style="padding: 70px 6%; background: var(--dark-bg); border-bottom: 1px solid var(--border);">
+        <div style="max-width: 1240px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 45px;">
+                <span class="section-badge">
+                    <i class="fa-solid fa-cubes-stacked" style="margin-right: 6px;"></i>
+                    <span data-lang="tr">Temel Yetenekler &amp; Modüller</span>
+                    <span data-lang="en">Core Capabilities &amp; Modules</span>
+                    <span data-lang="de">Kernfunktionen &amp; Module</span>
                 </span>
-                <h2 style="font-size: 2.2rem; color: #fff; margin-top: 14px; font-weight: 800;">
-                    <span data-lang="tr">Tüm Detaylarıyla AiPBX Dokümantasyonu</span>
-                    <span data-lang="en">Explore the Complete AiPBX Portal</span>
-                    <span data-lang="de">Entdecken Sie das vollständige AiPBX-Handbuch</span>
+                <h2 style="font-size: 2.3rem; color: #0f172a; margin-top: 14px; font-weight: 800; letter-spacing: -0.02em;">
+                    <span data-lang="tr">Kurumsal İletişimin Tüm Parçaları Tek Çatıda</span>
+                    <span data-lang="en">All Enterprise Communications in One Stack</span>
+                    <span data-lang="de">Alle Unternehmensfunktionen auf einer Plattform</span>
                 </h2>
-                <p style="color: #475569; max-width: 720px; margin: 10px auto 0; font-size: 1.02rem;">
-                    <span data-lang="tr">Platformun mimarisi, çağrı merkezi operasyonları, mobil istemcileri, kurulum adımları ve kurumsal protokol gateway modüllerini ayrı sayfalarda derinlemesine keşfedin.</span>
-                    <span data-lang="en">Deep dive into system architecture, call center break codes, mobile clients, turnkey installation, and enterprise protocol gateways across dedicated guides.</span>
-                    <span data-lang="de">Detaillierte Einblicke in Systemarchitektur, Callcenter-Pausencodes, mobile Clients, Installation und Unternehmens-Gateways auf separaten Seiten.</span>
+                <p style="color: #64748b; max-width: 680px; margin: 10px auto 0; font-size: 1.05rem; line-height: 1.6;">
+                    <span data-lang="tr">Lisans ücreti olmadan kendi sunucunuzda çalışan tam bağımsız, yüksek performanslı yeni nesil IP santral.</span>
+                    <span data-lang="en">Fully independent, high-performance next-gen IP PBX running on your own infrastructure with zero license fees.</span>
+                    <span data-lang="de">Vollkommen unabhängige Hochleistungs-IP-Telefonanlage auf eigener Infrastruktur ohne Lizenzkosten.</span>
                 </p>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px;">
-                <!-- Card 1: Mimari -->
-                <a href="architecture.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                <!-- Card 1: MS Teams Direct Routing -->
+                <a href="msteams.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#6264a7'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(98,100,167,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-sitemap" style="font-size:1.8rem; color:#0284c7;"></i>
-                        <span class="tag-badge tag-blue">Deep Dive</span>
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(98, 100, 167, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #6264a7;">
+                            <i class="fa-brands fa-microsoft"></i>
+                        </div>
+                        <span class="tag-badge" style="background: rgba(98, 100, 167, 0.1); color: #6264a7; border: 1px solid rgba(98, 100, 167, 0.25);">Direct Routing</span>
                     </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Sistem Mimarisi &amp; ALPN</span>
-                        <span data-lang="en">Architecture &amp; ALPN Stream</span>
-                        <span data-lang="de">Architektur &amp; ALPN-Stream</span>
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
+                        <span data-lang="tr">Microsoft Teams SBC</span>
+                        <span data-lang="en">Microsoft Teams SBC</span>
+                        <span data-lang="de">Microsoft Teams SBC</span>
                     </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Port 443 ALPN stream çoklayıcı, dual-endpoint PJSIP WebRTC ayrımı, bağımsız Go WebSocket chat motoru ve atomik senkronizasyon döngüsü.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        PJSIP SBC altyapısı ile Teams kullanıcıları ve santral dahilileri arasında 0 TL ücretsiz görüşme, TLS 1.3 / SRTP şifreleme ve PowerShell oluşturucu.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Port 443 ALPN stream multiplexing, dual-endpoint PJSIP WebRTC separation, standalone Go WebSocket chat engine, and atomic Asterisk sync.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        PJSIP SBC enabling $0 internal calls between Teams users and PBX extensions, TLS 1.3/SRTP encryption, and 1-click PowerShell generator.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Port 443 ALPN-Multiplexing, Dual-Endpoint PJSIP WebRTC-Trennung, eigenständiger Go-WebSocket-Chat und atomare Asterisk-Synchronisation.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        PJSIP-SBC für kostenlose interne Gespräche zwischen Teams und Nebenstellen, TLS 1.3/SRTP und 1-Klick PowerShell-Generator.
                     </p>
-                    <div style="margin-top: auto; color: #38bdf8; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Mimarisi İncele →</span><span data-lang="en">Explore Architecture →</span><span data-lang="de">Architektur ansehen →</span>
+                    <div style="margin-top: auto; color: #6264a7; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">Teams Rehberini İncele →</span><span data-lang="en">Explore Teams Guide →</span><span data-lang="de">Teams-Guide anzeigen →</span>
                     </div>
                 </a>
 
-                <!-- Card 2: Çağrı Merkezi -->
-                <a href="callcenter.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                <!-- Card 2: Asterisk 22 LTS & Dual-Endpoint -->
+                <a href="architecture.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(2,132,199,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-headset" style="font-size:1.8rem; color:#10b981;"></i>
-                        <span class="tag-badge tag-green">*22 / *23 Breaks</span>
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(2, 132, 199, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #0284c7;">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <span class="tag-badge tag-blue">Asterisk 22 LTS</span>
                     </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Çağrı Merkezi &amp; Mola Kodları</span>
-                        <span data-lang="en">Call Center &amp; Break Codes</span>
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
+                        <span data-lang="tr">Asterisk 22 &amp; Dual-Endpoint</span>
+                        <span data-lang="en">Asterisk 22 &amp; Dual-Endpoint</span>
+                        <span data-lang="de">Asterisk 22 &amp; Dual-Endpoint</span>
+                    </h3>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        Fiziksel masa telefonu ve WebRTC tarayıcı/mobil istemcisini aynı dahili numarada sorunsuz paralel çaldıran modern PJSIP mimarisi.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        Modern PJSIP dual-endpoint architecture ringing physical deskphones and WebRTC softphones on the exact same extension concurrently.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        Moderne PJSIP Dual-Endpoint-Architektur für paralleles Klingeln von Tischtelefonen und WebRTC-Apps auf derselben Nebenstelle.
+                    </p>
+                    <div style="margin-top: auto; color: #0284c7; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">Mimariyi İncele →</span><span data-lang="en">Explore Architecture →</span><span data-lang="de">Architektur ansehen →</span>
+                    </div>
+                </a>
+
+                <!-- Card 3: Port 443 L4 ALPN Stream -->
+                <a href="architecture.html#alpn" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(16,185,129,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #10b981;">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <span class="tag-badge tag-green">Port 443 Stream</span>
+                    </div>
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
+                        <span data-lang="tr">L4 ALPN Stream Çoklayıcı</span>
+                        <span data-lang="en">L4 ALPN Stream Multiplexer</span>
+                        <span data-lang="de">L4 ALPN Stream-Multiplexer</span>
+                    </h3>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        Tek 443 portu üzerinden Nginx L4 ile SIP TLS, WebRTC WSS ve HTTPS trafiğini sıfır firewall engeliyle akıllı ayrıştırma.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        Intelligent routing of SIP TLS, WebRTC WSS, and HTTPS traffic over a single port 443, eliminating firewall port blocks.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        Intelligentes Routing von SIP TLS, WebRTC WSS und HTTPS über einen einzigen Port 443 ohne Firewall-Sperren.
+                    </p>
+                    <div style="margin-top: auto; color: #10b981; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">ALPN Detayını Gör →</span><span data-lang="en">View ALPN Details →</span><span data-lang="de">ALPN-Details anzeigen →</span>
+                    </div>
+                </a>
+
+                <!-- Card 4: Yerel Mobil Softphone -->
+                <a href="mobile-apps.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#f59e0b'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(245,158,11,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #f59e0b;">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                        </div>
+                        <span class="tag-badge tag-amber">Android &amp; iOS</span>
+                    </div>
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
+                        <span data-lang="tr">Yerel Mobil Softphone</span>
+                        <span data-lang="en">Native Mobile Softphone</span>
+                        <span data-lang="de">Native Mobile Softphones</span>
+                    </h3>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        Kotlin ve SwiftUI ile geliştirilmiş, FCM &amp; CallKit entegrasyonlu, kilit ekranından anında çağrı karşılayan modern santral istemcisi.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        Native Kotlin and SwiftUI softphones with FCM &amp; Apple CallKit support, ringing instantly even when the screen is locked.
+                    </p>
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        Native Kotlin- und SwiftUI-Apps mit FCM &amp; CallKit, die sofort auch bei gesperrtem Bildschirm signalisieren.
+                    </p>
+                    <div style="margin-top: auto; color: #f59e0b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">Mobil Uygulamaları İncele →</span><span data-lang="en">Explore Mobile Apps →</span><span data-lang="de">Mobil-Apps ansehen →</span>
+                    </div>
+                </a>
+
+                <!-- Card 5: Canlı Çağrı Merkezi -->
+                <a href="callcenter.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#ec4899'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(236,72,153,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(236, 72, 153, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #ec4899;">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <span class="tag-badge" style="background: rgba(236,72,153,0.1); color:#ec4899; border:1px solid rgba(236,72,153,0.25);">Call Center</span>
+                    </div>
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
+                        <span data-lang="tr">Canlı Çağrı Merkezi &amp; Mola</span>
+                        <span data-lang="en">Call Center &amp; Breaks</span>
                         <span data-lang="de">Callcenter &amp; Pausencodes</span>
                     </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Statik/dinamik temsilciler, *22 mola alma (Yemek, Çay, Toplantı) ve *23 mola iptal kodları, çift bip ses tonu, canlı Wallboard ve *90 süpervizör dinleme.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        Canlı kuyruk duvar panosu, *81/*80 ajan mola kodları, web tarayıcısında ses kaydı dinleme ve detaylı analitik raporlar.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Static vs dynamic agents, *22 pause and *23 unpause star codes with break reason mapping, double-beep confirmation, live wallboard, and *90 spy.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        Live queue wallboard, *81/*80 agent break codes, in-browser call recording playback, and detailed analytic reports.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Statische vs. dynamische Agenten, *22 Pause- und *23 Pausenende-Codes, Doppel-Signalton, Live-Wallboard und *90 Mithören.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        Live-Wallboard, *81/*80 Agenten-Pausencodes, Browser-Audiowiedergabe und umfassende Analyseberichte.
                     </p>
-                    <div style="margin-top: auto; color: #34d399; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Çağrı Merkezini Keşfet →</span><span data-lang="en">Explore Call Center →</span><span data-lang="de">Callcenter entdecken →</span>
+                    <div style="margin-top: auto; color: #ec4899; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">Çağrı Merkezini İncele →</span><span data-lang="en">View Call Center →</span><span data-lang="de">Callcenter ansehen →</span>
                     </div>
                 </a>
 
-                <!-- Card 3: Santral Modülleri -->
-                <a href="features.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#8b5cf6'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                <!-- Card 6: Güvenlik & Fail2ban -->
+                <a href="security.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 24px rgba(16,185,129,0.15)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.03)';">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-bolt" style="font-size:1.8rem; color:#8b5cf6;"></i>
-                        <span class="tag-badge tag-purple">PBX Modules</span>
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #10b981;">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <span class="tag-badge tag-green">Hardened Security</span>
                     </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Santral Modülleri &amp; Yıldız Kodlar</span>
-                        <span data-lang="en">PBX Features &amp; Star Codes</span>
-                        <span data-lang="de">PBX-Module &amp; Stern-Codes</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Çok seviyeli IVR ve tuşlama zaman aşımı, gelen/giden DID rotalama, tarayıcıda WebRTC softphone, T.38 dijital faks ve kapsamlı özellik kodları rehberi.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Multi-level IVR with digit timeout, DID inbound/outbound routing, WebRTC browser softphone, T.38 fax-to-email, and complete star codes directory.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Mehrstufiges IVR mit Ziffern-Timeout, DID-Routing, WebRTC-Softphone, T.38-Faxserver und vollständiges Tastencode-Verzeichnis.
-                    </p>
-                    <div style="margin-top: auto; color: #c084fc; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Modülleri İncele →</span><span data-lang="en">Explore Modules →</span><span data-lang="de">Module entdecken →</span>
-                    </div>
-                </a>
-
-                <!-- Card 4: Mobil Uygulamalar -->
-                <a href="mobile-apps.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-mobile-screen" style="font-size:1.8rem; color:#10b981;"></i>
-                        <span class="tag-badge tag-green">APK · IPA · Sim</span>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Mobil Uygulamalar (Android &amp; iOS)</span>
-                        <span data-lang="en">Mobile Apps (Android &amp; iOS)</span>
-                        <span data-lang="de">Mobil-Apps (Android &amp; iOS)</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Kotlin Native (FCM veri push, CallStyle, FullScreenIntent), iOS Swift &amp; CallKit, interaktif ekran önizleyicisi ve doğrudan indirme bağlantıları.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Kotlin Native (FCM data push, CallStyle, FullScreenIntent), iOS Swift &amp; CallKit, interactive phone switcher, and direct downloads (APK, IPA).
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Kotlin Native (FCM-Push, CallStyle, FullScreenIntent), iOS Swift &amp; CallKit, interaktiver Simulator und direkte Downloads.
-                    </p>
-                    <div style="margin-top: auto; color: #34d399; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Uygulamaları İndir →</span><span data-lang="en">Download Mobile Apps →</span><span data-lang="de">Apps Herunterladen →</span>
-                    </div>
-                </a>
-
-                <!-- Card 5: Kurulum Kılavuzu -->
-                <a href="installation.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-terminal" style="font-size:1.8rem; color:#0284c7;"></i>
-                        <span class="tag-badge tag-blue">5 Minutes</span>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Hızlı Kurulum &amp; Port Rehberi</span>
-                        <span data-lang="en">Quick Install &amp; Ports Guide</span>
-                        <span data-lang="de">Installation &amp; Port-Handbuch</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Ubuntu Server üzerinde tek komutla anahtar teslim install.sh çalıştırma, Let's Encrypt SSL, dinamik şifre kasası ve güvenlik duvarı port kuralları.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Single-line automated install.sh on clean Ubuntu Server, Let's Encrypt certificates, credential vault, and firewall port forwarding specs.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Automatisierte 1-Befehl-Installation via install.sh auf Ubuntu Server, Let's Encrypt Zertifikate, Passwort-Tresor und Port-Regeln.
-                    </p>
-                    <div style="margin-top: auto; color: #38bdf8; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Kurulum Kılavuzuna Git →</span><span data-lang="en">View Install Guide →</span><span data-lang="de">Installationsanleitung →</span>
-                    </div>
-                </a>
-
-                <!-- Card 6: Güvenlik -->
-                <a href="security.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#f59e0b'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-shield-halved" style="font-size:1.8rem; color:#f59e0b;"></i>
-                        <span class="tag-badge tag-amber">Security</span>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
+                    <h3 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0;">
                         <span data-lang="tr">Güvenlik &amp; SBC Savunması</span>
                         <span data-lang="en">Security &amp; SBC Defense</span>
                         <span data-lang="de">Sicherheit &amp; SBC-Schutz</span>
                     </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Fail2ban PBX jails, TLS 1.3 / SRTP şifreleme, iki kademeli MariaDB güvenliği ve Microsoft Teams Direct Routing entegrasyonu.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="tr">
+                        SIP kaba kuvvet saldırı engelleme, otomatik 15 dk IP kilidi, TLS 1.3 sinyalleşme ve SRTP ses şifreleme ile tam koruma.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Fail2ban PBX jails, TLS 1.3/SRTP encryption, two-tier MariaDB privileges, and Microsoft Teams Direct Routing integration.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="en">
+                        SIP brute-force prevention, automated 15-minute IP bans, TLS 1.3 signaling, and SRTP audio encryption.
                     </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Fail2ban PBX-Jails, TLS 1.3/SRTP, zweistufige MariaDB-Rechte und Microsoft Teams Direct Routing-Integration.
+                    <p style="color: #475569; font-size: 0.92rem; margin: 0; line-height: 1.6;" data-lang="de">
+                        SIP-Brute-Force-Schutz, automatische 15-Minuten-IP-Sperren, TLS 1.3 Signalisierung und SRTP-Audioverschlüsselung.
                     </p>
-                    <div style="margin-top: auto; color: #fbbf24; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Güvenliği İncele →</span><span data-lang="en">View Security →</span><span data-lang="de">Sicherheit →</span>
-                    </div>
-                </a>
-
-                <!-- Card 7: REST API -->
-                <a href="api-docs.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#0284c7'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <i class="fa-solid fa-code" style="font-size:1.8rem; color:#6366f1;"></i>
-                        <span class="tag-badge tag-blue">API &amp; WebSocket</span>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">REST API &amp; Geliştirici Kılavuzu</span>
-                        <span data-lang="en">REST API &amp; Developer Guide</span>
-                        <span data-lang="de">REST-API &amp; Entwickler-Guide</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Dahili, kuyruk ve CDR REST uç noktaları, Go WebSocket sohbet JSON paket şeması, PHPUnit test takımı (142 test) ve katkı yönergeleri.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Extensions, queues, and CDR REST endpoints, Go real-time WebSocket chat schema, PHPUnit test suite (142 tests), and contributing guidelines.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        REST-Endpunkte für Nebenstellen, Warteschlangen und CDRs, Go-WebSocket-Chat-Schema, PHPUnit-Tests (142 Tests) und Mitwirkung.
-                    </p>
-                    <div style="margin-top: auto; color: #38bdf8; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">API Dokümantasyonuna Git →</span><span data-lang="en">View REST API Docs →</span><span data-lang="de">REST-API Dokumentation →</span>
-                    </div>
-                </a>
-
-                <!-- Card 8: Microsoft Teams Direct Routing -->
-                <a href="msteams.html" style="text-decoration: none; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-size: 1.8rem;">💼</span>
-                        <span class="tag-badge tag-purple" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4);">M365 Direct Routing</span>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.25rem; margin: 0;">
-                        <span data-lang="tr">Microsoft Teams Direct Routing</span>
-                        <span data-lang="en">Microsoft Teams Direct Routing</span>
-                        <span data-lang="de">Microsoft Teams Direct Routing</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="tr">
-                        Asterisk 22 ve Microsoft 365 Teams Phone System entegrasyonu: SIP over TLS (5061), SDES-SRTP ses şifreleme, M365 PowerShell adımları ve Teams kanal bildirimleri.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="en">
-                        Asterisk 22 and Microsoft 365 Teams Phone System bridge: SIP over TLS (5061), SDES-SRTP audio encryption, turnkey M365 PowerShell setup, and channel webhooks.
-                    </p>
-                    <p style="color: #475569; font-size: 0.88rem; margin: 0; line-height: 1.55;" data-lang="de">
-                        Asterisk 22 und Microsoft 365 Teams Phone System: SIP über TLS (5061), SDES-SRTP Sprachverschlüsselung, M365 PowerShell-Setup und Teams-Webhooks.
-                    </p>
-                    <div style="margin-top: auto; color: #818cf8; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                        <span data-lang="tr">Teams Entegrasyonunu İncele →</span><span data-lang="en">Explore Teams Integration →</span><span data-lang="de">Teams-Integration entdecken →</span>
+                    <div style="margin-top: auto; color: #10b981; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span data-lang="tr">Güvenliği İncele →</span><span data-lang="en">View Security →</span><span data-lang="de">Sicherheit ansehen →</span>
                     </div>
                 </a>
             </div>
@@ -1192,76 +884,7 @@
         </div>
     </section>
 
-    <section id="rationale" style="padding: 70px 6%; background: var(--dark-bg); border-bottom: 1px solid var(--border);">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <span class="section-badge" style="background: rgba(0, 143, 208, 0.15); border: 1px solid rgba(0, 143, 208, 0.3); color: #38bdf8; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">
-                    <span data-lang="tr">Mühendislik Rasyoneli</span>
-                    <span data-lang="en">Engineering Rationale</span>
-                    <span data-lang="de">Technische Rationale</span>
-                </span>
-                <h2 style="font-size: 2.1rem; color: #fff; margin-top: 12px; font-weight: 800;">
-                    <span data-lang="tr">Neden ve Nasıl Geliştirdik?</span>
-                    <span data-lang="en">Why &amp; How We Built It</span>
-                    <span data-lang="de">Warum und wie wir es gebaut haben</span>
-                </h2>
-                <p style="color: #475569; max-width: 700px; margin: 8px auto 0; font-size: 1rem;">
-                    <span data-lang="tr">AiPBX'teki her mimari karar; kurumsal güvenlik duvarı engellerini, WebRTC medya aktarım zorluklarını ve bellek şişkinliğini çözmek için tasarlanmıştır.</span>
-                    <span data-lang="en">Every architectural decision in AiPBX resolves real-world enterprise pain points: restrictive firewalls, split identities, bloated dependencies, and security risks.</span>
-                    <span data-lang="de">Jede Architekturentscheidung in AiPBX löst reale Herausforderungen: Restriktive Firewalls, getrennte Identitäten, unnötigen Speicherverbrauch und Sicherheitsrisiken.</span>
-                </p>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
-                <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-                    <h3 style="color: #38bdf8; font-size: 1.15rem; margin-bottom: 10px;">
-                        <span data-lang="tr">1. Port 443 ALPN Stream Çoklama</span>
-                        <span data-lang="en">1. Port 443 ALPN Multiplexing</span>
-                        <span data-lang="de">1. Port 443 ALPN-Multiplexing</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.9rem; line-height: 1.6;">
-                        <span data-lang="tr">Güvenlik duvarlarında UDP ve harici portlar kapalı olsa bile Nginx L4 Stream ile HTTPS, WebRTC WSS ve Coturn TURNS trafiği tek Port 443 üzerinden kesintisiz geçer.</span>
-                        <span data-lang="en">Even on networks blocking all UDP/SIP ports, Nginx L4 transparently routes HTTPS, WebRTC WSS, and Coturn TURNS over standard port 443.</span>
-                        <span data-lang="de">Selbst wenn Firewalls alle SIP-Ports blockieren, leitet Nginx L4 HTTPS, WebRTC WSS und Coturn TURNS über den Standardport 443.</span>
-                    </p>
-                </div>
-
-                <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-                    <h3 style="color: #34d399; font-size: 1.15rem; margin-bottom: 10px;">
-                        <span data-lang="tr">2. Dual-Endpoint PJSIP &amp; WebRTC</span>
-                        <span data-lang="en">2. Dual-Endpoint PJSIP &amp; WebRTC</span>
-                        <span data-lang="de">2. Dual-Endpoint PJSIP &amp; WebRTC</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.9rem; line-height: 1.6;">
-                        <span data-lang="tr">Kullanıcı için tek dahili; arkada donanım masa telefonu için ayrı SIP profili, tarayıcı/mobil için DTLS-SRTP WebRTC profili açar. İki cihaz aynı anda çalar.</span>
-                        <span data-lang="en">Single user extension backed by dedicated profiles for desk phone (SIP/TLS) and mobile (WebRTC/DTLS-SRTP), enabling simultaneous forked ringing.</span>
-                        <span data-lang="de">Eine Durchwahl, im Hintergrund getrennte Profile für Tischtelefon (SIP/TLS) und Mobil-App (WebRTC/DTLS-SRTP) mit echtem Parallelruf.</span>
-                    </p>
-                </div>
-
-                <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-                    <h3 style="color: #c084fc; font-size: 1.15rem; margin-bottom: 10px;">
-                        <span data-lang="tr">3. Go Real-Time WebSocket Sohbet</span>
-                        <span data-lang="en">3. Standalone Go Chat Service</span>
-                        <span data-lang="de">3. Eigenständiger Go-Chat-Dienst</span>
-                    </h3>
-                    <p style="color: #475569; font-size: 0.9rem; line-height: 1.6;">
-                        <span data-lang="tr">PHP'yi yormadan on binlerce WebSocket istemcisine sıfır gecikmeli mesaj, grup sohbeti ve yazıyor bildirimini yalnızca 28 MB RAM ile sunar.</span>
-                        <span data-lang="en">Delivers zero-latency messaging, group channels, and typing indicators to 10,000 concurrent clients on just 28 MB of RAM.</span>
-                        <span data-lang="de">Verwaltet zehntausende gleichzeitige Verbindungen für Gruppen-Chat und Tipp-Status mit nur ca. 28 MB Arbeitsspeicher.</span>
-                    </p>
-                </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="architecture.html" class="btn-primary" style="display: inline-flex;">
-                    <span data-lang="tr">Mühendislik Rasyoneli Detayları →</span>
-                    <span data-lang="en">Read Full Engineering Rationale →</span>
-                    <span data-lang="de">Vollständige Rationale lesen →</span>
-                </a>
-            </div>
-        </div>
-    </section>
+    
 
     <!-- SECTION: COMPARISON TABLE -->
     <section id="compare" style="padding: 70px 6%; background: var(--dark-bg); border-bottom: 1px solid var(--border);">
@@ -1272,7 +895,7 @@
                     <span data-lang="en">Comparison</span>
                     <span data-lang="de">Vergleich</span>
                 </span>
-                <h2 style="font-size: 2.1rem; color: #fff; margin-top: 12px; font-weight: 800;">
+                <h2 style="font-size: 2.1rem; color: #0f172a; margin-top: 12px; font-weight: 800;">
                     <span data-lang="tr">AiPBX Diğer Çözümlerle Nasıl Karşılaştırılır?</span>
                     <span data-lang="en">How AiPBX Compares</span>
                     <span data-lang="de">Wie AiPBX im Vergleich abschneidet</span>
@@ -1347,11 +970,11 @@
     <section id="developer" style="padding: 70px 6%; background: var(--dark-bg); border-bottom: 1px solid var(--border);">
         <div style="max-width: 900px; margin: 0 auto; background: #ffffff; border: 1px solid var(--border); border-radius: 16px; padding: 36px; display: flex; gap: 30px; align-items: center; flex-wrap: wrap;">
             <div style="font-size: 3.5rem; background: rgba(0, 143, 208, 0.15); border: 2px solid rgba(0, 143, 208, 0.3); border-radius: 50%; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                👨‍💻
+                <i class="fa-solid fa-user-tie" style="color: #0284c7; font-size: 2.5rem;"></i>
             </div>
             <div style="flex: 1; min-width: 280px;">
                 <span class="tag-badge tag-blue" style="margin-bottom: 8px;">Lead Architect</span>
-                <h3 style="font-size: 1.6rem; color: #fff; margin: 4px 0 10px;">Mahir Gül</h3>
+                <h3 style="font-size: 1.6rem; color: #0f172a; margin: 4px 0 10px;">Mahir Gül</h3>
                 <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px;">
                     <span data-lang="tr">Telekomünikasyon sistemleri, Asterisk çekirdek mimarisi, WebRTC ve kurumsal VoIP protokolleri üzerine uzmanlaşmış yazılım mimarı. AiPBX'in kurucusu ve baş geliştiricisi.</span>
                     <span data-lang="en">Systems architect specializing in high-concurrency telephony, Asterisk core internals, WebRTC streaming, and enterprise protocol engineering. Creator of AiPBX.</span>
@@ -1359,10 +982,10 @@
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <a href="https://mhrgl.com" target="_blank" class="btn-primary" style="padding: 8px 18px; font-size: 0.88rem;">
-                        🌐 mhrgl.com
+                        <i class="fa-solid fa-globe" style="margin-right:6px;"></i>mhrgl.com
                     </a>
                     <a href="https://github.com/mahirgul" target="_blank" class="btn-secondary" style="padding: 8px 18px; font-size: 0.88rem;">
-                        GitHub Profile
+                        <i class="fa-brands fa-github" style="margin-right:6px;"></i>GitHub Profile
                     </a>
                 </div>
             </div>
@@ -1378,7 +1001,7 @@
                     <span data-lang="en">FAQ</span>
                     <span data-lang="de">Häufig Gestellte Fragen</span>
                 </span>
-                <h2 style="font-size: 2.2rem; color: #fff; margin-top: 12px; font-weight: 800;">
+                <h2 style="font-size: 2.2rem; color: #0f172a; margin-top: 12px; font-weight: 800;">
                     <span data-lang="tr">AiPBX Kurumsal Santral Hakkında Merak Edilenler</span>
                     <span data-lang="en">Frequently Asked Questions About AiPBX</span>
                     <span data-lang="de">Häufige Fragen zu AiPBX Enterprise PBX</span>
@@ -1392,14 +1015,14 @@
 
             <div class="faq-list" style="display: flex; flex-direction: column; gap: 14px;">
                 <!-- FAQ 1 -->
-                <details class="faq-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
-                    <summary style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <details class="faq-item" style="background: #ffffff; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
+                    <summary style="font-weight: 700; font-size: 1.05rem; color: #0f172a; list-style: none; display: flex; justify-content: space-between; align-items: center;">
                         <span data-lang="tr">AiPBX nedir ve hangi amaçla geliştirilmiştir?</span>
                         <span data-lang="en">What is AiPBX and why was it created?</span>
                         <span data-lang="de">Was ist AiPBX und für welchen Zweck wurde es entwickelt?</span>
                         <span style="color: #38bdf8; font-size: 1.2rem; margin-left: 10px;">▾</span>
                     </summary>
-                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 12px;">
                         <p data-lang="tr">
                             AiPBX; <strong>Asterisk 22</strong>, modern web yönetim paneli (PHP 8 MVC), WebRTC Opus ses motoru, Nginx L4 ALPN stream çoklama, Go WebSocket anlık mesajlaşma ve yerel Android/iOS mobil istemcilerini tek bir çatı altında birleştiren açık kaynaklı, yeni nesil bir kurumsal IP telefon santrali (IP PBX) ve birleşik iletişim platformudur.
                         </p>
@@ -1413,14 +1036,14 @@
                 </details>
 
                 <!-- FAQ 2 -->
-                <details class="faq-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
-                    <summary style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <details class="faq-item" style="background: #ffffff; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
+                    <summary style="font-weight: 700; font-size: 1.05rem; color: #0f172a; list-style: none; display: flex; justify-content: space-between; align-items: center;">
                         <span data-lang="tr">AiPBX tamamen ücretsiz ve açık kaynak kodlu mu?</span>
                         <span data-lang="en">Is AiPBX completely free and open source?</span>
                         <span data-lang="de">Ist AiPBX vollständig kostenlos und Open Source?</span>
                         <span style="color: #38bdf8; font-size: 1.2rem; margin-left: 10px;">▾</span>
                     </summary>
-                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 12px;">
                         <p data-lang="tr">
                             Evet. AiPBX özgür <strong>MIT Lisansı</strong> ile yayımlanmaktadır. Herhangi bir dahili lisans kısıtlaması, kullanıcı başına aylık ücret ya da gizli lisanslama bulunmaz. Kaynak kodlarına GitHub üzerinden erişebilir, kendi sunucunuzda sınırsız dahili ve dış hatla güvenle kullanabilirsiniz.
                         </p>
@@ -1434,14 +1057,14 @@
                 </details>
 
                 <!-- FAQ 3 -->
-                <details class="faq-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
-                    <summary style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <details class="faq-item" style="background: #ffffff; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
+                    <summary style="font-weight: 700; font-size: 1.05rem; color: #0f172a; list-style: none; display: flex; justify-content: space-between; align-items: center;">
                         <span data-lang="tr">Web tarayıcısı üzerinden WebRTC ile arama yapılabilir mi?</span>
                         <span data-lang="en">Can calls be placed directly via web browsers using WebRTC?</span>
                         <span data-lang="de">Können Anrufe direkt über Webbrowser mittels WebRTC getätigt werden?</span>
                         <span style="color: #38bdf8; font-size: 1.2rem; margin-left: 10px;">▾</span>
                     </summary>
-                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 12px;">
                         <p data-lang="tr">
                             Evet. AiPBX yerleşik <strong>WebRTC (DTLS-SRTP ve WSS)</strong> desteğine sahiptir. Kullanıcılar Chrome, Firefox, Edge veya Safari tarayıcıları üzerinden herhangi bir SIP istemcisi ya da harici yazılım yüklemeden kristal netliğinde Opus HD ses kalitesiyle görüşme yapabilirler.
                         </p>
@@ -1455,14 +1078,14 @@
                 </details>
 
                 <!-- FAQ 4 -->
-                <details class="faq-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
-                    <summary style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <details class="faq-item" style="background: #ffffff; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
+                    <summary style="font-weight: 700; font-size: 1.05rem; color: #0f172a; list-style: none; display: flex; justify-content: space-between; align-items: center;">
                         <span data-lang="tr">Mobil cihazlar için Android ve iOS softphone mevcut mu?</span>
                         <span data-lang="en">Are mobile softphone applications available for Android &amp; iOS?</span>
                         <span data-lang="de">Gibt es native Mobil-Apps für Android und iOS?</span>
                         <span style="color: #38bdf8; font-size: 1.2rem; margin-left: 10px;">▾</span>
                     </summary>
-                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 12px;">
                         <p data-lang="tr">
                             Evet. AiPBX için özel olarak geliştirilmiş modern <strong>Android (Kotlin)</strong> ve <strong>iOS (Swift)</strong> yerel mobil uygulamaları mevcuttur. Sadece 2.8 MB APK boyutu, anlık sunucu keşfi ve push bildirimleriyle (FCM/APNs) sıfır arka plan pil tüketimi sağlar.
                         </p>
@@ -1476,14 +1099,14 @@
                 </details>
 
                 <!-- FAQ 5 -->
-                <details class="faq-item" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
-                    <summary style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <details class="faq-item" style="background: #ffffff; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: border-color 0.2s;">
+                    <summary style="font-weight: 700; font-size: 1.05rem; color: #0f172a; list-style: none; display: flex; justify-content: space-between; align-items: center;">
                         <span data-lang="tr">Çağrı merkezi, kuyruk ve mola kodları (*22/*23) destekleniyor mu?</span>
                         <span data-lang="en">Does AiPBX support call center queues and break codes (*22/*23)?</span>
                         <span data-lang="de">Unterstützt AiPBX Callcenter-Warteschlangen und Pausencodes (*22/*23)?</span>
                         <span style="color: #38bdf8; font-size: 1.2rem; margin-left: 10px;">▾</span>
                     </summary>
-                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                    <div style="margin-top: 14px; color: #475569; line-height: 1.7; font-size: 0.95rem; border-top: 1px solid var(--border); padding-top: 12px;">
                         <p data-lang="tr">
                             Evet. Gelişmiş <strong>ACD çağrı kuyrukları</strong>, dinamik/statik temsilci oturum açma (*21), mola verme (*22), moladan dönüş (*23), süpervizör dinleme/fısıldama (*90) ve canlı duvar panosu (wallboard) tam entegre olarak çalışır.
                         </p>
