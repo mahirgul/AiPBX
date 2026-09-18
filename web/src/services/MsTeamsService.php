@@ -17,16 +17,16 @@ class MsTeamsService
         $sbcName = trim($post['teams_sbc_name'] ?? '');
 
         if ($enabled === '1' && $domain === '') {
-            return ['success' => false, 'error' => 'Direct Routing aktif edildiğinde FQDN / SBC Domain alanı zorunludur.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_domain_required')];
         }
 
         if ($domain !== '' && !preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}$/', $domain)) {
-            return ['success' => false, 'error' => 'Geçerli bir FQDN alan adı giriniz (örn: sbc.sirketiniz.com).'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_domain')];
         }
 
         $portInt = (int)$port;
         if ($portInt < 1 || $portInt > 65535) {
-            return ['success' => false, 'error' => 'SIP TLS Portu 1 ile 65535 arasında olmalıdır (Önerilen: 5061).'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_port')];
         }
 
         $settings = [
@@ -42,7 +42,7 @@ class MsTeamsService
 
         return [
             'success' => true,
-            'message' => 'Direct Routing (SBC) ayarları başarıyla kaydedildi.',
+            'message' => t('ms_teams.msg_save_dr_success'),
         ];
     }
 
@@ -55,15 +55,15 @@ class MsTeamsService
         $webhookUrl = trim($post['teams_webhook_url'] ?? '');
 
         if ($enabled === '1' && $webhookUrl === '') {
-            return ['success' => false, 'error' => 'Webhook aktif edildiğinde Microsoft Teams Webhook URL alanı zorunludur.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_webhook_required')];
         }
 
         if ($webhookUrl !== '' && !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
-            return ['success' => false, 'error' => 'Geçerli bir Webhook URL adresi giriniz (https://...).'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
         }
 
         if ($webhookUrl !== '' && !str_starts_with($webhookUrl, 'https://')) {
-            return ['success' => false, 'error' => 'Teams Webhook URL adresi güvenli HTTPS protokolüyle başlamalıdır.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
         }
 
         $settings = [
@@ -80,7 +80,7 @@ class MsTeamsService
 
         return [
             'success' => true,
-            'message' => 'Microsoft Teams Webhook bildirim ayarları başarıyla güncellendi.',
+            'message' => t('ms_teams.msg_save_webhook_success'),
         ];
     }
 
@@ -90,7 +90,7 @@ class MsTeamsService
     public static function sendTestWebhook(string $webhookUrl): array
     {
         if ($webhookUrl === '' || !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
-            return ['success' => false, 'error' => 'Geçerli bir Teams Webhook URL adresi belirtilmedi.'];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
         }
 
         $payload = [
@@ -143,16 +143,16 @@ class MsTeamsService
         curl_close($ch);
 
         if ($curlError) {
-            return ['success' => false, 'error' => 'cURL Bağlantı Hatası: ' . $curlError];
+            return ['success' => false, 'error' => t('ms_teams.msg_err_curl') . $curlError];
         }
 
         if ($httpCode === 200 || trim((string)$response) === '1') {
-            return ['success' => true, 'message' => 'Test bildirimi Microsoft Teams kanalına başarıyla iletildi!'];
+            return ['success' => true, 'message' => t('ms_teams.msg_webhook_test_success')];
         }
 
         return [
             'success' => false,
-            'error'   => "Teams Webhook sunucusundan beklenmeyen yanıt döndü (HTTP {$httpCode}): " . htmlspecialchars((string)$response),
+            'error'   => t('ms_teams.msg_err_teams_response') . "(HTTP {$httpCode}): " . htmlspecialchars((string)$response),
         ];
     }
 
@@ -164,7 +164,7 @@ class MsTeamsService
         if ($certPath === '' || !is_file($certPath)) {
             return [
                 'exists'     => false,
-                'message'    => 'Sertifika dosyası belirtilen yolda bulunamadı.',
+                'message'    => t('ms_teams.cert_not_found'),
                 'color'      => 'warning',
                 'details'    => null,
             ];
@@ -174,7 +174,7 @@ class MsTeamsService
         if (!$content) {
             return [
                 'exists'     => false,
-                'message'    => 'Sertifika dosyası okunamıyor (izinleri kontrol ediniz).',
+                'message'    => t('ms_teams.cert_unreadable'),
                 'color'      => 'danger',
                 'details'    => null,
             ];
@@ -184,7 +184,7 @@ class MsTeamsService
         if (!$parsed) {
             return [
                 'exists'     => true,
-                'message'    => 'Geçerli bir X.509 PEM sertifikası bulunamadı.',
+                'message'    => t('ms_teams.cert_invalid'),
                 'color'      => 'danger',
                 'details'    => null,
             ];
