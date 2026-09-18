@@ -34,6 +34,7 @@ class RoleRepository extends BaseRepository
             'push_settings'      => ['title' => 'Mobil Bildirimler', 'group' => 'Yönetim'],
             'fax_mail_settings'  => ['title' => 'Faks Ayarları', 'group' => 'Yönetim'],
             'fax_settings'       => ['title' => 'Faks Birimleri', 'group' => 'Yönetim'],
+            'mail_settings'      => ['title' => 'E-Posta & Relay', 'group' => 'Yönetim'],
             'firewall'           => ['title' => 'Güvenlik Duvarı', 'group' => 'Güvenlik'],
             'fail2ban'           => ['title' => 'Saldırı Engelleme', 'group' => 'Güvenlik'],
             'fax_inbox'          => ['title' => 'Gelen Fakslar', 'group' => 'Faks Sistemi'],
