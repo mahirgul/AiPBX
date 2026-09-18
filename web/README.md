@@ -1,6 +1,6 @@
 # AI PBX Portal
 
-Official Website: [aipbx.bid](https://aipbx.bid) • Documentation: [mahirgul.github.io/AiPBX](https://mahirgul.github.io/AiPBX/)
+Official Website & Documentation: [aipbx.bid](https://aipbx.bid)
 
 A self-hosted PBX / fax / call-center management portal built on **native Asterisk** (PJSIP + AMI + ODBC), **MariaDB**, and plain **PHP** (Modern MVC) — no proprietary GUI (FreePBX, Issabel, etc.) required. Built as a high-performance, modular **AI PBX** infrastructure.
 
