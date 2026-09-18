@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/RoleService.php';
+require_once __DIR__ . '/../services/TwoFactorService.php';
 
 class SystemUserController extends BaseController
 {
@@ -22,6 +23,19 @@ class SystemUserController extends BaseController
             } elseif (isset($_POST['reset_password'])) {
                 $res = PBXHelper::resetUserPassword($_POST);
                 if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            } elseif (isset($_POST['reset_2fa'])) {
+                $targetUserId = (int)($_POST['user_id'] ?? 0);
+                $csrf = $_POST['csrf_token'] ?? '';
+                if (!verifyCSRFToken($csrf)) {
+                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                } else {
+                    $res = TwoFactorService::disableTwoFactor($targetUserId, '', true);
+                    if ($res['success']) {
+                        $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
+                    } else {
+                        $error = $res['error'] ?? 'İşlem başarısız.';
+                    }
+                }
             } elseif (isset($_POST['delete_user'])) {
                 $res = PBXHelper::deleteUser($_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
                 if ($res['success']) $message = $res['message']; else $error = $res['error'];
