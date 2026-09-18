@@ -54,7 +54,7 @@ CREATE TABLE `asteriskcdr` (
   KEY `idx_cdr_dst_date` (`dst`,`calldate`),
   KEY `idx_did` (`did`),
   KEY `idx_calldate` (`calldate`)
-) ENGINE=InnoDB AUTO_INCREMENT=1505 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -91,7 +91,7 @@ CREATE TABLE `asteriskcel` (
   KEY `eventtime` (`eventtime`),
   KEY `uniqueid` (`uniqueid`),
   KEY `linkedid` (`linkedid`)
-) ENGINE=InnoDB AUTO_INCREMENT=10454 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -121,7 +121,7 @@ CREATE TABLE `asteriskqueue` (
   KEY `queuename` (`queuename`),
   KEY `agent` (`agent`),
   KEY `event` (`event`)
-) ENGINE=InnoDB AUTO_INCREMENT=515 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -142,7 +142,7 @@ CREATE TABLE `callcenter_notes` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_agent_pending` (`agent_extension`,`call_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -165,7 +165,7 @@ CREATE TABLE `cc_pause_logs` (
   KEY `idx_agent` (`agent_extension`),
   KEY `idx_start_time` (`start_time`),
   KEY `idx_agent_status` (`agent_extension`,`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -195,7 +195,7 @@ CREATE TABLE `cc_queue_logs` (
   KEY `idx_queue_name` (`queue_name`),
   KEY `idx_event` (`event`),
   KEY `idx_agent` (`agent`)
-) ENGINE=InnoDB AUTO_INCREMENT=658 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -239,15 +239,18 @@ CREATE TABLE `chat_conversations` (
   `type` varchar(16) NOT NULL DEFAULT 'direct',
   `direct_key` varchar(50) DEFAULT NULL,
   `title` varchar(100) DEFAULT NULL,
+  `avatar_url` varchar(255) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   `created_by` varchar(20) NOT NULL,
   `last_message_text` varchar(255) DEFAULT NULL,
   `last_message_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp(),
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `direct_key` (`direct_key`),
   KEY `last_message_at` (`last_message_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -267,12 +270,14 @@ CREATE TABLE `chat_messages` (
   `file_name` varchar(255) DEFAULT NULL,
   `file_size` int(11) NOT NULL DEFAULT 0,
   `mime_type` varchar(100) DEFAULT NULL,
+  `system_event` varchar(32) DEFAULT NULL,
+  `system_meta` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `conversation_id` (`conversation_id`,`id`),
   KEY `sender_ext` (`sender_ext`),
   KEY `created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -286,13 +291,16 @@ CREATE TABLE `chat_participants` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `conversation_id` int(11) NOT NULL,
   `extension` varchar(20) NOT NULL,
+  `role` varchar(16) NOT NULL DEFAULT 'member',
+  `added_by` varchar(20) DEFAULT NULL,
   `last_read_message_id` bigint(20) NOT NULL DEFAULT 0,
   `is_muted` int(1) NOT NULL DEFAULT 0,
   `joined_at` datetime DEFAULT current_timestamp(),
+  `left_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `conversation_id` (`conversation_id`,`extension`),
   KEY `extension` (`extension`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -317,7 +325,7 @@ CREATE TABLE `fax_received` (
   PRIMARY KEY (`id`),
   KEY `idx_did` (`did_extension`),
   KEY `idx_received_at` (`received_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=216 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -343,7 +351,7 @@ CREATE TABLE `fax_sent` (
   KEY `idx_user` (`user_id`),
   KEY `idx_status` (`status`),
   KEY `idx_user_created` (`user_id`,`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=223 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -364,7 +372,7 @@ CREATE TABLE `pbx_announcements` (
   `internal_number` varchar(10) DEFAULT NULL COMMENT 'Dahili telefonlardan dogrudan aranabilen numara (istege bagli)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_internal_number` (`internal_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -389,7 +397,7 @@ CREATE TABLE `pbx_dids` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `did_number` (`did_number`),
   KEY `dest_type` (`dest_type`,`dest_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -410,7 +418,7 @@ CREATE TABLE `pbx_feature_codes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `feature_key` (`feature_key`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -434,7 +442,7 @@ CREATE TABLE `pbx_hangup_actions` (
   UNIQUE KEY `uniq_internal_number` (`internal_number`),
   KEY `fk_hangup_announcement` (`announcement_id`),
   CONSTRAINT `fk_hangup_announcement` FOREIGN KEY (`announcement_id`) REFERENCES `pbx_announcements` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -453,7 +461,7 @@ CREATE TABLE `pbx_ivr_entries` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_ivr_digit` (`ivr_id`,`digit`),
   CONSTRAINT `pbx_ivr_entries_ibfk_1` FOREIGN KEY (`ivr_id`) REFERENCES `pbx_ivrs` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -471,6 +479,7 @@ CREATE TABLE `pbx_ivrs` (
   `timeout_seconds` int(11) DEFAULT 10,
   `max_failures` int(11) DEFAULT 3,
   `allow_direct_dial` tinyint(1) DEFAULT 1,
+  `digit_timeout` int(11) NOT NULL DEFAULT 3 COMMENT 'Tuslama bekleme suresi (TIMEOUT(digit)) saniye',
   `timeout_dest_type` varchar(50) NOT NULL DEFAULT 'queue',
   `timeout_dest_id` varchar(100) NOT NULL DEFAULT 'queue_cc',
   `invalid_dest_type` varchar(50) NOT NULL DEFAULT 'hangup',
@@ -480,7 +489,7 @@ CREATE TABLE `pbx_ivrs` (
   `internal_number` varchar(10) DEFAULT NULL COMMENT 'Dahili telefonlardan dogrudan aranabilen numara (istege bagli)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_internal_number` (`internal_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -500,7 +509,7 @@ CREATE TABLE `pbx_moh_classes` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -525,7 +534,7 @@ CREATE TABLE `pbx_outbound_routes` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_route_group` (`route_group`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -557,6 +566,7 @@ CREATE TABLE `pbx_queues` (
   `ringinuse` varchar(10) DEFAULT 'no',
   `musicclass` varchar(50) DEFAULT 'default',
   `members_json` text DEFAULT NULL,
+  `static_members_json` text DEFAULT NULL COMMENT 'Statik kuyruk temsilcileri (kuyruktan cikamaz, sadece mola alabilir)',
   `supervisors_json` text DEFAULT NULL,
   `supervisor_extension` varchar(50) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
@@ -565,7 +575,7 @@ CREATE TABLE `pbx_queues` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `queue_name` (`queue_name`),
   UNIQUE KEY `uniq_internal_number` (`internal_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -591,7 +601,7 @@ CREATE TABLE `pbx_time_conditions` (
   UNIQUE KEY `uniq_internal_number` (`internal_number`),
   KEY `time_group_id` (`time_group_id`),
   CONSTRAINT `pbx_time_conditions_ibfk_1` FOREIGN KEY (`time_group_id`) REFERENCES `pbx_time_groups` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -611,7 +621,7 @@ CREATE TABLE `pbx_time_groups` (
   `created_at` datetime DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -664,7 +674,7 @@ CREATE TABLE `pbx_trunks` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `trunk_name` (`trunk_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -758,7 +768,7 @@ CREATE TABLE `sys_audit_log` (
   KEY `created_at` (`created_at`),
   KEY `domain` (`domain`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=488 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -781,7 +791,7 @@ CREATE TABLE `sys_did_mappings` (
   UNIQUE KEY `did_extension` (`did_extension`),
   KEY `fk_did_assigned_user` (`assigned_user_id`),
   CONSTRAINT `fk_did_assigned_user` FOREIGN KEY (`assigned_user_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -800,7 +810,7 @@ CREATE TABLE `sys_login_logs` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_ip_status` (`ip_address`,`status`,`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -828,7 +838,7 @@ CREATE TABLE `sys_mobile_devices` (
   KEY `extension` (`extension`),
   KEY `fcm_token` (`fcm_token`(255)),
   KEY `device_id` (`device_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -850,7 +860,7 @@ CREATE TABLE `sys_pending_sync` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_pending_entity` (`domain`,`entity_type`,`entity_id`),
   KEY `domain` (`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -872,7 +882,7 @@ CREATE TABLE `sys_role_permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `role_module` (`role_key`,`module_key`),
   KEY `role_key` (`role_key`)
-) ENGINE=InnoDB AUTO_INCREMENT=352 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -891,7 +901,7 @@ CREATE TABLE `sys_roles` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `role_key` (`role_key`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -905,6 +915,30 @@ CREATE TABLE `sys_settings` (
   `setting_key` varchar(50) NOT NULL,
   `setting_value` text NOT NULL,
   PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sys_user_passkeys`
+--
+
+DROP TABLE IF EXISTS `sys_user_passkeys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sys_user_passkeys` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `credential_id` varchar(255) NOT NULL,
+  `public_key` text NOT NULL,
+  `counter` int(11) unsigned NOT NULL DEFAULT 0,
+  `device_name` varchar(100) NOT NULL DEFAULT 'Passkey',
+  `transports` varchar(255) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `last_used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `credential_id` (`credential_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `sys_user_passkeys_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -943,6 +977,10 @@ CREATE TABLE `sys_users` (
   `cid_internal` varchar(50) DEFAULT '',
   `cid_external` varchar(50) DEFAULT '',
   `is_active` tinyint(1) DEFAULT 1,
+  `two_factor_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `two_factor_secret` varchar(64) DEFAULT NULL,
+  `two_factor_recovery_codes` text DEFAULT NULL,
+  `two_factor_confirmed_at` datetime DEFAULT NULL,
   `must_reset_password` tinyint(1) NOT NULL DEFAULT 0,
   `reset_token` varchar(64) DEFAULT NULL,
   `reset_token_expires` datetime DEFAULT NULL,
@@ -953,7 +991,29 @@ CREATE TABLE `sys_users` (
   KEY `idx_extension` (`extension`),
   KEY `fk_users_role` (`role`),
   CONSTRAINT `fk_users_role` FOREIGN KEY (`role`) REFERENCES `sys_roles` (`role_key`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `teams_user_mappings`
+--
+
+DROP TABLE IF EXISTS `teams_user_mappings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `teams_user_mappings` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `extension` varchar(20) NOT NULL,
+  `teams_upn` varchar(150) NOT NULL,
+  `phone_number` varchar(50) DEFAULT NULL,
+  `direct_routing_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension` (`extension`),
+  UNIQUE KEY `teams_upn` (`teams_upn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -966,7 +1026,7 @@ CREATE TABLE `sys_users` (
 /*!50001 SET @saved_col_connection     = @@collation_connection */;
 /*!50001 SET character_set_client      = utf8mb4 */;
 /*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 SET collation_connection      = utf8mb4_uca1400_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`aipbx_migrator`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `cdrs` AS select `c`.`id` AS `id`,`c`.`uniqueid` AS `call_id`,`c`.`src` AS `caller_num`,case when `c`.`lastapp` = 'ReceiveFAX' then 'Gelen Faks' when `c`.`lastapp` = 'SendFAX' then 'Giden Faks' when `c`.`lastapp` = 'Queue' then substring_index(`c`.`lastdata`,',',1) when `d`.`title` is not null then `d`.`title` when `c`.`dcontext` = 'from-internal-pbx' then 'Dahili Görüşme' else concat('Gelen Rota: ',coalesce(nullif(`c`.`did`,''),`c`.`dst`)) end AS `queue_name`,case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when nullif(`c`.`did`,'') is not null then `c`.`did` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end AS `agent_extension`,`u`.`full_name` AS `agent_name`,`c`.`calldate` AS `start_time`,`c`.`calldate` + interval greatest(`c`.`duration` - `c`.`billsec`,0) second AS `answer_time`,`c`.`calldate` + interval `c`.`duration` second AS `end_time`,greatest(`c`.`duration`,`c`.`billsec`) AS `duration`,`c`.`billsec` AS `billsec`,greatest(`c`.`duration`,`c`.`billsec`) - `c`.`billsec` AS `ring_sec`,`c`.`disposition` AS `status`,case when `c`.`userfield` is not null and `c`.`userfield` <> '' then `c`.`userfield` when `c`.`lastapp` = 'ReceiveFAX' then substring_index(`c`.`lastdata`,',',1) else '' end AS `recording_path`,`c`.`calldate` AS `created_at`,`c`.`channel` AS `channel`,`c`.`dstchannel` AS `dstchannel`,case when `c`.`dstchannel` like '%-mob-webrtc%' then 'mobil' when `c`.`dstchannel` like '%-webrtc%' then 'webrtc' when `c`.`dstchannel` like '%-sip%' then 'sip' when `c`.`channel` like '%-mob-webrtc%' then 'mobil' when `c`.`channel` like '%-webrtc%' then 'webrtc' when `c`.`channel` like '%-sip%' then 'sip' else '' end AS `device_type` from ((`asteriskcdr` `c` left join `sys_users` `u` on(`u`.`extension` = case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end)) left join `pbx_dids` `d` on(`d`.`did_number` = coalesce(nullif(`c`.`did`,''),`c`.`dst`))) */;
@@ -983,4 +1043,4 @@ CREATE TABLE `sys_users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-09-09  6:29:28
+-- Dump completed
