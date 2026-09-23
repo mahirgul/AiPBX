@@ -19,11 +19,16 @@ This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 The automated script configures Asterisk 22, MariaDB 11, the Web Portal, WebRTC WSS reverse proxy, coturn, Go Chat service, and security tools in one command.
 
 ```bash
-# 1. Clone the repository
+# One-liner curl installation (Recommended)
+curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
+```
+
+Alternatively, you can manually clone and run:
+
+```bash
+# Alternative: Clone & run locally
 git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
 cd /opt/aipbx
-
-# 2. Run the automated installer as root
 sudo bash install.sh
 ```
 
