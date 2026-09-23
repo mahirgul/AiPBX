@@ -832,6 +832,8 @@ return [
     'cdr_reports.close_tooltip' => 'Close',
     'cdr_reports.loading_recording' => 'Loading Recording...',
     'cdr_reports.play_pause_tooltip' => 'Play / Pause',
+    'cdr_reports.back5s_tooltip' => 'Back 5 Seconds',
+    'cdr_reports.forward5s_tooltip' => 'Forward 5 Seconds',
     'cdr_reports.mute_tooltip' => 'Mute / Unmute',
     'cdr_reports.view_mode' => 'View Mode',
     'cdr_reports.mode_grouped' => 'Unified Calls (Recommended)',
