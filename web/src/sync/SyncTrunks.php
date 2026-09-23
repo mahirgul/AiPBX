@@ -142,6 +142,7 @@ function __syncAllTrunksBody() {
         }
         if ($from_user !== '') {
             $conf .= "from_user={$from_user}\n";
+            $conf .= "contact_user={$from_user}\n";
         }
         if ($from_domain !== '') {
             $conf .= "from_domain={$from_domain}\n";
@@ -183,13 +184,15 @@ function __syncAllTrunksBody() {
 
         // Pass-through any custom extra parameters stored in `sip` table
         $ignore_keys = [
-            'type', 'title', 'ip_address', 'port', 'context', 'transport', 'disallow', 'allow',
+            'id', 'trunk_name', 'title', 'ip_address', 'port', 'context', 'transport', 'disallow', 'allow',
             'direct_media', 'rtp_symmetric', 'force_rport', 'rewrite_contact', 'qualify_frequency',
             'max_contacts', 't38_udptl', 't38_udptl_ec', 't38_udptl_nat', 't38_udptl_maxdatagram',
             'fax_detect', 'fax_detect_timeout', 'dtmf_mode', 'timers',
             'from_user', 'from_domain', 'send_pai', 'send_rpid', 'auth_username', 'auth_password',
             'registration_enabled', 'registration_expiration', 'registration_retry_interval',
-            'outbound_auth', 'outbound_proxy', 'match_hosts'
+            'outbound_auth', 'outbound_proxy', 'match_hosts',
+            'outbound_caller_id', 'callerid', 'did_trim_digits', 'allow_outbound_routing', 'outbound_route_group',
+            'connection_mode', 'is_active', 'created_at', 'custom_pjsip_params'
         ];
         foreach ($sip_map as $k => $v) {
             if (in_array($k, $ignore_keys) || $v === '') continue;
