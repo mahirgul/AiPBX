@@ -205,7 +205,7 @@ public struct LoginView: View {
                         .padding(.horizontal)
 
                         // Version Footnote
-                        Text("Sürüm: 1.0.32 · Asterisk 22 WebRTC")
+                        Text("Sürüm: 1.0.34 · Asterisk 22 WebRTC")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .padding(.bottom, 30)
