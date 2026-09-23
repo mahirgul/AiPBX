@@ -20,7 +20,7 @@ $destOptionsCache = [];
     </div>
 
     <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="didHelpBox" style="display: none; padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+    <div class="module-help-box" id="didHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('did.help_title'); ?></h4>
         <?php echo t('did.help_body'); ?>
     </div>

@@ -26,7 +26,7 @@
 
     <!-- BÖLÜM 1: PJSIP, NAT & Network Global Ayarları -->
     <div id="tab_pjsip" class="settings-tab-pane active">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-network-wired" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.section1_title'); ?>
@@ -37,7 +37,7 @@
         </div>
 
         <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="astHelpBox" style="margin: 0 0 16px 0;">
+        <div class="module-help-box" id="astHelpBox">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.help_title'); ?></h4>
             <?php echo t('asterisk_settings.help_body'); ?>
         </div>
@@ -178,7 +178,7 @@
 
     <!-- BÖLÜM: RTP (Medya) Ayarları -->
     <div id="tab_rtp" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-wave-square" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.rtp_section_title'); ?>
@@ -227,7 +227,7 @@
 
     <!-- BÖLÜM: T.38 UDPTL (Faks Medya) Ayarları -->
     <div id="tab_t38" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-fax" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.udptl_section_title'); ?>
@@ -281,14 +281,14 @@
 
     <!-- BÖLÜM: Softphone Zil & Çevirme Tonu -->
     <div id="tab_ring" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-bell" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.ring_section_title'); ?>
             </div>
         </div>
 
-        <div class="module-help-box" style="margin: 0 0 16px 0;">
+        <div class="module-help-box">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
             <?php echo t('asterisk_settings.ring_help'); ?>
         </div>
@@ -322,14 +322,14 @@
 
     <!-- BÖLÜM: Görüntülü Arama -->
     <div id="tab_video" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-video" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.video_section_title'); ?>
             </div>
         </div>
 
-        <div class="module-help-box" style="margin: 0 0 16px 0;">
+        <div class="module-help-box">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
             <?php echo t('asterisk_settings.video_help'); ?>
         </div>
@@ -366,14 +366,14 @@
 
     <!-- BÖLÜM: Dil Ayarları -->
     <div id="tab_lang" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-language" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.lang_section_title'); ?>
             </div>
         </div>
 
-        <div class="module-help-box" style="margin: 0 0 16px 0;">
+        <div class="module-help-box">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
             <?php echo t('asterisk_settings.lang_help'); ?>
         </div>

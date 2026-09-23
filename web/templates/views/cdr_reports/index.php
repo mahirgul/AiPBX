@@ -1,5 +1,5 @@
 <!-- Statistics Overview -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
     <div class="card" style="margin-bottom: 0;">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_total'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--text-main);"><?php echo $stat_total; ?></div>
