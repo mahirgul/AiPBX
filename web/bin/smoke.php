@@ -73,7 +73,7 @@ function check_routes(?string $onlyRoute = null): void
     // doğru davranış, sadece "fatal/PHP hatası yok" kontrol edilir.
     // /force-reset → $_SESSION['pending_reset_user_id'] yoksa /login'e gider.
     // /login-2fa   → $_SESSION['pending_2fa_user_id'] yoksa /login'e gider.
-    $REDIRECT_OK = ['/force-reset', '/login-2fa'];
+    $REDIRECT_OK = ['/force-reset', '/login-2fa', '/auth/google', '/auth/google/callback'];
 
     // Tam sayfa için alt sınır. /reset-password token'sız hâlde ~1700 bayt
     // meşru bir form basıyor; eşik bunun altında ama gerçekten boş/yarım
@@ -284,6 +284,7 @@ function check_conventions(): void
         'LogoutController.php',
         'ForceResetController.php',
         'ResetPasswordController.php',
+        'GoogleAuthController.php',
     ];
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/controllers/*.php') as $f) {

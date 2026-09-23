@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/LoginService.php';
+require_once __DIR__ . '/../services/GoogleAuthService.php';
 
 class LoginController extends BaseController
 {
@@ -37,6 +38,7 @@ class LoginController extends BaseController
         $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
         $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
+        $googleLoginEnabled = GoogleAuthService::isEnabled();
 
         static::render('login/index', [
             'error' => $error,
@@ -50,6 +52,7 @@ class LoginController extends BaseController
             'site_logo_icon' => $site_logo_icon,
             'site_logo_image' => $site_logo_image,
             'site_favicon_url' => $site_favicon_url,
+            'googleLoginEnabled' => $googleLoginEnabled,
         ]);
     }
 }

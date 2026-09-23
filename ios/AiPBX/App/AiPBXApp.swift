@@ -16,6 +16,9 @@ struct AiPBXApp: App {
             }
             .environmentObject(appState)
             .preferredColorScheme(.none) // Supports both Dark and Light mode automatically
+            .onOpenURL { url in
+                appState.handleDeepLinkUrl(url)
+            }
         }
     }
 }

@@ -81,6 +81,68 @@ class LoginActivity : AppCompatActivity() {
 
             performLogin(username, password)
         }
+
+        binding.btnGoogleLogin.setOnClickListener {
+            val serverUrl = prefs.serverUrl.trim().trimEnd('/')
+            if (serverUrl.isEmpty()) {
+                showError("Lütfen önce sunucu adresini belirleyin.")
+                return@setOnClickListener
+            }
+            try {
+                val googleAuthUrl = "$serverUrl/auth/google?mobile=1"
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(googleAuthUrl))
+                startActivity(intent)
+            } catch (e: Exception) {
+                showError("Tarayıcı açılamadı: ${e.message}")
+            }
+        }
+
+        handleAuthDeepLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAuthDeepLink(intent)
+    }
+
+    private fun handleAuthDeepLink(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (uri.scheme == "aipbx" && uri.host == "auth") {
+            val success = uri.getQueryParameter("success") == "1"
+            if (success) {
+                val dataJson = uri.getQueryParameter("data")
+                if (!dataJson.isNullOrEmpty()) {
+                    try {
+                        val response = com.google.gson.Gson().fromJson(dataJson, com.mhrgl.aipbx.model.LoginResponse::class.java)
+                        onLoginSuccess(response)
+                        return
+                    } catch (e: Exception) {
+                        showError("Giriş verisi çözümlenemedi: ${e.message}")
+                    }
+                }
+            } else {
+                val error = uri.getQueryParameter("error") ?: "Google ile giriş başarısız oldu."
+                showError(error)
+            }
+        }
+    }
+
+    private fun onLoginSuccess(response: com.mhrgl.aipbx.model.LoginResponse) {
+        prefs.saveLogin(response)
+
+        // Initialize FCM if configured on server (runtime dynamic)
+        FcmHelper.initIfConfigured(this, response.pushConfig)
+
+        // Request ignore battery optimizations so the app is never killed when screen is off
+        requestBatteryExemption()
+
+        // Start Foreground Service
+        PbxForegroundService.start(this)
+
+        // Navigate to Dialer
+        startActivity(Intent(this, DialerActivity::class.java))
+        finish()
     }
 
     private fun performLogin(user: String, pass: String) {
@@ -94,20 +156,7 @@ class LoginActivity : AppCompatActivity() {
             binding.btnLogin.isEnabled = true
 
             result.onSuccess { response ->
-                prefs.saveLogin(response)
-
-                // Initialize FCM if configured on server (runtime dynamic)
-                FcmHelper.initIfConfigured(this@LoginActivity, response.pushConfig)
-
-                // Request ignore battery optimizations so the app is never killed when screen is off
-                requestBatteryExemption()
-
-                // Start Foreground Service
-                PbxForegroundService.start(this@LoginActivity)
-
-                // Navigate to Dialer
-                startActivity(Intent(this@LoginActivity, DialerActivity::class.java))
-                finish()
+                onLoginSuccess(response)
             }.onFailure { error ->
                 showError(error.localizedMessage ?: "Giriş başarısız oldu.")
             }

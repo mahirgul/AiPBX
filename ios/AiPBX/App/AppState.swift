@@ -72,14 +72,6 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
         do {
             let res = try await ApiClient.shared.login(baseUrl: serverUrl, userOrExt: username, pass: pass)
-            self.baseUrl = serverUrl
-            self.token = res.token
-            self.userProfile = res.user
-            self.sipCredentials = res.sip
-            self.isLoggedIn = true
-            self.isLoading = false
-
-            UserDefaults.standard.set(serverUrl, forKey: "aipbx_base_url")
             if rememberMe {
                 UserDefaults.standard.set(username, forKey: "aipbx_username")
                 UserDefaults.standard.set(true, forKey: "aipbx_remember_me")
@@ -87,25 +79,76 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
                 UserDefaults.standard.removeObject(forKey: "aipbx_username")
                 UserDefaults.standard.set(false, forKey: "aipbx_remember_me")
             }
-
-            // Register SIP WebRTC
-            if let sip = res.sip {
-                let dName = res.user?.fullName ?? res.user?.username ?? sip.sipUsername
-                SipWebRtcEngine.shared.register(sip: sip, displayName: dName)
-            }
-
-            // Connect Chat WebSocket
-            if let tok = res.token {
-                ChatWebSocketManager.shared.connect(baseUrl: serverUrl, token: tok)
-            }
-
-            // Refresh initial data
-            await refreshAllData()
+            await handleLoginSuccess(res: res, serverUrl: serverUrl)
             return true
         } catch {
             self.isLoading = false
             self.errorMessage = error.localizedDescription
             return false
+        }
+    }
+
+    public func handleLoginSuccess(res: LoginResponse, serverUrl: String) async {
+        self.baseUrl = serverUrl
+        self.token = res.token
+        self.userProfile = res.user
+        self.sipCredentials = res.sip
+        self.isLoggedIn = true
+        self.isLoading = false
+
+        UserDefaults.standard.set(serverUrl, forKey: "aipbx_base_url")
+
+        // Register SIP WebRTC
+        if let sip = res.sip {
+            let dName = res.user?.fullName ?? res.user?.username ?? sip.sipUsername
+            SipWebRtcEngine.shared.register(sip: sip, displayName: dName)
+        }
+
+        // Connect Chat WebSocket
+        if let tok = res.token {
+            ChatWebSocketManager.shared.connect(baseUrl: serverUrl, token: tok)
+        }
+
+        // Refresh initial data
+        await refreshAllData()
+    }
+
+    public func loginWithGoogle(serverUrl: String, idToken: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let res = try await ApiClient.shared.googleLogin(baseUrl: serverUrl, idToken: idToken)
+            await handleLoginSuccess(res: res, serverUrl: serverUrl)
+            return true
+        } catch {
+            self.isLoading = false
+            self.errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    public func handleDeepLinkUrl(_ url: URL) {
+        guard url.scheme == "aipbx", url.host == "auth" else { return }
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        let queryItems = components.queryItems ?? []
+        let success = queryItems.first(where: { $0.name == "success" })?.value == "1"
+
+        if success {
+            if let dataJson = queryItems.first(where: { $0.name == "data" })?.value,
+               let data = dataJson.data(using: .utf8) {
+                do {
+                    let res = try JSONDecoder().decode(LoginResponse.self, from: data)
+                    Task { @MainActor in
+                        await self.handleLoginSuccess(res: res, serverUrl: self.baseUrl)
+                    }
+                } catch {
+                    self.errorMessage = "Giriş verisi çözümlenemedi: \(error.localizedDescription)"
+                }
+            }
+        } else {
+            let error = queryItems.first(where: { $0.name == "error" })?.value ?? "Google ile giriş başarısız oldu."
+            self.errorMessage = error
         }
     }
 

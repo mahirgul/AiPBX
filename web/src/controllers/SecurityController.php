@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/TwoFactorService.php';
 require_once __DIR__ . '/../services/PasskeyService.php';
+require_once __DIR__ . '/../services/GoogleAuthService.php';
 
 class SecurityController extends BaseController
 {
@@ -102,6 +103,16 @@ class SecurityController extends BaseController
                         $message = t('security.password_changed_success', 'Şifreniz başarıyla güncellendi.');
                     }
                 }
+
+                // 5. Google ile Giriş Ayarları (Yalnızca Yönetici)
+                elseif ($action === 'save_google_settings' && $user['role'] === 'admin') {
+                    $res = GoogleAuthService::saveSettings($_POST);
+                    if ($res['success']) {
+                        $message = $res['message'];
+                    } else {
+                        $error = $res['error'];
+                    }
+                }
             }
         }
 
@@ -121,7 +132,16 @@ class SecurityController extends BaseController
         // Kullanıcının kayıtlı Passkey listesi
         $passkeys = PasskeyService::getUserPasskeys($userId);
 
-        $page_title = t('security.page_title', 'Güvenlik Ayarları (2FA & Passkey)');
+        // Google OAuth ayarları (Yönetici için)
+        $googleSettings = [
+            'enabled' => GoogleAuthService::isEnabled(),
+            'raw_enabled' => (function_exists('getSystemSetting') ? getSystemSetting('google_oauth_enabled', '0') : '0') === '1',
+            'client_id' => GoogleAuthService::getClientId(),
+            'client_secret' => GoogleAuthService::getClientSecret(),
+            'redirect_uri' => GoogleAuthService::getRedirectUri()
+        ];
+
+        $page_title = t('security.page_title', 'Güvenlik Ayarları (2FA, Passkey & Google)');
         require_once dirname(__DIR__) . '/../header.php';
         static::render('security/index', [
             'user' => $user,
@@ -129,6 +149,7 @@ class SecurityController extends BaseController
             'setupSecret' => $setupSecret,
             'qrCodeDataUri' => $qrCodeDataUri,
             'passkeys' => $passkeys,
+            'googleSettings' => $googleSettings,
             'newRecoveryCodes' => $newRecoveryCodes,
             'message' => $message,
             'error' => $error,
