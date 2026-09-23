@@ -7,7 +7,7 @@
     border-radius: 16px;
     padding: 24px;
     box-shadow: var(--card-shadow);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     backdrop-filter: blur(10px);
 }
 
@@ -16,6 +16,9 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+    border-left: 4px solid var(--primary);
+    padding-left: 14px;
+    min-height: 32px;
 }
 
 .card-title {
@@ -24,6 +27,22 @@
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* Page Header Card (Unified Top Banner / Status Cards) */
+.page-header-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary) !important;
+    border-radius: 14px;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    box-shadow: var(--card-shadow);
 }
 
 /* Data Tables System */
@@ -487,6 +506,7 @@
     flex-direction: column;
     box-shadow: var(--card-shadow);
     animation: modalAppear 0.2s ease-out;
+    overflow: hidden;
 }
 
 @keyframes modalAppear {
@@ -495,8 +515,9 @@
 }
 
 .modal-header {
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1291,6 +1312,18 @@ body.auth-body {
 
     .card {
         padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+
+    .card-header {
+        margin-bottom: 16px;
+        padding-left: 10px;
+    }
+
+    .page-header-card {
+        padding: 12px 14px;
+        margin-bottom: 16px;
         border-radius: 12px;
     }
 

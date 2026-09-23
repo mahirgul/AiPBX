@@ -17,7 +17,7 @@
 
     <!-- BÖLÜM 1: Kimlik -->
     <div id="tab_identity" class="settings-tab-pane active">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-id-card" style="color: var(--primary);"></i> <?php echo t('brand_settings.identity_title'); ?>
@@ -27,7 +27,7 @@
             </button>
         </div>
 
-        <div class="module-help-box" id="brandHelpBox" style="margin: 0 0 16px 0;">
+        <div class="module-help-box" id="brandHelpBox">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('brand_settings.help_title'); ?></h4>
             <?php echo t('brand_settings.help_body'); ?>
         </div>
@@ -51,7 +51,7 @@
 
     <!-- BÖLÜM 2: Logo & Favicon -->
     <div id="tab_logo" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-image" style="color: var(--primary);"></i> <?php echo t('brand_settings.logo_favicon_title'); ?>
@@ -132,7 +132,7 @@
 
     <!-- BÖLÜM 3: Renkler -->
     <div id="tab_colors" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-palette" style="color: var(--primary);"></i> <?php echo t('brand_settings.colors_title'); ?>

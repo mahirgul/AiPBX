@@ -10,7 +10,7 @@
     </div>
 
     <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="faxMailHelpBox" style="margin: 16px 20px 0 20px;">
+    <div class="module-help-box" id="faxMailHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_mail_settings.help_title'); ?></h4>
         <?php echo t('fax_mail_settings.help_body'); ?>
     </div>
