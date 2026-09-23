@@ -163,6 +163,41 @@ public struct LoginView: View {
                             .disabled(appState.isLoading || username.isEmpty || password.isEmpty)
                             .opacity((username.isEmpty || password.isEmpty) ? 0.6 : 1.0)
                             .padding(.top, 8)
+
+                            // Divider
+                            HStack {
+                                Rectangle()
+                                    .fill(Color.secondary.opacity(0.3))
+                                    .frame(height: 1)
+                                Text("veya")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Rectangle()
+                                    .fill(Color.secondary.opacity(0.3))
+                                    .frame(height: 1)
+                            }
+                            .padding(.vertical, 4)
+
+                            // Google Login Button
+                            Button(action: performGoogleLogin) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "g.circle.fill")
+                                        .font(.title3)
+                                        .foregroundColor(.red)
+                                    Text("Google ile Giriş Yap")
+                                        .font(.subheadline.bold())
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(Color(.systemBackground))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .disabled(appState.isLoading || serverUrl.isEmpty)
                         }
                         .padding(20)
                         .background(Color(.secondarySystemGroupedBackground))
@@ -191,6 +226,15 @@ public struct LoginView: View {
         Task {
             _ = await appState.login(serverUrl: serverUrl, username: username, pass: password)
         }
+    }
+
+    private func performGoogleLogin() {
+        let cleanBase = serverUrl.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !cleanBase.isEmpty, let authUrl = URL(string: "\(cleanBase)/auth/google?mobile=1&platform=ios") else {
+            appState.errorMessage = "Lütfen geçerli bir santral sunucu adresi girin."
+            return
+        }
+        UIApplication.shared.open(authUrl)
     }
 
     private func testPing() {
