@@ -66,11 +66,16 @@ After install, open `https://<your-server>` in your browser and log in with the 
 
 ### 📞 PBX Management
 - **Extension management** — PJSIP-based, dual-endpoint (SIP + WebRTC)
+- **Calling permission groups (Call Barring)** — Prefix and exact match rule sets (`0`, `05`, `00`), per-extension assignment, default allow-all
+- **Native Voicemail** — Asterisk native voicemail, user configurable triggers (unconditional, busy, no-answer, unavailable) via MyPhone or star codes (`*97` personal inbox, `*98` general login), in-browser player
+- **Boss - Secretary groups** — Executive interception, simultaneous (`ringall`) or sequential secretary dialing, VIP whitelist bypass, and automatic failover
+- **Ring groups** — Virtual extension numbers mixing internal extensions and external mobile/PSTN numbers with simultaneous/sequential hunting
+- **Conference rooms** — Asterisk ConfBridge with virtual extensions, moderator/user PINs, wait-for-leader, join muted, and live web moderation (mute/kick)
 - **Trunk management** — dynamic PJSIP trunk configuration
 - **Call routing** — DID mapping, outbound routes, time conditions
 - **IVR** — multi-level voice menus with time-based routing
 - **Queue management** — call queues, dynamic agent login/logout, hold music
-- **Feature codes** — `*81` queue login (all or `*81<queue>`), `*80` queue logout, `*72` call forward, `*60` DND, `*43` intercom, `*88` spy/whisper
+- **Feature codes** — `*81` queue login (all or `*81<queue>`), `*80` queue logout, `*72` call forward, `*60` DND, `*43` intercom, `*90` spy, `*91` whisper, `*92` barge, `*97` my voicemail, `*98` voicemail login
 - **In-band disconnect supervision** — cadence-based disconnect tone detection (`from-trunk-kapanma-tonu`) for analog/legacy trunks without out-of-band hangup signaling
 - **Auto-rollback** — failed Asterisk reloads are automatically reverted
 
@@ -81,13 +86,21 @@ After install, open `https://<your-server>` in your browser and log in with the 
 - **Fax retry**
 - **Email notification** — incoming faxes forwarded by email automatically
 
-### 📊 Call Center
-- **Real-time agent panel** — live queue status, active calls, agent break selector
+### 📊 Call Center & Supervision
+- **Real-time agent panel & wallboard** — live queue status, active calls, agent break selector
+- **Live Call Spy, Whisper & Barge** — silent monitoring (`*90`), private agent coaching (`*91`), and three-way barge-in (`*92`) via web buttons or feature codes
+- **Real-time customer call tracking** — live caller number and talk duration on supervisor board via Local channel bridge traversal
 - **Dynamic queue login/logout** — via star codes (`*81`/`*80`) with audio confirmation (`queue-agentlogin-success` / beeps) or web UI
 - **Intelligent call transfer** — bridge-traversal caller preservation (`findCallerChannelForAgent`) prevents dropped lines during attended transfer
 - **Auto-desk navigation** — answering incoming queue calls in WebRTC automatically shifts SPA view to agent CRM/notes (`/cc-agent`)
-- **CDR reporting** — detailed call records, filtering, export
-- **Call recording playback** — listen to recordings in the browser
+- **CDR reporting & Call Journey** — detailed call records, linkedid call grouping with expandable step-by-step call timeline, filtering, export
+- **Call recording playback** — listen to recordings in the browser with waveform player
+
+### 🔐 Security & Two-Factor Authentication
+- **FIDO2 / WebAuthn Passkeys** — Passwordless biometric authentication using Touch ID, Face ID, Windows Hello, or hardware security keys (YubiKey)
+- **TOTP Two-Factor Authentication (2FA)** — Authenticator apps (Google / Microsoft / 1Password) with offline SVG QR code generation and single-use recovery codes
+- **Role-Based Access Control (RBAC)** — Granular permission matrix per role and module
+- **Integrated SBC, Firewall & Fail2ban** — Dynamic IP whitelisting and real-time brute force defense
 
 ### 🌐 WebRTC Softphone
 - **In-browser SIP phone** — zero-install browser phone embedded directly in topbar
