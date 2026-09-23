@@ -32,8 +32,48 @@ step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 [[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
 
 # --- Script and install directories ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
+
+# Helper for interactive prompts when running via piped curl (reading from /dev/tty)
+prompt_read() {
+    local prompt="$1"
+    local varname="$2"
+    local default_val="${3:-}"
+    local val=""
+
+    if [[ -t 0 ]]; then
+        read -r -p "$prompt" val || val=""
+    elif [[ -e /dev/tty ]]; then
+        read -r -p "$prompt" val < /dev/tty || val=""
+    else
+        val=""
+    fi
+    val="${val:-$default_val}"
+    printf -v "$varname" '%s' "$val"
+}
+
+# If running via curl pipe or outside a cloned repository:
+if [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
+    step "Bootstrapping Repository"
+    info "Running via remote curl installer. Cloning AiPBX to $INSTALL_DIR..."
+    
+    if ! command -v git >/dev/null 2>&1; then
+        info "Installing git..."
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq && apt-get install -y -qq git
+    fi
+    
+    if [[ -d "$INSTALL_DIR/.git" ]]; then
+        info "Existing repository found in $INSTALL_DIR, updating..."
+        git -C "$INSTALL_DIR" fetch origin main
+        git -C "$INSTALL_DIR" reset --hard origin/main
+    else
+        mkdir -p "$(dirname "$INSTALL_DIR")"
+        git clone --depth 1 https://github.com/mahirgul/AiPBX.git "$INSTALL_DIR"
+    fi
+    SCRIPT_DIR="$INSTALL_DIR"
+fi
 
 # ============================================================================
 # STEP 0: WELCOME BANNER
@@ -67,7 +107,7 @@ if [[ -n "${AIPBX_FQDN:-}" ]]; then
     PORTAL_DOMAIN_INPUT="$AIPBX_FQDN"
     echo -e "  FQDN provided via environment: ${GREEN}$PORTAL_DOMAIN_INPUT${NC}"
 else
-    read -r -p "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT 2>/dev/null || PORTAL_DOMAIN_INPUT=""
+    prompt_read "  FQDN (or press Enter to skip): " PORTAL_DOMAIN_INPUT ""
 fi
 
 if [[ -z "$PORTAL_DOMAIN_INPUT" || "${PORTAL_DOMAIN_INPUT,,}" == *.local ]]; then
@@ -89,11 +129,11 @@ else
     echo ""
     echo -e "  Do you want a free Let's Encrypt TLS certificate? (recommended)"
     echo -e "  Note: DNS must point ${CYAN}$PORTAL_DOMAIN${NC} → ${CYAN}$SERVER_IP${NC} already."
-    read -r -p "  Use Let's Encrypt? [y/N]: " LE_CHOICE 2>/dev/null || LE_CHOICE="n"
+    prompt_read "  Use Let's Encrypt? [y/N]: " LE_CHOICE "n"
     if [[ "${LE_CHOICE,,}" == "y" || "${LE_CHOICE,,}" == "yes" ]]; then
         USE_LETSENCRYPT=true
         echo ""
-        read -r -p "  Email for Let's Encrypt notifications: " LE_EMAIL 2>/dev/null || LE_EMAIL=""
+        prompt_read "  Email for Let's Encrypt notifications: " LE_EMAIL ""
     else
         USE_LETSENCRYPT=false
         USE_SELFSIGNED=true

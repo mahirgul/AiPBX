@@ -39,12 +39,15 @@
 ## Quick Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
-cd /opt/aipbx
+# One-liner curl installation (Recommended)
+curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
+```
 
-# Run the installer as root
-sudo bash install.sh
+Or manually clone and run:
+
+```bash
+git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
+cd /opt/aipbx && sudo bash install.sh
 ```
 
 The installer will:
