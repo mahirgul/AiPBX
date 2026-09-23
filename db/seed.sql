@@ -357,7 +357,8 @@ INSERT INTO `phinx_migrations` VALUES
 (20260916160000,'AddStaticMembersToPbxQueues','2026-09-16 15:36:51','2026-09-16 15:36:51',0),
 (20260916210000,'AddQueuePauseFeatureCodes','2026-09-16 20:26:41','2026-09-16 20:26:41',0),
 (20260918080000,'CreateTeamsIntegrationTables','2026-09-18 07:30:29','2026-09-18 07:30:29',0),
-(20260918123500,'CreateTwoFactorAndPasskeyTables','2026-09-18 12:25:38','2026-09-18 12:25:38',0);
+(20260918123500,'CreateTwoFactorAndPasskeyTables','2026-09-18 12:25:38','2026-09-18 12:25:38',0),
+(20260923090000,'AddDidTrimAndTransitToTrunks','2026-09-23 09:00:00','2026-09-23 09:00:00',0);
 /*!40000 ALTER TABLE `phinx_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

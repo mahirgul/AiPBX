@@ -83,6 +83,10 @@ function openCreateTrunkModal() {
     document.getElementById('modal_context').value = 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = 0;
     document.getElementById('modal_custom_pjsip_params').value = '';
+    document.getElementById('modal_did_trim_digits').value = 0;
+    const allowOutEl = document.getElementById('modal_allow_outbound_routing');
+    if (allowOutEl) allowOutEl.checked = false;
+    document.getElementById('modal_outbound_route_group').value = 1;
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);
@@ -154,6 +158,10 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_context').value = item.context || 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = item.max_channels || 0;
     document.getElementById('modal_custom_pjsip_params').value = item.custom_pjsip_params || '';
+    document.getElementById('modal_did_trim_digits').value = item.did_trim_digits !== undefined ? item.did_trim_digits : 0;
+    const allowOutEl = document.getElementById('modal_allow_outbound_routing');
+    if (allowOutEl) allowOutEl.checked = (item.allow_outbound_routing == 1);
+    document.getElementById('modal_outbound_route_group').value = item.outbound_route_group || 1;
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);

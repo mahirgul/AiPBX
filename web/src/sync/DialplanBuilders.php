@@ -64,7 +64,8 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
     if (!empty($override)) {
         $lines .= " same => n,Set(CALLERID(num)={$override})\n";
     } elseif (!empty($trunk_cid)) {
-        $lines .= " same => n,Set(CALLERID(num)={$trunk_cid})\n";
+        // Transit çağrılarda (başka bir trunktan gelen çağrıda) arayanın numarasını koru
+        $lines .= " same => n,ExecIf(\$[\"\${CDR(inbound_trunk)}\" = \"\"]?Set(CALLERID(num)={$trunk_cid}))\n";
     } else {
         $cid_var = $is_internal ? 'CID_INTERNAL' : 'CID_EXTERNAL';
         $lines .= " same => n,Set(CALLERID(num)=\${IF(\$[\"\${{$cid_var}}\" != \"\"]?\${{$cid_var}}:\${CALLERID(num)})})\n";
@@ -373,6 +374,13 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             // _X. deseniyle eşleşir (tek haneli sıra numaraları eşleşmezdi).
             $target = !empty($orig_did) ? $orig_did : (!empty($dest_id) ? $dest_id : 'default');
             $lines[] = " same => n,Goto(from-trunk-fax,{$target},1)";
+            break;
+
+        case 'outbound_route':
+            // Gelen DID çağrısını doğrudan Giden Rotalar üzerinden dış hatta aktar
+            $target = !empty($orig_did) ? $orig_did : (!empty($dest_id) ? $dest_id : '${EXTEN}');
+            $lines[] = " same => n,Set(CDR(direction)=outbound)";
+            $lines[] = " same => n,Goto(from-internal-outbound-1,{$target},1)";
             break;
 
         case 'announcement':
