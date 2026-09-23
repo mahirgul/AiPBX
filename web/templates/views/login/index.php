@@ -110,11 +110,18 @@
 
     <script>
         function base64urlToUint8Array(base64url) {
-            let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            if (!base64url) return new Uint8Array(0);
+            if (base64url instanceof Uint8Array) return base64url;
+            if (base64url instanceof ArrayBuffer) return new Uint8Array(base64url);
+            let str = String(base64url).trim();
+            if (str.startsWith('=?BINARY?B?') && str.endsWith('?=')) {
+                str = str.substring(11, str.length - 2);
+            }
+            let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
             while (base64.length % 4) {
                 base64 += '=';
             }
-            const raw = atob(base64);
+            const raw = window.atob(base64);
             const bytes = new Uint8Array(raw.length);
             for (let i = 0; i < raw.length; i++) {
                 bytes[i] = raw.charCodeAt(i);
@@ -123,12 +130,14 @@
         }
 
         function arrayBufferToBase64(buffer) {
+            if (!buffer) return '';
+            if (typeof buffer === 'string') return buffer;
             let binary = '';
-            const bytes = new Uint8Array(buffer);
+            const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
             for (let i = 0; i < bytes.byteLength; i++) {
                 binary += String.fromCharCode(bytes[i]);
             }
-            return btoa(binary);
+            return window.btoa(binary);
         }
 
         async function loginWithPasskey() {
@@ -156,7 +165,7 @@
                 const getArgs = optData.options;
                 getArgs.challenge = base64urlToUint8Array(getArgs.challenge);
 
-                if (getArgs.allowCredentials && getArgs.allowCredentials.length > 0) {
+                if (getArgs.allowCredentials && Array.isArray(getArgs.allowCredentials) && getArgs.allowCredentials.length > 0) {
                     getArgs.allowCredentials.forEach(c => {
                         c.id = base64urlToUint8Array(c.id);
                     });
@@ -175,7 +184,8 @@
 
                 const payload = {
                     action: 'auth-verify',
-                    id: assertion.id,
+                    id: (assertion.rawId ? arrayBufferToBase64(assertion.rawId) : '') || assertion.id,
+                    rawId: assertion.id,
                     clientDataJSON: arrayBufferToBase64(assertion.response.clientDataJSON),
                     authenticatorData: arrayBufferToBase64(assertion.response.authenticatorData),
                     signature: arrayBufferToBase64(assertion.response.signature),
