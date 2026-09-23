@@ -125,6 +125,10 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'rtp'               => 'syncRtpSettings',
     'udptl'             => 'syncUdptlSettings',
     'internal_numbers'  => 'syncInternalNumbers',
+    'ring_groups'       => 'syncRingGroups',
+    'conferences'       => 'syncConferences',
+    'voicemail'         => 'syncVoicemail',
+    'permissions'       => 'syncPermissions',
 ];
 
 /**
@@ -275,6 +279,10 @@ require_once __DIR__ . '/sync/SyncFeatureCodes.php';
 require_once __DIR__ . '/sync/SyncInternalNumbers.php';
 require_once __DIR__ . '/sync/SyncRtpSettings.php';
 require_once __DIR__ . '/sync/SyncUdptlSettings.php';
+require_once __DIR__ . '/sync/SyncRingGroups.php';
+require_once __DIR__ . '/sync/SyncConferences.php';
+require_once __DIR__ . '/sync/SyncVoicemail.php';
+require_once __DIR__ . '/sync/SyncPermissions.php';
 
 /**
  * Sistem varsayılan dilini (/etc/asterisk/asterisk.conf [options] defaultlanguage=)
@@ -314,11 +322,15 @@ function syncEverything() {
     // (tek bir syncEverything() çağrısında dialplan reload 5 kez, pjsip reload
     // 2 kez, moh reload 2 kez tekrarlanıyordu, 2026-08-21 denetiminde bulundu).
     syncTransports();
+    syncPermissions();
     syncAllExtensions();
     syncAllTrunks();
     syncAllQueues();
     syncAllIVRs();
     syncAllTimeConditions();
+    syncRingGroups();
+    syncConferences();
+    syncVoicemail();
     syncInboundDialplan();
     syncOutboundDialplan();
     syncFeatureCodes();

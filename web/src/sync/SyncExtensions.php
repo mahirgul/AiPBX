@@ -209,7 +209,8 @@ function __syncAllExtensionsBody() {
         $cid_internal = toCleanAscii($u['cid_internal'] ?? '');
         $cid_external = toCleanAscii($u['cid_external'] ?? '');
         $role = trim($u['role'] ?? '');
-        $set_vars = "set_var=CID_INTERNAL={$cid_internal}\nset_var=CID_EXTERNAL={$cid_external}\nset_var=USER_ROLE={$role}\n";
+        $perm_group = max(1, intval($u['permission_group_id'] ?? 1));
+        $set_vars = "set_var=CID_INTERNAL={$cid_internal}\nset_var=CID_EXTERNAL={$cid_external}\nset_var=USER_ROLE={$role}\nset_var=PERMISSION_GROUP_ID={$perm_group}\n";
 
         // Grup çekme (Pickup) için: aynı pickup_group'taki dahililer birbirinin
         // çalan çağrısını *20 (bkz. SyncFeatureCodes.php) ile çekebilir.

@@ -10,7 +10,7 @@ require_once __DIR__ . '/../modules/destinations/DestinationRegistry.php';
 // isim/id listeleri, şifre yok) ama tutarlılık için, bu üç modülden en az birine
 // erişimi olmayan bir kullanıcı (ör. sadece cc_agent) artık bu endpoint'i
 // çağıramıyor.
-if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view')) {
+if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view') && !hasModulePermission('ring_groups', 'view') && !hasModulePermission('boss_secretary', 'view')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Yetkisiz erişim']);
     exit;

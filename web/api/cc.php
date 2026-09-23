@@ -74,6 +74,7 @@ $ACTION_FILES = [
     'get_call_note'         => 'notes.php',
     'get_pending_note'      => 'notes.php',
     'save_call_note'        => 'notes.php',
+    'spy_call'              => 'queues.php',
 ];
 
 if (!isset($ACTION_FILES[$action])) {
