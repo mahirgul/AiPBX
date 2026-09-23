@@ -832,6 +832,8 @@ return [
     'cdr_reports.close_tooltip' => 'Kapat',
     'cdr_reports.loading_recording' => 'Ses Kaydı Yükleniyor...',
     'cdr_reports.play_pause_tooltip' => 'Oynat / Duraklat',
+    'cdr_reports.back5s_tooltip' => '5 Saniye Geri',
+    'cdr_reports.forward5s_tooltip' => '5 Saniye İleri',
     'cdr_reports.mute_tooltip' => 'Sesi Aç / Kapat',
     'cdr_reports.view_mode' => 'Görünüm',
     'cdr_reports.mode_grouped' => 'Birleştirilmiş Çağrılar (Önerilen)',
