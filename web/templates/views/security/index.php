@@ -205,6 +205,57 @@
                 </div>
             <?php endif; ?>
 
+            <?php if (($user['role'] ?? '') === 'admin'): ?>
+            <!-- Google OAuth 2.0 ile Giriş Ayarları (Sistem Yöneticisi) -->
+            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h4 style="font-size: 15px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fab fa-google" style="color: #EA4335;"></i>
+                        <?php echo t('security.google_oauth_title', 'Google ile Giriş Ayarları (OAuth 2.0)'); ?>
+                    </h4>
+                    <span class="badge <?php echo (!empty($googleSettings['enabled'])) ? 'badge-success' : 'badge-secondary'; ?>" style="font-size: 11px;">
+                        <?php echo (!empty($googleSettings['enabled'])) ? t('common.active', 'Aktif') : t('common.passive', 'Devre Dışı'); ?>
+                    </span>
+                </div>
+                <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+                    <?php echo t('security.google_oauth_desc', 'Kullanıcıların kayıtlı e-posta adresleriyle Google üzerinden tek tıkla şifresiz giriş yapmasını sağlar.'); ?>
+                </p>
+
+                <form method="POST" action="/security">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                    <input type="hidden" name="action" value="save_google_settings">
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                        <input type="checkbox" name="google_oauth_enabled" value="1" id="googleOauthToggle" <?php echo (!empty($googleSettings['raw_enabled'])) ? 'checked' : ''; ?> style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="googleOauthToggle" style="font-size: 13px; font-weight: 700; cursor: pointer; margin: 0;">
+                            <?php echo t('security.enable_google_login', 'Google ile Girişi Etkinleştir'); ?>
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label class="form-label" style="font-size: 12px; font-weight: 600;">Google Client ID</label>
+                        <input type="text" name="google_client_id" class="form-control" value="<?php echo htmlspecialchars($googleSettings['client_id'] ?? ''); ?>" placeholder="xxxxx.apps.googleusercontent.com" style="height: 38px; font-family: monospace; font-size: 12px;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label class="form-label" style="font-size: 12px; font-weight: 600;">Google Client Secret</label>
+                        <input type="password" name="google_client_secret" class="form-control" value="<?php echo htmlspecialchars($googleSettings['client_secret'] ?? ''); ?>" placeholder="GOCSPX-xxxxxx" style="height: 38px; font-family: monospace; font-size: 12px;">
+                    </div>
+
+                    <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
+                            <?php echo t('security.google_redirect_uri_info', 'Google Cloud Console Yetkili Yönlendirme URI (Redirect URI):'); ?>
+                        </div>
+                        <code style="font-size: 12px; color: var(--primary); user-select: all; word-break: break-all;"><?php echo htmlspecialchars($googleSettings['redirect_uri'] ?? ''); ?></code>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm" style="font-weight: 700;">
+                        <i class="fas fa-save"></i> <?php echo t('security.btn_save_google', 'Google Ayarlarını Kaydet'); ?>
+                    </button>
+                </form>
+            </div>
+            <?php endif; ?>
+
             <!-- Şifre Değiştirme Kartı (Sağ alt alan) -->
             <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
                 <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
