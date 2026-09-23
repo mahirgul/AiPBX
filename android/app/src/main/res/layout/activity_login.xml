@@ -228,7 +228,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Sürüm 1.0.8"
+        android:text="Sürüm 1.0.34"
         android:textColor="@color/text_secondary"
         android:textSize="13sp"
         app:layout_constraintBottom_toBottomOf="parent"
