@@ -93,11 +93,24 @@ class MyPhoneRepository extends BaseRepository
         $extList = array_values(array_unique(array_filter([$extPrimary, $cidInternal])));
         $inPlaceholders = implode(',', array_fill(0, count($extList), '?'));
 
-        // Fetch user full_name directory map for resolving party names
-        $nameRows = static::db()->query("SELECT extension, full_name FROM sys_users WHERE full_name IS NOT NULL AND full_name != ''")->fetchAll(PDO::FETCH_KEY_PAIR);
+        // Fetch user full_name directory map for resolving party names (both by extension and cid_internal)
+        $nameRows = [];
+        $users = static::db()->query("SELECT extension, cid_internal, full_name FROM sys_users WHERE full_name IS NOT NULL AND full_name != ''")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($users as $u) {
+            $fn = trim($u['full_name'] ?? '');
+            if ($fn === '') {
+                continue;
+            }
+            if (!empty($u['extension'])) {
+                $nameRows[$u['extension']] = $fn;
+            }
+            if (!empty($u['cid_internal'])) {
+                $nameRows[$u['cid_internal']] = $fn;
+            }
+        }
 
         $fetchLimit = max((int)$limit * 3, 100);
-        $sql = "SELECT id, calldate, clid, src, dst, duration, billsec, disposition, channel, dstchannel, linkedid, uniqueid, userfield
+        $sql = "SELECT id, calldate, clid, src, dst, duration, billsec, disposition, channel, dstchannel, linkedid, uniqueid, userfield, lastapp, lastdata, dcontext
                 FROM asteriskcdr
                 WHERE (
                     src IN ($inPlaceholders)
@@ -108,12 +121,49 @@ class MyPhoneRepository extends BaseRepository
                 AND channel NOT LIKE 'Local/%'
                 AND channel NOT LIKE 'CLIEval/%'
                 AND dst != 's'
-                ORDER BY calldate DESC LIMIT " . (int)$fetchLimit;
+                ORDER BY calldate DESC, id DESC LIMIT " . (int)$fetchLimit;
 
         $params = array_merge($extList, $extList, ["PJSIP/{$extPrimary}-%", "PJSIP/{$extPrimary}-%"]);
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Quality scoring function to select the primary leg of multi-leg calls
+        $statusWords = ['CHANUNAVAIL', 'NOANSWER', 'BUSY', 'CONGESTION', 'CANCEL', 'ANSWER', 'DONTCALL', 'TORTURE', 'INVALIDARGS', 'S', 'H', 'T', 'I', 'E'];
+        $legScore = function(array $r) use ($extList, $statusWords): int {
+            $score = 0;
+            if (($r['disposition'] ?? '') === 'ANSWERED') {
+                $score += 1000;
+            }
+            $score += min((int)($r['billsec'] ?? 0), 500);
+
+            $dstUpper = strtoupper(trim((string)($r['dst'] ?? '')));
+            $isStatusDst = in_array($dstUpper, $statusWords, true);
+
+            // Deprioritize sub-outbound-status context and Hangup trampoline legs
+            if (($r['dcontext'] ?? '') === 'sub-outbound-status') {
+                $score -= 200;
+            }
+            if (($r['lastapp'] ?? '') === 'Dial') {
+                $score += 100;
+            } elseif (($r['lastapp'] ?? '') === 'Queue') {
+                $score += 80;
+            } elseif (($r['lastapp'] ?? '') === 'Hangup') {
+                $score -= 50;
+            }
+
+            // Reward real destination number (not status word or self-extension)
+            if (!$isStatusDst && $dstUpper !== '' && !in_array($r['dst'], $extList, true)) {
+                $score += 50;
+            }
+            if (!empty($r['userfield'])) {
+                $score += 20;
+            }
+            if (!empty($r['dstchannel'])) {
+                $score += 10;
+            }
+            return $score;
+        };
 
         // Deduplicate multi-leg records of the same call (linkedid/uniqueid)
         $dedup = [];
@@ -122,10 +172,30 @@ class MyPhoneRepository extends BaseRepository
             if (!isset($dedup[$linkId])) {
                 $dedup[$linkId] = $row;
             } else {
-                if ($row['disposition'] === 'ANSWERED' && $dedup[$linkId]['disposition'] !== 'ANSWERED') {
+                $prev = $dedup[$linkId];
+                if ($legScore($row) > $legScore($prev)) {
+                    // Row is higher quality; preserve missing metadata from prev if row lacks them
+                    if (empty($row['userfield']) && !empty($prev['userfield'])) {
+                        $row['userfield'] = $prev['userfield'];
+                    }
+                    if (empty($row['dstchannel']) && !empty($prev['dstchannel'])) {
+                        $row['dstchannel'] = $prev['dstchannel'];
+                    }
+                    if (empty($row['lastdata']) && !empty($prev['lastdata'])) {
+                        $row['lastdata'] = $prev['lastdata'];
+                    }
                     $dedup[$linkId] = $row;
-                } elseif ((int)$row['billsec'] > (int)$dedup[$linkId]['billsec']) {
-                    $dedup[$linkId] = $row;
+                } else {
+                    // Prev is better; absorb missing metadata from row
+                    if (empty($prev['userfield']) && !empty($row['userfield'])) {
+                        $dedup[$linkId]['userfield'] = $row['userfield'];
+                    }
+                    if (empty($prev['dstchannel']) && !empty($row['dstchannel'])) {
+                        $dedup[$linkId]['dstchannel'] = $row['dstchannel'];
+                    }
+                    if (empty($prev['lastdata']) && !empty($row['lastdata'])) {
+                        $dedup[$linkId]['lastdata'] = $row['lastdata'];
+                    }
                 }
             }
         }
@@ -139,13 +209,47 @@ class MyPhoneRepository extends BaseRepository
 
             if ($isOutgoing) {
                 $dir = 'out';
-                $party = $row['dst'];
+                $dstRaw = trim((string)($row['dst'] ?? ''));
+                $dstUpper = strtoupper($dstRaw);
+                $isInvalidDst = (
+                    $dstRaw === '' ||
+                    $dstRaw === 's' ||
+                    in_array($dstUpper, $statusWords, true) ||
+                    in_array($dstRaw, $extList, true)
+                );
+
+                // 1. Extract destination from recording userfield (/.../outbound_..._to_<num>.wav)
+                $targetFromUserfield = '';
+                if (!empty($row['userfield']) && preg_match('/[_\/]to_([0-9+*#]+)(?:\.[a-zA-Z0-9]+)?$/i', $row['userfield'], $m)) {
+                    $targetFromUserfield = $m[1];
+                }
+
+                // 2. Extract destination from lastdata (e.g. PJSIP/<num>@trunk)
+                $targetFromLastdata = '';
+                if (!empty($row['lastdata']) && preg_match('~(?:PJSIP|SIP|Local)/([0-9+*#]+)@~i', $row['lastdata'], $m)) {
+                    $targetFromLastdata = $m[1];
+                }
+
+                if ($targetFromUserfield !== '' && !in_array($targetFromUserfield, $extList, true)) {
+                    $party = $targetFromUserfield;
+                } elseif ($targetFromLastdata !== '' && !in_array($targetFromLastdata, $extList, true)) {
+                    $party = $targetFromLastdata;
+                } elseif (!$isInvalidDst) {
+                    $party = $dstRaw;
+                } else {
+                    $party = $targetFromUserfield !== '' ? $targetFromUserfield : ($targetFromLastdata !== '' ? $targetFromLastdata : $dstRaw);
+                }
             } else {
                 $isMissed = ($row['disposition'] !== 'ANSWERED');
                 $dir = $isMissed ? 'missed' : 'in';
-                $party = $row['src'];
-                if ($party === '' && !empty($row['clid']) && preg_match('/<(\+?[0-9]+)>/', $row['clid'], $m)) {
+                $party = trim((string)($row['src'] ?? ''));
+                if (($party === '' || $party === 's') && !empty($row['clid']) && preg_match('/<(\+?[0-9]+)>/', $row['clid'], $m)) {
                     $party = $m[1];
+                }
+                if ($party === '' || $party === 's') {
+                    if (!empty($row['userfield']) && preg_match('/inbound_[0-9]+_[0-9]+_([0-9+*#]+)_to_/i', $row['userfield'], $m)) {
+                        $party = $m[1];
+                    }
                 }
             }
 
@@ -164,9 +268,11 @@ class MyPhoneRepository extends BaseRepository
                 continue;
             }
 
-            // Extract caller name if in clid: "Name" <num> or from user directory
+            // Extract party name:
+            // For INCOMING calls, caller name is in clid ("Name" <num>).
+            // For OUTGOING calls, clid is the caller's own identity, so recipient name must ONLY come from directory.
             $partyName = '';
-            if (!empty($row['clid']) && preg_match('/"([^"]+)"/', $row['clid'], $m)) {
+            if (!$isOutgoing && !empty($row['clid']) && preg_match('/"([^"]+)"/', $row['clid'], $m)) {
                 $partyName = trim($m[1]);
             }
             if (empty($partyName) && isset($nameRows[$party])) {
