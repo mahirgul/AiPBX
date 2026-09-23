@@ -946,6 +946,8 @@ return [
 
     // Fax Mail Settings
     'fax_mail_settings.title' => 'Fax Settings',
+    'fax_mail_settings.tab_email' => 'E-Mail',
+    'fax_mail_settings.tab_device' => 'Device',
     'fax_mail_settings.help_title' => 'Fax Settings Guide',
     'fax_mail_settings.help_body' => 'Configures fax email notification options, the Postfix mail relay IP address, the sender mail header, and the automatic fax retention/cleanup period.',
     'fax_mail_settings.field_from_address' => 'Sender Email Address (From Address)',
@@ -1905,4 +1907,9 @@ return [
     'mail_settings.test_title' => 'Send Test E-Mail',
     'mail_settings.test_desc' => 'Send a test message using current settings to verify relay connectivity.',
     'mail_settings.btn_send_test' => 'Send Test',
+
+    // Push Settings (Mobile Push)
+    'push_settings.title' => 'Mobile Push',
+    'push_settings.tab_config' => 'Configuration',
+    'push_settings.tab_test' => 'Test & Dispatch',
 ];
