@@ -114,6 +114,29 @@ function formatSeconds(secs) {
     return (m < 10 ? '0' + m : m) + ':' + (r < 10 ? '0' + r : r);
 }
 
+function toggleCallJourney(id) {
+    const row = document.getElementById('journey-row-' + id);
+    const btn = document.getElementById('journey-btn-' + id);
+    if (!row) return;
+    const isHidden = (row.style.display === 'none' || !row.style.display);
+    row.style.display = isHidden ? 'table-row' : 'none';
+    if (btn) {
+        const icon = btn.querySelector('.journey-icon');
+        if (icon) {
+            icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+        if (isHidden) {
+            btn.classList.add('active');
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-primary');
+        } else {
+            btn.classList.remove('active');
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const modalEl = document.getElementById('cdrAudioModal');
     if (modalEl) {

@@ -27,14 +27,21 @@ class CdrReportService {
         }
 
         $del_id = intval($del_id);
-        $cdr = DBHelper::fetchOne("SELECT recording_path, caller_num, start_time FROM cdrs WHERE id = ?", [$del_id]);
+        $cdr = DBHelper::fetchOne("SELECT recording_path, caller_num, start_time, coalesce(nullif(linkedid, ''), call_id) AS linkedid FROM cdrs WHERE id = ?", [$del_id]);
         $rec_path = $cdr['recording_path'] ?? null;
 
         if ($rec_path && file_exists($rec_path)) {
             @unlink($rec_path);
         }
 
-        DBHelper::delete('cdrs', 'id', $del_id);
+        $linkId = $cdr['linkedid'] ?? null;
+        $db = getDB();
+        if (!empty($linkId)) {
+            $stmt = $db->prepare("DELETE FROM asteriskcdr WHERE linkedid = ? OR uniqueid = ?");
+            $stmt->execute([$linkId, $linkId]);
+        } else {
+            DBHelper::delete('asteriskcdr', 'id', $del_id);
+        }
         writeAuditLog(null, 'cdr', $del_id, "Çağrı Kaydı: " . ($cdr['caller_num'] ?? $del_id) . " (" . ($cdr['start_time'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
         notify('Çağrı kaydı ve ses dosyası başarıyla silindi.', 'success');
         return true;

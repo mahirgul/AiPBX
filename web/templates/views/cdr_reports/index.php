@@ -88,13 +88,18 @@
             <option value="sip" <?php echo ($device_filter ?? '') === 'sip' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_sip'); ?></option>
         </select>
 
+        <select name="view_mode" class="form-control form-control-sm" style="width: auto; font-weight: 600;" onchange="this.form.submit()">
+            <option value="grouped" <?php echo ($view_mode ?? 'grouped') === 'grouped' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_grouped'); ?></option>
+            <option value="raw" <?php echo ($view_mode ?? 'grouped') === 'raw' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_raw'); ?></option>
+        </select>
+
         <div style="position: relative; max-width: 220px;">
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('cdr_reports.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('cdr_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
-        <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || $date_filter !== 'today'): ?>
+        <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || ($view_mode ?? 'grouped') !== 'grouped' || $date_filter !== 'today'): ?>
             <a href="/cdr-reports" class="btn btn-secondary btn-sm" title="<?php echo t('cdr_reports.reset_tooltip'); ?>"><i class="fas fa-undo"></i></a>
         <?php endif; ?>
     </form>
@@ -157,7 +162,14 @@
                         }
                     ?>
                         <tr>
-                            <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px;">#<?php echo $c['id']; ?></td>
+                            <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">
+                                <?php if (!empty($c['legs']) && count($c['legs']) > 1): ?>
+                                    <button type="button" class="btn btn-outline-primary btn-sm journey-toggle-btn" id="journey-btn-<?php echo $c['id']; ?>" onclick="toggleCallJourney('<?php echo $c['id']; ?>')" style="padding: 2px 7px; font-size: 11px; margin-right: 5px; border-radius: 6px; font-weight: 700; line-height: 1.2;" title="<?php echo t('cdr_reports.journey_title'); ?>">
+                                        <i class="fas fa-route"></i> <?php echo count($c['legs']); ?> <i class="fas fa-chevron-down journey-icon" style="font-size: 9px; transition: transform 0.2s;"></i>
+                                    </button>
+                                <?php endif; ?>
+                                #<?php echo $c['id']; ?>
+                            </td>
                             <td style="font-weight: 600; white-space: nowrap;">
                                 <?php echo date('d.m.Y H:i:s', strtotime($c['start_time'])); ?>
                             </td>
@@ -273,6 +285,80 @@
                                 <?php endif; ?>
                             </td>
                         </tr>
+                        <?php if (!empty($c['legs']) && count($c['legs']) > 1): ?>
+                            <tr id="journey-row-<?php echo $c['id']; ?>" class="cdr-journey-row" style="display: none;">
+                                <td colspan="10" style="padding: 14px 20px; background: rgba(0, 242, 254, 0.02); border-bottom: 2px solid var(--border-color);">
+                                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+                                            <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                                <span style="width: 24px; height: 24px; border-radius: 6px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">
+                                                    <i class="fas fa-route"></i>
+                                                </span>
+                                                <span><?php echo t('cdr_reports.journey_title'); ?></span>
+                                                <span class="badge badge-info" style="font-size: 11px;"><?php echo count($c['legs']); ?> <?php echo t('cdr_reports.legs_count'); ?></span>
+                                                <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($c['linkedid'] ?? $c['call_id']); ?></code>
+                                            </div>
+                                            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                                                <span><?php echo t('cdr_reports.journey_wait'); ?>: <strong style="color: var(--text-main);"><?php echo sprintf('%02d:%02d', intdiv($ring, 60), $ring % 60); ?></strong></span>
+                                                <span>•</span>
+                                                <span><?php echo t('cdr_reports.journey_talk'); ?>: <strong style="color: var(--success);"><?php echo sprintf('%02d:%02d', intdiv($bill, 60), $bill % 60); ?></strong></span>
+                                                <span>•</span>
+                                                <span><?php echo t('cdr_reports.journey_total'); ?>: <strong style="color: var(--primary);"><?php echo sprintf('%02d:%02d', intdiv($dur, 60), $dur % 60); ?></strong></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Vertical Timeline Steps -->
+                                        <div style="position: relative; padding-left: 24px; margin-left: 8px; border-left: 2px dashed var(--border-color);">
+                                            <?php foreach ($c['legs'] as $leg):
+                                                $info = $leg['leg_info'];
+                                                $legHasRec = (!empty($leg['userfield']) && file_exists($leg['userfield']));
+                                                $legTime = date('H:i:s', strtotime($leg['calldate']));
+                                                $isAnsweredLeg = ($leg['disposition'] === 'ANSWERED');
+                                                $nodeColor = $isAnsweredLeg ? 'var(--success)' : ($leg['disposition'] === 'BUSY' ? 'var(--info)' : 'var(--warning)');
+                                                if ($leg['disposition'] === 'FAILED' || $leg['disposition'] === 'ABANDON') {
+                                                    $nodeColor = 'var(--danger)';
+                                                }
+                                            ?>
+                                                <div style="position: relative; margin-bottom: 10px;">
+                                                    <!-- Node Dot -->
+                                                    <div style="position: absolute; left: -31px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg-card); border: 2px solid <?php echo $nodeColor; ?>; display: flex; align-items: center; justify-content: center;">
+                                                        <div style="width: 6px; height: 6px; border-radius: 50%; background: <?php echo $nodeColor; ?>;"></div>
+                                                    </div>
+
+                                                    <!-- Step Box -->
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                            <span style="font-family: monospace; font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--bg-card); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                                                <?php echo $legTime; ?>
+                                                            </span>
+                                                            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">
+                                                                <i class="fas <?php echo $info['icon']; ?>" style="color: var(--primary); font-size: 11px; margin-right: 4px;"></i>
+                                                                <?php echo htmlspecialchars($info['title']); ?>
+                                                            </span>
+                                                            <span class="badge <?php echo $info['badge']; ?>" style="font-size: 10px; padding: 2px 6px;">
+                                                                <?php echo htmlspecialchars($info['badge_text']); ?>
+                                                            </span>
+                                                            <span style="font-size: 11px; color: var(--text-muted);">
+                                                                <?php echo htmlspecialchars($info['detail']); ?>
+                                                            </span>
+                                                        </div>
+
+                                                        <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                                                            <?php if ($legHasRec && $can_listen_row): ?>
+                                                                <button type="button" class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo $leg['id']; ?>, '<?php echo htmlspecialchars(addslashes($leg['src']), ENT_QUOTES); ?>', '<?php echo date('d.m.Y H:i', strtotime($leg['calldate'])); ?>')" title="<?php echo t('cdr_reports.listen_tooltip'); ?>" style="padding: 2px 8px; font-size: 11px;">
+                                                                    <i class="fas fa-play"></i>
+                                                                </button>
+                                                            <?php endif; ?>
+                                                            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">#<?php echo $leg['id']; ?></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
