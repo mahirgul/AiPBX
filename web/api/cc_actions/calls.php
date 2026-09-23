@@ -20,7 +20,8 @@ if ($action === 'originate') {
            "Context: $outbound_context\r\n" .
            "Exten: $to\r\n" .
            "Priority: 1\r\n" .
-           "CallerID: Temsilci $user_ext <$user_ext>\r\n\r\n";
+           "CallerID: Temsilci $user_ext <$user_ext>\r\n" .
+           "Variable: __SAVED_DST=$to\r\n\r\n";
 
     $res = sendAMICommand($cmd);
     if (!$res || strpos($res, 'Response: Success') === false) {
