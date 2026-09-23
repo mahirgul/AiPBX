@@ -246,8 +246,8 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                     <?php endif; ?>
                     <?php if (hasModulePermission('push_settings', 'view')): ?>
                         <li>
-                            <a href="/push-settings" class="nav-link <?php echo $active_page === 'push_settings.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_push_settings', 'Mobil Bildirim'); ?>">
-                                <i class="fas fa-bell"></i> <span class="nav-text"><?php echo t('sidebar.item_push_settings', 'Mobil Bildirim'); ?></span>
+                            <a href="/push-settings" class="nav-link <?php echo $active_page === 'push_settings.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_push_settings', 'Bildirim'); ?>">
+                                <i class="fas fa-bell"></i> <span class="nav-text"><?php echo t('sidebar.item_push_settings', 'Bildirim'); ?></span>
                             </a>
                         </li>
                     <?php endif; ?>
@@ -260,8 +260,8 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                     <?php endif; ?>
                     <?php if (hasModulePermission('mail_settings', 'view')): ?>
                         <li>
-                            <a href="/mail-settings" class="nav-link <?php echo $active_page === 'mail_settings.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_mail_settings', 'E-Posta & Relay'); ?>">
-                                <i class="fas fa-envelope-open-text"></i> <span class="nav-text"><?php echo t('sidebar.item_mail_settings', 'E-Posta & Relay'); ?></span>
+                            <a href="/mail-settings" class="nav-link <?php echo $active_page === 'mail_settings.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_mail_settings', 'E-Posta'); ?>">
+                                <i class="fas fa-envelope-open-text"></i> <span class="nav-text"><?php echo t('sidebar.item_mail_settings', 'E-Posta'); ?></span>
                             </a>
                         </li>
                     <?php endif; ?>
@@ -310,16 +310,16 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
         <!-- 4c. Entegrasyonlar Menüsü (Microsoft Teams) -->
         <?php if ($can_view_teams_group): ?>
             <li class="nav-group <?php echo ($is_teams_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-integrations">
-                <button class="nav-toggle-btn" onclick="toggleNavGroup('group-integrations')" title="<?php echo t('sidebar.group_integrations', 'Entegrasyonlar'); ?>">
+                <button class="nav-toggle-btn" onclick="toggleNavGroup('group-integrations')" title="<?php echo t('sidebar.group_integrations', 'Entegrasyon'); ?>">
                     <span class="toggle-title">
-                        <i class="fab fa-microsoft" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.group_integrations', 'Entegrasyonlar'); ?></span>
+                        <i class="fab fa-microsoft" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.group_integrations', 'Entegrasyon'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
                 <ul class="nav-submenu">
                     <li>
-                        <a href="/ms-teams" class="nav-link <?php echo $active_page === 'ms_teams.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ms_teams', 'Microsoft Teams'); ?>">
-                            <i class="fab fa-windows" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.item_ms_teams', 'Microsoft Teams'); ?></span>
+                        <a href="/ms-teams" class="nav-link <?php echo $active_page === 'ms_teams.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ms_teams', 'Teams'); ?>">
+                            <i class="fab fa-windows" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.item_ms_teams', 'Teams'); ?></span>
                         </a>
                     </li>
                 </ul>

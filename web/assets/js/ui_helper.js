@@ -289,3 +289,57 @@ function executeDirectPendingSync(event) {
         }
     });
 }
+
+/**
+ * Universal Settings Tab Switcher
+ */
+function switchSettingsTab(tabKey, btn) {
+    if (!btn) return;
+    const tabContainer = btn.closest('.settings-tabs');
+    if (tabContainer) {
+        tabContainer.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+    }
+    btn.classList.add('active');
+
+    // Panes
+    const root = btn.closest('form') || btn.closest('.spa-content-area') || document;
+    root.querySelectorAll('.settings-tab-pane').forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+    });
+
+    const target = document.getElementById('tab_' + tabKey);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = 'block';
+    }
+
+    try {
+        sessionStorage.setItem('active_settings_tab_' + window.location.pathname, tabKey);
+    } catch(e) {}
+}
+
+// Restore saved settings tab on page load
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const savedTab = sessionStorage.getItem('active_settings_tab_' + window.location.pathname);
+        if (savedTab) {
+            const btn = document.querySelector(`.settings-tab-btn[data-tab="${savedTab}"]`);
+            if (btn) btn.click();
+        }
+    } catch(e) {}
+});
+
+// Auto-switch to tab containing invalid input on form submission
+document.addEventListener('invalid', function(e) {
+    const pane = e.target.closest('.settings-tab-pane, .modal-tab-pane, .trunk-tab-pane, .queue-tab-pane');
+    if (pane && (pane.style.display === 'none' || getComputedStyle(pane).display === 'none')) {
+        const tabId = pane.id.replace(/^tab_/, '').replace(/^trunk_tab_/, '').replace(/^queue_tab_/, '');
+        const btn = document.querySelector(`[data-tab="${tabId}"]`);
+        if (btn) btn.click();
+        setTimeout(() => {
+            try { e.target.focus(); } catch(err) {}
+        }, 50);
+    }
+}, true);
+

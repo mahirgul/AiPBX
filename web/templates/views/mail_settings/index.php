@@ -11,12 +11,26 @@ $fax_from_name = $settings['fax_email_from_name'] ?? 'AI PBX Faks Sistemi';
 $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 ?>
 
+<!-- Mail Settings Single-Line Fixed Tabs -->
+<div class="settings-tabs">
+    <button type="button" class="settings-tab-btn active" data-tab="smtp" onclick="switchSettingsTab('smtp', this)">
+        <i class="fas fa-server"></i> <?php echo t('mail_settings.tab_smtp', 'SMTP & Relay'); ?>
+    </button>
+    <button type="button" class="settings-tab-btn" data-tab="sender" onclick="switchSettingsTab('sender', this)">
+        <i class="fas fa-at"></i> <?php echo t('mail_settings.tab_sender', 'Gönderici'); ?>
+    </button>
+    <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
+        <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.tab_test', 'Test & Durum'); ?>
+    </button>
+</div>
+
 <!-- Ana Ayarlar Formu -->
 <form method="POST" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_mail_settings" value="1">
 
     <!-- BÖLÜM 1: Mail Relay & SMTP Sunucusu -->
+    <div id="tab_smtp" class="settings-tab-pane active">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -87,9 +101,17 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <?php echo t('mail_settings.sync_postfix_help', 'İşaretlendiğinde arka planda çalışan Postfix MTA servisine relayhost yazılır ve servis otomatik reload edilir.'); ?>
             </small>
         </div>
+
+        <div style="margin-top: 20px; text-align: right;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
+            </button>
+        </div>
+    </div>
     </div>
 
     <!-- BÖLÜM 2: Gönderici Kimlik Bilgileri (From) -->
+    <div id="tab_sender" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -129,9 +151,11 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </button>
         </div>
     </div>
+    </div>
 </form>
 
 <!-- BÖLÜM 3: Canlı Durum ve Test E-Postası Gönderimi -->
+<div id="tab_test" class="settings-tab-pane" style="display: none;">
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
         <div class="card-title">
@@ -178,6 +202,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </form>
         </div>
     </div>
+</div>
 </div>
 
 <script>
