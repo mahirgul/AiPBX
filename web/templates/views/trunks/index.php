@@ -56,7 +56,19 @@
                         <tr>
                             <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $t['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-server"></i> <?php echo htmlspecialchars($t['trunk_name']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($t['title']); ?></td>
+                            <td style="font-weight: 700; color: var(--text-main);">
+                                <?php echo htmlspecialchars($t['title']); ?>
+                                <?php if (!empty($t['did_trim_digits'])): ?>
+                                    <span class="badge badge-warning" title="DID Kırpma: Son <?php echo intval($t['did_trim_digits']); ?> hane" style="font-size: 10px; margin-left: 4px;">
+                                        <i class="fas fa-cut"></i> -<?php echo intval($t['did_trim_digits']); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if (!empty($t['allow_outbound_routing'])): ?>
+                                    <span class="badge badge-info" title="Transit / Trunk-to-Trunk Geçiş Aktif (Grup <?php echo intval($t['outbound_route_group'] ?? 1); ?>)" style="font-size: 10px; margin-left: 4px; background: #6366f1; color: #fff;">
+                                        <i class="fas fa-random"></i> Transit (G<?php echo intval($t['outbound_route_group'] ?? 1); ?>)
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><code><?php echo htmlspecialchars($t['ip_address'] . ':' . $t['port']); ?></code></td>
                             <td class="col-hide-mobile"><span class="badge badge-success"><?php echo strtoupper(htmlspecialchars($t['transport'])); ?></span></td>
                             <td class="col-hide-mobile"><?php echo htmlspecialchars($t['codecs']); ?></td>
@@ -394,6 +406,38 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_max_channels'); ?></label>
                             <input type="number" name="max_channels" id="modal_max_channels" class="form-control" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Gelen Çağrı & DID Normalizasyonu / Transit Rota -->
+                    <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
+                            <i class="fas fa-random" style="color: var(--primary);"></i> <?php echo t('trunks.section_inbound_routing'); ?>
+                        </h4>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label form-label-help">
+                                    <span><?php echo t('trunks.field_did_trim_digits'); ?></span>
+                                    <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.did_trim_digits_help'); ?></span></span>
+                                </label>
+                                <input type="number" name="did_trim_digits" id="modal_did_trim_digits" class="form-control" value="0" min="0" max="20">
+                                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.did_trim_example'); ?></small>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label"><?php echo t('trunks.field_outbound_route_group'); ?></label>
+                                <input type="number" name="outbound_route_group" id="modal_outbound_route_group" class="form-control" value="1" min="1" max="99">
+                                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.outbound_route_group_help'); ?></small>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
+                            <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="allow_outbound_routing" id="modal_allow_outbound_routing" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_allow_outbound_routing'); ?></span>
+                            </label>
+                            <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.allow_outbound_routing_help'); ?></small>
                         </div>
                     </div>
 

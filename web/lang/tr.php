@@ -145,6 +145,14 @@ return [
     'trunks.field_force_rport' => 'Force RPort',
     'trunks.field_registration_retry_interval' => 'Kayıt Tekrar Deneme Sıklığı (sn)',
     'trunks.field_max_contacts' => 'Maksimum Kontak Sayısı (Max Contacts)',
+    'trunks.section_inbound_routing' => 'Gelen Çağrı & DID Normalizasyonu',
+    'trunks.field_did_trim_digits' => 'Gelen DID Kırpma (Sondaki Hane Sayısı)',
+    'trunks.did_trim_digits_help' => 'Operatörden gelen uzun DID numarasının yalnızca son N hanesini alarak santralde eşleştirir.',
+    'trunks.did_trim_example' => 'Örn: 4 (Gelen 03704187840 numarasının son 4 hanesini alarak 7840 yapar. 0 = Kırpma yok)',
+    'trunks.field_allow_outbound_routing' => 'Giden Rotalara Geçişe İzin Ver (Trunk-to-Trunk / Transit Çağrı)',
+    'trunks.allow_outbound_routing_help' => 'Aktif edildiğinde, bu trunktan gelen çağrılar DID eşleşmesi bulunamazsa tanımlı Giden Rotalar üzerinden diğer trunklara/dış hatlara aktarılabilir.',
+    'trunks.field_outbound_route_group' => 'Transit Giden Rota Grubu',
+    'trunks.outbound_route_group_help' => 'Transit geçişte kullanılacak giden rota grubunu belirler (Varsayılan: Grup 1).',
 
     // DID Routes (Gelen Rotalar)
     'did.title' => 'Gelen Rotalar',
