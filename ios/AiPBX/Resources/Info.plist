@@ -47,5 +47,18 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.mhrgl.aipbx</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>aipbx</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
