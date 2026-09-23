@@ -946,6 +946,8 @@ return [
 
     // Fax Mail Settings (Faks Ayarları)
     'fax_mail_settings.title' => 'Faks Ayarları',
+    'fax_mail_settings.tab_email' => 'E-Posta',
+    'fax_mail_settings.tab_device' => 'Cihaz',
     'fax_mail_settings.help_title' => 'Faks Ayarları Rehberi',
     'fax_mail_settings.help_body' => 'Faks e-posta bildirim seçeneklerini, Postfix mail relay IP adresini, gönderen mail başlığını ve otomatik faks saklama/temizlik süresini yapılandırır.',
     'fax_mail_settings.field_from_address' => 'Gönderen E-Posta Adresi (From Address)',
@@ -1905,4 +1907,9 @@ return [
     'mail_settings.test_title' => 'Test E-Postası Gönder',
     'mail_settings.test_desc' => 'Mevcut ayarlar üzerinden test mesajı göndererek relay bağlantısını test edin.',
     'mail_settings.btn_send_test' => 'Test Gönder',
+
+    // Push Settings (Mobil Bildirim)
+    'push_settings.title' => 'Mobil Bildirim',
+    'push_settings.tab_config' => 'Yapılandırma',
+    'push_settings.tab_test' => 'Test & Gönderim',
 ];
