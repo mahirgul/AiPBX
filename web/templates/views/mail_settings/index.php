@@ -31,7 +31,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 
     <!-- BÖLÜM 1: Mail Relay & SMTP Sunucusu -->
     <div id="tab_smtp" class="settings-tab-pane active">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-server" style="color: var(--primary);"></i> <?php echo t('mail_settings.section_smtp', 'Mail Relay & SMTP Sunucusu'); ?>
@@ -42,7 +42,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         </div>
 
         <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="mailHelpBox" style="margin: 0 0 16px 0;">
+        <div class="module-help-box" id="mailHelpBox">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.help_title', 'Mail Relay & E-Posta Rehberi'); ?></h4>
             <p><?php echo t('mail_settings.help_body', 'Faks bildirimleri, şifre sıfırlama mailleri ve sistem uyarıları bu SMTP/Relay sunucusu üzerinden iletilir. Postfix MTA entegrasyonu seçilirse sunucu arka planda postconf ve SASL ayarlarını otomatik olarak günceller.'); ?></p>
         </div>
@@ -112,7 +112,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 
     <!-- BÖLÜM 2: Gönderici Kimlik Bilgileri (From) -->
     <div id="tab_sender" class="settings-tab-pane" style="display: none;">
-    <div class="card" style="margin-bottom: 20px;">
+    <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-at" style="color: var(--primary);"></i> <?php echo t('mail_settings.section_sender', 'Gönderici Kimlik Bilgileri'); ?>
@@ -132,7 +132,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
             <div class="form-group">
                 <label class="form-label"><?php echo t('mail_settings.fax_from_addr', 'Faks Bildirim Gönderici E-Postası'); ?></label>
                 <input type="email" name="fax_email_from_address" class="form-control" value="<?php echo htmlspecialchars($fax_from_addr); ?>" required>
@@ -156,7 +156,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 
 <!-- BÖLÜM 3: Canlı Durum ve Test E-Postası Gönderimi -->
 <div id="tab_test" class="settings-tab-pane" style="display: none;">
-<div class="card" style="margin-bottom: 24px;">
+<div class="card">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-paper-plane" style="color: var(--primary);"></i> <?php echo t('mail_settings.section_test_status', 'Canlı Posta Durumu ve Test Gönderimi'); ?>

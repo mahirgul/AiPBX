@@ -120,7 +120,7 @@ if (!$cert['exists']) {
 }
 </style>
 
-<div class="card" style="border-top: 4px solid #6264a7;">
+<div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div class="card-title" style="display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700;">
             <i class="fab fa-microsoft" style="color: #6264a7; font-size: 22px;"></i>
@@ -140,7 +140,7 @@ if (!$cert['exists']) {
     </div>
 
     <!-- Rehber Kutusu -->
-    <div class="module-help-box" id="teamsHelpBox" style="margin: 16px 20px 0 20px; display: none; padding: 16px; background: rgba(98, 100, 167, 0.08); border-left: 4px solid #6264a7; border-radius: 4px;">
+    <div class="module-help-box" id="teamsHelpBox">
         <h4 style="color: #464775; margin-top: 0;"><i class="fab fa-microsoft"></i> <?php echo t('ms_teams.guide_title'); ?></h4>
         <p style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
             <?php echo t('ms_teams.guide_intro'); ?>

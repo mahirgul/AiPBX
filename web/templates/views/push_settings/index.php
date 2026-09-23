@@ -68,7 +68,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
     </div>
 
     <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="pushHelpBox" style="margin: 16px 20px 0 20px; display: none;">
+    <div class="module-help-box" id="pushHelpBox">
         <h4><i class="fas fa-info-circle"></i> Mobil Bildirim Mimarisi Hakkında</h4>
         <p>AI PBX mobil softphone uygulaması <strong>üç katmanlı bildirim mimarisine</strong> sahiptir:</p>
         <ul style="margin: 8px 0 12px 20px; line-height: 1.6;">

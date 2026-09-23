@@ -203,7 +203,7 @@ $search = $search ?? '';
 
         <!-- TAB 1: ÇAĞRI GEÇMİŞİM (Geniş & Modern Data-Table) -->
         <div id="tab-pane-history" class="card" style="display: <?php echo $currentTab === 'history' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
-            <div class="card-header" style="padding: 0 0 16px 0; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+            <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
                 <div class="card-title" style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-phone-volume" style="color: var(--primary);"></i> <?php echo t('my_phone.recent_calls'); ?>
                 </div>

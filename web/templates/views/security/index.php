@@ -1,6 +1,6 @@
 <div class="content-wrapper">
     <!-- Başlık & Bilgi Kartı -->
-    <div class="card mb-4" style="border-left: 4px solid var(--primary); padding: 20px 24px;">
+    <div class="card page-header-card">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
             <div>
                 <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 6px 0; display: flex; align-items: center; gap: 10px;">

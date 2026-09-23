@@ -1,5 +1,5 @@
 <!-- Statistics Overview -->
-<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px;">
     <div class="card" style="margin-bottom: 0;">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_entered'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--primary);"><?php echo $stat_total_enter; ?></div>

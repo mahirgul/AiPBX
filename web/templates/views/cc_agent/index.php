@@ -69,7 +69,7 @@
 
     <!-- Agent CDR History Card -->
     <div class="card" style="padding: 14px 18px; margin-bottom: 0;">
-        <div class="card-header" style="margin-bottom: 10px; padding: 0 0 10px 0; border-bottom: 1px solid var(--border-color);">
+        <div class="card-header" style="margin-bottom: 10px; padding: 0 0 10px 14px; border-bottom: 1px solid var(--border-color);">
             <div class="card-title" style="font-size: 14px;"><i class="fas fa-history" style="color: var(--secondary);"></i> <?php echo t('cc_agent.recent_calls'); ?></div>
             <button class="btn btn-secondary btn-xs" onclick="loadCdrs()" title="<?php echo t('cc_agent.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></button>
         </div>
