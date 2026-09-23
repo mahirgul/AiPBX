@@ -18,7 +18,10 @@ class PasskeyService
      */
     public static function getRpId(): string
     {
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (strpos($host, ',') !== false) {
+            $host = trim(explode(',', $host)[0]);
+        }
         if (strpos($host, ':') !== false) {
             $host = explode(':', $host)[0];
         }
@@ -34,7 +37,7 @@ class PasskeyService
         $rpId = self::getRpId();
 
         $formats = ['android-key', 'android-safetynet', 'apple', 'fido-u2f', 'none', 'packed', 'tpm'];
-        return new WebAuthn($rpName, $rpId, $formats);
+        return new WebAuthn($rpName, $rpId, $formats, true);
     }
 
     /**
@@ -94,10 +97,21 @@ class PasskeyService
         $challenge = $_SESSION['webauthn_reg_challenge'];
 
         try {
+            // Tarayıcıdan base64 gelen verileri binary/raw formata dönüştür
+            $rawClientDataJSON = base64_decode($clientDataJSON, true);
+            if ($rawClientDataJSON === false || !str_starts_with(trim($rawClientDataJSON), '{')) {
+                $rawClientDataJSON = $clientDataJSON;
+            }
+
+            $rawAttestationObject = base64_decode($attestationObject, true);
+            if ($rawAttestationObject === false) {
+                $rawAttestationObject = $attestationObject;
+            }
+
             $webAuthn = self::getWebAuthn();
             $data = $webAuthn->processCreate(
-                $clientDataJSON,
-                $attestationObject,
+                $rawClientDataJSON,
+                $rawAttestationObject,
                 $challenge,
                 false, // requireUserVerification
                 true,  // requireUserPresent
@@ -153,6 +167,9 @@ class PasskeyService
             $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
             foreach ($rows as $cid) {
                 $raw = base64_decode($cid, true);
+                if ($raw === false) {
+                    $raw = base64_decode(strtr($cid, '-_', '+/'), true);
+                }
                 if ($raw !== false) {
                     $allowedCredentials[] = $raw;
                 }
@@ -188,6 +205,14 @@ class PasskeyService
 
         $challenge = $_SESSION['webauthn_auth_challenge'];
 
+        // Hem standart base64 hem de URL-safe base64 varyantlarını oluştur
+        $stdBase64 = strtr($credentialIdBase64, '-_', '+/');
+        $pad = strlen($stdBase64) % 4;
+        if ($pad > 0) {
+            $stdBase64 .= str_repeat('=', 4 - $pad);
+        }
+        $b64Url = rtrim(strtr($credentialIdBase64, '+/', '-_'), '=');
+
         $db = getDB();
         $stmt = $db->prepare('
             SELECT p.id as passkey_id, p.user_id, p.credential_id, p.public_key, p.counter, p.device_name,
@@ -195,9 +220,9 @@ class PasskeyService
                    u.language_preference, u.is_active, u.must_reset_password
             FROM sys_user_passkeys p
             JOIN sys_users u ON p.user_id = u.id
-            WHERE p.credential_id = ?
+            WHERE p.credential_id = ? OR p.credential_id = ?
         ');
-        $stmt->execute([$credentialIdBase64]);
+        $stmt->execute([$stdBase64, $b64Url]);
         $passkey = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$passkey) {
@@ -209,11 +234,19 @@ class PasskeyService
         }
 
         try {
+            // Tarayıcıdan base64 gelen verileri binary/raw formata dönüştür
+            $rawClientDataJSON = base64_decode($clientDataJSON, true);
+            if ($rawClientDataJSON === false || !str_starts_with(trim($rawClientDataJSON), '{')) {
+                $rawClientDataJSON = $clientDataJSON;
+            }
+            $rawAuthenticatorData = base64_decode($authenticatorData, true) ?: $authenticatorData;
+            $rawSignature = base64_decode($signature, true) ?: $signature;
+
             $webAuthn = self::getWebAuthn();
             $webAuthn->processGet(
-                $clientDataJSON,
-                $authenticatorData,
-                $signature,
+                $rawClientDataJSON,
+                $rawAuthenticatorData,
+                $rawSignature,
                 $passkey['public_key'],
                 $challenge,
                 (int)$passkey['counter'],
