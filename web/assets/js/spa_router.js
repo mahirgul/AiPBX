@@ -348,7 +348,11 @@
                 });
                 newScript.setAttribute('data-page-script', 'true');
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                document.body.appendChild(newScript); // inline script: appendChild senkron çalıştırır
+                try {
+                    document.body.appendChild(newScript); // inline script: appendChild senkron çalıştırır
+                } catch (scriptErr) {
+                    console.error('[SPA Router] Inline script execution error:', scriptErr);
+                }
             }
         });
 
