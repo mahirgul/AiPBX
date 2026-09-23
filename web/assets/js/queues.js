@@ -57,6 +57,9 @@ function openCreateQueueModal() {
     document.querySelectorAll('.modal-agent-mode').forEach(sel => sel.value = '');
     document.querySelectorAll('.modal-supervisor-checkbox').forEach(cb => cb.checked = false);
 
+    const firstTabBtn = document.querySelector('.queue-tab-btn[data-tab="basic"]');
+    switchQueueTab('basic', firstTabBtn);
+
     const modal = document.getElementById('queueModal');
     if (modal) {
         modal.style.display = 'flex';
@@ -148,10 +151,36 @@ function openEditQueueModal(item) {
         cb.checked = supervisors.map(String).includes(cb.value);
     });
 
+    const firstTabBtn = document.querySelector('.queue-tab-btn[data-tab="basic"]');
+    switchQueueTab('basic', firstTabBtn);
+
     const modal = document.getElementById('queueModal');
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('active');
+    }
+}
+
+function switchQueueTab(tabKey, btn) {
+    const panes = document.querySelectorAll('.queue-tab-pane');
+    panes.forEach(pane => {
+        pane.style.display = 'none';
+        pane.classList.remove('active');
+    });
+
+    const target = document.getElementById('queue_tab_' + tabKey);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+
+    const buttons = document.querySelectorAll('.queue-tab-btn');
+    buttons.forEach(b => {
+        b.classList.remove('active');
+    });
+
+    if (btn) {
+        btn.classList.add('active');
     }
 }
 
@@ -165,3 +194,4 @@ function toggleQueueFallbackTarget() {
 function closeQueueModal() {
     UIHelper.closeOverlayModal('queueModal');
 }
+
