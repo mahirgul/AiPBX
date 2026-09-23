@@ -145,6 +145,64 @@ function findCallerChannelForAgent($ext, $lines = null) {
 }
 
 /**
+ * Görüşmede olan temsilcinin bağlı olduğu karşı tarafın (müşteri) numarasını
+ * ve aktif görüşme süresini bulur.
+ */
+function findAgentCallDetails($ext, $lines = null): array
+{
+    $ext = preg_replace('/[^0-9]/', '', $ext);
+    if ($ext === '') {
+        return ['connected_number' => '', 'duration' => 0, 'duration_formatted' => '00:00', 'caller_channel' => ''];
+    }
+
+    if ($lines === null) {
+        $lines = [];
+        @exec("asterisk -rx " . escapeshellarg("core show channels concise"), $lines);
+    }
+
+    $chanData = [];
+    foreach ($lines as $l) {
+        $c = explode('!', $l);
+        if (count($c) < 14 || $c[0] === '') continue;
+        $chanData[$c[0]] = [
+            'callerid' => trim($c[7] ?? ''),
+            'duration' => intval($c[10] ?? 0),
+        ];
+    }
+
+    $callerChan = findCallerChannelForAgent($ext, $lines);
+    if (!$callerChan) {
+        return ['connected_number' => '', 'duration' => 0, 'duration_formatted' => '00:00', 'caller_channel' => ''];
+    }
+
+    $info = $chanData[$callerChan] ?? [];
+    $callerNum = $info['callerid'] ?? '';
+    $duration = $info['duration'] ?? 0;
+
+    // Eğer concise çıktısında callerid boş ise, doğrudan Asterisk kanalından sorgula
+    if ($callerNum === '') {
+        @exec("asterisk -rx " . escapeshellarg("channel get {$callerChan} CALLERID(num)"), $cidOut);
+        foreach ($cidOut ?: [] as $co) {
+            if (preg_match('/Value:\s*([0-9+]+)/i', $co, $m)) {
+                $callerNum = $m[1];
+                break;
+            }
+        }
+    }
+
+    $m = floor($duration / 60);
+    $s = $duration % 60;
+    $durationFormatted = sprintf('%02d:%02d', $m, $s);
+
+    return [
+        'connected_number' => $callerNum,
+        'duration' => $duration,
+        'duration_formatted' => $durationFormatted,
+        'caller_channel' => $callerChan,
+    ];
+}
+
+/**
  * cc_pause_logs üzerinde ajan başına ATOMİK işlem garantisi.
  * Aynı ajan için eşzamanlı iki istek (iki sekme/cihaz, çift tıklama) UPDATE+INSERT
  * çiftini yarışa sokabilir (TOCTOU) — MySQL adlandırılmış kilidiyle serileştirilir.

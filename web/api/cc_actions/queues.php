@@ -104,6 +104,8 @@ if ($action === 'get_supervisor_agents') {
         $users_map[(string)$u['extension']] = $u;
     }
 
+    @exec("asterisk -rx " . escapeshellarg("core show channels concise"), $concise_lines);
+
     $agents_list = [];
     foreach ($db_queues as $q) {
         $q_name = $q['queue_name'];
@@ -122,6 +124,10 @@ if ($action === 'get_supervisor_agents') {
             $full_name = $users_map[$ext_str]['full_name'];
             $st_info = $member_statuses[$ext_str] ?? ['status_key' => 'OFFLINE', 'in_queue' => false, 'is_paused' => false];
 
+            $call_details = ($st_info['status_key'] === 'BUSY')
+                ? findAgentCallDetails($ext_str, $concise_lines)
+                : ['connected_number' => '', 'duration' => 0, 'duration_formatted' => '00:00'];
+
             $agents_list[] = [
                 'extension' => $ext_str,
                 'full_name' => $full_name,
@@ -134,12 +140,11 @@ if ($action === 'get_supervisor_agents') {
                 // cc_board (templates/views/cc_board/index.php) BU alanlari okur:
                 // is_in_call -> "Görüşmede", is_paused -> "Molada",
                 // is_logged_in -> "Boşta", hicbiri yoksa "Çevrimdışı".
-                // Uretilmedikleri surece hepsi undefined kalip her temsilci
-                // "Çevrimdışı" gorunuyordu (2026-09-15).
-                // cc_supervisor eski alanlari (queue_name/in_queue/status_key)
-                // kullandigi icin onlar KORUNDU.
                 'is_logged_in' => (bool)$st_info['in_queue'],
                 'is_in_call' => ($st_info['status_key'] === 'BUSY'),
+                'connected_number' => $call_details['connected_number'] ?? '',
+                'duration' => $call_details['duration'] ?? 0,
+                'duration_formatted' => $call_details['duration_formatted'] ?? '00:00',
                 'queues' => [$q_name],
             ];
         }
@@ -149,6 +154,49 @@ if ($action === 'get_supervisor_agents') {
         'success' => true,
         'agents' => $agents_list
     ]);
+    exit;
+}
+
+if ($action === 'spy_call') {
+    $role = $_SESSION['user_role'] ?? '';
+    if (!in_array($role, ['admin', 'cc_manager', 'cc_supervisor'], true)) {
+        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmamaktadır.']);
+        exit;
+    }
+
+    $target_ext = preg_replace('/[^0-9]/', '', $_POST['target_ext'] ?? '');
+    $mode = $_POST['mode'] ?? 'spy';
+    $supervisor_ext = preg_replace('/[^0-9]/', '', $_SESSION['user_extension'] ?? $user_ext);
+
+    if (empty($target_ext) || empty($supervisor_ext)) {
+        echo json_encode(['success' => false, 'error' => 'Hedef temsilci veya yönetici dahili numarası bulunamadı.']);
+        exit;
+    }
+
+    $spy_flags = match($mode) {
+        'whisper' => 'qw',
+        'barge' => 'qB',
+        default => 'q'
+    };
+
+    $ami_action = [
+        'Action' => 'Originate',
+        'Channel' => "Local/{$supervisor_ext}@from-internal-pbx-ortak/n",
+        'Application' => 'ChanSpy',
+        'Data' => "PJSIP/{$target_ext},{$spy_flags}",
+        'CallerID' => "SPY: {$target_ext} <*90>",
+        'Priority' => '1',
+        'Async' => 'true'
+    ];
+
+    $res = AsteriskHelper::queryAMI($ami_action);
+    if (!empty($res['Response']) && strtolower($res['Response']) === 'success') {
+        $mode_labels = ['spy' => 'Gizli Dinleme', 'whisper' => 'Fısıldama', 'barge' => 'Araya Girme'];
+        $label = $mode_labels[$mode] ?? 'Dinleme';
+        echo json_encode(['success' => true, 'message' => "Telefonunuz çaldırılıyor ({$label}). Açtığınızda {$target_ext} numaralı temsilcinin görüşmesine bağlanacaksınız."]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Dinleme başlatılamadı: ' . ($res['Message'] ?? 'Bilinmeyen hata')]);
+    }
     exit;
 }
 

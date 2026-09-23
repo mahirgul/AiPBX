@@ -19,9 +19,11 @@ final class InternalNumberTest extends TestCase
         Fixtures::load();
     }
 
-    public function testManifestteBesKaynakVarVeHangupActionKeyKullanir(): void
+    public function testManifestteKaynaklarVarVeHangupActionKeyKullanir(): void
     {
-        $this->assertCount(5, INTERNAL_NUMBER_SOURCES);
+        $this->assertCount(7, INTERNAL_NUMBER_SOURCES);
+        $this->assertArrayHasKey('ring_group', INTERNAL_NUMBER_SOURCES);
+        $this->assertArrayHasKey('conference', INTERNAL_NUMBER_SOURCES);
         $this->assertSame('action_key', INTERNAL_NUMBER_SOURCES['hangup']['dest_col'],
             'hangup hedefinin dest_id\'si buildDestinationLines() icinde action_key ile aranir');
         $this->assertSame('id', INTERNAL_NUMBER_SOURCES['ivr']['dest_col']);

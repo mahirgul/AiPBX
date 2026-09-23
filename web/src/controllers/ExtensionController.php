@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
+require_once __DIR__ . '/../services/DialPermissionService.php';
+require_once __DIR__ . '/../services/BossSecretaryService.php';
 
 class ExtensionController extends BaseController
 {
@@ -28,12 +30,18 @@ class ExtensionController extends BaseController
 
         $extensions = ExtensionRepository::allWithExtension();
         $pjsip_statuses = ExtensionRepository::livePjsipStatuses();
+        $permission_groups = DialPermissionService::getGroups();
+        $boss_secretary_groups = BossSecretaryService::getGroups();
 
         $page_title = t('extensions.title');
         require_once dirname(__DIR__) . '/../header.php';
         static::render('extensions/index', [
             'extensions' => $extensions,
             'pjsip_statuses' => $pjsip_statuses,
+            'permission_groups' => $permission_groups,
+            'boss_secretary_groups' => $boss_secretary_groups,
+            'message' => $message,
+            'error' => $error,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';
     }

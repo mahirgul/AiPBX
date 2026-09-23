@@ -31,6 +31,18 @@
         - <strong><?php echo t('extensions.help_remove'); ?></strong>
     </div>
 
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-success" style="margin-bottom: 20px;">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="table-responsive">
         <table class="data-table">
             <thead>
@@ -42,13 +54,14 @@
                     <th class="col-hide-mobile"><?php echo t('extensions.col_type'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_sip_password'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_live_status'); ?></th>
+                    <th class="col-hide-mobile"><?php echo t('extensions.col_perm_role', 'Yetki / Grup'); ?></th>
                     <th><?php echo t('extensions.col_status'); ?></th>
                     <th class="text-right"><?php echo t('extensions.col_actions'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($extensions)): ?>
-                    <?php echo uiTableEmptyRow(9, t('extensions.empty'), 'fa-phone-alt'); ?>
+                    <?php echo uiTableEmptyRow(10, t('extensions.empty'), 'fa-phone-alt'); ?>
                 <?php else: ?>
                     <?php foreach ($extensions as $e): ?>
                         <?php
@@ -107,6 +120,23 @@
                                 <?php else: ?>
                                     <span class="badge <?php echo $status_badge; ?>"><?php echo htmlspecialchars($status_text); ?></span>
                                 <?php endif; ?>
+                            </td>
+                            <td class="col-hide-mobile">
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span class="badge badge-secondary" style="font-size: 10px;" title="Arama Yetki Grubu">
+                                        <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars($e['permission_group_name'] ?? 'Her Yöne Açık'); ?>
+                                    </span>
+                                    <?php if (!empty($e['boss_secretary_role']) && $e['boss_secretary_role'] !== 'none'): ?>
+                                        <?php if ($e['boss_secretary_role'] === 'boss'): ?>
+                                            <span class="badge badge-warning" style="font-size: 10px;" title="Şef / Müdür"><i class="fas fa-crown"></i> Şef</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info" style="font-size: 10px;" title="Sekreter"><i class="fas fa-user-tie"></i> Sekreter</span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <?php if ((int)($e['voicemail_enabled'] ?? 1) === 1): ?>
+                                        <span class="badge badge-primary" style="font-size: 9px; opacity: 0.8;" title="Sesli Posta Kutusu"><i class="fas fa-voicemail"></i> VM</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
@@ -202,6 +232,65 @@
                     </div>
                 </div>
                 <small style="color: var(--text-muted); font-size: 11px; margin-top: -8px; margin-bottom: 10px; display: block;"><?php echo t('extensions.cid_help'); ?></small>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-shield-alt text-info"></i> <?php echo t('extensions.field_permission_group', 'Arama Yetki Grubu'); ?></label>
+                        <select name="permission_group_id" id="modal_permission_group_id" class="form-control">
+                            <?php foreach ($permission_groups ?? [] as $pg): ?>
+                                <option value="<?php echo $pg['id']; ?>"><?php echo htmlspecialchars($pg['group_name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-user-tie text-warning"></i> <?php echo t('extensions.field_boss_secretary_group', 'Şef - Sekreter Grubu'); ?></label>
+                        <select name="boss_secretary_group_id" id="modal_boss_secretary_group_id" class="form-control">
+                            <option value="">-- Grup Yok --</option>
+                            <?php foreach ($boss_secretary_groups ?? [] as $bsg): ?>
+                                <option value="<?php echo $bsg['id']; ?>"><?php echo htmlspecialchars($bsg['group_name']); ?> (Grup <?php echo $bsg['group_number']; ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);"><i class="fas fa-voicemail" style="color: var(--primary);"></i> Sesli Posta (Voicemail)</span>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
+                            <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked style="accent-color: var(--primary);">
+                            <span>Sesli Posta Kutusu Etkin</span>
+                        </label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label class="form-label" style="font-size: 11px;">Sesli Posta PIN (Şifre)</label>
+                            <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control" placeholder="Boş ise dahili no" style="font-size: 12px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label class="form-label" style="font-size: 11px;">Sesli Posta E-posta</label>
+                            <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control" placeholder="ornek@alanadi.com" style="font-size: 12px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="vm_on_noanswer" id="modal_vm_on_noanswer" value="1" style="accent-color: var(--primary);">
+                            <span>Cevapsızda</span>
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="vm_on_busy" id="modal_vm_on_busy" value="1" style="accent-color: var(--primary);">
+                            <span>Meşgulde</span>
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="vm_on_unavail" id="modal_vm_on_unavail" value="1" style="accent-color: var(--primary);">
+                            <span>Ulaşılamadığında</span>
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="vm_always" id="modal_vm_always" value="1" style="accent-color: var(--primary);">
+                            <span>Her Zaman Sesli Posta</span>
+                        </label>
+                    </div>
+                </div>
 
                 <div class="form-group" style="margin-top: 10px;">
                     <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">

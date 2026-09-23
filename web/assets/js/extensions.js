@@ -56,6 +56,26 @@ function openCreateExtensionModal() {
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = true;
 
+    const permEl = document.getElementById('modal_permission_group_id');
+    if (permEl) permEl.value = '1';
+    const bsgEl = document.getElementById('modal_boss_secretary_group_id');
+    if (bsgEl) bsgEl.value = '';
+
+    const vmEn = document.getElementById('modal_voicemail_enabled');
+    if (vmEn) vmEn.checked = true;
+    const vmPin = document.getElementById('modal_voicemail_pin');
+    if (vmPin) vmPin.value = '';
+    const vmEmail = document.getElementById('modal_voicemail_email');
+    if (vmEmail) vmEmail.value = '';
+    const vmNa = document.getElementById('modal_vm_on_noanswer');
+    if (vmNa) vmNa.checked = false;
+    const vmBusy = document.getElementById('modal_vm_on_busy');
+    if (vmBusy) vmBusy.checked = false;
+    const vmUnavail = document.getElementById('modal_vm_on_unavail');
+    if (vmUnavail) vmUnavail.checked = false;
+    const vmAlways = document.getElementById('modal_vm_always');
+    if (vmAlways) vmAlways.checked = false;
+
     const pwEl = document.getElementById('modal_sip_password');
     pwEl.value = generateSipPassword();
     pwEl.type = 'text';
@@ -84,6 +104,26 @@ function openEditExtensionModal(item) {
     document.getElementById('modal_cid_external').value = item.cid_external || '';
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = (item.is_active == 1);
+
+    const permEl = document.getElementById('modal_permission_group_id');
+    if (permEl) permEl.value = item.permission_group_id || '1';
+    const bsgEl = document.getElementById('modal_boss_secretary_group_id');
+    if (bsgEl) bsgEl.value = item.boss_secretary_group_id || '';
+
+    const vmEn = document.getElementById('modal_voicemail_enabled');
+    if (vmEn) vmEn.checked = (item.voicemail_enabled == 1 || item.voicemail_enabled === undefined);
+    const vmPin = document.getElementById('modal_voicemail_pin');
+    if (vmPin) vmPin.value = item.voicemail_pin || '';
+    const vmEmail = document.getElementById('modal_voicemail_email');
+    if (vmEmail) vmEmail.value = item.voicemail_email || '';
+    const vmNa = document.getElementById('modal_vm_on_noanswer');
+    if (vmNa) vmNa.checked = (item.vm_on_noanswer == 1);
+    const vmBusy = document.getElementById('modal_vm_on_busy');
+    if (vmBusy) vmBusy.checked = (item.vm_on_busy == 1);
+    const vmUnavail = document.getElementById('modal_vm_on_unavail');
+    if (vmUnavail) vmUnavail.checked = (item.vm_on_unavail == 1);
+    const vmAlways = document.getElementById('modal_vm_always');
+    if (vmAlways) vmAlways.checked = (item.vm_always == 1);
 
     const pwEl = document.getElementById('modal_sip_password');
     pwEl.value = item.sip_password || '';

@@ -45,6 +45,16 @@ const INTERNAL_NUMBER_SOURCES = [
         'dest_type' => 'announcement', 'dest_col' => 'id',
         'ui' => 'Anons',
     ],
+    'ring_group' => [
+        'table' => 'pbx_ring_groups', 'label_col' => 'name',
+        'dest_type' => 'ring_group', 'dest_col' => 'id',
+        'ui' => 'Çalma Grubu',
+    ],
+    'conference' => [
+        'table' => 'pbx_conferences', 'label_col' => 'title',
+        'dest_type' => 'conference', 'dest_col' => 'id',
+        'ui' => 'Konferans Odası',
+    ],
     'hangup' => [
         'table' => 'pbx_hangup_actions', 'label_col' => 'title',
         'dest_type' => 'hangup', 'dest_col' => 'action_key',
