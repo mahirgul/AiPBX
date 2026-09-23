@@ -162,6 +162,12 @@
                     });
                 }
 
+                // IP adresi durumunda rpId W3C standardı gereği alan adı sayılmaz;
+                // tarayıcının hata vermemesi için rpId silinerek origin varsayılan alınır.
+                if (getArgs.rpId && /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(getArgs.rpId)) {
+                    delete getArgs.rpId;
+                }
+
                 const assertion = await navigator.credentials.get({ publicKey: getArgs });
                 if (!assertion) {
                     throw new Error('Passkey doğrulaması iptal edildi.');
