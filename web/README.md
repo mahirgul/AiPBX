@@ -6,15 +6,15 @@ A self-hosted PBX / fax / call-center management portal built on **native Asteri
 
 ## Features
 
-- **PBX management**: SIP/WebRTC extensions (dual-endpoint architecture), trunks (advanced PJSIP configuration & outbound caller name toggle), inbound/outbound routes, time conditions, IVR menus, feature codes (star codes), call queues (localized announcements), hangup actions.
+- **PBX management**: SIP/WebRTC extensions (dual-endpoint architecture), trunks (advanced PJSIP configuration & outbound caller name toggle), inbound/outbound routes, time conditions, IVR menus, feature codes (star codes), call queues (localized announcements), hangup actions, calling permission groups (call barring), native voicemail, boss-secretary groups, ring groups, and ConfBridge conference rooms.
 - **Microsoft Teams integration**: Direct Routing (SBC / SIP TLS 5061), user & extension mapping, incoming webhooks & adaptive cards, dynamic M365 PowerShell script generator.
 - **Two-Factor Authentication (2FA) & Passkeys**: optional RFC 6238 TOTP authenticator app support (Google/MS Authenticator) with 100% offline SVG QR code generation, 8 single-use recovery codes, and passwordless FIDO2 Passkeys (Touch ID, Face ID, Windows Hello, YubiKey) with self-service user security management (`/security`), two-step login (`/login-2fa`), and admin reset.
-- **Call center**: live agent screen (WebRTC softphone in the browser), supervisor queue monitoring, wallboard, pause reports, queue logs.
+- **Call center**: live agent screen (WebRTC softphone in the browser), supervisor queue monitoring, wallboard, pause reports, queue logs, live call spy/whisper/barge (`*90`/`*91`/`*92`), and real-time customer number & call duration tracking.
 - **Fax**: inbound/outbound fax over native Asterisk trunks (T.38 / spandsp), direct PDF upload or browser WYSIWYG rich-text editor, per-department routing and email notification, sent/received archives, and failed fax retry.
 - **Admin & Security**: role-based access control (RBAC) with a per-module permission matrix, user management, branding/appearance customization, advanced PBX & SIP User Agent settings, integrated **Firewall (firewalld)** and **Fail2ban** management.
 - **Reliability & Rollback**: automatic backup of working Asterisk configurations before every reload, with instant rollback and audit logging if syntax validation or reload fails.
-- **Multi-language UI**: Turkish and English out of the box (`lang/tr.php`, `lang/en.php` with 1,740+ keys with 100% parity), independent from Asterisk's voice-prompt language setting.
-- **CDR & recordings**: call detail records with waveform playback of recordings, scoped by role (agents see their own calls, supervisors/admins see full scope).
+- **Multi-language UI**: Turkish and English out of the box (`lang/tr.php`, `lang/en.php` with 1,890+ keys with 100% parity), independent from Asterisk's voice-prompt language setting.
+- **CDR & recordings**: call detail records with waveform playback of recordings, scoped by role, linkedid call grouping with expandable journey timeline.
 
 ## Architecture
 
@@ -22,12 +22,12 @@ A lightweight, framework-free MVC layered over Asterisk's "database is the sourc
 
 ```
 index.php                 Front controller / router (clean URLs, whitelist mapping)
-src/controllers/          37 controllers — auth check, POST handling, orchestration
-src/repositories/         28 repositories — read queries (extends BaseRepository)
-src/services/             26 services — write/business logic (validation, RBAC, sync triggers)
-src/sync/                 12 sync generators — DB -> Asterisk .conf files (PJSIP, dialplan, ...)
+src/controllers/          46 controllers — auth check, POST handling, orchestration
+src/repositories/         32 repositories — read queries (extends BaseRepository)
+src/services/             34 services — write/business logic (validation, RBAC, sync triggers)
+src/sync/                 19 sync generators — DB -> Asterisk .conf files (PJSIP, dialplan, ...)
 src/ui_helpers.php        Reusable HTML component renderers (modals, forms, badges)
-templates/views/          36 pure-PHP view templates
+templates/views/          48 pure-PHP view templates
 lang/                     Translation tables (tr.php / en.php) + t() helper in config.php
 db/migrations/            Phinx — versioned, reversible schema changes
 api/                      JSON endpoints consumed by browser JS (WebAuthn, call control, WebRTC creds, ...)
