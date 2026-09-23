@@ -63,13 +63,18 @@ class CdrReportController extends BaseController
         $sayfa = max(1, intval($_GET['page'] ?? 1));
         $sayfa_boyutu = View::sayfaBoyutu(CdrReportRepository::SAYFA_BOYUTU);
 
-        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter);
+        $view_mode = trim($_GET['view_mode'] ?? 'grouped');
+        if ($view_mode !== 'raw') {
+            $view_mode = 'grouped';
+        }
+
+        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter, $view_mode);
 
         // Ozet TUM eslesen kayitlar uzerinden, veritabaninda hesaplaniyor.
         // Eskiden PHP'de satir satir donuluyordu; sayfalamayla birlikte bu
         // yalnizca goruntulenen sayfayi kapsar ve ozet yanlis olurdu. Ayrica
         // her satir icin file_exists() cagriliyordu.
-        $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter);
+        $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode);
 
         $stat_total            = $ozet['toplam'];
         $stat_answered         = $ozet['cevaplanan'];
@@ -102,6 +107,7 @@ class CdrReportController extends BaseController
             'agent_filter' => $agent_filter,
             'device_filter' => $device_filter,
             'search_query' => $search_query,
+            'view_mode' => $view_mode,
             'cdrs' => $cdrs,
             'stat_total_ring' => $stat_total_ring,
             'stat_avg_talk' => $stat_avg_talk,
