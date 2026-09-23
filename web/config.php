@@ -5,6 +5,10 @@
 // İş/branding ayarları:        DB `sys_settings` (getSystemSetting)
 // ============================================================================
 
+if (is_file(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
+
 /**
  * /etc/ai-pbx.env dosyasını okur (anahtar=değer satırları, # yorum).
  * Apache SetEnv (getenv) değerleri önceliklidir.
