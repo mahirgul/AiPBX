@@ -44,7 +44,10 @@ function __syncAllTrunksBody() {
             $transport = 'transport-udp';
         }
         $codecs = toCleanAscii(!empty($sip_map['allow']) ? $sip_map['allow'] : (!empty($t['codecs']) ? $t['codecs'] : 'alaw,ulaw'));
-        $context = toCleanAscii(!empty($sip_map['context']) ? $sip_map['context'] : (!empty($t['context']) ? $t['context'] : 'from-trunk-inbound'));
+        $raw_context = toCleanAscii(!empty($sip_map['context']) ? $sip_map['context'] : (!empty($t['context']) ? $t['context'] : 'from-trunk-inbound'));
+        $context = ($raw_context === '' || $raw_context === 'from-trunk-inbound' || $raw_context === 'from-trunk-kapanma-tonu')
+            ? "from-trunk-{$t_name}"
+            : $raw_context;
         $qualify = !empty($sip_map['qualify_frequency']) ? intval($sip_map['qualify_frequency']) : intval($t['qualify_frequency'] ?: 60);
         $t38 = (!empty($sip_map['t38_udptl']) && $sip_map['t38_udptl'] === 'yes') || !empty($t['t38_support']);
         $dtmf_mode = toCleanAscii(!empty($sip_map['dtmf_mode']) ? $sip_map['dtmf_mode'] : (!empty($t['dtmf_mode']) ? $t['dtmf_mode'] : 'rfc4733'));

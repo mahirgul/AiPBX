@@ -460,6 +460,43 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringContainsString('exten => NOANSWER,1,NoOp(Outbound Status: NOANSWER', $conf,
             'NOANSWER durumu yonetilmeli');
     }
+
+    public function testTrunkInboundDialplanUretimiVeDidKirpma(): void
+    {
+        $db = getDB();
+        $db->prepare('UPDATE pbx_trunks SET did_trim_digits = 4, allow_outbound_routing = 1, outbound_route_group = 1 WHERE trunk_name = ?')
+           ->execute([Fixtures::TRUNK_NAME]);
+
+        syncInboundDialplan();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+
+        // Trunk inbound context var mi
+        $this->assertStringContainsString('[from-trunk-' . Fixtures::TRUNK_NAME . ']', $conf);
+        // DID kırpma formülü doğru mu
+        $this->assertStringContainsString('same => n,Set(NORMALIZED_DID=${IF($[${LEN(${EXTEN})} >= 4]?${EXTEN:-4}:${EXTEN})})', $conf);
+        $this->assertStringContainsString('same => n,Goto(from-trunk-' . Fixtures::TRUNK_NAME . '-route,${NORMALIZED_DID},1)', $conf);
+
+        // Route bağlamında transit outbound rotası ve dahili aboneler include edilmiş mi
+        $this->assertStringContainsString('[from-trunk-' . Fixtures::TRUNK_NAME . '-route]', $conf);
+        $this->assertStringContainsString('include => from-trunk-inbound', $conf);
+        $this->assertStringContainsString('include => from-internal-outbound-1', $conf);
+        $this->assertStringContainsString('include => from-internal-pbx-ortak', $conf);
+        $this->assertStringContainsString('include => from-trunk-notfound', $conf);
+    }
+
+    public function testOutboundDialplanTransitCagrilardaCallerIdKorur(): void
+    {
+        $db = getDB();
+        $db->prepare('UPDATE pbx_trunks SET outbound_caller_id = "08501234567" WHERE trunk_name = ?')
+           ->execute([Fixtures::TRUNK_NAME]);
+
+        syncOutboundDialplan();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+
+        // Transit gelen çağrıda arayan numarasını korumak için ExecIf koşulu
+        $this->assertStringContainsString('ExecIf($["${CDR(inbound_trunk)}" = ""]?Set(CALLERID(num)=08501234567))', $conf,
+            'Trunk-to-Trunk transit cagrilarinda gelen cep numarasi trunk varsayilan CID ile ezilmemeli');
+    }
 }
 
 
