@@ -242,6 +242,18 @@ class PasskeyService
             $rawAuthenticatorData = base64_decode($authenticatorData, true) ?: $authenticatorData;
             $rawSignature = base64_decode($signature, true) ?: $signature;
 
+            // Platform anahtarları (Android, Apple, Windows Hello) signCount = 0 döner.
+            // Cihaz signCount = 0 gönderiyorsa counter karşılaştırması yapılmaz (null iletilir).
+            $prevCounter = (int)$passkey['counter'];
+            try {
+                $authObj = new \lbuchs\WebAuthn\Attestation\AuthenticatorData($rawAuthenticatorData);
+                if ($authObj->getSignCount() === 0) {
+                    $prevCounter = null;
+                }
+            } catch (\Exception $e) {
+                // ignore
+            }
+
             $webAuthn = self::getWebAuthn();
             $webAuthn->processGet(
                 $rawClientDataJSON,
@@ -249,16 +261,15 @@ class PasskeyService
                 $rawSignature,
                 $passkey['public_key'],
                 $challenge,
-                (int)$passkey['counter'],
+                $prevCounter,
                 false, // requireUserVerification
                 true   // requireUserPresent
             );
 
-            // Counter güncelle
-            $newCounter = $webAuthn->getSignatureCounter();
-            if ($newCounter === null || $newCounter === 0) {
-                $newCounter = (int)$passkey['counter'] + 1;
-            }
+            // Counter güncelle: Yalnızca donanım anahtarları (YubiKey vb.) artıran sayaç dönerse sakla,
+            // 0 dönen platform anahtarlarında 0 olarak koru (yapay artırma yapma).
+            $signCount = $webAuthn->getSignatureCounter();
+            $newCounter = ($signCount !== null && $signCount > 0) ? $signCount : 0;
 
             $upd = $db->prepare('UPDATE sys_user_passkeys SET counter = ?, last_used_at = NOW() WHERE id = ?');
             $upd->execute([$newCounter, $passkey['passkey_id']]);
@@ -271,12 +282,14 @@ class PasskeyService
             $_SESSION['full_name'] = $passkey['full_name'];
             $_SESSION['user_role'] = $passkey['role'];
             $_SESSION['extension'] = $passkey['extension'];
+            $_SESSION['last_activity'] = time();
             $_SESSION['theme'] = $passkey['theme_preference'] ?? 'light';
             $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$passkey['language_preference'] ?? '']))
                 ? $passkey['language_preference']
                 : 'tr';
 
             unset($_SESSION['webauthn_auth_challenge']);
+            unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
             // Başarılı giriş günlüğe kaydet
             if (function_exists('logLoginAttempt')) {

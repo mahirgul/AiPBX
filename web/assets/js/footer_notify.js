@@ -39,6 +39,16 @@
     }
 
     /**
+     * Güvenli HTML Kaçış Yardımcısı
+     */
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(String(str)));
+        return div.innerHTML;
+    }
+
+    /**
      * Ortalanmış Yüzen Toast Bildirimi (Footer Center)
      * @param {string} msg 
      * @param {string} type - 'success', 'danger', 'warning', 'info'
