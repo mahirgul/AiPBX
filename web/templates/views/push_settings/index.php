@@ -43,6 +43,20 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 }
 </style>
 
+<!-- Push Settings Single-Line Fixed Tabs -->
+<div class="settings-tabs" style="margin-bottom: 20px;">
+    <button type="button" class="settings-tab-btn active" data-tab="config" onclick="switchSettingsTab('config', this)">
+        <i class="fas fa-sliders-h"></i> <?php echo t('push_settings.tab_config', 'Yapılandırma'); ?>
+    </button>
+    <?php if (hasModulePermission('push_settings', 'edit')): ?>
+    <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
+        <i class="fas fa-paper-plane"></i> <?php echo t('push_settings.tab_test', 'Test & Gönderim'); ?>
+    </button>
+    <?php endif; ?>
+</div>
+
+<!-- TAB 1: Yapılandırma -->
+<div id="tab_config" class="settings-tab-pane active">
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -151,16 +165,18 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         <?php if (hasModulePermission('push_settings', 'edit')): ?>
         <div class="push-save-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
             <button type="submit" name="save_push_settings" class="btn btn-primary">
-                <i class="fas fa-save"></i> Ayarları Kaydet
+                <i class="fas fa-save"></i> <?php echo t('common.save', 'Ayarları Kaydet'); ?>
             </button>
         </div>
         <?php endif; ?>
     </form>
 </div>
+</div>
 
 <?php if (hasModulePermission('push_settings', 'edit')): ?>
-<!-- Push Test Card -->
-<div class="card" style="margin-top: 24px;">
+<!-- TAB 2: Test Bildirimi -->
+<div id="tab_test" class="settings-tab-pane" style="display: none;">
+<div class="card">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-paper-plane" style="color: var(--success, #28a745);"></i> Test Bildirimi Gönder
@@ -199,6 +215,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 
         <div id="testResultBox" style="display: none; margin-top: 16px;"></div>
     </div>
+</div>
 </div>
 <?php endif; ?>
 

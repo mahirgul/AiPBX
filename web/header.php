@@ -116,10 +116,13 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         window.WEBRTC_RING_INCOMING_URL = "<?php echo $ring_in !== '' ? '/api/sound_play.php?file=' . urlencode($ring_in) : ''; ?>";
         window.WEBRTC_RING_OUTGOING_URL = "<?php echo $ring_out !== '' ? '/api/sound_play.php?file=' . urlencode($ring_out) : ''; ?>";
         window.LANG_APPLYING = "<?php echo t('topbar.applying'); ?>";
-        if ("serviceWorker" in navigator) {
-            window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js").catch(function () {});
-            });
+        if ("serviceWorker" in navigator && window.isSecureContext) {
+            var isSelfSignedHost = location.protocol === 'https:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname));
+            if (!isSelfSignedHost) {
+                window.addEventListener("load", function () {
+                    navigator.serviceWorker.register("/sw.js").catch(function () {});
+                });
+            }
         }
     </script>
     <link rel="stylesheet" href="/assets/css/variables.css?v=<?php echo time(); ?>">

@@ -557,10 +557,10 @@ $token = $token ?? '';
 </div>
 
 <script>
-// Global Chat Konfigürasyonu
-const CHAT_TOKEN = <?= json_encode($token, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-const MY_EXT = <?= json_encode($ext, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-const MY_NAME = <?= json_encode($user['full_name'] ?? $user['username'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+// Global Chat Konfigürasyonu (SPA uyumlu window atamaları)
+window.CHAT_TOKEN = <?= json_encode($token, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+window.MY_EXT = <?= json_encode($ext, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+window.MY_NAME = <?= json_encode($user['full_name'] ?? $user['username'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
 // Chat WebSocket & Sayfa Durum Yöneticisi (Singleton)
 window._chatWsState = window._chatWsState || {
@@ -569,20 +569,19 @@ window._chatWsState = window._chatWsState || {
     intentionalClose: false
 };
 
-let currentConvId = null;
-let currentConv = null;
-let currentTargetExt = null;
-let conversations = [];
-let contacts = [];
-let currentTab = 'convs';
-let pendingUpload = null;
-let newGroupAvatarUrl = '';
-let typingTimeout = null;
-let isTypingSent = false;
-let audioCtx = null;
-
-// Geriye dönük uyumluluk için ws getter/setter proxy
-let ws = null;
+// Sayfa Durum Değişkenleri (Tekrarlı SPA yüklemelerinde çakışma olmaması için window üzerinde tutulur)
+window.currentConvId = null;
+window.currentConv = null;
+window.currentTargetExt = null;
+window.conversations = window.conversations || [];
+window.contacts = window.contacts || [];
+window.currentTab = 'convs';
+window.pendingUpload = null;
+window.newGroupAvatarUrl = '';
+window.typingTimeout = null;
+window.isTypingSent = false;
+window.audioCtx = null;
+window.ws = null;
 
 function getChatWs() {
     return window._chatWsState ? window._chatWsState.ws : null;
@@ -657,7 +656,7 @@ function initChatWebSocket() {
     }
 
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProto}//${window.location.host}/chat/ws?token=${encodeURIComponent(CHAT_TOKEN)}`;
+    const wsUrl = `${wsProto}//${window.location.host}/chat/ws?token=${encodeURIComponent(window.CHAT_TOKEN)}`;
 
     badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...';
     badge.style.color = 'var(--text-muted)';
@@ -808,7 +807,7 @@ function handleWsEvent(evt) {
 
     } else if (evt.event === 'group_member_removed') {
         const data = evt.data || {};
-        if (data.extension === MY_EXT) {
+        if (data.extension === window.MY_EXT) {
             if (currentConv && currentConv.id === data.conversation_id) {
                 closeActiveConversation();
                 alert('Bu gruptan çıkarıldınız veya ayrıldınız.');
@@ -832,7 +831,7 @@ function handleWsEvent(evt) {
 async function loadConversations() {
     try {
         const res = await fetch('/chat/api/conversations', {
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN }
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN }
         });
         const json = await res.json();
         if (json.success) {
@@ -849,7 +848,7 @@ async function loadConversations() {
 async function loadContacts() {
     try {
         const res = await fetch('/chat/api/contacts', {
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN }
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN }
         });
         const json = await res.json();
         if (json.success) {
@@ -1004,7 +1003,7 @@ async function startDirectChatWith(targetExt, targetName) {
         const res = await fetch('/chat/api/conversations/direct', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ target_extension: targetExt })
@@ -1137,7 +1136,7 @@ async function loadMessages(convId) {
 
     try {
         const res = await fetch(`/chat/api/messages?conversation_id=${convId}&limit=50`, {
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN }
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN }
         });
         const json = await res.json();
         scrollEl.innerHTML = '';
@@ -1173,7 +1172,7 @@ function appendMessageToUI(msg) {
         return;
     }
 
-    const isMe = msg.is_me || msg.sender_ext === MY_EXT;
+    const isMe = msg.is_me || msg.sender_ext === window.MY_EXT;
 
     const msgRow = document.createElement('div');
     msgRow.id = `chat-msg-${msg.id}`;
@@ -1277,7 +1276,7 @@ async function sendMessage() {
             await fetch('/chat/api/messages', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer ' + CHAT_TOKEN,
+                    'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
@@ -1315,7 +1314,7 @@ async function handleFileSelected(event, type) {
     try {
         const res = await fetch('/chat/api/upload', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN },
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN },
             body: formData
         });
         const json = await res.json();
@@ -1631,7 +1630,7 @@ async function handleNewGroupAvatarSelect(event) {
     try {
         const res = await fetch('/chat/api/upload?type=avatar', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN },
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN },
             body: formData
         });
         const json = await res.json();
@@ -1670,7 +1669,7 @@ async function submitCreateGroup() {
         const res = await fetch('/chat/api/conversations/group', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -1700,7 +1699,7 @@ async function submitCreateGroup() {
 async function fetchGroupDetails(convId) {
     try {
         const res = await fetch(`/chat/api/conversations/group?conversation_id=${convId}`, {
-            headers: { 'Authorization': 'Bearer ' + CHAT_TOKEN }
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN }
         });
         const json = await res.json();
         if (json.success && json.conversation) {
@@ -1760,7 +1759,7 @@ function renderGroupInfo(conv) {
         row.onmouseenter = () => row.style.background = 'var(--bg-main)';
         row.onmouseleave = () => row.style.background = 'var(--bg-card)';
 
-        const isMe = p.extension === MY_EXT;
+        const isMe = p.extension === window.MY_EXT;
         const onlineColor = p.is_online ? '#10b981' : '#9ca3af';
         const roleBadge = p.role === 'admin' 
             ? '<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 10.5px; padding: 2px 6px; border-radius: 6px;">Yönetici</span>'
@@ -1821,7 +1820,7 @@ async function promptEditGroupInfo() {
         const res = await fetch('/chat/api/conversations/group/update', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -1911,7 +1910,7 @@ async function submitAddMembers() {
         const res = await fetch('/chat/api/conversations/group/members/add', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -1946,7 +1945,7 @@ async function removeMemberFromGroup(targetExt, targetName) {
         const res = await fetch('/chat/api/conversations/group/members/remove', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -1978,7 +1977,7 @@ async function updateMemberRole(targetExt, targetName, newRole) {
         const res = await fetch('/chat/api/conversations/group/members/role', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -2009,7 +2008,7 @@ async function confirmLeaveGroup() {
         const res = await fetch('/chat/api/conversations/group/leave', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ conversation_id: currentConv.id })
@@ -2036,7 +2035,7 @@ async function confirmDeleteGroup() {
         const res = await fetch('/chat/api/conversations/group/delete', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + CHAT_TOKEN,
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ conversation_id: currentConv.id })
