@@ -199,16 +199,24 @@
                 const verifyData = await verifyRes.json();
 
                 if (verifyData.success) {
-                    if (window.notify) window.notify.success("Passkey doğrulandı! Giriş yapılıyor...");
+                    try {
+                        if (window.notify) window.notify.success("Passkey doğrulandı! Giriş yapılıyor...");
+                    } catch (e) {
+                        console.warn(e);
+                    }
                     window.location.href = verifyData.redirect || '/dashboard';
                 } else {
                     throw new Error(verifyData.error || 'Passkey doğrulanamadı.');
                 }
             } catch (err) {
                 console.error(err);
-                if (window.notify) {
-                    window.notify.error(err.message || 'Passkey doğrulaması başarısız.');
-                } else {
+                try {
+                    if (window.notify) {
+                        window.notify.error(err.message || 'Passkey doğrulaması başarısız.');
+                    } else {
+                        alert(err.message || 'Passkey doğrulaması başarısız.');
+                    }
+                } catch (e) {
                     alert(err.message || 'Passkey doğrulaması başarısız.');
                 }
             } finally {
