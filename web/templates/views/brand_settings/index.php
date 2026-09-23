@@ -2,7 +2,21 @@
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_brand_settings" value="1">
 
+    <!-- Brand Settings Single-Line Fixed Tabs -->
+    <div class="settings-tabs">
+        <button type="button" class="settings-tab-btn active" data-tab="identity" onclick="switchSettingsTab('identity', this)">
+            <i class="fas fa-id-card"></i> <?php echo t('brand_settings.tab_identity', 'Kimlik'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="logo" onclick="switchSettingsTab('logo', this)">
+            <i class="fas fa-image"></i> <?php echo t('brand_settings.tab_logo', 'Logo & İkon'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="colors" onclick="switchSettingsTab('colors', this)">
+            <i class="fas fa-palette"></i> <?php echo t('brand_settings.tab_colors', 'Renkler'); ?>
+        </button>
+    </div>
+
     <!-- BÖLÜM 1: Kimlik -->
+    <div id="tab_identity" class="settings-tab-pane active">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -33,8 +47,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- BÖLÜM 2: Logo & Favicon -->
+    <div id="tab_logo" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -112,8 +128,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- BÖLÜM 3: Renkler -->
+    <div id="tab_colors" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -152,6 +170,7 @@
                 <button type="button" class="btn btn-secondary" onclick="resetBrandColors()" style="margin-left: auto;"><i class="fas fa-undo"></i> <?php echo t('brand_settings.reset_colors'); ?></button>
             <?php endif; ?>
         </div>
+    </div>
     </div>
 
     <?php if (hasModulePermission('brand_settings', 'edit')): ?>

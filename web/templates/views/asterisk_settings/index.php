@@ -2,7 +2,30 @@
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_asterisk_settings" value="1">
 
+    <!-- Settings Single-Line Fixed Tabs -->
+    <div class="settings-tabs">
+        <button type="button" class="settings-tab-btn active" data-tab="pjsip" onclick="switchSettingsTab('pjsip', this)">
+            <i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.tab_pjsip', 'PJSIP & Ağ'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="rtp" onclick="switchSettingsTab('rtp', this)">
+            <i class="fas fa-wave-square"></i> <?php echo t('asterisk_settings.tab_rtp', 'RTP'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="t38" onclick="switchSettingsTab('t38', this)">
+            <i class="fas fa-fax"></i> <?php echo t('asterisk_settings.tab_t38', 'T.38 Faks'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="ring" onclick="switchSettingsTab('ring', this)">
+            <i class="fas fa-bell"></i> <?php echo t('asterisk_settings.tab_ring', 'Zil Sesi'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="video" onclick="switchSettingsTab('video', this)">
+            <i class="fas fa-video"></i> <?php echo t('asterisk_settings.tab_video', 'Video'); ?>
+        </button>
+        <button type="button" class="settings-tab-btn" data-tab="lang" onclick="switchSettingsTab('lang', this)">
+            <i class="fas fa-language"></i> <?php echo t('asterisk_settings.tab_lang', 'Dil'); ?>
+        </button>
+    </div>
+
     <!-- BÖLÜM 1: PJSIP, NAT & Network Global Ayarları -->
+    <div id="tab_pjsip" class="settings-tab-pane active">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -151,8 +174,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- BÖLÜM: RTP (Medya) Ayarları -->
+    <div id="tab_rtp" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -198,8 +223,10 @@
             <i class="fas fa-triangle-exclamation"></i> <?php echo t('asterisk_settings.rtp_restart_warning'); ?>
         </p>
     </div>
+    </div>
 
     <!-- BÖLÜM: T.38 UDPTL (Faks Medya) Ayarları -->
+    <div id="tab_t38" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -250,8 +277,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- BÖLÜM: Softphone Zil & Çevirme Tonu -->
+    <div id="tab_ring" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -289,8 +318,10 @@
             <small style="color: var(--text-muted); display: block; margin-top: 8px;"><?php echo t('asterisk_settings.no_sounds_uploaded'); ?> <a href="/sounds"><?php echo t('asterisk_settings.sounds_page_link'); ?></a> <?php echo t('asterisk_settings.sounds_page_link_suffix'); ?></small>
         <?php endif; ?>
     </div>
+    </div>
 
     <!-- BÖLÜM: Görüntülü Arama -->
+    <div id="tab_video" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -331,8 +362,10 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- BÖLÜM: Dil Ayarları -->
+    <div id="tab_lang" class="settings-tab-pane" style="display: none;">
     <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">
@@ -357,10 +390,11 @@
             <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.lang_packs_help'); ?></small>
         </div>
     </div>
+    </div>
 
     <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
-            <i class="fas fa-save"></i>
+            <i class="fas fa-save"></i> <?php echo t('common.save', 'Tüm Ayarları Kaydet'); ?>
         </button>
     <?php endif; ?>
 </form>

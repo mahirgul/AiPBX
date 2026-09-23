@@ -9,12 +9,24 @@ $token = $token ?? '';
 
 <style>
 .chat-container {
-    padding: 15px;
-    height: calc(100vh - 120px);
-    height: calc(100dvh - 120px);
-    min-height: 580px;
+    padding: 0;
+    height: calc(100vh - 165px);
+    height: calc(100dvh - 165px);
+    min-height: 560px;
     display: flex;
     flex-direction: column;
+}
+.chat-page-header {
+    padding: 12px 18px;
+    border-left: 4px solid var(--primary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    border-radius: 12px;
 }
 .chat-card-wrapper {
     flex: 1;
@@ -27,6 +39,7 @@ $token = $token ?? '';
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     position: relative;
     height: 100%;
+    min-height: 0;
 }
 .chat-sidebar {
     width: 340px;
@@ -36,6 +49,65 @@ $token = $token ?? '';
     flex-direction: column;
     background: var(--bg-card);
     height: 100%;
+}
+.chat-sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.chat-sidebar-tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--bg-main);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.chat-sidebar-tab-btn {
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.chat-search-wrap {
+    position: relative;
+    width: 100%;
+}
+.chat-search-wrap i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 13px;
+    pointer-events: none;
+}
+.chat-search-wrap input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    color: var(--text-main);
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chat-search-wrap input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.15);
 }
 .chat-main {
     flex: 1;
@@ -52,9 +124,17 @@ $token = $token ?? '';
 
 @media (max-width: 768px) {
     .chat-container {
-        padding: 4px 6px !important;
+        padding: 0 !important;
         height: calc(100dvh - 110px) !important;
         min-height: 0 !important;
+    }
+    .chat-page-header {
+        padding: 10px 14px !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px !important;
+    }
+    .chat-container.is-chat-open .chat-page-header {
+        display: none !important;
     }
     .chat-card-wrapper {
         border-radius: 8px !important;
@@ -131,6 +211,41 @@ $token = $token ?? '';
 </style>
 
 <div class="chat-container">
+    <!-- Üst Başlık & İşlem Kartı -->
+    <div class="card chat-page-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-main);">
+                            Mesajlar
+                        </h2>
+                        <?php if (!empty($ext)): ?>
+                            <span class="badge" style="background: rgba(0, 242, 254, 0.12); color: var(--primary); font-size: 12px; border-radius: 12px; padding: 2px 8px; font-weight: 700;">
+                                #<?php echo htmlspecialchars($ext); ?> - <?php echo htmlspecialchars($user['full_name'] ?? $user['username'] ?? ''); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                        Kurum içi anlık mesajlaşma, dosya paylaşımı ve dahili sohbet grupları
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span id="chat-ws-status-badge" class="badge" style="font-size: 12px; padding: 6px 12px; background: rgba(0,0,0,0.05); color: var(--text-muted); border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center;">
+                    <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px; color: var(--warning);"></i> Bağlanıyor...
+                </span>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openNewGroupModal()" title="Yeni Grup Oluştur" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-users"></i> Yeni Grup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Chat Card Container -->
     <div class="card chat-card-wrapper">
         
@@ -138,35 +253,21 @@ $token = $token ?? '';
         <div id="chat-sidebar" class="chat-sidebar">
             
             <!-- Sidebar Header & Arama -->
-            <div style="padding: 14px 16px; border-bottom: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-comments" style="color: var(--primary);"></i> Mesajlar
-                    </h3>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 2px 8px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="openNewGroupModal()" title="Yeni Grup Oluştur">
-                            <i class="fas fa-users"></i> + Grup
-                        </button>
-                        <span id="chat-ws-status-badge" class="badge" style="font-size: 11px; padding: 3px 8px; background: rgba(0,0,0,0.05); color: var(--text-muted); border-radius: 10px;">
-                            <i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...
-                        </span>
-                    </div>
-                </div>
-                
+            <div class="chat-sidebar-header">
                 <!-- Sekmeler: Sohbetler / Kişiler -->
-                <div style="display: flex; gap: 6px; margin-bottom: 10px; background: var(--bg-main); padding: 3px; border-radius: 8px;">
-                    <button id="tab-btn-convs" class="btn btn-sm" style="flex: 1; border: none; background: var(--bg-card); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; padding: 6px 10px;" onclick="switchChatTab('convs')">
+                <div class="chat-sidebar-tabs">
+                    <button id="tab-btn-convs" class="btn btn-sm chat-sidebar-tab-btn" style="background: var(--bg-card); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onclick="switchChatTab('convs')">
                         <i class="fas fa-comment-dots"></i> Sohbetler
                     </button>
-                    <button id="tab-btn-contacts" class="btn btn-sm" style="flex: 1; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-radius: 6px; padding: 6px 10px;" onclick="switchChatTab('contacts')">
+                    <button id="tab-btn-contacts" class="btn btn-sm chat-sidebar-tab-btn" style="background: transparent; color: var(--text-muted);" onclick="switchChatTab('contacts')">
                         <i class="fas fa-address-book"></i> Dahili Rehber
                     </button>
                 </div>
 
                 <!-- Arama Kutusu -->
-                <div style="position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 12px; top: 10px; color: var(--text-muted); font-size: 13px;"></i>
-                    <input type="text" id="chat-search-input" placeholder="İsim veya dahili ara..." style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13px; outline: none;" oninput="filterChatList(this.value)">
+                <div class="chat-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="chat-search-input" placeholder="İsim veya dahili ara..." oninput="filterChatList(this.value)">
                 </div>
             </div>
 
@@ -931,6 +1032,10 @@ async function openConversation(conv, pushHistory = true) {
     if (cardWrapper) {
         cardWrapper.classList.add('is-chat-open');
     }
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+        chatContainer.classList.add('is-chat-open');
+    }
     if (pushHistory && window.innerWidth <= 768) {
         try {
             window.history.pushState({ chatActive: true, convId: conv.id }, '');
@@ -1001,6 +1106,10 @@ function closeActiveChatMobile(popHistory = true) {
     const cardWrapper = document.querySelector('.chat-card-wrapper');
     if (cardWrapper) {
         cardWrapper.classList.remove('is-chat-open');
+    }
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+        chatContainer.classList.remove('is-chat-open');
     }
     currentConvId = null;
     currentConv = null;

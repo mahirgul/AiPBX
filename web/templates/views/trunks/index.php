@@ -109,12 +109,12 @@
                 <input type="hidden" name="save_trunk" value="1">
                 <input type="hidden" name="trunk_id" id="modal_trunk_id" value="">
 
-                <!-- Tab Buttons -->
-                <div style="display: flex; gap: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; padding-bottom: 8px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-sm btn-primary trunk-tab-btn" data-tab="basic" onclick="switchTrunkTab('basic', this)"><i class="fas fa-sliders-h"></i> <?php echo t('trunks.tab_basic'); ?></button>
-                    <button type="button" class="btn btn-sm btn-secondary trunk-tab-btn" data-tab="auth" onclick="switchTrunkTab('auth', this)"><i class="fas fa-key"></i> <?php echo t('trunks.tab_auth'); ?></button>
-                    <button type="button" class="btn btn-sm btn-secondary trunk-tab-btn" data-tab="callerid" onclick="switchTrunkTab('callerid', this)"><i class="fas fa-id-badge"></i> <?php echo t('trunks.tab_callerid'); ?></button>
-                    <button type="button" class="btn btn-sm btn-secondary trunk-tab-btn" data-tab="advanced" onclick="switchTrunkTab('advanced', this)"><i class="fas fa-cogs"></i> <?php echo t('trunks.tab_advanced'); ?></button>
+                <!-- Tab Buttons (Single-Line Fixed Tabs) -->
+                <div class="modal-tabs">
+                    <button type="button" class="modal-tab-btn active trunk-tab-btn" data-tab="basic" onclick="switchTrunkTab('basic', this)"><i class="fas fa-sliders-h"></i> <?php echo t('trunks.tab_basic'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="auth" onclick="switchTrunkTab('auth', this)"><i class="fas fa-key"></i> <?php echo t('trunks.tab_auth'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="callerid" onclick="switchTrunkTab('callerid', this)"><i class="fas fa-id-badge"></i> <?php echo t('trunks.tab_callerid'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="advanced" onclick="switchTrunkTab('advanced', this)"><i class="fas fa-cogs"></i> <?php echo t('trunks.tab_advanced'); ?></button>
                 </div>
 
                 <!-- TAB 1: Temel Ayarlar -->

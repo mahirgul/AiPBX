@@ -252,42 +252,88 @@
     }
 }
 
-/* Tab Navigation System */
+/* Tab Navigation System (Single-Line Fixed Non-Wrapping Tabs) */
 .portal-tabs,
 .sub-tab-nav,
-.tc-tabs {
+.tc-tabs,
+.settings-tabs,
+.modal-tabs {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     border-bottom: 2px solid var(--border-color);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     padding-bottom: 0;
     align-items: center;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.portal-tabs::-webkit-scrollbar,
+.sub-tab-nav::-webkit-scrollbar,
+.tc-tabs::-webkit-scrollbar,
+.settings-tabs::-webkit-scrollbar,
+.modal-tabs::-webkit-scrollbar {
+    height: 3px;
+}
+
+.portal-tabs::-webkit-scrollbar-thumb,
+.sub-tab-nav::-webkit-scrollbar-thumb,
+.tc-tabs::-webkit-scrollbar-thumb,
+.settings-tabs::-webkit-scrollbar-thumb,
+.modal-tabs::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
 }
 
 .portal-tab-btn,
 .sub-tab-btn,
-.tc-tab-btn {
+.tc-tab-btn,
+.settings-tab-btn,
+.modal-tab-btn,
+.trunk-tab-btn,
+.queue-tab-btn {
     position: relative;
     background: transparent;
     border: none;
-    padding: 12px 20px;
-    font-size: 14px;
+    padding: 10px 16px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--text-muted);
     cursor: pointer;
-    border-radius: 10px 10px 0 0;
+    border-radius: 8px 8px 0 0;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     outline: none;
     margin-bottom: -2px;
     border-bottom: 3px solid transparent;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.portal-tab-btn:hover,
+.sub-tab-btn:hover,
+.tc-tab-btn:hover,
+.settings-tab-btn:hover,
+.modal-tab-btn:hover,
+.trunk-tab-btn:hover,
+.queue-tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(125, 125, 125, 0.05);
 }
 
 .portal-tab-btn.active,
 .sub-tab-btn.active,
-.tc-tab-btn.active {
+.tc-tab-btn.active,
+.settings-tab-btn.active,
+.modal-tab-btn.active,
+.trunk-tab-btn.active,
+.queue-tab-btn.active {
     color: var(--primary);
     font-weight: 700;
     background: rgba(79, 70, 229, 0.08);
@@ -296,13 +342,21 @@
 
 .portal-tab-pane,
 .tab-pane,
-.tc-tab-pane {
+.tc-tab-pane,
+.settings-tab-pane,
+.modal-tab-pane,
+.trunk-tab-pane,
+.queue-tab-pane {
     display: none;
 }
 
 .portal-tab-pane.active,
 .tab-pane.active,
-.tc-tab-pane.active {
+.tc-tab-pane.active,
+.settings-tab-pane.active,
+.modal-tab-pane.active,
+.trunk-tab-pane.active,
+.queue-tab-pane.active {
     display: block;
 }
 

@@ -6,20 +6,24 @@ function switchTrunkTab(tabKey, btn) {
     const panes = document.querySelectorAll('.trunk-tab-pane');
     panes.forEach(pane => {
         pane.style.display = 'none';
+        pane.classList.remove('active');
     });
 
     const target = document.getElementById('trunk_tab_' + tabKey);
     if (target) {
         target.style.display = 'block';
+        target.classList.add('active');
     }
 
     const buttons = document.querySelectorAll('.trunk-tab-btn');
     buttons.forEach(b => {
+        b.classList.remove('active');
         b.classList.remove('btn-primary');
         b.classList.add('btn-secondary');
     });
 
     if (btn) {
+        btn.classList.add('active');
         btn.classList.remove('btn-secondary');
         btn.classList.add('btn-primary');
     }
