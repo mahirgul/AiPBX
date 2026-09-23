@@ -12,8 +12,8 @@ $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
 $is_dashboard_active = in_array($active_page, ['dashboard.php', 'index.php', 'my_phone.php', 'chat.php', 'cdr_reports.php', 'reports.php']);
-$is_trunk_active = in_array($active_page, ['trunks.php', 'did_routes.php', 'outbound_routes.php']);
-$is_pbx_active = in_array($active_page, ['time_conditions.php', 'ivrs.php', 'extensions.php', 'queues.php', 'sounds.php', 'end_call.php']);
+$is_trunk_active = in_array($active_page, ['trunks.php', 'did_routes.php', 'outbound_routes.php', 'dial_permissions.php']) || str_contains($request_uri, '/dial-permissions');
+$is_pbx_active = in_array($active_page, ['time_conditions.php', 'ivrs.php', 'extensions.php', 'queues.php', 'sounds.php', 'end_call.php', 'ring_groups.php', 'conferences.php', 'boss_secretary.php']) || str_contains($request_uri, '/ring-groups') || str_contains($request_uri, '/conferences') || str_contains($request_uri, '/boss-secretary');
 $is_admin_active = in_array($active_page, ['system_users.php', 'roles.php', 'asterisk_settings.php', 'brand_settings.php', 'fax_mail_settings.php', 'fax_settings.php', 'pending_sync.php', 'audit_log.php', 'push_settings.php', 'mail_settings.php']);
 $is_fax_active = in_array($active_page, ['fax_inbox.php', 'fax_send.php', 'fax_sent.php']);
 $is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc_board.php', 'queue_logs.php', 'pause_reports.php']);
@@ -22,8 +22,8 @@ $is_teams_active = in_array($active_page, ['ms_teams.php']);
 
 // Module Visibility Checks via RBAC
 $can_view_dashboard_group = hasModulePermission('dashboard', 'view') || hasModulePermission('my_phone', 'view') || hasModulePermission('chat', 'view') || hasModulePermission('cdr_reports', 'view') || hasModulePermission('cc_reports', 'view');
-$can_view_trunks_group = hasModulePermission('trunks', 'view') || hasModulePermission('did_routes', 'view') || hasModulePermission('outbound_routes', 'view');
-$can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModulePermission('ivrs', 'view') || hasModulePermission('extensions', 'view') || hasModulePermission('queues', 'view') || hasModulePermission('sounds', 'view') || hasModulePermission('end_call', 'view');
+$can_view_trunks_group = hasModulePermission('trunks', 'view') || hasModulePermission('did_routes', 'view') || hasModulePermission('outbound_routes', 'view') || hasModulePermission('dial_permissions', 'view');
+$can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModulePermission('ivrs', 'view') || hasModulePermission('extensions', 'view') || hasModulePermission('queues', 'view') || hasModulePermission('sounds', 'view') || hasModulePermission('end_call', 'view') || hasModulePermission('ring_groups', 'view') || hasModulePermission('conferences', 'view') || hasModulePermission('boss_secretary', 'view');
 $can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('pending_sync', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('audit_log', 'view') || hasModulePermission('mail_settings', 'view');
 $can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
 $can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view');

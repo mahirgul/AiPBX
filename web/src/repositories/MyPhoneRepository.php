@@ -13,7 +13,9 @@ class MyPhoneRepository extends BaseRepository
             "SELECT id, username, full_name, email, extension, sip_password, sip_auth_digest,
                     role, allowed_phone_mode, dnd_enabled, call_forward_number,
                     cf_busy_number, cf_noanswer_number, cf_noanswer_timeout,
-                    cid_internal, cid_external, outbound_group, is_active
+                    cid_internal, cid_external, outbound_group, is_active,
+                    voicemail_enabled, voicemail_pin, voicemail_email, voicemail_attach_audio,
+                    vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always
              FROM sys_users
              WHERE id = ?"
         );
@@ -343,8 +345,18 @@ class MyPhoneRepository extends BaseRepository
         string $mode,
         string $forwardBusy = '',
         string $forwardNoAnswer = '',
-        int $noAnswerTimeout = 20
+        int $noAnswerTimeout = 20,
+        array $voicemailSettings = []
     ): bool {
+        $vmEnabled = isset($voicemailSettings['voicemail_enabled']) ? intval($voicemailSettings['voicemail_enabled']) : 1;
+        $vmPin = preg_replace('/[^0-9]/', '', (string)($voicemailSettings['voicemail_pin'] ?? ''));
+        $vmEmail = trim((string)($voicemailSettings['voicemail_email'] ?? ''));
+        $vmAttach = isset($voicemailSettings['voicemail_attach_audio']) ? intval($voicemailSettings['voicemail_attach_audio']) : 1;
+        $vmNa = isset($voicemailSettings['vm_on_noanswer']) ? intval($voicemailSettings['vm_on_noanswer']) : 0;
+        $vmBusy = isset($voicemailSettings['vm_on_busy']) ? intval($voicemailSettings['vm_on_busy']) : 0;
+        $vmUnavail = isset($voicemailSettings['vm_on_unavail']) ? intval($voicemailSettings['vm_on_unavail']) : 0;
+        $vmAlways = isset($voicemailSettings['vm_always']) ? intval($voicemailSettings['vm_always']) : 0;
+
         $stmt = static::db()->prepare(
             "UPDATE sys_users
              SET dnd_enabled = ?,
@@ -352,7 +364,15 @@ class MyPhoneRepository extends BaseRepository
                  cf_busy_number = ?,
                  cf_noanswer_number = ?,
                  cf_noanswer_timeout = ?,
-                 allowed_phone_mode = ?
+                 allowed_phone_mode = ?,
+                 voicemail_enabled = ?,
+                 voicemail_pin = CASE WHEN ? != '' THEN ? ELSE voicemail_pin END,
+                 voicemail_email = ?,
+                 voicemail_attach_audio = ?,
+                 vm_on_noanswer = ?,
+                 vm_on_busy = ?,
+                 vm_on_unavail = ?,
+                 vm_always = ?
              WHERE id = ?"
         );
         return $stmt->execute([
@@ -362,6 +382,15 @@ class MyPhoneRepository extends BaseRepository
             $forwardNoAnswer !== '' ? $forwardNoAnswer : null,
             max(5, min(120, $noAnswerTimeout)),
             $mode,
+            $vmEnabled,
+            $vmPin,
+            $vmPin,
+            $vmEmail,
+            $vmAttach,
+            $vmNa,
+            $vmBusy,
+            $vmUnavail,
+            $vmAlways,
             $userId
         ]);
     }

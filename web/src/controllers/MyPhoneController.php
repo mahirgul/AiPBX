@@ -33,15 +33,28 @@ class MyPhoneController extends BaseController
                     $mode = 'web';
                 }
 
-                MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout);
+                $vmSettings = [
+                    'voicemail_enabled' => isset($_POST['voicemail_enabled']) ? 1 : 0,
+                    'voicemail_pin' => trim($_POST['voicemail_pin'] ?? ''),
+                    'voicemail_email' => trim($_POST['voicemail_email'] ?? ''),
+                    'voicemail_attach_audio' => isset($_POST['voicemail_attach_audio']) ? 1 : 0,
+                    'vm_on_noanswer' => isset($_POST['vm_on_noanswer']) ? 1 : 0,
+                    'vm_on_busy' => isset($_POST['vm_on_busy']) ? 1 : 0,
+                    'vm_on_unavail' => isset($_POST['vm_on_unavail']) ? 1 : 0,
+                    'vm_always' => isset($_POST['vm_always']) ? 1 : 0,
+                ];
+
+                MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout, $vmSettings);
 
                 // Update session state for current user
                 $_SESSION['allowed_phone_mode'] = $mode;
 
-                // Sync dialplan so DND / Call forwarding changes take effect immediately
+                // Sync dialplan and voicemail so changes take effect immediately
                 try {
                     require_once dirname(__DIR__) . '/sync/SyncGeneralDialplan.php';
                     syncGeneralDialplan();
+                    require_once dirname(__DIR__) . '/sync/SyncVoicemail.php';
+                    syncVoicemail();
                 } catch (\Throwable $e) {
                     // Non-fatal if reload fails; pending sync will catch it
                 }
@@ -57,8 +70,11 @@ class MyPhoneController extends BaseController
         $extDetails = MyPhoneRepository::getUserExtensionDetails($userId);
         $ext = trim($extDetails['extension'] ?? '');
 
+        require_once dirname(__DIR__) . '/services/VoicemailService.php';
+        $voicemailMessages = VoicemailService::getVoicemailMessages($ext);
+
         $tab = trim($_GET['tab'] ?? 'history');
-        if (!in_array($tab, ['history', 'settings'], true)) {
+        if (!in_array($tab, ['history', 'settings', 'voicemail'], true)) {
             $tab = 'history';
         }
 
@@ -93,6 +109,7 @@ class MyPhoneController extends BaseController
             'webrtcStatus' => $webrtcStatus,
             'mobileStatus' => $mobileStatus,
             'mobileDevices' => MyPhoneRepository::getUserMobileDevices($userId),
+            'voicemailMessages' => $voicemailMessages,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';
     }

@@ -118,6 +118,13 @@ class AsteriskHelper {
     }
 
     /**
+     * Reload Voicemail configuration (/etc/asterisk/voicemail.conf)
+     */
+    public static function reloadVoicemail() {
+        return self::execCLI('voicemail reload');
+    }
+
+    /**
      * Resolve the trunk to dial through when a specific outbound route isn't in play
      * (fax sending, the outbound dialplan's zero-routes-configured bootstrap fallback).
      * Reads the first active row from `pbx_trunks`. Returns null if no trunk is configured

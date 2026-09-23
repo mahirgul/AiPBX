@@ -134,6 +134,13 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if (hasModulePermission('dial_permissions', 'view')): ?>
+                        <li>
+                            <a href="/dial-permissions" class="nav-link <?php echo ($active_page === 'dial_permissions.php' || str_contains($request_uri, '/dial-permissions')) ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_dial_permissions', 'Arama Yetki Grupları'); ?>">
+                                <i class="fas fa-shield-alt"></i> <span class="nav-text"><?php echo t('sidebar.item_dial_permissions', 'Arama Yetkileri'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </li>
         <?php endif; ?>
@@ -166,6 +173,27 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                         <li>
                             <a href="/extensions" class="nav-link <?php echo ($active_page === 'extensions.php' || $active_page === 'users.php') ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_extensions'); ?>">
                                 <i class="fas fa-phone-square-alt"></i> <span class="nav-text"><?php echo t('sidebar.item_extensions'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('ring_groups', 'view')): ?>
+                        <li>
+                            <a href="/ring-groups" class="nav-link <?php echo ($active_page === 'ring_groups.php' || str_contains($request_uri, '/ring-groups')) ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ring_groups', 'Çalma Grupları'); ?>">
+                                <i class="fas fa-users"></i> <span class="nav-text"><?php echo t('sidebar.item_ring_groups', 'Çalma Grupları'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('boss_secretary', 'view')): ?>
+                        <li>
+                            <a href="/boss-secretary" class="nav-link <?php echo ($active_page === 'boss_secretary.php' || str_contains($request_uri, '/boss-secretary')) ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_boss_secretary', 'Şef - Sekreter'); ?>">
+                                <i class="fas fa-user-tie"></i> <span class="nav-text"><?php echo t('sidebar.item_boss_secretary', 'Şef - Sekreter'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('conferences', 'view')): ?>
+                        <li>
+                            <a href="/conferences" class="nav-link <?php echo ($active_page === 'conferences.php' || str_contains($request_uri, '/conferences')) ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_conferences', 'Konferans Odaları'); ?>">
+                                <i class="fas fa-users-rectangle"></i> <span class="nav-text"><?php echo t('sidebar.item_conferences', 'Konferans Odaları'); ?></span>
                             </a>
                         </li>
                     <?php endif; ?>

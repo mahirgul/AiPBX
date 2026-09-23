@@ -21,6 +21,15 @@ $stats = $stats ?? [];
 $calls = $calls ?? [];
 $filter = $filter ?? 'all';
 $search = $search ?? '';
+$vmMessages = $voicemailMessages ?? [];
+$vmEnabled = (int)($details['voicemail_enabled'] ?? 1);
+$vmPin = $details['voicemail_pin'] ?? '';
+$vmEmail = $details['voicemail_email'] ?? '';
+$vmAttach = (int)($details['voicemail_attach_audio'] ?? 1);
+$vmNa = (int)($details['vm_on_noanswer'] ?? 0);
+$vmBusy = (int)($details['vm_on_busy'] ?? 0);
+$vmUnavail = (int)($details['vm_on_unavail'] ?? 0);
+$vmAlways = (int)($details['vm_always'] ?? 0);
 ?>
 
 <style>
@@ -198,6 +207,10 @@ $search = $search ?? '';
                 <?php if ($isDnd || $hasActiveCf): ?>
                     <span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px; border-radius: 10px;"><i class="fas fa-check"></i> Aktif</span>
                 <?php endif; ?>
+            </button>
+            <button type="button" class="btn btn-sm <?php echo $currentTab === 'voicemail' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-voicemail" onclick="switchMyPhoneTab('voicemail')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+                <i class="fas fa-voicemail"></i> <?php echo t('my_phone.tab_voicemail', 'Sesli Posta'); ?>
+                <span class="badge <?php echo !empty($vmMessages) ? 'badge-danger' : 'badge-secondary'; ?>" style="font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($vmMessages); ?></span>
             </button>
         </div>
 
@@ -570,6 +583,50 @@ $search = $search ?? '';
                         </div>
                     </div>
 
+                    <!-- Sesli Posta (Voicemail) Tercihleri -->
+                    <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-voicemail" style="color: var(--primary);"></i> Sesli Posta (Voicemail) Ayarları
+                            </div>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 12px;">
+                                <input type="checkbox" name="voicemail_enabled" value="1" <?php echo $vmEnabled ? 'checked' : ''; ?> style="accent-color: var(--primary);">
+                                <span>Etkin</span>
+                            </label>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Sesli Posta PIN (Şifre)</label>
+                                <input type="password" name="voicemail_pin" value="<?php echo htmlspecialchars($vmPin); ?>" class="form-control form-control-sm" placeholder="Varsayılan: dahili no" style="font-size: 12px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Bildirim E-postası</label>
+                                <input type="email" name="voicemail_email" value="<?php echo htmlspecialchars($vmEmail); ?>" class="form-control form-control-sm" placeholder="ornek@alanadi.com" style="font-size: 12px;">
+                            </div>
+                        </div>
+
+                        <div style="font-size: 11.5px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Sesli Postaya Yönlendirme Durumları:</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" name="vm_on_noanswer" value="1" <?php echo $vmNa ? 'checked' : ''; ?> style="accent-color: var(--primary);">
+                                <span>Cevap Verilmediğinde (Zaman Aşımı) Sesli Postaya Aktar</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" name="vm_on_busy" value="1" <?php echo $vmBusy ? 'checked' : ''; ?> style="accent-color: var(--primary);">
+                                <span>Meşgul Olduğumda Sesli Postaya Aktar</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" name="vm_on_unavail" value="1" <?php echo $vmUnavail ? 'checked' : ''; ?> style="accent-color: var(--primary);">
+                                <span>Ulaşılamadığında / Çevrimdışıyken Sesli Postaya Aktar</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" name="vm_always" value="1" <?php echo $vmAlways ? 'checked' : ''; ?> style="accent-color: var(--primary);">
+                                <span>Her Zaman Doğrudan Sesli Postaya Aktar</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
                         <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
@@ -701,6 +758,89 @@ $search = $search ?? '';
             </div>
 
         </div>
+
+        <!-- TAB 3: SESLİ POSTA KUTUM (Voicemail Messages) -->
+        <div id="tab-pane-voicemail" class="card" style="display: <?php echo $currentTab === 'voicemail' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
+            <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+                <div class="card-title" style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-voicemail" style="color: var(--primary);"></i> <?php echo t('my_phone.voicemail_inbox', 'Sesli Posta Kutum'); ?>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
+                    <span><i class="fas fa-phone-alt text-info"></i> Dahili Dinleme: <strong class="badge badge-info" style="font-size: 11px;">*97</strong></span>
+                    <span><i class="fas fa-hashtag text-warning"></i> Dış/Uzak Erişim: <strong class="badge badge-secondary" style="font-size: 11px;">*98</strong></span>
+                    <a href="/my-phone?tab=voicemail" class="btn btn-secondary btn-sm" title="Yenile"><i class="fas fa-sync-alt"></i></a>
+                </div>
+            </div>
+
+            <!-- Bilgilendirme Kartı -->
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-info-circle text-primary" style="font-size: 18px;"></i>
+                    <span>Telesekreterinize bırakılan sesli mesajları aşağıdan dinleyebilir veya telefonunuzdan <strong>*97</strong> tuşlayarak sesli menüyle yönetebilirsiniz.</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('settings')" style="font-size: 11.5px;">
+                    <i class="fas fa-cog"></i> Sesli Posta Ayarları
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Tarih & Saat</th>
+                            <th>Arayan Numara</th>
+                            <th>Klasör</th>
+                            <th>Süre</th>
+                            <th>Ses Kaydı</th>
+                            <th class="text-right">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voicemailMessagesList">
+                        <?php if (empty($vmMessages)): ?>
+                            <?php echo uiTableEmptyRow(7, 'Sesli posta kutunuzda kayıtlı mesaj bulunmuyor.', 'fa-inbox'); ?>
+                        <?php else: ?>
+                            <?php foreach ($vmMessages as $vm): ?>
+                                <tr>
+                                    <td><span class="badge badge-secondary"><?php echo htmlspecialchars($vm['number']); ?></span></td>
+                                    <td style="font-weight: 600;"><?php echo htmlspecialchars($vm['origdate']); ?></td>
+                                    <td>
+                                        <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($vm['callerid'] ?: 'Bilinmeyen'); ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?php echo $vm['folder'] === 'INBOX' ? 'badge-primary' : 'badge-secondary'; ?>">
+                                            <?php echo htmlspecialchars($vm['folder_name']); ?>
+                                        </span>
+                                    </td>
+                                    <td><span class="badge badge-secondary"><?php echo htmlspecialchars($vm['duration_formatted']); ?></span></td>
+                                    <td>
+                                        <?php if ($vm['has_audio']): ?>
+                                            <audio controls preload="none" style="height: 30px; max-width: 220px;">
+                                                <source src="/api/voicemail.php?action=play&ext=<?php echo urlencode($ext); ?>&folder=<?php echo urlencode($vm['folder']); ?>&msg=<?php echo urlencode($vm['number']); ?>" type="audio/wav">
+                                            </audio>
+                                        <?php else: ?>
+                                            <span class="text-muted" style="font-size: 11px;">Ses yok</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-right">
+                                        <div style="display: inline-flex; gap: 4px;">
+                                            <?php if ($vm['has_audio']): ?>
+                                                <a href="/api/voicemail.php?action=play&ext=<?php echo urlencode($ext); ?>&folder=<?php echo urlencode($vm['folder']); ?>&msg=<?php echo urlencode($vm['number']); ?>&download=1" class="btn btn-secondary btn-sm" title="İndir">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteVoicemailMessage('<?php echo htmlspecialchars($vm['id']); ?>')" title="Sil">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -771,16 +911,22 @@ $search = $search ?? '';
 function switchMyPhoneTab(tabName) {
     const paneHistory = document.getElementById("tab-pane-history");
     const paneSettings = document.getElementById("tab-pane-settings");
+    const paneVoicemail = document.getElementById("tab-pane-voicemail");
     const btnHistory = document.getElementById("btn-tab-history");
     const btnSettings = document.getElementById("btn-tab-settings");
+    const btnVoicemail = document.getElementById("btn-tab-voicemail");
+
+    if (paneHistory) paneHistory.style.display = (tabName === "history") ? "block" : "none";
+    if (paneSettings) paneSettings.style.display = (tabName === "settings") ? "grid" : "none";
+    if (paneVoicemail) paneVoicemail.style.display = (tabName === "voicemail") ? "block" : "none";
+
+    [btnHistory, btnSettings, btnVoicemail].forEach(b => {
+        if (!b) return;
+        b.classList.remove("btn-primary");
+        b.classList.add("btn-secondary");
+    });
 
     if (tabName === "settings") {
-        if (paneHistory) paneHistory.style.display = "none";
-        if (paneSettings) paneSettings.style.display = "grid";
-        if (btnHistory) {
-            btnHistory.classList.remove("btn-primary");
-            btnHistory.classList.add("btn-secondary");
-        }
         if (btnSettings) {
             btnSettings.classList.remove("btn-secondary");
             btnSettings.classList.add("btn-primary");
@@ -790,16 +936,17 @@ function switchMyPhoneTab(tabName) {
         if (typeof loadMyPhoneAudioDevices === "function") {
             loadMyPhoneAudioDevices();
         }
+    } else if (tabName === "voicemail") {
+        if (btnVoicemail) {
+            btnVoicemail.classList.remove("btn-secondary");
+            btnVoicemail.classList.add("btn-primary");
+        }
+        history.replaceState(null, "", "/my-phone?tab=voicemail");
+        localStorage.setItem("my_phone_active_tab", "voicemail");
     } else {
-        if (paneHistory) paneHistory.style.display = "block";
-        if (paneSettings) paneSettings.style.display = "none";
         if (btnHistory) {
             btnHistory.classList.remove("btn-secondary");
             btnHistory.classList.add("btn-primary");
-        }
-        if (btnSettings) {
-            btnSettings.classList.remove("btn-primary");
-            btnSettings.classList.add("btn-secondary");
         }
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.delete("tab");
@@ -807,6 +954,26 @@ function switchMyPhoneTab(tabName) {
         history.replaceState(null, "", "/my-phone" + (queryStr ? "?" + queryStr : ""));
         localStorage.setItem("my_phone_active_tab", "history");
     }
+}
+
+function deleteVoicemailMessage(msgId) {
+    if (!confirm('Bu sesli mesajı silmek istediğinizden emin misiniz?')) return;
+    const form = new FormData();
+    form.append('csrf_token', window.CSRF_TOKEN);
+    form.append('action', 'delete');
+    form.append('ext', window.CURRENT_USER_EXT);
+    form.append('msg_id', msgId);
+
+    fetch('/api/voicemail.php', { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Silinemedi');
+            }
+        })
+        .catch(() => alert('Bağlantı hatası'));
 }
 
 function setMyPhoneFilter(filterVal) {

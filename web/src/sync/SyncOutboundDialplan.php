@@ -82,6 +82,7 @@ function __syncOutboundDialplanBody() {
             $conf .= "; Outbound Route: {$name} (Pattern: {$pattern} -> Trunk: {$trunk_label})\n";
             $conf .= "exten => {$pattern},1,NoOp(Outbound Call via Route {$name} -> Trunk {$trunk_label})\n";
             $conf .= " same => n,Set(CDR(direction)=outbound)\n";
+            $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
 
             if (empty($trunk_chain)) {
                 $conf .= " same => n,NoOp(Bu rota icin tanimli/aktif bir dis hat yok)\n";

@@ -41,6 +41,21 @@ class ExtensionService {
                 throw new \Exception("{$extension} dahilisi zaten başka bir kayda atanmış!");
             }
 
+            $permission_group_id = !empty($data['permission_group_id']) ? intval($data['permission_group_id']) : 1;
+            $boss_secretary_group_id = !empty($data['boss_secretary_group_id']) ? intval($data['boss_secretary_group_id']) : null;
+            $boss_secretary_role = in_array($data['boss_secretary_role'] ?? 'none', ['none', 'boss', 'secretary'], true) ? $data['boss_secretary_role'] : 'none';
+            $voicemail_enabled = isset($data['voicemail_enabled']) ? intval($data['voicemail_enabled']) : 1;
+            $voicemail_pin = preg_replace('/[^0-9]/', '', trim($data['voicemail_pin'] ?? ''));
+            if (empty($voicemail_pin)) {
+                $voicemail_pin = $extension;
+            }
+            $voicemail_email = trim($data['voicemail_email'] ?? '');
+            $voicemail_attach_audio = isset($data['voicemail_attach_audio']) ? intval($data['voicemail_attach_audio']) : 1;
+            $vm_on_noanswer = isset($data['vm_on_noanswer']) ? intval($data['vm_on_noanswer']) : 0;
+            $vm_on_busy = isset($data['vm_on_busy']) ? intval($data['vm_on_busy']) : 0;
+            $vm_on_unavail = isset($data['vm_on_unavail']) ? intval($data['vm_on_unavail']) : 0;
+            $vm_always = isset($data['vm_always']) ? intval($data['vm_always']) : 0;
+
             // Save/Update Extension
             if ($user_id > 0) {
                 // Mevcut kayıt: eski dahili dosyasını da temizle (numara değişebilir)
@@ -52,6 +67,17 @@ class ExtensionService {
                     'sip_auth_digest' => $sip_auth_digest,
                     'extension_type' => $extension_type,
                     'outbound_group' => $outbound_group,
+                    'permission_group_id' => $permission_group_id,
+                    'boss_secretary_group_id' => $boss_secretary_group_id,
+                    'boss_secretary_role' => $boss_secretary_role,
+                    'voicemail_enabled' => $voicemail_enabled,
+                    'voicemail_pin' => $voicemail_pin,
+                    'voicemail_email' => $voicemail_email,
+                    'voicemail_attach_audio' => $voicemail_attach_audio,
+                    'vm_on_noanswer' => $vm_on_noanswer,
+                    'vm_on_busy' => $vm_on_busy,
+                    'vm_on_unavail' => $vm_on_unavail,
+                    'vm_always' => $vm_always,
                     'cid_internal' => $cid_internal,
                     'cid_external' => $cid_external,
                     'is_active' => $is_active
@@ -64,6 +90,8 @@ class ExtensionService {
                 markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'update', $_SESSION['user_id'] ?? null);
                 markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('voicemail', 'voicemail', 'all', "Sesli posta ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('permissions', 'permissions', 'all', "Yetki grupları ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 $msg = "{$extension} dahili abonesi güncellendi! Etkili olması için Uygula sayfasından gönderin.";
             } else {
                 // Yeni dahili abone: cihaz amaçlı minimal sistem kaydı oluştur
@@ -84,6 +112,17 @@ class ExtensionService {
                     'sip_auth_digest' => $sip_auth_digest,
                     'extension_type' => $extension_type,
                     'outbound_group' => $outbound_group,
+                    'permission_group_id' => $permission_group_id,
+                    'boss_secretary_group_id' => $boss_secretary_group_id,
+                    'boss_secretary_role' => $boss_secretary_role,
+                    'voicemail_enabled' => $voicemail_enabled,
+                    'voicemail_pin' => $voicemail_pin,
+                    'voicemail_email' => $voicemail_email,
+                    'voicemail_attach_audio' => $voicemail_attach_audio,
+                    'vm_on_noanswer' => $vm_on_noanswer,
+                    'vm_on_busy' => $vm_on_busy,
+                    'vm_on_unavail' => $vm_on_unavail,
+                    'vm_always' => $vm_always,
                     'cid_internal' => $cid_internal,
                     'cid_external' => $cid_external,
                     'is_active' => $is_active,
@@ -93,6 +132,8 @@ class ExtensionService {
                 markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'create', $_SESSION['user_id'] ?? null);
                 markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('voicemail', 'voicemail', 'all', "Sesli posta ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('permissions', 'permissions', 'all', "Yetki grupları ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 $msg = "{$extension} dahili abonesi oluşturuldu! Etkili olması için Uygula sayfasından gönderin.";
             }
             return $msg;
