@@ -1,7 +1,7 @@
 <div style="display: flex; flex-direction: column; gap: 20px;" id="cc-board-root">
 
     <!-- Üst Bar: Kuyruk/Tarih Filtresi & Tam Ekran -->
-    <div class="card" style="padding: 16px 20px;">
+    <div class="card page-header-card" style="margin-bottom: 0;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 242, 254, 0.15); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px;">

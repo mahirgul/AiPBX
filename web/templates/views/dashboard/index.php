@@ -1,5 +1,5 @@
 <!-- System Status Summary Banner -->
-<div class="card" style="margin-bottom: 24px; padding: 18px 24px;">
+<div class="card page-header-card">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
         <div style="display: flex; align-items: center; gap: 16px;">
             <div style="width: 44px; height: 44px; background: rgba(0, 242, 254, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px;">
