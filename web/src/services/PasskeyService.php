@@ -4,6 +4,10 @@
  * Şifresiz veya biyometrik güvenlik anahtarları (Touch ID, Face ID, Windows Hello, YubiKey) yönetimi.
  */
 
+if (is_file(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
+    require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+}
+
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\WebAuthnException;
 

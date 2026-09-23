@@ -395,6 +395,12 @@
                 });
             }
 
+            // IP adresi durumunda rp.id W3C standardı gereği alan adı sayılmaz;
+            // tarayıcının hata vermemesi için rp.id silinerek origin varsayılan alınır.
+            if (makeArgs.rp && makeArgs.rp.id && /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(makeArgs.rp.id)) {
+                delete makeArgs.rp.id;
+            }
+
             // 2. Tarayıcıda biyometrik / güvenlik anahtarı oluştur
             const credential = await navigator.credentials.create({ publicKey: makeArgs });
             if (!credential) {
