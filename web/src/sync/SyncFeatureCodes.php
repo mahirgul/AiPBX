@@ -213,6 +213,38 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 break;
 
+            case 'spy_whisper':
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Read(SPYTARGET,,10,,3,10)\n";
+                $conf .= " same => n,GotoIf(\$[\"\${SPYTARGET}\" = \"\"]?spy_w_empty)\n";
+                $conf .= " same => n,ChanSpy(PJSIP/\${SPYTARGET},qwb)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(spy_w_empty),Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                break;
+
+            case 'spy_barge':
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Read(SPYTARGET,,10,,3,10)\n";
+                $conf .= " same => n,GotoIf(\$[\"\${SPYTARGET}\" = \"\"]?spy_b_empty)\n";
+                $conf .= " same => n,ChanSpy(PJSIP/\${SPYTARGET},qBb)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(spy_b_empty),Playback(beep)\n";
+                $conf .= " same => n,Hangup()\n";
+                break;
+
+            case 'voicemail_my':
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,VoiceMailMain(\${CALLERID(num)}@default,s)\n";
+                $conf .= " same => n,Hangup()\n";
+                break;
+
+            case 'voicemail_general':
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,VoiceMailMain(@default)\n";
+                $conf .= " same => n,Hangup()\n";
+                break;
+
             case 'queue_unpause':
                 $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_unpause \${CALLERID(num)} &)\n";
                 $conf .= " same => n,Answer()\n";

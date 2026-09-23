@@ -23,6 +23,20 @@ function __syncGeneralDialplanBody() {
     $conf .= "[from-internal-pbx-ortak]\n";
     $conf .= "; Internal Extension-to-Extension Direct Calling\n";
 
+    // Şef - Sekreter Grupları
+    $bs_groups = [];
+    try {
+        $bs_stmt = $db->query("SELECT * FROM pbx_boss_secretary_groups WHERE is_active = 1");
+        foreach ($bs_stmt->fetchAll(PDO::FETCH_ASSOC) as $bg) {
+            $boss_ext = trim($bg['boss_extension']);
+            if ($boss_ext !== '') {
+                $bs_groups[$boss_ext] = $bg;
+            }
+        }
+    } catch (\Exception $e) {
+        $bs_groups = [];
+    }
+
     if (!empty($active_exts)) {
         foreach ($active_exts as $e) {
             $ext = trim($e['extension']);
@@ -35,6 +49,56 @@ function __syncGeneralDialplanBody() {
             $conf .= "exten => {$ext},hint,PJSIP/{$ext}-sip&PJSIP/{$ext}-webrtc&PJSIP/{$ext}-mob-webrtc\n";
             $conf .= "exten => {$ext},1,NoOp(Direct Call to Extension {$ext} - {$name})\n";
             $conf .= " same => n,Set(CDR(direction)=internal)\n";
+
+            // Şef - Sekreter Kontrolü: Bu dahili aktif bir şef ise sekreter filtresi uygulanır
+            if (isset($bs_groups[$ext])) {
+                $bg = $bs_groups[$ext];
+                $secs = json_decode($bg['secretaries_json'] ?? '[]', true) ?: [];
+                $whitelist = array_filter(array_map('trim', explode(',', $bg['whitelist_extensions'] ?? '')));
+                $allowed = array_unique(array_merge([$ext], $secs, $whitelist));
+
+                $condParts = [];
+                foreach ($allowed as $ac) {
+                    $ac_clean = preg_replace('/[^0-9]/', '', $ac);
+                    if ($ac_clean !== '') {
+                        $condParts[] = "\"\${CALLERID(num)}\" = \"{$ac_clean}\"";
+                    }
+                }
+                if (!empty($condParts)) {
+                    $conf .= " same => n,GotoIf(\$[" . implode(' | ', $condParts) . "]?allow_boss_{$ext})\n";
+                }
+
+                $conf .= " same => n,NoOp(Sef arandi: {$ext}, arayan yetkili degil -> Sekreter caldiriliyor)\n";
+                $sec_channels = [];
+                foreach ($secs as $s_ext) {
+                    $s_clean = preg_replace('/[^0-9]/', '', $s_ext);
+                    if ($s_clean !== '') {
+                        $sec_channels[] = "Local/{$s_clean}@from-internal-pbx-ortak/n";
+                    }
+                }
+
+                $bg_timeout = max(5, min(120, intval($bg['ring_timeout'] ?: 20)));
+                $bg_strategy = $bg['ring_strategy'] ?? 'ringall';
+
+                if (!empty($sec_channels)) {
+                    if ($bg_strategy === 'sequential') {
+                        $sec_step = max(5, intval($bg_timeout / max(1, count($sec_channels))));
+                        foreach ($sec_channels as $sc) {
+                            $conf .= " same => n,Dial({$sc},{$sec_step},tT)\n";
+                            $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?sec_ans_{$ext})\n";
+                        }
+                    } else {
+                        $sec_dial_str = implode('&', $sec_channels);
+                        $conf .= " same => n,Dial({$sec_dial_str},{$bg_timeout},tT)\n";
+                        $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?sec_ans_{$ext})\n";
+                    }
+                }
+
+                $conf .= " same => n,NoOp(Sekreter cevap vermedi -> Fallback)\n";
+                $conf .= buildDestinationLines($bg['fallback_dest_type'] ?? 'hangup', $bg['fallback_dest_id'] ?? 'busy') . "\n";
+                $conf .= " same => n(sec_ans_{$ext}),Hangup()\n";
+                $conf .= " same => n(allow_boss_{$ext}),NoOp(Sefe erisim yetkili)\n";
+            }
 
             $extDial = buildExtensionDialLines($ext, $db, 'direct');
             $conf .= implode("\n", $extDial['lines']) . "\n";

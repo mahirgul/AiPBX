@@ -103,12 +103,13 @@
                         <th><?php echo t('cc_supervisor.col_agent_name'); ?></th>
                         <th><?php echo t('cc_supervisor.col_active_queues'); ?></th>
                         <th><?php echo t('cc_supervisor.col_status'); ?></th>
-                        <th><?php echo t('cc_supervisor.col_pause_detail'); ?></th>
+                        <th>Görüşülen Numara & Süre</th>
+                        <th class="text-right">Denetim & Dinleme</th>
                     </tr>
                 </thead>
                 <tbody id="sup-agents-tbody">
                     <tr>
-                        <td colspan="5" class="text-center text-muted" style="padding: 24px;"><?php echo t('cc_supervisor.loading_agents'); ?></td>
+                        <td colspan="6" class="text-center text-muted" style="padding: 24px;"><?php echo t('cc_supervisor.loading_agents'); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -213,15 +214,38 @@ function fetchAgentsStatus(queueFilter) {
                 let statusBadge = '<span class="badge badge-secondary"><i class="fas fa-power-off"></i> Çevrimdışı (Bağlı Değil)</span>';
                 let detailText = '<span class="text-muted">Telefon Oturumu Kapalı</span>';
 
+                let callDetailsHtml = '<span class="text-muted">—</span>';
+                let actionsHtml = '<span class="text-muted">—</span>';
+
                 if (a.status_key === 'READY') {
                     statusBadge = '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Boşta / Hazır</span>';
-                    detailText = '<span style="color: var(--success); font-weight: 600;">Çağrı Bekliyor</span>';
+                    callDetailsHtml = '<span style="color: var(--success); font-weight: 600;">Çağrı Bekliyor</span>';
                 } else if (a.status_key === 'BUSY') {
                     statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone-alt"></i> Görüşmede</span>';
-                    detailText = '<span style="color: var(--danger); font-weight: 600;">Çağrı Devam Ediyor</span>';
+                    const connNum = a.connected_number ? escapeHtml(a.connected_number) : 'Müşteri';
+                    const durFmt = a.duration_formatted ? escapeHtml(a.duration_formatted) : '00:00';
+                    callDetailsHtml = `
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 700; color: var(--danger);"><i class="fas fa-phone-volume"></i> ${connNum}</span>
+                            <span class="badge badge-secondary" style="font-family: monospace; font-size: 11px;">${durFmt}</span>
+                        </div>
+                    `;
+                    actionsHtml = `
+                        <div class="btn-group btn-group-sm" style="display: inline-flex; gap: 4px;">
+                            <button class="btn btn-outline-info btn-sm" onclick="spyCall('${escapeHtml(a.extension)}', 'spy')" title="Gizli Dinle (Sadece dinlersiniz)" style="padding: 2px 8px; font-size: 11px; font-weight: 600;">
+                                <i class="fas fa-headphones"></i> Dinle
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="spyCall('${escapeHtml(a.extension)}', 'whisper')" title="Fısılda (Yalnızca temsilci duyar)" style="padding: 2px 8px; font-size: 11px; font-weight: 600;">
+                                <i class="fas fa-comment-dots"></i> Fısılda
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="spyCall('${escapeHtml(a.extension)}', 'barge')" title="Dahil Ol (Her iki taraf duyar)" style="padding: 2px 8px; font-size: 11px; font-weight: 600;">
+                                <i class="fas fa-users"></i> Dahil Ol
+                            </button>
+                        </div>
+                    `;
                 } else if (a.status_key === 'PAUSED') {
                     statusBadge = '<span class="badge badge-warning"><i class="fas fa-coffee"></i> Molada</span>';
-                    detailText = '<span style="color: var(--warning); font-weight: 600;">Aktif Mola Kaydı Var</span>';
+                    callDetailsHtml = '<span style="color: var(--warning); font-weight: 600;">Mola Alındı</span>';
                 }
 
                 html += `
@@ -230,7 +254,8 @@ function fetchAgentsStatus(queueFilter) {
                         <td style="font-weight: 700; color: var(--text-main);">${escapeHtml(a.full_name)}</td>
                         <td><span class="badge badge-info">${escapeHtml(a.queue_title || a.queue_name)}</span></td>
                         <td>${statusBadge}</td>
-                        <td>${detailText}</td>
+                        <td>${callDetailsHtml}</td>
+                        <td class="text-right">${actionsHtml}</td>
                     </tr>
                 `;
             });
@@ -238,12 +263,35 @@ function fetchAgentsStatus(queueFilter) {
             if (html) {
                 tbody.innerHTML = html;
             } else {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
             }
 
             document.getElementById('stat-active-agents').innerText = activeCount;
             document.getElementById('stat-paused-agents').innerText = pausedCount;
         });
+}
+
+function spyCall(targetExt, mode) {
+    const modeNames = { 'spy': 'Gizli Dinleme', 'whisper': 'Fısıldama', 'barge': 'Araya Girme' };
+    const label = modeNames[mode] || 'Dinleme';
+    if (!confirm(`${targetExt} numaralı temsilcinin görüşmesine (${label}) modunda bağlanmak istiyor musunuz?\nTelefonunuz çaldırılacaktır.`)) return;
+
+    fetch('/api/cc.php?action=spy_call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN || '') + '&target_ext=' + encodeURIComponent(targetExt) + '&mode=' + encodeURIComponent(mode)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            if (window.notify) window.notify.success(data.message);
+        } else {
+            if (window.notify) window.notify.error(data.error || 'İşlem başlatılamadı');
+        }
+    })
+    .catch(e => {
+        if (window.notify) window.notify.error('İstek gönderilemedi: ' + e);
+    });
 }
 
 function pickupCall(channel) {

@@ -368,7 +368,9 @@ function renderAgentsStatus(agents, queueFilter) {
 
         if (a.is_in_call) {
             statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone"></i> Görüşmede</span>';
-            detail = a.call_partner ? `<span style="color: var(--danger); font-weight: 600;">${escapeHtml(a.call_partner)}</span>` : 'Görüşmede';
+            const partner = a.connected_number || a.call_partner;
+            const dur = a.duration_formatted ? ` <span class="badge badge-secondary" style="font-family: monospace; font-size: 10px; margin-left: 4px;">${escapeHtml(a.duration_formatted)}</span>` : '';
+            detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : 'Görüşmede';
         } else if (a.is_paused) {
             statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> Molada</span>';
             detail = `<span style="color: var(--warning); font-weight: 600;">${escapeHtml(a.pause_reason || 'Mola')}</span>`;

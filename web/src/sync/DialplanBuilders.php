@@ -137,7 +137,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $seq++;
     $lbl = ($labelPrefix !== '' ? $labelPrefix . '_' : '') . $ext . '_' . $seq;
 
-    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode FROM sys_users WHERE extension = ?");
+    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode, voicemail_enabled, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always FROM sys_users WHERE extension = ?");
     $stmt->execute([$ext]);
     $u = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -161,6 +161,18 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
             'lines' => [
                 " same => n,NoOp(DND aktif - {$ext})",
                 " same => n,Hangup(17)"
+            ]
+        ];
+    }
+
+    // 1.1 Koşulsuz Sesli Posta Yönlendirmesi aktif ise doğrudan sesli posta
+    if (!empty($u['voicemail_enabled']) && !empty($u['vm_always'])) {
+        return [
+            'terminal' => true,
+            'lines' => [
+                " same => n,NoOp(Kosulsuz Sesli Postaya Yonlendirme aktif - {$ext})",
+                " same => n,VoiceMail({$ext}@default,u)",
+                " same => n,Hangup()"
             ]
         ];
     }
@@ -260,6 +272,10 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,NoOp(Mesgulken Yonlendirme aktif - {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
+    } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_busy'])) {
+        $lines[] = " same => n,NoOp(Mesgulken Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,VoiceMail({$ext}@default,b)";
+        $lines[] = " same => n,Hangup()";
     } else {
         $lines[] = " same => n,Hangup(17)";
     }
@@ -270,6 +286,10 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,NoOp(Cevapsizken Yonlendirme aktif - {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
+    } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_noanswer'])) {
+        $lines[] = " same => n,NoOp(Cevapsizken Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,VoiceMail({$ext}@default,u)";
+        $lines[] = " same => n,Hangup()";
     } else {
         $lines[] = " same => n,Hangup()";
     }
@@ -284,6 +304,10 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,NoOp(Ulasilamadi -> Mesgulken Yonlendirme: {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
+    } elseif (!empty($u['voicemail_enabled']) && (!empty($u['vm_on_unavail']) || !empty($u['vm_on_noanswer']))) {
+        $lines[] = " same => n,NoOp(Ulasilamadi -> Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,VoiceMail({$ext}@default,u)";
+        $lines[] = " same => n,Hangup()";
     } else {
         $lines[] = " same => n,Hangup()";
     }
@@ -367,6 +391,20 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
 
             $extDial = buildExtensionDialLines($ext, $db, "dest_{$ext_label_seq}");
             $lines = array_merge($lines, $extDial['lines']);
+            break;
+
+        case 'ring_group':
+            $lines[] = " same => n,Goto(app-ringgroup-" . intval($dest_id) . ",s,1)";
+            break;
+
+        case 'conference':
+            $lines[] = " same => n,Goto(app-confbridge-" . intval($dest_id) . ",s,1)";
+            break;
+
+        case 'voicemail':
+            $vm_ext = preg_replace('/[^0-9]/', '', (string)$dest_id);
+            $lines[] = " same => n,VoiceMail({$vm_ext}@default,u)";
+            $lines[] = " same => n,Hangup()";
             break;
 
         case 'fax':
