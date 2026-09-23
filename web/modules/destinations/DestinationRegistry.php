@@ -89,6 +89,7 @@ class DestinationRegistry {
             'fax'            => 'badge-warning',
             'announcement'   => 'badge-purple',
             'time_condition' => 'badge-teal',
+            'outbound_route' => 'badge-indigo',
             'hangup'         => 'badge-danger',
         ];
         return $map[$destType] ?? 'badge-info';

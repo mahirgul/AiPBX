@@ -97,6 +97,9 @@ class TrunkService {
                 : 'rfc4733';
 
             $context = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['context'] ?? '')) ?: 'from-trunk-inbound';
+            $did_trim_digits = max(0, min(30, intval($data['did_trim_digits'] ?? 0)));
+            $allow_outbound_routing = isset($data['allow_outbound_routing']) ? intval($data['allow_outbound_routing']) : 0;
+            $outbound_route_group = max(1, intval($data['outbound_route_group'] ?? 1));
             $max_channels = max(0, intval($data['max_channels'] ?? 0));
 
             $direct_media = in_array(strtolower(trim($data['direct_media'] ?? '')), ['no', 'yes', 'nonat'], true)
@@ -141,6 +144,9 @@ class TrunkService {
                 'outbound_caller_id' => $outbound_caller_id !== '' ? $outbound_caller_id : null,
                 'dtmf_mode' => $dtmf_mode,
                 'context' => $context,
+                'did_trim_digits' => $did_trim_digits,
+                'allow_outbound_routing' => $allow_outbound_routing,
+                'outbound_route_group' => $outbound_route_group,
                 'max_channels' => $max_channels,
                 'direct_media' => $direct_media,
                 'timers' => $timers,
@@ -163,6 +169,7 @@ class TrunkService {
             // pjsip_trunks.conf değil — bu domain de işaretlenmezse "Uygula"
             // sonrası ayar etkisiz kalıyordu (2026-08-31 denetiminde bulundu).
             markPendingSync('outbound_dialplan', 'trunk', $trunk_name, "Trunk CID ayarı: {$title} ({$trunk_name})", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('inbound_dialplan', 'trunk', $trunk_name, "Trunk gelen rota/DID ayarı: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return "SIP Trunk '{$title}' ({$trunk_name}) kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
         });
     }

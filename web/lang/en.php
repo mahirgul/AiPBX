@@ -145,6 +145,14 @@ return [
     'trunks.field_force_rport' => 'Force RPort',
     'trunks.field_registration_retry_interval' => 'Registration Retry Interval (sec)',
     'trunks.field_max_contacts' => 'Max Contacts',
+    'trunks.section_inbound_routing' => 'Inbound Call & DID Normalization',
+    'trunks.field_did_trim_digits' => 'Inbound DID Trim (Last N Digits)',
+    'trunks.did_trim_digits_help' => 'Takes only the last N digits from the incoming DID sent by the carrier to match on the PBX.',
+    'trunks.did_trim_example' => 'E.g.: 4 (Converts incoming 03704187840 to 7840. 0 = No trim, keep full number)',
+    'trunks.field_allow_outbound_routing' => 'Allow Outbound Routes (Trunk-to-Trunk / Transit Routing)',
+    'trunks.allow_outbound_routing_help' => 'When enabled, calls arriving on this trunk without a matching Inbound Route (DID) can transit through defined Outbound Routes to other trunks.',
+    'trunks.field_outbound_route_group' => 'Transit Outbound Route Group',
+    'trunks.outbound_route_group_help' => 'Selects which outbound route group will be used for transit calls (Default: Group 1).',
 
     // DID Routes
     'did.title' => 'Inbound Routes',

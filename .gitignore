@@ -101,5 +101,6 @@ CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
 .dmrc
 .pam_environment
 .pki/
+.gnupg/
 .vboxclient*
 .xsession*
