@@ -49,6 +49,27 @@
     (function() {
         var saved = null;
         try { saved = localStorage.getItem('aipbx_user_lang') || localStorage.getItem('aipbx_lang'); } catch(e) {}
+        if (!saved) {
+            var match = document.cookie.match(/(?:^|;\s*)aipbx_lang=([^;]+)/);
+            if (match && ["tr", "en", "de"].includes(match[1])) {
+                saved = match[1];
+            }
+        }
+        var urlParam = null;
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var ql = params.get('lang');
+            if (ql && ["tr", "en", "de"].includes(ql)) {
+                urlParam = ql;
+                saved = ql;
+                try {
+                    localStorage.setItem('aipbx_user_lang', ql);
+                    localStorage.setItem('aipbx_lang', ql);
+                    document.cookie = "aipbx_lang=" + ql + ";path=/;max-age=31536000;SameSite=Lax";
+                } catch(e) {}
+            }
+        } catch(e) {}
+
         var lang = saved;
         if (!lang || !["tr", "en", "de"].includes(lang)) {
             var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || "en"];
@@ -62,11 +83,14 @@
         document.documentElement.setAttribute("data-lang", lang);
         document.documentElement.lang = lang;
 
-        // Edge GeoIP detection via Cloudflare trace if user has not manually locked a language
-        if (!saved) {
+        // Edge GeoIP detection via Cloudflare trace ONLY if user has NOT manually chosen a language
+        if (!saved && !urlParam) {
             fetch('/cdn-cgi/trace')
                 .then(function(r) { return r.text(); })
                 .then(function(text) {
+                    try {
+                        if (localStorage.getItem('aipbx_user_lang')) return;
+                    } catch(e) {}
                     var m = text.match(/loc=([A-Z]{2})/);
                     if (m) {
                         var country = m[1];
