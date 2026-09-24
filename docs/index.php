@@ -30,21 +30,13 @@ require_once __DIR__ . '/includes/data.php';
                 ) ?>
             </div>
 
-            <h1>
-                <?= t(
-                    'Kurumsal IP Santral, <span>Amacına Uygun Tasarlandı.</span>',
-                    'Enterprise IP Telephony, <span>Engineered with Purpose.</span>',
-                    'Enterprise IP-Telefonie, <span>Konsequent Durchdacht.</span>'
-                ) ?>
-            </h1>
+            <h1 data-lang="tr">Kurumsal IP Santral, <span>Amacına Uygun Tasarlandı.</span></h1>
+            <h1 data-lang="en">Enterprise IP Telephony, <span>Engineered with Purpose.</span></h1>
+            <h1 data-lang="de">Enterprise IP-Telefonie, <span>Konsequent Durchdacht.</span></h1>
 
-            <p>
-                <?= t(
-                    'Asterisk 22, Port 443 Nginx L4 ALPN stream çoklama, WebRTC, Passkey biyometrik kimlik doğrulama, Go anlık sohbet motoru ve yerel Android/iOS softphone istemcilerini birleştiren modern kurumsal santral.',
-                    'A high-concurrency, web-managed IP PBX uniting Asterisk 22, Port 443 ALPN stream multiplexing, WebRTC, Passkeys, Go instant messaging, and native Android & iOS softphone clients.',
-                    'Eine hochskalierbare Enterprise IP-Telefonanlage mit Asterisk 22, Port 443 ALPN-Multiplexing, WebRTC, biometrischen Passkeys, Go-Echtzeitchat und nativen Mobil-Softphones.'
-                ) ?>
-            </p>
+            <p data-lang="tr">Asterisk 22, Port 443 Nginx L4 ALPN stream çoklama, WebRTC, Passkey biyometrik kimlik doğrulama, Go anlık sohbet motoru ve yerel Android/iOS softphone istemcilerini birleştiren modern kurumsal santral.</p>
+            <p data-lang="en">A high-concurrency, web-managed IP PBX uniting Asterisk 22, Port 443 ALPN stream multiplexing, WebRTC, Passkeys, Go instant messaging, and native Android &amp; iOS softphone clients.</p>
+            <p data-lang="de">Eine hochskalierbare Enterprise IP-Telefonanlage mit Asterisk 22, Port 443 ALPN-Multiplexing, WebRTC, biometrischen Passkeys, Go-Echtzeitchat und nativen Mobil-Softphones.</p>
 
             <div class="hero-actions">
                 <a href="#install" class="btn-primary">
@@ -95,8 +87,8 @@ require_once __DIR__ . '/includes/data.php';
                 <?php foreach ($stats as $st): ?>
                 <div style="padding: 12px;">
                     <div style="font-size: clamp(2rem, 3.2vw, 2.6rem); font-weight: 800; color: #0f172a; line-height: 1.1; letter-spacing: -0.5px;"><?= htmlspecialchars($st['value']) ?></div>
-                    <div style="font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 6px;"><?= getLocal($st, 'label') ?></div>
-                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;"><?= getLocal($st, 'sub') ?></div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 6px;"><?= t_field($st, 'label') ?></div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;"><?= t_field($st, 'sub') ?></div>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -130,8 +122,8 @@ require_once __DIR__ . '/includes/data.php';
                         </div>
                         <span class="tech-badge"><?= htmlspecialchars($feat['badge']) ?></span>
                     </div>
-                    <h3 class="tech-card-title"><?= getLocal($feat, 'title') ?></h3>
-                    <p class="tech-card-desc"><?= getLocal($feat, 'desc') ?></p>
+                    <h3 class="tech-card-title"><?= t_field($feat, 'title') ?></h3>
+                    <p class="tech-card-desc"><?= t_field($feat, 'desc') ?></p>
                     <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
                         <?php
                             $targetLink = '/features.html';
@@ -336,11 +328,13 @@ require_once __DIR__ . '/includes/data.php';
                 <?php foreach (array_slice($faq, 0, 5) as $idx => $fItem): ?>
                 <div class="faq-item <?= ($idx === 0) ? 'active' : '' ?>">
                     <div class="faq-question">
-                        <span><?= getLocal($fItem, 'q') ?></span>
+                        <?= t_field($fItem, 'q') ?>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="faq-answer">
-                        <p><?= nl2br(htmlspecialchars(getLocal($fItem, 'a'))) ?></p>
+                        <div data-lang="tr"><p><?= nl2br(htmlspecialchars($fItem['aTR'] ?? ($fItem['a'] ?? ''))) ?></p></div>
+                        <div data-lang="en"><p><?= nl2br(htmlspecialchars($fItem['aEN'] ?? ($fItem['aTR'] ?? ''))) ?></p></div>
+                        <div data-lang="de"><p><?= nl2br(htmlspecialchars($fItem['aDE'] ?? ($fItem['aEN'] ?? ''))) ?></p></div>
                     </div>
                 </div>
                 <?php endforeach; ?>
