@@ -124,6 +124,43 @@ global $LANG, $company;
         });
     }
 
+    // Language Switcher Function with zero reload & CSS cloak sync
+    function setLanguage(lang) {
+        if (!['tr', 'en', 'de'].includes(lang)) lang = 'tr';
+        document.documentElement.setAttribute('data-lang', lang);
+        document.documentElement.lang = lang;
+        try {
+            localStorage.setItem('aipbx_lang', lang);
+            localStorage.setItem('aipbx_user_lang', lang);
+        } catch(e) {}
+
+        const flagEl = document.getElementById('currentLangFlag');
+        const codeEl = document.getElementById('currentLangCode');
+        const flags = {
+            tr: '<svg class="flag-icon" viewBox="0 0 1200 800" width="20" height="14"><rect width="1200" height="800" fill="#E30A17"/><circle cx="480" cy="400" r="200" fill="#fff"/><circle cx="520" cy="400" r="160" fill="#E30A17"/><polygon fill="#fff" points="583,400 641,335 600,400 641,465" transform="rotate(18,610,400)"/></svg>',
+            en: '<svg class="flag-icon" viewBox="0 0 60 30" width="20" height="14"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>',
+            de: '<svg class="flag-icon" viewBox="0 0 900 600" width="20" height="14"><rect width="900" height="600" fill="#fff"/><rect width="900" height="200" fill="#ed2939"/><rect y="400" width="900" height="200" fill="#ed2939"/></svg>'
+        };
+        const codes = { tr: 'TR', en: 'EN', de: 'DE' };
+
+        if (flagEl && flags[lang]) flagEl.innerHTML = flags[lang];
+        if (codeEl && codes[lang]) codeEl.innerText = codes[lang];
+
+        document.querySelectorAll('.lang-option').forEach(btn => {
+            if (btn.getAttribute('data-set-lang') === lang) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        document.querySelectorAll('.mobile-lang-btn').forEach(btn => {
+            if (btn.getAttribute('data-set-lang') === lang) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        const langDropdown = document.getElementById('langDropdown');
+        if (langDropdown) langDropdown.classList.remove('active');
+    }
+    window.setLanguage = setLanguage;
+
     // JSON Tables Tab Switcher
     function initTableTabs() {
         const tabButtons = document.querySelectorAll('.table-tab-btn');
@@ -200,6 +237,8 @@ global $LANG, $company;
 
     // Run initializers
     document.addEventListener('DOMContentLoaded', () => {
+        var curLang = document.documentElement.getAttribute('data-lang') || 'tr';
+        setLanguage(curLang);
         initTableTabs();
         initTableSearch();
         initFaqAccordion();

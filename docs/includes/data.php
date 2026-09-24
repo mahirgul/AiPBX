@@ -88,36 +88,31 @@ if (!function_exists('j')) {
     }
 }
 
-// ── Translation Rendering Helper ─────────────────────────────────────────────
+// ── Trilingual Tag Rendering Helpers ─────────────────────────────────────────
 /**
- * Outputs localized text based on $LANG, preserving data-tr, data-en, and data-de attributes for zero-flicker client toggling.
+ * Renders all 3 language representations with data-lang attributes for instant client-side switching.
  */
 function t(string $tr, string $en, ?string $de = null, string $tag = 'span', string $extra = ''): string {
-    global $LANG;
     $de = $de ?? $en;
     $trE = htmlspecialchars($tr, ENT_QUOTES, 'UTF-8');
     $enE = htmlspecialchars($en, ENT_QUOTES, 'UTF-8');
     $deE = htmlspecialchars($de, ENT_QUOTES, 'UTF-8');
 
-    if ($LANG === 'de') {
-        $content = $deE;
-    } elseif ($LANG === 'en') {
-        $content = $enE;
-    } else {
-        $content = $trE;
-    }
-
-    if ($tag === '') {
-        return $content;
-    }
-
-    return "<{$tag} data-tr=\"{$trE}\" data-en=\"{$enE}\" data-de=\"{$deE}\"{$extra}>{$content}</{$tag}>";
+    return "<{$tag} data-lang=\"tr\"{$extra}>{$trE}</{$tag}><{$tag} data-lang=\"en\"{$extra}>{$enE}</{$tag}><{$tag} data-lang=\"de\"{$extra}>{$deE}</{$tag}>";
 }
 
-/**
- * Gets a localized field from an array based on current $LANG.
- * e.g., getLocal($item, 'title') looks up titleTR, titleEN, titleDE.
- */
+function t_html(string $tr, string $en, ?string $de = null, string $tag = 'div', string $extra = ''): string {
+    $de = $de ?? $en;
+    return "<{$tag} data-lang=\"tr\"{$extra}>{$tr}</{$tag}><{$tag} data-lang=\"en\"{$extra}>{$en}</{$tag}><{$tag} data-lang=\"de\"{$extra}>{$de}</{$tag}>";
+}
+
+function t_field(array $item, string $fieldPrefix, string $tag = 'span', string $extra = ''): string {
+    $tr = $item[$fieldPrefix . 'TR'] ?? ($item[$fieldPrefix] ?? '');
+    $en = $item[$fieldPrefix . 'EN'] ?? $tr;
+    $de = $item[$fieldPrefix . 'DE'] ?? $en;
+    return t($tr, $en, $de, $tag, $extra);
+}
+
 function getLocal(array $item, string $fieldPrefix, ?string $lang = null): string {
     global $LANG;
     $l = $lang ?: $LANG;
@@ -125,13 +120,11 @@ function getLocal(array $item, string $fieldPrefix, ?string $lang = null): strin
     if (isset($item[$fieldPrefix . $suffix])) {
         return (string)$item[$fieldPrefix . $suffix];
     }
-    // Fallbacks
     if (isset($item[$fieldPrefix . 'TR'])) return (string)$item[$fieldPrefix . 'TR'];
     if (isset($item[$fieldPrefix . 'EN'])) return (string)$item[$fieldPrefix . 'EN'];
     return (string)($item[$fieldPrefix] ?? '');
 }
 
-// ── Multilingual URL Helper ──────────────────────────────────────────────────
 function getLangUrl(string $targetLang): string {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     if ($targetLang === 'tr') {

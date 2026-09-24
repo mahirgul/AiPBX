@@ -28,17 +28,29 @@
     <!-- 2. Features / Santral Özellikleri -->
     <url>
         <loc>https://aipbx.bid/features.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
         <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/features.html" />
         <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/features.html" />
         <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/features.html" />
         <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/features.html" />
+    </url>
+
+    <!-- 3. Tables & Comparison Matrix / JSON Tablo Sistemi -->
+    <url>
+        <loc>https://aipbx.bid/tables.html</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.95</priority>
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/tables.html" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/tables.html" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/tables.html" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/tables.html" />
         <image:image>
-            <image:loc>https://aipbx.bid/img/feature_graphic.png</image:loc>
-            <image:title>AiPBX Santral Özellikleri — IVR, Ses Kayıt, Konferans, WebRTC</image:title>
-            <image:caption>Kurumsal santral özellikleri ve yıldız kodları tablosu</image:caption>
+            <image:loc>https://aipbx.bid/logo.png</image:loc>
+            <image:title>AiPBX Teknik Özellik Matrisi &amp; JSON Tabloları</image:title>
+            <image:caption>Santral karşılaştırma matrisi, ağ portları, yıldız kodları ve sistem parametreleri</image:caption>
         </image:image>
     </url>
 

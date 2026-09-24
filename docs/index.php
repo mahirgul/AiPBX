@@ -1,9 +1,10 @@
 <?php
 /**
- * AiPBX.bid — Official Landing Page & Technical Documentation
- * Powered by centralized data.json, full trilingual i18n (TR/EN/DE),
- * dynamic comparison tables, architecture deep-dives, and Schema.org SEO.
+ * AiPBX.bid — Minimalist & High-Performance Corporate Landing Page
+ * Clean, fast, modern homepage linking to deep technical subpages.
+ * Powered by centralized data.json, full trilingual support (TR/EN/DE), and Schema.org SEO.
  */
+$page = 'home';
 require_once __DIR__ . '/includes/data.php';
 ?>
 <!DOCTYPE html>
@@ -18,7 +19,7 @@ require_once __DIR__ . '/includes/data.php';
     <?php include __DIR__ . '/includes/navbar.php'; ?>
 
     <main>
-        <!-- ── HERO SECTION ──────────────────────────────────────────────── -->
+        <!-- ── HERO SECTION (CLEAN & MINIMALIST) ─────────────────────────── -->
         <header class="hero" id="overview">
             <div class="hero-tag">
                 <i class="fa-solid fa-sparkles" style="color:var(--primary);"></i>
@@ -46,26 +47,30 @@ require_once __DIR__ . '/includes/data.php';
             </p>
 
             <div class="hero-actions">
-                <a href="#tables" class="btn-primary">
+                <a href="#install" class="btn-primary">
+                    <i class="fa-solid fa-bolt" style="margin-right:6px;"></i>
+                    <?= t('Hızlı Kuruluma Git', 'Quick Install (5 Min)', 'Jetzt Installieren') ?>
+                </a>
+                <a href="/tables.php" class="btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #0284c7;">
                     <i class="fa-solid fa-table-list" style="margin-right:6px;"></i>
-                    <?= t('JSON Tablolar & Matris', 'Tables & Specs', 'Tabellen & Matrix') ?>
+                    <?= t('Karşılaştırma & Tablolar', 'Tables & Specs', 'Tabellen & Matrix') ?>
                 </a>
-                <a href="#technologies" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981;">
+                <a href="/features.html" class="btn-secondary">
                     <i class="fa-solid fa-microchip" style="margin-right:6px;"></i>
-                    <?= t('Yeni Teknolojiler', 'Flagship Tech', 'Technologien') ?>
+                    <?= t('Özellikler', 'Features', 'Funktionen') ?>
                 </a>
-                <a href="#architecture" class="btn-secondary">
+                <a href="/architecture.html" class="btn-secondary">
                     <i class="fa-solid fa-sitemap" style="margin-right:6px;"></i>
                     <?= t('Sistem Mimarisi', 'Architecture', 'Architektur') ?>
                 </a>
                 <a href="/mobile-apps.html" class="btn-secondary">
                     <i class="fa-solid fa-mobile-screen" style="margin-right:6px;"></i>
-                    <?= t('Mobil Uygulamalar', 'Mobile Apps', 'Mobil-Apps') ?>
+                    <?= t('Mobil Softphone', 'Mobile Apps', 'Mobil-Apps') ?>
                 </a>
             </div>
 
             <!-- Terminal Card: One-Liner Turnkey Quick Install -->
-            <div class="terminal-container" id="install" style="max-width: 880px; margin: 38px auto 26px auto; border-radius: 18px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);">
+            <div class="terminal-container" id="install" style="max-width: 880px; margin: 38px auto 10px auto; border-radius: 18px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);">
                 <div class="terminal-header">
                     <div class="terminal-dots">
                         <span class="terminal-dot dot-red"></span>
@@ -81,23 +86,6 @@ require_once __DIR__ . '/includes/data.php';
                     <span class="terminal-comment"># <?= t('Veya kaynak koddan derleyerek kurulum (Alternative git clone)', 'Alternative git clone from source', 'Alternativ aus dem Quellcode via Git') ?></span><br>
                     <span class="terminal-cmd" style="color: #94a3b8;"><?= htmlspecialchars($company['gitCloneCommand'] ?? '') ?></span>
                 </div>
-            </div>
-
-            <!-- Flyer Showcase -->
-            <div class="flyer-wrapper" style="max-width: 980px; margin: 34px auto 10px auto; padding: 0 16px;">
-                <div style="background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(2, 132, 199, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9);">
-                    <a href="/img/feature_graphic.png" target="_blank" title="<?= t('AiPBX Tanıtım Broşürü — Büyütmek için tıklayın', 'AiPBX Flyer — Click to expand', 'AiPBX Flyer — Klicken zum Vergrößern') ?>">
-                        <img src="/img/feature_graphic.png" alt="AiPBX Kurumsal Akıllı Santral ve Softphone Tanıtım Broşürü" style="width: 100%; height: auto; display: block; border-radius: 20px;">
-                    </a>
-                </div>
-                <p style="margin-top: 12px; text-align: center; font-size: 0.88rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-expand" style="margin-right: 6px; color: var(--primary);"></i>
-                    <?= t(
-                        'AiPBX Kurumsal Telefon Santrali & Mobil Softphone Tanıtımı • Büyütmek için görsele tıklayın',
-                        'AiPBX Enterprise IP PBX & Mobile Softphone Overview • Click image to view full size',
-                        'AiPBX Enterprise IP-Telefonie & Mobile Softphone Übersicht • Klicken zum Vergrößern'
-                    ) ?>
-                </p>
             </div>
         </header>
 
@@ -115,7 +103,7 @@ require_once __DIR__ . '/includes/data.php';
         </section>
 
         <!-- ── FLAGSHIP TECHNOLOGIES SHOWCASE ───────────────────────────── -->
-        <section class="section-wrapper" id="technologies">
+        <section class="section-wrapper" id="features">
             <div class="section-header-center">
                 <div class="section-eyebrow">
                     <i class="fa-solid fa-bolt"></i>
@@ -144,236 +132,148 @@ require_once __DIR__ . '/includes/data.php';
                     </div>
                     <h3 class="tech-card-title"><?= getLocal($feat, 'title') ?></h3>
                     <p class="tech-card-desc"><?= getLocal($feat, 'desc') ?></p>
+                    <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+                        <?php
+                            $targetLink = '/features.html';
+                            if ($feat['id'] === 'alpn') $targetLink = '/architecture.html';
+                            elseif ($feat['id'] === 'msteams') $targetLink = '/msteams.html';
+                            elseif ($feat['id'] === 'call_spy') $targetLink = '/callcenter.html';
+                            elseif ($feat['id'] === 'mobile_apps') $targetLink = '/mobile-apps.html';
+                        ?>
+                        <a href="<?= $targetLink ?>" style="color: <?= htmlspecialchars($feat['color']) ?>; font-weight: 700; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                            <span><?= t('Teknik Detayları İncele', 'View Technical Deep Dive', 'Technische Details ansehen') ?></span>
+                            <i class="fa-solid fa-arrow-right" style="font-size: 0.78rem;"></i>
+                        </a>
+                    </div>
                 </div>
                 <?php endforeach; ?>
             </div>
         </section>
 
-        <!-- ── JSON TABLES & COMPARISON MATRIX ──────────────────────────── -->
-        <section class="section-wrapper" id="tables" style="padding-top: 20px;">
-            <div class="section-header-center">
-                <div class="section-eyebrow">
-                    <i class="fa-solid fa-table"></i>
-                    <?= t('JSON TABLO SİSTEMİ', 'JSON TABLE SYSTEM', 'JSON-TABELLENSYSTEM') ?>
-                </div>
-                <h2 class="section-title-large">
-                    <?= t('Teknik Özellik Matrisi & Sistem Parametreleri', 'Technical Feature Matrix & System Specs', 'Technische Funktionsmatrix & Systemparameter') ?>
-                </h2>
-                <p class="section-subtitle-muted">
-                    <?= t(
-                        'data.json üzerinden dinamik olarak beslenen karşılaştırmalı santral matrisi, ağ portları, yıldız kodları ve arama yetki seviyeleri.',
-                        'Centralized data.json powering our comprehensive PBX comparison matrix, network port architecture, feature star codes, and dialing permissions.',
-                        'Zentral über data.json gesteuerte PBX-Vergleichsmatrix, Netzwerk-Portarchitektur, Funktionstastencodes und Berechtigungsstufen.'
-                    ) ?>
-                </p>
-            </div>
+        <!-- ── SPOTLIGHT: JSON TABLES SYSTEM ─────────────────────────────── -->
+        <section class="section-wrapper" id="tables" style="background: #f8fafc; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding-left: max(24px, calc((100% - 1280px) / 2)); padding-right: max(24px, calc((100% - 1280px) / 2));">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px; align-items: center;">
+                    <div>
+                        <div class="section-eyebrow">
+                            <i class="fa-solid fa-table-list"></i>
+                            <?= t('JSON TABLO SİSTEMİ', 'JSON TABLE SYSTEM', 'JSON-TABELLENSYSTEM') ?>
+                        </div>
+                        <h2 style="font-size: clamp(2rem, 3.2vw, 2.6rem); font-weight: 800; color: var(--text-heading); line-height: 1.25; margin-bottom: 18px; letter-spacing: -0.5px;">
+                            <?= t(
+                                'Karşılaştırma Matrisi & <span>Teknik Parametreler</span>',
+                                'Feature Comparison Matrix & <span>System Parameters</span>',
+                                'Vergleichsmatrix & <span>Systemparameter</span>'
+                            ) ?>
+                        </h2>
+                        <p style="font-size: 1.05rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 24px;">
+                            <?= t(
+                                'AiPBX platformunun Cisco, Avaya ve bulut santrallerle (RingCentral, 8x8) detaylı karşılaştırması, Port 443 ALPN stream çoklama haritası, santral yıldız kodları (*90, *22, *23), arama yetkilendirme (Call Barring) ve donanım gereksinimleri bağımsız tablolarda toplandı.',
+                                'Comprehensive side-by-side comparison with Cisco, Avaya, and Cloud PBX SaaS, along with Port 443 ALPN mapping, telephony star codes (*90/*22/*23), outbound call barring, and hardware specs.',
+                                'Detaillierter Vergleich mit klassischen Systemen und Cloud-PBX, ergänzt durch Port-443-ALPN-Diagramme, Funktionstastencodes (*90/*22/*23), Wählberechtigungsgruppen und Systemanforderungen.'
+                            ) ?>
+                        </p>
 
-            <div class="table-system-container">
-                <!-- Toolbar: Tabs + Instant Search Filter -->
-                <div class="table-toolbar">
-                    <div class="table-tabs-nav" role="tablist">
-                        <button class="table-tab-btn active" data-target="comparison" type="button" role="tab">
-                            <i class="fa-solid fa-scale-balanced"></i>
-                            <?= t('Karşılaştırma Matrisi', 'Comparison Matrix', 'Vergleichsmatrix') ?>
-                        </button>
-                        <button class="table-tab-btn" data-target="protocols" type="button" role="tab">
-                            <i class="fa-solid fa-network-wired"></i>
-                            <?= t('Ağ Portları & ALPN', 'Ports & Protocols', 'Netzwerk & Ports') ?>
-                        </button>
-                        <button class="table-tab-btn" data-target="starcodes" type="button" role="tab">
-                            <i class="fa-solid fa-asterisk"></i>
-                            <?= t('Yıldız Kodları (*90/*22)', 'Star Codes (*90/*22)', 'Funktionscodes (*90/*22)') ?>
-                        </button>
-                        <button class="table-tab-btn" data-target="permissions" type="button" role="tab">
-                            <i class="fa-solid fa-phone-slash"></i>
-                            <?= t('Arama Yetki Grupları', 'Call Barring', 'Wählberechtigung') ?>
-                        </button>
-                        <button class="table-tab-btn" data-target="requirements" type="button" role="tab">
-                            <i class="fa-solid fa-server"></i>
-                            <?= t('Sistem Gereksinimleri', 'System Specs', 'Systemanforderungen') ?>
-                        </button>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;">
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-heading);">
+                                <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
+                                <span><?= t('5 Dinamik Tablo (Matris, Portlar, Yıldız Kodları, Yetki, Donanım)', '5 Dynamic Tables (Matrix, Ports, Star Codes, Barring, Sizing)', '5 Dynamische Tabellen (Matrix, Ports, Codes, Rechte, Hardware)') ?></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-heading);">
+                                <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
+                                <span><?= t('Anlık Canlı Metin Filtreleme ve Arama', 'Instant Real-Time Keyword Filter & Search', 'Echtzeit-Stichwortsuche in Tabellen') ?></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-heading);">
+                                <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
+                                <span><?= t('TR / EN / DE Otomatik IP ve Dil Desteği', 'Instant TR / EN / DE Multilingual Switching', 'Dreisprachig mit synchroner Umschaltung') ?></span>
+                            </div>
+                        </div>
+
+                        <a href="/tables.php" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 14px 28px; font-size: 1rem;">
+                            <i class="fa-solid fa-table-list"></i>
+                            <span><?= t('Tüm Tabloları & Karşılaştırmayı Aç →', 'Explore Full Tables & Comparison Matrix →', 'Alle Tabellen & Matrix Öffnen →') ?></span>
+                        </a>
                     </div>
 
-                    <div class="table-search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="tableFilterInput" class="table-search-input" placeholder="<?= t('Tabloda ara (ör. passkey, port, *90)...', 'Search in table (e.g. passkey, port, *90)...', 'In Tabelle suchen (z.B. Passkey, Port, *90)...') ?>">
-                    </div>
-                </div>
+                    <!-- Visual Teaser Cards of the Tables -->
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div style="width:44px; height:44px; border-radius:12px; background:rgba(2,132,199,0.1); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    <i class="fa-solid fa-scale-balanced"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text-heading); font-size:1rem;"><?= t('Karşılaştırma Matrisi', 'Comparison Matrix', 'Vergleichsmatrix') ?></div>
+                                    <div style="font-size:0.82rem; color:var(--text-muted);"><?= t('AiPBX vs Eski Santraller vs Bulut SaaS', 'AiPBX vs Legacy vs Cloud SaaS', 'AiPBX vs Klassisch vs Cloud SaaS') ?></div>
+                                </div>
+                            </div>
+                            <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
+                        </a>
 
-                <!-- 1. COMPARISON MATRIX TAB -->
-                <div class="table-tab-panel active" id="panel-comparison" role="tabpanel">
-                    <div class="table-responsive-wrapper">
-                        <table class="aipbx-data-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 14%;"><?= t('Kategori', 'Category', 'Kategorie') ?></th>
-                                    <th style="width: 24%;"><?= t('Özellik / Yetenek', 'Feature / Capability', 'Funktion / Eigenschaft') ?></th>
-                                    <th class="col-aipbx" style="width: 20%;"><i class="fa-solid fa-award" style="margin-right:6px;"></i>AiPBX v1.0 LTS</th>
-                                    <th style="width: 18%;"><?= t('Geleneksel Santral', 'Legacy PBX', 'Klassische PBX') ?></th>
-                                    <th style="width: 24%;"><?= t('Ticari Bulut PBX', 'Cloud PBX SaaS', 'Cloud PBX SaaS') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tables['comparison'] as $row): ?>
-                                <tr>
-                                    <td><span class="category-pill"><?= getLocal($row, 'category') ?></span></td>
-                                    <td>
-                                        <strong><?= getLocal($row, 'feature') ?></strong>
-                                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;"><?= getLocal($row, 'details') ?></div>
-                                    </td>
-                                    <td class="col-aipbx">
-                                        <span class="status-badge <?= htmlspecialchars($row['aipbxStatus']) ?>">
-                                            <?= htmlspecialchars($row['aipbx']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge <?= htmlspecialchars($row['legacyStatus']) ?>">
-                                            <?= htmlspecialchars($row['legacy']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge <?= htmlspecialchars($row['cloudStatus']) ?>">
-                                            <?= htmlspecialchars($row['cloud']) ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div style="width:44px; height:44px; border-radius:12px; background:rgba(16,185,129,0.1); color:#059669; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    <i class="fa-solid fa-network-wired"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text-heading); font-size:1rem;"><?= t('Ağ Portları & ALPN Çoklama', 'Network Ports & ALPN Stream', 'Netzwerk-Ports & ALPN') ?></div>
+                                    <div style="font-size:0.82rem; color:var(--text-muted);"><?= t('Port 443, SIP TLS 5061, SRTP, Go Chat', 'Port 443, SIP TLS 5061, SRTP, Go Chat', 'Port 443, SIP TLS 5061, SRTP, Chat') ?></div>
+                                </div>
+                            </div>
+                            <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
+                        </a>
 
-                <!-- 2. NETWORK PROTOCOLS TAB -->
-                <div class="table-tab-panel" id="panel-protocols" role="tabpanel">
-                    <div class="table-responsive-wrapper">
-                        <table class="aipbx-data-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 16%;"><?= t('Port / Soket', 'Port / Socket', 'Port / Socket') ?></th>
-                                    <th style="width: 16%;"><?= t('Protokol', 'Protocol', 'Protokoll') ?></th>
-                                    <th style="width: 26%;"><?= t('Servis Adı & Bileşen', 'Service & Component', 'Dienst & Komponente') ?></th>
-                                    <th style="width: 24%;"><?= t('Sistem Rolü & Açıklama', 'System Role & Scope', 'Systemrolle & Zweck') ?></th>
-                                    <th style="width: 18%;"><?= t('Güvenlik', 'Security', 'Sicherheit') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tables['networkProtocols'] as $pRow): ?>
-                                <tr>
-                                    <td><span class="chip-port"><?= htmlspecialchars($pRow['port']) ?></span></td>
-                                    <td><span class="chip-proto"><?= htmlspecialchars($pRow['protocol']) ?></span></td>
-                                    <td><strong><?= getLocal($pRow, 'service') ?></strong></td>
-                                    <td style="font-size:0.88rem;"><?= getLocal($pRow, 'role') ?></td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><?= getLocal($pRow, 'security') ?></span></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#f59e0b'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div style="width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.1); color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    <i class="fa-solid fa-asterisk"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text-heading); font-size:1rem;"><?= t('Yıldız Kodları Kılavuzu', 'Star Codes Directory', 'Funktionstastencodes') ?></div>
+                                    <div style="font-size:0.82rem; color:var(--text-muted);"><?= t('*90 Dinleme, *22/*23 Mola, *97/*98 Sesli Mesaj', '*90 Spy, *22/*23 Breaks, *97 Voicemail', '*90 Spy, *22/*23 Pausen, *97 Voicemail') ?></div>
+                                </div>
+                            </div>
+                            <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
+                        </a>
 
-                <!-- 3. STAR CODES TAB -->
-                <div class="table-tab-panel" id="panel-starcodes" role="tabpanel">
-                    <div class="table-responsive-wrapper">
-                        <table class="aipbx-data-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 18%;"><?= t('Tuşlama Kodu', 'Dial Code', 'Wählcode') ?></th>
-                                    <th style="width: 28%;"><?= t('Fonksiyon Adı', 'Function Name', 'Funktionsbezeichnung') ?></th>
-                                    <th style="width: 36%;"><?= t('Açıklama & Kullanım Şekli', 'Description & How-to', 'Beschreibung & Anwendung') ?></th>
-                                    <th style="width: 18%;"><?= t('Yetki Düzeyi', 'Access Level', 'Berechtigungsstufe') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tables['starCodes'] as $sc): ?>
-                                <tr>
-                                    <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i><?= htmlspecialchars($sc['code']) ?></span></td>
-                                    <td><strong><?= getLocal($sc, 'name') ?></strong></td>
-                                    <td style="font-size:0.88rem;"><?= getLocal($sc, 'desc') ?></td>
-                                    <td><span class="category-pill"><?= getLocal($sc, 'role') ?></span></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 4. CALL BARRING TAB -->
-                <div class="table-tab-panel" id="panel-permissions" role="tabpanel">
-                    <div class="table-responsive-wrapper">
-                        <table class="aipbx-data-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 28%;"><?= t('Arama Yetki Kademesi', 'Dial Permission Level', 'Wählberechtigungsstufe') ?></th>
-                                    <th style="width: 52%;"><?= t('İzin Verilen Arama Kapsamı', 'Permitted Calling Scope', 'Erlaubter Wählbereich') ?></th>
-                                    <th style="width: 20%;"><?= t('Politika Rozeti', 'Policy Badge', 'Richtlinien-Badge') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tables['dialPermissions'] as $perm): ?>
-                                <tr>
-                                    <td><strong style="color:var(--text-heading);"><?= getLocal($perm, 'level') ?></strong></td>
-                                    <td style="font-size:0.9rem;"><?= getLocal($perm, 'scope') ?></td>
-                                    <td><span class="status-badge" style="background:<?= htmlspecialchars($perm['color']) ?>20; color:<?= htmlspecialchars($perm['color']) ?>; border:1px solid <?= htmlspecialchars($perm['color']) ?>40;"><?= htmlspecialchars($perm['badge']) ?></span></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 5. SYSTEM REQUIREMENTS TAB -->
-                <div class="table-tab-panel" id="panel-requirements" role="tabpanel">
-                    <div class="table-responsive-wrapper">
-                        <table class="aipbx-data-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 22%;"><?= t('Kapasite Ölçeği', 'Deployment Scale', 'Einsatzbereich') ?></th>
-                                    <th style="width: 16%;">İşlemci (vCPU)</th>
-                                    <th style="width: 14%;">RAM</th>
-                                    <th style="width: 20%;"><?= t('Disk Depolama', 'Storage', 'Festplatte') ?></th>
-                                    <th style="width: 14%;"><?= t('Ağ Hızı', 'Network', 'Netzwerk') ?></th>
-                                    <th style="width: 14%;"><?= t('İşletim Sistemi', 'Operating System', 'Betriebssystem') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($tables['systemRequirements'] as $req): ?>
-                                <tr>
-                                    <td><strong style="color:var(--primary);"><?= getLocal($req, 'tier') ?></strong></td>
-                                    <td><span class="chip-proto"><?= htmlspecialchars($req['cpu']) ?></span></td>
-                                    <td><span class="chip-proto"><?= htmlspecialchars($req['ram']) ?></span></td>
-                                    <td style="font-size:0.88rem;"><?= htmlspecialchars($req['storage']) ?></td>
-                                    <td><span class="chip-proto"><?= htmlspecialchars($req['network']) ?></span></td>
-                                    <td style="font-size:0.84rem; font-weight:600;"><?= htmlspecialchars($req['os']) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div style="width:44px; height:44px; border-radius:12px; background:rgba(99,102,241,0.1); color:#6366f1; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    <i class="fa-solid fa-server"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text-heading); font-size:1rem;"><?= t('Arama Yetkisi & Donanım Rehberi', 'Dial Barring & System Specs', 'Wählberechtigung & Hardware') ?></div>
+                                    <div style="font-size:0.82rem; color:var(--text-muted);"><?= t('6 Yetki Kademesi & 4 Sunucu Ölçeği', '6 Permission Tiers & 4 Hardware Scales', '6 Stufen & 4 Hardware-Skalen') ?></div>
+                                </div>
+                            </div>
+                            <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ── TECHNICAL DEEP DIVE SECTION ───────────────────────────────── -->
-        <section class="section-wrapper" id="architecture" style="background: #f8fafc; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); max-width: 100%; padding-left: max(24px, calc((100% - 1280px) / 2)); padding-right: max(24px, calc((100% - 1280px) / 2));">
+        <!-- ── ARCHITECTURE SNAPSHOT ─────────────────────────────────────── -->
+        <section class="section-wrapper" id="architecture">
             <div class="section-header-center">
                 <div class="section-eyebrow">
                     <i class="fa-solid fa-code-fork"></i>
-                    <?= t('MİMARİ & PROTOKOL AKIŞI', 'ARCHITECTURE & PROTOCOL FLOW', 'ARCHITEKTUR & PROTOKOLLABLAUF') ?>
+                    <?= t('MİMARİ BAKIŞ', 'ARCHITECTURE SNAPSHOT', 'ARCHITEKTUR-ÜBERSICHT') ?>
                 </div>
                 <h2 class="section-title-large">
-                    <?= t('Teknik Konular & Çözüm Mimarisi', 'Technical Deep Dive & Architecture', 'Technische Architektur & Deep Dive') ?>
+                    <?= t('Port 443 L4 ALPN Stream Çoklama Mimarisi', 'Port 443 L4 ALPN Stream Multiplexing', 'Port 443 L4 ALPN Stream Multiplexing') ?>
                 </h2>
                 <p class="section-subtitle-muted">
                     <?= t(
-                        'AiPBX çekirdeğinde yer alan L4 stream çoklama, dual-endpoint PJSIP senkronizasyonu ve mobil push uyanma algoritmalarının detaylı mühendislik açıklaması.',
-                        'In-depth technical breakdown of L4 stream multiplexing, dual-endpoint PJSIP synchronization, and high-efficiency push wake-up algorithms.',
-                        'Detaillierte Analyse des L4-Stream-Multiplexings, der Dual-Endpoint-PJSIP-Synchronisierung und der Push-Wakeup-Algorithmen.'
+                        'İnternete savunmasız SIP 5060 portunu açmadan tek bir TCP 443 portundan HTTPS, WebRTC WSS ve TLS SIP trafiğini güvenle yönlendirin.',
+                        'Never expose vulnerable SIP port 5060 to the public web. Multiplex HTTPS, WebRTC, and TLS SIP over a single TCP port 443.',
+                        'Kein offener Port 5060 im Internet: HTTPS, WebRTC und TLS-SIP sicher über einen einzigen TCP-Port 443 betreiben.'
                     ) ?>
                 </p>
             </div>
 
             <!-- Architecture ASCII Flow Diagram -->
-            <div class="diagram-terminal" style="max-width: 960px; margin: 0 auto 36px auto;">
+            <div class="diagram-terminal" style="max-width: 960px; margin: 0 auto 30px auto;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:12px; font-weight:700;">
                     <i class="fa-solid fa-diagram-project" style="color:#38bdf8; margin-right:6px;"></i>
                     <?= t('AiPBX Port 443 L4 ALPN Stream & Bileşen Yönlendirme Şeması', 'AiPBX Port 443 L4 ALPN Stream & Component Routing Flow', 'AiPBX Port 443 L4 ALPN Stream & Routing-Diagramm') ?>
@@ -405,38 +305,16 @@ require_once __DIR__ . '/includes/data.php';
                 </pre>
             </div>
 
-            <div class="deepdive-grid">
-                <!-- Card 1: ALPN -->
-                <div class="deepdive-card">
-                    <div class="deepdive-header">
-                        <div class="deepdive-icon"><i class="fa-solid fa-network-wired"></i></div>
-                        <h3 class="deepdive-title"><?= getLocal($technicalDeepDive['alpn'], 'title') ?></h3>
-                    </div>
-                    <p class="deepdive-text"><?= getLocal($technicalDeepDive['alpn'], 'concept') ?></p>
-                </div>
-
-                <!-- Card 2: Dual Endpoint -->
-                <div class="deepdive-card">
-                    <div class="deepdive-header">
-                        <div class="deepdive-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);"><i class="fa-solid fa-clone"></i></div>
-                        <h3 class="deepdive-title"><?= getLocal($technicalDeepDive['dualEndpoint'], 'title') ?></h3>
-                    </div>
-                    <p class="deepdive-text"><?= getLocal($technicalDeepDive['dualEndpoint'], 'concept') ?></p>
-                </div>
-
-                <!-- Card 3: Push Wakeup -->
-                <div class="deepdive-card">
-                    <div class="deepdive-header">
-                        <div class="deepdive-icon" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);"><i class="fa-solid fa-mobile-screen-button"></i></div>
-                        <h3 class="deepdive-title"><?= getLocal($technicalDeepDive['pushWakeup'], 'title') ?></h3>
-                    </div>
-                    <p class="deepdive-text"><?= getLocal($technicalDeepDive['pushWakeup'], 'concept') ?></p>
-                </div>
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="/architecture.html" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span><?= t('Kapsamlı Sistem Mimarisini İncele (Detaylı Kılavuz) →', 'Explore Full Architecture & Sequence Diagrams →', 'Vollständige Systemarchitektur öffnen →') ?></span>
+                </a>
             </div>
         </section>
 
-        <!-- ── FAQ SECTION ───────────────────────────────────────────────── -->
-        <section class="section-wrapper" id="faq">
+        <!-- ── CURATED FAQ SECTION ───────────────────────────────────────── -->
+        <section class="section-wrapper" id="faq" style="background: #f8fafc; border-top: 1px solid var(--border);">
             <div class="section-header-center">
                 <div class="section-eyebrow">
                     <i class="fa-solid fa-circle-question"></i>
@@ -447,15 +325,15 @@ require_once __DIR__ . '/includes/data.php';
                 </h2>
                 <p class="section-subtitle-muted">
                     <?= t(
-                        'AiPBX platformunun mimarisi, kurulum süreci, güvenliği ve açık kaynak lisansı hakkında kapsamlı yanıtlar.',
-                        'Detailed answers regarding AiPBX architecture, turnkey deployment, enterprise security, and MIT licensing.',
-                        'Detaillierte Antworten zu Architektur, Installation, Unternehmenssicherheit und MIT-Lizenzierung von AiPBX.'
+                        'AiPBX platformunun mimarisi, kurulum süreci, güvenliği ve açık kaynak lisansı hakkında en çok merak edilen konular.',
+                        'Direct answers regarding AiPBX architecture, turnkey deployment, security posture, and MIT licensing.',
+                        'Häufige Fragen zu Architektur, Installation, Unternehmenssicherheit und MIT-Lizenzierung von AiPBX.'
                     ) ?>
                 </p>
             </div>
 
-            <div class="faq-accordion">
-                <?php foreach ($faq as $idx => $fItem): ?>
+            <div class="faq-accordion" style="max-width: 900px; margin: 0 auto;">
+                <?php foreach (array_slice($faq, 0, 5) as $idx => $fItem): ?>
                 <div class="faq-item <?= ($idx === 0) ? 'active' : '' ?>">
                     <div class="faq-question">
                         <span><?= getLocal($fItem, 'q') ?></span>
@@ -466,6 +344,26 @@ require_once __DIR__ . '/includes/data.php';
                     </div>
                 </div>
                 <?php endforeach; ?>
+            </div>
+
+            <div style="text-align: center; margin-top: 36px;">
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
+                    <?= t('Daha fazla teknik bilgi veya adım adım kurulum yönergeleri mi arıyorsunuz?', 'Looking for more in-depth guides or step-by-step setup tutorials?', 'Suchen Sie nach weiteren technischen Leitfäden oder Anleitungen?') ?>
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">
+                    <a href="/installation.html" class="btn-secondary">
+                        <i class="fa-solid fa-terminal" style="margin-right: 6px;"></i>
+                        <?= t('Kurulum Kılavuzu', 'Installation Guide', 'Installationsanleitung') ?>
+                    </a>
+                    <a href="/msteams.html" class="btn-secondary">
+                        <i class="fa-brands fa-microsoft" style="margin-right: 6px;"></i>
+                        Microsoft Teams Direct Routing
+                    </a>
+                    <a href="/security.html" class="btn-secondary">
+                        <i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i>
+                        <?= t('Güvenlik & SBC', 'Security & SBC', 'Sicherheit & SBC') ?>
+                    </a>
+                </div>
             </div>
         </section>
 
