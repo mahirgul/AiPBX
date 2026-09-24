@@ -64,9 +64,9 @@
     "badgeTR": "✨ AiPBX v1.0.34 LTS — Kurumsal IP Santral Platformu",
     "badgeEN": "✨ AiPBX v1.0.34 LTS — Enterprise IP Telephony Platform",
     "badgeDE": "✨ AiPBX v1.0.34 LTS — Enterprise IP-Telefonanlage",
-    "titleTR": "Kurumsal IP Santral, <span>Amacına Uygun Tasarlandı.</span>",
-    "titleEN": "Enterprise IP Telephony, <span>Engineered with Purpose.</span>",
-    "titleDE": "Enterprise IP-Telefonie, <span>Konsequent Durchdacht.</span>",
+    "titleTR": "Kurumsal IP Santral, Amacına Uygun Tasarlandı.",
+    "titleEN": "Enterprise IP Telephony, Engineered with Purpose.",
+    "titleDE": "Enterprise IP-Telefonie, Konsequent Durchdacht.",
     "subtitleTR": "Asterisk 22, Nginx L4 ALPN stream çoklama, WebRTC, Passkey biyometrik kimlik doğrulama, Go anlık mesajlaşma ve yerel Android/iOS mobil istemcilerini tek çatı altında birleştiren yeni nesil kurumsal santral.",
     "subtitleEN": "A high-concurrency, web-managed IP PBX uniting Asterisk 22, Nginx L4 ALPN stream multiplexing, WebRTC, Passkey biometric auth, Go instant messaging, and native Android & iOS clients.",
     "subtitleDE": "Eine hochgradig skalierbare IP-Telefonanlage mit Asterisk 22, Nginx L4 ALPN-Multiplexing, WebRTC, biometrischer Passkey-Authentifizierung, Go-Echtzeit-Chat und nativen Android- & iOS-Clients."
