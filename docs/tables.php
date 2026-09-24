@@ -18,7 +18,7 @@ $pageDesc = [
     'en' => 'AiPBX open-source enterprise IP PBX feature comparison matrix, network port architecture, ALPN stream multiplexing, feature star codes (*90, *22, *23), call barring levels, and hardware specs.',
     'de' => 'AiPBX Enterprise Open-Source IP-Telefonie Vergleichsmatrix, Port-Architektur, ALPN-Multiplexing, Funktionstastencodes (*90, *22, *23), Wählberechtigungsstufen und Hardwareanforderungen.'
 ];
-$pageUrl = 'https://aipbx.bid/tables.html';
+$pageUrl = 'https://aipbx.bid/tables';
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
@@ -26,6 +26,7 @@ $pageUrl = 'https://aipbx.bid/tables.html';
     <?php include __DIR__ . '/includes/head.php'; ?>
     <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 
 <body>
 
@@ -368,7 +369,7 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                 </p>
 
                 <div style="display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: center;">
-                    <a href="/installation.html" class="btn-primary" style="background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 700;">
+                    <a href="/installation" class="btn-primary" style="background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 700;">
                         <i class="fa-solid fa-terminal" style="margin-right: 6px;"></i>
                         <?= t('Kurulum Kılavuzunu İncele', 'View Installation Guide', 'Installationsanleitung ansehen') ?>
                     </a>

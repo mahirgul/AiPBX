@@ -39,10 +39,10 @@ global $LANG, $company;
             <ul>
                 <li><a href="#technologies"><?= t('Biyometrik Passkeys (WebAuthn)', 'Biometric Passkeys (WebAuthn)', 'Biometrische Passkeys') ?></a></li>
                 <li><a href="#technologies"><?= t('Google OAuth 2.0 Giriş', 'Google OAuth 2.0 Login', 'Google OAuth 2.0 Login') ?></a></li>
-                <li><a href="/msteams.html">Microsoft Teams Direct Routing</a></li>
+                <li><a href="/msteams">Microsoft Teams Direct Routing</a></li>
                 <li><a href="#architecture"><?= t('Port 443 ALPN Stream Çoklama', 'Port 443 ALPN Multiplexing', 'Port 443 ALPN Multiplexing') ?></a></li>
                 <li><a href="#tables"><?= t('Canlı Süpervizör Dinleme (*90)', 'Supervisor Call Spy (*90)', 'Supervisor Mithören (*90)') ?></a></li>
-                <li><a href="/callcenter.html"><?= t('Mola Kodları (*22/*23)', 'Break Codes (*22/*23)', 'Pausencodes (*22/*23)') ?></a></li>
+                <li><a href="/callcenter"><?= t('Mola Kodları (*22/*23)', 'Break Codes (*22/*23)', 'Pausencodes (*22/*23)') ?></a></li>
                 <li><a href="#technologies"><?= t('Go Sohbet Motoru (aipbx-chat)', 'Go WebSocket Chat', 'Go WebSocket Chat') ?></a></li>
             </ul>
         </div>
@@ -50,12 +50,12 @@ global $LANG, $company;
         <div class="footer-col">
             <h5><?= t('Dokümantasyon & Rehber', 'Docs & Guides', 'Dokumentation & Handbuch') ?></h5>
             <ul>
-                <li><a href="/installation.html"><?= t('Hızlı Kurulum Kılavuzu', 'Installation Guide', 'Installationsanleitung') ?></a></li>
-                <li><a href="/architecture.html"><?= t('Dual-Endpoint PJSIP Mimarisi', 'Dual-Endpoint Architecture', 'Dual-Endpoint Architektur') ?></a></li>
-                <li><a href="/mobile-apps.html"><?= t('Mobil Softphone (Android/iOS)', 'Mobile Softphones', 'Mobile Softphones') ?></a></li>
-                <li><a href="/callcenter.html"><?= t('Çağrı Merkezi & Kuyruklar', 'Call Center & Queues', 'Callcenter & Warteschlangen') ?></a></li>
-                <li><a href="/security.html"><?= t('SBC Savunması & Fail2ban', 'SBC Defense & Security', 'Sicherheit & SBC-Schutz') ?></a></li>
-                <li><a href="/api-docs.html"><?= t('REST API & Webhooks', 'REST API & Webhooks', 'REST-API & Webhooks') ?></a></li>
+                <li><a href="/installation"><?= t('Hızlı Kurulum Kılavuzu', 'Installation Guide', 'Installationsanleitung') ?></a></li>
+                <li><a href="/architecture"><?= t('Dual-Endpoint PJSIP Mimarisi', 'Dual-Endpoint Architecture', 'Dual-Endpoint Architektur') ?></a></li>
+                <li><a href="/mobile-apps"><?= t('Mobil Softphone (Android/iOS)', 'Mobile Softphones', 'Mobile Softphones') ?></a></li>
+                <li><a href="/callcenter"><?= t('Çağrı Merkezi & Kuyruklar', 'Call Center & Queues', 'Callcenter & Warteschlangen') ?></a></li>
+                <li><a href="/security"><?= t('SBC Savunması & Fail2ban', 'SBC Defense & Security', 'Sicherheit & SBC-Schutz') ?></a></li>
+                <li><a href="/api-docs"><?= t('REST API & Webhooks', 'REST API & Webhooks', 'REST-API & Webhooks') ?></a></li>
                 <li><a href="#faq"><?= t('Sıkça Sorulan Sorular', 'Frequently Asked Questions', 'Häufig gestellte Fragen') ?></a></li>
             </ul>
         </div>
@@ -64,8 +64,8 @@ global $LANG, $company;
             <h5><?= t('Açık Kaynak & İndirme', 'Open Source & Downloads', 'Open Source & Downloads') ?></h5>
             <ul>
                 <li><a href="https://github.com/mahirgul/AiPBX" target="_blank" rel="noopener"><?= t('Kaynak Kodu (GitHub)', 'Source Code (GitHub)', 'Quellcode (GitHub)') ?></a></li>
-                <li><a href="/mobile-apps.html"><?= t('Android APK (v1.0.34)', 'Android APK (v1.0.34)', 'Android APK (v1.0.34)') ?></a></li>
-                <li><a href="/mobile-apps.html#ios"><?= t('iOS Swift & CallKit', 'iOS Swift & CallKit', 'iOS Swift & CallKit') ?></a></li>
+                <li><a href="/mobile-apps"><?= t('Android APK (v1.0.34)', 'Android APK (v1.0.34)', 'Android APK (v1.0.34)') ?></a></li>
+                <li><a href="/mobile-apps#ios"><?= t('iOS Swift & CallKit', 'iOS Swift & CallKit', 'iOS Swift & CallKit') ?></a></li>
                 <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
                 <li><a href="https://github.com/mahirgul/AiPBX/releases" target="_blank" rel="noopener"><?= t('Sürüm Notları (Releases)', 'Release Notes', 'Versionshinweise') ?></a></li>
                 <li><a href="/sitemap.xml" target="_blank">XML Sitemap</a></li>

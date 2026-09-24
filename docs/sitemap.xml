@@ -3,11 +3,11 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
-    <!-- 1. Homepage / Genel Bakış -->
+    <!-- 0. Homepage / Ana Sayfa -->
     <url>
         <loc>https://aipbx.bid/</loc>
         <lastmod>2026-09-24</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/" />
         <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/?lang=en" />
@@ -15,55 +15,55 @@
         <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Açık Kaynak Kurumsal IP Santral ve Birleşik İletişim Platformu</image:title>
-            <image:caption>Asterisk 22, WebRTC, Nginx ALPN ve mobil softphone destekli kurumsal santral mimarisi</image:caption>
-        </image:image>
-        <image:image>
-            <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Resmi Logo</image:title>
-            <image:caption>AiPBX Enterprise IP PBX Logo</image:caption>
+            <image:title>AiPBX — Açık Kaynak Kurumsal IP Santral</image:title>
+            <image:caption>Asterisk 22, Port 443 ALPN, WebRTC, Passkey ve native Android/iOS softphone</image:caption>
         </image:image>
     </url>
 
-    <!-- 2. Features / Santral Özellikleri -->
+    <!-- 1. Features / Santral Özellikleri & Modüller -->
     <url>
-        <loc>https://aipbx.bid/features.html</loc>
+        <loc>https://aipbx.bid/features</loc>
         <lastmod>2026-09-24</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/features.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/features.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/features.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/features.html" />
-    </url>
-
-    <!-- 3. Tables & Comparison Matrix / JSON Tablo Sistemi -->
-    <url>
-        <loc>https://aipbx.bid/tables.html</loc>
-        <lastmod>2026-09-24</lastmod>
-        <changefreq>daily</changefreq>
         <priority>0.95</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/tables.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/tables.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/tables.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/tables.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/features" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/features?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/features?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/features" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Teknik Özellik Matrisi &amp; JSON Tabloları</image:title>
-            <image:caption>Santral karşılaştırma matrisi, ağ portları, yıldız kodları ve sistem parametreleri</image:caption>
+            <image:title>AiPBX Özellikler — Port 443 ALPN, In-Dialer Chat, CDR, ConfBridge</image:title>
+            <image:caption>20 modül: ChanSpy, Ring Groups, Boss-Secretary, MS Teams SBC ve daha fazlası</image:caption>
         </image:image>
     </url>
 
-    <!-- 3. Call Center / Çağrı Merkezi Çözümleri -->
+    <!-- 2. Tables / Karşılaştırma & Teknik Tablolar -->
     <url>
-        <loc>https://aipbx.bid/callcenter.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/tables</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/callcenter.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/callcenter.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/callcenter.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/callcenter.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/tables" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/tables?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/tables?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/tables" />
+        <image:image>
+            <image:loc>https://aipbx.bid/logo.png</image:loc>
+            <image:title>AiPBX Teknik Özellik Tabloları — Codec, Yıldız Kodları, Protokoller</image:title>
+            <image:caption>G.711, G.729, Opus, H.264 codec desteği ve tüm modül karşılaştırma matrisi</image:caption>
+        </image:image>
+    </url>
+
+    <!-- 3. Call Center / Çağrı Merkezi -->
+    <url>
+        <loc>https://aipbx.bid/callcenter</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/callcenter" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/callcenter?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/callcenter?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/callcenter" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
             <image:title>AiPBX Çağrı Merkezi — ACD Kuyruk Yönetimi ve Canlı Wallboard</image:title>
@@ -71,70 +71,50 @@
         </image:image>
     </url>
 
-    <!-- 4. Mobile Apps / Mobil Softphone Uygulamaları -->
+    <!-- 4. Mobile Apps / Mobil Softphone -->
     <url>
-        <loc>https://aipbx.bid/mobile-apps.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/mobile-apps</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/mobile-apps.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/mobile-apps.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/mobile-apps.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/mobile-apps.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/mobile-apps" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/mobile-apps?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/mobile-apps?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/mobile-apps" />
         <image:image>
-            <image:loc>https://aipbx.bid/img/app_dialer.jpg</image:loc>
-            <image:title>AiPBX Android ve iOS WebRTC HD Tuş Takımı</image:title>
+            <image:loc>https://aipbx.bid/logo.png</image:loc>
+            <image:title>AiPBX Android ve iOS WebRTC HD Softphone</image:title>
             <image:caption>Opus ses motoru ve 2.8 MB hafif mobil softphone istemcisi</image:caption>
-        </image:image>
-        <image:image>
-            <image:loc>https://aipbx.bid/img/app_chat.jpg</image:loc>
-            <image:title>AiPBX Kurumsal Anlık Mesajlaşma ve Grup Sohbeti</image:title>
-            <image:caption>Go WebSocket tabanlı güvenli dahili mesajlaşma</image:caption>
-        </image:image>
-        <image:image>
-            <image:loc>https://aipbx.bid/img/app_contacts.jpg</image:loc>
-            <image:title>AiPBX Rehber ve Dahili Senkronizasyonu</image:title>
-            <image:caption>Merkezi dahili telefon defteri ve durum bilgisi</image:caption>
-        </image:image>
-        <image:image>
-            <image:loc>https://aipbx.bid/img/app_history.jpg</image:loc>
-            <image:title>AiPBX Arama Geçmişi ve CDR Kayıtları</image:title>
-            <image:caption>Gelen, giden, cevapsız arama detayları ve konuşma süreleri</image:caption>
-        </image:image>
-        <image:image>
-            <image:loc>https://aipbx.bid/img/app_login.jpg</image:loc>
-            <image:title>AiPBX Sıfır Yapılandırma ile Otomatik Sunucu Keşfi</image:title>
-            <image:caption>Karmaşık SIP ayarları olmadan tek URL ile santral bağlantısı</image:caption>
         </image:image>
     </url>
 
     <!-- 5. Architecture / Sistem Mimarisi -->
     <url>
-        <loc>https://aipbx.bid/architecture.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/architecture</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.85</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/architecture.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/architecture.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/architecture.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/architecture.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/architecture" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/architecture?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/architecture?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/architecture" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Sistem Mimarisi — Nginx L4 ALPN Multiplexing &amp; Asterisk 22</image:title>
+            <image:title>AiPBX Sistem Mimarisi — Nginx L4 ALPN Multiplexing ve Asterisk 22</image:title>
             <image:caption>Port 443 tek port mimarisi, WebRTC ve MariaDB güvenlik katmanları</image:caption>
         </image:image>
     </url>
 
-    <!-- 6. Installation / Kurulum ve Dağıtım Rehberi -->
+    <!-- 6. Installation / Kurulum Kılavuzu -->
     <url>
-        <loc>https://aipbx.bid/installation.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/installation</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.85</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/installation.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/installation.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/installation.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/installation.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/installation" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/installation?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/installation?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/installation" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
             <image:title>AiPBX Otomatik Kurulum Kılavuzu — Debian ve Ubuntu LTS</image:title>
@@ -142,54 +122,54 @@
         </image:image>
     </url>
 
-    <!-- 7. Security / Güvenlik ve CCIS Gateway -->
+    <!-- 7. Security / Güvenlik ve SBC -->
     <url>
-        <loc>https://aipbx.bid/security.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/security</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.85</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/security.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/security.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/security.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/security.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/security" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/security?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/security?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/security" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Güvenlik Katmanları — Fail2ban, TLS 1.3, SRTP ve NEC CCIS</image:title>
-            <image:caption>VoIP güvenlik sıkılaştırması ve eski kurumsal santral entegrasyonu</image:caption>
+            <image:title>AiPBX Güvenlik — FIDO2 Passkey, TLS 1.3, SRTP ve SBC</image:title>
+            <image:caption>VoIP güvenlik sıkılaştırması: Fail2ban, WebAuthn ve şifreli medya</image:caption>
         </image:image>
     </url>
 
-    <!-- 8. API Docs / REST API ve Geliştirici Dokümantasyonu -->
+    <!-- 8. API Docs / REST API ve WebSocket -->
     <url>
-        <loc>https://aipbx.bid/api-docs.html</loc>
-        <lastmod>2026-09-18</lastmod>
+        <loc>https://aipbx.bid/api-docs</loc>
+        <lastmod>2026-09-24</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/api-docs.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/api-docs.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/api-docs.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/api-docs.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/api-docs" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/api-docs?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/api-docs?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/api-docs" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
             <image:title>AiPBX REST API ve WebSocket Dokümantasyonu</image:title>
-            <image:caption>Entegrasyon uç noktaları, kimlik doğrulama ve gerçek zamanlı olay bildirimleri</image:caption>
+            <image:caption>JWT kimlik doğrulama, CTI entegrasyonu ve gerçek zamanlı olay bildirimleri</image:caption>
         </image:image>
     </url>
 
-    <!-- 9. Microsoft Teams Integration / Direct Routing -->
+    <!-- 9. Microsoft Teams / Direct Routing -->
     <url>
-        <loc>https://aipbx.bid/msteams.html</loc>
-        <lastmod>2026-09-18</lastmod>
-        <changefreq>weekly</changefreq>
+        <loc>https://aipbx.bid/msteams</loc>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.9</priority>
-        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/msteams.html" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/msteams.html" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/msteams.html" />
-        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/msteams.html" />
+        <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/msteams" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/msteams?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/msteams?lang=de" />
+        <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/msteams" />
         <image:image>
             <image:loc>https://aipbx.bid/logo.png</image:loc>
-            <image:title>AiPBX Microsoft Teams Entegrasyonu &amp; Direct Routing SBC</image:title>
-            <image:caption>Asterisk 22 ve Microsoft Teams hibrit santral mimarisi, SIP TLS ve SRTP yapılandırması</image:caption>
+            <image:title>AiPBX Microsoft Teams Entegrasyonu — Direct Routing SBC</image:title>
+            <image:caption>Asterisk 22 ve Microsoft Teams hibrit mimarisi, SIP TLS ve SRTP yapılandırması</image:caption>
         </image:image>
     </url>
 
