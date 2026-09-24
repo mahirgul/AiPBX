@@ -65,10 +65,10 @@ $canonicalUrl  = ($LANG === 'tr') ? $canonicalBase . '/' : $canonicalBase . '/?l
 <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl) ?>">
 <meta property="og:title" content="<?= htmlspecialchars($currentTitle) ?>">
 <meta property="og:description" content="<?= htmlspecialchars($currentDesc) ?>">
-<meta property="og:image" content="https://aipbx.bid/img/feature_graphic.png">
-<meta property="og:image:secure_url" content="https://aipbx.bid/img/feature_graphic.png">
-<meta property="og:image:width" content="1024">
-<meta property="og:image:height" content="500">
+<meta property="og:image" content="https://aipbx.bid/logo.png">
+<meta property="og:image:secure_url" content="https://aipbx.bid/logo.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="AiPBX Açık Kaynak Kurumsal IP Santral">
 <meta property="og:locale" content="<?= htmlspecialchars($currentLocale) ?>">
@@ -77,13 +77,13 @@ $canonicalUrl  = ($LANG === 'tr') ? $canonicalBase . '/' : $canonicalBase . '/?l
 <?php endif; endforeach; ?>
 
 <!-- Twitter / X Card -->
-<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:card" content="summary">
 <meta name="twitter:site" content="@mhrgl">
 <meta name="twitter:creator" content="@mhrgl">
 <meta name="twitter:url" content="<?= htmlspecialchars($canonicalUrl) ?>">
 <meta name="twitter:title" content="<?= htmlspecialchars($currentTitle) ?>">
 <meta name="twitter:description" content="<?= htmlspecialchars($currentDesc) ?>">
-<meta name="twitter:image" content="https://aipbx.bid/img/feature_graphic.png">
+<meta name="twitter:image" content="https://aipbx.bid/logo.png">
 <meta name="twitter:image:alt" content="AiPBX Kurumsal IP Santral Platformu">
 
 <!-- Schema.org Comprehensive Structured Data (JSON-LD) -->
@@ -152,7 +152,7 @@ $schemaGraph = [
                 'name'  => 'Mahir Gül',
                 'url'   => 'https://mhrgl.com'
             ],
-            'screenshot' => 'https://aipbx.bid/img/feature_graphic.png',
+            'screenshot' => 'https://aipbx.bid/img/screenshot_dialer.png',
             'featureList' => array_column($featureListItems, 'name')
         ],
         [
