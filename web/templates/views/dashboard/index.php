@@ -1,40 +1,35 @@
 <!-- System Status Summary Banner -->
-<div class="card page-header-card">
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 44px; height: 44px; background: rgba(0, 242, 254, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px;">
+<div class="card page-header-card" style="padding: 12px 18px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; background: rgba(0, 242, 254, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 16px;">
                 <i class="fas fa-server"></i>
             </div>
-            <div>
-                <div style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                    <?php echo t('dashboard.system_status'); ?>
-                    <?php if ($is_asterisk_running): ?>
-                        <span class="badge badge-success" style="font-size: 11px;"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
-                    <?php else: ?>
-                        <span class="badge badge-danger" style="font-size: 11px;"><i class="fas fa-exclamation-triangle"></i> <?php echo t('dashboard.status_down'); ?></span>
-                    <?php endif; ?>
-                </div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    <?php echo t('dashboard.extensions_label'); ?>: <strong style="color: var(--primary);"><?php echo $online_pjsip_count; ?> / <?php echo $ext_count; ?> <?php echo t('dashboard.online_suffix'); ?></strong> | <?php echo t('dashboard.mail_relay'); ?>: <strong style="color: <?php echo !empty($mail_relay_host) ? 'var(--success)' : 'var(--text-muted)'; ?>;"><?php echo htmlspecialchars($mail_relay_host ?? t('dashboard.not_configured')); ?></strong>
-                </div>
+            <div style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                <span><?php echo t('dashboard.system_status'); ?></span>
+                <?php if ($is_asterisk_running): ?>
+                    <span class="badge badge-success" style="font-size: 11px;"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
+                <?php else: ?>
+                    <span class="badge badge-danger" style="font-size: 11px;"><i class="fas fa-exclamation-triangle"></i> <?php echo t('dashboard.status_down'); ?></span>
+                <?php endif; ?>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-            <form method="POST" autocomplete="off" style="display: inline;">
+            <form method="POST" autocomplete="off" style="display: inline; margin: 0;">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="reload_asterisk">
-                <button type="submit" class="btn btn-primary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.reload_tooltip')); ?>">
+                <button type="submit" class="btn btn-outline-primary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.reload_tooltip')); ?>" style="display: inline-flex; align-items: center; gap: 6px;">
                     <i class="fas fa-sync-alt"></i> <span class="btn-label"><?php echo t('dashboard.reload_button'); ?></span>
                 </button>
             </form>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('dashHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('dashHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
     </div>
 
     <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="dashHelpBox" style="margin-top: 16px; margin-bottom: 0;">
+    <div class="module-help-box" id="dashHelpBox" style="width: 100%; margin-top: 14px; margin-bottom: 0;">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('dashboard.help_title'); ?></h4>
         <p style="margin: 0 0 8px 0; font-size: 13px;"><?php echo t('dashboard.help_intro'); ?></p>
         <ul style="margin: 0; padding-left: 20px; font-size: 12px; line-height: 1.6;">

@@ -53,8 +53,18 @@ class ExtensionService {
             $voicemail_attach_audio = isset($data['voicemail_attach_audio']) ? intval($data['voicemail_attach_audio']) : 1;
             $vm_on_noanswer = isset($data['vm_on_noanswer']) ? intval($data['vm_on_noanswer']) : 0;
             $vm_on_busy = isset($data['vm_on_busy']) ? intval($data['vm_on_busy']) : 0;
-            $vm_on_unavail = isset($data['vm_on_unavail']) ? intval($data['vm_on_unavail']) : 0;
             $vm_always = isset($data['vm_always']) ? intval($data['vm_always']) : 0;
+
+            if ($extension_type === 'fax') {
+                $voicemail_enabled = 0;
+                $voicemail_pin = '';
+                $voicemail_email = '';
+                $voicemail_attach_audio = 0;
+                $vm_on_noanswer = 0;
+                $vm_on_busy = 0;
+                $vm_on_unavail = 0;
+                $vm_always = 0;
+            }
 
             // Save/Update Extension
             if ($user_id > 0) {

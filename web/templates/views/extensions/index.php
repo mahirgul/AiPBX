@@ -133,7 +133,7 @@
                                             <span class="badge badge-info" style="font-size: 10px;" title="Sekreter"><i class="fas fa-user-tie"></i> Sekreter</span>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <?php if ((int)($e['voicemail_enabled'] ?? 1) === 1): ?>
+                                    <?php if (($e['extension_type'] ?? 'sip') !== 'fax' && (int)($e['voicemail_enabled'] ?? 1) === 1): ?>
                                         <span class="badge badge-primary" style="font-size: 9px; opacity: 0.8;" title="Sesli Posta Kutusu"><i class="fas fa-voicemail"></i> VM</span>
                                     <?php endif; ?>
                                 </div>
@@ -254,7 +254,7 @@
                     </div>
                 </div>
 
-                <div class="card" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+                <div class="card" id="voicemail_settings_group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                         <span style="font-weight: 700; font-size: 13px; color: var(--text-main);"><i class="fas fa-voicemail" style="color: var(--primary);"></i> Sesli Posta (Voicemail)</span>
                         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">

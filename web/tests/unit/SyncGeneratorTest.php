@@ -493,8 +493,8 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
 
-        // Transit gelen çağrıda arayan numarasını korumak için ExecIf koşulu
-        $this->assertStringContainsString('ExecIf($["${CDR(inbound_trunk)}" = ""]?Set(CALLERID(num)=08501234567))', $conf,
+        // Transit gelen çağrıda arayan numarasını korumak ve dahili CID_EXTERNAL önceliğini doğrulamak için ExecIf koşulu
+        $this->assertStringContainsString('ExecIf($["${CDR(inbound_trunk)}" = ""]?Set(CALLERID(num)=${IF($["${CID_EXTERNAL}" != ""]?${CID_EXTERNAL}:08501234567)}))', $conf,
             'Trunk-to-Trunk transit cagrilarinda gelen cep numarasi trunk varsayilan CID ile ezilmemeli');
     }
 }
