@@ -420,6 +420,10 @@ function setLanguage(lang) {
     try {
         localStorage.setItem('aipbx_lang', lang);
         localStorage.setItem('aipbx_user_lang', lang);
+        document.cookie = "aipbx_lang=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+        var u = new URL(window.location.href);
+        u.searchParams.set('lang', lang);
+        window.history.replaceState({}, '', u.toString());
     } catch(e) {}
 
     // Update document title and meta description dynamically

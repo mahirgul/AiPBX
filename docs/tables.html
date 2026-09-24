@@ -46,6 +46,27 @@
     (function() {
         var saved = null;
         try { saved = localStorage.getItem('aipbx_user_lang') || localStorage.getItem('aipbx_lang'); } catch(e) {}
+        if (!saved) {
+            var match = document.cookie.match(/(?:^|;\s*)aipbx_lang=([^;]+)/);
+            if (match && ["tr", "en", "de"].includes(match[1])) {
+                saved = match[1];
+            }
+        }
+        var urlParam = null;
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var ql = params.get('lang');
+            if (ql && ["tr", "en", "de"].includes(ql)) {
+                urlParam = ql;
+                saved = ql;
+                try {
+                    localStorage.setItem('aipbx_user_lang', ql);
+                    localStorage.setItem('aipbx_lang', ql);
+                    document.cookie = "aipbx_lang=" + ql + ";path=/;max-age=31536000;SameSite=Lax";
+                } catch(e) {}
+            }
+        } catch(e) {}
+
         var lang = saved;
         if (!lang || !["tr", "en", "de"].includes(lang)) {
             var navLangs = navigator.languages || [navigator.language || navigator.userLanguage || "en"];
@@ -59,11 +80,14 @@
         document.documentElement.setAttribute("data-lang", lang);
         document.documentElement.lang = lang;
 
-        // Edge GeoIP detection via Cloudflare trace if user has not manually locked a language
-        if (!saved) {
+        // Edge GeoIP detection via Cloudflare trace ONLY if user has NOT manually chosen a language
+        if (!saved && !urlParam) {
             fetch('/cdn-cgi/trace')
                 .then(function(r) { return r.text(); })
                 .then(function(text) {
+                    try {
+                        if (localStorage.getItem('aipbx_user_lang')) return;
+                    } catch(e) {}
                     var m = text.match(/loc=([A-Z]{2})/);
                     if (m) {
                         var country = m[1];
@@ -157,7 +181,7 @@
     <div class="top-banner-inner">
         <span class="banner-desktop">
             <i class="fa-solid fa-sparkles"></i> <strong>AiPBX v1.0.34 LTS</strong> — 
-            <span data-lang="tr">Açık Kaynak Kurumsal IP Santral &amp; Birleşik İletişim</span><span data-lang="en">Open-Source Enterprise IP PBX &amp; Unified Communications</span><span data-lang="de">Open-Source Enterprise IP-Telefonie &amp; Unified Communications</span>            • <a href="https://mhrgl.com" target="_blank" rel="noopener">Mahir Gül (mhrgl.com)</a>
+            <span data-lang="tr">Açık Kaynak Kurumsal IP Santral & Birleşik İletişim</span><span data-lang="en">Open-Source Enterprise IP PBX & Unified Communications</span><span data-lang="de">Open-Source Enterprise IP-Telefonie & Unified Communications</span>            • <a href="https://mhrgl.com" target="_blank" rel="noopener">Mahir Gül (mhrgl.com)</a>
         </span>
         <span class="banner-mobile">
             <strong>AiPBX v1.0.34 LTS</strong> • <a href="https://mhrgl.com" target="_blank" rel="noopener">mhrgl.com</a>
@@ -184,7 +208,7 @@
         </li>
         <li>
             <a href="/tables.php" class="active">
-                <span data-lang="tr">Karşılaştırma &amp; Tablolar</span><span data-lang="en">Tables &amp; Specs</span><span data-lang="de">Tabellen</span>            </a>
+                <span data-lang="tr">Karşılaştırma & Tablolar</span><span data-lang="en">Tables & Specs</span><span data-lang="de">Tabellen</span>            </a>
         </li>
         <li>
             <a href="/architecture.html" class="">
@@ -215,7 +239,7 @@
                     <i class="fa-brands fa-microsoft" style="color:#6264a7; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">Microsoft Teams Direct Routing</div>
-                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">Yerleşik SBC &amp; Çift Yönlü Köprü</span><span data-lang="en">Built-in SBC &amp; 2-Way Bridge</span><span data-lang="de">Integriertes SBC &amp; 2-Wege-Gateway</span></small>
+                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">Yerleşik SBC & Çift Yönlü Köprü</span><span data-lang="en">Built-in SBC & 2-Way Bridge</span><span data-lang="de">Integriertes SBC & 2-Wege-Gateway</span></small>
                     </div>
                 </a>
                 <a href="/mobile-apps.html" class="nav-dropdown-item">
@@ -228,14 +252,14 @@
                 <a href="/callcenter.html" class="nav-dropdown-item">
                     <i class="fa-solid fa-headset" style="color:#ec4899; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
-                        <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Çağrı Merkezi &amp; Kuyruklar</span><span data-lang="en">Call Center &amp; Queues</span><span data-lang="de">Callcenter &amp; Warteschlangen</span></div>
-                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">*22/*23 Mola &amp; *90 Dinleme</span><span data-lang="en">*22/*23 Breaks &amp; *90 Spy</span><span data-lang="de">*22/*23 Pausen &amp; *90 Spy</span></small>
+                        <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Çağrı Merkezi & Kuyruklar</span><span data-lang="en">Call Center & Queues</span><span data-lang="de">Callcenter & Warteschlangen</span></div>
+                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">*22/*23 Mola & *90 Dinleme</span><span data-lang="en">*22/*23 Breaks & *90 Spy</span><span data-lang="de">*22/*23 Pausen & *90 Spy</span></small>
                     </div>
                 </a>
                 <a href="/security.html" class="nav-dropdown-item">
                     <i class="fa-solid fa-shield-halved" style="color:#f59e0b; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
-                        <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Güvenlik &amp; SBC Savunması</span><span data-lang="en">Security &amp; SBC Defense</span><span data-lang="de">Sicherheit &amp; SBC-Schutz</span></div>
+                        <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Güvenlik & SBC Savunması</span><span data-lang="en">Security & SBC Defense</span><span data-lang="de">Sicherheit & SBC-Schutz</span></div>
                         <small style="color:#64748b; font-size:0.76rem;">Fail2ban, TLS 1.3, Passkeys</small>
                     </div>
                 </a>
@@ -243,7 +267,7 @@
                     <i class="fa-solid fa-code" style="color:#6366f1; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">REST API &amp; WebSocket</div>
-                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">Entegrasyon, Webhook &amp; Go Chat</span><span data-lang="en">Integrations, Webhooks &amp; Chat</span><span data-lang="de">Integrationen, Webhooks &amp; Chat</span></small>
+                        <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">Entegrasyon, Webhook & Go Chat</span><span data-lang="en">Integrations, Webhooks & Chat</span><span data-lang="de">Integrationen, Webhooks & Chat</span></small>
                     </div>
                 </a>
             </div>
@@ -323,19 +347,19 @@
 
     <ul class="mobile-nav-links">
         <li><a href="/" class="mobile-nav-item"><i class="fa-solid fa-house" style="color:#0284c7;"></i> <span><span data-lang="tr">Genel Bakış</span><span data-lang="en">Overview</span><span data-lang="de">Übersicht</span></span></a></li>
-        <li><a href="/features.html" class="mobile-nav-item"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> <span><span data-lang="tr">Özellikler &amp; Modüller</span><span data-lang="en">Features &amp; Modules</span><span data-lang="de">Funktionen &amp; Module</span></span></a></li>
-        <li><a href="/tables.php" class="mobile-nav-item"><i class="fa-solid fa-table-list" style="color:#10b981;"></i> <span><span data-lang="tr">Karşılaştırma &amp; Tablolar</span><span data-lang="en">Tables &amp; Specs</span><span data-lang="de">Tabellen</span></span></a></li>
+        <li><a href="/features.html" class="mobile-nav-item"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> <span><span data-lang="tr">Özellikler & Modüller</span><span data-lang="en">Features & Modules</span><span data-lang="de">Funktionen & Module</span></span></a></li>
+        <li><a href="/tables.php" class="mobile-nav-item"><i class="fa-solid fa-table-list" style="color:#10b981;"></i> <span><span data-lang="tr">Karşılaştırma & Tablolar</span><span data-lang="en">Tables & Specs</span><span data-lang="de">Tabellen</span></span></a></li>
         <li><a href="/architecture.html" class="mobile-nav-item"><i class="fa-solid fa-sitemap" style="color:#6366f1;"></i> <span><span data-lang="tr">Sistem Mimarisi</span><span data-lang="en">Architecture</span><span data-lang="de">Architektur</span></span></a></li>
         <li><a href="/mobile-apps.html" class="mobile-nav-item"><i class="fa-solid fa-mobile-screen" style="color:#0ea5e9;"></i> <span><span data-lang="tr">Mobil Softphone</span><span data-lang="en">Mobile Softphone</span><span data-lang="de">Mobile Apps</span></span></a></li>
         <li><a href="/msteams.html" class="mobile-nav-item"><i class="fa-brands fa-microsoft" style="color:#6264a7;"></i> <span>Microsoft Teams Direct Routing</span></a></li>
         <li style="border-top: 1px solid var(--border); margin: 8px 0; padding-top: 8px;">
-            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; padding:4px 12px;"><span data-lang="tr">Kılavuzlar &amp; Dokümantasyon</span><span data-lang="en">Guides &amp; Documentation</span><span data-lang="de">Handbücher &amp; Dokumentation</span></div>
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; padding:4px 12px;"><span data-lang="tr">Kılavuzlar & Dokümantasyon</span><span data-lang="en">Guides & Documentation</span><span data-lang="de">Handbücher & Dokumentation</span></div>
         </li>
         <li><a href="/installation.html" class="mobile-nav-item"><i class="fa-solid fa-terminal" style="color:#0284c7;"></i> <span><span data-lang="tr">Kurulum Kılavuzu</span><span data-lang="en">Installation Guide</span><span data-lang="de">Installation</span></span></a></li>
         <li><a href="/msteams.html" class="mobile-nav-item"><i class="fa-brands fa-microsoft" style="color:#6264a7;"></i> <span>Microsoft Teams</span></a></li>
         <li><a href="/mobile-apps.html" class="mobile-nav-item"><i class="fa-solid fa-mobile-screen" style="color:#10b981;"></i> <span><span data-lang="tr">Mobil Softphone</span><span data-lang="en">Mobile Softphone</span><span data-lang="de">Mobile Apps</span></span></a></li>
-        <li><a href="/callcenter.html" class="mobile-nav-item"><i class="fa-solid fa-headset" style="color:#ec4899;"></i> <span><span data-lang="tr">Çağrı Merkezi &amp; Mola</span><span data-lang="en">Call Center &amp; Breaks</span><span data-lang="de">Callcenter &amp; Pausen</span></span></a></li>
-        <li><a href="/security.html" class="mobile-nav-item"><i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i> <span><span data-lang="tr">Güvenlik &amp; SBC</span><span data-lang="en">Security &amp; SBC</span><span data-lang="de">Sicherheit &amp; SBC</span></span></a></li>
+        <li><a href="/callcenter.html" class="mobile-nav-item"><i class="fa-solid fa-headset" style="color:#ec4899;"></i> <span><span data-lang="tr">Çağrı Merkezi & Mola</span><span data-lang="en">Call Center & Breaks</span><span data-lang="de">Callcenter & Pausen</span></span></a></li>
+        <li><a href="/security.html" class="mobile-nav-item"><i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i> <span><span data-lang="tr">Güvenlik & SBC</span><span data-lang="en">Security & SBC</span><span data-lang="de">Sicherheit & SBC</span></span></a></li>
         <li><a href="/api-docs.html" class="mobile-nav-item"><i class="fa-solid fa-code" style="color:#8b5cf6;"></i> <span>REST API &amp; WebSocket</span></a></li>
     </ul>
 
@@ -362,18 +386,20 @@
                     <span data-lang="tr">Ana Sayfa</span><span data-lang="en">Home</span><span data-lang="de">Startseite</span>                </a>
                 <span style="margin: 0 8px; color: var(--border);">/</span>
                 <span style="color: var(--text-heading); font-weight: 600;">
-                    <span data-lang="tr">Teknik Özellik Tabloları &amp; Matris</span><span data-lang="en">Technical Feature Tables &amp; Matrix</span><span data-lang="de">Technische Funktionstabellen &amp; Matrix</span>                </span>
+                    <span data-lang="tr">Teknik Özellik Tabloları & Matris</span><span data-lang="en">Technical Feature Tables & Matrix</span><span data-lang="de">Technische Funktionstabellen & Matrix</span>                </span>
             </div>
 
             <div class="hero-tag">
                 <i class="fa-solid fa-table-list" style="color:var(--primary);"></i>
-                <span data-lang="tr">JSON TABLO SİSTEMİ &amp; TEKNİK PARAMETRELER</span><span data-lang="en">JSON TABLE SYSTEM &amp; SPECS</span><span data-lang="de">JSON-TABELLENSYSTEM &amp; PARAMETER</span>            </div>
+                <span data-lang="tr">JSON TABLO SİSTEMİ & TEKNİK PARAMETRELER</span><span data-lang="en">JSON TABLE SYSTEM & SPECS</span><span data-lang="de">JSON-TABELLENSYSTEM & PARAMETER</span>            </div>
 
-            <h1 style="max-width: 900px; margin: 0 auto 16px auto;">
-                <span data-lang="tr">Teknik Özellik Matrisi &amp; &lt;span&gt;Sistem Parametreleri&lt;/span&gt;</span><span data-lang="en">Technical Feature Matrix &amp; &lt;span&gt;System Parameters&lt;/span&gt;</span><span data-lang="de">Technische Funktionsmatrix &amp; &lt;span&gt;Systemparameter&lt;/span&gt;</span>            </h1>
+            <h1 data-lang="tr" style="max-width: 900px; margin: 0 auto 16px auto;">Teknik Özellik Matrisi & <span>Sistem Parametreleri</span></h1>
+            <h1 data-lang="en" style="max-width: 900px; margin: 0 auto 16px auto;">Technical Feature Matrix & <span>System Parameters</span></h1>
+            <h1 data-lang="de" style="max-width: 900px; margin: 0 auto 16px auto;">Technische Funktionsmatrix & <span>Systemparameter</span></h1>
 
-            <p style="max-width: 820px; margin: 0 auto 24px auto;">
-                <span data-lang="tr">AiPBX açık kaynak santral platformunun kurumsal karşılaştırma matrisi, ağ portları ve L4 ALPN stream çoklama haritası, santral yıldız kodları (*90, *22, *23, *97, *8000), arama yetki kademeleri (Call Barring) ve donanım gereksinimleri.</span><span data-lang="en">Centralized, dynamic JSON tables detailing the AiPBX enterprise feature comparison, network port architecture, star codes (*90, *22, *23), outbound call barring policies, and hardware sizing specs.</span><span data-lang="de">Zentral gesteuerte, dynamische JSON-Tabellen mit PBX-Vergleichsmatrix, Netzwerk-Portarchitektur, Funktionstastencodes (*90, *22, *23), Wählberechtigungsstufen und Hardware-Dimensionierung.</span>            </p>
+            <p data-lang="tr" style="max-width: 820px; margin: 0 auto 24px auto;">AiPBX açık kaynak santral platformunun kurumsal karşılaştırma matrisi, ağ portları ve L4 ALPN stream çoklama haritası, santral yıldız kodları (*90, *22, *23, *97, *8000), arama yetki kademeleri (Call Barring) ve donanım gereksinimleri.</p>
+            <p data-lang="en" style="max-width: 820px; margin: 0 auto 24px auto;">Centralized, dynamic JSON tables detailing the AiPBX enterprise feature comparison, network port architecture, star codes (*90, *22, *23), outbound call barring policies, and hardware sizing specs.</p>
+            <p data-lang="de" style="max-width: 820px; margin: 0 auto 24px auto;">Zentral gesteuerte, dynamische JSON-Tabellen mit PBX-Vergleichsmatrix, Netzwerk-Portarchitektur, Funktionstastencodes (*90, *22, *23), Wählberechtigungsstufen und Hardware-Dimensionierung.</p>
 
             <!-- Quick Specs Badges -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; margin-top: 10px;">
@@ -382,7 +408,7 @@
                     <span data-lang="tr">5 Dinamik Tablo</span><span data-lang="en">5 Dynamic Tables</span><span data-lang="de">5 Dynamische Tabellen</span>                </span>
                 <span class="tech-badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; border-color: rgba(16, 185, 129, 0.25); font-weight: 700; padding: 6px 14px; font-size: 0.82rem;">
                     <i class="fa-solid fa-bolt" style="margin-right: 5px;"></i>
-                    <span data-lang="tr">Anlık Arama &amp; Filtreleme</span><span data-lang="en">Real-Time Search Filter</span><span data-lang="de">Echtzeit-Suchfilter</span>                </span>
+                    <span data-lang="tr">Anlık Arama & Filtreleme</span><span data-lang="en">Real-Time Search Filter</span><span data-lang="de">Echtzeit-Suchfilter</span>                </span>
                 <span class="tech-badge" style="background: rgba(99, 102, 241, 0.1); color: #6366f1; border-color: rgba(99, 102, 241, 0.25); font-weight: 700; padding: 6px 14px; font-size: 0.82rem;">
                     <i class="fa-solid fa-database" style="margin-right: 5px;"></i>
                     <span data-lang="tr">data.json ile Yönetilebilir</span><span data-lang="en">Powered by data.json</span><span data-lang="de">Gesteuert über data.json</span>                </span>
@@ -403,7 +429,7 @@
                             <span data-lang="tr">Karşılaştırma Matrisi</span><span data-lang="en">Comparison Matrix</span><span data-lang="de">Vergleichsmatrix</span>                        </button>
                         <button class="table-tab-btn" data-target="protocols" type="button" role="tab">
                             <i class="fa-solid fa-network-wired"></i>
-                            <span data-lang="tr">Ağ Portları &amp; ALPN</span><span data-lang="en">Ports &amp; Protocols</span><span data-lang="de">Netzwerk &amp; Ports</span>                        </button>
+                            <span data-lang="tr">Ağ Portları & ALPN</span><span data-lang="en">Ports & Protocols</span><span data-lang="de">Netzwerk & Ports</span>                        </button>
                         <button class="table-tab-btn" data-target="starcodes" type="button" role="tab">
                             <i class="fa-solid fa-asterisk"></i>
                             <span data-lang="tr">Yıldız Kodları (*90/*22)</span><span data-lang="en">Star Codes (*90/*22)</span><span data-lang="de">Funktionscodes (*90/*22)</span>                        </button>
@@ -426,7 +452,7 @@
                     <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;">
                         <i class="fa-solid fa-circle-info" style="color: var(--primary); font-size: 1.3rem; margin-top: 2px;"></i>
                         <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
-                            <span data-lang="tr">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Neden AiPBX?&lt;/strong&gt; Geleneksel donanım santralleri (Cisco, Avaya, Karel) yüksek ilk yatırım ve pahalı lisans kartları gerektirirken, ticari bulut santraller (RingCentral, 8x8) kullanıcı başına aylık 15$-35$ fatura keser. AiPBX, Asterisk 22 ve Passkey/ALPN teknolojilerini birleştirerek kendi donanımınızda sıfır lisans maliyetiyle kurumsal gücü sunar.</span><span data-lang="en">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Why AiPBX?&lt;/strong&gt; Legacy hardware PBXs mandate steep upfront hardware costs and per-feature DSP cards, while cloud PBX SaaS platforms bill $15-$35 per user every month. AiPBX unites Asterisk 22, Passkeys, and ALPN stream multiplexing on your own private infrastructure with zero license fees.</span><span data-lang="de">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Warum AiPBX?&lt;/strong&gt; Klassische Hardware-Telefonanlagen erfordern hohe Anschaffungskosten und Lizenzkarten, während Cloud-SaaS-Anbieter 15€–35€ pro Nebenstelle monatlich abrechnen. AiPBX bietet volle Enterprise-Leistung mit Asterisk 22 und biometrischen Passkeys auf eigener Infrastruktur bei 0 € Lizenzkosten.</span>                        </div>
+                            <span data-lang="tr"><strong style="color:var(--text-heading);">Neden AiPBX?</strong> Geleneksel donanım santralleri (Cisco, Avaya, Karel) yüksek ilk yatırım ve pahalı lisans kartları gerektirirken, ticari bulut santraller (RingCentral, 8x8) kullanıcı başına aylık 15$-35$ fatura keser. AiPBX, Asterisk 22 ve Passkey/ALPN teknolojilerini birleştirerek kendi donanımınızda sıfır lisans maliyetiyle kurumsal gücü sunar.</span><span data-lang="en"><strong style="color:var(--text-heading);">Why AiPBX?</strong> Legacy hardware PBXs mandate steep upfront hardware costs and per-feature DSP cards, while cloud PBX SaaS platforms bill $15-$35 per user every month. AiPBX unites Asterisk 22, Passkeys, and ALPN stream multiplexing on your own private infrastructure with zero license fees.</span><span data-lang="de"><strong style="color:var(--text-heading);">Warum AiPBX?</strong> Klassische Hardware-Telefonanlagen erfordern hohe Anschaffungskosten und Lizenzkarten, während Cloud-SaaS-Anbieter 15€–35€ pro Nebenstelle monatlich abrechnen. AiPBX bietet volle Enterprise-Leistung mit Asterisk 22 und biometrischen Passkeys auf eigener Infrastruktur bei 0 € Lizenzkosten.</span>                        </div>
                     </div>
 
                     <div class="table-responsive-wrapper">
@@ -442,269 +468,269 @@
                             </thead>
                             <tbody>
                                                                 <tr>
-                                    <td><span class="category-pill">Güvenlik & Kimlik</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Güvenlik & Kimlik</span><span data-lang="en">Security & Identity</span><span data-lang="de">Sicherheit & Identität</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Biyometrik Passkey (WebAuthn / FIDO2)</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Touch ID, Face ID, Windows Hello, YubiKey ile şifresiz giriş.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Biyometrik Passkey (WebAuthn / FIDO2)</span><span data-lang="en">Biometric Passkey (WebAuthn / FIDO2)</span><span data-lang="de">Biometrische Passkeys (WebAuthn / FIDO2)</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Touch ID, Face ID, Windows Hello, YubiKey ile şifresiz giriş.</div><div data-lang="en">Passwordless auth with Touch ID, Face ID, Windows Hello, YubiKey.</div><div data-lang="de">Passwortlose Anmeldung mit Touch ID, Face ID, Windows Hello, YubiKey.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Yerleşik &amp; Ücretsiz                                        </span>
+                                            <span data-lang="tr">✅ Yerleşik & Ücretsiz</span><span data-lang="en">✅ Built-in & Free</span><span data-lang="de">✅ Integriert & Kostenlos</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Desteklenmiyor                                        </span>
+                                            <span data-lang="tr">❌ Desteklenmiyor</span><span data-lang="en">❌ Not Supported</span><span data-lang="de">❌ Nicht unterstützt</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Yalnızca Kurumsal SSO Eklentisi                                        </span>
+                                            <span data-lang="tr">⚠️ Yalnızca Kurumsal SSO Eklentisi</span><span data-lang="en">⚠️ Enterprise SSO Add-on Only</span><span data-lang="de">⚠️ Nur mit Enterprise SSO Add-on</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Güvenlik & Kimlik</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Güvenlik & Kimlik</span><span data-lang="en">Security & Identity</span><span data-lang="de">Sicherheit & Identität</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Google OAuth 2.0 Tek Tıkla Giriş</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Dahili e-posta adresiyle eşleştiğinde anında oturum açma.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Google OAuth 2.0 Tek Tıkla Giriş</span><span data-lang="en">Google OAuth 2.0 One-Click Login</span><span data-lang="de">Google OAuth 2.0 Ein-Klick-Login</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Dahili e-posta adresiyle eşleştiğinde anında oturum açma.</div><div data-lang="en">Instant login matching corporate extension email addresses.</div><div data-lang="de">Sofortiges Login bei Übereinstimmung mit Firmen-E-Mail.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Web, Android ve iOS                                        </span>
+                                            <span data-lang="tr">✅ Web, Android ve iOS</span><span data-lang="en">✅ Web, Android & iOS</span><span data-lang="de">✅ Web, Android & iOS</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Yok                                        </span>
+                                            <span data-lang="tr">❌ Yok</span><span data-lang="en">❌ None / Not Available</span><span data-lang="de">❌ Nicht vorhanden</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Ekstra Lisans Gerekir                                        </span>
+                                            <span data-lang="tr">⚠️ Ekstra Lisans Gerekir</span><span data-lang="en">⚠️ Extra License Required</span><span data-lang="de">⚠️ Zusätzliche Lizenz erforderlich</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Güvenlik & Kimlik</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Güvenlik & Kimlik</span><span data-lang="en">Security & Identity</span><span data-lang="de">Sicherheit & Identität</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">DTLS-SRTP & TLS 1.3 Uçtan Uca Şifreleme</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Tüm ses paketleri kriptolanır, ağda paket dinleme (sniffing) imkansızdır.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">DTLS-SRTP & TLS 1.3 Uçtan Uca Şifreleme</span><span data-lang="en">DTLS-SRTP & TLS 1.3 End-to-End Encryption</span><span data-lang="de">DTLS-SRTP & TLS 1.3 Ende-zu-Ende-Verschlüsselung</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Tüm ses paketleri kriptolanır, ağda paket dinleme (sniffing) imkansızdır.</div><div data-lang="en">All voice traffic encrypted; packet eavesdropping is impossible.</div><div data-lang="de">Sämtlicher Sprachverkehr verschlüsselt; Paket-Sniffing unmöglich.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Standart (Opus HD)                                        </span>
+                                            <span data-lang="tr">✅ Standart (Opus HD)</span><span data-lang="en">✅ Standard (Opus HD)</span><span data-lang="de">✅ Standard (Opus HD)</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Ek DSP / Lisans Kartı                                        </span>
+                                            <span data-lang="tr">⚠️ Ek DSP / Lisans Kartı</span><span data-lang="en">⚠️ Expensive DSP / License Add-on</span><span data-lang="de">⚠️ Teure DSP- / Lizenzkarten nötig</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge yes">
-                                            ✅ Sağlayıcı Yönetiminde                                        </span>
+                                            <span data-lang="tr">✅ Sağlayıcı Yönetiminde</span><span data-lang="en">✅ Managed by Provider</span><span data-lang="de">✅ Durch Anbieter verwaltet</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Ağ & Güvenlik Duvarı</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Ağ & Güvenlik Duvarı</span><span data-lang="en">Network & Firewall</span><span data-lang="de">Netzwerk & Firewall</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Port 443 Nginx L4 ALPN Stream Çoklama</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Otel, misafir WiFi ve katı kurumsal firewall engellerini tek porttan aşar.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Port 443 Nginx L4 ALPN Stream Çoklama</span><span data-lang="en">Port 443 Nginx L4 ALPN Stream Multiplexing</span><span data-lang="de">Port 443 Nginx L4 ALPN Stream Multiplexing</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Otel, misafir WiFi ve katı kurumsal firewall engellerini tek porttan aşar.</div><div data-lang="en">Bypasses strict hotel, guest WiFi and corporate firewall filters on port 443.</div><div data-lang="de">Überwindet restriktive Hotel-, Gast-WLAN- und Firmenfilter über Port 443.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Tek Porttan Web, WSS ve SIP                                        </span>
+                                            <span data-lang="tr">✅ Tek Porttan Web, WSS ve SIP</span><span data-lang="en">✅ Web, WSS & SIP on Port 443</span><span data-lang="de">✅ Web, WSS & SIP auf Port 443</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Çok Sayıda Port Açılması Zorunlu                                        </span>
+                                            <span data-lang="tr">❌ Çok Sayıda Port Açılması Zorunlu</span><span data-lang="en">❌ Multiple Exposed Ports Required</span><span data-lang="de">❌ Viele offene Ports erforderlich</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ 5060/5061 ve Çok Sayıda RTP Portu                                        </span>
+                                            <span data-lang="tr">❌ 5060/5061 ve Çok Sayıda RTP Portu</span><span data-lang="en">❌ 5060/5061 & Wide RTP Ranges</span><span data-lang="de">❌ 5060/5061 & viele RTP-Ports</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Ağ & Güvenlik Duvarı</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Ağ & Güvenlik Duvarı</span><span data-lang="en">Network & Firewall</span><span data-lang="de">Netzwerk & Firewall</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Dahili SBC & Otomatik Fail2ban Savunması</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">SIP brute-force ve flood atakları anında çekirdek seviyesinde engellenir.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Dahili SBC & Otomatik Fail2ban Savunması</span><span data-lang="en">Built-in SBC & Automatic Fail2ban Defense</span><span data-lang="de">Integrierter SBC & Fail2ban-Schutz</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">SIP brute-force ve flood atakları anında çekirdek seviyesinde engellenir.</div><div data-lang="en">SIP brute-force and flood attacks blocked at OS kernel level instantly.</div><div data-lang="de">SIP-Brute-Force- und Flood-Angriffe werden direkt auf Kernel-Ebene blockiert.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Yerleşik &amp; Otomatik IP Bloklama                                        </span>
+                                            <span data-lang="tr">✅ Yerleşik & Otomatik IP Bloklama</span><span data-lang="en">✅ Built-in & Automated IP Blocking</span><span data-lang="de">✅ Integriert & Automatische IP-Sperre</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Ayrı SBC Donanımı (Pahalı)                                        </span>
+                                            <span data-lang="tr">❌ Ayrı SBC Donanımı (Pahalı)</span><span data-lang="en">❌ Costly Dedicated SBC Appliance</span><span data-lang="de">❌ Teure dedizierte SBC-Hardware</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Sağlayıcı Kontrolünde                                        </span>
+                                            <span data-lang="tr">⚠️ Sağlayıcı Kontrolünde</span><span data-lang="en">⚠️ Controlled by Provider</span><span data-lang="de">⚠️ Vom Anbieter kontrolliert</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Entegrasyon & Ekosistem</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Entegrasyon & Ekosistem</span><span data-lang="en">Integration & Ecosystem</span><span data-lang="de">Integration & Ökosystem</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Microsoft Teams Direct Routing</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Teams kullanıcıları ile IP santral dahilileri arasında çift yönlü ses köprüsü.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Microsoft Teams Direct Routing</span><span data-lang="en">Microsoft Teams Direct Routing</span><span data-lang="de">Microsoft Teams Direct Routing</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Teams kullanıcıları ile IP santral dahilileri arasında çift yönlü ses köprüsü.</div><div data-lang="en">Bidirectional voice routing between Teams users and IP PBX extensions.</div><div data-lang="de">Bidirektionale Sprachkopplung zwischen Teams-Nutzern und Nebenstellen.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Yerleşik SBC ile Ücretsiz                                        </span>
+                                            <span data-lang="tr">✅ Yerleşik SBC ile Ücretsiz</span><span data-lang="en">✅ Built-in SBC & Free</span><span data-lang="de">✅ Integrierter SBC & Kostenlos</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Sertifikalı Harici SBC Şartı                                        </span>
+                                            <span data-lang="tr">❌ Sertifikalı Harici SBC Şartı</span><span data-lang="en">❌ Certified External SBC Required</span><span data-lang="de">❌ Zertifizierter externer SBC erforderlich</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Yüksek Ek Ücretli Eklenti                                        </span>
+                                            <span data-lang="tr">⚠️ Yüksek Ek Ücretli Eklenti</span><span data-lang="en">⚠️ High-Priced Add-on Tier</span><span data-lang="de">⚠️ Teures Zusatzpaket</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Entegrasyon & Ekosistem</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Entegrasyon & Ekosistem</span><span data-lang="en">Integration & Ecosystem</span><span data-lang="de">Integration & Ökosystem</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">REST API & WebSocket Webhook Desteği</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">CRM, ERP ve özel kurumsal yazılımlarla sınırsız veri entegrasyonu.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">REST API & WebSocket Webhook Desteği</span><span data-lang="en">REST API & WebSocket Webhooks</span><span data-lang="de">REST-API & WebSocket-Webhooks</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">CRM, ERP ve özel kurumsal yazılımlarla sınırsız veri entegrasyonu.</div><div data-lang="en">Unlimited integration with CRM, ERP, and internal enterprise software.</div><div data-lang="de">Grenzenlose Integration in CRM-, ERP- und interne Unternehmenssoftware.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Tam Erişim &amp; Dokümante                                        </span>
+                                            <span data-lang="tr">✅ Tam Erişim & Dokümante</span><span data-lang="en">✅ Full Access & Documented</span><span data-lang="de">✅ Voller Zugriff & Dokumentiert</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ TAPI / CSTA Lisansı Gerekir                                        </span>
+                                            <span data-lang="tr">❌ TAPI / CSTA Lisansı Gerekir</span><span data-lang="en">❌ TAPI / CSTA License Required</span><span data-lang="de">❌ TAPI- / CSTA-Lizenz erforderlich</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ API Çağrı Başına Ücretli                                        </span>
+                                            <span data-lang="tr">⚠️ API Çağrı Başına Ücretli</span><span data-lang="en">⚠️ Per-API-Call Invoicing</span><span data-lang="de">⚠️ Gebühren pro API-Aufruf</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Mobil & İletişim</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Mobil & İletişim</span><span data-lang="en">Mobile & Communications</span><span data-lang="de">Mobil & Kommunikation</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Yerel Android (Kotlin) & iOS (Swift) Softphone</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Özelleştirilebilir, logolu ve kurumsal kimliğinize göre derlenebilir.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Yerel Android (Kotlin) & iOS (Swift) Softphone</span><span data-lang="en">Native Android (Kotlin) & iOS (Swift) Softphone</span><span data-lang="de">Native Android (Kotlin) & iOS (Swift) Softphones</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Özelleştirilebilir, logolu ve kurumsal kimliğinize göre derlenebilir.</div><div data-lang="en">Fully customizable, rebrandable, and compileable with your branding.</div><div data-lang="de">Vollständig anpassbar und mit eigenem Branding kompilierbar.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Kendi Kod Tabanı (v1.0.34)                                        </span>
+                                            <span data-lang="tr">✅ Kendi Kod Tabanı (v1.0.34)</span><span data-lang="en">✅ Native Codebase (v1.0.34)</span><span data-lang="de">✅ Eigene Codebasis (v1.0.34)</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ 3. Parti Ücretli Uygulama Zorunlu                                        </span>
+                                            <span data-lang="tr">❌ 3. Parti Ücretli Uygulama Zorunlu</span><span data-lang="en">❌ Costly 3rd-Party App Required</span><span data-lang="de">❌ Kostenpflichtige Drittanbieter-App</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Sağlayıcı Uygulaması (Kapalı)                                        </span>
+                                            <span data-lang="tr">⚠️ Sağlayıcı Uygulaması (Kapalı)</span><span data-lang="en">⚠️ Proprietary Provider App</span><span data-lang="de">⚠️ Proprietäre Anbieter-App</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Mobil & İletişim</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Mobil & İletişim</span><span data-lang="en">Mobile & Communications</span><span data-lang="de">Mobil & Kommunikation</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">FCM / APNs High Priority Push Uyanma</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Uygulama kapalıyken bile çağrı geldiğinde anında ekranı uyandırır.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">FCM / APNs High Priority Push Uyanma</span><span data-lang="en">FCM / APNs High-Priority Push Wake-up</span><span data-lang="de">FCM / APNs High-Priority Push-Wakeup</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Uygulama kapalıyken bile çağrı geldiğinde anında ekranı uyandırır.</div><div data-lang="en">Wakes the lock screen instantly on incoming call even if app is closed.</div><div data-lang="de">Aktiviert den Sperrbildschirm bei eingehendem Anruf selbst bei geschlossener App.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ &lt;400ms Uyanma, %0 Pil Tüketimi                                        </span>
+                                            <span data-lang="tr">✅ <400ms Uyanma, %0 Pil Tüketimi</span><span data-lang="en">✅ <400ms Wakeup, 0% Battery Drain</span><span data-lang="de">✅ <400ms Aufwecken, 0% Akkuverbrauch</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Arka Planda Pil Tüketir                                        </span>
+                                            <span data-lang="tr">❌ Arka Planda Pil Tüketir</span><span data-lang="en">❌ High Background Battery Drain</span><span data-lang="de">❌ Hoher Akkuverbrauch im Hintergrund</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge yes">
-                                            ✅ Standart                                        </span>
+                                            <span data-lang="tr">✅ Standart</span><span data-lang="en">✅ Standard</span><span data-lang="de">✅ Standard</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Mobil & İletişim</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Mobil & İletişim</span><span data-lang="en">Mobile & Communications</span><span data-lang="de">Mobil & Kommunikation</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Tarayıcı İçi WebRTC Telefon (Zero-Install)</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Hiçbir yazılım yüklemeden Chrome/Firefox üzerinden doğrudan arama.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Tarayıcı İçi WebRTC Telefon (Zero-Install)</span><span data-lang="en">In-Browser WebRTC Softphone (Zero-Install)</span><span data-lang="de">WebRTC-Softphone im Browser (Zero-Install)</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Hiçbir yazılım yüklemeden Chrome/Firefox üzerinden doğrudan arama.</div><div data-lang="en">Make and receive calls directly in Chrome/Firefox with zero installation.</div><div data-lang="de">Telefonieren direkt in Chrome/Firefox ohne jede Softwareinstallation.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Web Paneline Gömülü                                        </span>
+                                            <span data-lang="tr">✅ Web Paneline Gömülü</span><span data-lang="en">✅ Embedded in Web Panel</span><span data-lang="de">✅ Im Web-Panel integriert</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ Desteklenmiyor                                        </span>
+                                            <span data-lang="tr">❌ Desteklenmiyor</span><span data-lang="en">❌ Not Supported</span><span data-lang="de">❌ Nicht unterstützt</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge yes">
-                                            ✅ Standart                                        </span>
+                                            <span data-lang="tr">✅ Standart</span><span data-lang="en">✅ Standard</span><span data-lang="de">✅ Standard</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Çağrı Merkezi & Denetim</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Çağrı Merkezi & Denetim</span><span data-lang="en">Call Center & Supervision</span><span data-lang="de">Callcenter & Überwachung</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Canlı Süpervizör Dinleme / Fısıldama (*90)</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Yönetici dilerse yalnızca dinler, dilerse ajana koçluk yapar.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Canlı Süpervizör Dinleme / Fısıldama (*90)</span><span data-lang="en">Live Supervisor Spy & Whisper (*90)</span><span data-lang="de">Live Supervisor Mithören & Flüstern (*90)</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Yönetici dilerse yalnızca dinler, dilerse ajana koçluk yapar.</div><div data-lang="en">Supervisor can listen silently, coach the agent, or barge into the call.</div><div data-lang="de">Supervisor kann stumm mithören, den Agenten coachen oder sich aufschalten.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ 3 Mod (Spy/Whisper/Barge-in)                                        </span>
+                                            <span data-lang="tr">✅ 3 Mod (Spy/Whisper/Barge-in)</span><span data-lang="en">✅ 3 Modes (Spy/Whisper/Barge-in)</span><span data-lang="de">✅ 3 Modi (Spy/Whisper/Barge-in)</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Ek Süpervizör Lisansı                                        </span>
+                                            <span data-lang="tr">⚠️ Ek Süpervizör Lisansı</span><span data-lang="en">⚠️ Additional Supervisor License</span><span data-lang="de">⚠️ Zusätzliche Supervisor-Lizenz</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Yüksek Paket Aboneliği                                        </span>
+                                            <span data-lang="tr">⚠️ Yüksek Paket Aboneliği</span><span data-lang="en">⚠️ Top-Tier Subscription Only</span><span data-lang="de">⚠️ Nur in Top-Tarifen enthalten</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Çağrı Merkezi & Denetim</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Çağrı Merkezi & Denetim</span><span data-lang="en">Call Center & Supervision</span><span data-lang="de">Callcenter & Überwachung</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Mola Kodları & Canlı Duvar Panosu (*22/*23)</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Yemek, çay, mola, eğitim süreleri anlık olarak raporlanır.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Mola Kodları & Canlı Duvar Panosu (*22/*23)</span><span data-lang="en">Break Reason Codes & Live Wallboard (*22/*23)</span><span data-lang="de">Pausencodes & Live-Wallboard (*22/*23)</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Yemek, çay, mola, eğitim süreleri anlık olarak raporlanır.</div><div data-lang="en">Real-time tracking of agent breaks (lunch, coffee, training, technical).</div><div data-lang="de">Echtzeit-Erfassung von Pausenzeiten (Essen, Pause, Schulung, Störung).</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ Yerleşik ACD Kuyruk Takibi                                        </span>
+                                            <span data-lang="tr">✅ Yerleşik ACD Kuyruk Takibi</span><span data-lang="en">✅ Built-in ACD Queue Monitoring</span><span data-lang="de">✅ Integriertes ACD-Monitoring</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Ayrı Raporlama Sunucusu                                        </span>
+                                            <span data-lang="tr">⚠️ Ayrı Raporlama Sunucusu</span><span data-lang="en">⚠️ Separate Reporting Server</span><span data-lang="de">⚠️ Separater Report-Server</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Ekstra Kullanıcı Başı Ücret                                        </span>
+                                            <span data-lang="tr">⚠️ Ekstra Kullanıcı Başı Ücret</span><span data-lang="en">⚠️ Extra Fee Per User</span><span data-lang="de">⚠️ Zusatzgebühr pro Benutzer</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Maliyet & Bağımsızlık</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Maliyet & Bağımsızlık</span><span data-lang="en">Cost & Independence</span><span data-lang="de">Kosten & Unabhängigkeit</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Lisanslama & Dahili Başına Aylık Maliyet</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Kendi sunucunuzda sınırsız dahili ve dış hatla maliyetsiz çalışır.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Lisanslama & Dahili Başına Aylık Maliyet</span><span data-lang="en">Licensing & Monthly Cost Per Extension</span><span data-lang="de">Lizenzierung & Monatliche Kosten pro Nebenstelle</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Kendi sunucunuzda sınırsız dahili ve dış hatla maliyetsiz çalışır.</div><div data-lang="en">Runs on your hardware with unlimited extensions and trunks at zero cost.</div><div data-lang="de">Läuft auf eigener Hardware mit unbegrenzten Nebenstellen ohne laufende Gebühren.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ 0 TL / 0 $ (Tamamen Ücretsiz)                                        </span>
+                                            <span data-lang="tr">✅ 0 TL / 0 $ (Tamamen Ücretsiz)</span><span data-lang="en">✅ bash / Completely Free (MIT)</span><span data-lang="de">✅ 0 € / Völlig Kostenlos (MIT)</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ 1.000$+ Donanım &amp; Dahili Lisansı                                        </span>
+                                            <span data-lang="tr">❌ 1.000$+ Donanım & Dahili Lisansı</span><span data-lang="en">❌ ,000+ Hardware & Ext Licenses</span><span data-lang="de">❌ 1.000€+ Hardware- & Lizenzkosten</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge no">
-                                            ❌ 15$-35$ / Dahili / Her Ay                                        </span>
+                                            <span data-lang="tr">❌ 15$-35$ / Dahili / Her Ay</span><span data-lang="en">❌ 15$-35$ / Dahili / Her Ay</span><span data-lang="de">❌ 15$-35$ / Dahili / Her Ay</span>                                        </span>
                                     </td>
                                 </tr>
                                                                 <tr>
-                                    <td><span class="category-pill">Maliyet & Bağımsızlık</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Maliyet & Bağımsızlık</span><span data-lang="en">Cost & Independence</span><span data-lang="de">Kosten & Unabhängigkeit</span></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);">Veri Egemenliği & KVKK / GDPR Uyumluluğu</strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;">Ses kayıtları ve kullanıcı verileri üçüncü parti sunuculara gitmez.</div>
+                                        <strong style="color:var(--text-heading);"><span data-lang="tr">Veri Egemenliği & KVKK / GDPR Uyumluluğu</span><span data-lang="en">Data Sovereignty & GDPR Compliance</span><span data-lang="de">Datensouveränität & DSGVO-Konformität</span></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><div data-lang="tr">Ses kayıtları ve kullanıcı verileri üçüncü parti sunuculara gitmez.</div><div data-lang="en">All call recordings and personal data remain strictly on your premises.</div><div data-lang="de">Alle Sprachaufzeichnungen und Daten verbleiben auf Ihren eigenen Servern.</div></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge yes">
-                                            ✅ %100 Kendi Sunucunuzda (On-Prem / Özel VPS)                                        </span>
+                                            <span data-lang="tr">✅ %100 Kendi Sunucunuzda (On-Prem / Özel VPS)</span><span data-lang="en">✅ 100% On-Premises / Private VPS</span><span data-lang="de">✅ 100% On-Premises / Eigener VPS</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge yes">
-                                            ✅ Lokal                                        </span>
+                                            <span data-lang="tr">✅ Lokal</span><span data-lang="en">✅ Local Storage</span><span data-lang="de">✅ Lokale Speicherung</span>                                        </span>
                                     </td>
                                     <td>
                                         <span class="status-badge warning">
-                                            ⚠️ Yurt Dışı Bulutunda Saklanır                                        </span>
+                                            <span data-lang="tr">⚠️ Yurt Dışı Bulutunda Saklanır</span><span data-lang="en">⚠️ Stored in Third-Party Cloud</span><span data-lang="de">⚠️ Speicherung in Drittanbieter-Cloud</span>                                        </span>
                                     </td>
                                 </tr>
                                                             </tbody>
@@ -717,7 +743,7 @@
                     <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;">
                         <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.3rem; margin-top: 2px;"></i>
                         <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
-                            <span data-lang="tr">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Port 443 ALPN Güvenlik Devrimi:&lt;/strong&gt; Klasik santraller internete savunmasız SIP 5060 portunu açmak zorunda kalır ve port tarayıcılarının (SIP scanner) saldırılarına maruz kalır. AiPBX, Nginx L4 Stream modülü ve ALPN denetimi ile TCP 443 üzerinden Web, WebRTC ve SIP TLS paketlerini ayrıştırır. Dış dünyaya 5060 açılmaz, otel ve misafir ağlarında sıfır engel ile bağlanır.</span><span data-lang="en">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Port 443 ALPN Security Breakthrough:&lt;/strong&gt; Legacy IP PBXs expose vulnerable SIP port 5060 to the public web, drawing relentless bot scans and brute-force attacks. AiPBX solves this by inspecting TLS ClientHello ALPN protocols on port 443, routing Web, WebRTC WSS, and TLS SIP internally. Zero firewall hassle in hotels and enterprise guest networks.</span><span data-lang="de">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Port 443 ALPN Sicherheits-Vorteil:&lt;/strong&gt; Herkömmliche PBX-Systeme müssen den anfälligen SIP-Port 5060 öffnen. AiPBX prüft über Nginx L4 Stream den TLS ALPN-Header auf Port 443 und verteilt HTTPS, WebRTC WSS und TLS-SIP intern. Port 5060 bleibt nach außen geschlossen – ideal für Hotels und Firmennetze.</span>                        </div>
+                            <span data-lang="tr"><strong style="color:var(--text-heading);">Port 443 ALPN Güvenlik Devrimi:</strong> Klasik santraller internete savunmasız SIP 5060 portunu açmak zorunda kalır ve port tarayıcılarının (SIP scanner) saldırılarına maruz kalır. AiPBX, Nginx L4 Stream modülü ve ALPN denetimi ile TCP 443 üzerinden Web, WebRTC ve SIP TLS paketlerini ayrıştırır. Dış dünyaya 5060 açılmaz, otel ve misafir ağlarında sıfır engel ile bağlanır.</span><span data-lang="en"><strong style="color:var(--text-heading);">Port 443 ALPN Security Breakthrough:</strong> Legacy IP PBXs expose vulnerable SIP port 5060 to the public web, drawing relentless bot scans and brute-force attacks. AiPBX solves this by inspecting TLS ClientHello ALPN protocols on port 443, routing Web, WebRTC WSS, and TLS SIP internally. Zero firewall hassle in hotels and enterprise guest networks.</span><span data-lang="de"><strong style="color:var(--text-heading);">Port 443 ALPN Sicherheits-Vorteil:</strong> Herkömmliche PBX-Systeme müssen den anfälligen SIP-Port 5060 öffnen. AiPBX prüft über Nginx L4 Stream den TLS ALPN-Header auf Port 443 und verteilt HTTPS, WebRTC WSS und TLS-SIP intern. Port 5060 bleibt nach außen geschlossen – ideal für Hotels und Firmennetze.</span>                        </div>
                     </div>
 
                     <div class="table-responsive-wrapper">
@@ -726,8 +752,8 @@
                                 <tr>
                                     <th style="width: 16%;"><span data-lang="tr">Port / Soket</span><span data-lang="en">Port / Socket</span><span data-lang="de">Port / Socket</span></th>
                                     <th style="width: 15%;"><span data-lang="tr">Protokol</span><span data-lang="en">Protocol</span><span data-lang="de">Protokoll</span></th>
-                                    <th style="width: 25%;"><span data-lang="tr">Servis Adı &amp; Bileşen</span><span data-lang="en">Service &amp; Component</span><span data-lang="de">Dienst &amp; Komponente</span></th>
-                                    <th style="width: 26%;"><span data-lang="tr">Sistem Rolü &amp; Açıklama</span><span data-lang="en">System Role &amp; Scope</span><span data-lang="de">Systemrolle &amp; Zweck</span></th>
+                                    <th style="width: 25%;"><span data-lang="tr">Servis Adı & Bileşen</span><span data-lang="en">Service & Component</span><span data-lang="de">Dienst & Komponente</span></th>
+                                    <th style="width: 26%;"><span data-lang="tr">Sistem Rolü & Açıklama</span><span data-lang="en">System Role & Scope</span><span data-lang="de">Systemrolle & Zweck</span></th>
                                     <th style="width: 18%;"><span data-lang="tr">Güvenlik</span><span data-lang="en">Security</span><span data-lang="de">Sicherheit</span></th>
                                 </tr>
                             </thead>
@@ -735,44 +761,44 @@
                                                                 <tr>
                                     <td><span class="chip-port">443 / TCP</span></td>
                                     <td><span class="chip-proto">HTTPS, WSS, SIP TLS</span></td>
-                                    <td><strong style="color:var(--text-heading);">Nginx L4 ALPN Stream Çoklayıcı</strong></td>
-                                    <td style="font-size:0.88rem;">Tek porttan Web UI (:8443), WebRTC WSS (:8089) ve SIP TLS (:5061) ayrıştırması</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>TLS 1.3 / Strict ALPN Preread Inspection</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Nginx L4 ALPN Stream Çoklayıcı</span><span data-lang="en">Nginx L4 ALPN Stream Multiplexer</span><span data-lang="de">Nginx L4 ALPN Stream Multiplexer</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Tek porttan Web UI (:8443), WebRTC WSS (:8089) ve SIP TLS (:5061) ayrıştırması</span><span data-lang="en">Multiplexes Web UI (:8443), WebRTC WSS (:8089), and SIP TLS (:5061) on one port</span><span data-lang="de">Verteilt Web-UI (:8443), WebRTC WSS (:8089) und SIP TLS (:5061) über Port 443</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">TLS 1.3 / Strict ALPN Preread Inspection</span><span data-lang="en">TLS 1.3 / Strict ALPN Preread Inspection</span><span data-lang="de">TLS 1.3 / Strenge ALPN-Vorabinspektion</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="chip-port">5060 / UDP-TCP</span></td>
                                     <td><span class="chip-proto">SIP (PJSIP)</span></td>
-                                    <td><strong style="color:var(--text-heading);">Yerel Masaüstü IP Telefon Sinyalleşmesi</strong></td>
-                                    <td style="font-size:0.88rem;">Ofis içi masa telefonları ve yerel VoIP ağ geçitleri</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>Fail2ban SIP Jails / Digest Auth</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Yerel Masaüstü IP Telefon Sinyalleşmesi</span><span data-lang="en">Local Desktop IP Phone Signaling</span><span data-lang="de">Lokale IP-Telefon SIP-Signalisierung</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Ofis içi masa telefonları ve yerel VoIP ağ geçitleri</span><span data-lang="en">On-premise physical desk phones and VoIP gateways</span><span data-lang="de">Interne Tischtelefone und VoIP-Gateways</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">Fail2ban SIP Jails / Digest Auth</span><span data-lang="en">Fail2ban SIP Jails / Digest Auth</span><span data-lang="de">Fail2ban SIP-Jails / Digest-Authentifizierung</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="chip-port">5061 / TCP</span></td>
                                     <td><span class="chip-proto">SIP TLS (PJSIP)</span></td>
-                                    <td><strong style="color:var(--text-heading);">Şifreli Uzak Dahili & Teams Direct Routing</strong></td>
-                                    <td style="font-size:0.88rem;">Mobil softphone ve Microsoft Teams Direct Routing bağlantısı</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>TLS 1.2 / 1.3 Karşılıklı Doğrulama</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Şifreli Uzak Dahili & Teams Direct Routing</span><span data-lang="en">Encrypted Remote Extensions & Teams SBC</span><span data-lang="de">Verschlüsselte Nebenstellen & Teams SBC</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Mobil softphone ve Microsoft Teams Direct Routing bağlantısı</span><span data-lang="en">Mobile softphones and Microsoft Teams Direct Routing trunks</span><span data-lang="de">Mobile Softphones und Microsoft Teams Direct Routing Trunks</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">TLS 1.2 / 1.3 Karşılıklı Doğrulama</span><span data-lang="en">TLS 1.2 / 1.3 Mutual Authentication</span><span data-lang="de">TLS 1.2 / 1.3 Gegenseitige Authentifizierung</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="chip-port">8089 / TCP</span></td>
                                     <td><span class="chip-proto">WSS (WebRTC SIP)</span></td>
-                                    <td><strong style="color:var(--text-heading);">Asterisk WebRTC Güvenli WebSocket</strong></td>
-                                    <td style="font-size:0.88rem;">Web tarayıcısı içi softphone (Chrome/Firefox/Safari)</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>DTLS-SRTP & SSL Origin Denetimi</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Asterisk WebRTC Güvenli WebSocket</span><span data-lang="en">Asterisk WebRTC Secure WebSocket</span><span data-lang="de">Asterisk WebRTC Sicherer WebSocket</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Web tarayıcısı içi softphone (Chrome/Firefox/Safari)</span><span data-lang="en">Browser softphone telephony engine (Chrome/Firefox/Safari)</span><span data-lang="de">Browser-Telefonie-Engine (Chrome/Firefox/Safari)</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">DTLS-SRTP & SSL Origin Denetimi</span><span data-lang="en">DTLS-SRTP & SSL Origin Verification</span><span data-lang="de">DTLS-SRTP & SSL-Origin-Prüfung</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="chip-port">8090 / TCP</span></td>
                                     <td><span class="chip-proto">WSS (Go Chat)</span></td>
-                                    <td><strong style="color:var(--text-heading);">aipbx-chat Gerçek Zamanlı Mesajlaşma</strong></td>
-                                    <td style="font-size:0.88rem;">1'e 1 ve grup sohbeti, yazıyor/okundu bildirimleri, dosya paylaşımı</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>Bearer Token & Session Guard</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">aipbx-chat Gerçek Zamanlı Mesajlaşma</span><span data-lang="en">aipbx-chat Real-Time Messaging Daemon</span><span data-lang="de">aipbx-chat Echtzeit-Messaging-Daemon</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">1'e 1 ve grup sohbeti, yazıyor/okundu bildirimleri, dosya paylaşımı</span><span data-lang="en">1-on-1 and group chat rooms, typing indicators, read receipts</span><span data-lang="de">1-zu-1- und Gruppenchats, Tipp- und Lesebestätigungen</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">Bearer Token & Session Guard</span><span data-lang="en">Bearer Token & Session Guard</span><span data-lang="de">Bearer-Token & Session-Guard</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="chip-port">10000-20000 / UDP</span></td>
                                     <td><span class="chip-proto">RTP / SRTP</span></td>
-                                    <td><strong style="color:var(--text-heading);">Opus & G.711 HD Ses Medya Akışı</strong></td>
-                                    <td style="font-size:0.88rem;">Ses paketlerinin çift yönlü doğrudan iletimi</td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i>AES-128 / AES-256 SRTP Kriptolama</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Opus & G.711 HD Ses Medya Akışı</span><span data-lang="en">Opus & G.711 HD Voice Media Stream</span><span data-lang="de">Opus & G.711 HD-Sprach-Medienstrom</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Ses paketlerinin çift yönlü doğrudan iletimi</span><span data-lang="en">Direct bidirectional transport of digitized voice packets</span><span data-lang="de">Direkte bidirektionale Übertragung digitalisierter Sprachpakete</span></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><span data-lang="tr">AES-128 / AES-256 SRTP Kriptolama</span><span data-lang="en">AES-128 / AES-256 SRTP Encryption</span><span data-lang="de">AES-128 / AES-256 SRTP-Verschlüsselung</span></span></td>
                                 </tr>
                                                             </tbody>
                         </table>
@@ -784,7 +810,7 @@
                     <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;">
                         <i class="fa-solid fa-asterisk" style="color: var(--primary); font-size: 1.3rem; margin-top: 2px;"></i>
                         <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
-                            <span data-lang="tr">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Santral Yıldız Kodları (* Codes):&lt;/strong&gt; Fiziksel masa telefonu, web softphone ve mobil uygulamalar üzerinden özel tuş kombinasyonlarıyla santral fonksiyonlarını tetikleyebilirsiniz. Örneğin süpervizörler *901002 tuşlayarak 1002 nolu dahiliyi anında gizlice dinleyebilir (Spy), tuşlama ile ajana fısıldayabilir (Whisper) veya çağrıya katılabilir.</span><span data-lang="en">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Telephony Star Codes (* Codes):&lt;/strong&gt; Feature access codes dialable from desk phones, browser WebRTC, and mobile softphone apps. For example, supervisors dial *901002 to instantly eavesdrop on extension 1002 silently (Spy), press 5 to whisper coaching, or press 4 to barge in.</span><span data-lang="de">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Telefon-Funktionscodes (* Codes):&lt;/strong&gt; Schnellwahltasten für Tischtelefone, WebRTC und Mobil-Apps. Beispielsweise wählt ein Supervisor *901002, um Nebenstelle 1002 lautlos abzuhören (Spy), drückt 5 zum Einflüstern (Whisper) oder 4 zum Aufschalten (Barge-in).</span>                        </div>
+                            <span data-lang="tr"><strong style="color:var(--text-heading);">Santral Yıldız Kodları (* Codes):</strong> Fiziksel masa telefonu, web softphone ve mobil uygulamalar üzerinden özel tuş kombinasyonlarıyla santral fonksiyonlarını tetikleyebilirsiniz. Örneğin süpervizörler *901002 tuşlayarak 1002 nolu dahiliyi anında gizlice dinleyebilir (Spy), tuşlama ile ajana fısıldayabilir (Whisper) veya çağrıya katılabilir.</span><span data-lang="en"><strong style="color:var(--text-heading);">Telephony Star Codes (* Codes):</strong> Feature access codes dialable from desk phones, browser WebRTC, and mobile softphone apps. For example, supervisors dial *901002 to instantly eavesdrop on extension 1002 silently (Spy), press 5 to whisper coaching, or press 4 to barge in.</span><span data-lang="de"><strong style="color:var(--text-heading);">Telefon-Funktionscodes (* Codes):</strong> Schnellwahltasten für Tischtelefone, WebRTC und Mobil-Apps. Beispielsweise wählt ein Supervisor *901002, um Nebenstelle 1002 lautlos abzuhören (Spy), drückt 5 zum Einflüstern (Whisper) oder 4 zum Aufschalten (Barge-in).</span>                        </div>
                     </div>
 
                     <div class="table-responsive-wrapper">
@@ -793,64 +819,64 @@
                                 <tr>
                                     <th style="width: 18%;"><span data-lang="tr">Tuşlama Kodu</span><span data-lang="en">Dial Code</span><span data-lang="de">Wählcode</span></th>
                                     <th style="width: 28%;"><span data-lang="tr">Fonksiyon Adı</span><span data-lang="en">Function Name</span><span data-lang="de">Funktionsbezeichnung</span></th>
-                                    <th style="width: 36%;"><span data-lang="tr">Açıklama &amp; Kullanım Şekli</span><span data-lang="en">Description &amp; How-to</span><span data-lang="de">Beschreibung &amp; Anwendung</span></th>
+                                    <th style="width: 36%;"><span data-lang="tr">Açıklama & Kullanım Şekli</span><span data-lang="en">Description & How-to</span><span data-lang="de">Beschreibung & Anwendung</span></th>
                                     <th style="width: 18%;"><span data-lang="tr">Yetki Düzeyi</span><span data-lang="en">Access Level</span><span data-lang="de">Berechtigungsstufe</span></th>
                                 </tr>
                             </thead>
                             <tbody>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*90[Dahili]</span></td>
-                                    <td><strong style="color:var(--text-heading);">Süpervizör Canlı Çağrı Dinleme / Fısıldama</strong></td>
-                                    <td style="font-size:0.88rem;">Aktif bir görüşmeyi gizlice dinleme, tuşlama ile ajana fısıldama (5) veya çağrıya müdahale (4).</td>
-                                    <td><span class="category-pill">Süpervizör & Yönetici</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Süpervizör Canlı Çağrı Dinleme / Fısıldama</span><span data-lang="en">Supervisor Call Spy & Whisper</span><span data-lang="de">Supervisor Mithören & Flüstern</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Aktif bir görüşmeyi gizlice dinleme, tuşlama ile ajana fısıldama (5) veya çağrıya müdahale (4).</span><span data-lang="en">Silently listen to active call; press (5) to whisper to agent or (4) to barge in.</span><span data-lang="de">Stilles Mithören eines Gesprächs; Taste (5) für Flüstern zum Agenten, (4) für Aufschalten.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Süpervizör & Yönetici</span><span data-lang="en">Supervisor & Admin</span><span data-lang="de">Supervisor & Administrator</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*22[MolaKodu]</span></td>
-                                    <td><strong style="color:var(--text-heading);">Çağrı Merkezi Molaya Çıkış</strong></td>
-                                    <td style="font-size:0.88rem;">Ajanın kuyruktan geçici olarak molaya ayrılması (*221: Yemek, *222: Çay, *223: Toplantı, *224: Eğitim).</td>
-                                    <td><span class="category-pill">Çağrı Merkezi Ajanı</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Çağrı Merkezi Molaya Çıkış</span><span data-lang="en">Call Center Pause / Break Start</span><span data-lang="de">Callcenter-Pause Beginn</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Ajanın kuyruktan geçici olarak molaya ayrılması (*221: Yemek, *222: Çay, *223: Toplantı, *224: Eğitim).</span><span data-lang="en">Temporarily pause agent from ACD queues (*221: Lunch, *222: Break, *223: Meeting, *224: Training).</span><span data-lang="de">Agenten vorübergehend pausieren (*221: Essen, *222: Pause, *223: Meeting, *224: Schulung).</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Çağrı Merkezi Ajanı</span><span data-lang="en">Call Center Agent</span><span data-lang="de">Callcenter-Agent</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*23</span></td>
-                                    <td><strong style="color:var(--text-heading);">Çağrı Merkezi Moladan Dönüş</strong></td>
-                                    <td style="font-size:0.88rem;">Ajanın mola durumunu sonlandırıp tekrar çağrı almaya hazır hale gelmesi.</td>
-                                    <td><span class="category-pill">Çağrı Merkezi Ajanı</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Çağrı Merkezi Moladan Dönüş</span><span data-lang="en">Call Center Resume from Break</span><span data-lang="de">Callcenter-Pause Beenden</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Ajanın mola durumunu sonlandırıp tekrar çağrı almaya hazır hale gelmesi.</span><span data-lang="en">Ends agent pause state and immediately resumes ACD incoming queue call delivery.</span><span data-lang="de">Beendet die Pause und schaltet den Agenten sofort wieder für Warteschlangen-Anrufe frei.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Çağrı Merkezi Ajanı</span><span data-lang="en">Call Center Agent</span><span data-lang="de">Callcenter-Agent</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*97</span></td>
-                                    <td><strong style="color:var(--text-heading);">Kendi Sesli Posta Kutuna Giriş</strong></td>
-                                    <td style="font-size:0.88rem;">Aranan dahili numaranın kendi sesli mesajlarını dinlemesi ve yönetmesi.</td>
-                                    <td><span class="category-pill">Tüm Dahililer</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Kendi Sesli Posta Kutuna Giriş</span><span data-lang="en">Direct Voicemail Access</span><span data-lang="de">Eigene Voicemail abrufen</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Aranan dahili numaranın kendi sesli mesajlarını dinlemesi ve yönetmesi.</span><span data-lang="en">Access and manage personal voicemail box directly from the calling extension.</span><span data-lang="de">Direkter Zugriff auf die eigene Mailbox von der anrufenden Nebenstelle.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Tüm Dahililer</span><span data-lang="en">All Extensions</span><span data-lang="de">Alle Nebenstellen</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*98[Dahili]</span></td>
-                                    <td><strong style="color:var(--text-heading);">Uzak Dahili Sesli Posta Kutusu</strong></td>
-                                    <td style="font-size:0.88rem;">Farklı bir telefondan veya dış hattan PIN girerek herhangi bir dahili sesli mesajını dinleme.</td>
-                                    <td><span class="category-pill">Yetkili Kullanıcı</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Uzak Dahili Sesli Posta Kutusu</span><span data-lang="en">Remote Voicemail Access</span><span data-lang="de">Entfernte Voicemail abrufen</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Farklı bir telefondan veya dış hattan PIN girerek herhangi bir dahili sesli mesajını dinleme.</span><span data-lang="en">Access any extension's voicemail box from another phone or outside trunk using PIN.</span><span data-lang="de">Zugriff auf eine beliebige Mailbox von einem anderen Telefon aus mittels PIN.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Yetkili Kullanıcı</span><span data-lang="en">Authorized User</span><span data-lang="de">Autorisierter Nutzer</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*72[HedefNo]</span></td>
-                                    <td><strong style="color:var(--text-heading);">Koşulsuz Çağrı Yönlendirme (CFWD)</strong></td>
-                                    <td style="font-size:0.88rem;">Gelen tüm çağrıları anında belirtilen dahili veya harici numaraya aktarır.</td>
-                                    <td><span class="category-pill">Tüm Dahililer</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Koşulsuz Çağrı Yönlendirme (CFWD)</span><span data-lang="en">Call Forward Unconditional</span><span data-lang="de">Anrufweiterschaltung Sofort</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Gelen tüm çağrıları anında belirtilen dahili veya harici numaraya aktarır.</span><span data-lang="en">Forwards all incoming calls immediately to the designated internal or external number.</span><span data-lang="de">Leitet alle eingehenden Anrufe sofort an die angegebene interne oder externe Nummer weiter.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Tüm Dahililer</span><span data-lang="en">All Extensions</span><span data-lang="de">Alle Nebenstellen</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*73</span></td>
-                                    <td><strong style="color:var(--text-heading);">Koşulsuz Yönlendirme İptal</strong></td>
-                                    <td style="font-size:0.88rem;">Daha önce tanımlanmış koşulsuz çağrı yönlendirmesini kaldırır.</td>
-                                    <td><span class="category-pill">Tüm Dahililer</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Koşulsuz Yönlendirme İptal</span><span data-lang="en">Cancel Call Forward Unconditional</span><span data-lang="de">Anrufweiterschaltung Sofort Deaktivieren</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Daha önce tanımlanmış koşulsuz çağrı yönlendirmesini kaldırır.</span><span data-lang="en">Cancels active unconditional call forwarding rule on the extension.</span><span data-lang="de">Deaktiviert die sofortige Anrufweiterschaltung der Nebenstelle.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Tüm Dahililer</span><span data-lang="en">All Extensions</span><span data-lang="de">Alle Nebenstellen</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*8000-*8099</span></td>
-                                    <td><strong style="color:var(--text-heading);">PIN Korumalı Konferans Odaları</strong></td>
-                                    <td style="font-size:0.88rem;">Çok katılımcılı, yönetici denetimli, Opus HD ses kalitesinde sanal toplantı salonları.</td>
-                                    <td><span class="category-pill">Tüm Kullanıcılar & Dış Hat</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">PIN Korumalı Konferans Odaları</span><span data-lang="en">PIN-Protected ConfBridge Rooms</span><span data-lang="de">PIN-Geschützte Konferenzräume</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Çok katılımcılı, yönetici denetimli, Opus HD ses kalitesinde sanal toplantı salonları.</span><span data-lang="en">Multi-party, moderator-managed HD audio virtual conference rooms with PIN security.</span><span data-lang="de">Virtuelle Mehrteilnehmer-Konferenzräume in HD-Audio mit PIN-Schutz und Moderator-Steuerung.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Tüm Kullanıcılar & Dış Hat</span><span data-lang="en">All Users & Trunks</span><span data-lang="de">Alle Nutzer & Trunks</span></span></td>
                                 </tr>
                                                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i>*8</span></td>
-                                    <td><strong style="color:var(--text-heading);">Grup Çağrı Yakalama (Call Pickup)</strong></td>
-                                    <td style="font-size:0.88rem;">Aynı grupta çalan başka bir masanın telefonunu kendi masasından cevaplama.</td>
-                                    <td><span class="category-pill">Grup Üyeleri</span></td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Grup Çağrı Yakalama (Call Pickup)</span><span data-lang="en">Group Call Pickup</span><span data-lang="de">Gruppen-Heranholen (Call Pickup)</span></strong></td>
+                                    <td style="font-size:0.88rem;"><span data-lang="tr">Aynı grupta çalan başka bir masanın telefonunu kendi masasından cevaplama.</span><span data-lang="en">Answers a ringing call on any desk phone belonging to the same pickup group.</span><span data-lang="de">Nimmt einen Anruf entgegen, der an einem anderen Apparat derselben Gruppe klingelt.</span></td>
+                                    <td><span class="category-pill"><span data-lang="tr">Grup Üyeleri</span><span data-lang="en">Pickup Group Members</span><span data-lang="de">Gruppenmitglieder</span></span></td>
                                 </tr>
                                                             </tbody>
                         </table>
@@ -862,7 +888,7 @@
                     <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;">
                         <i class="fa-solid fa-phone-slash" style="color: #ef4444; font-size: 1.3rem; margin-top: 2px;"></i>
                         <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
-                            <span data-lang="tr">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Arama Kısıtlama ve Yetkilendirme (Call Barring):&lt;/strong&gt; Dahili bazında yetkisiz dış hat aramalarını engelleyerek telefon faturası suiistimallerini (toll fraud) önler. Her personele veya departmana uygun bir yetki seviyesi atanır; yetkisiz bir arama yapıldığında santral otomatik olarak &quot;Bu yöne arama yetkiniz bulunmamaktadır&quot; anonsunu dinletir.</span><span data-lang="en">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Call Barring &amp; Toll Fraud Prevention:&lt;/strong&gt; Granular dialing permission tiers applied per extension to prevent unauthorized long-distance or premium rate calls. If a restricted destination is dialed, Asterisk plays an automated intercept announcement.</span><span data-lang="de">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Wählberechtigungsgruppen (Call Barring):&lt;/strong&gt; Verhindert Gebührenmissbrauch (Toll Fraud) durch zonenbasierte Berechtigungen pro Nebenstelle. Bei unberechtigten Anrufen ertönt automatisch eine Sperransage.</span>                        </div>
+                            <span data-lang="tr"><strong style="color:var(--text-heading);">Arama Kısıtlama ve Yetkilendirme (Call Barring):</strong> Dahili bazında yetkisiz dış hat aramalarını engelleyerek telefon faturası suiistimallerini (toll fraud) önler. Her personele veya departmana uygun bir yetki seviyesi atanır; yetkisiz bir arama yapıldığında santral otomatik olarak "Bu yöne arama yetkiniz bulunmamaktadır" anonsunu dinletir.</span><span data-lang="en"><strong style="color:var(--text-heading);">Call Barring & Toll Fraud Prevention:</strong> Granular dialing permission tiers applied per extension to prevent unauthorized long-distance or premium rate calls. If a restricted destination is dialed, Asterisk plays an automated intercept announcement.</span><span data-lang="de"><strong style="color:var(--text-heading);">Wählberechtigungsgruppen (Call Barring):</strong> Verhindert Gebührenmissbrauch (Toll Fraud) durch zonenbasierte Berechtigungen pro Nebenstelle. Bei unberechtigten Anrufen ertönt automatisch eine Sperransage.</span>                        </div>
                     </div>
 
                     <div class="table-responsive-wrapper">
@@ -876,33 +902,33 @@
                             </thead>
                             <tbody>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 1: Yalnızca Dahili</strong></td>
-                                    <td style="font-size:0.9rem;">Sadece şirket içi dahili numaralar (1000-9999) ve acil numaralar (112)</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 1: Yalnızca Dahili</span><span data-lang="en">Level 1: Internal Only</span><span data-lang="de">Stufe 1: Nur Intern</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Sadece şirket içi dahili numaralar (1000-9999) ve acil numaralar (112)</span><span data-lang="en">Internal extensions only (1000-9999) and emergency services (112/911)</span><span data-lang="de">Nur interne Nebenstellen (1000-9999) und Notrufe (112)</span></td>
                                     <td><span class="status-badge" style="background:#ef444420; color:#ef4444; border:1px solid #ef444440;">En Kısıtlı</span></td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 2: Şehir İçi Sabit Hatlar</strong></td>
-                                    <td style="font-size:0.9rem;">Dahili aramalar + Alan kodu gerektirmeyen yerel sabit telefon numaraları</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 2: Şehir İçi Sabit Hatlar</span><span data-lang="en">Level 2: Local Landlines</span><span data-lang="de">Stufe 2: Ortsnetz Festnetz</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Dahili aramalar + Alan kodu gerektirmeyen yerel sabit telefon numaraları</span><span data-lang="en">Internal extensions + local area PSTN landline numbers</span><span data-lang="de">Interne Nebenstellen + lokale Festnetzanschlüsse ohne Vorwahl</span></td>
                                     <td><span class="status-badge" style="background:#f59e0b20; color:#f59e0b; border:1px solid #f59e0b40;">Lokal</span></td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 3: Şehirlerarası Sabit Hatlar</strong></td>
-                                    <td style="font-size:0.9rem;">Dahili + Tüm illerdeki sabit hatlar (02xx, 03xx, 04xx)</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 3: Şehirlerarası Sabit Hatlar</span><span data-lang="en">Level 3: National Long Distance</span><span data-lang="de">Stufe 3: Fernverkehr Festnetz</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Dahili + Tüm illerdeki sabit hatlar (02xx, 03xx, 04xx)</span><span data-lang="en">Internal + all national domestic PSTN area codes</span><span data-lang="de">Interne Nebenstellen + alle nationalen Festnetz-Vorwahlen</span></td>
                                     <td><span class="status-badge" style="background:#0ea5e920; color:#0ea5e9; border:1px solid #0ea5e940;">Ulusal</span></td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 4: Tüm Mobil / GSM Hatları</strong></td>
-                                    <td style="font-size:0.9rem;">Dahili + Sabit Hatlar + Tüm GSM operatörleri (05xx)</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 4: Tüm Mobil / GSM Hatları</span><span data-lang="en">Level 4: Mobile / GSM Networks</span><span data-lang="de">Stufe 4: Mobilfunknetze</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Dahili + Sabit Hatlar + Tüm GSM operatörleri (05xx)</span><span data-lang="en">Internal + National Landlines + all cellular mobile carriers</span><span data-lang="de">Interne Nebenstellen + Festnetz + alle Mobilfunkbetreiber</span></td>
                                     <td><span class="status-badge" style="background:#10b98120; color:#10b981; border:1px solid #10b98140;">Standart İş</span></td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 5: Milletlerarası / Uluslararası</strong></td>
-                                    <td style="font-size:0.9rem;">Dahili + Ulusal + Tüm dünya ülkeleri (00... / +...)</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 5: Milletlerarası / Uluslararası</span><span data-lang="en">Level 5: International Direct Dialing</span><span data-lang="de">Stufe 5: Internationaler Fernverkehr</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Dahili + Ulusal + Tüm dünya ülkeleri (00... / +...)</span><span data-lang="en">Internal + National + all worldwide destination countries (00... / +...)</span><span data-lang="de">Interne Nebenstellen + National + alle weltweiten Ziele (00... / +...)</span></td>
                                     <td><span class="status-badge" style="background:#6366f120; color:#6366f1; border:1px solid #6366f140;">Küresel</span></td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--text-heading);">Seviye 6: Tam Yetki & Özel Servisler</strong></td>
-                                    <td style="font-size:0.9rem;">Tüm aramalar + 118xx bilinmeyen numaralar, yarışma ve katma değerli hatlar</td>
+                                    <td><strong style="color:var(--text-heading);"><span data-lang="tr">Seviye 6: Tam Yetki & Özel Servisler</span><span data-lang="en">Level 6: Full Unrestricted & Premium</span><span data-lang="de">Stufe 6: Vollzugriff & Sonderrufnummern</span></strong></td>
+                                    <td style="font-size:0.9rem;"><span data-lang="tr">Tüm aramalar + 118xx bilinmeyen numaralar, yarışma ve katma değerli hatlar</span><span data-lang="en">Unrestricted dialing including directory inquiry (118xx) and premium lines</span><span data-lang="de">Uneingeschränkte Wählberechtigung inklusive Auskunft und Mehrwertdiensten</span></td>
                                     <td><span class="status-badge" style="background:#8b5cf620; color:#8b5cf6; border:1px solid #8b5cf640;">Tam Yetkili</span></td>
                                 </tr>
                                                             </tbody>
@@ -915,7 +941,7 @@
                     <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;">
                         <i class="fa-solid fa-microchip" style="color: #6366f1; font-size: 1.3rem; margin-top: 2px;"></i>
                         <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
-                            <span data-lang="tr">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Donanım Ölçekleme Rehberi:&lt;/strong&gt; AiPBX C diliyle derlenmiş Asterisk 22 ve optimize edilmiş PJSIP çekirdeği kullandığı için son derece az kaynak tüketir. 2 vCPU ve 4 GB RAM ile 100 eşzamanlı görüşme rahatlıkla taşınabilir. Ses kayıtlarının saklanması için NVMe SSD diskler önerilir.</span><span data-lang="en">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Hardware Sizing &amp; Deployment:&lt;/strong&gt; Built upon pure C Asterisk 22 and optimized PJSIP, AiPBX exhibits extraordinarily low memory and CPU footprint. An instance with 2 vCPUs and 4 GB RAM smoothly handles 100 concurrent channels. Fast NVMe SSD storage is advised for audio call recording archives.</span><span data-lang="de">&lt;strong style=&quot;color:var(--text-heading);&quot;&gt;Hardware-Dimensionierung:&lt;/strong&gt; Dank optimiertem Asterisk 22 C-Core und PJSIP arbeitet AiPBX extrem ressourceneffizient. 2 vCPUs und 4 GB RAM genügen für 100 parallele Gespräche. Für Anrufaufzeichnungen werden schnelle NVMe-SSDs empfohlen.</span>                        </div>
+                            <span data-lang="tr"><strong style="color:var(--text-heading);">Donanım Ölçekleme Rehberi:</strong> AiPBX C diliyle derlenmiş Asterisk 22 ve optimize edilmiş PJSIP çekirdeği kullandığı için son derece az kaynak tüketir. 2 vCPU ve 4 GB RAM ile 100 eşzamanlı görüşme rahatlıkla taşınabilir. Ses kayıtlarının saklanması için NVMe SSD diskler önerilir.</span><span data-lang="en"><strong style="color:var(--text-heading);">Hardware Sizing & Deployment:</strong> Built upon pure C Asterisk 22 and optimized PJSIP, AiPBX exhibits extraordinarily low memory and CPU footprint. An instance with 2 vCPUs and 4 GB RAM smoothly handles 100 concurrent channels. Fast NVMe SSD storage is advised for audio call recording archives.</span><span data-lang="de"><strong style="color:var(--text-heading);">Hardware-Dimensionierung:</strong> Dank optimiertem Asterisk 22 C-Core und PJSIP arbeitet AiPBX extrem ressourceneffizient. 2 vCPUs und 4 GB RAM genügen für 100 parallele Gespräche. Für Anrufaufzeichnungen werden schnelle NVMe-SSDs empfohlen.</span>                        </div>
                     </div>
 
                     <div class="table-responsive-wrapper">
@@ -923,7 +949,7 @@
                             <thead>
                                 <tr>
                                     <th style="width: 22%;"><span data-lang="tr">Kapasite Ölçeği</span><span data-lang="en">Deployment Scale</span><span data-lang="de">Einsatzbereich</span></th>
-                                    <th style="width: 16%;">İşlemci (vCPU)</th>
+                                    <th style="width: 16%;"><span data-lang="tr">İşlemci (vCPU)</span><span data-lang="en">Processor (vCPU)</span><span data-lang="de">Prozessor (vCPU)</span></th>
                                     <th style="width: 14%;">RAM</th>
                                     <th style="width: 20%;"><span data-lang="tr">Disk Depolama</span><span data-lang="en">Storage</span><span data-lang="de">Festplatte</span></th>
                                     <th style="width: 14%;"><span data-lang="tr">Ağ Hızı</span><span data-lang="en">Network</span><span data-lang="de">Netzwerk</span></th>
@@ -932,7 +958,7 @@
                             </thead>
                             <tbody>
                                                                 <tr>
-                                    <td><strong style="color:var(--primary);">Küçük Ölçek (1-50 Dahili)</strong></td>
+                                    <td><strong style="color:var(--primary);"><span data-lang="tr">Küçük Ölçek (1-50 Dahili)</span><span data-lang="en">Small Business (1-50 Ext)</span><span data-lang="de">Kleines Unternehmen (1-50 Nst)</span></strong></td>
                                     <td><span class="chip-proto">2 vCPU (x86_64 / ARM64)</span></td>
                                     <td><span class="chip-proto">2 GB RAM</span></td>
                                     <td style="font-size:0.88rem;">20 GB SSD / NVMe</td>
@@ -940,7 +966,7 @@
                                     <td style="font-size:0.84rem; font-weight:600;">Ubuntu 22.04 / 24.04 LTS veya Debian 12</td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--primary);">Orta Ölçek (50-250 Dahili)</strong></td>
+                                    <td><strong style="color:var(--primary);"><span data-lang="tr">Orta Ölçek (50-250 Dahili)</span><span data-lang="en">Medium Business (50-250 Ext)</span><span data-lang="de">Mittelstand (50-250 Nst)</span></strong></td>
                                     <td><span class="chip-proto">4 vCPU (x86_64)</span></td>
                                     <td><span class="chip-proto">4 - 8 GB RAM</span></td>
                                     <td style="font-size:0.88rem;">60 GB NVMe (Ses Kaydı Dahil)</td>
@@ -948,7 +974,7 @@
                                     <td style="font-size:0.84rem; font-weight:600;">Ubuntu 24.04 LTS / Debian 12</td>
                                 </tr>
                                                                 <tr>
-                                    <td><strong style="color:var(--primary);">Kurumsal / Çağrı Merkezi (250-2000+ Dahili)</strong></td>
+                                    <td><strong style="color:var(--primary);"><span data-lang="tr">Kurumsal / Çağrı Merkezi (250-2000+ Dahili)</span><span data-lang="en">Enterprise / Call Center (250-2000+ Ext)</span><span data-lang="de">Enterprise / Callcenter (250-2000+ Nst)</span></strong></td>
                                     <td><span class="chip-proto">8 - 16 vCPU (x86_64)</span></td>
                                     <td><span class="chip-proto">16 - 32 GB RAM</span></td>
                                     <td style="font-size:0.88rem;">250+ GB NVMe RAID-10</td>
@@ -964,7 +990,7 @@
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; color: var(--text-muted);">
                     <div>
                         <i class="fa-solid fa-pen-to-square" style="margin-right: 6px; color: var(--primary);"></i>
-                        <span data-lang="tr">Tablo verileri &lt;code&gt;docs/data.json&lt;/code&gt; dosyasından okunmaktadır.</span><span data-lang="en">Table data is rendered dynamically from &lt;code&gt;docs/data.json&lt;/code&gt;.</span><span data-lang="de">Tabellendaten werden dynamisch aus &lt;code&gt;docs/data.json&lt;/code&gt; gerendert.</span>                    </div>
+                        <span data-lang="tr">Tablo verileri <code>docs/data.json</code> dosyasından okunmaktadır.</span><span data-lang="en">Table data is rendered dynamically from <code>docs/data.json</code>.</span><span data-lang="de">Tabellendaten werden dynamisch aus <code>docs/data.json</code> gerendert.</span>                    </div>
                     <div>
                         <a href="/admin/" style="color: var(--primary); font-weight: 600; text-decoration: none;">
                             <i class="fa-solid fa-lock" style="margin-right: 4px;"></i>
@@ -1006,7 +1032,7 @@
             <p>
                 <span data-lang="tr">Açık kaynak, yüksek eşzamanlılıklı kurumsal IP PBX ve Birleşik İletişim Platformu. Kısıtlayıcı güvenlik duvarlarını aşan Port 443 ALPN mimarisi, Asterisk 22, WebRTC, Passkey biyometrik güvenlik ve yerel mobil softphone.</span><span data-lang="en">Open-source, high-concurrency enterprise IP PBX and Unified Communications platform. Featuring Port 443 ALPN stream multiplexing, Asterisk 22, WebRTC, Passkeys, and native mobile softphone apps.</span><span data-lang="de">Open-Source Enterprise IP-Telefonanlage und Unified Communications Plattform mit Port 443 ALPN-Multiplexing, Asterisk 22, WebRTC, Passkeys und nativen mobilen Softphones.</span>            </p>
             <p style="margin-top:14px; font-size:0.86rem;">
-                <span style="color:var(--text-muted);"><span data-lang="tr">Proje Mimarı &amp; Baş Geliştirici:</span><span data-lang="en">Architect &amp; Lead Developer:</span><span data-lang="de">Architektur &amp; Entwickler:</span></span>
+                <span style="color:var(--text-muted);"><span data-lang="tr">Proje Mimarı & Baş Geliştirici:</span><span data-lang="en">Architect & Lead Developer:</span><span data-lang="de">Architektur & Entwickler:</span></span>
                 <a href="https://mhrgl.com" target="_blank" rel="noopener" style="color:#38bdf8; font-weight:700; text-decoration:none;">Mahir Gül (mhrgl.com)</a>
             </p>
             <div style="margin-top: 16px; display:flex; gap:12px; align-items:center;">
@@ -1020,7 +1046,7 @@
         </div>
 
         <div class="footer-col">
-            <h5><span data-lang="tr">Çözümler &amp; Yetenekler</span><span data-lang="en">Solutions &amp; Features</span><span data-lang="de">Lösungen &amp; Features</span></h5>
+            <h5><span data-lang="tr">Çözümler & Yetenekler</span><span data-lang="en">Solutions & Features</span><span data-lang="de">Lösungen & Features</span></h5>
             <ul>
                 <li><a href="#technologies"><span data-lang="tr">Biyometrik Passkeys (WebAuthn)</span><span data-lang="en">Biometric Passkeys (WebAuthn)</span><span data-lang="de">Biometrische Passkeys</span></a></li>
                 <li><a href="#technologies"><span data-lang="tr">Google OAuth 2.0 Giriş</span><span data-lang="en">Google OAuth 2.0 Login</span><span data-lang="de">Google OAuth 2.0 Login</span></a></li>
@@ -1033,24 +1059,24 @@
         </div>
 
         <div class="footer-col">
-            <h5><span data-lang="tr">Dokümantasyon &amp; Rehber</span><span data-lang="en">Docs &amp; Guides</span><span data-lang="de">Dokumentation &amp; Handbuch</span></h5>
+            <h5><span data-lang="tr">Dokümantasyon & Rehber</span><span data-lang="en">Docs & Guides</span><span data-lang="de">Dokumentation & Handbuch</span></h5>
             <ul>
                 <li><a href="/installation.html"><span data-lang="tr">Hızlı Kurulum Kılavuzu</span><span data-lang="en">Installation Guide</span><span data-lang="de">Installationsanleitung</span></a></li>
                 <li><a href="/architecture.html"><span data-lang="tr">Dual-Endpoint PJSIP Mimarisi</span><span data-lang="en">Dual-Endpoint Architecture</span><span data-lang="de">Dual-Endpoint Architektur</span></a></li>
                 <li><a href="/mobile-apps.html"><span data-lang="tr">Mobil Softphone (Android/iOS)</span><span data-lang="en">Mobile Softphones</span><span data-lang="de">Mobile Softphones</span></a></li>
-                <li><a href="/callcenter.html"><span data-lang="tr">Çağrı Merkezi &amp; Kuyruklar</span><span data-lang="en">Call Center &amp; Queues</span><span data-lang="de">Callcenter &amp; Warteschlangen</span></a></li>
-                <li><a href="/security.html"><span data-lang="tr">SBC Savunması &amp; Fail2ban</span><span data-lang="en">SBC Defense &amp; Security</span><span data-lang="de">Sicherheit &amp; SBC-Schutz</span></a></li>
-                <li><a href="/api-docs.html"><span data-lang="tr">REST API &amp; Webhooks</span><span data-lang="en">REST API &amp; Webhooks</span><span data-lang="de">REST-API &amp; Webhooks</span></a></li>
+                <li><a href="/callcenter.html"><span data-lang="tr">Çağrı Merkezi & Kuyruklar</span><span data-lang="en">Call Center & Queues</span><span data-lang="de">Callcenter & Warteschlangen</span></a></li>
+                <li><a href="/security.html"><span data-lang="tr">SBC Savunması & Fail2ban</span><span data-lang="en">SBC Defense & Security</span><span data-lang="de">Sicherheit & SBC-Schutz</span></a></li>
+                <li><a href="/api-docs.html"><span data-lang="tr">REST API & Webhooks</span><span data-lang="en">REST API & Webhooks</span><span data-lang="de">REST-API & Webhooks</span></a></li>
                 <li><a href="#faq"><span data-lang="tr">Sıkça Sorulan Sorular</span><span data-lang="en">Frequently Asked Questions</span><span data-lang="de">Häufig gestellte Fragen</span></a></li>
             </ul>
         </div>
 
         <div class="footer-col">
-            <h5><span data-lang="tr">Açık Kaynak &amp; İndirme</span><span data-lang="en">Open Source &amp; Downloads</span><span data-lang="de">Open Source &amp; Downloads</span></h5>
+            <h5><span data-lang="tr">Açık Kaynak & İndirme</span><span data-lang="en">Open Source & Downloads</span><span data-lang="de">Open Source & Downloads</span></h5>
             <ul>
                 <li><a href="https://github.com/mahirgul/AiPBX" target="_blank" rel="noopener"><span data-lang="tr">Kaynak Kodu (GitHub)</span><span data-lang="en">Source Code (GitHub)</span><span data-lang="de">Quellcode (GitHub)</span></a></li>
                 <li><a href="/mobile-apps.html"><span data-lang="tr">Android APK (v1.0.34)</span><span data-lang="en">Android APK (v1.0.34)</span><span data-lang="de">Android APK (v1.0.34)</span></a></li>
-                <li><a href="/mobile-apps.html#ios"><span data-lang="tr">iOS Swift &amp; CallKit</span><span data-lang="en">iOS Swift &amp; CallKit</span><span data-lang="de">iOS Swift &amp; CallKit</span></a></li>
+                <li><a href="/mobile-apps.html#ios"><span data-lang="tr">iOS Swift & CallKit</span><span data-lang="en">iOS Swift & CallKit</span><span data-lang="de">iOS Swift & CallKit</span></a></li>
                 <li><a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
                 <li><a href="https://github.com/mahirgul/AiPBX/releases" target="_blank" rel="noopener"><span data-lang="tr">Sürüm Notları (Releases)</span><span data-lang="en">Release Notes</span><span data-lang="de">Versionshinweise</span></a></li>
                 <li><a href="/sitemap.xml" target="_blank">XML Sitemap</a></li>
@@ -1060,7 +1086,7 @@
 
     <div class="footer-bottom">
         <div>
-            &copy; 2026 <strong>AiPBX</strong>. <span data-lang="tr">Tüm hakları saklıdır.</span><span data-lang="en">All rights reserved.</span><span data-lang="de">Alle Rechte vorbehalten.</span>            • <span data-lang="tr">Geliştirici &amp; Sistem Mimarı:</span><span data-lang="en">Lead Architect:</span><span data-lang="de">Entwickler &amp; Architekt:</span> <a href="https://mhrgl.com" target="_blank" rel="noopener">Mahir Gül</a>
+            &copy; 2026 <strong>AiPBX</strong>. <span data-lang="tr">Tüm hakları saklıdır.</span><span data-lang="en">All rights reserved.</span><span data-lang="de">Alle Rechte vorbehalten.</span>            • <span data-lang="tr">Geliştirici & Sistem Mimarı:</span><span data-lang="en">Lead Architect:</span><span data-lang="de">Entwickler & Architekt:</span> <a href="https://mhrgl.com" target="_blank" rel="noopener">Mahir Gül</a>
         </div>
         <div style="display:flex; gap:16px; align-items:center;">
             <span><i class="fa-solid fa-code-commit" style="color:var(--primary); margin-right:4px;"></i> Build 35</span>
@@ -1116,6 +1142,10 @@
         try {
             localStorage.setItem('aipbx_lang', lang);
             localStorage.setItem('aipbx_user_lang', lang);
+            document.cookie = "aipbx_lang=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+            var u = new URL(window.location.href);
+            u.searchParams.set('lang', lang);
+            window.history.replaceState({}, '', u.toString());
         } catch(e) {}
 
         const flagEl = document.getElementById('currentLangFlag');
@@ -1160,6 +1190,10 @@
                 const panel = document.getElementById('panel-' + target);
                 if (panel) {
                     panel.classList.add('active');
+                    const searchInput = document.getElementById('tableFilterInput');
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
                 }
             });
         });

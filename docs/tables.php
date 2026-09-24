@@ -112,21 +112,13 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                 <?= t('JSON TABLO SİSTEMİ & TEKNİK PARAMETRELER', 'JSON TABLE SYSTEM & SPECS', 'JSON-TABELLENSYSTEM & PARAMETER') ?>
             </div>
 
-            <h1 style="max-width: 900px; margin: 0 auto 16px auto;">
-                <?= t(
-                    'Teknik Özellik Matrisi & <span>Sistem Parametreleri</span>',
-                    'Technical Feature Matrix & <span>System Parameters</span>',
-                    'Technische Funktionsmatrix & <span>Systemparameter</span>'
-                ) ?>
-            </h1>
+            <h1 data-lang="tr" style="max-width: 900px; margin: 0 auto 16px auto;">Teknik Özellik Matrisi & <span>Sistem Parametreleri</span></h1>
+            <h1 data-lang="en" style="max-width: 900px; margin: 0 auto 16px auto;">Technical Feature Matrix & <span>System Parameters</span></h1>
+            <h1 data-lang="de" style="max-width: 900px; margin: 0 auto 16px auto;">Technische Funktionsmatrix & <span>Systemparameter</span></h1>
 
-            <p style="max-width: 820px; margin: 0 auto 24px auto;">
-                <?= t(
-                    'AiPBX açık kaynak santral platformunun kurumsal karşılaştırma matrisi, ağ portları ve L4 ALPN stream çoklama haritası, santral yıldız kodları (*90, *22, *23, *97, *8000), arama yetki kademeleri (Call Barring) ve donanım gereksinimleri.',
-                    'Centralized, dynamic JSON tables detailing the AiPBX enterprise feature comparison, network port architecture, star codes (*90, *22, *23), outbound call barring policies, and hardware sizing specs.',
-                    'Zentral gesteuerte, dynamische JSON-Tabellen mit PBX-Vergleichsmatrix, Netzwerk-Portarchitektur, Funktionstastencodes (*90, *22, *23), Wählberechtigungsstufen und Hardware-Dimensionierung.'
-                ) ?>
-            </p>
+            <p data-lang="tr" style="max-width: 820px; margin: 0 auto 24px auto;">AiPBX açık kaynak santral platformunun kurumsal karşılaştırma matrisi, ağ portları ve L4 ALPN stream çoklama haritası, santral yıldız kodları (*90, *22, *23, *97, *8000), arama yetki kademeleri (Call Barring) ve donanım gereksinimleri.</p>
+            <p data-lang="en" style="max-width: 820px; margin: 0 auto 24px auto;">Centralized, dynamic JSON tables detailing the AiPBX enterprise feature comparison, network port architecture, star codes (*90, *22, *23), outbound call barring policies, and hardware sizing specs.</p>
+            <p data-lang="de" style="max-width: 820px; margin: 0 auto 24px auto;">Zentral gesteuerte, dynamische JSON-Tabellen mit PBX-Vergleichsmatrix, Netzwerk-Portarchitektur, Funktionstastencodes (*90, *22, *23), Wählberechtigungsstufen und Hardware-Dimensionierung.</p>
 
             <!-- Quick Specs Badges -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; margin-top: 10px;">
@@ -210,24 +202,24 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                             <tbody>
                                 <?php foreach ($tables['comparison'] as $row): ?>
                                 <tr>
-                                    <td><span class="category-pill"><?= getLocal($row, 'category') ?></span></td>
+                                    <td><span class="category-pill"><?= t_field($row, 'category') ?></span></td>
                                     <td>
-                                        <strong style="color:var(--text-heading);"><?= getLocal($row, 'feature') ?></strong>
-                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><?= getLocal($row, 'details') ?></div>
+                                        <strong style="color:var(--text-heading);"><?= t_field($row, 'feature') ?></strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:3px; line-height:1.4;"><?= t_field($row, 'details', 'div') ?></div>
                                     </td>
                                     <td class="col-aipbx">
                                         <span class="status-badge <?= htmlspecialchars($row['aipbxStatus']) ?>">
-                                            <?= htmlspecialchars($row['aipbx']) ?>
+                                            <?= t_field($row, 'aipbx') ?>
                                         </span>
                                     </td>
                                     <td>
                                         <span class="status-badge <?= htmlspecialchars($row['legacyStatus']) ?>">
-                                            <?= htmlspecialchars($row['legacy']) ?>
+                                            <?= t_field($row, 'legacy') ?>
                                         </span>
                                     </td>
                                     <td>
                                         <span class="status-badge <?= htmlspecialchars($row['cloudStatus']) ?>">
-                                            <?= htmlspecialchars($row['cloud']) ?>
+                                            <?= t_field($row, 'cloud') ?>
                                         </span>
                                     </td>
                                 </tr>
@@ -266,9 +258,9 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                                 <tr>
                                     <td><span class="chip-port"><?= htmlspecialchars($pRow['port']) ?></span></td>
                                     <td><span class="chip-proto"><?= htmlspecialchars($pRow['protocol']) ?></span></td>
-                                    <td><strong style="color:var(--text-heading);"><?= getLocal($pRow, 'service') ?></strong></td>
-                                    <td style="font-size:0.88rem;"><?= getLocal($pRow, 'role') ?></td>
-                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><?= getLocal($pRow, 'security') ?></span></td>
+                                    <td><strong style="color:var(--text-heading);"><?= t_field($pRow, 'service') ?></strong></td>
+                                    <td style="font-size:0.88rem;"><?= t_field($pRow, 'role') ?></td>
+                                    <td><span style="font-size:0.82rem; color:#059669; font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i><?= t_field($pRow, 'security') ?></span></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -303,9 +295,9 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                                 <?php foreach ($tables['starCodes'] as $sc): ?>
                                 <tr>
                                     <td><span class="star-code-pill"><i class="fa-solid fa-hashtag" style="color:var(--primary); font-size:0.8rem;"></i><?= htmlspecialchars($sc['code']) ?></span></td>
-                                    <td><strong style="color:var(--text-heading);"><?= getLocal($sc, 'name') ?></strong></td>
-                                    <td style="font-size:0.88rem;"><?= getLocal($sc, 'desc') ?></td>
-                                    <td><span class="category-pill"><?= getLocal($sc, 'role') ?></span></td>
+                                    <td><strong style="color:var(--text-heading);"><?= t_field($sc, 'name') ?></strong></td>
+                                    <td style="font-size:0.88rem;"><?= t_field($sc, 'desc') ?></td>
+                                    <td><span class="category-pill"><?= t_field($sc, 'role') ?></span></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -338,8 +330,8 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                             <tbody>
                                 <?php foreach ($tables['dialPermissions'] as $perm): ?>
                                 <tr>
-                                    <td><strong style="color:var(--text-heading);"><?= getLocal($perm, 'level') ?></strong></td>
-                                    <td style="font-size:0.9rem;"><?= getLocal($perm, 'scope') ?></td>
+                                    <td><strong style="color:var(--text-heading);"><?= t_field($perm, 'level') ?></strong></td>
+                                    <td style="font-size:0.9rem;"><?= t_field($perm, 'scope') ?></td>
                                     <td><span class="status-badge" style="background:<?= htmlspecialchars($perm['color']) ?>20; color:<?= htmlspecialchars($perm['color']) ?>; border:1px solid <?= htmlspecialchars($perm['color']) ?>40;"><?= htmlspecialchars($perm['badge']) ?></span></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -366,7 +358,7 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                             <thead>
                                 <tr>
                                     <th style="width: 22%;"><?= t('Kapasite Ölçeği', 'Deployment Scale', 'Einsatzbereich') ?></th>
-                                    <th style="width: 16%;">İşlemci (vCPU)</th>
+                                    <th style="width: 16%;"><?= t('İşlemci (vCPU)', 'Processor (vCPU)', 'Prozessor (vCPU)') ?></th>
                                     <th style="width: 14%;">RAM</th>
                                     <th style="width: 20%;"><?= t('Disk Depolama', 'Storage', 'Festplatte') ?></th>
                                     <th style="width: 14%;"><?= t('Ağ Hızı', 'Network', 'Netzwerk') ?></th>
@@ -376,7 +368,7 @@ $pageUrl = 'https://aipbx.bid/tables.html';
                             <tbody>
                                 <?php foreach ($tables['systemRequirements'] as $req): ?>
                                 <tr>
-                                    <td><strong style="color:var(--primary);"><?= getLocal($req, 'tier') ?></strong></td>
+                                    <td><strong style="color:var(--primary);"><?= t_field($req, 'tier') ?></strong></td>
                                     <td><span class="chip-proto"><?= htmlspecialchars($req['cpu']) ?></span></td>
                                     <td><span class="chip-proto"><?= htmlspecialchars($req['ram']) ?></span></td>
                                     <td style="font-size:0.88rem;"><?= htmlspecialchars($req['storage']) ?></td>

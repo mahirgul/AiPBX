@@ -91,25 +91,24 @@ if (!function_exists('j')) {
 // ── Trilingual Tag Rendering Helpers ─────────────────────────────────────────
 /**
  * Renders all 3 language representations with data-lang attributes for instant client-side switching.
+ * HTML tags (<span>, <a>, <strong>, etc.) are preserved without double-escaping.
  */
 function t(string $tr, string $en, ?string $de = null, string $tag = 'span', string $extra = ''): string {
     $de = $de ?? $en;
-    $trE = htmlspecialchars($tr, ENT_QUOTES, 'UTF-8');
-    $enE = htmlspecialchars($en, ENT_QUOTES, 'UTF-8');
-    $deE = htmlspecialchars($de, ENT_QUOTES, 'UTF-8');
-
-    return "<{$tag} data-lang=\"tr\"{$extra}>{$trE}</{$tag}><{$tag} data-lang=\"en\"{$extra}>{$enE}</{$tag}><{$tag} data-lang=\"de\"{$extra}>{$deE}</{$tag}>";
-}
-
-function t_html(string $tr, string $en, ?string $de = null, string $tag = 'div', string $extra = ''): string {
-    $de = $de ?? $en;
+    if ($tag === '') {
+        return "<span data-lang=\"tr\"{$extra}>{$tr}</span><span data-lang=\"en\"{$extra}>{$en}</span><span data-lang=\"de\"{$extra}>{$de}</span>";
+    }
     return "<{$tag} data-lang=\"tr\"{$extra}>{$tr}</{$tag}><{$tag} data-lang=\"en\"{$extra}>{$en}</{$tag}><{$tag} data-lang=\"de\"{$extra}>{$de}</{$tag}>";
 }
 
+function t_html(string $tr, string $en, ?string $de = null, string $tag = 'div', string $extra = ''): string {
+    return t($tr, $en, $de, $tag, $extra);
+}
+
 function t_field(array $item, string $fieldPrefix, string $tag = 'span', string $extra = ''): string {
-    $tr = $item[$fieldPrefix . 'TR'] ?? ($item[$fieldPrefix] ?? '');
-    $en = $item[$fieldPrefix . 'EN'] ?? $tr;
-    $de = $item[$fieldPrefix . 'DE'] ?? $en;
+    $tr = (string)($item[$fieldPrefix . 'TR'] ?? ($item[$fieldPrefix] ?? ''));
+    $en = (string)($item[$fieldPrefix . 'EN'] ?? $tr);
+    $de = (string)($item[$fieldPrefix . 'DE'] ?? $en);
     return t($tr, $en, $de, $tag, $extra);
 }
 
