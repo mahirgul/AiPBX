@@ -61,14 +61,22 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
         }
     }
 
-    if (!empty($override)) {
-        $lines .= " same => n,Set(CALLERID(num)={$override})\n";
-    } elseif (!empty($trunk_cid)) {
-        // Transit çağrılarda (başka bir trunktan gelen çağrıda) arayanın numarasını koru
-        $lines .= " same => n,ExecIf(\$[\"\${CDR(inbound_trunk)}\" = \"\"]?Set(CALLERID(num)={$trunk_cid}))\n";
+    if ($is_internal) {
+        if (!empty($override)) {
+            $lines .= " same => n,Set(CALLERID(num)={$override})\n";
+        } else {
+            $lines .= " same => n,Set(CALLERID(num)=\${IF(\$[\"\${CID_INTERNAL}\" != \"\"]?\${CID_INTERNAL}:\${CALLERID(num)})})\n";
+        }
     } else {
-        $cid_var = $is_internal ? 'CID_INTERNAL' : 'CID_EXTERNAL';
-        $lines .= " same => n,Set(CALLERID(num)=\${IF(\$[\"\${{$cid_var}}\" != \"\"]?\${{$cid_var}}:\${CALLERID(num)})})\n";
+        // Harici arama: kullanıcının sys_users.cid_external (CID_EXTERNAL) bilgisi önceliklidir.
+        // Eğer kullanıcıda harici CID boşsa, trunk'ın CID bilgisi (outbound_caller_id) veya rota override gönderilir.
+        $fallback_cid = !empty($trunk_cid) ? $trunk_cid : $override;
+        if (!empty($fallback_cid)) {
+            // Transit çağrılarda (başka bir trunktan gelen çağrıda) arayanın numarasını koru
+            $lines .= " same => n,ExecIf(\$[\"\${CDR(inbound_trunk)}\" = \"\"]?Set(CALLERID(num)=\${IF(\$[\"\${CID_EXTERNAL}\" != \"\"]?\${CID_EXTERNAL}:{$fallback_cid})}))\n";
+        } else {
+            $lines .= " same => n,ExecIf(\$[\"\${CID_EXTERNAL}\" != \"\"]?Set(CALLERID(num)=\${CID_EXTERNAL}))\n";
+        }
     }
 
     if (!$send_name) {
