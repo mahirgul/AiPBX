@@ -87,6 +87,32 @@
             }
             document.documentElement.setAttribute("data-lang", lang);
             document.documentElement.lang = lang;
+
+            // Edge GeoIP detection via Cloudflare trace if user has not manually locked a language
+            if (!saved) {
+                fetch('/cdn-cgi/trace')
+                    .then(function(r) { return r.text(); })
+                    .then(function(text) {
+                        var m = text.match(/loc=([A-Z]{2})/);
+                        if (m) {
+                            var country = m[1];
+                            var geoLang = "en";
+                            if (country === "AT" || country === "DE" || country === "CH" || country === "LI") {
+                                geoLang = "de";
+                            } else if (country === "TR" || country === "AZ") {
+                                geoLang = "tr";
+                            }
+                            if (geoLang !== document.documentElement.getAttribute('data-lang')) {
+                                if (window.setLanguage) {
+                                    window.setLanguage(geoLang);
+                                } else {
+                                    document.documentElement.setAttribute("data-lang", geoLang);
+                                    document.documentElement.lang = geoLang;
+                                }
+                            }
+                        }
+                    }).catch(function() {});
+            }
         })();
     </script>
 
@@ -155,6 +181,7 @@
         <ul class="nav-links">
             <li><a href="index.html" ><span data-lang="tr">Genel Bakış</span><span data-lang="en">Overview</span><span data-lang="de">Übersicht</span></a></li>
             <li><a href="features.html" ><span data-lang="tr">Özellikler</span><span data-lang="en">Features</span><span data-lang="de">Funktionen</span></a></li>
+            <li><a href="tables.html" ><span data-lang="tr">Tablolar</span><span data-lang="en">Tables</span><span data-lang="de">Tabellen</span></a></li>
             <li><a href="architecture.html" ><span data-lang="tr">Mimari</span><span data-lang="en">Architecture</span><span data-lang="de">Architektur</span></a></li>
             <li><a href="mobile-apps.html" ><span data-lang="tr">Mobil</span><span data-lang="en">Mobile Apps</span><span data-lang="de">Mobil-Apps</span></a></li>
             <li><a href="msteams.html" ><i class="fa-brands fa-microsoft" style="color: #6264a7; margin-right: 4px;"></i><span>Teams</span></a></li>
@@ -257,6 +284,7 @@
         <ul class="mobile-nav-links">
             <li><a href="index.html" class="mobile-nav-item"><i class="fa-solid fa-house item-icon" style="color:#0284c7;"></i><span data-lang="tr">Genel Bakış</span><span data-lang="en">Overview</span><span data-lang="de">Übersicht</span></a></li>
             <li><a href="features.html" class="mobile-nav-item"><i class="fa-solid fa-bolt item-icon" style="color:#f59e0b;"></i><span data-lang="tr">Santral Özellikleri</span><span data-lang="en">PBX Features</span><span data-lang="de">PBX-Funktionen</span></a></li>
+        <li><a href="tables.html" class="mobile-nav-item"><i class="fa-solid fa-table-list item-icon" style="color:#10b981;"></i><span data-lang="tr">Karşılaştırma &amp; Tablolar</span><span data-lang="en">Tables &amp; Specs</span><span data-lang="de">Tabellen</span></a></li>
             <li><a href="architecture.html" class="mobile-nav-item"><i class="fa-solid fa-sitemap item-icon" style="color:#10b981;"></i><span data-lang="tr">Sistem Mimarisi &amp; ALPN</span><span data-lang="en">Architecture &amp; ALPN</span><span data-lang="de">Systemarchitektur &amp; ALPN</span></a></li>
             <li><a href="mobile-apps.html" class="mobile-nav-item"><i class="fa-solid fa-mobile-screen item-icon" style="color:#6366f1;"></i><span data-lang="tr">Mobil Uygulamalar</span><span data-lang="en">Mobile Apps</span><span data-lang="de">Mobil-Apps</span></a></li>
             <li><a href="msteams.html" class="mobile-nav-item"><i class="fa-brands fa-microsoft item-icon" style="color:#6264a7;"></i><span data-lang="tr">Microsoft Teams Direct Routing</span><span data-lang="en">Microsoft Teams Direct Routing</span><span data-lang="de">Microsoft Teams Direct Routing</span></a></li>

@@ -87,6 +87,32 @@
             }
             document.documentElement.setAttribute("data-lang", lang);
             document.documentElement.lang = lang;
+
+            // Edge GeoIP detection via Cloudflare trace if user has not manually locked a language
+            if (!saved) {
+                fetch('/cdn-cgi/trace')
+                    .then(function(r) { return r.text(); })
+                    .then(function(text) {
+                        var m = text.match(/loc=([A-Z]{2})/);
+                        if (m) {
+                            var country = m[1];
+                            var geoLang = "en";
+                            if (country === "AT" || country === "DE" || country === "CH" || country === "LI") {
+                                geoLang = "de";
+                            } else if (country === "TR" || country === "AZ") {
+                                geoLang = "tr";
+                            }
+                            if (geoLang !== document.documentElement.getAttribute('data-lang')) {
+                                if (window.setLanguage) {
+                                    window.setLanguage(geoLang);
+                                } else {
+                                    document.documentElement.setAttribute("data-lang", geoLang);
+                                    document.documentElement.lang = geoLang;
+                                }
+                            }
+                        }
+                    }).catch(function() {});
+            }
         })();
     </script>
 
@@ -152,6 +178,7 @@
         <ul class="nav-links">
             <li><a href="index.html" ><span data-lang="tr">Genel Bakış</span><span data-lang="en">Overview</span><span data-lang="de">Übersicht</span></a></li>
             <li><a href="features.html" class="active"><span data-lang="tr">Özellikler</span><span data-lang="en">Features</span><span data-lang="de">Funktionen</span></a></li>
+            <li><a href="tables.html" ><span data-lang="tr">Tablolar</span><span data-lang="en">Tables</span><span data-lang="de">Tabellen</span></a></li>
             <li><a href="architecture.html" ><span data-lang="tr">Mimari</span><span data-lang="en">Architecture</span><span data-lang="de">Architektur</span></a></li>
             <li><a href="mobile-apps.html" ><span data-lang="tr">Mobil</span><span data-lang="en">Mobile Apps</span><span data-lang="de">Mobil-Apps</span></a></li>
             <li><a href="msteams.html" ><i class="fa-brands fa-microsoft" style="color: #6264a7; margin-right: 4px;"></i><span>Teams</span></a></li>
@@ -254,6 +281,7 @@
         <ul class="mobile-nav-links">
             <li><a href="index.html" class="mobile-nav-item"><i class="fa-solid fa-house item-icon" style="color:#0284c7;"></i><span data-lang="tr">Genel Bakış</span><span data-lang="en">Overview</span><span data-lang="de">Übersicht</span></a></li>
             <li><a href="features.html" class="mobile-nav-item"><i class="fa-solid fa-bolt item-icon" style="color:#f59e0b;"></i><span data-lang="tr">Santral Özellikleri</span><span data-lang="en">PBX Features</span><span data-lang="de">PBX-Funktionen</span></a></li>
+        <li><a href="tables.html" class="mobile-nav-item"><i class="fa-solid fa-table-list item-icon" style="color:#10b981;"></i><span data-lang="tr">Karşılaştırma &amp; Tablolar</span><span data-lang="en">Tables &amp; Specs</span><span data-lang="de">Tabellen</span></a></li>
             <li><a href="architecture.html" class="mobile-nav-item"><i class="fa-solid fa-sitemap item-icon" style="color:#10b981;"></i><span data-lang="tr">Sistem Mimarisi &amp; ALPN</span><span data-lang="en">Architecture &amp; ALPN</span><span data-lang="de">Systemarchitektur &amp; ALPN</span></a></li>
             <li><a href="mobile-apps.html" class="mobile-nav-item"><i class="fa-solid fa-mobile-screen item-icon" style="color:#6366f1;"></i><span data-lang="tr">Mobil Uygulamalar</span><span data-lang="en">Mobile Apps</span><span data-lang="de">Mobil-Apps</span></a></li>
             <li><a href="msteams.html" class="mobile-nav-item"><i class="fa-brands fa-microsoft item-icon" style="color:#6264a7;"></i><span data-lang="tr">Microsoft Teams Direct Routing</span><span data-lang="en">Microsoft Teams Direct Routing</span><span data-lang="de">Microsoft Teams Direct Routing</span></a></li>
@@ -872,6 +900,153 @@
                 </div>
             </section>
 
+            <!-- Section 7: Biyometrik Passkey (WebAuthn / FIDO2) -->
+            <section class="docs-section" id="passkey">
+                <h2>
+                    <span data-lang="tr">7. Biyometrik Passkey (WebAuthn / FIDO2) &amp; 2FA</span>
+                    <span data-lang="en">7. Biometric Passkey (WebAuthn / FIDO2) &amp; 2FA</span>
+                    <span data-lang="de">7. Biometrische Passkeys (WebAuthn / FIDO2) &amp; 2FA</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        AiPBX v1.0.34, kurumsal santral yönetim paneline <strong>FIDO2 / WebAuthn</strong> standardında şifresiz biyometrik oturum açma yeteneği kazandırmıştır. Bu sayede klasik şifre çalınması, kaba kuvvet (brute-force) veya oltalama (phishing) saldırıları matematiksel olarak engellenir:
+                    </p>
+                    <ul>
+                        <li><strong>Platform Doğrulayıcılar:</strong> Apple Touch ID / Face ID, Windows Hello parmak izi/yüz tanıma, Android Biyometrik Kilit.</li>
+                        <li><strong>Dolaşabilir Donanım Anahtarları:</strong> YubiKey, Google Titan ve FIDO2 sertifikalı USB/NFC güvenlik anahtarları.</li>
+                        <li><strong>TOTP Çift Kademeli Savunma:</strong> Google Authenticator, Microsoft Authenticator ve 1Password ile 6 haneli zaman damgalı tek kullanımlık kodlar.</li>
+                    </ul>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        AiPBX v1.0.34 introduces phishing-resistant, passwordless authentication governed by the <strong>FIDO2 / WebAuthn</strong> W3C standard. Credential stuffing and brute-force attacks are rendered cryptographically impossible:
+                    </p>
+                    <ul>
+                        <li><strong>Platform Authenticators:</strong> Apple Touch ID / Face ID, Windows Hello biometric sensor, Android Fingerprint/Face unlock.</li>
+                        <li><strong>Roaming Security Keys:</strong> YubiKey, Google Titan, and standard FIDO2 USB/NFC hardware tokens.</li>
+                        <li><strong>TOTP Two-Factor Backup:</strong> Time-based one-time password fallback via Google Authenticator, Microsoft Authenticator, or Bitwarden.</li>
+                    </ul>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        AiPBX v1.0.34 bietet passwortlose, phishing-resistente Authentifizierung nach dem <strong>FIDO2 / WebAuthn</strong>-Standard für das Webportal und Mobilgeräte:
+                    </p>
+                    <ul>
+                        <li><strong>Plattform-Authentifikatoren:</strong> Apple Touch ID / Face ID, Windows Hello und Android-Biometrie.</li>
+                        <li><strong>Hardware-Sicherheitsschlüssel:</strong> YubiKey, Google Titan und standardisierte FIDO2 USB/NFC-Tokens.</li>
+                        <li><strong>TOTP Zwei-Faktor-Absicherung:</strong> Zeitbasierte 6-stellige Einmalcodes über Authenticator-Apps.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 8: Google OAuth 2.0 -->
+            <section class="docs-section" id="oauth">
+                <h2>
+                    <span data-lang="tr">8. Google OAuth 2.0 Tek Tıkla Kurumsal Giriş</span>
+                    <span data-lang="en">8. Google OAuth 2.0 Enterprise Single Sign-On</span>
+                    <span data-lang="de">8. Google OAuth 2.0 Enterprise Single Sign-On</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        Google Workspace kullanan kurumlar için personellerin tek tek şifre ezberlemesine gerek kalmaz. Dahili üzerinde tanımlı kurumsal e-posta adresi (@sirket.com) Google hesabıyla eşleştiği anda Web Portal, Android ve iOS softphone istemcilerinde tek tıkla oturum açılabilir.
+                    </p>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        Organizations utilizing Google Workspace can authenticate seamlessly. Whenever an extension's assigned email address matches an active corporate Google account, users log into the Web Portal and mobile apps with a single click.
+                    </p>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        Für Unternehmen mit Google Workspace entfällt das Verwalten separater SIP-Passwörter. Stimmt die Nebenstellen-E-Mail mit dem Firmen-Google-Konto überein, genügt ein Klick zum Login im Webportal sowie in Mobil-Apps.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 9: Go Chat Engine -->
+            <section class="docs-section" id="go-chat">
+                <h2>
+                    <span data-lang="tr">9. Go Anlık Sohbet &amp; Mesajlaşma Motoru (aipbx-chat)</span>
+                    <span data-lang="en">9. Go WebSocket Real-Time Chat Engine (aipbx-chat)</span>
+                    <span data-lang="de">9. Go WebSocket Echtzeit-Chat-Engine (aipbx-chat)</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        AiPBX mimarisine entegre edilen bağımsız Go mikroservisi (<code>aipbx-chat</code>), TCP Port 8090 üzerinden yüksek eşzamanlılıklı kurumsal mesajlaşma sunar:
+                    </p>
+                    <ul>
+                        <li><strong>Goroutine Eşzamanlılığı:</strong> Minimum RAM tüketimi ile on binlerce anlık WebSocket bağlantısını yönetir.</li>
+                        <li><strong>1'e 1 ve Grup Sohbetleri:</strong> Departman ve proje bazlı 256 kişiye kadar şifreli sohbet odaları.</li>
+                        <li><strong>Medya &amp; Ek Dosya Desteği:</strong> Resim sıkıştırma, sesli mesaj kayıtları ve belge paylaşımı.</li>
+                        <li><strong>FCM / APNs Entegrasyonu:</strong> Uygulama kapalıyken bile anında mobil uyandırma ve push bildirimi iletimi.</li>
+                    </ul>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        Engineered in Go, the standalone <code>aipbx-chat</code> daemon runs on TCP Port 8090 delivering high-concurrency instant messaging:
+                    </p>
+                    <ul>
+                        <li><strong>Goroutine Scalability:</strong> Multiplexes tens of thousands of active WebSockets with lightweight memory consumption.</li>
+                        <li><strong>Direct &amp; Group Channels:</strong> 1-on-1 private messaging and department group channels up to 256 users.</li>
+                        <li><strong>Attachments &amp; Voice Notes:</strong> Automated client-side media compression and document transfers.</li>
+                        <li><strong>FCM / APNs Delivery:</strong> Instant push wakeup when recipient apps are backgrounded or killed.</li>
+                    </ul>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        Der in Go geschriebene <code>aipbx-chat</code>-Dienst auf TCP Port 8090 bietet sicheres, hochskalierbares Messaging im Firmennetzwerk:
+                    </p>
+                    <ul>
+                        <li><strong>Goroutine-Effizienz:</strong> Tausende gleichzeitige WebSocket-Verbindungen bei minimalem Arbeitsspeicher.</li>
+                        <li><strong>1-zu-1 &amp; Gruppenräume:</strong> Verschlüsselte Direktnachrichten und Gruppen bis 256 Teilnehmer.</li>
+                        <li><strong>Dateiversand &amp; Sprachmemos:</strong> Automatische Medienkomprimierung und Dateianhänge.</li>
+                        <li><strong>Push-Integration:</strong> Zuverlässiges Wecken der Mobilgeräte über FCM und Apple APNs.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 10: Call Barring & JSON Table CTA -->
+            <section class="docs-section" id="call-barring">
+                <h2>
+                    <span data-lang="tr">10. Dinamik Arama Yetkilendirme (Call Barring) &amp; Karşılaştırma Matrisi</span>
+                    <span data-lang="en">10. Granular Outbound Call Barring &amp; Feature Matrix</span>
+                    <span data-lang="de">10. Wählberechtigungsgruppen &amp; Funktionsmatrix</span>
+                </h2>
+                <div data-lang="tr">
+                    <p>
+                        AiPBX, santral dahililerini 6 kademeli yetki gruplarına (Dahili, Acil, Şehir İçi, Şehirlerarası, GSM, Uluslararası) ayırarak şirket bütçesini suiistimallere karşı korur. Detaylı teknik özellikleri, ağ port haritasını ve Cisco/Avaya karşılaştırmasını görmek için interaktif JSON tablosunu inceleyin:
+                    </p>
+                    <p style="margin-top: 14px;">
+                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-table-list"></i>
+                            <span>AiPBX İnteraktif JSON Tablo Sistemi &amp; Matrisi Aç →</span>
+                        </a>
+                    </p>
+                </div>
+                <div data-lang="en">
+                    <p>
+                        AiPBX enforces 6-tier outbound dialing policies to protect telecom budgets. Explore the interactive JSON table system for side-by-side matrices, network port breakdowns, and hardware sizing:
+                    </p>
+                    <p style="margin-top: 14px;">
+                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-table-list"></i>
+                            <span>Open Full Interactive JSON Table System &amp; Matrix →</span>
+                        </a>
+                    </p>
+                </div>
+                <div data-lang="de">
+                    <p>
+                        AiPBX sichert Ihre Telefonie durch 6 Wählberechtigungsstufen vor Gebührenmissbrauch. Öffnen Sie unser interaktives JSON-Tabellensystem für den vollständigen Vergleich mit klassischen Anlagen:
+                    </p>
+                    <p style="margin-top: 14px;">
+                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-table-list"></i>
+                            <span>Interaktives JSON-Tabellensystem öffnen →</span>
+                        </a>
+                    </p>
+                </div>
+            </section>
+
 
             <div class="docs-pagination">
                 <a href="callcenter.html" class="pagination-btn">
@@ -916,6 +1091,10 @@
                 <li><a href="#webrtc">4. WebRTC Softphone</a></li>
                 <li><a href="#fax">5. Digital Fax</a></li>
                 <li><a href="#feature-codes">6. Feature Codes (* Codes)</a></li>
+                <li><a href="#passkey">7. Biometric Passkeys (FIDO2)</a></li>
+                <li><a href="#oauth">8. Google OAuth 2.0 Login</a></li>
+                <li><a href="#go-chat">9. Go Real-Time Chat Engine</a></li>
+                <li><a href="#call-barring">10. Call Barring &amp; Matrix</a></li>
             </ul>
         </div>
     </div>
