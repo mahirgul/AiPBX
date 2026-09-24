@@ -47,7 +47,7 @@
 
     <!-- Filter Form Bar -->
     <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: var(--bg-input); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
-        <select name="date_range" id="date_range_select" class="form-control form-control-sm" style="width: auto;" onchange="toggleCustomDates()">
+        <select name="date_range" id="date_range_select" class="form-control form-control-sm" style="width: auto;" onchange="toggleCustomDates(); if (this.value !== 'custom') this.form.submit();">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_yesterday'); ?></option>
             <option value="week" <?php echo $date_filter === 'week' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_week'); ?></option>
@@ -61,7 +61,7 @@
             <input type="date" name="end_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($end_date); ?>" style="width: auto;">
         </div>
 
-        <select name="status" class="form-control form-control-sm" style="width: auto;">
+        <select name="status" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_statuses'); ?></option>
             <option value="ANSWERED" <?php echo $status_filter === 'ANSWERED' ? 'selected' : ''; ?>><?php echo t('cdr_reports.status_answered'); ?></option>
             <option value="NO ANSWER" <?php echo $status_filter === 'NO ANSWER' ? 'selected' : ''; ?>><?php echo t('cdr_reports.status_no_answer'); ?></option>
@@ -71,7 +71,7 @@
         </select>
 
         <?php if ($can_view_all): ?>
-        <select name="agent" class="form-control form-control-sm" style="width: auto;">
+        <select name="agent" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_agents'); ?></option>
             <?php foreach ($agents as $ag): ?>
                 <option value="<?php echo htmlspecialchars($ag['extension']); ?>" <?php echo $agent_filter === $ag['extension'] ? 'selected' : ''; ?>>
@@ -81,7 +81,7 @@
         </select>
         <?php endif; ?>
 
-        <select name="device" class="form-control form-control-sm" style="width: auto;">
+        <select name="device" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_devices'); ?></option>
             <option value="mobil" <?php echo ($device_filter ?? '') === 'mobil' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_mobile'); ?></option>
             <option value="webrtc" <?php echo ($device_filter ?? '') === 'webrtc' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_webrtc'); ?></option>
