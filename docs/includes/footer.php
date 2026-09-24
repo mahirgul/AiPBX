@@ -124,6 +124,25 @@ global $LANG, $company;
         });
     }
 
+    // Docs / Guides Nav Dropdown Click Toggle
+    document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+        const btn = dropdown.querySelector('.nav-dropdown-btn');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-dropdown.active').forEach(dropdown => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    });
+
     // Language Switcher Function with zero reload & CSS cloak sync
     function setLanguage(lang) {
         if (!['tr', 'en', 'de'].includes(lang)) lang = 'tr';
@@ -160,8 +179,14 @@ global $LANG, $company;
             else btn.classList.remove('active');
         });
 
+        document.querySelectorAll('[data-placeholder-' + lang + ']').forEach(el => {
+            el.setAttribute('placeholder', el.getAttribute('data-placeholder-' + lang));
+        });
+
         const langDropdown = document.getElementById('langDropdown');
         if (langDropdown) langDropdown.classList.remove('active');
+        const langSelector = document.getElementById('langSelector');
+        if (langSelector) langSelector.classList.remove('open');
     }
     window.setLanguage = setLanguage;
 

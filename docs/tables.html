@@ -224,46 +224,46 @@
             </a>
         </li>
         <li class="nav-dropdown">
-            <button class="nav-dropdown-btn" type="button" aria-haspopup="true">
+            <button class="nav-dropdown-btn " type="button" aria-haspopup="true">
                 <span data-lang="tr">Dokümantasyon</span><span data-lang="en">Docs</span><span data-lang="de">Handbuch</span>                <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:3px;"></i>
             </button>
             <div class="nav-dropdown-menu">
-                <a href="/installation.html" class="nav-dropdown-item">
+                <a href="/installation.html" class="nav-dropdown-item ">
                     <i class="fa-solid fa-terminal" style="color:#0284c7; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Kurulum Kılavuzu</span><span data-lang="en">Installation Guide</span><span data-lang="de">Installationsanleitung</span></div>
                         <small style="color:#64748b; font-size:0.76rem;">Ubuntu 22.04 / 24.04 &amp; Debian 12</small>
                     </div>
                 </a>
-                <a href="/msteams.html" class="nav-dropdown-item">
+                <a href="/msteams.html" class="nav-dropdown-item ">
                     <i class="fa-brands fa-microsoft" style="color:#6264a7; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">Microsoft Teams Direct Routing</div>
                         <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">Yerleşik SBC & Çift Yönlü Köprü</span><span data-lang="en">Built-in SBC & 2-Way Bridge</span><span data-lang="de">Integriertes SBC & 2-Wege-Gateway</span></small>
                     </div>
                 </a>
-                <a href="/mobile-apps.html" class="nav-dropdown-item">
+                <a href="/mobile-apps.html" class="nav-dropdown-item ">
                     <i class="fa-solid fa-mobile-screen" style="color:#10b981; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Mobil Softphone</span><span data-lang="en">Mobile Softphone</span><span data-lang="de">Mobile Softphones</span></div>
                         <small style="color:#64748b; font-size:0.76rem;">Android (Kotlin) &amp; iOS (Swift)</small>
                     </div>
                 </a>
-                <a href="/callcenter.html" class="nav-dropdown-item">
+                <a href="/callcenter.html" class="nav-dropdown-item ">
                     <i class="fa-solid fa-headset" style="color:#ec4899; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Çağrı Merkezi & Kuyruklar</span><span data-lang="en">Call Center & Queues</span><span data-lang="de">Callcenter & Warteschlangen</span></div>
                         <small style="color:#64748b; font-size:0.76rem;"><span data-lang="tr">*22/*23 Mola & *90 Dinleme</span><span data-lang="en">*22/*23 Breaks & *90 Spy</span><span data-lang="de">*22/*23 Pausen & *90 Spy</span></small>
                     </div>
                 </a>
-                <a href="/security.html" class="nav-dropdown-item">
+                <a href="/security.html" class="nav-dropdown-item ">
                     <i class="fa-solid fa-shield-halved" style="color:#f59e0b; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><span data-lang="tr">Güvenlik & SBC Savunması</span><span data-lang="en">Security & SBC Defense</span><span data-lang="de">Sicherheit & SBC-Schutz</span></div>
                         <small style="color:#64748b; font-size:0.76rem;">Fail2ban, TLS 1.3, Passkeys</small>
                     </div>
                 </a>
-                <a href="/api-docs.html" class="nav-dropdown-item">
+                <a href="/api-docs.html" class="nav-dropdown-item ">
                     <i class="fa-solid fa-code" style="color:#6366f1; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">REST API &amp; WebSocket</div>
@@ -443,7 +443,11 @@
 
                     <div class="table-search-box">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="tableFilterInput" class="table-search-input" placeholder="<span data-lang="tr">Tabloda ara (ör. passkey, port 443, *90, yetki)...</span><span data-lang="en">Search in table (e.g. passkey, port 443, *90)...</span><span data-lang="de">In Tabelle suchen (z.B. Passkey, Port 443, *90)...</span>">
+                                                <input type="text" id="tableFilterInput" class="table-search-input" 
+                               placeholder="Tabloda ara (ör. passkey, port 443, *90, yetki)..."
+                               data-placeholder-tr="Tabloda ara (ör. passkey, port 443, *90, yetki)..."
+                               data-placeholder-en="Search in table (e.g. passkey, port 443, *90, barring)..."
+                               data-placeholder-de="In Tabelle suchen (z.B. Passkey, Port 443, *90, Rechte)...">
                     </div>
                 </div>
 
@@ -1134,6 +1138,25 @@
         });
     }
 
+    // Docs / Guides Nav Dropdown Click Toggle
+    document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+        const btn = dropdown.querySelector('.nav-dropdown-btn');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-dropdown.active').forEach(dropdown => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    });
+
     // Language Switcher Function with zero reload & CSS cloak sync
     function setLanguage(lang) {
         if (!['tr', 'en', 'de'].includes(lang)) lang = 'tr';
@@ -1170,8 +1193,14 @@
             else btn.classList.remove('active');
         });
 
+        document.querySelectorAll('[data-placeholder-' + lang + ']').forEach(el => {
+            el.setAttribute('placeholder', el.getAttribute('data-placeholder-' + lang));
+        });
+
         const langDropdown = document.getElementById('langDropdown');
         if (langDropdown) langDropdown.classList.remove('active');
+        const langSelector = document.getElementById('langSelector');
+        if (langSelector) langSelector.classList.remove('open');
     }
     window.setLanguage = setLanguage;
 
