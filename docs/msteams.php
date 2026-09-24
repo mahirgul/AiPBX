@@ -9,60 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Microsoft Teams Entegrasyonu & Direct Routing — Asterisk 22 SBC Gateway | AiPBX</title>
-    <meta name="description" content="AiPBX Microsoft Teams Direct Routing entegrasyonu: Asterisk 22 PJSIP SBC altyapısı, SIP TLS ve SRTP ses şifreleme, Microsoft 365 PowerShell yapılandırması ve Teams kanal bildirimleri.">
-    <link rel="canonical" href="https://aipbx.bid/msteams.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/msteams.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/msteams.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/msteams.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/msteams.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Rehberler",
-              "item": "https://aipbx.bid/installation.html"
-            },
-            {
-              "@type": "ListItem",
-              "position": 3,
-              "name": "Microsoft Teams Entegrasyonu",
-              "item": "https://aipbx.bid/msteams.html"
-            }
-          ]
-        },
-        {
-          "@type": "TechArticle",
-          "headline": "AiPBX Microsoft Teams Direct Routing & SBC Gateway Integration",
-          "description": "Connecting Asterisk 22 with Microsoft 365 Teams Phone System using SIP TLS/SRTP Direct Routing, hybrid telephony architecture, and automated PowerShell setup.",
-          "url": "https://aipbx.bid/msteams.html",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "AiPBX",
-            "url": "https://aipbx.bid/"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>

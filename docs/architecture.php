@@ -9,54 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Sistem Mimarisi & ALPN Çoklama — Asterisk 22, Nginx L4, WebRTC | AiPBX</title>
-    <meta name="description" content="AiPBX katmanlı sistem mimarisi: Port 443 ALPN stream çoklama, PJSIP çift uç nokta WebRTC mimarisi, bağımsız Go WebSocket anlık mesajlaşma ve iki katmanlı MariaDB modeli.">
-    <link rel="canonical" href="https://aipbx.bid/architecture.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/architecture.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/architecture.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/architecture.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/architecture.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Sistem Mimarisi",
-              "item": "https://aipbx.bid/architecture.html"
-            }
-          ]
-        },
-        {
-          "@type": "TechArticle",
-          "headline": "AiPBX Port 443 ALPN Stream Multiplexing & Enterprise IP PBX Architecture",
-          "description": "Deep architectural analysis of Port 443 ALPN stream multiplexing, dual-endpoint PJSIP WebRTC, Go WebSocket chat engine, and two-tier database security.",
-          "url": "https://aipbx.bid/architecture.html",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "AiPBX",
-            "url": "https://aipbx.bid/"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>

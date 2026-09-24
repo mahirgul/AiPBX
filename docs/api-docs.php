@@ -9,54 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>REST API & WebSocket Dokümantasyonu — Geliştirici Kılavuzu & Entegrasyon | AiPBX</title>
-    <meta name="description" content="AiPBX geliştirici referansı: REST API uç noktaları, Go anlık WebSocket mesajlaşma şeması, PHP 8 MVC mimarisi ve PHPUnit otomatik test paketi ile santral entegrasyonu.">
-    <link rel="canonical" href="https://aipbx.bid/api-docs.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/api-docs.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/api-docs.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/api-docs.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/api-docs.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "REST API & WebSocket",
-              "item": "https://aipbx.bid/api-docs.html"
-            }
-          ]
-        },
-        {
-          "@type": "TechArticle",
-          "headline": "AiPBX REST API and WebSocket Event Schema Documentation",
-          "description": "Developer reference for AiPBX telephony REST API endpoints, Go WebSocket real-time messaging schema, and CRM integration.",
-          "url": "https://aipbx.bid/api-docs.html",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "AiPBX",
-            "url": "https://aipbx.bid/"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>

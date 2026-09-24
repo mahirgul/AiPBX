@@ -9,54 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Santral Güvenliği & CCIS Gateway — Fail2ban, TLS 1.3, SRTP Şifreleme | AiPBX</title>
-    <meta name="description" content="AiPBX güvenlik savunma katmanları: Fail2ban kaba kuvvet saldırı koruması, TLS 1.3 ve SRTP ses şifreleme, NEC UNIVERGE SV8100/SV8300/SV8500 CCIS protokol gateway entegrasyonu.">
-    <link rel="canonical" href="https://aipbx.bid/security.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/security.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/security.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/security.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/security.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Güvenlik",
-              "item": "https://aipbx.bid/security.html"
-            }
-          ]
-        },
-        {
-          "@type": "TechArticle",
-          "headline": "AiPBX Telephony Security Hardening and Microsoft Teams Direct Routing",
-          "description": "Multi-layer VoIP security defense: Fail2ban brute-force protection, TLS 1.3/SRTP encryption, and Microsoft Teams Direct Routing integration.",
-          "url": "https://aipbx.bid/security.html",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          },
-          "publisher": {
-            "@type": "Organization",
-            "name": "AiPBX",
-            "url": "https://aipbx.bid/"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
