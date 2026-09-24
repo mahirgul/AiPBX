@@ -52,11 +52,14 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
     $trunk_cid = '';
     $send_name = 1;
     if ($trunk_name !== '') {
-        $t_stmt = getDB()->prepare("SELECT outbound_caller_id, send_caller_name FROM pbx_trunks WHERE trunk_name = ?");
+        $t_stmt = getDB()->prepare("SELECT outbound_caller_id, send_caller_name, from_user FROM pbx_trunks WHERE trunk_name = ?");
         $t_stmt->execute([$trunk_name]);
         $t_row = $t_stmt->fetch(PDO::FETCH_ASSOC);
         if ($t_row) {
             $trunk_cid = preg_replace('/[^0-9]/', '', trim($t_row['outbound_caller_id'] ?? ''));
+            if ($trunk_cid === '' && !empty($t_row['from_user'])) {
+                $trunk_cid = preg_replace('/[^0-9]/', '', trim($t_row['from_user'] ?? ''));
+            }
             $send_name = intval($t_row['send_caller_name'] ?? 1);
         }
     }
