@@ -68,7 +68,7 @@ $formatDuration = function(int $seconds): string {
 
     <!-- Filter Form -->
     <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-        <select name="date_range" class="form-control form-control-sm" style="width: auto;">
+        <select name="date_range" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_yesterday'); ?></option>
             <option value="week" <?php echo $date_filter === 'week' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_week'); ?></option>
@@ -84,7 +84,7 @@ $formatDuration = function(int $seconds): string {
             </option>
         </select>
 
-        <select name="event" class="form-control form-control-sm" style="width: auto;">
+        <select name="event" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value=""><?php echo t('queue_logs.all_events'); ?></option>
             <option value="ENTERQUEUE" <?php echo $event_filter === 'ENTERQUEUE' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_enterqueue'); ?></option>
             <option value="CONNECT" <?php echo $event_filter === 'CONNECT' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_connect'); ?></option>
@@ -96,7 +96,7 @@ $formatDuration = function(int $seconds): string {
             <option value="REMOVEMEMBER" <?php echo $event_filter === 'REMOVEMEMBER' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_removemember'); ?></option>
         </select>
 
-        <select name="agent" class="form-control form-control-sm" style="width: auto;">
+        <select name="agent" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
             <option value=""><?php echo t('queue_logs.all_agents'); ?></option>
             <?php foreach ($agent_map as $ext => $name): ?>
                 <option value="<?php echo htmlspecialchars($ext); ?>" <?php echo $agent_filter === (string)$ext ? 'selected' : ''; ?>>

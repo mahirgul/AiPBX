@@ -5,58 +5,46 @@
 use PBX\Destinations\DestinationRegistry;
 ?>
 
-<div class="card mb-3 my-phone-header-card">
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(var(--primary-rgb, 2, 132, 199), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-            <i class="fas fa-user-tie"></i>
-        </div>
-        <div>
-            <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-main);"><?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?></h2>
-            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('boss_secretary.subtitle', 'Müdür/Yönetici aramalarını sekreterlere yönlendirir, yalnızca yetkili kişilerin doğrudan ulaşmasını sağlar.'); ?></div>
-        </div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="Modül Rehberi">
-            <i class="fas fa-question-circle"></i>
-        </button>
-        <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
-            <button class="btn btn-primary btn-sm" onclick="openCreateBsModal()">
-                <i class="fas fa-plus-circle"></i> <?php echo t('boss_secretary.new_group_btn', 'Yeni Şef Grubu'); ?>
-            </button>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- Collapsible Help Box -->
-<div class="module-help-box" id="bsHelpBox">
-    <h4><i class="fas fa-info-circle"></i> <?php echo t('boss_secretary.help_title', 'Şef - Sekreter Modülü Nasıl Çalışır?'); ?></h4>
-    <p><?php echo t('boss_secretary.help_body', 'Yöneticilerin doğrudan aranarak rahatsız edilmesini engeller:'); ?></p>
-    <ul>
-        <li><strong><?php echo t('boss_secretary.help_intercept', 'Arama Yakalama:'); ?></strong> <?php echo t('boss_secretary.help_intercept_desc', 'Dahili veya harici bir arayan şefin numarasını tuşladığında arama otomatik olarak tanımlı sekreter(ler)e aktarılır.'); ?></li>
-        <li><strong><?php echo t('boss_secretary.help_direct', 'Doğrudan Arama:'); ?></strong> <?php echo t('boss_secretary.help_direct_desc', 'Sekreterler ve VIP/Beyaz Listedeki dahililer şefi doğrudan arayabilir.'); ?></li>
-        <li><strong><?php echo t('boss_secretary.help_strategy', 'Çalma Stratejisi:'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc', 'Hepsi Birlikte (Aynı anda çalar, ilk açan bağlanır) veya Sırayla (Belirlenen sırayla teker teker çalar).'); ?></li>
-    </ul>
-</div>
-
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-list" style="color: var(--primary);"></i> <?php echo t('boss_secretary.list_title', 'Tanımlı Şef - Sekreter Grupları'); ?>
+            <i class="fas fa-user-tie" style="color: var(--primary);"></i> <?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?>
+            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($groups); ?></span>
         </div>
-        <span class="badge badge-secondary"><?php echo count($groups); ?></span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateBsModal()" title="<?php echo t('boss_secretary.new_group_btn', 'Yeni Şef Grubu'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <!-- Collapsible Help Box -->
+    <div class="module-help-box" id="bsHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('boss_secretary.help_title', 'Şef - Sekreter Modülü Nasıl Çalışır?'); ?></h4>
+        <p><?php echo t('boss_secretary.help_body', 'Yöneticilerin doğrudan aranarak rahatsız edilmesini engeller:'); ?></p>
+        <ul>
+            <li><strong><?php echo t('boss_secretary.help_intercept', 'Arama Yakalama:'); ?></strong> <?php echo t('boss_secretary.help_intercept_desc', 'Dahili veya harici bir arayan şefin numarasını tuşladığında arama otomatik olarak tanımlı sekreter(ler)e aktarılır.'); ?></li>
+            <li><strong><?php echo t('boss_secretary.help_direct', 'Doğrudan Arama:'); ?></strong> <?php echo t('boss_secretary.help_direct_desc', 'Sekreterler ve VIP/Beyaz Listedeki dahililer şefi doğrudan arayabilir.'); ?></li>
+            <li><strong><?php echo t('boss_secretary.help_strategy', 'Çalma Stratejisi:'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc', 'Hepsi Birlikte (Aynı anda çalar, ilk açan bağlanır) veya Sırayla (Belirlenen sırayla teker teker çalar).'); ?></li>
+        </ul>
+    </div>
+
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+        </div>
+    <?php endif; ?>
 
     <div class="table-responsive">
         <table class="data-table">

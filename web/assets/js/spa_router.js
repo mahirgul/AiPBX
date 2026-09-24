@@ -99,10 +99,24 @@
 
             e.preventDefault();
 
-            const actionUrl = form.getAttribute('action') || window.location.href;
-            const method = (form.method || 'POST').toUpperCase();
+            const method = (form.method || 'GET').toUpperCase();
             const formData = new FormData(form);
 
+            if (method === 'GET') {
+                const actionAttr = form.getAttribute('action');
+                let targetUrlObj;
+                try {
+                    targetUrlObj = new URL(actionAttr || window.location.pathname, window.location.origin);
+                } catch(e) {
+                    targetUrlObj = new URL(window.location.pathname, window.location.origin);
+                }
+                const params = new URLSearchParams(formData);
+                targetUrlObj.search = params.toString();
+                loadSPAPage(targetUrlObj.href, true);
+                return;
+            }
+
+            const actionUrl = form.getAttribute('action') || window.location.href;
             startProgress();
             const mySeq = ++requestSeq;
 
@@ -111,7 +125,7 @@
                 headers: {
                     'X-SPA-Request': '1'
                 },
-                body: method === 'POST' ? formData : null
+                body: formData
             })
             .then(res => {
                 // Sunucu bir hata sayfası (403/419/500 vb.) ya da boş gövde

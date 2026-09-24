@@ -5,58 +5,46 @@
 use PBX\Destinations\DestinationRegistry;
 ?>
 
-<div class="card mb-3 my-phone-header-card">
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(var(--primary-rgb, 2, 132, 199), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-            <i class="fas fa-users"></i>
-        </div>
-        <div>
-            <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-main);"><?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?></h2>
-            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('ring_groups.subtitle', 'Dahili ve harici telefon numaralarını aynı anda veya sırayla çaldırarak ilk açana bağlar.'); ?></div>
-        </div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="Modül Rehberi">
-            <i class="fas fa-question-circle"></i>
-        </button>
-        <?php if (hasModulePermission('ring_groups', 'edit')): ?>
-            <button class="btn btn-primary btn-sm" onclick="openCreateRgModal()">
-                <i class="fas fa-plus-circle"></i> <?php echo t('ring_groups.new_group_btn', 'Yeni Çalma Grubu'); ?>
-            </button>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- Collapsible Help Box -->
-<div class="module-help-box" id="rgHelpBox">
-    <h4><i class="fas fa-info-circle"></i> <?php echo t('ring_groups.help_title', 'Çalma Grubu Nedir ve Nasıl Çalışır?'); ?></h4>
-    <p><?php echo t('ring_groups.help_body', 'Bir çağrı geldiğinde veya grup dahili numarası arandığında birden fazla hedefi aynı anda çaldırır.'); ?></p>
-    <ul>
-        <li><strong><?php echo t('ring_groups.help_mixed', 'Dahili ve Harici Numaralar:'); ?></strong> <?php echo t('ring_groups.help_mixed_desc', 'Listeye santral içi dahilileri (ör: 1001, 1002) ve cep telefonu / harici sabit hatları (ör: 05051234567) serbestçe virgülle ayırarak yazabilirsiniz.'); ?></li>
-        <li><strong><?php echo t('ring_groups.help_first_wins', 'İlk Açan Kazanır:'); ?></strong> <?php echo t('ring_groups.help_first_wins_desc', 'Gruptaki hedeflerden hangisi çağrıyı açarsa, arayan doğrudan ona bağlanır ve diğer tüm çalan telefonlar anında susar.'); ?></li>
-        <li><strong><?php echo t('ring_groups.help_internal_ext', 'Sanal Dahili Numarası:'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc', 'Her çalma grubunun kendi dahili erişim numarası olabilir (ör: 7000). IVR, zaman koşulu ve dahililerden doğrudan bu numara aranabilir.'); ?></li>
-    </ul>
-</div>
-
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-layer-group" style="color: var(--primary);"></i> <?php echo t('ring_groups.list_title', 'Tanımlı Çalma Grupları'); ?>
+            <i class="fas fa-users" style="color: var(--primary);"></i> <?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?>
+            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($ring_groups); ?></span>
         </div>
-        <span class="badge badge-secondary"><?php echo count($ring_groups); ?></span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <?php if (hasModulePermission('ring_groups', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateRgModal()" title="<?php echo t('ring_groups.new_group_btn', 'Yeni Çalma Grubu'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <!-- Collapsible Help Box -->
+    <div class="module-help-box" id="rgHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('ring_groups.help_title', 'Çalma Grubu Nedir ve Nasıl Çalışır?'); ?></h4>
+        <p><?php echo t('ring_groups.help_body', 'Bir çağrı geldiğinde veya grup dahili numarası arandığında birden fazla hedefi aynı anda çaldırır.'); ?></p>
+        <ul>
+            <li><strong><?php echo t('ring_groups.help_mixed', 'Dahili ve Harici Numaralar:'); ?></strong> <?php echo t('ring_groups.help_mixed_desc', 'Listeye santral içi dahilileri (ör: 1001, 1002) ve cep telefonu / harici sabit hatları (ör: 05051234567) serbestçe virgülle ayırarak yazabilirsiniz.'); ?></li>
+            <li><strong><?php echo t('ring_groups.help_first_wins', 'İlk Açan Kazanır:'); ?></strong> <?php echo t('ring_groups.help_first_wins_desc', 'Gruptaki hedeflerden hangisi çağrıyı açarsa, arayan doğrudan ona bağlanır ve diğer tüm çalan telefonlar anında susar.'); ?></li>
+            <li><strong><?php echo t('ring_groups.help_internal_ext', 'Sanal Dahili Numarası:'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc', 'Her çalma grubunun kendi dahili erişim numarası olabilir (ör: 7000). IVR, zaman koşulu ve dahililerden doğrudan bu numara aranabilir.'); ?></li>
+        </ul>
+    </div>
+
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+        </div>
+    <?php endif; ?>
 
     <div class="table-responsive">
         <table class="data-table">
