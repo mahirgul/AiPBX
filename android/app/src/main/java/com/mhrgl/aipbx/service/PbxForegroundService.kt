@@ -780,8 +780,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             else -> if (!message.message.isNullOrEmpty()) message.message else "Yeni bir mesaj gönderdi."
         }
 
-        val intent = Intent(this, ChatActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val intent = Intent(this, com.mhrgl.aipbx.ui.DialerActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(ChatActivity.EXTRA_CONV_ID, message.conversationId)
             putExtra(ChatActivity.EXTRA_TARGET_EXT, message.senderExt)
             putExtra(ChatActivity.EXTRA_TARGET_NAME, message.senderName)
