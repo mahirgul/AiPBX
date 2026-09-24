@@ -109,6 +109,7 @@ $formatDuration = function(int $seconds): string {
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('queue_logs.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
+        <input type="hidden" name="boyut" value="<?php echo (int)$sayfa_boyutu; ?>">
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($event_filter) || !empty($agent_filter) || !empty($search_query) || $date_filter !== 'today' || $view_mode !== 'grouped'): ?>
@@ -117,6 +118,10 @@ $formatDuration = function(int $seconds): string {
     </form>
 
     <div class="table-responsive">
+        <?php
+            $page_size = $sayfa_boyutu;
+            require dirname(__DIR__, 2) . '/pagination_controls.php';
+        ?>
         <?php if ($view_mode === 'grouped'): ?>
             <!-- ======================================================== -->
             <!-- GROUPED VIEW: 1 ÇAĞRI = 1 SATIR (ÇAĞRI YOLCULUĞU İLE)    -->
@@ -334,6 +339,14 @@ $formatDuration = function(int $seconds): string {
             </table>
         <?php endif; ?>
     </div>
+
+    <?php
+        $page = $sayfa;
+        $page_size = $sayfa_boyutu;
+        $total_pages = $toplam_sayfa;
+        $total_rows = $total_records;
+        require dirname(__DIR__, 2) . '/pagination.php';
+    ?>
 </div>
 
 <script>
