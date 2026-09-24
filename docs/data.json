@@ -188,7 +188,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Touch ID, Face ID, Windows Hello, YubiKey ile şifresiz giriş.",
         "detailsEN": "Passwordless auth with Touch ID, Face ID, Windows Hello, YubiKey.",
-        "detailsDE": "Passwortlose Anmeldung mit Touch ID, Face ID, Windows Hello, YubiKey."
+        "detailsDE": "Passwortlose Anmeldung mit Touch ID, Face ID, Windows Hello, YubiKey.",
+        "aipbxTR": "✅ Yerleşik & Ücretsiz",
+        "aipbxEN": "✅ Built-in & Free",
+        "aipbxDE": "✅ Integriert & Kostenlos",
+        "legacyTR": "❌ Desteklenmiyor",
+        "legacyEN": "❌ Not Supported",
+        "legacyDE": "❌ Nicht unterstützt",
+        "cloudTR": "⚠️ Yalnızca Kurumsal SSO Eklentisi",
+        "cloudEN": "⚠️ Enterprise SSO Add-on Only",
+        "cloudDE": "⚠️ Nur mit Enterprise SSO Add-on"
       },
       {
         "categoryTR": "Güvenlik & Kimlik",
@@ -205,7 +214,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Dahili e-posta adresiyle eşleştiğinde anında oturum açma.",
         "detailsEN": "Instant login matching corporate extension email addresses.",
-        "detailsDE": "Sofortiges Login bei Übereinstimmung mit Firmen-E-Mail."
+        "detailsDE": "Sofortiges Login bei Übereinstimmung mit Firmen-E-Mail.",
+        "aipbxTR": "✅ Web, Android ve iOS",
+        "aipbxEN": "✅ Web, Android & iOS",
+        "aipbxDE": "✅ Web, Android & iOS",
+        "legacyTR": "❌ Yok",
+        "legacyEN": "❌ None / Not Available",
+        "legacyDE": "❌ Nicht vorhanden",
+        "cloudTR": "⚠️ Ekstra Lisans Gerekir",
+        "cloudEN": "⚠️ Extra License Required",
+        "cloudDE": "⚠️ Zusätzliche Lizenz erforderlich"
       },
       {
         "categoryTR": "Güvenlik & Kimlik",
@@ -222,7 +240,16 @@
         "cloudStatus": "yes",
         "detailsTR": "Tüm ses paketleri kriptolanır, ağda paket dinleme (sniffing) imkansızdır.",
         "detailsEN": "All voice traffic encrypted; packet eavesdropping is impossible.",
-        "detailsDE": "Sämtlicher Sprachverkehr verschlüsselt; Paket-Sniffing unmöglich."
+        "detailsDE": "Sämtlicher Sprachverkehr verschlüsselt; Paket-Sniffing unmöglich.",
+        "aipbxTR": "✅ Standart (Opus HD)",
+        "aipbxEN": "✅ Standard (Opus HD)",
+        "aipbxDE": "✅ Standard (Opus HD)",
+        "legacyTR": "⚠️ Ek DSP / Lisans Kartı",
+        "legacyEN": "⚠️ Expensive DSP / License Add-on",
+        "legacyDE": "⚠️ Teure DSP- / Lizenzkarten nötig",
+        "cloudTR": "✅ Sağlayıcı Yönetiminde",
+        "cloudEN": "✅ Managed by Provider",
+        "cloudDE": "✅ Durch Anbieter verwaltet"
       },
       {
         "categoryTR": "Ağ & Güvenlik Duvarı",
@@ -239,7 +266,16 @@
         "cloudStatus": "no",
         "detailsTR": "Otel, misafir WiFi ve katı kurumsal firewall engellerini tek porttan aşar.",
         "detailsEN": "Bypasses strict hotel, guest WiFi and corporate firewall filters on port 443.",
-        "detailsDE": "Überwindet restriktive Hotel-, Gast-WLAN- und Firmenfilter über Port 443."
+        "detailsDE": "Überwindet restriktive Hotel-, Gast-WLAN- und Firmenfilter über Port 443.",
+        "aipbxTR": "✅ Tek Porttan Web, WSS ve SIP",
+        "aipbxEN": "✅ Web, WSS & SIP on Port 443",
+        "aipbxDE": "✅ Web, WSS & SIP auf Port 443",
+        "legacyTR": "❌ Çok Sayıda Port Açılması Zorunlu",
+        "legacyEN": "❌ Multiple Exposed Ports Required",
+        "legacyDE": "❌ Viele offene Ports erforderlich",
+        "cloudTR": "❌ 5060/5061 ve Çok Sayıda RTP Portu",
+        "cloudEN": "❌ 5060/5061 & Wide RTP Ranges",
+        "cloudDE": "❌ 5060/5061 & viele RTP-Ports"
       },
       {
         "categoryTR": "Ağ & Güvenlik Duvarı",
@@ -256,7 +292,16 @@
         "cloudStatus": "warning",
         "detailsTR": "SIP brute-force ve flood atakları anında çekirdek seviyesinde engellenir.",
         "detailsEN": "SIP brute-force and flood attacks blocked at OS kernel level instantly.",
-        "detailsDE": "SIP-Brute-Force- und Flood-Angriffe werden direkt auf Kernel-Ebene blockiert."
+        "detailsDE": "SIP-Brute-Force- und Flood-Angriffe werden direkt auf Kernel-Ebene blockiert.",
+        "aipbxTR": "✅ Yerleşik & Otomatik IP Bloklama",
+        "aipbxEN": "✅ Built-in & Automated IP Blocking",
+        "aipbxDE": "✅ Integriert & Automatische IP-Sperre",
+        "legacyTR": "❌ Ayrı SBC Donanımı (Pahalı)",
+        "legacyEN": "❌ Costly Dedicated SBC Appliance",
+        "legacyDE": "❌ Teure dedizierte SBC-Hardware",
+        "cloudTR": "⚠️ Sağlayıcı Kontrolünde",
+        "cloudEN": "⚠️ Controlled by Provider",
+        "cloudDE": "⚠️ Vom Anbieter kontrolliert"
       },
       {
         "categoryTR": "Entegrasyon & Ekosistem",
@@ -273,7 +318,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Teams kullanıcıları ile IP santral dahilileri arasında çift yönlü ses köprüsü.",
         "detailsEN": "Bidirectional voice routing between Teams users and IP PBX extensions.",
-        "detailsDE": "Bidirektionale Sprachkopplung zwischen Teams-Nutzern und Nebenstellen."
+        "detailsDE": "Bidirektionale Sprachkopplung zwischen Teams-Nutzern und Nebenstellen.",
+        "aipbxTR": "✅ Yerleşik SBC ile Ücretsiz",
+        "aipbxEN": "✅ Built-in SBC & Free",
+        "aipbxDE": "✅ Integrierter SBC & Kostenlos",
+        "legacyTR": "❌ Sertifikalı Harici SBC Şartı",
+        "legacyEN": "❌ Certified External SBC Required",
+        "legacyDE": "❌ Zertifizierter externer SBC erforderlich",
+        "cloudTR": "⚠️ Yüksek Ek Ücretli Eklenti",
+        "cloudEN": "⚠️ High-Priced Add-on Tier",
+        "cloudDE": "⚠️ Teures Zusatzpaket"
       },
       {
         "categoryTR": "Entegrasyon & Ekosistem",
@@ -290,7 +344,16 @@
         "cloudStatus": "warning",
         "detailsTR": "CRM, ERP ve özel kurumsal yazılımlarla sınırsız veri entegrasyonu.",
         "detailsEN": "Unlimited integration with CRM, ERP, and internal enterprise software.",
-        "detailsDE": "Grenzenlose Integration in CRM-, ERP- und interne Unternehmenssoftware."
+        "detailsDE": "Grenzenlose Integration in CRM-, ERP- und interne Unternehmenssoftware.",
+        "aipbxTR": "✅ Tam Erişim & Dokümante",
+        "aipbxEN": "✅ Full Access & Documented",
+        "aipbxDE": "✅ Voller Zugriff & Dokumentiert",
+        "legacyTR": "❌ TAPI / CSTA Lisansı Gerekir",
+        "legacyEN": "❌ TAPI / CSTA License Required",
+        "legacyDE": "❌ TAPI- / CSTA-Lizenz erforderlich",
+        "cloudTR": "⚠️ API Çağrı Başına Ücretli",
+        "cloudEN": "⚠️ Per-API-Call Invoicing",
+        "cloudDE": "⚠️ Gebühren pro API-Aufruf"
       },
       {
         "categoryTR": "Mobil & İletişim",
@@ -307,7 +370,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Özelleştirilebilir, logolu ve kurumsal kimliğinize göre derlenebilir.",
         "detailsEN": "Fully customizable, rebrandable, and compileable with your branding.",
-        "detailsDE": "Vollständig anpassbar und mit eigenem Branding kompilierbar."
+        "detailsDE": "Vollständig anpassbar und mit eigenem Branding kompilierbar.",
+        "aipbxTR": "✅ Kendi Kod Tabanı (v1.0.34)",
+        "aipbxEN": "✅ Native Codebase (v1.0.34)",
+        "aipbxDE": "✅ Eigene Codebasis (v1.0.34)",
+        "legacyTR": "❌ 3. Parti Ücretli Uygulama Zorunlu",
+        "legacyEN": "❌ Costly 3rd-Party App Required",
+        "legacyDE": "❌ Kostenpflichtige Drittanbieter-App",
+        "cloudTR": "⚠️ Sağlayıcı Uygulaması (Kapalı)",
+        "cloudEN": "⚠️ Proprietary Provider App",
+        "cloudDE": "⚠️ Proprietäre Anbieter-App"
       },
       {
         "categoryTR": "Mobil & İletişim",
@@ -324,7 +396,16 @@
         "cloudStatus": "yes",
         "detailsTR": "Uygulama kapalıyken bile çağrı geldiğinde anında ekranı uyandırır.",
         "detailsEN": "Wakes the lock screen instantly on incoming call even if app is closed.",
-        "detailsDE": "Aktiviert den Sperrbildschirm bei eingehendem Anruf selbst bei geschlossener App."
+        "detailsDE": "Aktiviert den Sperrbildschirm bei eingehendem Anruf selbst bei geschlossener App.",
+        "aipbxTR": "✅ <400ms Uyanma, %0 Pil Tüketimi",
+        "aipbxEN": "✅ <400ms Wakeup, 0% Battery Drain",
+        "aipbxDE": "✅ <400ms Aufwecken, 0% Akkuverbrauch",
+        "legacyTR": "❌ Arka Planda Pil Tüketir",
+        "legacyEN": "❌ High Background Battery Drain",
+        "legacyDE": "❌ Hoher Akkuverbrauch im Hintergrund",
+        "cloudTR": "✅ Standart",
+        "cloudEN": "✅ Standard",
+        "cloudDE": "✅ Standard"
       },
       {
         "categoryTR": "Mobil & İletişim",
@@ -341,7 +422,16 @@
         "cloudStatus": "yes",
         "detailsTR": "Hiçbir yazılım yüklemeden Chrome/Firefox üzerinden doğrudan arama.",
         "detailsEN": "Make and receive calls directly in Chrome/Firefox with zero installation.",
-        "detailsDE": "Telefonieren direkt in Chrome/Firefox ohne jede Softwareinstallation."
+        "detailsDE": "Telefonieren direkt in Chrome/Firefox ohne jede Softwareinstallation.",
+        "aipbxTR": "✅ Web Paneline Gömülü",
+        "aipbxEN": "✅ Embedded in Web Panel",
+        "aipbxDE": "✅ Im Web-Panel integriert",
+        "legacyTR": "❌ Desteklenmiyor",
+        "legacyEN": "❌ Not Supported",
+        "legacyDE": "❌ Nicht unterstützt",
+        "cloudTR": "✅ Standart",
+        "cloudEN": "✅ Standard",
+        "cloudDE": "✅ Standard"
       },
       {
         "categoryTR": "Çağrı Merkezi & Denetim",
@@ -358,7 +448,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Yönetici dilerse yalnızca dinler, dilerse ajana koçluk yapar.",
         "detailsEN": "Supervisor can listen silently, coach the agent, or barge into the call.",
-        "detailsDE": "Supervisor kann stumm mithören, den Agenten coachen oder sich aufschalten."
+        "detailsDE": "Supervisor kann stumm mithören, den Agenten coachen oder sich aufschalten.",
+        "aipbxTR": "✅ 3 Mod (Spy/Whisper/Barge-in)",
+        "aipbxEN": "✅ 3 Modes (Spy/Whisper/Barge-in)",
+        "aipbxDE": "✅ 3 Modi (Spy/Whisper/Barge-in)",
+        "legacyTR": "⚠️ Ek Süpervizör Lisansı",
+        "legacyEN": "⚠️ Additional Supervisor License",
+        "legacyDE": "⚠️ Zusätzliche Supervisor-Lizenz",
+        "cloudTR": "⚠️ Yüksek Paket Aboneliği",
+        "cloudEN": "⚠️ Top-Tier Subscription Only",
+        "cloudDE": "⚠️ Nur in Top-Tarifen enthalten"
       },
       {
         "categoryTR": "Çağrı Merkezi & Denetim",
@@ -375,7 +474,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Yemek, çay, mola, eğitim süreleri anlık olarak raporlanır.",
         "detailsEN": "Real-time tracking of agent breaks (lunch, coffee, training, technical).",
-        "detailsDE": "Echtzeit-Erfassung von Pausenzeiten (Essen, Pause, Schulung, Störung)."
+        "detailsDE": "Echtzeit-Erfassung von Pausenzeiten (Essen, Pause, Schulung, Störung).",
+        "aipbxTR": "✅ Yerleşik ACD Kuyruk Takibi",
+        "aipbxEN": "✅ Built-in ACD Queue Monitoring",
+        "aipbxDE": "✅ Integriertes ACD-Monitoring",
+        "legacyTR": "⚠️ Ayrı Raporlama Sunucusu",
+        "legacyEN": "⚠️ Separate Reporting Server",
+        "legacyDE": "⚠️ Separater Report-Server",
+        "cloudTR": "⚠️ Ekstra Kullanıcı Başı Ücret",
+        "cloudEN": "⚠️ Extra Fee Per User",
+        "cloudDE": "⚠️ Zusatzgebühr pro Benutzer"
       },
       {
         "categoryTR": "Maliyet & Bağımsızlık",
@@ -392,7 +500,13 @@
         "cloudStatus": "no",
         "detailsTR": "Kendi sunucunuzda sınırsız dahili ve dış hatla maliyetsiz çalışır.",
         "detailsEN": "Runs on your hardware with unlimited extensions and trunks at zero cost.",
-        "detailsDE": "Läuft auf eigener Hardware mit unbegrenzten Nebenstellen ohne laufende Gebühren."
+        "detailsDE": "Läuft auf eigener Hardware mit unbegrenzten Nebenstellen ohne laufende Gebühren.",
+        "aipbxTR": "✅ 0 TL / 0 $ (Tamamen Ücretsiz)",
+        "aipbxEN": "✅ bash / Completely Free (MIT)",
+        "aipbxDE": "✅ 0 € / Völlig Kostenlos (MIT)",
+        "legacyTR": "❌ 1.000$+ Donanım & Dahili Lisansı",
+        "legacyEN": "❌ ,000+ Hardware & Ext Licenses",
+        "legacyDE": "❌ 1.000€+ Hardware- & Lizenzkosten"
       },
       {
         "categoryTR": "Maliyet & Bağımsızlık",
@@ -409,7 +523,16 @@
         "cloudStatus": "warning",
         "detailsTR": "Ses kayıtları ve kullanıcı verileri üçüncü parti sunuculara gitmez.",
         "detailsEN": "All call recordings and personal data remain strictly on your premises.",
-        "detailsDE": "Alle Sprachaufzeichnungen und Daten verbleiben auf Ihren eigenen Servern."
+        "detailsDE": "Alle Sprachaufzeichnungen und Daten verbleiben auf Ihren eigenen Servern.",
+        "aipbxTR": "✅ %100 Kendi Sunucunuzda (On-Prem / Özel VPS)",
+        "aipbxEN": "✅ 100% On-Premises / Private VPS",
+        "aipbxDE": "✅ 100% On-Premises / Eigener VPS",
+        "legacyTR": "✅ Lokal",
+        "legacyEN": "✅ Local Storage",
+        "legacyDE": "✅ Lokale Speicherung",
+        "cloudTR": "⚠️ Yurt Dışı Bulutunda Saklanır",
+        "cloudEN": "⚠️ Stored in Third-Party Cloud",
+        "cloudDE": "⚠️ Speicherung in Drittanbieter-Cloud"
       }
     ],
     "networkProtocols": [

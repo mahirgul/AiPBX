@@ -132,6 +132,10 @@ global $LANG, $company;
         try {
             localStorage.setItem('aipbx_lang', lang);
             localStorage.setItem('aipbx_user_lang', lang);
+            document.cookie = "aipbx_lang=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+            var u = new URL(window.location.href);
+            u.searchParams.set('lang', lang);
+            window.history.replaceState({}, '', u.toString());
         } catch(e) {}
 
         const flagEl = document.getElementById('currentLangFlag');
@@ -176,6 +180,10 @@ global $LANG, $company;
                 const panel = document.getElementById('panel-' + target);
                 if (panel) {
                     panel.classList.add('active');
+                    const searchInput = document.getElementById('tableFilterInput');
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
                 }
             });
         });
