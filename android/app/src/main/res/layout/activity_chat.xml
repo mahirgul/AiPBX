@@ -22,7 +22,7 @@
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Geri"
-            android:src="@drawable/ic_contacts"
+            android:src="@drawable/ic_arrow_back"
             app:tint="@color/text_primary" />
 
         <LinearLayout

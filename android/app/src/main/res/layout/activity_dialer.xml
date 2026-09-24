@@ -123,37 +123,45 @@
             android:padding="16dp"
             android:visibility="visible">
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="6dp">
 
-                <TextView
-                    android:id="@+id/tvDigits"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="start"
-                    android:gravity="center"
-                    android:hint="@string/dialer_hint"
-                    android:maxLines="1"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/card_rounded_bg"
+                    android:paddingHorizontal="12dp">
 
-                <ImageButton
-                    android:id="@+id/btnBackspace"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Sil"
-                    android:src="@drawable/ic_backspace"
-                    android:visibility="invisible" />
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/tvDigits"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_centerInParent="true"
+                        android:ellipsize="start"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="44dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnBackspace"
+                        android:layout_width="44dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Sil"
+                        android:src="@drawable/ic_backspace"
+                        android:visibility="invisible" />
+                </RelativeLayout>
+            </FrameLayout>
 
             <TableLayout
                 android:layout_width="wrap_content"
@@ -511,188 +519,424 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Top Chat Header Bar -->
+            <!-- 4A: Chat Conversation List View -->
             <LinearLayout
+                android:id="@+id/layoutChatList"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/card_bg"
-                android:elevation="1dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp">
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="visible">
 
-                <EditText
-                    android:id="@+id/etChatSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/card_rounded_bg"
-                    android:drawableStart="@drawable/ic_contacts"
-                    android:drawablePadding="8dp"
-                    android:hint="Sohbet veya grup ara..."
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:paddingHorizontal="12dp"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:textSize="13sp" />
-
-                <ImageButton
-                    android:id="@+id/btnNewGroup"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Yeni Grup"
-                    android:src="@drawable/ic_group"
-                    app:tint="@color/primary" />
-
-                <ImageButton
-                    android:id="@+id/btnNewChat"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="4dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Yeni Sohbet"
-                    android:src="@drawable/ic_chat"
-                    app:tint="@color/primary" />
-            </LinearLayout>
-
-            <!-- Chat Filter Chips (Tümü / Bireysel / Gruplar) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/card_bg"
-                android:elevation="1dp"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:id="@+id/btnChatFilterAll"
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/chip_tab_btn_bg"
-                    android:backgroundTint="@color/primary"
-                    android:gravity="center"
-                    android:text="Tümü"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/btnChatFilterDirect"
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginHorizontal="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/chip_tab_btn_bg"
-                    android:gravity="center"
-                    android:text="Bireysel"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/btnChatFilterGroups"
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/chip_tab_btn_bg"
-                    android:gravity="center"
-                    android:text="Gruplar"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvChatConversations"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:paddingVertical="4dp" />
-
-                <ProgressBar
-                    android:id="@+id/pbChat"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
-
-                <!-- Empty State -->
+                <!-- Top Chat Header Bar -->
                 <LinearLayout
-                    android:id="@+id/llChatEmptyState"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="32dp"
-                    android:visibility="gone">
+                    android:layout_height="wrap_content"
+                    android:background="@color/card_bg"
+                    android:elevation="1dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp">
 
-                    <ImageView
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:contentDescription="@null"
+                    <EditText
+                        android:id="@+id/etChatSearch"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/card_rounded_bg"
+                        android:drawableStart="@drawable/ic_contacts"
+                        android:drawablePadding="8dp"
+                        android:hint="Sohbet veya grup ara..."
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:paddingHorizontal="12dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnNewGroup"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Yeni Grup"
+                        android:src="@drawable/ic_group"
+                        app:tint="@color/primary" />
+
+                    <ImageButton
+                        android:id="@+id/btnNewChat"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_marginStart="4dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Yeni Sohbet"
                         android:src="@drawable/ic_chat"
-                        app:tint="@color/text_secondary" />
+                        app:tint="@color/primary" />
+                </LinearLayout>
+
+                <!-- Chat Filter Chips (Tümü / Bireysel / Gruplar) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/card_bg"
+                    android:elevation="1dp"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="8dp">
 
                     <TextView
-                        android:id="@+id/tvChatEmptyTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Henüz bir sohbetiniz yok"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
+                        android:id="@+id/btnChatFilterAll"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/chip_tab_btn_bg"
+                        android:backgroundTint="@color/primary"
+                        android:gravity="center"
+                        android:text="Tümü"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvChatEmptySubtitle"
+                        android:id="@+id/btnChatFilterDirect"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/chip_tab_btn_bg"
+                        android:gravity="center"
+                        android:text="Bireysel"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnChatFilterGroups"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/chip_tab_btn_bg"
+                        android:gravity="center"
+                        android:text="Gruplar"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvChatConversations"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:paddingVertical="4dp" />
+
+                    <ProgressBar
+                        android:id="@+id/pbChat"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_gravity="center"
+                        android:visibility="gone" />
+
+                    <!-- Empty State -->
+                    <LinearLayout
+                        android:id="@+id/llChatEmptyState"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:gravity="center"
-                        android:text="Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:orientation="vertical"
+                        android:padding="32dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_chat"
+                            app:tint="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/tvChatEmptyTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Henüz bir sohbetiniz yok"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvChatEmptySubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:orientation="horizontal">
+
+                            <Button
+                                android:id="@+id/btnChatEmptyNewChat"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:backgroundTint="@color/primary"
+                                android:text="Yeni Sohbet"
+                                android:textAllCaps="false"
+                                android:textColor="#FFFFFF" />
+
+                            <Button
+                                android:id="@+id/btnChatEmptyNewGroup"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:text="+ Yeni Grup"
+                                android:textAllCaps="false"
+                                android:textColor="@color/primary" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- 4B: Embedded Chat Room View -->
+            <LinearLayout
+                android:id="@+id/layoutChatRoom"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Room Header Bar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:background="@color/card_bg"
+                    android:elevation="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp">
+
+                    <ImageButton
+                        android:id="@+id/btnChatRoomBack"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Geri"
+                        android:src="@drawable/ic_arrow_back"
+                        app:tint="@color/text_primary" />
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:id="@+id/llChatRoomHeaderInfo"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <Button
-                            android:id="@+id/btnChatEmptyNewChat"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:backgroundTint="@color/primary"
-                            android:text="Yeni Sohbet"
-                            android:textAllCaps="false"
-                            android:textColor="#FFFFFF" />
+                        <FrameLayout
+                            android:layout_width="38dp"
+                            android:layout_height="38dp">
 
-                        <Button
-                            android:id="@+id/btnChatEmptyNewGroup"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
+                            <TextView
+                                android:id="@+id/tvChatRoomAvatar"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/circle_avatar"
+                                android:gravity="center"
+                                android:text="U"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <View
+                                android:id="@+id/vChatRoomOnlineDot"
+                                android:layout_width="10dp"
+                                android:layout_height="10dp"
+                                android:layout_gravity="bottom|end"
+                                android:background="@drawable/circle_status"
+                                android:backgroundTint="#9CA3AF" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
-                            android:text="+ Yeni Grup"
-                            android:textAllCaps="false"
-                            android:textColor="@color/primary" />
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvChatRoomTargetName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="Kullanıcı Adı"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvChatRoomTargetStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Çevrimdışı"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11.5sp" />
+                        </LinearLayout>
                     </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnChatRoomGroupInfo"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Grup Bilgisi"
+                        android:src="@drawable/ic_info"
+                        app:tint="@color/primary"
+                        android:visibility="gone" />
+
+                    <ImageButton
+                        android:id="@+id/btnChatRoomCall"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Ara"
+                        android:src="@drawable/ic_phone"
+                        app:tint="@color/primary" />
                 </LinearLayout>
-            </FrameLayout>
+
+                <!-- Messages RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvChatMessages"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:clipToPadding="false"
+                    android:paddingVertical="8dp" />
+
+                <!-- Typing Indicator -->
+                <TextView
+                    android:id="@+id/tvChatTyping"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="4dp"
+                    android:text="yazıyor..."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:visibility="gone" />
+
+                <!-- Upload / Attachment Pending Preview Banner -->
+                <LinearLayout
+                    android:id="@+id/llChatUploadPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#EFF6FF"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_attach"
+                        app:tint="@color/primary" />
+
+                    <TextView
+                        android:id="@+id/tvChatUploadFilename"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:ellipsize="middle"
+                        android:singleLine="true"
+                        android:text="dosya.pdf"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnChatCancelUpload"
+                        android:contentDescription="Yüklemeyi iptal et"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_call_end"
+                        app:tint="#DC2626" />
+                </LinearLayout>
+
+                <!-- Input Bar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/card_bg"
+                    android:elevation="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="6dp">
+
+                    <ImageButton
+                        android:id="@+id/btnChatAttach"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Dosya Ekle"
+                        android:src="@drawable/ic_attach"
+                        app:tint="@color/text_secondary" />
+
+                    <ImageButton
+                        android:id="@+id/btnChatCamera"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Fotoğraf Çek / Gönder"
+                        android:src="@drawable/ic_photo"
+                        app:tint="@color/text_secondary" />
+
+                    <EditText
+                        android:id="@+id/etChatMessage"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/chip_tab_btn_bg"
+                        android:hint="Bir mesaj yazın..."
+                        android:maxLines="4"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnChatSend"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/circle_avatar"
+                        android:contentDescription="Gönder"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_send"
+                        app:tint="#FFFFFF" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ================= PAGE 5: FEATURES / SANTRAL ================= -->
@@ -883,12 +1127,11 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:orientation="horizontal">
+                            android:orientation="vertical">
 
                             <com.google.android.material.textfield.TextInputLayout
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
                                 android:hint="Cevapsız Hedef No"
                                 app:boxBackgroundMode="outline"
                                 app:boxCornerRadiusBottomEnd="8dp"
@@ -907,9 +1150,9 @@
                             <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/tilNoAnswerTimeout"
                                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                                android:layout_width="110dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
+                                android:layout_marginTop="8dp"
                                 android:hint="@string/features_cf_timeout_hint"
                                 app:boxCornerRadiusBottomEnd="8dp"
                                 app:boxCornerRadiusBottomStart="8dp"
