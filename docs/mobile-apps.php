@@ -9,54 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Mobil Softphone Uygulamaları — Android APK & iOS WebRTC PBX | AiPBX</title>
-    <meta name="description" content="AiPBX yerel mobil uygulamaları: Android Kotlin ve iOS Swift, WebRTC Opus HD ses kalitesi, arka plan push bildirimleri, doğrudan APK indirme ve sıfır yapılandırma.">
-    <link rel="canonical" href="https://aipbx.bid/mobile-apps.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/mobile-apps.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/mobile-apps.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/mobile-apps.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/mobile-apps.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Mobil Uygulamalar",
-              "item": "https://aipbx.bid/mobile-apps.html"
-            }
-          ]
-        },
-        {
-          "@type": "MobileApplication",
-          "name": "AiPBX Mobile Softphone",
-          "applicationCategory": "CommunicationApplication",
-          "operatingSystem": "Android, iOS",
-          "fileSize": "2.8MB",
-          "url": "https://aipbx.bid/mobile-apps.html",
-          "downloadUrl": "https://aipbx.bid/mobile-apps.html",
-          "description": "Native Android (Kotlin) and iOS (Swift) enterprise WebRTC softphone with Opus HD audio and background push notification.",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          },
-          "screenshot": "https://aipbx.bid/img/app_dialer.jpg"
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
