@@ -4,58 +4,46 @@
  */
 ?>
 
-<div class="card mb-3 my-phone-header-card">
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(var(--primary-rgb, 2, 132, 199), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-            <i class="fas fa-users-rectangle"></i>
-        </div>
-        <div>
-            <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-main);"><?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?></h2>
-            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('conferences.subtitle', 'Çok katılımcılı sesli konferans odaları oluşturun, PIN kodları ve moderatör kuralları tanımlayın.'); ?></div>
-        </div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="Modül Rehberi">
-            <i class="fas fa-question-circle"></i>
-        </button>
-        <?php if (hasModulePermission('conferences', 'edit')): ?>
-            <button class="btn btn-primary btn-sm" onclick="openCreateConfModal()">
-                <i class="fas fa-plus-circle"></i> <?php echo t('conferences.new_conf_btn', 'Yeni Konferans Odası'); ?>
-            </button>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- Collapsible Help Box -->
-<div class="module-help-box" id="confHelpBox">
-    <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title', 'Konferans Odaları Nasıl Çalışır?'); ?></h4>
-    <p><?php echo t('conferences.help_body', 'Konferans odaları, dahili ve harici arayanların aynı anda bağlanarak toplu görüşme yapmasını sağlar.'); ?></p>
-    <ul>
-        <li><strong><?php echo t('conferences.help_pins', 'Kullanıcı ve Yönetici PIN:'); ?></strong> <?php echo t('conferences.help_pins_desc', 'PIN tanımlanırsa arayanlardan PIN istenir. Yönetici PIN ile girenler lider yetkisi kazanır.'); ?></li>
-        <li><strong><?php echo t('conferences.help_wait_leader', 'Lideri Bekle:'); ?></strong> <?php echo t('conferences.help_wait_leader_desc', 'Aktif edilirse, bir yönetici odaya girene kadar katılımcılar bekleme müziği dinler, görüşme lider gelince başlar.'); ?></li>
-        <li><strong><?php echo t('conferences.help_live_ctrl', 'Canlı Denetim:'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc', 'Aktif katılımcıları canlı izleyebilir, istediklerinizi sessize alabilir (Mute) veya odadan atabilirsiniz (Kick).'); ?></li>
-    </ul>
-</div>
-
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-headset" style="color: var(--primary);"></i> <?php echo t('conferences.list_title', 'Tanımlı Konferans Odaları'); ?>
+            <i class="fas fa-users-rectangle" style="color: var(--primary);"></i> <?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?>
+            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($conferences); ?></span>
         </div>
-        <span class="badge badge-secondary"><?php echo count($conferences); ?></span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <?php if (hasModulePermission('conferences', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateConfModal()" title="<?php echo t('conferences.new_conf_btn', 'Yeni Konferans Odası'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <!-- Collapsible Help Box -->
+    <div class="module-help-box" id="confHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title', 'Konferans Odaları Nasıl Çalışır?'); ?></h4>
+        <p><?php echo t('conferences.help_body', 'Konferans odaları, dahili ve harici arayanların aynı anda bağlanarak toplu görüşme yapmasını sağlar.'); ?></p>
+        <ul>
+            <li><strong><?php echo t('conferences.help_pins', 'Kullanıcı ve Yönetici PIN:'); ?></strong> <?php echo t('conferences.help_pins_desc', 'PIN tanımlanırsa arayanlardan PIN istenir. Yönetici PIN ile girenler lider yetkisi kazanır.'); ?></li>
+            <li><strong><?php echo t('conferences.help_wait_leader', 'Lideri Bekle:'); ?></strong> <?php echo t('conferences.help_wait_leader_desc', 'Aktif edilirse, bir yönetici odaya girene kadar katılımcılar bekleme müziği dinler, görüşme lider gelince başlar.'); ?></li>
+            <li><strong><?php echo t('conferences.help_live_ctrl', 'Canlı Denetim:'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc', 'Aktif katılımcıları canlı izleyebilir, istediklerinizi sessize alabilir (Mute) veya odadan atabilirsiniz (Kick).'); ?></li>
+        </ul>
+    </div>
+
+    <?php if (!empty($message)): ?>
+        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
+            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+        </div>
+    <?php endif; ?>
 
     <div class="table-responsive">
         <table class="data-table">
