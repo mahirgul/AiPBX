@@ -6,25 +6,27 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.ContactsContract
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
-import android.content.res.ColorStateList
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import android.provider.ContactsContract
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.mhrgl.aipbx.databinding.DialogNewGroupBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.recyclerview.widget.RecyclerView
 import com.mhrgl.aipbx.BuildConfig
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
@@ -32,15 +34,23 @@ import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.data.ChatEventListener
 import com.mhrgl.aipbx.data.ChatWebSocketManager
 import com.mhrgl.aipbx.databinding.ActivityDialerBinding
+import com.mhrgl.aipbx.databinding.DialogGroupInfoBinding
+import com.mhrgl.aipbx.databinding.DialogNewGroupBinding
 import com.mhrgl.aipbx.engine.SipEngineListener
 import com.mhrgl.aipbx.model.CallStatus
 import com.mhrgl.aipbx.model.ChatConversation
 import com.mhrgl.aipbx.model.ChatMessage
+import com.mhrgl.aipbx.model.ChatUploadResponse
 import com.mhrgl.aipbx.model.ConnectionStatus
 import com.mhrgl.aipbx.model.ContactItem
 import com.mhrgl.aipbx.service.PbxForegroundService
 import com.mhrgl.aipbx.util.SamsungPowerManagerHelper
 import com.mhrgl.aipbx.util.SearchUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener {
 
@@ -56,6 +66,23 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private lateinit var chatAdapter: ChatConversationAdapter
     private val allConversations = mutableListOf<ChatConversation>()
     private val chatCorporateContacts = mutableListOf<ContactItem>()
+
+    // Embedded Chat Room
+    private lateinit var chatMessageAdapter: ChatMessageAdapter
+    private var currentChatConvId: Int = 0
+    private var currentChatTargetExt: String = ""
+    private var currentChatTargetName: String = ""
+    private var currentChatIsGroup: Boolean = false
+    private var currentChatGroupDetails: ChatConversation? = null
+    private var chatPendingUpload: ChatUploadResponse? = null
+
+    private val pickChatDocumentLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) handleChatPickedUri(uri, "file")
+    }
+
+    private val pickChatPhotoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) handleChatPickedUri(uri, "image")
+    }
 
     private var currentFilter = "all"
     private enum class ChatFilter { ALL, DIRECT, GROUP }
@@ -128,6 +155,32 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         // Background initial sync
         syncFeatures()
         syncDeviceToken()
+
+        handleIncomingIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        if (intent == null) return
+        val convId = intent.getIntExtra(ChatActivity.EXTRA_CONV_ID, 0)
+        val targetExt = intent.getStringExtra(ChatActivity.EXTRA_TARGET_EXT) ?: ""
+        val targetName = intent.getStringExtra(ChatActivity.EXTRA_TARGET_NAME)
+        val isGroup = intent.getBooleanExtra(ChatActivity.EXTRA_IS_GROUP, false)
+        val dialNum = intent.getStringExtra("extra_dial_number")
+
+        if (convId > 0 || targetExt.isNotEmpty()) {
+            switchTab(Tab.CHAT)
+            openChatRoom(convId, targetExt, targetName, isGroup)
+        } else if (!dialNum.isNullOrEmpty()) {
+            switchTab(Tab.DIALER)
+            binding.tvDigits.text = dialNum
+            binding.btnBackspace.visibility = View.VISIBLE
+        }
     }
 
     @android.annotation.SuppressLint("BatteryLife")
@@ -160,7 +213,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (currentTab == Tab.HISTORY) {
             loadCallHistory(currentFilter)
         } else if (currentTab == Tab.CHAT) {
-            loadConversations()
+            if (isChatRoomOpen()) {
+                ChatActivity.activeConversationId = currentChatConvId
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+                nm?.cancel(10000 + (currentChatConvId % 1000))
+                loadChatRoomMessages()
+            } else {
+                loadConversations()
+            }
         }
         updateChatUnreadBadge()
 
@@ -183,6 +243,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        if (ChatActivity.activeConversationId == currentChatConvId) {
+            ChatActivity.activeConversationId = 0
+        }
+    }
+
     override fun onStop() {
         super.onStop()
         if (isBound) {
@@ -194,11 +261,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onDestroy() {
         super.onDestroy()
+        if (ChatActivity.activeConversationId == currentChatConvId) {
+            ChatActivity.activeConversationId = 0
+        }
         ChatWebSocketManager.instance.removeListener(this)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (currentTab == Tab.CHAT && isChatRoomOpen()) {
+            closeChatRoom()
+            return
+        }
         if (currentTab != Tab.DIALER) {
             switchTab(Tab.DIALER)
         } else {
@@ -266,8 +340,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
         binding.tabChat.setOnClickListener {
-            switchTab(Tab.CHAT)
-            loadConversations()
+            if (currentTab == Tab.CHAT && isChatRoomOpen()) {
+                closeChatRoom()
+            } else {
+                switchTab(Tab.CHAT)
+                if (!isChatRoomOpen()) {
+                    loadConversations()
+                }
+            }
         }
         binding.tabFeatures.setOnClickListener {
             switchTab(Tab.FEATURES)
@@ -298,6 +378,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.layoutChat.visibility = View.GONE
         binding.layoutFeatures.visibility = View.GONE
 
+        if (tab != Tab.CHAT) {
+            ChatActivity.activeConversationId = 0
+        }
+
         when (tab) {
             Tab.DIALER -> {
                 binding.layoutDialpad.visibility = View.VISIBLE
@@ -318,6 +402,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 binding.layoutChat.visibility = View.VISIBLE
                 binding.ivTabChat.setColorFilter(colorActive)
                 binding.tvTabChat.setTextColor(colorActive)
+                if (isChatRoomOpen()) {
+                    ChatActivity.activeConversationId = currentChatConvId
+                }
             }
             Tab.FEATURES -> {
                 binding.layoutFeatures.visibility = View.VISIBLE
@@ -679,10 +766,58 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val isGroup = conv.type == "group"
             val targetExt = if (isGroup) "" else (conv.targetExt ?: "")
             val displayName = if (isGroup) (conv.title ?: "Grup Sohbeti") else (conv.targetName ?: conv.targetExt ?: "")
-            ChatActivity.start(this, conv.id, targetExt, displayName, isGroup)
+            openChatRoom(conv.id, targetExt, displayName, isGroup)
         }
         binding.rvChatConversations.layoutManager = LinearLayoutManager(this)
         binding.rvChatConversations.adapter = chatAdapter
+
+        // Embedded Chat Room setup
+        val myExt = prefs.extension ?: ""
+        val baseUrl = prefs.serverUrl ?: ""
+        chatMessageAdapter = ChatMessageAdapter(myExt, baseUrl, false)
+        val msgLm = LinearLayoutManager(this).apply {
+            stackFromEnd = true
+        }
+        binding.rvChatMessages.layoutManager = msgLm
+        binding.rvChatMessages.adapter = chatMessageAdapter
+
+        binding.btnChatRoomBack.setOnClickListener {
+            closeChatRoom()
+        }
+
+        binding.btnChatSend.setOnClickListener {
+            sendChatMessage()
+        }
+
+        binding.btnChatAttach.setOnClickListener {
+            pickChatDocumentLauncher.launch("*/*")
+        }
+
+        binding.btnChatCamera.setOnClickListener {
+            pickChatPhotoLauncher.launch("image/*")
+        }
+
+        binding.btnChatCancelUpload.setOnClickListener {
+            chatPendingUpload = null
+            binding.llChatUploadPreview.visibility = View.GONE
+        }
+
+        binding.btnChatRoomCall.setOnClickListener {
+            if (currentChatTargetExt.isNotEmpty()) {
+                switchTab(Tab.DIALER)
+                initiateCall(currentChatTargetExt, currentChatTargetName)
+            }
+        }
+
+        binding.btnChatRoomGroupInfo.setOnClickListener {
+            showChatRoomGroupInfoDialog()
+        }
+
+        binding.llChatRoomHeaderInfo.setOnClickListener {
+            if (currentChatIsGroup) {
+                showChatRoomGroupInfoDialog()
+            }
+        }
 
         binding.btnNewChat.setOnClickListener {
             showNewChatDialog()
@@ -921,8 +1056,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     createRes.onSuccess { newConv ->
                         dialog.dismiss()
                         loadConversations()
-                        ChatActivity.start(
-                            context = this@DialerActivity,
+                        openChatRoom(
                             convId = newConv.id,
                             targetExt = "",
                             targetName = newConv.title,
@@ -975,7 +1109,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             val pickerAdapter = ChatContactPickerAdapter { selected ->
                 dialog.dismiss()
-                ChatActivity.start(this@DialerActivity, 0, selected.extension, selected.name)
+                openChatRoom(0, selected.extension, selected.name, false)
             }
 
             dialogBinding.rvNewChatContacts.layoutManager = LinearLayoutManager(this@DialerActivity)
@@ -996,6 +1130,500 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             dialogBinding.btnCancelNewChat.setOnClickListener {
                 dialog.dismiss()
+            }
+
+            dialog.show()
+        }
+    }
+
+    // --- Embedded Chat Room Functionality ---
+
+    fun isChatRoomOpen(): Boolean = binding.layoutChatRoom.visibility == View.VISIBLE
+
+    private fun openChatRoom(convId: Int, targetExt: String = "", targetName: String? = null, isGroup: Boolean = false) {
+        currentChatConvId = convId
+        currentChatTargetExt = targetExt
+        currentChatTargetName = targetName ?: targetExt
+        currentChatIsGroup = isGroup
+        currentChatGroupDetails = null
+        ChatActivity.activeConversationId = convId
+
+        if (convId > 0) {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+            nm?.cancel(10000 + (convId % 1000))
+        }
+
+        binding.layoutChatList.visibility = View.GONE
+        binding.layoutChatRoom.visibility = View.VISIBLE
+
+        chatMessageAdapter.setIsGroup(isGroup)
+        chatMessageAdapter.submitList(emptyList())
+        binding.etChatMessage.setText("")
+        chatPendingUpload = null
+        binding.llChatUploadPreview.visibility = View.GONE
+        binding.tvChatTyping.visibility = View.GONE
+
+        updateChatRoomHeader()
+        ensureChatConversationAndLoadMessages()
+    }
+
+    private fun closeChatRoom() {
+        binding.layoutChatRoom.visibility = View.GONE
+        binding.layoutChatList.visibility = View.VISIBLE
+        currentChatConvId = 0
+        currentChatTargetExt = ""
+        currentChatTargetName = ""
+        currentChatIsGroup = false
+        currentChatGroupDetails = null
+        ChatActivity.activeConversationId = 0
+
+        loadConversations()
+        updateChatUnreadBadge()
+    }
+
+    private fun updateChatRoomHeader() {
+        if (currentChatIsGroup) {
+            binding.btnChatRoomCall.visibility = View.GONE
+            binding.btnChatRoomGroupInfo.visibility = View.VISIBLE
+            binding.vChatRoomOnlineDot.visibility = View.GONE
+            binding.tvChatRoomAvatar.text = "👥"
+            binding.tvChatRoomAvatar.backgroundTintList = ColorStateList.valueOf(0xFF4F46E5.toInt())
+            binding.tvChatRoomTargetName.text = if (currentChatTargetName.isNotEmpty()) currentChatTargetName else "Grup Sohbeti"
+            val grp = currentChatGroupDetails
+            binding.tvChatRoomTargetStatus.text = if (grp != null) {
+                "${grp.memberCount} üye, ${grp.onlineCount} çevrimiçi"
+            } else {
+                "Grup"
+            }
+        } else {
+            binding.btnChatRoomCall.visibility = View.VISIBLE
+            binding.btnChatRoomGroupInfo.visibility = View.GONE
+            binding.vChatRoomOnlineDot.visibility = View.VISIBLE
+            binding.tvChatRoomAvatar.text = currentChatTargetName.take(1).uppercase()
+            binding.tvChatRoomAvatar.backgroundTintList = null
+            binding.tvChatRoomTargetName.text = if (currentChatTargetName.isNotEmpty()) {
+                "$currentChatTargetName (#$currentChatTargetExt)"
+            } else {
+                "Dahili #$currentChatTargetExt"
+            }
+            binding.tvChatRoomTargetStatus.text = "Çevrimdışı"
+            binding.tvChatRoomTargetStatus.setTextColor(0xFF64748B.toInt())
+            binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(0xFF9CA3AF.toInt())
+        }
+    }
+
+    private fun ensureChatConversationAndLoadMessages() {
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            if (!currentChatIsGroup && currentChatConvId <= 0 && currentChatTargetExt.isNotEmpty()) {
+                val createRes = apiClient.createDirectChat(sUrl, token, currentChatTargetExt)
+                createRes.onSuccess { conv ->
+                    currentChatConvId = conv.id
+                    ChatActivity.activeConversationId = conv.id
+                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+                    nm?.cancel(10000 + (conv.id % 1000))
+                    loadChatRoomMessages()
+                }.onFailure {
+                    Toast.makeText(this@DialerActivity, "Sohbet oluşturulamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
+            } else if (currentChatConvId > 0) {
+                loadChatRoomMessages()
+                if (currentChatIsGroup || currentChatTargetExt.isEmpty()) {
+                    loadChatRoomGroupDetails()
+                }
+            }
+        }
+    }
+
+    private fun loadChatRoomMessages() {
+        if (currentChatConvId <= 0) return
+        val convId = currentChatConvId
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            val res = apiClient.getChatMessages(sUrl, token, convId, 50)
+            res.onSuccess { list ->
+                if (currentChatConvId == convId && isChatRoomOpen()) {
+                    chatMessageAdapter.submitList(list)
+                    binding.rvChatMessages.scrollToPosition((list.size - 1).coerceAtLeast(0))
+                    ChatWebSocketManager.instance.sendMarkRead(convId, list.lastOrNull()?.id ?: 0L)
+                }
+            }
+        }
+    }
+
+    private fun loadChatRoomGroupDetails() {
+        if (currentChatConvId <= 0) return
+        val convId = currentChatConvId
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            val res = apiClient.getGroupDetails(sUrl, token, convId)
+            res.onSuccess { conv ->
+                if (currentChatConvId == convId && isChatRoomOpen()) {
+                    currentChatGroupDetails = conv
+                    currentChatIsGroup = true
+                    runOnUiThread {
+                        chatMessageAdapter.setIsGroup(true)
+                        updateChatRoomHeader()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sendChatMessage() {
+        val text = binding.etChatMessage.text.toString().trim()
+        val upload = chatPendingUpload
+        if (text.isEmpty() && upload == null) return
+        if (currentChatConvId <= 0) return
+
+        val msgType = upload?.msgType ?: "text"
+        val attachUrl = upload?.attachmentUrl
+        val fileName = upload?.fileName
+        val fileSize = upload?.fileSize ?: 0L
+        val mimeType = upload?.mimeType
+
+        ChatWebSocketManager.instance.sendMessage(
+            convId = currentChatConvId,
+            msgType = msgType,
+            message = text,
+            attachmentUrl = attachUrl,
+            fileName = fileName,
+            fileSize = fileSize,
+            mimeType = mimeType
+        )
+
+        binding.etChatMessage.setText("")
+        chatPendingUpload = null
+        binding.llChatUploadPreview.visibility = View.GONE
+    }
+
+    private fun handleChatPickedUri(uri: Uri, type: String) {
+        lifecycleScope.launch {
+            binding.llChatUploadPreview.visibility = View.VISIBLE
+            binding.tvChatUploadFilename.text = "Dosya hazırlanıyor ve yükleniyor..."
+
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            val tempFile = withContext(Dispatchers.IO) {
+                try {
+                    val cr = contentResolver
+                    val mime = cr.getType(uri) ?: if (type == "image") "image/jpeg" else "application/octet-stream"
+                    val ext = if (type == "image") ".jpg" else ".bin"
+                    val file = File.createTempFile("chat_upload_", ext, cacheDir)
+
+                    cr.openInputStream(uri)?.use { input ->
+                        FileOutputStream(file).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Pair(file, mime)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            if (tempFile == null) {
+                Toast.makeText(this@DialerActivity, "Dosya okunamadı.", Toast.LENGTH_SHORT).show()
+                binding.llChatUploadPreview.visibility = View.GONE
+                return@launch
+            }
+
+            val (file, mime) = tempFile
+            val uploadRes = apiClient.uploadChatFile(sUrl, token, file, mime)
+            uploadRes.onSuccess { res ->
+                chatPendingUpload = res
+                binding.tvChatUploadFilename.text = res.fileName ?: file.name
+            }.onFailure {
+                Toast.makeText(this@DialerActivity, "Yükleme hatası: ${it.message}", Toast.LENGTH_LONG).show()
+                binding.llChatUploadPreview.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showChatRoomGroupInfoDialog() {
+        if (!currentChatIsGroup || currentChatConvId <= 0) return
+        val convId = currentChatConvId
+
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            val res = apiClient.getGroupDetails(sUrl, token, convId)
+            val group = res.getOrNull() ?: currentChatGroupDetails
+            if (group == null) {
+                Toast.makeText(this@DialerActivity, "Grup detayları yüklenemedi.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            currentChatGroupDetails = group
+
+            val dialogBinding = DialogGroupInfoBinding.inflate(layoutInflater)
+            val dialog = AlertDialog.Builder(this@DialerActivity)
+                .setView(dialogBinding.root)
+                .create()
+
+            val myExt = prefs.extension ?: ""
+            val isAdmin = group.myRole.equals("admin", ignoreCase = true)
+
+            dialogBinding.tvGroupInfoAvatar.text = "👥"
+            dialogBinding.tvGroupInfoAvatar.backgroundTintList = ColorStateList.valueOf(0xFF4F46E5.toInt())
+            dialogBinding.tvGroupInfoTitle.text = group.title ?: "Grup Sohbeti"
+            dialogBinding.tvGroupInfoSubtitle.text = "${group.memberCount} üye • ${group.onlineCount} çevrimiçi"
+            if (!group.description.isNullOrEmpty()) {
+                dialogBinding.tvGroupInfoDesc.visibility = View.VISIBLE
+                dialogBinding.tvGroupInfoDesc.text = group.description
+            } else {
+                dialogBinding.tvGroupInfoDesc.visibility = View.GONE
+            }
+
+            if (isAdmin) {
+                dialogBinding.llAdminActions.visibility = View.VISIBLE
+                dialogBinding.btnDeleteGroup.visibility = View.VISIBLE
+            } else {
+                dialogBinding.llAdminActions.visibility = View.GONE
+                dialogBinding.btnDeleteGroup.visibility = View.GONE
+            }
+
+            val participantAdapter = GroupParticipantAdapter(
+                myExtension = myExt,
+                isAdmin = isAdmin,
+                onToggleAdminRole = { participant ->
+                    val newRole = if (participant.role == "admin") "member" else "admin"
+                    lifecycleScope.launch {
+                        val roleRes = apiClient.updateGroupMemberRole(sUrl, token, convId, participant.extension, newRole)
+                        roleRes.onSuccess {
+                            dialog.dismiss()
+                            showChatRoomGroupInfoDialog()
+                            loadChatRoomGroupDetails()
+                        }.onFailure {
+                            Toast.makeText(this@DialerActivity, "Yetki değiştirilemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onRemoveMember = { participant ->
+                    AlertDialog.Builder(this@DialerActivity)
+                        .setTitle("Üyeyi Çıkar")
+                        .setMessage("${participant.name ?: participant.extension} gruptan çıkarılsın mı?")
+                        .setPositiveButton("Çıkar") { _, _ ->
+                            lifecycleScope.launch {
+                                val remRes = apiClient.removeGroupMember(sUrl, token, convId, participant.extension)
+                                remRes.onSuccess {
+                                    dialog.dismiss()
+                                    showChatRoomGroupInfoDialog()
+                                    loadChatRoomGroupDetails()
+                                }.onFailure {
+                                    Toast.makeText(this@DialerActivity, "Üye çıkarılamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                        .setNegativeButton("İptal", null)
+                        .show()
+                }
+            )
+
+            dialogBinding.rvGroupParticipants.layoutManager = LinearLayoutManager(this@DialerActivity)
+            dialogBinding.rvGroupParticipants.adapter = participantAdapter
+            participantAdapter.submitList(group.participants ?: emptyList())
+
+            dialogBinding.btnEditGroupInfo.setOnClickListener {
+                showEditChatGroupInfoDialog(group) {
+                    dialog.dismiss()
+                    showChatRoomGroupInfoDialog()
+                    loadChatRoomGroupDetails()
+                }
+            }
+
+            dialogBinding.btnAddMember.setOnClickListener {
+                showAddChatMembersDialog(group) {
+                    dialog.dismiss()
+                    showChatRoomGroupInfoDialog()
+                    loadChatRoomGroupDetails()
+                }
+            }
+
+            dialogBinding.btnLeaveGroup.setOnClickListener {
+                AlertDialog.Builder(this@DialerActivity)
+                    .setTitle("Gruptan Ayrıl")
+                    .setMessage("Bu gruptan ayrılmak istediğinizden emin misiniz?")
+                    .setPositiveButton("Ayrıl") { _, _ ->
+                        lifecycleScope.launch {
+                            val leaveRes = apiClient.leaveGroup(sUrl, token, convId)
+                            leaveRes.onSuccess {
+                                Toast.makeText(this@DialerActivity, "Gruptan ayrıldınız.", Toast.LENGTH_SHORT).show()
+                                dialog.dismiss()
+                                closeChatRoom()
+                            }.onFailure {
+                                Toast.makeText(this@DialerActivity, "İşlem başarısız: ${it.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Vazgeç", null)
+                    .show()
+            }
+
+            dialogBinding.btnDeleteGroup.setOnClickListener {
+                AlertDialog.Builder(this@DialerActivity)
+                    .setTitle("Grubu Sil")
+                    .setMessage("Bu grubu silmek istediğinizden emin misiniz? Tüm üyelerin sohbet listesinden kaldırılacaktır.")
+                    .setPositiveButton("Sil") { _, _ ->
+                        lifecycleScope.launch {
+                            val delRes = apiClient.deleteGroup(sUrl, token, convId)
+                            delRes.onSuccess {
+                                Toast.makeText(this@DialerActivity, "Grup silindi.", Toast.LENGTH_SHORT).show()
+                                dialog.dismiss()
+                                closeChatRoom()
+                            }.onFailure {
+                                Toast.makeText(this@DialerActivity, "Silinemedi: ${it.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Vazgeç", null)
+                    .show()
+            }
+
+            dialogBinding.btnCloseGroupInfo.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            dialog.show()
+        }
+    }
+
+    private fun showEditChatGroupInfoDialog(group: ChatConversation, onUpdated: () -> Unit) {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_new_group, null)
+        val etTitle = view.findViewById<EditText>(R.id.etGroupTitle)
+        val etDesc = view.findViewById<EditText>(R.id.etGroupDesc)
+        val tvSelected = view.findViewById<TextView>(R.id.tvSelectedCount)
+        val etSearch = view.findViewById<EditText>(R.id.etSearchMember)
+        val rvMembers = view.findViewById<RecyclerView>(R.id.rvGroupMembers)
+        val btnSubmit = view.findViewById<Button>(R.id.btnSubmitNewGroup)
+        val btnCancel = view.findViewById<Button>(R.id.btnCancelNewGroup)
+
+        tvSelected.visibility = View.GONE
+        etSearch.visibility = View.GONE
+        rvMembers.visibility = View.GONE
+        btnSubmit.text = "Kaydet"
+
+        etTitle.setText(group.title ?: "")
+        etDesc.setText(group.description ?: "")
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Grup Bilgilerini Düzenle")
+            .setView(view)
+            .create()
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnSubmit.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+            val desc = etDesc.text.toString().trim()
+
+            if (title.isEmpty()) {
+                Toast.makeText(this, "Grup başlığı boş olamaz.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            btnSubmit.isEnabled = false
+            lifecycleScope.launch {
+                val sUrl = prefs.serverUrl ?: return@launch
+                val token = prefs.token ?: return@launch
+
+                val updateRes = apiClient.updateGroupInfo(
+                    baseUrl = sUrl,
+                    token = token,
+                    convId = group.id,
+                    title = title,
+                    avatarUrl = null,
+                    description = desc
+                )
+                updateRes.onSuccess {
+                    dialog.dismiss()
+                    onUpdated()
+                }.onFailure { err ->
+                    btnSubmit.isEnabled = true
+                    Toast.makeText(this@DialerActivity, "Güncellenemedi: ${err.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showAddChatMembersDialog(group: ChatConversation, onAdded: () -> Unit) {
+        lifecycleScope.launch {
+            val sUrl = prefs.serverUrl ?: return@launch
+            val token = prefs.token ?: return@launch
+
+            val contactsRes = apiClient.getContacts(sUrl, token)
+            val allContacts = contactsRes.getOrNull()?.contacts ?: emptyList()
+
+            val existingExts = group.participants?.map { it.extension }?.toSet() ?: emptySet()
+            val availableContacts = allContacts.filter { !existingExts.contains(it.extension) }
+
+            if (availableContacts.isEmpty()) {
+                Toast.makeText(this@DialerActivity, "Eklenebilecek yeni dahili bulunamadı.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            val view = LayoutInflater.from(this@DialerActivity).inflate(R.layout.dialog_new_group, null)
+            val etTitle = view.findViewById<EditText>(R.id.etGroupTitle)
+            val etDesc = view.findViewById<EditText>(R.id.etGroupDesc)
+            val tvSelected = view.findViewById<TextView>(R.id.tvSelectedCount)
+            val etSearch = view.findViewById<EditText>(R.id.etSearchMember)
+            val rvMembers = view.findViewById<RecyclerView>(R.id.rvGroupMembers)
+            val btnSubmit = view.findViewById<Button>(R.id.btnSubmitNewGroup)
+            val btnCancel = view.findViewById<Button>(R.id.btnCancelNewGroup)
+
+            etTitle.visibility = View.GONE
+            etDesc.visibility = View.GONE
+            btnSubmit.text = "Üyeleri Ekle"
+
+            val selectionAdapter = ContactSelectionAdapter { selected ->
+                tvSelected.text = "Üye Seçin (${selected.size} seçildi):"
+            }
+            rvMembers.layoutManager = LinearLayoutManager(this@DialerActivity)
+            rvMembers.adapter = selectionAdapter
+            selectionAdapter.submitList(availableContacts)
+
+            etSearch.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                    selectionAdapter.filter(s?.toString() ?: "")
+                }
+                override fun afterTextChanged(s: android.text.Editable?) {}
+            })
+
+            val dialog = AlertDialog.Builder(this@DialerActivity)
+                .setTitle("Gruba Üye Ekle")
+                .setView(view)
+                .create()
+
+            btnCancel.setOnClickListener { dialog.dismiss() }
+
+            btnSubmit.setOnClickListener {
+                val selected = selectionAdapter.getSelectedExtensions().toList()
+                if (selected.isEmpty()) {
+                    Toast.makeText(this@DialerActivity, "Lütfen en az bir üye seçin.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                btnSubmit.isEnabled = false
+                lifecycleScope.launch {
+                    val addRes = apiClient.addGroupMembers(sUrl, token, group.id, selected)
+                    addRes.onSuccess {
+                        dialog.dismiss()
+                        onAdded()
+                    }.onFailure {
+                        btnSubmit.isEnabled = true
+                        Toast.makeText(this@DialerActivity, "Üyeler eklenemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
 
             dialog.show()
@@ -1319,10 +1947,28 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onNewMessage(message: ChatMessage) {
         runOnUiThread {
+            if (isChatRoomOpen() && message.conversationId == currentChatConvId) {
+                chatMessageAdapter.addMessage(message)
+                binding.rvChatMessages.scrollToPosition(chatMessageAdapter.itemCount - 1)
+                ChatWebSocketManager.instance.sendMarkRead(currentChatConvId, message.id)
+            }
             if (currentTab == Tab.CHAT) {
                 loadConversations()
             }
             updateChatUnreadBadge()
+        }
+    }
+
+    override fun onTyping(conversationId: Int, fromName: String, isTyping: Boolean) {
+        if (isChatRoomOpen() && conversationId == currentChatConvId) {
+            runOnUiThread {
+                if (isTyping) {
+                    binding.tvChatTyping.visibility = View.VISIBLE
+                    binding.tvChatTyping.text = "$fromName yazıyor..."
+                } else {
+                    binding.tvChatTyping.visibility = View.GONE
+                }
+            }
         }
     }
 
@@ -1335,18 +1981,33 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {
         runOnUiThread {
+            if (isChatRoomOpen() && conversationId == currentChatConvId) {
+                loadChatRoomGroupDetails()
+            }
             if (currentTab == Tab.CHAT) loadConversations()
         }
     }
 
     override fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {
         runOnUiThread {
+            if (isChatRoomOpen() && conversationId == currentChatConvId) {
+                loadChatRoomGroupDetails()
+            }
             if (currentTab == Tab.CHAT) loadConversations()
         }
     }
 
     override fun onGroupMemberRemoved(conversationId: Int, extension: String, actor: String) {
         runOnUiThread {
+            if (isChatRoomOpen() && conversationId == currentChatConvId) {
+                val myExt = prefs.extension ?: ""
+                if (extension == myExt) {
+                    Toast.makeText(this@DialerActivity, "Gruptan çıkarıldınız.", Toast.LENGTH_LONG).show()
+                    closeChatRoom()
+                } else {
+                    loadChatRoomGroupDetails()
+                }
+            }
             if (currentTab == Tab.CHAT) loadConversations()
             updateChatUnreadBadge()
         }
@@ -1354,12 +2015,19 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onGroupRoleUpdated(conversationId: Int, extension: String, role: String, actor: String) {
         runOnUiThread {
+            if (isChatRoomOpen() && conversationId == currentChatConvId) {
+                loadChatRoomGroupDetails()
+            }
             if (currentTab == Tab.CHAT) loadConversations()
         }
     }
 
     override fun onGroupDeleted(conversationId: Int) {
         runOnUiThread {
+            if (isChatRoomOpen() && conversationId == currentChatConvId) {
+                Toast.makeText(this@DialerActivity, "Grup silindi.", Toast.LENGTH_LONG).show()
+                closeChatRoom()
+            }
             if (currentTab == Tab.CHAT) loadConversations()
             updateChatUnreadBadge()
         }
@@ -1367,6 +2035,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onPresence(extension: String, isOnline: Boolean) {
         runOnUiThread {
+            if (isChatRoomOpen()) {
+                if (!currentChatIsGroup && extension == currentChatTargetExt) {
+                    binding.tvChatRoomTargetStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
+                    binding.tvChatRoomTargetStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
+                    binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(
+                        if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
+                    )
+                } else if (currentChatIsGroup) {
+                    loadChatRoomGroupDetails()
+                }
+            }
+
             var changed = false
             for (i in 0 until allConversations.size) {
                 val c = allConversations[i]

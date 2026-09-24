@@ -63,8 +63,8 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
     private fun showChatNotification(title: String, body: String, convId: Int, targetExt: String, targetName: String, isGroup: Boolean) {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
-        val intent = Intent(this, com.mhrgl.aipbx.ui.ChatActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val intent = Intent(this, com.mhrgl.aipbx.ui.DialerActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_CONV_ID, convId)
             putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_EXT, targetExt)
             putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_NAME, targetName)
