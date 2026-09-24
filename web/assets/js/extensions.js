@@ -25,6 +25,9 @@ function toggleExtensionTypeFields() {
     const isFax = typeEl.value === 'fax';
     if (authGroup) authGroup.style.display = isFax ? 'none' : '';
 
+    const vmGroup = document.getElementById('voicemail_settings_group');
+    if (vmGroup) vmGroup.style.display = isFax ? 'none' : '';
+
     if (isFax) {
         pwGroup.style.display = 'none';
         pwEl.required = false;

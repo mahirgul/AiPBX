@@ -30,6 +30,10 @@ $vmNa = (int)($details['vm_on_noanswer'] ?? 0);
 $vmBusy = (int)($details['vm_on_busy'] ?? 0);
 $vmUnavail = (int)($details['vm_on_unavail'] ?? 0);
 $vmAlways = (int)($details['vm_always'] ?? 0);
+$isFaxUser = (($_SESSION['user_role'] ?? '') === 'fax_user' || ($details['extension_type'] ?? '') === 'fax');
+if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
+    $currentTab = 'history';
+}
 ?>
 
 <style>
@@ -208,10 +212,12 @@ $vmAlways = (int)($details['vm_always'] ?? 0);
                     <span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px; border-radius: 10px;"><i class="fas fa-check"></i> Aktif</span>
                 <?php endif; ?>
             </button>
+            <?php if (!$isFaxUser): ?>
             <button type="button" class="btn btn-sm <?php echo $currentTab === 'voicemail' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-voicemail" onclick="switchMyPhoneTab('voicemail')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
                 <i class="fas fa-voicemail"></i> <?php echo t('my_phone.tab_voicemail', 'Sesli Posta'); ?>
                 <span class="badge <?php echo !empty($vmMessages) ? 'badge-danger' : 'badge-secondary'; ?>" style="font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($vmMessages); ?></span>
             </button>
+            <?php endif; ?>
         </div>
 
         <!-- TAB 1: ÇAĞRI GEÇMİŞİM (Geniş & Modern Data-Table) -->
@@ -583,6 +589,7 @@ $vmAlways = (int)($details['vm_always'] ?? 0);
                         </div>
                     </div>
 
+                    <?php if (!$isFaxUser): ?>
                     <!-- Sesli Posta (Voicemail) Tercihleri -->
                     <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 18px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -626,6 +633,7 @@ $vmAlways = (int)($details['vm_always'] ?? 0);
                             </label>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
                         <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
@@ -759,6 +767,7 @@ $vmAlways = (int)($details['vm_always'] ?? 0);
 
         </div>
 
+        <?php if (!$isFaxUser): ?>
         <!-- TAB 3: SESLİ POSTA KUTUM (Voicemail Messages) -->
         <div id="tab-pane-voicemail" class="card" style="display: <?php echo $currentTab === 'voicemail' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
             <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
@@ -841,6 +850,7 @@ $vmAlways = (int)($details['vm_always'] ?? 0);
                 </table>
             </div>
         </div>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 
