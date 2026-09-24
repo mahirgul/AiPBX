@@ -15,37 +15,33 @@ if (!$selected_group && !empty($groups)) {
 }
 ?>
 
-<div class="card mb-3 my-phone-header-card">
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(var(--primary-rgb, 2, 132, 199), 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-            <i class="fas fa-shield-alt"></i>
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-shield-alt" style="color: var(--primary);"></i> <?php echo t('dial_permissions.title', 'Arama Yetki Grupları'); ?>
         </div>
-        <div>
-            <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-main);"><?php echo t('dial_permissions.title', 'Arama Yetki Grupları'); ?></h2>
-            <div style="font-size: 12px; color: var(--text-muted);"><?php echo t('dial_permissions.subtitle', 'Abonelerin arayabileceği ve arayamayacağı yönleri, prefix ve özel numaraları grup bazında tanımlayın.'); ?></div>
-        </div>
-    </div>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="Modül Rehberi">
-            <i class="fas fa-question-circle"></i>
-        </button>
-        <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
-            <button class="btn btn-primary btn-sm" onclick="openCreateGroupModal()">
-                <i class="fas fa-plus-circle"></i> <?php echo t('dial_permissions.new_group_btn', 'Yeni Yetki Grubu'); ?>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+                <i class="fas fa-question-circle"></i>
             </button>
-        <?php endif; ?>
+            <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateGroupModal()" title="<?php echo t('dial_permissions.new_group_btn', 'Yeni Yetki Grubu'); ?>">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
-</div>
 
-<!-- Collapsible Help Box -->
-<div class="module-help-box" id="permHelpBox">
-    <h4><i class="fas fa-info-circle"></i> <?php echo t('dial_permissions.help_title', 'Arama Yetki Grupları Nasıl Çalışır?'); ?></h4>
-    <p><?php echo t('dial_permissions.help_body', 'Arama yetki grupları, dahili abonelerin harici hatlara doğru yapacakları aramaları denetler.'); ?></p>
-    <ul>
-        <li><strong><?php echo t('dial_permissions.help_default', 'Varsayılan Davranış:'); ?></strong> <?php echo t('dial_permissions.help_default_desc', 'Grup "İzin Ver" modundaysa kurallar kara liste (engelleme), "Engelle" modundaysa kurallar beyaz liste (izin verme) olarak çalışır.'); ?></li>
-        <li><strong><?php echo t('dial_permissions.help_prefix', 'Ön Ek (Prefix):'); ?></strong> <?php echo t('dial_permissions.help_prefix_desc', 'Örneğin "0" girilirse 0 ile başlayan tüm numaralar, "00" girilirse yurtdışı, "05" girilirse tüm GSM aramaları kapsanır.'); ?></li>
-        <li><strong><?php echo t('dial_permissions.help_exact', 'Tam Numara:'); ?></strong> <?php echo t('dial_permissions.help_exact_desc', 'Spesifik bir numara girildiğinde sadece o numara için kural işletilir.'); ?></li>
-    </ul>
+    <!-- Collapsible Help Box -->
+    <div class="module-help-box" id="permHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('dial_permissions.help_title', 'Arama Yetki Grupları Nasıl Çalışır?'); ?></h4>
+        <p><?php echo t('dial_permissions.help_body', 'Arama yetki grupları, dahili abonelerin harici hatlara doğru yapacakları aramaları denetler.'); ?></p>
+        <ul>
+            <li><strong><?php echo t('dial_permissions.help_default', 'Varsayılan Davranış:'); ?></strong> <?php echo t('dial_permissions.help_default_desc', 'Grup "İzin Ver" modundaysa kurallar kara liste (engelleme), "Engelle" modundaysa kurallar beyaz liste (izin verme) olarak çalışır.'); ?></li>
+            <li><strong><?php echo t('dial_permissions.help_prefix', 'Ön Ek (Prefix):'); ?></strong> <?php echo t('dial_permissions.help_prefix_desc', 'Örneğin "0" girilirse 0 ile başlayan tüm numaralar, "00" girilirse yurtdışı, "05" girilirse tüm GSM aramaları kapsanır.'); ?></li>
+            <li><strong><?php echo t('dial_permissions.help_exact', 'Tam Numara:'); ?></strong> <?php echo t('dial_permissions.help_exact_desc', 'Spesifik bir numara girildiğinde sadece o numara için kural işletilir.'); ?></li>
+        </ul>
+    </div>
 </div>
 
 <?php if (!empty($message)): ?>
