@@ -59,47 +59,47 @@ global $LANG, $company;
             </a>
         </li>
         <li class="nav-dropdown">
-            <button class="nav-dropdown-btn" type="button" aria-haspopup="true">
+            <button class="nav-dropdown-btn <?= (isset($page) && in_array($page, ['docs', 'installation', 'callcenter', 'security', 'api'])) ? 'active' : '' ?>" type="button" aria-haspopup="true">
                 <?= t('Dokümantasyon', 'Docs', 'Handbuch') ?>
                 <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:3px;"></i>
             </button>
             <div class="nav-dropdown-menu">
-                <a href="/installation.html" class="nav-dropdown-item">
+                <a href="/installation.html" class="nav-dropdown-item <?= (isset($page) && $page === 'installation') ? 'active' : '' ?>">
                     <i class="fa-solid fa-terminal" style="color:#0284c7; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><?= t('Kurulum Kılavuzu', 'Installation Guide', 'Installationsanleitung') ?></div>
                         <small style="color:#64748b; font-size:0.76rem;">Ubuntu 22.04 / 24.04 &amp; Debian 12</small>
                     </div>
                 </a>
-                <a href="/msteams.html" class="nav-dropdown-item">
+                <a href="/msteams.html" class="nav-dropdown-item <?= (isset($page) && $page === 'teams') ? 'active' : '' ?>">
                     <i class="fa-brands fa-microsoft" style="color:#6264a7; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">Microsoft Teams Direct Routing</div>
                         <small style="color:#64748b; font-size:0.76rem;"><?= t('Yerleşik SBC & Çift Yönlü Köprü', 'Built-in SBC & 2-Way Bridge', 'Integriertes SBC & 2-Wege-Gateway') ?></small>
                     </div>
                 </a>
-                <a href="/mobile-apps.html" class="nav-dropdown-item">
+                <a href="/mobile-apps.html" class="nav-dropdown-item <?= (isset($page) && $page === 'mobile') ? 'active' : '' ?>">
                     <i class="fa-solid fa-mobile-screen" style="color:#10b981; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><?= t('Mobil Softphone', 'Mobile Softphone', 'Mobile Softphones') ?></div>
                         <small style="color:#64748b; font-size:0.76rem;">Android (Kotlin) &amp; iOS (Swift)</small>
                     </div>
                 </a>
-                <a href="/callcenter.html" class="nav-dropdown-item">
+                <a href="/callcenter.html" class="nav-dropdown-item <?= (isset($page) && $page === 'callcenter') ? 'active' : '' ?>">
                     <i class="fa-solid fa-headset" style="color:#ec4899; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><?= t('Çağrı Merkezi & Kuyruklar', 'Call Center & Queues', 'Callcenter & Warteschlangen') ?></div>
                         <small style="color:#64748b; font-size:0.76rem;"><?= t('*22/*23 Mola & *90 Dinleme', '*22/*23 Breaks & *90 Spy', '*22/*23 Pausen & *90 Spy') ?></small>
                     </div>
                 </a>
-                <a href="/security.html" class="nav-dropdown-item">
+                <a href="/security.html" class="nav-dropdown-item <?= (isset($page) && $page === 'security') ? 'active' : '' ?>">
                     <i class="fa-solid fa-shield-halved" style="color:#f59e0b; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;"><?= t('Güvenlik & SBC Savunması', 'Security & SBC Defense', 'Sicherheit & SBC-Schutz') ?></div>
                         <small style="color:#64748b; font-size:0.76rem;">Fail2ban, TLS 1.3, Passkeys</small>
                     </div>
                 </a>
-                <a href="/api-docs.html" class="nav-dropdown-item">
+                <a href="/api-docs.html" class="nav-dropdown-item <?= (isset($page) && $page === 'api') ? 'active' : '' ?>">
                     <i class="fa-solid fa-code" style="color:#6366f1; font-size:1.1rem; width:20px; text-align:center;"></i>
                     <div>
                         <div style="font-weight:700; color:#0f172a;">REST API &amp; WebSocket</div>

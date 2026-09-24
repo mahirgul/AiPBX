@@ -171,7 +171,19 @@ $pageUrl = 'https://aipbx.bid/tables.html';
 
                     <div class="table-search-box">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="tableFilterInput" class="table-search-input" placeholder="<?= t('Tabloda ara (ör. passkey, port 443, *90, yetki)...', 'Search in table (e.g. passkey, port 443, *90)...', 'In Tabelle suchen (z.B. Passkey, Port 443, *90)...') ?>">
+                        <?php
+                            $phTexts = [
+                                'tr' => 'Tabloda ara (ör. passkey, port 443, *90, yetki)...',
+                                'en' => 'Search in table (e.g. passkey, port 443, *90, barring)...',
+                                'de' => 'In Tabelle suchen (z.B. Passkey, Port 443, *90, Rechte)...'
+                            ];
+                            $currPh = $phTexts[$LANG] ?? $phTexts['tr'];
+                        ?>
+                        <input type="text" id="tableFilterInput" class="table-search-input" 
+                               placeholder="<?= htmlspecialchars($currPh) ?>"
+                               data-placeholder-tr="<?= htmlspecialchars($phTexts['tr']) ?>"
+                               data-placeholder-en="<?= htmlspecialchars($phTexts['en']) ?>"
+                               data-placeholder-de="<?= htmlspecialchars($phTexts['de']) ?>">
                     </div>
                 </div>
 
