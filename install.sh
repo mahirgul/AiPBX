@@ -213,6 +213,7 @@ apt-get install -y \
   libc6-dev \
   git \
   fail2ban \
+  firewalld \
   ghostscript \
   libtiff-tools \
   postfix \
@@ -620,8 +621,8 @@ usermod -aG asterisk www-data
 
 # Sudoers permissions for AI PBX management (service restarts and postfix/asterisk controls)
 cat > /etc/sudoers.d/aipbx << 'SUDOOVERRIDE'
-www-data ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/sbin/asterisk, /usr/sbin/postconf, /usr/sbin/postmap, /usr/sbin/postfix
-asterisk ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/sbin/asterisk
+www-data ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/bin/systemctl restart fail2ban, /usr/bin/systemctl reload fail2ban, /usr/bin/systemctl restart firewalld, /usr/bin/systemctl reload firewalld, /usr/sbin/asterisk, /usr/sbin/postconf, /usr/sbin/postmap, /usr/sbin/postfix, /usr/bin/fail2ban-client, /usr/bin/firewall-cmd
+asterisk ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/bin/systemctl restart fail2ban, /usr/bin/systemctl reload fail2ban, /usr/bin/systemctl restart firewalld, /usr/bin/systemctl reload firewalld, /usr/sbin/asterisk, /usr/bin/fail2ban-client, /usr/bin/firewall-cmd
 SUDOOVERRIDE
 chmod 440 /etc/sudoers.d/aipbx
 
@@ -788,12 +789,57 @@ systemctl enable coturn 2>/dev/null || true
 ok "coturn configured"
 
 # ============================================================================
-# STEP 12: FAIL2BAN
+# STEP 12: SECURITY (FIREWALLD & FAIL2BAN)
 # ============================================================================
-step "12. Configuring fail2ban"
+step "12. Configuring Firewall (firewalld) & Fail2ban"
+
+# 12a. Firewalld configuration
+systemctl enable firewalld 2>/dev/null || true
+systemctl start firewalld 2>/dev/null || true
+
+firewall-cmd --permanent --add-service=http 2>/dev/null || true
+firewall-cmd --permanent --add-service=https 2>/dev/null || true
+firewall-cmd --permanent --add-service=ssh 2>/dev/null || true
+firewall-cmd --permanent --add-port=5060/udp 2>/dev/null || true
+firewall-cmd --permanent --add-port=5060/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=5061/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=8089/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=8443/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=10000-20000/udp 2>/dev/null || true
+firewall-cmd --permanent --add-port=3478/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=3478/udp 2>/dev/null || true
+firewall-cmd --permanent --add-port=5349/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=5349/udp 2>/dev/null || true
+firewall-cmd --permanent --add-port=49152-65535/udp 2>/dev/null || true
+firewall-cmd --reload 2>/dev/null || true
+
+# 12b. Asterisk security logging
+sed -i "s/^;security\.log => security/security.log => security/" /etc/asterisk/logger.conf 2>/dev/null || true
+asterisk -rx "logger reload" 2>/dev/null || true
+
+# 12c. Fail2ban configuration
+cat > /etc/fail2ban/jail.d/asterisk.local << 'JAIL'
+[asterisk]
+enabled  = true
+port     = 5060,5061
+protocol = all
+filter   = asterisk
+logpath  = /var/log/asterisk/messages.log
+           /var/log/asterisk/security.log
+maxretry = 5
+bantime  = 3600
+findtime = 600
+JAIL
+
+chgrp -R www-data /etc/fail2ban/jail.d 2>/dev/null || true
+chmod 775 /etc/fail2ban/jail.d 2>/dev/null || true
+touch /etc/fail2ban/jail.d/99-ai-pbx.local
+chown root:www-data /etc/fail2ban/jail.d/99-ai-pbx.local 2>/dev/null || true
+chmod 664 /etc/fail2ban/jail.d/99-ai-pbx.local 2>/dev/null || true
+
 systemctl enable fail2ban 2>/dev/null || true
-systemctl start fail2ban 2>/dev/null || true
-ok "fail2ban configured"
+systemctl restart fail2ban 2>/dev/null || true
+ok "firewall and fail2ban configured"
 
 # ============================================================================
 # STEP 13: SAVE CREDENTIALS TO FILE

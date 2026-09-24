@@ -335,24 +335,34 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             </li>
         <?php endif; ?>
 
-        <!-- 4c. Entegrasyonlar Menüsü (Microsoft Teams) -->
-        <?php if ($can_view_teams_group): ?>
-            <li class="nav-group <?php echo ($is_teams_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-integrations">
+        <!-- 4c. Entegrasyonlar Menüsü (Google & Microsoft Teams) -->
+        <?php if (!empty($can_view_integrations_group)): ?>
+            <li class="nav-group <?php echo (($is_teams_active || !empty($is_google_active) || !empty($is_integrations_active)) && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-integrations">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-integrations')" title="<?php echo t('sidebar.group_integrations', 'Entegrasyon'); ?>">
                     <span class="toggle-title">
-                        <i class="fab fa-microsoft" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.group_integrations', 'Entegrasyon'); ?></span>
+                        <i class="fas fa-plug" style="color: #3b82f6;"></i> <span class="nav-text"><?php echo t('sidebar.group_integrations', 'Entegrasyon'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
                 <ul class="nav-submenu">
-                    <li>
-                        <a href="/ms-teams" class="nav-link <?php echo $active_page === 'ms_teams.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ms_teams', 'Teams'); ?>">
-                            <i class="fab fa-windows" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.item_ms_teams', 'Teams'); ?></span>
-                        </a>
-                    </li>
+                    <?php if ($role === 'admin'): ?>
+                        <li>
+                            <a href="/google-integration" class="nav-link <?php echo !empty($is_google_active) ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_google_integration', 'Google ile Giriş'); ?>">
+                                <i class="fab fa-google" style="color: #ea4335;"></i> <span class="nav-text"><?php echo t('sidebar.item_google_integration', 'Google ile Giriş'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (hasModulePermission('ms_teams', 'view')): ?>
+                        <li>
+                            <a href="/ms-teams" class="nav-link <?php echo $active_page === 'ms_teams.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ms_teams', 'Teams'); ?>">
+                                <i class="fab fa-windows" style="color: #6264a7;"></i> <span class="nav-text"><?php echo t('sidebar.item_ms_teams', 'Teams'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </li>
         <?php endif; ?>
+
 
         <!-- 5. Faks Sistemi Menüsü -->
         <?php if ($can_view_fax_group): ?>

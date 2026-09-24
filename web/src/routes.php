@@ -65,6 +65,9 @@ return [
     '/fax-send'        => ['controller' => FaxSendController::class, 'action' => 'index', 'module' => 'fax_send.php'],
     '/fax-sent'        => ['controller' => FaxSentController::class, 'action' => 'index', 'module' => 'fax_sent.php'],
     '/ms-teams'        => ['controller' => MsTeamsController::class, 'action' => 'index', 'module' => 'ms_teams.php'],
+    '/google-integration' => ['controller' => GoogleIntegrationController::class, 'action' => 'index', 'module' => 'google_integration.php'],
+    '/integrations/google' => ['controller' => GoogleIntegrationController::class, 'action' => 'index', 'module' => 'google_integration.php'],
     '/auth/google'     => ['controller' => GoogleAuthController::class, 'action' => 'auth', 'module' => 'google_auth.php'],
     '/auth/google/callback' => ['controller' => GoogleAuthController::class, 'action' => 'callback', 'module' => 'google_auth_callback.php'],
 ];
+
