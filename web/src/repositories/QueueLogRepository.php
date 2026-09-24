@@ -19,19 +19,19 @@ class QueueLogRepository extends BaseRepository
      * - 'grouped': Çağrı bacaklarını call_id'ye göre birleştirip çağrı yolculuğu (journey) oluşturur.
      * - 'raw': Ham Asterisk event loglarını satır satır listeler.
      */
-    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped'): array
+    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $sayfa = 1, int $boyut = 50): array
     {
         if ($viewMode === 'raw') {
-            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap);
+            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
         }
-        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap);
+        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
     }
 
     /**
      * Birleştirilmiş (Grouped by call_id) Çağrı Listesi.
      * 1 Kuyruk Çağrısı = 1 Satır (Açılabilir Çağrı Yolculuğu / Timeline ile).
      */
-    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap): array
+    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
     {
         $db = static::db();
 
@@ -62,21 +62,32 @@ class QueueLogRepository extends BaseRepository
             }
         }
 
-        // Filtrelere uyan en güncel çağrıları (call_id) belirleyelim
+        // Toplam benzersiz çağrı (call_id) sayısını hesaplayalım
+        $countSql = "SELECT COUNT(DISTINCT call_id) FROM cc_queue_logs" . $where;
+        $countStmt = $db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalCalls = (int)$countStmt->fetchColumn();
+
+        // İstatistikler (Filtrelenen aralıktaki tüm satırlar üzerinden)
+        $stats = static::calculateStats($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery);
+
+        if ($totalCalls === 0) {
+            return array_merge(['view_mode' => 'grouped', 'logs' => [], 'total' => 0], $stats);
+        }
+
+        // Filtrelere uyan en güncel çağrıları (call_id) belirleyelim (sayfalamalı)
+        $offset = max(0, ($sayfa - 1) * $boyut);
         $sqlCalls = "SELECT call_id, MIN(time_id) AS first_ts, MAX(time_id) AS last_ts, MAX(queue_name) AS q_name 
                      FROM cc_queue_logs"
                   . $where
-                  . " GROUP BY call_id ORDER BY first_ts DESC LIMIT 200";
+                  . " GROUP BY call_id ORDER BY first_ts DESC LIMIT " . (int)$boyut . " OFFSET " . (int)$offset;
 
         $stmtCalls = $db->prepare($sqlCalls);
         $stmtCalls->execute($params);
         $callRows = $stmtCalls->fetchAll(PDO::FETCH_ASSOC);
 
-        // İstatistikler (Filtrelenen aralıktaki tüm satırlar üzerinden)
-        $stats = static::calculateStats($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery);
-
         if (empty($callRows)) {
-            return array_merge(['view_mode' => 'grouped', 'logs' => []], $stats);
+            return array_merge(['view_mode' => 'grouped', 'logs' => [], 'total' => $totalCalls], $stats);
         }
 
         $callIds = array_column($callRows, 'call_id');
@@ -261,42 +272,58 @@ class QueueLogRepository extends BaseRepository
         return array_merge([
             'view_mode' => 'grouped',
             'logs' => $groupedCalls,
+            'total' => $totalCalls,
         ], $stats);
     }
 
     /**
      * Ham (un-grouped) Asterisk Queue Log listesi.
      */
-    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap): array
+    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
     {
-        $sql = "SELECT id, time_id, created_at, call_id, queue_name, agent, event, data1, data2, data3, data4 FROM cc_queue_logs WHERE 1=1";
+        $sqlWhere = " WHERE 1=1";
         $params = [];
 
         if ($startTs > 0) {
-            $sql .= " AND time_id >= ?";
+            $sqlWhere .= " AND time_id >= ?";
             $params[] = $startTs;
         }
         if ($endTs > 0) {
-            $sql .= " AND time_id <= ?";
+            $sqlWhere .= " AND time_id <= ?";
             $params[] = $endTs;
         }
         if (!empty($eventFilter)) {
-            $sql .= " AND event = ?";
+            $sqlWhere .= " AND event = ?";
             $params[] = $eventFilter;
         }
         if (!empty($agentFilter)) {
-            $sql .= " AND (agent = ? OR agent LIKE ?)";
+            $sqlWhere .= " AND (agent = ? OR agent LIKE ?)";
             $params[] = $agentFilter;
             $params[] = "%$agentFilter%";
         }
         if (!empty($searchQuery)) {
-            $sql .= " AND (call_id LIKE ? OR queue_name LIKE ? OR agent LIKE ? OR data1 LIKE ? OR data2 LIKE ?)";
+            $sqlWhere .= " AND (call_id LIKE ? OR queue_name LIKE ? OR agent LIKE ? OR data1 LIKE ? OR data2 LIKE ?)";
             for ($i = 0; $i < 5; $i++) {
                 $params[] = "%$searchQuery%";
             }
         }
 
-        $sql .= " ORDER BY time_id DESC, id DESC LIMIT 500";
+        // Toplam ham kayıt sayısını hesaplayalım
+        $countSql = "SELECT COUNT(*) FROM cc_queue_logs" . $sqlWhere;
+        $countStmt = static::db()->prepare($countSql);
+        $countStmt->execute($params);
+        $totalRaw = (int)$countStmt->fetchColumn();
+
+        $stats = static::calculateStats($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery);
+
+        if ($totalRaw === 0) {
+            return array_merge(['view_mode' => 'raw', 'logs' => [], 'total' => 0], $stats);
+        }
+
+        $offset = max(0, ($sayfa - 1) * $boyut);
+        $sql = "SELECT id, time_id, created_at, call_id, queue_name, agent, event, data1, data2, data3, data4 FROM cc_queue_logs"
+             . $sqlWhere
+             . " ORDER BY time_id DESC, id DESC LIMIT " . (int)$boyut . " OFFSET " . (int)$offset;
 
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
@@ -331,11 +358,10 @@ class QueueLogRepository extends BaseRepository
             ];
         }
 
-        $stats = static::calculateStats($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery);
-
         return array_merge([
             'view_mode' => 'raw',
             'logs' => $parsed_logs,
+            'total' => $totalRaw,
         ], $stats);
     }
 

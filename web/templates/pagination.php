@@ -27,10 +27,10 @@
 $page = max(1, intval($page ?? 1));
 $total_pages = max(1, intval($total_pages ?? 1));
 $page_size = intval($page_size ?? 0);
+$total_rows = intval($total_rows ?? 0);
 
-// Tek sayfa olsa bile boyut seçicisi gösterilir: kullanıcı 10'a düşürüp
-// sayfalamayı ortaya çıkarabilmeli.
-if ($total_pages <= 1) {
+// Kayıt yoksa veya tek sayfa ve kayıt sayısı belirsizse gizle
+if ($total_rows <= 0 && $total_pages <= 1) {
     return;
 }
 
@@ -58,8 +58,6 @@ $ilk = max(1, $son - 4);
             }
             ?>
         </div>
-
-    </div>
 
     <div class="dt-pagination-nav">
         <?php if ($total_pages > 1): ?>
