@@ -1,4 +1,4 @@
-# AiPBX — Modern Enterprise IP Telephony Static Documentation & Web
+# AiPBX — Modern Enterprise IP Telephony
 DirectoryIndex index.php index.html
 
 # Security: Deny direct web access to sensitive config & backups
@@ -6,12 +6,11 @@ DirectoryIndex index.php index.html
     Require all denied
 </FilesMatch>
 
-# 1. Canonical Domain & HTTPS Enforcement (SEO 301 Permanent Redirect)
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Redirect www.aipbx.bid -> https://aipbx.bid (Canonical Apex Domain)
+    # Redirect www.aipbx.bid -> https://aipbx.bid
     RewriteCond %{HTTP_HOST} ^www\.aipbx\.bid$ [NC]
     RewriteRule ^(.*)$ https://aipbx.bid/$1 [R=301,L]
 
@@ -20,17 +19,18 @@ DirectoryIndex index.php index.html
     RewriteCond %{HTTP_HOST} ^(www\.)?aipbx\.bid$ [NC]
     RewriteRule ^(.*)$ https://aipbx.bid/$1 [R=301,L]
 
-    # Pretty URLs — transparently serve .php or .html when extension is omitted
+    # Transparent .html -> .php (URL stays .html, PHP executes — no redirect)
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{DOCUMENT_ROOT}/$1.php -f
-    RewriteRule ^([^/]+)/?$ $1.php [L]
+    RewriteRule ^(.+)\.html$ $1.php [L]
 
+    # Pretty URLs — serve .php when extension omitted
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{DOCUMENT_ROOT}/$1.html -f
-    RewriteRule ^([^/]+)/?$ $1.html [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/$1.php -f
+    RewriteRule ^([^/]+)/?$ $1.php [L]
 </IfModule>
 
-# 2. Modern MIME Types
 <IfModule mod_mime.c>
     AddType application/manifest+json .webmanifest
     AddType application/xml .xml
@@ -41,7 +41,6 @@ DirectoryIndex index.php index.html
     AddType font/woff .woff
 </IfModule>
 
-# 3. Security & Privacy Headers (SEO Trust & Protection)
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
@@ -51,7 +50,6 @@ DirectoryIndex index.php index.html
     Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 </IfModule>
 
-# 4. Browser Caching & Performance (Google Core Web Vitals)
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresDefault "access plus 2 days"
@@ -71,10 +69,8 @@ DirectoryIndex index.php index.html
     ExpiresByType text/html "access plus 10 minutes"
 </IfModule>
 
-# 5. Gzip / Deflate Compression
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json application/xml image/svg+xml
 </IfModule>
 
-# 6. Custom Error Handling
 ErrorDocument 404 /404.html

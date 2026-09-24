@@ -9,51 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Çağrı Merkezi Çözümleri — ACD Kuyruk, Mola Kodları (*22/*23), Wallboard | AiPBX</title>
-    <meta name="description" content="AiPBX çağrı merkezi altyapısı: Statik ve dinamik temsilciler, *22 mola ve *23 moladan dönüş kodları, anlık canlı duvar panosu (wallboard) ve *90 süpervizör çağrı dinleme.">
-    <link rel="canonical" href="https://aipbx.bid/callcenter.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/callcenter.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/callcenter.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/callcenter.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/callcenter.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Çağrı Merkezi",
-              "item": "https://aipbx.bid/callcenter.html"
-            }
-          ]
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "AiPBX Enterprise Call Center Suite",
-          "applicationCategory": "BusinessApplication, TelecommunicationsApplication",
-          "operatingSystem": "Linux, Android, iOS, Web",
-          "url": "https://aipbx.bid/callcenter.html",
-          "description": "Enterprise ACD queue management, agent break codes (*22/*23), supervisor call spy (*90), and live real-time wallboards.",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://www.mhrgl.com"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>

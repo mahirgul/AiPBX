@@ -24,69 +24,9 @@ $pageUrl = 'https://aipbx.bid/tables.html';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-
-    <title><?= htmlspecialchars($pageTitle[$LANG] ?? $pageTitle['en']) ?></title>
-    <meta name="description" content="<?= htmlspecialchars($pageDesc[$LANG] ?? $pageDesc['en']) ?>">
-    <meta name="keywords" content="santral karşılaştırma tablosu, aipbx feature matrix, asterisk vs cisco vs 3cx, pbx portları, alpn stream çoklama, pbx yıldız kodları, call barring, asterisk donanım gereksinimleri, kurumsal ip pbx json tablosu">
-    <link rel="canonical" href="<?= $pageUrl ?>">
-
-    <!-- Multilingual Hreflang Tags -->
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/tables.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/tables.html">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/tables.html">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/tables.html">
-
-    <!-- Open Graph -->
-    <meta property="og:site_name" content="AiPBX — Modern Open Source Enterprise IP Telephony">
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="<?= $pageUrl ?>">
-    <meta property="og:title" content="<?= htmlspecialchars($pageTitle[$LANG] ?? $pageTitle['en']) ?>">
-    <meta property="og:description" content="<?= htmlspecialchars($pageDesc[$LANG] ?? $pageDesc['en']) ?>">
-    <meta property="og:image" content="https://aipbx.bid/logo.png">
-
-    <!-- Schema.org JSON-LD (BreadcrumbList & ItemList) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "AiPBX",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "<?= htmlspecialchars($pageTitle[$LANG] ?? $pageTitle['en']) ?>",
-              "item": "<?= $pageUrl ?>"
-            }
-          ]
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "AiPBX Enterprise Telephony Matrix",
-          "applicationCategory": "BusinessApplication, TelecommunicationsApplication",
-          "operatingSystem": "Linux, Android, iOS, Web",
-          "url": "<?= $pageUrl ?>",
-          "description": "Comprehensive PBX feature matrix, star codes, port mappings, and hardware sizing.",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://mhrgl.com"
-          }
-        },
-        {
-          "@type": "Table",
-          "about": "PBX Telephony System Feature Comparison Matrix and Network Specifications"
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
 
     <!-- Header & Navigation -->
