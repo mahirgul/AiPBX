@@ -119,28 +119,28 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
     <div style="padding: 20px; line-height: 1.7; font-size: 13.5px;">
         <ol style="padding-left: 20px; margin-bottom: 0;">
             <li style="margin-bottom: 10px;">
-                <strong>Google Cloud Console</strong> adresine gidin: 
+                <?php echo t('google_integration.setup_step1', '<strong>Google Cloud Console</strong> adresine gidin:'); ?> 
                 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: underline;">
                     console.cloud.google.com/apis/credentials <i class="fas fa-external-link-alt" style="font-size: 11px;"></i>
                 </a>
             </li>
             <li style="margin-bottom: 10px;">
-                Üst kısımdan <strong>+ CREATE CREDENTIALS (+ KİMLİK BİLGİSİ OLUŞTUR)</strong> butonuna tıklayıp <strong>OAuth client ID</strong> seçeneğini seçin.
+                <?php echo t('google_integration.setup_step2', 'Üst kısımdan <strong>+ CREATE CREDENTIALS (+ KİMLİK BİLGİSİ OLUŞTUR)</strong> butonuna tıklayıp <strong>OAuth client ID</strong> seçeneğini seçin.'); ?>
             </li>
             <li style="margin-bottom: 10px;">
-                Uygulama türü (Application type) olarak <strong>Web application (Web uygulaması)</strong> seçin ve bir isim verin (Örn: <em>AI PBX Santral</em>).
+                <?php echo t('google_integration.setup_step3', 'Uygulama türü (Application type) olarak <strong>Web application (Web uygulaması)</strong> seçin ve bir isim verin (Örn: <em>AI PBX Santral</em>).'); ?>
             </li>
             <li style="margin-bottom: 10px;">
-                <strong>Authorized redirect URIs (Yetkili yönlendirme URI'leri)</strong> bölümünün altındaki <strong>+ ADD URI</strong> butonuna tıklayın ve yukarıda gösterilen <code><?php echo htmlspecialchars($redirect_uri); ?></code> adresini yapıştırın.
+                <?php echo sprintf(t('google_integration.setup_step4', '<strong>Authorized redirect URIs (Yetkili yönlendirme URI\'leri)</strong> bölümünün altındaki <strong>+ ADD URI</strong> butonuna tıklayın ve yukarıda gösterilen <code>%s</code> adresini yapıştırın.'), htmlspecialchars($redirect_uri)); ?>
             </li>
             <li style="margin-bottom: 10px;">
-                <strong>Create (Oluştur)</strong> butonuna basarak <strong>Client ID</strong> ve <strong>Client Secret</strong> değerlerinizi alın.
+                <?php echo t('google_integration.setup_step5', '<strong>Create (Oluştur)</strong> butonuna basarak <strong>Client ID</strong> ve <strong>Client Secret</strong> değerlerinizi alın.'); ?>
             </li>
             <li style="margin-bottom: 10px;">
-                Bu değerleri yukarıdaki forma yapıştırıp <strong>Google ile Girişi Etkinleştir</strong> onay kutusunu işaretleyerek kaydedin.
+                <?php echo t('google_integration.setup_step6', 'Bu değerleri yukarıdaki forma yapıştırıp <strong>Google ile Girişi Etkinleştir</strong> onay kutusunu işaretleyerek kaydedin.'); ?>
             </li>
             <li style="margin-bottom: 0;">
-                <strong>Mobil Uygulama (Android / iOS):</strong> Android ve iOS mobil uygulamalarınız aynı Web Client ID'yi kullanacak şekilde hazırdır. Santral üzerinde ayarları kaydettikten sonra mobil uygulamalarda tek tıkla Google ile oturum açılabilir.
+                <?php echo t('google_integration.setup_step7', '<strong>Mobil Uygulama (Android / iOS):</strong> Android ve iOS mobil uygulamalarınız aynı Web Client ID\'yi kullanacak şekilde hazırdır. Santral üzerinde ayarları kaydettikten sonra mobil uygulamalarda tek tıkla Google ile oturum açılabilir.'); ?>
             </li>
         </ol>
     </div>
@@ -166,7 +166,7 @@ function copyRedirectUri() {
     navigator.clipboard.writeText(copyText.value).then(function() {
         var btnText = document.getElementById('copyBtnText');
         var orig = btnText.innerText;
-        btnText.innerText = 'Kopyalandı!';
+        btnText.innerText = <?php echo json_encode(t('google_integration.copied', 'Kopyalandı!')); ?>;
         setTimeout(function() {
             btnText.innerText = orig;
         }, 2000);
