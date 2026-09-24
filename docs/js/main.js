@@ -458,6 +458,11 @@ function setLanguage(lang) {
         else btn.classList.remove('active');
     });
 
+    // Update input placeholders
+    document.querySelectorAll('[data-placeholder-' + lang + ']').forEach(el => {
+        el.setAttribute('placeholder', el.getAttribute('data-placeholder-' + lang));
+    });
+
     // Update interactive screen switcher if present
     updateScreenDisplay(activeScreenIndex, lang);
 }
@@ -482,6 +487,25 @@ document.addEventListener('DOMContentLoaded', () => {
             langSelector.classList.remove('open');
         });
     }
+
+    // Docs / Guides Nav Dropdown Click Toggle
+    document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+        const btn = dropdown.querySelector('.nav-dropdown-btn');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-dropdown.active').forEach(dropdown => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    });
 
     // Language Option Click Listeners
     document.querySelectorAll('.lang-option, .mobile-lang-btn').forEach(btn => {
