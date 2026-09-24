@@ -6,12 +6,12 @@
     <!-- 1. Homepage / Genel Bakış -->
     <url>
         <loc>https://aipbx.bid/</loc>
-        <lastmod>2026-09-18</lastmod>
-        <changefreq>weekly</changefreq>
+        <lastmod>2026-09-24</lastmod>
+        <changefreq>daily</changefreq>
         <priority>1.0</priority>
         <xhtml:link rel="alternate" hreflang="tr" href="https://aipbx.bid/" />
-        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/" />
-        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/" />
+        <xhtml:link rel="alternate" hreflang="en" href="https://aipbx.bid/?lang=en" />
+        <xhtml:link rel="alternate" hreflang="de" href="https://aipbx.bid/?lang=de" />
         <xhtml:link rel="alternate" hreflang="x-default" href="https://aipbx.bid/" />
         <image:image>
             <image:loc>https://aipbx.bid/img/feature_graphic.png</image:loc>

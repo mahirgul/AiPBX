@@ -1,5 +1,10 @@
 # AiPBX — Modern Enterprise IP Telephony Static Documentation & Web
-DirectoryIndex index.html
+DirectoryIndex index.php index.html
+
+# Security: Deny direct web access to sensitive config & backups
+<FilesMatch "^(config\.php|data\.json\.bak|\.credentials\.php)$">
+    Require all denied
+</FilesMatch>
 
 # 1. Canonical Domain & HTTPS Enforcement (SEO 301 Permanent Redirect)
 <IfModule mod_rewrite.c>
@@ -15,7 +20,11 @@ DirectoryIndex index.html
     RewriteCond %{HTTP_HOST} ^(www\.)?aipbx\.bid$ [NC]
     RewriteRule ^(.*)$ https://aipbx.bid/$1 [R=301,L]
 
-    # Pretty URLs — transparently serve .html when extension is omitted
+    # Pretty URLs — transparently serve .php or .html when extension is omitted
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{DOCUMENT_ROOT}/$1.php -f
+    RewriteRule ^([^/]+)/?$ $1.php [L]
+
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{DOCUMENT_ROOT}/$1.html -f
     RewriteRule ^([^/]+)/?$ $1.html [L]
