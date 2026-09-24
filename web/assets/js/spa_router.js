@@ -56,6 +56,20 @@
 
     function initSPARouter() {
         createProgressBar();
+        window.loadSPAPage = loadSPAPage;
+
+        // Intercept programmatic form.submit() calls so onchange="this.form.submit()" triggers SPA
+        if (!HTMLFormElement.prototype._spaSubmitWrapped) {
+            const origSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function() {
+                if (typeof this.requestSubmit === 'function') {
+                    this.requestSubmit();
+                } else {
+                    origSubmit.call(this);
+                }
+            };
+            HTMLFormElement.prototype._spaSubmitWrapped = true;
+        }
 
         // Intercept all internal link clicks safely
         document.body.addEventListener('click', function(e) {
