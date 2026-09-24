@@ -240,13 +240,15 @@
                 <div id="trunk_tab_callerid" class="trunk-tab-pane" style="display: none;">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('trunks.field_outbound_caller_id'); ?></label>
-                        <input type="text" name="outbound_caller_id" id="modal_outbound_caller_id" class="form-control" placeholder="0XXXXXXXXXX (Boşsa dahilinin numarası basılır)">
+                        <input type="text" name="outbound_caller_id" id="modal_outbound_caller_id" class="form-control" placeholder="<?php echo htmlspecialchars(t('trunks.placeholder_outbound_caller_id')); ?>">
+                        <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;"><?php echo t('trunks.help_outbound_caller_id'); ?></small>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_from_user'); ?></label>
-                            <input type="text" name="from_user" id="modal_from_user" class="form-control" placeholder="0XXXXXXXXXX">
+                            <input type="text" name="from_user" id="modal_from_user" class="form-control" placeholder="<?php echo htmlspecialchars(t('trunks.placeholder_from_user')); ?>">
+                            <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;"><?php echo t('trunks.help_from_user'); ?></small>
                         </div>
 
                         <div class="form-group">
