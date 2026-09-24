@@ -123,5 +123,20 @@ final class QueueLogGroupedTest extends TestCase
         $resRaw = QueueLogRepository::searchAndParse($baseTs - 10, $baseTs2 + 50, '', '', 'test-q-call-', $agentMap, 'raw');
         $this->assertEquals('raw', $resRaw['view_mode']);
         $this->assertCount(7, $resRaw['logs'], 'Raw mode should return all 7 individual events');
+        $this->assertEquals(7, $resRaw['total'], 'Raw mode total count should be 7');
+
+        // Test Pagination in Grouped Mode
+        $resPage1 = QueueLogRepository::searchAndParse($baseTs - 10, $baseTs2 + 50, '', '', 'test-q-call-', $agentMap, 'grouped', 1, 1);
+        $this->assertCount(1, $resPage1['logs'], 'Page size 1 should return exactly 1 grouped call');
+        $this->assertEquals(2, $resPage1['total'], 'Total grouped calls should remain 2');
+
+        $resPage2 = QueueLogRepository::searchAndParse($baseTs - 10, $baseTs2 + 50, '', '', 'test-q-call-', $agentMap, 'grouped', 2, 1);
+        $this->assertCount(1, $resPage2['logs'], 'Page 2 should return the second call');
+        $this->assertNotEquals($resPage1['logs'][0]['call_id'], $resPage2['logs'][0]['call_id']);
+
+        // Test Pagination in Raw Mode
+        $resRawPage1 = QueueLogRepository::searchAndParse($baseTs - 10, $baseTs2 + 50, '', '', 'test-q-call-', $agentMap, 'raw', 1, 3);
+        $this->assertCount(3, $resRawPage1['logs'], 'Page 1 with limit 3 should return 3 raw logs');
+        $this->assertEquals(7, $resRawPage1['total'], 'Total raw count should remain 7');
     }
 }

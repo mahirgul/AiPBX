@@ -32,10 +32,19 @@ class QueueLogController extends BaseController
             $start_ts = strtotime('-30 days midnight');
         }
 
+        $sayfa = max(1, intval($_GET['page'] ?? 1));
+        $sayfa_boyutu = View::sayfaBoyutu(50);
+
         // Ensure latest logs are synced to DB
         QueueLogRepository::syncLatest();
 
-        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map, $view_mode);
+        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map, $view_mode, $sayfa, $sayfa_boyutu);
+
+        $total_records = (int)($result['total'] ?? count($result['logs']));
+        $toplam_sayfa = max(1, (int)ceil($total_records / $sayfa_boyutu));
+        if ($sayfa > $toplam_sayfa) {
+            $sayfa = $toplam_sayfa;
+        }
 
         $page_title = t('queue_logs.title');
         require_once dirname(__DIR__) . '/../header.php';
@@ -46,6 +55,10 @@ class QueueLogController extends BaseController
             'search_query' => $search_query,
             'date_filter' => $date_filter,
             'view_mode' => $view_mode,
+            'sayfa' => $sayfa,
+            'toplam_sayfa' => $toplam_sayfa,
+            'sayfa_boyutu' => $sayfa_boyutu,
+            'total_records' => $total_records,
             'parsed_logs' => $result['logs'],
             'stat_total_enter' => $result['stat_total_enter'],
             'stat_connected' => $result['stat_connected'],

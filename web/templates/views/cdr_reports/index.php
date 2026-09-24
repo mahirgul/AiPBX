@@ -97,6 +97,7 @@
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('cdr_reports.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
+        <input type="hidden" name="boyut" value="<?php echo (int)$sayfa_boyutu; ?>">
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('cdr_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || ($view_mode ?? 'grouped') !== 'grouped' || $date_filter !== 'today'): ?>

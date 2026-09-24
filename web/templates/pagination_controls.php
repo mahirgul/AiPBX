@@ -33,7 +33,7 @@ $boyut_url = static function (int $b): string {
     <div></div>
     <div class="dt-length-box">
         <span><?php echo t('pagination.show'); ?></span>
-        <select class="dt-length-select" onchange="window.location.href=this.value">
+        <select class="dt-length-select" onchange="if(window.loadSPAPage){window.loadSPAPage(this.value,true);}else{window.location.href=this.value;}">
             <?php foreach (View::SAYFA_BOYUTLARI as $b): ?>
                 <option value="<?php echo htmlspecialchars($boyut_url($b)); ?>" <?php echo $b === $page_size ? 'selected' : ''; ?>>
                     <?php echo sprintf(t('pagination.records'), $b); ?>
