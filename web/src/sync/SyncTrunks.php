@@ -140,7 +140,8 @@ function __syncAllTrunksBody() {
         if ($has_auth) {
             $conf .= "outbound_auth={$t_name}-auth\n";
         }
-        if ($from_user !== '') {
+        $trunk_cid = toCleanAscii(!empty($sip_map['outbound_caller_id']) ? $sip_map['outbound_caller_id'] : (!empty($t['outbound_caller_id']) ? $t['outbound_caller_id'] : ''));
+        if ($from_user !== '' && $from_user !== $trunk_cid) {
             $conf .= "from_user={$from_user}\n";
             $conf .= "contact_user={$from_user}\n";
         }
@@ -153,6 +154,7 @@ function __syncAllTrunksBody() {
         if ($send_rpid) {
             $conf .= "send_rpid=yes\n";
         }
+        $conf .= "trust_id_outbound=yes\n";
 
         if ($t38) {
             $conf .= "t38_udptl=yes\n";
