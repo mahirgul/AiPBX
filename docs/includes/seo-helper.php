@@ -40,7 +40,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX Telefonie-Suite: Port 443 ALPN, In-App-Chat, Visuelles CDR, Konferenz, Supervisor Mithören (*90), Rufgruppen und MS Teams SBC.',
             'keywords' => 'AiPBX Funktionen, IP TK-Anlage Module, ALPN SIP, ChanSpy, ConfBridge, CDR LinkedID, Rufgruppen, MS Teams SBC',
         ],
-        'slug' => '/features.html',
+        'slug' => '/features',
     ],
     'architecture' => [
         'tr' => [
@@ -58,7 +58,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX Schichtarchitektur: Port 443 ALPN-Multiplexing (HTTP/2, WebRTC, SIP/TLS), PJSIP Dual-Endpunkt, Go WebSocket-Chat, Zwei-Datenbank-MariaDB-Modell.',
             'keywords' => 'AiPBX Architektur, ALPN Stream-Multiplexing, Nginx L4 SIP, WebRTC Asterisk, PJSIP, MariaDB Dual-Datenbank, Go WebSocket Chat',
         ],
-        'slug' => '/architecture.html',
+        'slug' => '/architecture',
     ],
     'callcenter' => [
         'tr' => [
@@ -76,7 +76,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX Callcenter: Statische/dynamische ACD-Warteschlangen, *22 Pause und *23 Rückkehr, Live-Wallboard, *90 Spy/Whisper/Barge Supervisor-Überwachung.',
             'keywords' => 'AiPBX Callcenter, ACD Warteschlange, Pausencode *22, Wallboard, ChanSpy *90, Supervisor Mithören, Asterisk Callcenter',
         ],
-        'slug' => '/callcenter.html',
+        'slug' => '/callcenter',
     ],
     'mobile-apps' => [
         'tr' => [
@@ -94,7 +94,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX natives Android (Kotlin) & iOS (Swift) Softphone: WebRTC Opus Audio/Video, FCM/APNs Push, In-Dialer-Chat, G.729 und Turnkey App-Installation.',
             'keywords' => 'AiPBX mobiles Softphone, Android VoIP App, iOS Softphone, WebRTC mobil, FCM Push-Benachrichtigung, PJSIP Android, Enterprise Softphone',
         ],
-        'slug' => '/mobile-apps.html',
+        'slug' => '/mobile-apps',
     ],
     'msteams' => [
         'tr' => [
@@ -112,7 +112,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX MS Teams Direct Routing: SIP TLS 5061, DigiCert/Baltimore CA, New-CsOnlinePSTNGateway PowerShell, PJSIP Trunk und Asterisk REFER Transfer.',
             'keywords' => 'AiPBX Microsoft Teams, Direct Routing SBC, SIP TLS Teams, CsOnlinePSTNGateway, Asterisk Teams Integration, Enterprise Teams Sprachanrufe',
         ],
-        'slug' => '/msteams.html',
+        'slug' => '/msteams',
     ],
     'security' => [
         'tr' => [
@@ -130,7 +130,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX Sicherheitsschicht: FIDO2/WebAuthn Passkeys, Google OAuth 2.0, TLS 1.3, SRTP AES_CM_128, Fail2ban SIP-Schutz und Session Border Controller.',
             'keywords' => 'AiPBX Sicherheit, FIDO2 Passkey, WebAuthn VoIP, TLS 1.3 SIP, SRTP Verschlüsselung, Fail2ban Asterisk, SBC Schutz, VoIP Sicherheit',
         ],
-        'slug' => '/security.html',
+        'slug' => '/security',
     ],
     'api-docs' => [
         'tr' => [
@@ -148,7 +148,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX REST API & WebSocket Integrationsleitfaden: JWT-Authentifizierung, Nebenstellen-Verwaltung, Echtzeit-Events, CTI-Integration und Softphone-Entwicklerreferenz.',
             'keywords' => 'AiPBX API, REST API TK-Anlage, WebSocket VoIP, JWT Authentifizierung, CTI Integration, Asterisk API, VoIP Entwicklerhandbuch',
         ],
-        'slug' => '/api-docs.html',
+        'slug' => '/api-docs',
     ],
     'installation' => [
         'tr' => [
@@ -166,7 +166,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX vollautomatische Installation: Einzeilen-Turnkey-Installer für Ubuntu 22.04/24.04 und Debian 12, Git-Clone-Quellbuild und schrittweise Konfigurationsanleitung.',
             'keywords' => 'AiPBX Installation, Ubuntu Asterisk installieren, Debian VoIP installieren, Turnkey TK-Anlage Installer, Asterisk 22 Setup, IP TK-Anlage Installation',
         ],
-        'slug' => '/installation.html',
+        'slug' => '/installation',
     ],
     'tables' => [
         'tr' => [
@@ -184,7 +184,7 @@ $pageSeoMap = [
             'desc'     => 'AiPBX Funktionsvergleichstabellen: Codec-Unterstützung (G.711, G.729, Opus, H.264), Sternbefehle (*97, *22, *90), Asterisk-Module und Sicherheitsprotokolle.',
             'keywords' => 'AiPBX Vergleichstabelle, IP TK-Anlage Funktionsmatrix, Asterisk Codec-Liste, VoIP Sternbefehle, Asterisk Module, TK-Anlage Protokollunterstützung',
         ],
-        'slug' => '/tables.html',
+        'slug' => '/tables',
     ],
 ];
 
