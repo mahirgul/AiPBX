@@ -43,19 +43,19 @@ require_once __DIR__ . '/includes/data.php';
                     <i class="fa-solid fa-bolt" style="margin-right:6px;"></i>
                     <?= t('Hızlı Kuruluma Git', 'Quick Install (5 Min)', 'Jetzt Installieren') ?>
                 </a>
-                <a href="/tables.php" class="btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #0284c7;">
+                <a href="/tables" class="btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color: #0284c7;">
                     <i class="fa-solid fa-table-list" style="margin-right:6px;"></i>
                     <?= t('Karşılaştırma & Tablolar', 'Tables & Specs', 'Tabellen & Matrix') ?>
                 </a>
-                <a href="/features.html" class="btn-secondary">
+                <a href="/features" class="btn-secondary">
                     <i class="fa-solid fa-microchip" style="margin-right:6px;"></i>
                     <?= t('Özellikler', 'Features', 'Funktionen') ?>
                 </a>
-                <a href="/architecture.html" class="btn-secondary">
+                <a href="/architecture" class="btn-secondary">
                     <i class="fa-solid fa-sitemap" style="margin-right:6px;"></i>
                     <?= t('Sistem Mimarisi', 'Architecture', 'Architektur') ?>
                 </a>
-                <a href="/mobile-apps.html" class="btn-secondary">
+                <a href="/mobile-apps" class="btn-secondary">
                     <i class="fa-solid fa-mobile-screen" style="margin-right:6px;"></i>
                     <?= t('Mobil Softphone', 'Mobile Apps', 'Mobil-Apps') ?>
                 </a>
@@ -126,11 +126,11 @@ require_once __DIR__ . '/includes/data.php';
                     <p class="tech-card-desc"><?= t_field($feat, 'desc') ?></p>
                     <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
                         <?php
-                            $targetLink = '/features.html';
-                            if ($feat['id'] === 'alpn') $targetLink = '/architecture.html';
-                            elseif ($feat['id'] === 'msteams') $targetLink = '/msteams.html';
-                            elseif ($feat['id'] === 'call_spy') $targetLink = '/callcenter.html';
-                            elseif ($feat['id'] === 'mobile_apps') $targetLink = '/mobile-apps.html';
+                            $targetLink = '/features';
+                            if ($feat['id'] === 'alpn') $targetLink = '/architecture';
+                            elseif ($feat['id'] === 'msteams') $targetLink = '/msteams';
+                            elseif ($feat['id'] === 'call_spy') $targetLink = '/callcenter';
+                            elseif ($feat['id'] === 'mobile_apps') $targetLink = '/mobile-apps';
                         ?>
                         <a href="<?= $targetLink ?>" style="color: <?= htmlspecialchars($feat['color']) ?>; font-weight: 700; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                             <span><?= t('Teknik Detayları İncele', 'View Technical Deep Dive', 'Technische Details ansehen') ?></span>
@@ -181,7 +181,7 @@ require_once __DIR__ . '/includes/data.php';
                             </div>
                         </div>
 
-                        <a href="/tables.php" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 14px 28px; font-size: 1rem;">
+                        <a href="/tables" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 14px 28px; font-size: 1rem;">
                             <i class="fa-solid fa-table-list"></i>
                             <span><?= t('Tüm Tabloları & Karşılaştırmayı Aç →', 'Explore Full Tables & Comparison Matrix →', 'Alle Tabellen & Matrix Öffnen →') ?></span>
                         </a>
@@ -189,7 +189,7 @@ require_once __DIR__ . '/includes/data.php';
 
                     <!-- Visual Teaser Cards of the Tables -->
                     <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
-                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                        <a href="/tables" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <div style="width:44px; height:44px; border-radius:12px; background:rgba(2,132,199,0.1); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
                                     <i class="fa-solid fa-scale-balanced"></i>
@@ -202,7 +202,7 @@ require_once __DIR__ . '/includes/data.php';
                             <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
                         </a>
 
-                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                        <a href="/tables" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <div style="width:44px; height:44px; border-radius:12px; background:rgba(16,185,129,0.1); color:#059669; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
                                     <i class="fa-solid fa-network-wired"></i>
@@ -215,7 +215,7 @@ require_once __DIR__ . '/includes/data.php';
                             <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
                         </a>
 
-                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#f59e0b'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                        <a href="/tables" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#f59e0b'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <div style="width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.1); color:#d97706; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
                                     <i class="fa-solid fa-asterisk"></i>
@@ -228,7 +228,7 @@ require_once __DIR__ . '/includes/data.php';
                             <span class="status-badge yes"><?= t('İncele', 'View', 'Öffnen') ?></span>
                         </a>
 
-                        <a href="/tables.php" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                        <a href="/tables" style="background:#ffffff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; text-decoration:none; display:flex; align-items:center; justify-content:space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateX(4px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <div style="width:44px; height:44px; border-radius:12px; background:rgba(99,102,241,0.1); color:#6366f1; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
                                     <i class="fa-solid fa-server"></i>
@@ -298,7 +298,7 @@ require_once __DIR__ . '/includes/data.php';
             </div>
 
             <div style="text-align: center; margin-top: 24px;">
-                <a href="/architecture.html" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                <a href="/architecture" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-sitemap"></i>
                     <span><?= t('Kapsamlı Sistem Mimarisini İncele (Detaylı Kılavuz) →', 'Explore Full Architecture & Sequence Diagrams →', 'Vollständige Systemarchitektur öffnen →') ?></span>
                 </a>
@@ -345,15 +345,15 @@ require_once __DIR__ . '/includes/data.php';
                     <?= t('Daha fazla teknik bilgi veya adım adım kurulum yönergeleri mi arıyorsunuz?', 'Looking for more in-depth guides or step-by-step setup tutorials?', 'Suchen Sie nach weiteren technischen Leitfäden oder Anleitungen?') ?>
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">
-                    <a href="/installation.html" class="btn-secondary">
+                    <a href="/installation" class="btn-secondary">
                         <i class="fa-solid fa-terminal" style="margin-right: 6px;"></i>
                         <?= t('Kurulum Kılavuzu', 'Installation Guide', 'Installationsanleitung') ?>
                     </a>
-                    <a href="/msteams.html" class="btn-secondary">
+                    <a href="/msteams" class="btn-secondary">
                         <i class="fa-brands fa-microsoft" style="margin-right: 6px;"></i>
                         Microsoft Teams Direct Routing
                     </a>
-                    <a href="/security.html" class="btn-secondary">
+                    <a href="/security" class="btn-secondary">
                         <i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i>
                         <?= t('Güvenlik & SBC', 'Security & SBC', 'Sicherheit & SBC') ?>
                     </a>

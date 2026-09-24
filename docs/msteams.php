@@ -12,6 +12,7 @@ require_once __DIR__ . '/includes/data.php';
     <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
 
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
@@ -52,7 +53,7 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="msteams.html" class="active">
+                        <a href="/msteams" class="active">
                             <span data-lang="tr">💼 Microsoft Teams Direct Routing <span class="sidebar-badge">Yeni</span></span>
                             <span data-lang="en">💼 Microsoft Teams Direct Routing <span class="sidebar-badge">New</span></span>
                             <span data-lang="de">💼 Microsoft Teams Direct Routing <span class="sidebar-badge">Neu</span></span>
@@ -72,21 +73,21 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="index.html">
+                        <a href="/">
                             <span data-lang="tr">🏠 Genel Bakış (Overview)</span>
                             <span data-lang="en">🏠 Overview (Home)</span>
                             <span data-lang="de">🏠 Übersicht (Home)</span>
                         </a>
                     </li>
                     <li>
-                        <a href="architecture.html">
+                        <a href="/architecture">
                             <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
                             <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
                             <span data-lang="de">🏗️ Architektur &amp; ALPN</span>
                         </a>
                     </li>
                     <li>
-                        <a href="features.html">
+                        <a href="/features">
                             <span data-lang="tr">⚡ Santral Modülleri</span>
                             <span data-lang="en">⚡ PBX Modules</span>
                             <span data-lang="de">⚡ PBX-Module</span>
@@ -103,21 +104,21 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="installation.html">
+                        <a href="/installation">
                             <span data-lang="tr">🚀 Hızlı Kurulum (install.sh)</span>
                             <span data-lang="en">🚀 Quick Install (install.sh)</span>
                             <span data-lang="de">🚀 Schnellinstallation (install.sh)</span>
                         </a>
                     </li>
                     <li>
-                        <a href="installation.html#ports">
+                        <a href="/installation#ports">
                             <span data-lang="tr">🌐 Port &amp; Güvenlik Duvarı</span>
                             <span data-lang="en">🌐 Ports &amp; Firewall</span>
                             <span data-lang="de">🌐 Ports &amp; Firewall</span>
                         </a>
                     </li>
                     <li>
-                        <a href="security.html">
+                        <a href="/security">
                             <span data-lang="tr">🛡️ Güvenlik &amp; Fail2ban</span>
                             <span data-lang="en">🛡️ Security &amp; Fail2ban</span>
                             <span data-lang="de">🛡️ Sicherheit &amp; Fail2ban</span>
@@ -134,14 +135,14 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="api-docs.html">
+                        <a href="/api-docs">
                             <span data-lang="tr">🔌 REST API Referansı</span>
                             <span data-lang="en">🔌 REST API Reference</span>
                             <span data-lang="de">🔌 REST-API Referenz</span>
                         </a>
                     </li>
                     <li>
-                        <a href="api-docs.html#websocket">
+                        <a href="/api-docs#websocket">
                             <span data-lang="tr">💬 Go WebSocket Protokolü</span>
                             <span data-lang="en">💬 Go WebSocket Protocol</span>
                             <span data-lang="de">💬 Go WebSocket Protokoll</span>
@@ -154,12 +155,12 @@ require_once __DIR__ . '/includes/data.php';
         <!-- Main Documentation Content -->
         <main class="docs-content">
             <div class="docs-breadcrumb">
-                <a href="index.html">
+                <a href="/">
                     <span data-lang="tr">Ana Sayfa</span>
                     <span data-lang="en">Home</span>
                     <span data-lang="de">Startseite</span>
                 </a> / 
-                <a href="features.html">
+                <a href="/features">
                     <span data-lang="tr">Entegrasyonlar</span>
                     <span data-lang="en">Integrations</span>
                     <span data-lang="de">Integrationen</span>

@@ -12,6 +12,7 @@ require_once __DIR__ . '/includes/data.php';
     <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
 
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
@@ -33,21 +34,21 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="index.html">
+                        <a href="/">
                             <span data-lang="tr">🏠 Genel Bakış (Overview)</span>
                             <span data-lang="en">🏠 Overview (Home)</span>
                             <span data-lang="de">🏠 Übersicht (Home)</span>
                         </a>
                     </li>
                     <li>
-                        <a href="architecture.html" class="active">
+                        <a href="/architecture" class="active">
                             <span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span>
                             <span data-lang="en">🏗️ Architecture &amp; ALPN</span>
                             <span data-lang="de">🏗️ Architektur &amp; ALPN</span>
                         </a>
                     </li>
                     <li>
-                        <a href="features.html" class="">
+                        <a href="/features" class="">
                             <span data-lang="tr">⚡ Santral Modülleri</span>
                             <span data-lang="en">⚡ PBX Modules</span>
                             <span data-lang="de">⚡ PBX-Module</span>
@@ -64,28 +65,28 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="callcenter.html" class="">
+                        <a href="/callcenter" class="">
                             <span data-lang="tr">🎧 Kuyruk Yönetimi</span>
                             <span data-lang="en">🎧 Queue Operations</span>
                             <span data-lang="de">🎧 Warteschlangen-Betrieb</span>
                         </a>
                     </li>
                     <li>
-                        <a href="callcenter.html#break-codes" class="">
+                        <a href="/callcenter#break-codes" class="">
                             <span data-lang="tr">⏸️ Mola Kodları (*22/*23) <span class="sidebar-badge">Yeni</span></span>
                             <span data-lang="en">⏸️ Break Codes (*22/*23) <span class="sidebar-badge">New</span></span>
                             <span data-lang="de">⏸️ Pausencodes (*22/*23) <span class="sidebar-badge">Neu</span></span>
                         </a>
                     </li>
                     <li>
-                        <a href="callcenter.html#wallboard">
+                        <a href="/callcenter#wallboard">
                             <span data-lang="tr">📊 Canlı Wallboard &amp; SLA</span>
                             <span data-lang="en">📊 Live Wallboard &amp; SLA</span>
                             <span data-lang="de">📊 Live-Wallboard &amp; SLA</span>
                         </a>
                     </li>
                     <li>
-                        <a href="callcenter.html#supervisor">
+                        <a href="/callcenter#supervisor">
                             <span data-lang="tr">👁️ Süpervizör &amp; Spy (*90)</span>
                             <span data-lang="en">👁️ Supervisor &amp; Spy (*90)</span>
                             <span data-lang="de">👁️ Supervisor &amp; Spy (*90)</span>
@@ -102,28 +103,28 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="mobile-apps.html" class="">
+                        <a href="/mobile-apps" class="">
                             <span data-lang="tr">📱 Android &amp; iOS İstemcileri</span>
                             <span data-lang="en">📱 Android &amp; iOS Clients</span>
                             <span data-lang="de">📱 Android &amp; iOS Clients</span>
                         </a>
                     </li>
                     <li>
-                        <a href="mobile-apps.html#downloads">
+                        <a href="/mobile-apps#downloads">
                             <span data-lang="tr">⬇️ APK / IPA / Simulator</span>
                             <span data-lang="en">⬇️ APK / IPA / Simulator</span>
                             <span data-lang="de">⬇️ APK / IPA / Simulator</span>
                         </a>
                     </li>
                     <li>
-                        <a href="mobile-apps.html#android">
+                        <a href="/mobile-apps#android">
                             <span data-lang="tr">🤖 Kotlin Native &amp; FCM Push</span>
                             <span data-lang="en">🤖 Kotlin Native &amp; FCM Push</span>
                             <span data-lang="de">🤖 Kotlin Native &amp; FCM-Push</span>
                         </a>
                     </li>
                     <li>
-                        <a href="mobile-apps.html#ios">
+                        <a href="/mobile-apps#ios">
                             <span data-lang="tr">🍏 Swift &amp; CallKit</span>
                             <span data-lang="en">🍏 Swift &amp; CallKit</span>
                             <span data-lang="de">🍏 Swift &amp; CallKit</span>
@@ -140,21 +141,21 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="installation.html" class="">
+                        <a href="/installation" class="">
                             <span data-lang="tr">🚀 Hızlı Kurulum (install.sh)</span>
                             <span data-lang="en">🚀 Quick Install (install.sh)</span>
                             <span data-lang="de">🚀 Schnellinstallation (install.sh)</span>
                         </a>
                     </li>
                     <li>
-                        <a href="installation.html#ports">
+                        <a href="/installation#ports">
                             <span data-lang="tr">🌐 Port &amp; Güvenlik Duvarı</span>
                             <span data-lang="en">🌐 Ports &amp; Firewall</span>
                             <span data-lang="de">🌐 Ports &amp; Firewall</span>
                         </a>
                     </li>
                     <li>
-                        <a href="security.html" class="">
+                        <a href="/security" class="">
                             <span data-lang="tr">🛡️ Güvenlik &amp; Fail2ban</span>
                             <span data-lang="en">🛡️ Security &amp; Fail2ban</span>
                             <span data-lang="de">🛡️ Sicherheit &amp; Fail2ban</span>
@@ -174,21 +175,21 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li>
-                        <a href="api-docs.html" class="">
+                        <a href="/api-docs" class="">
                             <span data-lang="tr">🔌 REST API Referansı</span>
                             <span data-lang="en">🔌 REST API Reference</span>
                             <span data-lang="de">🔌 REST-API Referenz</span>
                         </a>
                     </li>
                     <li>
-                        <a href="api-docs.html#websocket">
+                        <a href="/api-docs#websocket">
                             <span data-lang="tr">💬 Go WebSocket Protokolü</span>
                             <span data-lang="en">💬 Go WebSocket Protocol</span>
                             <span data-lang="de">💬 Go WebSocket Protokoll</span>
                         </a>
                     </li>
                     <li>
-                        <a href="api-docs.html#tests">
+                        <a href="/api-docs#tests">
                             <span data-lang="tr">🧪 PHPUnit Testleri (142 Test)</span>
                             <span data-lang="en">🧪 PHPUnit Test Suite</span>
                             <span data-lang="de">🧪 PHPUnit Test-Suite</span>
@@ -202,12 +203,12 @@ require_once __DIR__ . '/includes/data.php';
         <!-- Main Documentation Content -->
         <main class="docs-content">
             <div class="docs-breadcrumb">
-                <a href="index.html">
+                <a href="/">
                     <span data-lang="tr">Ana Sayfa</span>
                     <span data-lang="en">Home</span>
                     <span data-lang="de">Startseite</span>
                 </a> / 
-                <a href="architecture.html">
+                <a href="/architecture">
                     <span data-lang="tr">Mimari</span>
                     <span data-lang="en">Architecture</span>
                     <span data-lang="de">Architektur</span>
@@ -649,7 +650,7 @@ Sync Generator (src/sync/*.php)
 
 
             <div class="docs-pagination">
-                <a href="index.html" class="pagination-btn">
+                <a href="/" class="pagination-btn">
                     <span class="pagination-label">
                         <span data-lang="tr">← Önceki</span>
                         <span data-lang="en">← Previous</span>
@@ -661,7 +662,7 @@ Sync Generator (src/sync/*.php)
                         <span data-lang="de">Übersicht</span>
                     </span>
                 </a>
-                <a href="callcenter.html" class="pagination-btn next">
+                <a href="/callcenter" class="pagination-btn next">
                     <span class="pagination-label">
                         <span data-lang="tr">Sonraki →</span>
                         <span data-lang="en">Next →</span>

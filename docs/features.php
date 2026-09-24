@@ -13,6 +13,7 @@ require_once __DIR__ . '/includes/data.php';
     <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
 
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
@@ -33,9 +34,9 @@ require_once __DIR__ . '/includes/data.php';
                 </div>
                 <ul class="sidebar-menu">
                     <li><a href="/"><span data-lang="tr">🏠 Genel Bakış (Home)</span><span data-lang="en">🏠 Overview (Home)</span><span data-lang="de">🏠 Übersicht (Home)</span></a></li>
-                    <li><a href="/features.html" class="active"><span data-lang="tr">⚡ 20 Santral Modülü</span><span data-lang="en">⚡ 20 PBX Modules</span><span data-lang="de">⚡ 20 PBX-Module</span></a></li>
-                    <li><a href="/tables.php"><span data-lang="tr">📊 Karşılaştırma &amp; Tablolar</span><span data-lang="en">📊 Tables &amp; Specs</span><span data-lang="de">📊 Tabellen &amp; Matrix</span></a></li>
-                    <li><a href="/architecture.html"><span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span><span data-lang="en">🏗️ Architecture &amp; ALPN</span><span data-lang="de">🏗️ Architektur &amp; ALPN</span></a></li>
+                    <li><a href="/features" class="active"><span data-lang="tr">⚡ 20 Santral Modülü</span><span data-lang="en">⚡ 20 PBX Modules</span><span data-lang="de">⚡ 20 PBX-Module</span></a></li>
+                    <li><a href="/tables"><span data-lang="tr">📊 Karşılaştırma &amp; Tablolar</span><span data-lang="en">📊 Tables &amp; Specs</span><span data-lang="de">📊 Tabellen &amp; Matrix</span></a></li>
+                    <li><a href="/architecture"><span data-lang="tr">🏗️ Sistem Mimarisi &amp; ALPN</span><span data-lang="en">🏗️ Architecture &amp; ALPN</span><span data-lang="de">🏗️ Architektur &amp; ALPN</span></a></li>
                 </ul>
             </div>
 
@@ -76,12 +77,12 @@ require_once __DIR__ . '/includes/data.php';
                     <span data-lang="de">Apps &amp; Anleitungen</span>
                 </div>
                 <ul class="sidebar-menu">
-                    <li><a href="/mobile-apps.html"><span data-lang="tr">📱 Mobil Softphone (Android/iOS)</span><span data-lang="en">📱 Mobile Softphone</span><span data-lang="de">📱 Mobil-Softphone</span></a></li>
-                    <li><a href="/callcenter.html"><span data-lang="tr">🎧 Çağrı Merkezi &amp; Mola (*22)</span><span data-lang="en">🎧 Call Center &amp; Breaks</span><span data-lang="de">🎧 Callcenter &amp; Pausen</span></a></li>
-                    <li><a href="/installation.html"><span data-lang="tr">⚙️ Kurulum &amp; Yapılandırma</span><span data-lang="en">⚙️ Installation Guide</span><span data-lang="de">⚙️ Installationsanleitung</span></a></li>
-                    <li><a href="/security.html"><span data-lang="tr">🛡️ Güvenlik &amp; CCIS Gateway</span><span data-lang="en">🛡️ Security &amp; CCIS</span><span data-lang="de">🛡️ Sicherheit &amp; CCIS</span></a></li>
-                    <li><a href="/msteams.html"><span data-lang="tr">🔷 Microsoft Teams Entegrasyonu</span><span data-lang="en">🔷 Microsoft Teams Integration</span><span data-lang="de">🔷 Microsoft Teams</span></a></li>
-                    <li><a href="/api-docs.html"><span data-lang="tr">💻 REST API &amp; WebSocket</span><span data-lang="en">💻 REST API &amp; WebSocket</span><span data-lang="de">💻 REST-API &amp; WebSocket</span></a></li>
+                    <li><a href="/mobile-apps"><span data-lang="tr">📱 Mobil Softphone (Android/iOS)</span><span data-lang="en">📱 Mobile Softphone</span><span data-lang="de">📱 Mobil-Softphone</span></a></li>
+                    <li><a href="/callcenter"><span data-lang="tr">🎧 Çağrı Merkezi &amp; Mola (*22)</span><span data-lang="en">🎧 Call Center &amp; Breaks</span><span data-lang="de">🎧 Callcenter &amp; Pausen</span></a></li>
+                    <li><a href="/installation"><span data-lang="tr">⚙️ Kurulum &amp; Yapılandırma</span><span data-lang="en">⚙️ Installation Guide</span><span data-lang="de">⚙️ Installationsanleitung</span></a></li>
+                    <li><a href="/security"><span data-lang="tr">🛡️ Güvenlik &amp; CCIS Gateway</span><span data-lang="en">🛡️ Security &amp; CCIS</span><span data-lang="de">🛡️ Sicherheit &amp; CCIS</span></a></li>
+                    <li><a href="/msteams"><span data-lang="tr">🔷 Microsoft Teams Entegrasyonu</span><span data-lang="en">🔷 Microsoft Teams Integration</span><span data-lang="de">🔷 Microsoft Teams</span></a></li>
+                    <li><a href="/api-docs"><span data-lang="tr">💻 REST API &amp; WebSocket</span><span data-lang="en">💻 REST API &amp; WebSocket</span><span data-lang="de">💻 REST-API &amp; WebSocket</span></a></li>
                 </ul>
             </div>
         </aside>
@@ -611,7 +612,7 @@ require_once __DIR__ . '/includes/data.php';
                         AiPBX, santral dahililerini 6 kademeli yetki gruplarına (Dahili, Acil, Şehir İçi, Şehirlerarası, GSM, Uluslararası) ayırarak şirket bütçesini suiistimallere karşı korur. Detaylı teknik özellikleri, ağ port haritasını ve Cisco/Avaya karşılaştırmasını görmek için interaktif JSON tablosunu inceleyin:
                     </p>
                     <p style="margin-top: 14px;">
-                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                        <a href="/tables" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-table-list"></i>
                             <span>AiPBX İnteraktif JSON Tablo Sistemi &amp; Matrisi Aç →</span>
                         </a>
@@ -622,7 +623,7 @@ require_once __DIR__ . '/includes/data.php';
                         AiPBX enforces 6-tier outbound dialing policies to protect telecom budgets. Explore the interactive JSON table system for side-by-side matrices, network port breakdowns, and hardware sizing:
                     </p>
                     <p style="margin-top: 14px;">
-                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                        <a href="/tables" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-table-list"></i>
                             <span>Open Full Interactive JSON Table System &amp; Matrix →</span>
                         </a>
@@ -633,7 +634,7 @@ require_once __DIR__ . '/includes/data.php';
                         AiPBX sichert Ihre Telefonie durch 6 Wählberechtigungsstufen vor Gebührenmissbrauch. Öffnen Sie unser interaktives JSON-Tabellensystem für den vollständigen Vergleich mit klassischen Anlagen:
                     </p>
                     <p style="margin-top: 14px;">
-                        <a href="tables.html" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+                        <a href="/tables" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-table-list"></i>
                             <span>Interaktives JSON-Tabellensystem öffnen →</span>
                         </a>
@@ -1044,7 +1045,7 @@ Grant-CsOnlineVoiceRoutingPolicy -Identity "user@company.com" -PolicyName "AiPBX
                         <span data-lang="de">🏠 Übersicht (Home)</span>
                     </span>
                 </a>
-                <a href="/tables.php" class="pagination-btn next">
+                <a href="/tables" class="pagination-btn next">
                     <span class="pagination-label">
                         <span data-lang="tr">Sonraki Sayfa</span>
                         <span data-lang="en">Next</span>
