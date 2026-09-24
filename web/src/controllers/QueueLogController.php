@@ -12,6 +12,10 @@ class QueueLogController extends BaseController
         $agent_filter = trim($_GET['agent'] ?? '');
         $search_query = trim($_GET['search'] ?? '');
         $date_filter = trim($_GET['date_range'] ?? 'today');
+        $view_mode = trim($_GET['view_mode'] ?? 'grouped');
+        if ($view_mode !== 'raw') {
+            $view_mode = 'grouped';
+        }
 
         // Determine date boundary
         $start_ts = 0;
@@ -31,7 +35,7 @@ class QueueLogController extends BaseController
         // Ensure latest logs are synced to DB
         QueueLogRepository::syncLatest();
 
-        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map);
+        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map, $view_mode);
 
         $page_title = t('queue_logs.title');
         require_once dirname(__DIR__) . '/../header.php';
@@ -41,12 +45,14 @@ class QueueLogController extends BaseController
             'agent_filter' => $agent_filter,
             'search_query' => $search_query,
             'date_filter' => $date_filter,
+            'view_mode' => $view_mode,
             'parsed_logs' => $result['logs'],
             'stat_total_enter' => $result['stat_total_enter'],
             'stat_connected' => $result['stat_connected'],
             'stat_abandon' => $result['stat_abandon'],
             'stat_ring_no_answer' => $result['stat_ring_no_answer'],
             'avg_holdtime' => $result['avg_holdtime'],
+            'avg_talktime' => $result['avg_talktime'] ?? 0,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';
     }
