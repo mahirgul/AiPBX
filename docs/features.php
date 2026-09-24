@@ -10,49 +10,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title><?= ($LANG === 'de') ? 'Funktionen &amp; Kernmodule — AiPBX Kurumsal IP Santral' : (($LANG === 'en') ? 'Enterprise Features &amp; Modules — AiPBX IP PBX' : 'Santral Özellikleri &amp; Modüller — AiPBX Kurumsal IP Santral') ?></title>
-    <meta name="description" content="<?= ($LANG === 'de') ? 'AiPBX Telefonie-Suite: Port 443 ALPN, In-App-Chat, Visual CDR, Konferenz, Spy, Ring Groups und Teams SBC.' : (($LANG === 'en') ? 'AiPBX telephony suite: Port 443 ALPN, In-Dialer Chat, Visual CDR, Conferences, Spy, Ring Groups and Teams SBC.' : 'AiPBX kurumsal santral modülleri: Port 443 ALPN, Dahili Sohbet, Görsel CDR, Konferans, Süpervizör Dinleme, Çalma Grupları ve Teams SBC.') ?>">
-    <link rel="canonical" href="https://aipbx.bid/features.html">
-
-    <!-- Structured Data (Schema.org JSON-LD: BreadcrumbList & SoftwareApplication) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Santral Özellikleri",
-              "item": "https://aipbx.bid/features.html"
-            }
-          ]
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "AiPBX Telephony Feature Suite",
-          "applicationCategory": "BusinessApplication, TelecommunicationsApplication",
-          "operatingSystem": "Linux, Android, iOS, Web",
-          "url": "https://aipbx.bid/features.html",
-          "description": "20 flagship enterprise telephony modules: Port 443 ALPN, WebRTC, In-Dialer Chat, IVR, Visual CDR, ConfBridge, Voicemail MP3, and MS Teams SBC.",
-          "author": {
-            "@type": "Person",
-            "name": "Mahir Gül",
-            "url": "https://mhrgl.com"
-          }
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>

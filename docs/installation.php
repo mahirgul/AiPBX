@@ -9,64 +9,9 @@ require_once __DIR__ . '/includes/data.php';
 <html lang="<?= htmlspecialchars($LANG) ?>" data-lang="<?= htmlspecialchars($LANG) ?>">
 <head>
     <?php include __DIR__ . '/includes/head.php'; ?>
-    <title>Kurulum ve Yönetim Rehberi — Debian & Ubuntu Asterisk PBX Dağıtımı | AiPBX</title>
-    <meta name="description" content="AiPBX otomatik anahtar teslim kurulum kılavuzu: Ubuntu LTS ve Debian gereksinimleri, tek komutla install.sh scripti, port ve güvenlik duvarı kuralları, ilk yapılandırma.">
-    <link rel="canonical" href="https://aipbx.bid/installation.html">
-    <link rel="alternate" hreflang="tr" href="https://aipbx.bid/installation.html">
-    <link rel="alternate" hreflang="en" href="https://aipbx.bid/installation.html?lang=en">
-    <link rel="alternate" hreflang="de" href="https://aipbx.bid/installation.html?lang=de">
-    <link rel="alternate" hreflang="x-default" href="https://aipbx.bid/installation.html">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Ana Sayfa",
-              "item": "https://aipbx.bid/"
-            },
-            {
-              "@type": "ListItem",
-              "position": 2,
-              "name": "Kurulum Rehberi",
-              "item": "https://aipbx.bid/installation.html"
-            }
-          ]
-        },
-        {
-          "@type": "HowTo",
-          "name": "AiPBX Açık Kaynak Kurumsal IP Santral Kurulumu",
-          "description": "Debian 12 veya Ubuntu LTS üzerinde tek komutla anahtar teslim AiPBX kurulum adımları.",
-          "totalTime": "PT5M",
-          "step": [
-            {
-              "@type": "HowToStep",
-              "position": 1,
-              "name": "Sunucu Hazırlığı ve Güncellemesi",
-              "text": "Temiz bir Debian 12 veya Ubuntu LTS sunucusunda root yetkisiyle apt update paket güncellemesini çalıştırın."
-            },
-            {
-              "@type": "HowToStep",
-              "position": 2,
-              "name": "AiPBX Deposunu İndirme",
-              "text": "GitHub deposunu sunucuya klonlayın ve kurulum dizinine geçiş yapın."
-            },
-            {
-              "@type": "HowToStep",
-              "position": 3,
-              "name": "Otomatik Kurulum Scriptini Çalıştırma",
-              "text": "bash install.sh komutunu çalıştırarak Asterisk 22, Nginx, PHP 8 ve Go bileşenlerinin otomatik derlenmesini tamamlayın."
-            }
-          ]
-        }
-      ]
-    }
-    </script>
+    <?php include __DIR__ . '/includes/seo-helper.php'; ?>
 </head>
+
 <body>
     <!-- Top Announcement Banner & Main Navigation Bar -->
     <?php include __DIR__ . '/includes/navbar.php'; ?>
