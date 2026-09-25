@@ -41,13 +41,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AiPbxPhone"
         android:networkSecurityConfig="@xml/network_security_config"
-        tools:targetApi="34">
+        android:resizeableActivity="true"
+        tools:targetApi="36">
 
         <!-- Server Setup Activity (First Run / Config) -->
         <activity
             android:name=".ui.ServerSetupActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -59,7 +60,7 @@
             android:name=".ui.LoginActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -73,16 +74,17 @@
         <activity
             android:name=".ui.DialerActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
             android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Active Call Activity -->
+        <!-- Active Call Activity with Picture-in-Picture Support -->
         <activity
             android:name=".ui.CallActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
             android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:turnScreenOn="true"
             android:showWhenLocked="true" />
 
@@ -90,8 +92,8 @@
         <activity
             android:name=".ui.IncomingCallActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
             android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:excludeFromRecents="true" />
@@ -100,20 +102,20 @@
         <activity
             android:name=".ui.ChatListActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
         <!-- 1-on-1 Chat Activity -->
         <activity
             android:name=".ui.ChatActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- System & Diagnostic Log Viewer Activity -->
         <activity
             android:name=".ui.LogViewerActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
         <!-- FileProvider for Sharing / Downloading Log Files -->
         <provider
