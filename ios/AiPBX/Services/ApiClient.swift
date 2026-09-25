@@ -129,6 +129,46 @@ public final class ApiClient {
         }
     }
 
+    public func qrLogin(baseUrl: String, qrToken: String) async throws -> LoginResponse {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/qr_login.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "qr_token": qrToken,
+            "device_name": "iPhone",
+            "platform": "ios"
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ApiError.custom("Sunucu yanıtı alınamadı")
+        }
+
+        do {
+            let res = try JSONDecoder().decode(LoginResponse.self, from: data)
+            if !res.success {
+                throw ApiError.custom(res.error ?? "QR kod ile giriş başarısız")
+            }
+            return res
+        } catch {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errMsg = json["error"] as? String {
+                throw ApiError.custom(errMsg)
+            }
+            if httpResponse.statusCode == 401 {
+                throw ApiError.custom("QR kod geçersiz veya süresi dolmuş")
+            }
+            throw ApiError.decodingError(error)
+        }
+    }
+
     // MARK: - Call History
 
     public func getCallHistory(baseUrl: String, token: String, filter: String = "all", limit: Int = 100, offset: Int = 0) async throws -> CallHistoryResponse {

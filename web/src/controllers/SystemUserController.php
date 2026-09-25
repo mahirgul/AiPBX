@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/RoleService.php';
 require_once __DIR__ . '/../services/TwoFactorService.php';
+require_once __DIR__ . '/../services/UserInvitationService.php';
 
 class SystemUserController extends BaseController
 {
@@ -17,6 +18,33 @@ class SystemUserController extends BaseController
             if (isset($_POST['save_system_user'])) {
                 $res = PBXHelper::saveUser($_POST);
                 if ($res['success']) $message = $res['message']; else $error = $res['error'];
+            } elseif (isset($_POST['send_activation_mail'])) {
+                $csrf = $_POST['csrf_token'] ?? '';
+                if (!verifyCSRFToken($csrf)) {
+                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                } else {
+                    $targetUserId = (int)($_POST['user_id'] ?? 0);
+                    $res = UserInvitationService::sendInvitationEmail($targetUserId, false);
+                    if ($res['success']) {
+                        $message = $res['message'] ?? 'Aktivasyon ve şifre belirleme maili başarıyla gönderildi.';
+                    } else {
+                        $error = $res['error'] ?? 'E-posta gönderilemedi.';
+                    }
+                }
+            } elseif (isset($_POST['bulk_send_activation_mail'])) {
+                $csrf = $_POST['csrf_token'] ?? '';
+                if (!verifyCSRFToken($csrf)) {
+                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                } else {
+                    $rawSelected = $_POST['selected_users'] ?? [];
+                    $selectedIds = is_array($rawSelected) ? $rawSelected : explode(',', (string)$rawSelected);
+                    $res = UserInvitationService::sendBulkInvitations($selectedIds);
+                    if ($res['success']) {
+                        $message = $res['message'];
+                    } else {
+                        $error = $res['message'] ?: ($res['error'] ?? 'Toplu e-posta gönderimi başarısız oldu.');
+                    }
+                }
             } elseif (isset($_POST['toggle_status'])) {
                 $res = PBXHelper::toggleStatus('sys_users', $_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
                 if ($res['success']) $message = $res['message']; else $error = $res['error'];

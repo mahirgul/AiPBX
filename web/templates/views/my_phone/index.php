@@ -723,14 +723,35 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
             <!-- Kart 4: Mobil Uygulama & Cihaz Bilgileri -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 8px;">
                         <i class="fab fa-android" style="color: #3DDC84;"></i> Mobil Uygulama &amp; Sürüm Bilgisi
                     </span>
-                    <a href="/app.apk" class="btn btn-xs btn-primary" download style="font-size: 11px; padding: 4px 10px;">
-                        <i class="fas fa-download"></i> APK İndir
-                    </a>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" class="btn btn-xs btn-success" onclick="openQrLoginModal()" style="font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-qrcode"></i> Mobil Giriş QR Kodu
+                        </button>
+                        <a href="/app.apk" class="btn btn-xs btn-primary" download style="font-size: 11px; padding: 4px 10px;">
+                            <i class="fas fa-download"></i> APK İndir
+                        </a>
+                    </div>
                 </h3>
+
+                <!-- QR Kod Hızlı Mobil Giriş Tanıtım Kutusu -->
+                <div style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06)); border: 1px dashed rgba(37,99,235,0.28); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(37,99,235,0.12); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 18px;">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">Hızlı Mobil Giriş (Barkod / QR Kod)</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">Android ve iOS uygulamanızın giriş ekranından bu QR kodu okutarak şifresiz, tek dokunuşla giriş yapın.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openQrLoginModal()" style="font-size: 11.5px; padding: 6px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-qrcode"></i> QR Kod Göster
+                    </button>
+                </div>
 
                 <?php if (empty($mobileDevices)): ?>
                     <div style="font-size: 12.5px; background: var(--bg-input); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color); color: var(--text-muted); text-align: center;">
@@ -852,6 +873,55 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         </div>
         <?php endif; ?>
     <?php endif; ?>
+</div>
+
+<!-- Modal: QR Kod ile Hızlı Mobil Giriş -->
+<div class="modal-overlay" id="qrLoginModal" style="display: none;">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(37, 99, 235, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 700; margin: 0; text-align: left;">Mobil Giriş QR Kodu</h3>
+                    <small style="color: var(--text-muted); font-size: 11px; display: block; text-align: left;">Dahili: <?php echo htmlspecialchars($ext); ?> (<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>)</small>
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="closeQrLoginModal()" style="padding: 4px 10px;" title="Kapat">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding: 24px 20px;">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                Telefonunuzdaki <strong>AiPBX</strong> mobil uygulamasını açın, giriş ekranında <strong>"QR Kod ile Giriş Yap"</strong> butonuna basarak bu kodu kameraya hizalayın.
+            </p>
+
+            <div id="qrCodeContainer" style="display: flex; justify-content: center; align-items: center; min-height: 240px; background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin: 0 auto; max-width: 250px;">
+                <div id="qrLoadingSpinner" style="text-align: center; color: var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+                    QR Kod üretiliyor...
+                </div>
+                <div id="qrSvgWrapper" style="display: none; width: 100%;"></div>
+            </div>
+
+            <div id="qrSuccessAlert" style="display: none; margin-top: 16px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px; color: #059669; font-weight: 600; font-size: 13px;">
+                <i class="fas fa-check-circle" style="margin-right: 6px;"></i> Giriş Başarılı! Eşleşen Cihaz: <span id="qrPairedDevice"></span>
+            </div>
+
+            <div id="qrCountdownContainer" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-clock"></i> Kalan geçerlilik süresi: <strong id="qrCountdown" style="color: var(--primary);">10:00</strong>
+                <button type="button" class="btn btn-ghost btn-xs" onclick="generateNewQrCode()" title="Yeni QR Kod Üret" style="padding: 2px 8px; font-size: 11px;">
+                    <i class="fas fa-sync-alt"></i> Yenile
+                </button>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 11.5px; color: var(--text-muted); background: var(--bg-input); padding: 12px 14px; border-radius: 8px; text-align: left; line-height: 1.5; border: 1px solid var(--border-color);">
+                <i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 4px;"></i>
+                <strong>Uçtan Uca Güvenli:</strong> Bu kod tek kullanımlıktır ve şifrenizi barındırmaz. Telefonunuz eşleştikten sonra uygulama güncellemelerinde bile oturumunuz korunur.
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- WaveSurfer Ses Oynatıcı Modal (CDR Raporları ile Ortak Bileşen) -->
@@ -1043,6 +1113,126 @@ function loadMyPhoneAudioDevices() {
     if (typeof populatePhoneDeviceSelects === "function") {
         populatePhoneDeviceSelects();
     }
+}
+
+/**
+ * QR Code Quick Mobile Login Functions
+ */
+let _qrToken = null;
+let _qrTimer = null;
+let _qrPollInterval = null;
+let _qrSecondsLeft = 600;
+
+function openQrLoginModal() {
+    const modal = document.getElementById("qrLoginModal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    modal.classList.add("active");
+    generateNewQrCode();
+}
+
+function closeQrLoginModal() {
+    const modal = document.getElementById("qrLoginModal");
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("active");
+    }
+    if (_qrTimer) clearInterval(_qrTimer);
+    if (_qrPollInterval) clearInterval(_qrPollInterval);
+}
+
+function generateNewQrCode() {
+    const spinner = document.getElementById("qrLoadingSpinner");
+    const svgWrapper = document.getElementById("qrSvgWrapper");
+    const successAlert = document.getElementById("qrSuccessAlert");
+
+    if (spinner) {
+        spinner.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i> QR Kod üretiliyor...';
+        spinner.style.display = "block";
+    }
+    if (svgWrapper) {
+        svgWrapper.style.display = "none";
+        svgWrapper.style.opacity = "1";
+        svgWrapper.innerHTML = "";
+    }
+    if (successAlert) successAlert.style.display = "none";
+    if (_qrTimer) clearInterval(_qrTimer);
+    if (_qrPollInterval) clearInterval(_qrPollInterval);
+
+    const csrf = window.CSRF_TOKEN || "<?php echo getCSRFToken(); ?>";
+    fetch("/api/qr_code.php?action=generate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRF-Token": csrf
+        },
+        body: "csrf_token=" + encodeURIComponent(csrf)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.qr_data_uri) {
+            _qrToken = data.qr_token;
+            if (spinner) spinner.style.display = "none";
+            if (svgWrapper) {
+                svgWrapper.innerHTML = '<img src="' + data.qr_data_uri + '" alt="QR Kodu" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
+                svgWrapper.style.display = "block";
+            }
+            _qrSecondsLeft = data.expires_in || 600;
+            startQrCountdown();
+            startQrPolling();
+        } else {
+            if (spinner) spinner.innerHTML = '<span style="color: var(--danger);">' + (data.error || "QR kod üretilemedi") + '</span>';
+        }
+    })
+    .catch(err => {
+        if (spinner) spinner.innerHTML = '<span style="color: var(--danger);">Bağlantı hatası: ' + err.message + '</span>';
+    });
+}
+
+function startQrCountdown() {
+    const el = document.getElementById("qrCountdown");
+    if (_qrTimer) clearInterval(_qrTimer);
+
+    function update() {
+        if (_qrSecondsLeft <= 0) {
+            clearInterval(_qrTimer);
+            if (el) el.textContent = "Süresi doldu";
+            const svgWrapper = document.getElementById("qrSvgWrapper");
+            if (svgWrapper) svgWrapper.style.opacity = "0.25";
+            return;
+        }
+        const m = Math.floor(_qrSecondsLeft / 60);
+        const s = _qrSecondsLeft % 60;
+        if (el) el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+        _qrSecondsLeft--;
+    }
+    update();
+    _qrTimer = setInterval(update, 1000);
+}
+
+function startQrPolling() {
+    if (_qrPollInterval) clearInterval(_qrPollInterval);
+    _qrPollInterval = setInterval(() => {
+        if (!_qrToken) return;
+        fetch("/api/qr_code.php?action=status&token=" + encodeURIComponent(_qrToken))
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.data && res.data.used) {
+                clearInterval(_qrPollInterval);
+                clearInterval(_qrTimer);
+                const alertEl = document.getElementById("qrSuccessAlert");
+                const devEl = document.getElementById("qrPairedDevice");
+                if (devEl) devEl.textContent = res.data.device_name || "Mobil Cihaz";
+                if (alertEl) alertEl.style.display = "block";
+                const svgWrapper = document.getElementById("qrSvgWrapper");
+                if (svgWrapper) svgWrapper.style.opacity = "0.35";
+                if (window.showFooterToast) {
+                    showFooterToast("Mobil cihaz başarıyla eşleştirildi!", "success");
+                }
+            }
+        })
+        .catch(() => {});
+    }, 2500);
 }
 
 function initMyPhone() {

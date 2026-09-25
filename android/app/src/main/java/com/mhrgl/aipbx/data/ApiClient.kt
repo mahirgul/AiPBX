@@ -188,6 +188,38 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
             }
         }
 
+    suspend fun qrLogin(baseUrl: String, qrToken: String): Result<LoginResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val endpoint = "$cleanUrl/api/mobile/qr_login.php"
+
+                val jsonBody = JSONObject().apply {
+                    put("qr_token", qrToken.trim())
+                    put("device_name", "Android-${android.os.Build.MODEL}")
+                }.toString()
+
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val result = gson.fromJson(body, LoginResponse::class.java)
+                    if (response.isSuccessful && result != null && result.success) {
+                        Result.success(result)
+                    } else {
+                        val errMsg = result?.error ?: "QR kod ile giriş başarısız (HTTP ${response.code})"
+                        Result.failure(Exception(errMsg))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+
 
     suspend fun getCallHistory(
         baseUrl: String,

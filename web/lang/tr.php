@@ -1960,6 +1960,12 @@ return [
     'system_users.2fa_inactive_tooltip' => '2FA Kapalı',
     'system_users.reset_2fa_tooltip' => '2FA Sıfırla',
     'system_users.reset_2fa_confirm' => '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?',
+    'system_users.send_mail_tooltip' => 'Giriş / Aktivasyon Maili Gönder',
+    'system_users.send_mail_confirm' => '%s kullanıcısına giriş ve şifre belirleme maili gönderilsin mi?',
+    'system_users.bulk_mail_btn' => 'Seçilenlere Giriş Maili Gönder',
+    'system_users.bulk_mail_confirm' => 'Seçilen %d kullanıcıya aktivasyon ve şifre belirleme maili gönderilecek. Emin misiniz?',
+    'system_users.no_email_tooltip' => 'E-posta adresi tanımlı değil',
+    'system_users.select_users_warning' => 'Lütfen işlem yapmak için en az bir kullanıcı seçin!',
 
     // E-Posta & Mail Relay Ayarları
     'mail_settings.title' => 'E-Posta & Mail Relay Ayarları',
