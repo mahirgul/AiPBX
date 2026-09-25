@@ -128,6 +128,21 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         }
     }
 
+    public func loginWithQr(serverUrl: String, qrToken: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let res = try await ApiClient.shared.qrLogin(baseUrl: serverUrl, qrToken: qrToken)
+            await handleLoginSuccess(res: res, serverUrl: serverUrl)
+            return true
+        } catch {
+            self.isLoading = false
+            self.errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     public func handleDeepLinkUrl(_ url: URL) {
         guard url.scheme == "aipbx", url.host == "auth" else { return }
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }

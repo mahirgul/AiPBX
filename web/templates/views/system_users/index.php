@@ -25,10 +25,29 @@
         - <strong><?php echo t('system_users.help_fax_user'); ?></strong>
     </div>
 
+    <!-- Bulk Actions Toolbar -->
+    <div id="bulkActionBar" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 10px 16px; margin: 12px 16px; align-items: center; justify-content: space-between;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-check-square"></i>
+            <span id="bulkSelectedCount">0</span> kullanıcı seçildi
+        </div>
+        <form method="POST" id="bulkMailForm" style="margin: 0;" onsubmit="return confirmBulkSendMail();">
+            <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+            <input type="hidden" name="bulk_send_activation_mail" value="1">
+            <input type="hidden" name="selected_users" id="bulkSelectedUsersInput" value="">
+            <button type="submit" class="btn btn-primary btn-sm" id="btnBulkSendMail">
+                <i class="fas fa-paper-plane"></i> <?php echo t('system_users.bulk_mail_btn'); ?>
+            </button>
+        </form>
+    </div>
+
     <div class="table-responsive">
         <table class="data-table">
             <thead>
                 <tr>
+                    <th style="width: 36px; text-align: center;">
+                        <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" style="cursor: pointer; accent-color: var(--primary);" title="Tümünü Seç">
+                    </th>
                     <th class="col-hide-mobile" style="width: 50px;">#</th>
                     <th class="col-hide-mobile"><?php echo t('system_users.col_user'); ?></th>
                     <th><?php echo t('system_users.col_fullname'); ?></th>
@@ -43,13 +62,16 @@
             </thead>
             <tbody>
                 <?php if (empty($users)): ?>
-                    <?php echo uiTableEmptyRow(10, t('system_users.empty'), 'fa-users-cog'); ?>
+                    <?php echo uiTableEmptyRow(11, t('system_users.empty'), 'fa-users-cog'); ?>
                 <?php else: ?>
                     <?php foreach ($users as $u):
                         $role_label = htmlspecialchars($u['role_name'] ?? $u['role']);
                         $role_class = 'role-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $u['role']);
                     ?>
                         <tr>
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="user-select-cb" value="<?php echo $u['id']; ?>" data-has-email="<?php echo !empty($u['email']) ? '1' : '0'; ?>" onchange="updateBulkActionState()" style="cursor: pointer; accent-color: var(--primary);">
+                            </td>
                             <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $u['id']; ?></td>
                             <td class="col-hide-mobile" style="font-weight: 700; color: var(--text-main);">
                                 <i class="fas fa-user-circle"></i> <?php echo htmlspecialchars($u['username']); ?>
@@ -92,6 +114,20 @@
                             </td>
                             <td class="text-right">
                                 <div class="table-actions-cell">
+                                    <?php if (!empty($u['email'])): ?>
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo sprintf(t('system_users.send_mail_confirm'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                                            <input type="hidden" name="send_activation_mail" value="1">
+                                            <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
+                                            <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('system_users.send_mail_tooltip'); ?>" style="color: var(--primary);">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                        </form>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled title="<?php echo t('system_users.no_email_tooltip'); ?>" style="opacity: 0.35; cursor: not-allowed;">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                    <?php endif; ?>
                                     <?php if (!empty($u['two_factor_enabled'])): ?>
                                         <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm', '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
