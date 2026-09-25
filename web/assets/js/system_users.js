@@ -137,3 +137,49 @@ function resetRoleForm() {
     document.getElementById('role_modal_name').value = '';
     document.getElementById('role_modal_desc').value = '';
 }
+
+/**
+ * Bulk User Selection & Action Functions
+ */
+function toggleSelectAllUsers(master) {
+    const checkboxes = document.querySelectorAll('.user-select-cb');
+    checkboxes.forEach(cb => {
+        cb.checked = master.checked;
+    });
+    updateBulkActionState();
+}
+
+function updateBulkActionState() {
+    const checkboxes = document.querySelectorAll('.user-select-cb:checked');
+    const count = checkboxes.length;
+    const bar = document.getElementById('bulkActionBar');
+    const countSpan = document.getElementById('bulkSelectedCount');
+    const input = document.getElementById('bulkSelectedUsersInput');
+
+    if (countSpan) countSpan.textContent = count;
+
+    if (count > 0) {
+        if (bar) bar.style.display = 'flex';
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        if (input) input.value = ids.join(',');
+    } else {
+        if (bar) bar.style.display = 'none';
+        if (input) input.value = '';
+    }
+
+    const master = document.getElementById('selectAllUsers');
+    const all = document.querySelectorAll('.user-select-cb');
+    if (master && all.length > 0) {
+        master.checked = (count === all.length);
+    }
+}
+
+function confirmBulkSendMail() {
+    const checkboxes = document.querySelectorAll('.user-select-cb:checked');
+    if (checkboxes.length === 0) {
+        alert('Lütfen en az bir kullanıcı seçin.');
+        return false;
+    }
+    return confirm(`Seçilen ${checkboxes.length} kullanıcıya giriş ve şifre belirleme bağlantısı e-posta ile gönderilecektir. Onaylıyor musunuz?`);
+}
+

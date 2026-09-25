@@ -111,6 +111,9 @@ dependencies {
     // Optional Runtime FCM (Faz 3 - initialized dynamically only when push_provider=fcm)
     implementation("com.google.firebase:firebase-messaging:24.0.0")
 
+    // QR Code / Barcode Scanning for Fast Login
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
     // Unit Testing (M24)
     testImplementation("junit:junit:4.13.2")
 }

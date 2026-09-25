@@ -189,6 +189,22 @@
                 app:cornerRadius="12dp"
                 app:strokeColor="@color/border_color" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQrLogin"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:text="QR Kod ile Giriş Yap"
+                android:textAllCaps="false"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                app:icon="@drawable/ic_qr_code"
+                app:iconGravity="textStart"
+                app:iconTint="@color/primary"
+                app:cornerRadius="12dp"
+                app:strokeColor="@color/primary" />
+
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"

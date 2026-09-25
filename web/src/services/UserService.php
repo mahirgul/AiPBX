@@ -88,12 +88,18 @@ class UserService {
                 writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'update', $_SESSION['user_id'] ?? null);
             } else {
                 if (empty($password)) {
-                    throw new \Exception("Yeni kullanıcı için web giriş şifresi zorunludur!");
+                    if (!empty($email)) {
+                        $effective_password = bin2hex(random_bytes(16));
+                    } else {
+                        throw new \Exception("Yeni kullanıcı için web giriş şifresi veya aktivasyon için e-posta adresi zorunludur!");
+                    }
+                } else {
+                    $effective_password = $password;
                 }
                 $effective_sip_pass = !empty($sip_password) ? $sip_password : SIPHelper::generateStrongSIPPassword();
                 DBHelper::insert('sys_users', [
                     'username' => $username,
-                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                    'password_hash' => password_hash($effective_password, PASSWORD_DEFAULT),
                     'sip_password' => $effective_sip_pass,
                     'full_name' => $full_name,
                     'email' => $email,
@@ -111,6 +117,17 @@ class UserService {
                 $user_id = (int) getDB()->lastInsertId();
                 $msg = "Yeni sistem kullanıcısı '{$username}' oluşturuldu!";
                 writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'create', $_SESSION['user_id'] ?? null);
+
+                // E-posta tanımlıysa otomatik aktivasyon ve şifre belirleme maili gönder
+                if (!empty($email)) {
+                    require_once __DIR__ . '/UserInvitationService.php';
+                    $inviteRes = UserInvitationService::sendInvitationEmail($user_id, true);
+                    if ($inviteRes['success']) {
+                        $msg .= " Aktivasyon ve şifre belirleme e-postası ({$email}) gönderildi.";
+                    } else {
+                        $msg .= " (Uyarı: Aktivasyon maili gönderilemedi: " . ($inviteRes['error'] ?? '') . ")";
+                    }
+                }
             }
 
             $uid = $_SESSION['user_id'] ?? null;

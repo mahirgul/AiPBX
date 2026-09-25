@@ -19,12 +19,22 @@ import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.databinding.ActivityLoginBinding
 import com.mhrgl.aipbx.service.FcmHelper
 import com.mhrgl.aipbx.service.PbxForegroundService
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var prefs: AppPreferences
     private val apiClient = ApiClient()
+
+    private val qrScanLauncher = registerForActivityResult(ScanContract()) { result ->
+        val content = result.contents
+        if (!content.isNullOrEmpty()) {
+            handleScannedQr(content)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,7 +107,60 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnQrLogin.setOnClickListener {
+            val options = ScanOptions().apply {
+                setPrompt("AiPBX web ekranındaki (Dahilim) QR kodu kameraya hizalayın")
+                setBeepEnabled(true)
+                setOrientationLocked(false)
+                setBarcodeImageEnabled(false)
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+            }
+            qrScanLauncher.launch(options)
+        }
+
         handleAuthDeepLink(intent)
+    }
+
+    private fun handleScannedQr(qrData: String) {
+        try {
+            val json = JSONObject(qrData)
+            val type = json.optString("type")
+            if (type == "aipbx_qr_login") {
+                val serverUrl = json.optString("server")
+                val qrToken = json.optString("qr_token")
+                if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
+                    performQrLogin(serverUrl, qrToken)
+                } else {
+                    showError("QR kod eksik parametre içeriyor.")
+                }
+            } else {
+                showError("Geçersiz veya uyumsuz AiPBX QR kodu!")
+            }
+        } catch (e: Exception) {
+            showError("QR kod çözümlenemedi: ${e.message}")
+        }
+    }
+
+    private fun performQrLogin(serverUrl: String, qrToken: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.tvError.visibility = View.GONE
+        binding.btnLogin.isEnabled = false
+        binding.btnQrLogin.isEnabled = false
+
+        lifecycleScope.launch {
+            val result = apiClient.qrLogin(serverUrl, qrToken)
+            binding.progressBar.visibility = View.GONE
+            binding.btnLogin.isEnabled = true
+            binding.btnQrLogin.isEnabled = true
+
+            result.onSuccess { response ->
+                prefs.serverUrl = serverUrl
+                binding.tvCurrentServer.text = serverUrl
+                onLoginSuccess(response)
+            }.onFailure { error ->
+                showError(error.localizedMessage ?: "QR kod ile giriş başarısız oldu.")
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
