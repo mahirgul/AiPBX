@@ -1960,6 +1960,12 @@ return [
     'system_users.2fa_inactive_tooltip' => '2FA Inactive',
     'system_users.reset_2fa_tooltip' => 'Reset 2FA',
     'system_users.reset_2fa_confirm' => 'Two-factor authentication for %s will be reset. Are you sure?',
+    'system_users.send_mail_tooltip' => 'Send Login / Activation Email',
+    'system_users.send_mail_confirm' => 'Send login and password setup email to %s?',
+    'system_users.bulk_mail_btn' => 'Send Login Email to Selected',
+    'system_users.bulk_mail_confirm' => 'Activation and password setup email will be sent to %d selected user(s). Are you sure?',
+    'system_users.no_email_tooltip' => 'No email address registered',
+    'system_users.select_users_warning' => 'Please select at least one user to proceed!',
 
     // E-Mail & Mail Relay Settings
     'mail_settings.title' => 'E-Mail & Mail Relay Settings',

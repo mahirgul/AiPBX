@@ -9,6 +9,7 @@ public struct LoginView: View {
     @State private var isSecured: Bool = true
     @State private var isPinging: Bool = false
     @State private var pingStatusText: String? = nil
+    @State private var isShowingScanner: Bool = false
 
     public init() {}
 
@@ -198,6 +199,27 @@ public struct LoginView: View {
                                 )
                             }
                             .disabled(appState.isLoading || serverUrl.isEmpty)
+
+                            // QR Kod ile Hızlı Giriş Butonu
+                            Button(action: { isShowingScanner = true }) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "qrcode.viewfinder")
+                                        .font(.title3)
+                                        .foregroundColor(.blue)
+                                    Text("QR Kod ile Giriş Yap")
+                                        .font(.subheadline.bold())
+                                        .foregroundColor(.blue)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(Color.blue.opacity(0.08))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.4), lineWidth: 1)
+                                )
+                            }
+                            .disabled(appState.isLoading)
                         }
                         .padding(20)
                         .background(Color(.secondarySystemGroupedBackground))
@@ -213,12 +235,54 @@ public struct LoginView: View {
                 }
             }
             .navigationBarHidden(true)
+            .sheet(isPresented: $isShowingScanner) {
+                NavigationView {
+                    QRCodeScannerView { scannedCode in
+                        handleScannedQrCode(scannedCode)
+                    }
+                    .navigationTitle("QR Kod Tara")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("İptal") {
+                                isShowingScanner = false
+                            }
+                        }
+                    }
+                }
+            }
             .onAppear {
                 self.serverUrl = appState.baseUrl
                 self.username = appState.savedUsername
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+    }
+
+    private func handleScannedQrCode(_ code: String) {
+        guard let data = code.data(using: .utf8) else {
+            appState.errorMessage = "QR kod okunamadı."
+            return
+        }
+
+        do {
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let type = json["type"] as? String, type == "aipbx_qr_login",
+               let server = json["server"] as? String,
+               let qrToken = json["qr_token"] as? String {
+                self.serverUrl = server
+                Task {
+                    let success = await appState.loginWithQr(serverUrl: server, qrToken: qrToken)
+                    if !success && appState.errorMessage == nil {
+                        appState.errorMessage = "QR kod ile giriş başarısız oldu."
+                    }
+                }
+            } else {
+                appState.errorMessage = "Geçersiz veya uyumsuz AiPBX QR kodu."
+            }
+        } catch {
+            appState.errorMessage = "QR kod çözümlenemedi: \(error.localizedDescription)"
+        }
     }
 
     private func performLogin() {
@@ -257,3 +321,104 @@ public struct LoginView: View {
         }
     }
 }
+
+// MARK: - AVFoundation QR Scanner View
+import AVFoundation
+import AudioToolbox
+
+struct QRCodeScannerView: UIViewControllerRepresentable {
+    var onScan: (String) -> Void
+    @Environment(\.presentationMode) var presentationMode
+
+    func makeUIViewController(context: Context) -> ScannerViewController {
+        let controller = ScannerViewController()
+        controller.delegate = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    class Coordinator: NSObject, ScannerViewControllerDelegate {
+        let parent: QRCodeScannerView
+
+        init(parent: QRCodeScannerView) {
+            self.parent = parent
+        }
+
+        func didFindCode(_ code: String) {
+            parent.onScan(code)
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+    }
+}
+
+protocol ScannerViewControllerDelegate: AnyObject {
+    func didFindCode(_ code: String)
+}
+
+final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+    weak var delegate: ScannerViewControllerDelegate?
+    private var captureSession: AVCaptureSession?
+    private var previewLayer: AVCaptureVideoPreviewLayer?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+
+        let session = AVCaptureSession()
+        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return }
+        guard let videoInput = try? AVCaptureDeviceInput(device: videoCaptureDevice) else { return }
+
+        if session.canAddInput(videoInput) {
+            session.addInput(videoInput)
+        } else {
+            return
+        }
+
+        let metadataOutput = AVCaptureMetadataOutput()
+        if session.canAddOutput(metadataOutput) {
+            session.addOutput(metadataOutput)
+            metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+            metadataOutput.metadataObjectTypes = [.qr]
+        } else {
+            return
+        }
+
+        let preview = AVCaptureVideoPreviewLayer(session: session)
+        preview.frame = view.layer.bounds
+        preview.videoGravity = .resizeAspectFill
+        view.layer.addSublayer(preview)
+        self.previewLayer = preview
+        self.captureSession = session
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            session.startRunning()
+        }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        previewLayer?.frame = view.layer.bounds
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if captureSession?.isRunning == true {
+            captureSession?.stopRunning()
+        }
+    }
+
+    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+        if let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+           let stringValue = metadataObject.stringValue {
+            AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
+            captureSession?.stopRunning()
+            delegate?.didFindCode(stringValue)
+        }
+    }
+}
+

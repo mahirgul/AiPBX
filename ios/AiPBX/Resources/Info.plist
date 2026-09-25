@@ -25,7 +25,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kurumsal santral aramaları ve sesli görüşmeler için mikrofon erişimi gereklidir.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Sohbette fotoğraf göndermek için kamera erişimi gereklidir.</string>
+	<string>Santral QR kodu ile hızlı giriş yapmak ve sohbette fotoğraf göndermek için kamera erişimi gereklidir.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Sohbette fotoğraf ve dosya paylaşmak için galeri erişimi gereklidir.</string>
 	<key>UIBackgroundModes</key>
