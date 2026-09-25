@@ -12,9 +12,13 @@ import android.os.Bundle
 import android.os.IBinder
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.mhrgl.aipbx.databinding.ActivityIncomingCallBinding
 import com.mhrgl.aipbx.engine.SipEngineListener
 import com.mhrgl.aipbx.model.CallStatus
@@ -47,15 +51,21 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         wakeAndUnlockScreen()
 
         binding = ActivityIncomingCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge WindowInsets destegi (M22)
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        // Edge-to-edge WindowInsets desteği
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
