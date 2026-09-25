@@ -17,15 +17,22 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.text.InputType
 import android.util.Log
+import android.util.Rational
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.databinding.ActivityCallBinding
@@ -91,24 +98,36 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         binding = ActivityCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = AppPreferences.getInstance(this)
 
-        // Edge-to-edge WindowInsets destegi (M22)
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        // Edge-to-edge WindowInsets desteği
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
         // Keep screen on during call setup
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-        )
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         volumeControlStream = AudioManager.STREAM_VOICE_CALL
@@ -593,5 +612,44 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
             }
         }
         abandonCallAudioFocus()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val status = pbxService?.engine?.currentCallStatus
+        if (status == CallStatus.ACTIVE || status == CallStatus.ON_HOLD || status == CallStatus.RINGING_OUTGOING) {
+            enterPipMode()
+        }
+    }
+
+    private fun enterPipMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(1, 1))
+                    .build()
+                enterPictureInPictureMode(params)
+            } catch (e: Exception) {
+                Log.w("CallActivity", "Failed to enter Picture-in-Picture mode", e)
+            }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) {
+            binding.layoutNormalControls.visibility = View.GONE
+            binding.layoutKeypadControls.visibility = View.GONE
+            val lp = binding.ivCallerAvatar.layoutParams
+            lp.width = (48 * resources.displayMetrics.density).toInt()
+            lp.height = (48 * resources.displayMetrics.density).toInt()
+            binding.ivCallerAvatar.layoutParams = lp
+        } else {
+            binding.layoutNormalControls.visibility = View.VISIBLE
+            val lp = binding.ivCallerAvatar.layoutParams
+            lp.width = (84 * resources.displayMetrics.density).toInt()
+            lp.height = (84 * resources.displayMetrics.density).toInt()
+            binding.ivCallerAvatar.layoutParams = lp
+        }
     }
 }
