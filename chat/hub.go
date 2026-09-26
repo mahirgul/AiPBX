@@ -80,15 +80,18 @@ func (h *Hub) Run() {
 				h.broadcastPresence(ext, true)
 			}
 
-			if len(onlineExts) > 0 {
-				snapshotMsg, _ := json.Marshal(map[string]interface{}{
-					"event":      "presence_snapshot",
-					"extensions": onlineExts,
-				})
-				select {
-				case client.send <- snapshotMsg:
-				default:
-				}
+			// Liste boş olsa da gönderilir: istemci anlık görüntüyü tam liste
+			// olarak kullanıp elindeki eski "çevrimiçi" kayıtlarını temizliyor.
+			if onlineExts == nil {
+				onlineExts = []string{}
+			}
+			snapshotMsg, _ := json.Marshal(map[string]interface{}{
+				"event":      "presence_snapshot",
+				"extensions": onlineExts,
+			})
+			select {
+			case client.send <- snapshotMsg:
+			default:
 			}
 
 		case client := <-h.unregister:
