@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import com.mhrgl.aipbx.data.ChatWebSocketManager
+import androidx.appcompat.app.AlertDialog
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
@@ -134,10 +136,16 @@ class LoginActivity : AppCompatActivity() {
             val json = JSONObject(qrData)
             val type = json.optString("type")
             if (type == "aipbx_qr_login") {
-                val serverUrl = json.optString("server")
+                val serverUrl = json.optString("server").trim().trimEnd('/')
                 val qrToken = json.optString("qr_token")
                 if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
-                    performQrLogin(serverUrl, qrToken)
+                    // Kayıtlı sunucudan farklı bir sunucuya bağlanacaksa sor:
+                    // rastgele bir QR uygulamayı başka bir santrale bağlamasın.
+                    if (serverUrl.equals(prefs.serverUrl.trim().trimEnd('/'), ignoreCase = true)) {
+                        performQrLogin(serverUrl, qrToken)
+                    } else {
+                        confirmServerThen(serverUrl) { replace -> performQrLogin(serverUrl, qrToken, replace) }
+                    }
                 } else {
                     showError("QR kod eksik parametre içeriyor.")
                 }
@@ -149,7 +157,11 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun performQrLogin(serverUrl: String, qrToken: String) {
+    /**
+     * @param replaceSession true ise mevcut oturum, YENİ giriş başarılı olduktan
+     *   sonra kapatılır (başarısız girişte kullanıcı oturumunu kaybetmez).
+     */
+    private fun performQrLogin(serverUrl: String, qrToken: String, replaceSession: Boolean = false) {
         binding.progressBar.visibility = View.VISIBLE
         binding.tvError.visibility = View.GONE
         binding.btnLogin.isEnabled = false
@@ -162,6 +174,7 @@ class LoginActivity : AppCompatActivity() {
             binding.btnQrLogin.isEnabled = true
 
             result.onSuccess { response ->
+                if (replaceSession) signOutCurrentSession()
                 prefs.serverUrl = serverUrl
                 binding.tvCurrentServer.text = serverUrl
                 onLoginSuccess(response)
@@ -179,24 +192,76 @@ class LoginActivity : AppCompatActivity() {
 
     private fun handleAuthDeepLink(intent: Intent?) {
         val uri = intent?.data ?: return
-        if (uri.scheme == "aipbx" && uri.host == "auth") {
-            val success = uri.getQueryParameter("success") == "1"
-            if (success) {
-                val dataJson = uri.getQueryParameter("data")
-                if (!dataJson.isNullOrEmpty()) {
-                    try {
-                        val response = com.google.gson.Gson().fromJson(dataJson, com.mhrgl.aipbx.model.LoginResponse::class.java)
-                        onLoginSuccess(response)
-                        return
-                    } catch (e: Exception) {
-                        showError("Giriş verisi çözümlenemedi: ${e.message}")
-                    }
+        if (uri.scheme != "aipbx") return
+        // Aynı bağlantı (ör. ekran döndürme sonrası) ikinci kez işlenmesin.
+        intent.data = null
+
+        when (uri.host) {
+            // Davet e-postası / mobil giriş sayfası: aipbx://login?server=…&token=…
+            "login" -> {
+                val serverUrl = uri.getQueryParameter("server")?.trim()?.trimEnd('/') ?: ""
+                val token = uri.getQueryParameter("token")?.trim() ?: ""
+                val validServer = serverUrl.startsWith("https://", true) || serverUrl.startsWith("http://", true)
+                if (!validServer || token.isEmpty()) {
+                    showError("Giriş bağlantısı eksik veya bozuk.")
+                    return
                 }
-            } else {
-                val error = uri.getQueryParameter("error") ?: "Google ile giriş başarısız oldu."
-                showError(error)
+                confirmServerThen(serverUrl) { replace -> performQrLogin(serverUrl, token, replace) }
+            }
+            // Google girişi dönüşü: aipbx://auth?success=1&code=…
+            // Sunucu artık giriş bilgisini (token + SIP şifresi) URL'de göndermiyor;
+            // tek kullanımlık kod, girişi BAŞLATTIĞIMIZ sunucuda değiş tokuş edilir.
+            "auth" -> {
+                if (uri.getQueryParameter("success") == "1") {
+                    val code = uri.getQueryParameter("code")
+                    val serverUrl = prefs.serverUrl.trim().trimEnd('/')
+                    if (!code.isNullOrEmpty() && serverUrl.isNotEmpty()) {
+                        performQrLogin(serverUrl, code)
+                    } else {
+                        showError("Google girişi tamamlanamadı. Lütfen tekrar deneyin.")
+                    }
+                } else {
+                    showError(uri.getQueryParameter("error") ?: "Google ile giriş başarısız oldu.")
+                }
             }
         }
+    }
+
+    /**
+     * Bağlantı/QR ile başka bir sunucuya giriş öncesi onay. Sahte bir bağlantı
+     * uygulamayı saldırganın santraline bağlayamasın diye sunucu adı gösterilir.
+     * Oturum açıksa kullanıcıya kapatılacağı söylenir.
+     */
+    private fun confirmServerThen(serverUrl: String, onConfirmed: (replaceSession: Boolean) -> Unit) {
+        val host = Uri.parse(serverUrl).host ?: serverUrl
+        val loggedIn = prefs.isLoggedIn
+        val message = StringBuilder()
+            .append("\"").append(host).append("\" santraline giriş yapılsın mı?\n\n")
+            .append("Bu bağlantıyı yalnızca kurumunuzdan gelen bir e-postadan veya kendi ekranınızdaki QR koddan açtıysanız onaylayın.")
+        if (loggedIn) {
+            message.append("\n\nŞu an dahili ").append(prefs.extension ?: "")
+                .append(" ile oturum açık; giriş başarılı olursa bu oturum kapatılacak.")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Mobil Giriş")
+            .setMessage(message.toString())
+            .setCancelable(false)
+            .setPositiveButton("Giriş Yap") { _, _ -> onConfirmed(loggedIn) }
+            .setNegativeButton("İptal") { _, _ ->
+                // Oturum açıkken bağlantıyla gelindiyse giriş ekranında kalmasın.
+                if (loggedIn) {
+                    startActivity(Intent(this, DialerActivity::class.java))
+                    finish()
+                }
+            }
+            .show()
+    }
+
+    /** DialerActivity'deki "Çıkış Yap" ile aynı adımlar (sıra önemli: önce auth silinir ki servis kendini diriltmesin). */
+    private fun signOutCurrentSession() {
+        prefs.clearAuth()
+        ChatWebSocketManager.instance.disconnect()
+        stopService(Intent(this, PbxForegroundService::class.java))
     }
 
     private fun onLoginSuccess(response: com.mhrgl.aipbx.model.LoginResponse) {

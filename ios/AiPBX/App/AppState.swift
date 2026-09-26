@@ -33,6 +33,15 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var contacts: [ContactItem] = []
     @Published public var conversations: [ChatConversation] = []
     @Published public var features: FeatureSettings? = nil
+
+    /// aipbx://login bağlantısı veya farklı sunucuya ait QR: kullanıcı onayı bekliyor.
+    public struct PendingLinkLogin: Identifiable {
+        public let id = UUID()
+        public let serverUrl: String
+        public let token: String
+        public var host: String { URL(string: serverUrl)?.host ?? serverUrl }
+    }
+    @Published public var pendingLinkLogin: PendingLinkLogin? = nil
     @Published public var activeConversationId: Int? = nil
 
     private var cancellables = Set<AnyCancellable>()
@@ -144,26 +153,64 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     }
 
     public func handleDeepLinkUrl(_ url: URL) {
-        guard url.scheme == "aipbx", url.host == "auth" else { return }
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        guard url.scheme == "aipbx",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
         let queryItems = components.queryItems ?? []
-        let success = queryItems.first(where: { $0.name == "success" })?.value == "1"
+        func param(_ name: String) -> String? {
+            queryItems.first(where: { $0.name == name })?.value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
 
-        if success {
-            if let dataJson = queryItems.first(where: { $0.name == "data" })?.value,
-               let data = dataJson.data(using: .utf8) {
-                do {
-                    let res = try JSONDecoder().decode(LoginResponse.self, from: data)
-                    Task { @MainActor in
-                        await self.handleLoginSuccess(res: res, serverUrl: self.baseUrl)
-                    }
-                } catch {
-                    self.errorMessage = "Giriş verisi çözümlenemedi: \(error.localizedDescription)"
-                }
+        switch url.host {
+        case "login":
+            // Davet e-postası / mobil giriş sayfası: aipbx://login?server=…&token=…
+            let server = (param("server") ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            let token = param("token") ?? ""
+            let lower = server.lowercased()
+            guard (lower.hasPrefix("https://") || lower.hasPrefix("http://")), !token.isEmpty else {
+                errorMessage = "Giriş bağlantısı eksik veya bozuk."
+                return
             }
-        } else {
-            let error = queryItems.first(where: { $0.name == "error" })?.value ?? "Google ile giriş başarısız oldu."
-            self.errorMessage = error
+            // Sahte bağlantı uygulamayı başka bir santrale bağlamasın: önce sor.
+            pendingLinkLogin = PendingLinkLogin(serverUrl: server, token: token)
+
+        case "auth":
+            // Google girişi dönüşü: sunucu artık giriş bilgisini (token + SIP
+            // şifresi) URL'de göndermiyor; tek kullanımlık kod, girişi
+            // başlattığımız sunucuda değiş tokuş edilir.
+            if param("success") == "1" {
+                guard let code = param("code"), !code.isEmpty else {
+                    errorMessage = "Google girişi tamamlanamadı. Lütfen tekrar deneyin."
+                    return
+                }
+                let server = baseUrl
+                Task { @MainActor in
+                    _ = await self.loginWithQr(serverUrl: server, qrToken: code)
+                }
+            } else {
+                errorMessage = param("error") ?? "Google ile giriş başarısız oldu."
+            }
+
+        default:
+            return
+        }
+    }
+
+    /// Onaylanan bağlantı girişi. Açık oturum, YENİ giriş başarılı olduktan
+    /// sonra kapatılır (başarısız girişte kullanıcı oturumunu kaybetmez).
+    public func confirmPendingLinkLogin() {
+        guard let pending = pendingLinkLogin else { return }
+        pendingLinkLogin = nil
+        Task { @MainActor in
+            self.isLoading = true
+            self.errorMessage = nil
+            do {
+                let res = try await ApiClient.shared.qrLogin(baseUrl: pending.serverUrl, qrToken: pending.token)
+                if self.isLoggedIn { self.logout() }
+                await self.handleLoginSuccess(res: res, serverUrl: pending.serverUrl)
+            } catch {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+            }
         }
     }
 

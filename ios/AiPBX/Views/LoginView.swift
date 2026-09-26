@@ -270,6 +270,13 @@ public struct LoginView: View {
                let type = json["type"] as? String, type == "aipbx_qr_login",
                let server = json["server"] as? String,
                let qrToken = json["qr_token"] as? String {
+                let normalized = server.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                let current = appState.baseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if normalized.caseInsensitiveCompare(current) != .orderedSame {
+                    // Kayıtlı sunucudan farklı bir santral: önce kullanıcıya sor.
+                    appState.pendingLinkLogin = AppState.PendingLinkLogin(serverUrl: normalized, token: qrToken)
+                    return
+                }
                 self.serverUrl = server
                 Task {
                     let success = await appState.loginWithQr(serverUrl: server, qrToken: qrToken)
