@@ -89,6 +89,39 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (uri != null) handleChatPickedUri(uri, "image")
     }
 
+    // Kamera: çekilen fotoğraf galeridekiyle aynı hazırlama/yükleme akışından geçer.
+    private val takeChatPhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (ok) handleChatPickedUri(ChatUploadPrep.cameraUri(this), "image")
+    }
+
+    // Manifest CAMERA izni tanımladığı için Android, kamera uygulamasını açmadan
+    // önce bu iznin verilmiş olmasını şart koşuyor.
+    private val chatCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
+        else Toast.makeText(this, "Fotoğraf çekmek için kamera izni gerekli.", Toast.LENGTH_LONG).show()
+    }
+
+    private fun showChatPhotoSourceMenu(anchor: View) {
+        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "Fotoğraf çek")
+        popup.menu.add(0, 2, 1, "Galeriden seç")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> {
+                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        this, android.Manifest.permission.CAMERA
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
+                    else chatCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    true
+                }
+                2 -> { pickChatPhotoLauncher.launch("image/*"); true }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
     private var currentFilter = "all"
     private enum class ChatFilter { ALL, DIRECT, GROUP }
     private var chatFilterMode = ChatFilter.ALL
@@ -839,8 +872,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             pickChatDocumentLauncher.launch("*/*")
         }
 
-        binding.btnChatCamera.setOnClickListener {
-            pickChatPhotoLauncher.launch("image/*")
+        binding.btnChatCamera.setOnClickListener { anchor ->
+            showChatPhotoSourceMenu(anchor)
         }
 
         binding.btnChatCancelUpload.setOnClickListener {

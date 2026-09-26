@@ -28,12 +28,22 @@ object SimpleImageLoader {
      * @param fallbackUrl ilk adres indirilemezse denenecek adres (ör. küçük
      *   resim yoksa orijinal görsel).
      */
-    fun load(urlStr: String, imageView: ImageView, authToken: String? = null, fallbackUrl: String? = null) {
+    fun load(
+        urlStr: String,
+        imageView: ImageView,
+        authToken: String? = null,
+        fallbackUrl: String? = null,
+        maxDim: Int = 800,
+        onDone: ((Boolean) -> Unit)? = null
+    ) {
         imageView.tag = urlStr
 
-        val cached = memoryCache.get(urlStr)
+        // Aynı adres farklı çözünürlükte (liste / tam ekran) istenebilir.
+        val cacheKey = "$urlStr@$maxDim"
+        val cached = memoryCache.get(cacheKey)
         if (cached != null) {
             imageView.setImageBitmap(cached)
+            onDone?.invoke(true)
             return
         }
 
@@ -41,17 +51,18 @@ object SimpleImageLoader {
 
         scope.launch {
             val bitmap = withContext(Dispatchers.IO) {
-                downloadBitmap(urlStr, authToken)
-                    ?: fallbackUrl?.let { downloadBitmap(it, authToken) }
+                downloadBitmap(urlStr, authToken, maxDim)
+                    ?: fallbackUrl?.let { downloadBitmap(it, authToken, maxDim) }
             }
-            if (bitmap != null && imageView.tag == urlStr) {
-                memoryCache.put(urlStr, bitmap)
-                imageView.setImageBitmap(bitmap)
+            if (bitmap != null) memoryCache.put(cacheKey, bitmap)
+            if (imageView.tag == urlStr) {
+                if (bitmap != null) imageView.setImageBitmap(bitmap)
+                onDone?.invoke(bitmap != null)
             }
         }
     }
 
-    private fun downloadBitmap(urlStr: String, authToken: String?): Bitmap? {
+    private fun downloadBitmap(urlStr: String, authToken: String?, maxDim: Int): Bitmap? {
         return try {
             val url = URL(urlStr)
             val conn = url.openConnection() as HttpURLConnection
@@ -77,12 +88,12 @@ object SimpleImageLoader {
             }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
 
-            // Scale to max 800x800
+            // Scale to max maxDim x maxDim
             var inSampleSize = 1
-            if (options.outHeight > 800 || options.outWidth > 800) {
+            if (options.outHeight > maxDim || options.outWidth > maxDim) {
                 val halfHeight = options.outHeight / 2
                 val halfWidth = options.outWidth / 2
-                while ((halfHeight / inSampleSize) >= 800 && (halfWidth / inSampleSize) >= 800) {
+                while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
                     inSampleSize *= 2
                 }
             }

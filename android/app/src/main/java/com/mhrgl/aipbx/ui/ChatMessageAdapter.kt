@@ -129,11 +129,9 @@ class ChatMessageAdapter(
                 // yoksa orijinal görsele düşülür.
                 SimpleImageLoader.load(resolveMediaUrl(thumbPathFor(m.attachmentUrl)), ivImage, tokenProvider(), fullImageUrl)
 
+                // Harici tarayıcı yerine uygulama içi tam ekran görüntüleyici.
                 ivImage.setOnClickListener {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withToken(fullImageUrl)))
-                        ctx.startActivity(intent)
-                    } catch (e: Exception) {}
+                    ImageViewerDialog.show(ctx, fullImageUrl, tokenProvider())
                 }
             } else {
                 ivImage.visibility = View.GONE

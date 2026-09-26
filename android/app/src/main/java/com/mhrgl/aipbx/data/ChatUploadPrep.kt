@@ -12,6 +12,7 @@ import android.os.Build
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
+import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.max
@@ -39,6 +40,17 @@ object ChatUploadPrep {
             file.delete()
             file.parentFile?.delete()
         }
+    }
+
+    /**
+     * Kamera uygulamasının fotoğrafı yazacağı adres. Ad sabit: kamera uygulaması
+     * açıkken Android bizim etkinliğimizi kapatabilir; sabit adres sayesinde
+     * dönüşte kayıtlı duruma ihtiyaç kalmadan dosya bulunur. Her yeni çekim
+     * bir öncekinin (zaten yüklenmiş) dosyasının üzerine yazar.
+     */
+    fun cameraUri(context: Context): Uri {
+        val dir = File(context.cacheDir, "camera").apply { mkdirs() }
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(dir, "capture.jpg"))
     }
 
     fun prepare(context: Context, uri: Uri, type: String): Prepared? {
