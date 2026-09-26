@@ -52,7 +52,9 @@ class LoginActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val bottom = maxOf(systemBars.bottom, ime.bottom)
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
             insets
         }
 

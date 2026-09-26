@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -101,9 +102,29 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                 val systemBars = insets.getInsets(
                     WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
                 )
-                view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+                val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+                val bottom = maxOf(systemBars.bottom, ime.bottom)
+                view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
                 insets
             }
+
+            ViewCompat.setWindowInsetsAnimationCallback(
+                root,
+                object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
+                    override fun onProgress(
+                        insets: WindowInsetsCompat,
+                        runningAnimations: MutableList<WindowInsetsAnimationCompat>
+                    ): WindowInsetsCompat {
+                        val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+                        val systemBars = insets.getInsets(
+                            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+                        )
+                        val bottom = maxOf(systemBars.bottom, ime.bottom)
+                        root.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
+                        return insets
+                    }
+                }
+            )
         }
 
         convId = intent.getIntExtra(EXTRA_CONV_ID, 0)
@@ -181,6 +202,14 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         btnCancelUpload.setOnClickListener {
             pendingUpload = null
             llUploadPreview.visibility = View.GONE
+        }
+
+        etMessage.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && ::adapter.isInitialized && adapter.itemCount > 0) {
+                rvMessages.postDelayed({
+                    rvMessages.scrollToPosition(adapter.itemCount - 1)
+                }, 150)
+            }
         }
     }
 
@@ -269,6 +298,14 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         }
         rvMessages.layoutManager = lm
         rvMessages.adapter = adapter
+
+        rvMessages.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, oldBottom ->
+            if (bottom < oldBottom && ::adapter.isInitialized && adapter.itemCount > 0) {
+                rvMessages.post {
+                    rvMessages.scrollToPosition(adapter.itemCount - 1)
+                }
+            }
+        }
     }
 
     private fun ensureConversationAndLoadMessages() {
