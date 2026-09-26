@@ -28,8 +28,10 @@ class ChatWebSocketManager private constructor() {
 
     private val gson = Gson()
     private val listeners = CopyOnWriteArrayList<ChatEventListener>()
-    private var webSocket: WebSocket? = null
-    private var isConnected = false
+    @Volatile private var webSocket: WebSocket? = null
+    @Volatile private var isConnected = false
+    /** El sıkışma sürerken gelen ikinci connect() çağrısı yeni soket açmasın diye. */
+    @Volatile private var isConnecting = false
     private var isManuallyClosed = false
     private var reconnectAttempts = 0
     private var currentUrl: String = ""
@@ -73,8 +75,13 @@ class ChatWebSocketManager private constructor() {
     fun connect(baseUrl: String, token: String) {
         if (baseUrl.isEmpty() || token.isEmpty()) return
 
-        if (isConnected && webSocket != null && currentUrl == baseUrl && currentToken == token) {
-            Log.d(TAG, "Chat WS already connected with current credentials, skipping redundant connect")
+        // ChatListActivity, ChatActivity, DialerActivity ve PbxForegroundService
+        // hepsi connect() çağırıyor. Önceden el sıkışma sürerken gelen çağrı eski
+        // soketi iptal edip yenisini açıyordu: sunucu aynı telefonu iki cihaz
+        // sayıyor, iptal edilen soketin geç gelen onFailure'ı da yeni bağlantının
+        // online listesini siliyordu (herkes "Çevrimdışı" görünüyordu).
+        if ((isConnected || isConnecting) && webSocket != null && currentUrl == baseUrl && currentToken == token) {
+            Log.d(TAG, "Chat WS already connected/connecting with current credentials, skipping redundant connect")
             return
         }
 
@@ -96,8 +103,11 @@ class ChatWebSocketManager private constructor() {
             .url(fullWsUrl)
             .build()
 
-        webSocket?.cancel()
+        val old = webSocket
+        isConnected = false
+        isConnecting = true
         webSocket = client.newWebSocket(request, createWebSocketListener())
+        old?.cancel()
     }
 
     fun disconnect() {
@@ -105,6 +115,7 @@ class ChatWebSocketManager private constructor() {
         webSocket?.close(1000, "Normal closure")
         webSocket = null
         isConnected = false
+        isConnecting = false
         onlineExtensions.clear()
         notifyConnectionState(false)
     }
@@ -148,13 +159,16 @@ class ChatWebSocketManager private constructor() {
     private fun createWebSocketListener(): WebSocketListener {
         return object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
+                if (ws !== webSocket) return
                 Log.i(TAG, "Chat WebSocket connected successfully")
+                isConnecting = false
                 isConnected = true
                 reconnectAttempts = 0
                 notifyConnectionState(true)
             }
 
             override fun onMessage(ws: WebSocket, text: String) {
+                if (ws !== webSocket) return
                 try {
                     val root = JSONObject(text)
                     val event = root.optString("event")
@@ -176,16 +190,20 @@ class ChatWebSocketManager private constructor() {
                             for (l in listeners) l.onPresence(ext, isOnline)
                         }
                         "presence_snapshot" -> {
+                            // Anlık görüntü tam listedir: listede olmayanlar çevrimdışı.
+                            val snapshot = mutableSetOf<String>()
                             val arr = root.optJSONArray("extensions")
                             if (arr != null) {
                                 for (i in 0 until arr.length()) {
                                     val ext = arr.optString(i)
-                                    if (ext.isNotEmpty()) {
-                                        onlineExtensions.add(ext)
-                                        for (l in listeners) l.onPresence(ext, true)
-                                    }
+                                    if (ext.isNotEmpty()) snapshot.add(ext)
                                 }
                             }
+                            val wentOffline = onlineExtensions.filter { it !in snapshot }
+                            onlineExtensions.retainAll(snapshot)
+                            onlineExtensions.addAll(snapshot)
+                            for (ext in wentOffline) for (l in listeners) l.onPresence(ext, false)
+                            for (ext in snapshot) for (l in listeners) l.onPresence(ext, true)
                         }
                         "typing" -> {
                             val convId = root.optInt("conversation_id")
@@ -257,6 +275,9 @@ class ChatWebSocketManager private constructor() {
 
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                 Log.i(TAG, "Chat WebSocket closed: $code / $reason")
+                // Yerine yenisi açılmış (iptal edilmiş) eski soket: durumu bozmasın.
+                if (ws !== webSocket) return
+                isConnecting = false
                 isConnected = false
                 onlineExtensions.clear()
                 notifyConnectionState(false)
@@ -265,6 +286,8 @@ class ChatWebSocketManager private constructor() {
 
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 Log.w(TAG, "Chat WebSocket failure: ${t.message}")
+                if (ws !== webSocket) return
+                isConnecting = false
                 isConnected = false
                 onlineExtensions.clear()
                 notifyConnectionState(false)
@@ -282,7 +305,7 @@ class ChatWebSocketManager private constructor() {
 
         scope.launch {
             delay(delaySec * 1000L)
-            if (!isManuallyClosed && !isConnected && currentUrl.isNotEmpty() && currentToken.isNotEmpty()) {
+            if (!isManuallyClosed && !isConnected && !isConnecting && currentUrl.isNotEmpty() && currentToken.isNotEmpty()) {
                 connect(currentUrl, currentToken)
             }
         }

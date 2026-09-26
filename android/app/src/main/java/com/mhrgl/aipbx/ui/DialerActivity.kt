@@ -36,6 +36,7 @@ import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.data.ChatEventListener
+import com.mhrgl.aipbx.data.ChatUploadPrep
 import com.mhrgl.aipbx.data.ChatWebSocketManager
 import com.mhrgl.aipbx.databinding.ActivityDialerBinding
 import com.mhrgl.aipbx.databinding.DialogGroupInfoBinding
@@ -803,7 +804,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         // Embedded Chat Room setup
         val myExt = prefs.extension ?: ""
         val baseUrl = prefs.serverUrl ?: ""
-        chatMessageAdapter = ChatMessageAdapter(myExt, baseUrl, false)
+        chatMessageAdapter = ChatMessageAdapter(myExt, baseUrl, false) { prefs.token }
         val msgLm = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -1253,10 +1254,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             } else {
                 "Dahili #$currentChatTargetExt"
             }
-            binding.tvChatRoomTargetStatus.text = "Çevrimdışı"
-            binding.tvChatRoomTargetStatus.setTextColor(0xFF64748B.toInt())
-            binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(0xFF9CA3AF.toInt())
+            // Sabit "Çevrimdışı" yerine soketin bildiği anlık durum — presence
+            // olayı karşı taraf zaten bağlıyken bir daha gelmiyor.
+            applyChatRoomPresence(ChatWebSocketManager.instance.isOnline(currentChatTargetExt))
         }
+    }
+
+    private fun applyChatRoomPresence(isOnline: Boolean) {
+        binding.tvChatRoomTargetStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
+        binding.tvChatRoomTargetStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
+        binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(
+            if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
+        )
     }
 
     private fun ensureChatConversationAndLoadMessages() {
@@ -1358,35 +1367,21 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch
 
-            val tempFile = withContext(Dispatchers.IO) {
-                try {
-                    val cr = contentResolver
-                    val mime = cr.getType(uri) ?: if (type == "image") "image/jpeg" else "application/octet-stream"
-                    val ext = if (type == "image") ".jpg" else ".bin"
-                    val file = File.createTempFile("chat_upload_", ext, cacheDir)
-
-                    cr.openInputStream(uri)?.use { input ->
-                        FileOutputStream(file).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    Pair(file, mime)
-                } catch (e: Exception) {
-                    null
-                }
+            val prepared = withContext(Dispatchers.IO) {
+                ChatUploadPrep.prepare(this@DialerActivity, uri, type)
             }
 
-            if (tempFile == null) {
+            if (prepared == null) {
                 Toast.makeText(this@DialerActivity, "Dosya okunamadı.", Toast.LENGTH_SHORT).show()
                 binding.llChatUploadPreview.visibility = View.GONE
                 return@launch
             }
 
-            val (file, mime) = tempFile
-            val uploadRes = apiClient.uploadChatFile(sUrl, token, file, mime)
+            val uploadRes = apiClient.uploadChatFile(sUrl, token, prepared.file, prepared.mimeType)
+            prepared.cleanup()
             uploadRes.onSuccess { res ->
                 chatPendingUpload = res
-                binding.tvChatUploadFilename.text = res.fileName ?: file.name
+                binding.tvChatUploadFilename.text = res.fileName ?: prepared.file.name
             }.onFailure {
                 Toast.makeText(this@DialerActivity, "Yükleme hatası: ${it.message}", Toast.LENGTH_LONG).show()
                 binding.llChatUploadPreview.visibility = View.GONE
@@ -2084,13 +2079,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         runOnUiThread {
             if (isChatRoomOpen()) {
                 if (!currentChatIsGroup && extension == currentChatTargetExt) {
-                    binding.tvChatRoomTargetStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
-                    binding.tvChatRoomTargetStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
-                    binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(
-                        if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
-                    )
+                    applyChatRoomPresence(isOnline)
                 } else if (currentChatIsGroup) {
-                    loadChatRoomGroupDetails()
+                    // Anlık görüntü her dahili için ayrı olay üretiyor — yalnızca
+                    // bu grubun üyesiyse (ya da üyeler henüz bilinmiyorsa) yenile.
+                    val members = currentChatGroupDetails?.participants
+                    if (members == null || members.any { it.extension == extension }) {
+                        loadChatRoomGroupDetails()
+                    }
                 }
             }
 
