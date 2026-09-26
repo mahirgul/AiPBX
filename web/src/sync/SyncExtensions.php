@@ -55,7 +55,7 @@ function pjsipIdentifyHosts(): array
     }
 
     // Apache ServerName — masaustu telefonlarin From hostu bu (loglarda dogrulandi).
-    foreach (glob('/etc/httpd/conf.d/*.conf') as $f) {
+    foreach (glob('/etc/apache2/sites-enabled/*.conf') as $f) {
         $icerik = @file_get_contents($f);
         if ($icerik !== false && preg_match_all('/^\s*ServerName\s+(\S+)/mi', $icerik, $m)) {
             foreach ($m[1] as $sn) { $hosts[] = trim($sn); }

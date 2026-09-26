@@ -135,7 +135,7 @@
             <form method="POST" autocomplete="off" onsubmit="return confirm('<?php echo htmlspecialchars(t('dashboard.confirm_restart_httpd'), ENT_QUOTES); ?>');">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="restart_service">
-                <input type="hidden" name="service_name" value="httpd">
+                <input type="hidden" name="service_name" value="apache2">
                 <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_httpd')); ?>">
                     <i class="fas fa-globe" style="color: var(--secondary);"></i> <?php echo t('dashboard.restart_httpd'); ?>
                 </button>
