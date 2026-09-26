@@ -11,7 +11,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String? = nil
 
-    @Published public var baseUrl: String = UserDefaults.standard.string(forKey: "aipbx_base_url") ?? "http://10.8.0.10"
+    @Published public var baseUrl: String = UserDefaults.standard.string(forKey: "aipbx_base_url") ?? "https://pbx.example.com"
     @Published public var savedUsername: String = UserDefaults.standard.string(forKey: "aipbx_username") ?? ""
     @Published public var rememberMe: Bool = UserDefaults.standard.bool(forKey: "aipbx_remember_me")
 

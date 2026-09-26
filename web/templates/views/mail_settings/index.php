@@ -50,7 +50,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('mail_settings.field_host', 'SMTP / Relay Sunucu Adresi'); ?></label>
-                <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="10.8.0.1 veya mail.kurum.edu.tr">
+                <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="192.168.1.25 veya mail.example.com">
                 <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('mail_settings.host_help', 'Kurumsal mail sunucunuzun veya relay makinesinin IP / FQDN adresi.'); ?></small>
             </div>
 
@@ -83,7 +83,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div id="auth_fields" style="display: <?php echo $auth === 'yes' ? 'grid' : 'none'; ?>; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
             <div class="form-group">
                 <label class="form-label"><?php echo t('mail_settings.field_user', 'SMTP Kullanıcı Adı'); ?></label>
-                <input type="text" name="mail_smtp_user" class="form-control" value="<?php echo htmlspecialchars($user); ?>" placeholder="kullanici@kurum.edu.tr">
+                <input type="text" name="mail_smtp_user" class="form-control" value="<?php echo htmlspecialchars($user); ?>" placeholder="kullanici@example.com">
             </div>
 
             <div class="form-group">
@@ -194,7 +194,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="send_test_email" value="1">
                 <div style="display: flex; gap: 8px;">
-                    <input type="email" name="test_recipient" class="form-control" placeholder="ornek@kurum.edu.tr" required style="flex: 1;">
+                    <input type="email" name="test_recipient" class="form-control" placeholder="ornek@example.com" required style="flex: 1;">
                     <button type="submit" class="btn btn-secondary">
                         <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.btn_send_test', 'Test Gönder'); ?>
                     </button>

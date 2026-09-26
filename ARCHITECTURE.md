@@ -69,7 +69,7 @@
 
 ## 2. Ingress & Reverse Proxy Tier (Nginx ALPN Multiplexer + Apache Backend)
 
-The system deploys **Nginx at the edge on Port 443** paired with **Apache 2.4 on Port 8443** (and Port 80 for HTTP/ACME verification). This is the exact production architecture running across active nodes (including `10.8.0.10`).
+The system deploys **Nginx at the edge on Port 443** paired with **Apache 2.4 on Port 8443** (and Port 80 for HTTP/ACME verification).
 
 ### 2.1 The Core Challenge: Sharing Port 443 between Web & WebRTC TURNS
 In enterprise, hospital, and university environments, corporate firewalls strictly block all outbound UDP traffic as well as non-standard TCP ports, permitting only **Port 80** and **Port 443**.
