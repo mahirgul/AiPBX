@@ -1,3 +1,19 @@
+<?php if (!empty($generated_password)): ?>
+<div class="card" style="border: 2px solid var(--warning); margin-bottom: 16px;">
+    <div style="padding: 16px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;">
+        <i class="fas fa-key" style="font-size: 22px; color: var(--warning);"></i>
+        <div style="flex: 1; min-width: 220px;">
+            <div style="font-weight: 700; margin-bottom: 4px;"><?php echo t('system_users.generated_password_title'); ?> — <?php echo htmlspecialchars($generated_for); ?></div>
+            <div style="font-size: 12.5px; color: var(--text-muted);"><?php echo t('system_users.generated_password_hint'); ?></div>
+        </div>
+        <code style="font-size: 18px; font-weight: 700; letter-spacing: 1px; padding: 8px 14px; border-radius: 8px; background: var(--bg-main); user-select: all;"><?php echo htmlspecialchars($generated_password); ?></code>
+        <button type="button" class="btn btn-secondary btn-sm" data-pw="<?php echo htmlspecialchars($generated_password); ?>"
+                onclick="navigator.clipboard.writeText(this.dataset.pw).then(() => { this.innerHTML = '<i class=&quot;fas fa-check&quot;></i> <?php echo htmlspecialchars(t('system_users.generated_password_copied'), ENT_QUOTES); ?>'; });">
+            <i class="fas fa-copy"></i> <?php echo t('system_users.generated_password_copy'); ?>
+        </button>
+    </div>
+</div>
+<?php endif; ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -176,6 +192,7 @@
                     <div class="form-group" id="modal_password_group">
                         <label class="form-label"><?php echo t('system_users.field_password'); ?></label>
                         <input type="password" name="password" id="modal_password" class="form-control" placeholder="******" autocomplete="new-password">
+                        <small style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-muted);"><?php echo t('system_users.password_auto_hint'); ?></small>
                     </div>
                 </div>
 

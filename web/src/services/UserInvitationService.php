@@ -57,6 +57,16 @@ class UserInvitationService
         $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
         $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
 
+        // Mobil uygulamaya doğrudan giriş bağlantısı (7 gün, tek kullanımlık).
+        // Telefonda uygulamayı açıp giriş yapar, bilgisayarda QR gösterir.
+        // Dahilisi olmayan kullanıcıya mobil giriş yok (SIP hesabı gerekiyor).
+        $mobileUrl = '';
+        if (!empty($user['extension'])) {
+            require_once __DIR__ . '/QrLoginService.php';
+            $mobileRes = QrLoginService::createEmailLink($userId);
+            $mobileUrl = $mobileRes['url'] ?? '';
+        }
+
         // Posta ve Sistem Ayarları
         $fromAddress = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com')));
         $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AI PBX')));
@@ -70,6 +80,24 @@ class UserInvitationService
         $displayName = !empty($user['full_name']) ? $user['full_name'] : $user['username'];
         $extInfo = !empty($user['extension']) ? "<li><strong>Dahili Numaranız:</strong> {$user['extension']}</li>" : "";
         $extText = !empty($user['extension']) ? "- Dahili Numaranız: {$user['extension']}\n" : "";
+
+        if ($mobileUrl !== '') {
+            $mobileBlock = <<<HTML
+<div class="qr-tip-box">
+      <strong>📱 Mobil Uygulamaya Giriş</strong><br>
+      Şifre gerekmez. Bu e-postayı <strong>telefonunuzda</strong> açtıysanız butona dokunun: AiPBX uygulaması açılır ve giriş yapılır (uygulama yüklü değilse mağazaya yönlendirilirsiniz). <strong>Bilgisayarda</strong> açtıysanız ekranda çıkan QR kodu uygulamayla okutun.
+      <div style="text-align: center; margin: 18px 0 6px 0;">
+        <a href="{$mobileUrl}" class="btn" target="_blank">Mobil Uygulamaya Giriş Yap</a>
+      </div>
+      <span style="font-size: 12px;">Bu bağlantı size özeldir; <strong>7 gün</strong> geçerli ve tek kullanımlıktır.</span>
+    </div>
+HTML;
+            $mobileText = "Mobil uygulamaya giriş (şifre gerekmez, 7 gün geçerli, tek kullanımlık):\n{$mobileUrl}\n"
+                . "Telefonda açarsanız uygulama açılıp giriş yapar; bilgisayarda açarsanız çıkan QR kodu uygulamayla okutun.\n\n";
+        } else {
+            $mobileBlock = '';
+            $mobileText = '';
+        }
 
         // HTML E-posta Gövdesi
         $htmlBody = <<<HTML
@@ -123,10 +151,7 @@ class UserInvitationService
     <p style="font-size: 13px; color: #475569;">Buton çalışmıyorsa aşağıdaki bağlantıyı tarayıcınızın adres çubuğuna yapıştırabilirsiniz:<br>
     <a href="{$resetUrl}" style="color: #2563eb; word-break: break-all;">{$resetUrl}</a></p>
 
-    <div class="qr-tip-box">
-      <strong>📱 Mobil Uygulama ile Hızlı Giriş:</strong><br>
-      Web portalına giriş yaptıktan sonra <strong>"Dahilim (My Phone)"</strong> ekranındaki <strong>QR Kodu</strong> Android ve iOS cep telefonunuzdaki AiPBX mobil uygulamasına okutarak tek dokunuşla şifresiz giriş yapabilirsiniz.
-    </div>
+    {$mobileBlock}
 
     <div class="security-note">
       🔒 <strong>Güvenlik Notu:</strong> Bu şifre belirleme bağlantısı <strong>48 saat</strong> boyunca geçerlidir ve tek kullanımlıktır. Bu e-postayı siz talep etmediyseniz veya beklemiyorsanız sistem yöneticiniz ile iletişime geçiniz.
@@ -150,7 +175,7 @@ HTML;
             . "Aşağıdaki bağlantıya tıklayarak şifrenizi belirleyebilirsiniz:\n"
             . "{$resetUrl}\n\n"
             . "Bu bağlantı 48 saat boyunca geçerlidir ve tek kullanımlıktır.\n\n"
-            . "Mobil Uygulama: Web portalına giriş yaptıktan sonra 'Dahilim' ekranından QR kod üreterek mobil uygulamanıza tek dokunuşla giriş yapabilirsiniz.\n\n"
+            . $mobileText
             . "İyi çalışmalar,\n{$brandTitle}";
 
         // E-Posta Başlıkları (MIME Multipart HTML + Plain Text)

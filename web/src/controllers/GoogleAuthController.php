@@ -101,9 +101,19 @@ class GoogleAuthController extends BaseController
 
         // 7. Mobil Giriş Yönlendirmesi
         if ($isMobile) {
-            require_once dirname(__DIR__, 2) . '/api/mobile/auth_helper.php';
-            $mobileData = buildMobileLoginResponse($user);
-            self::renderMobileCallback(true, 'Giriş Başarılı', $mobileData);
+            // Uygulamaya giriş yanıtının kendisi (oturum token'ı + SIP şifresi)
+            // DEĞİL, 2 dakikalık tek kullanımlık bir kod dönülür: aipbx://
+            // şemasını başka bir uygulama da kaydedebilir ve URL'yi yakalayabilir.
+            // Uygulama kodu, Google girişini başlattığı sunucuda
+            // /api/mobile/qr_login.php ile giriş bilgisine çevirir.
+            require_once dirname(__DIR__) . '/services/QrLoginService.php';
+            $codeRes = QrLoginService::createGoogleCode((int) $user['id']);
+            if (empty($codeRes['success'])) {
+                self::renderMobileCallback(false, 'Giriş yapılamadı', null, $codeRes['error'] ?? 'Mobil giriş kodu oluşturulamadı.');
+                return;
+            }
+            writeAuditLog(null, 'user_account', $user['id'], "Google ile mobil giriş kodu üretildi: {$user['username']}", 'login', $user['id']);
+            self::renderMobileCallback(true, 'Giriş Başarılı', ['code' => $codeRes['token']]);
             return;
         }
 
@@ -119,8 +129,8 @@ class GoogleAuthController extends BaseController
     private static function renderMobileCallback(bool $success, string $title, ?array $data = null, string $errorMessage = ''): void
     {
         $deepLink = 'aipbx://auth?success=' . ($success ? '1' : '0');
-        if ($success && !empty($data['token'])) {
-            $deepLink .= '&token=' . urlencode($data['token']) . '&data=' . urlencode(json_encode($data));
+        if ($success && !empty($data['code'])) {
+            $deepLink .= '&code=' . urlencode($data['code']);
         } else {
             $deepLink .= '&error=' . urlencode($errorMessage);
         }
