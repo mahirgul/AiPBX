@@ -6,9 +6,8 @@ require_once __DIR__ . '/../priv_helper.php';
  * fail2ban Yönetim Servisi
  * `fail2ban-client`'ı root yetkisiyle PrivHelper (aipbx-priv `f2b` alt
  * komutları) üzerinden çalıştırır — doğrudan sudo çağrısı yok. Kalıcılık için
- * jail.local'e DOKUNULMAZ — ayrı bir override dosyası (OVERRIDE_FILE) kullanılır,
- * jail.d/ dizini zaten web kullanıcısının grubuna yazılabilir (root gerekmez,
- * sadece fail2ban-client komutları için gerekiyor).
+ * jail.local'e DOKUNULMAZ — ayrı bir override dosyası (OVERRIDE_FILE) kullanılır;
+ * o da STAGING_FILE üzerinden aipbx-priv ile kuruluyor.
  */
 class Fail2banService {
 
@@ -22,6 +21,13 @@ class Fail2banService {
     const PROTECTED_IGNOREIPS = ['127.0.0.0/8', '::1'];
 
     const OVERRIDE_FILE = '/etc/fail2ban/jail.d/99-ai-pbx.local';
+
+    /**
+     * jail.d root'a ait (jail dosyası çalıştırılacak komut tanımlayabildiği
+     * için web kullanıcısı oraya yazamaz). Panel dosyayı buraya hazırlar,
+     * `aipbx-priv f2b install-override` satır satır doğrulayıp kurar.
+     */
+    const STAGING_FILE = '/var/lib/aipbx/fail2ban-override.local';
 
     private static function run(string ...$args): array {
         return PrivHelper::run(array_merge(['f2b'], $args));
@@ -281,13 +287,12 @@ class Fail2banService {
             $lines[] = '';
         }
 
-        // Doğrudan file_put_contents() DEĞİL: FileHelper geçici dosya + rename()
-        // kullanıyor. jail.d/ dizini asterisk grubuna yazılabilir olduğu için bu
-        // yöntem, hedef dosya root'a ait olsa BİLE çalışır (rename dosyanın
-        // değil dizinin iznine bakar) — sahiplik kaynaklı sessiz başarısızlık
-        // bir daha oluşamaz.
-        if (!FileHelper::writeFile(self::OVERRIDE_FILE, implode("\n", $lines) . "\n")) {
-            return self::OVERRIDE_FILE . ' yazılamadı (dosya izni/sahipliği?)';
+        if (!FileHelper::writeFile(self::STAGING_FILE, implode("\n", $lines) . "\n", null, null, 0640)) {
+            return self::STAGING_FILE . ' yazılamadı (dosya izni/sahipliği?)';
+        }
+        $res = PrivHelper::run(['f2b', 'install-override']);
+        if (!$res['success']) {
+            return self::OVERRIDE_FILE . ' kurulamadı: ' . trim($res['output']);
         }
         return null;
     }
