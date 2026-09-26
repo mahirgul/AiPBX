@@ -68,7 +68,7 @@ public struct LoginView: View {
                                     .foregroundColor(.secondary)
 
                                 HStack {
-                                    TextField("http://10.8.0.10", text: $serverUrl)
+                                    TextField("https://pbx.example.com", text: $serverUrl)
                                         .autocapitalization(.none)
                                         .disableAutocorrection(true)
                                         .keyboardType(.URL)

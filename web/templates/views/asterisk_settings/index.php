@@ -65,7 +65,7 @@
 
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.field_local_net'); ?></label>
-                <input type="text" name="pjsip_local_net" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_local_net']); ?>" placeholder="192.168.1.0/24,10.8.0.0/24">
+                <input type="text" name="pjsip_local_net" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_local_net']); ?>" placeholder="192.168.1.0/24,10.0.0.0/24">
                 <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.local_net_help'); ?></small>
             </div>
         </div>

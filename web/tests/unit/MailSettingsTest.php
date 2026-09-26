@@ -13,9 +13,9 @@ final class MailSettingsTest extends TestCase
     public function testRelayHostParsing(): void
     {
         $testCases = [
-            '[10.8.0.1]:25' => ['host' => '10.8.0.1', 'port' => '25'],
+            '[192.168.1.25]:25' => ['host' => '192.168.1.25', 'port' => '25'],
             '[smtp.office365.com]:587' => ['host' => 'smtp.office365.com', 'port' => '587'],
-            '[10.8.0.1]' => ['host' => '10.8.0.1', 'port' => '25'],
+            '[192.168.1.25]' => ['host' => '192.168.1.25', 'port' => '25'],
             'mail.example.com:25' => ['host' => 'mail.example.com', 'port' => '25'],
             'mail.example.com' => ['host' => 'mail.example.com', 'port' => '25'],
             '192.168.1.100' => ['host' => '192.168.1.100', 'port' => '25'],
@@ -63,7 +63,7 @@ final class MailSettingsTest extends TestCase
     {
         $res = MailSettingsService::saveSettings([
             'csrf_token' => 'invalid_token_12345',
-            'mail_relay_host' => '10.8.0.1'
+            'mail_relay_host' => '192.168.1.25'
         ]);
         $this->assertFalse($res['success']);
         $this->assertStringContainsString('CSRF', $res['error']);
