@@ -834,6 +834,24 @@ ok "coturn configured"
 # ============================================================================
 # STEP 12: SECURITY (FIREWALLD & FAIL2BAN)
 # ============================================================================
+# Time sync: CDRs, TLS, chat tokens and TOTP (30 s window) all need a correct
+# clock. Ubuntu's default chrony sources are NTS-only; where TCP 4460 (NTS-KE)
+# is blocked the clock never synchronised and drifted by minutes. Add plain
+# NTP as a fallback and let chrony select it (NTS stays authenticated when
+# reachable).
+if [[ -d /etc/chrony ]]; then
+    mkdir -p /etc/chrony/sources.d /etc/chrony/conf.d
+    cat > /etc/chrony/sources.d/aipbx-fallback.sources << 'NTPSRC'
+# AI PBX: plain NTP fallback for networks that block NTS-KE (TCP 4460)
+pool pool.ntp.org iburst maxsources 4
+NTPSRC
+    cat > /etc/chrony/conf.d/aipbx.conf << 'NTPCONF'
+# AI PBX: with NTS unreachable, "mix"/"prefer" never select plain NTP sources
+authselectmode ignore
+NTPCONF
+    systemctl restart chrony 2>/dev/null || true
+fi
+
 step "12. Configuring Firewall (firewalld) & Fail2ban"
 
 # 12a. Firewalld configuration
