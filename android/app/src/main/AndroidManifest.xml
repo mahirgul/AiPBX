@@ -68,6 +68,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="aipbx" android:host="auth" />
             </intent-filter>
+            <!-- Davet e-postasındaki mobil giriş bağlantısı: aipbx://login?server=…&token=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aipbx" android:host="login" />
+            </intent-filter>
         </activity>
 
         <!-- Main Phone Dialer Activity -->
