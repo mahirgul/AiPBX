@@ -75,10 +75,12 @@ type Contact struct {
 	UnreadCount int    `json:"unread_count"`
 }
 
-// Zaman damgaları DB'de UTC saklanır (oturum time_zone'u +00:00'a sabitleniyor,
-// NOW() sunucunun işletim sistemi saat diliminden bağımsız). İstemcilere giden
-// metin ise portalın TIMEZONE diliminde üretilir — önceden sunucu UTC iken
-// sohbet saatleri portaldan 3 saat geri görünüyordu.
+// Zaman damgaları DB'ye NOW() ile, yani MariaDB'nin sistem saat diliminde
+// yazılıyor; chat servisi DB ile aynı makinede çalıştığı için loc=Local ile
+// doğru okunuyor (UTC sistemde UTC, Europe/Istanbul sistemde yerel saat —
+// mevcut verinin dönüştürülmesi gerekmez). İstemcilere giden metin portalın
+// TIMEZONE diliminde üretilir: önceden sistem UTC iken sohbet saatleri
+// portaldan 3 saat geri görünüyordu.
 const timeLayout = "2006-01-02 15:04:05"
 
 var displayLoc = time.Local
@@ -94,7 +96,7 @@ func InitDB(cfg *Config) error {
 		log.Printf("[DB] Unknown TIMEZONE %q, falling back to system local time: %v", cfg.Timezone, err)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=true&loc=UTC&time_zone=%%27%%2B00%%3A00%%27",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=true&loc=Local",
 		cfg.DBUser, cfg.DBPass, cfg.DBHost, cfg.DBName)
 
 	var err error
