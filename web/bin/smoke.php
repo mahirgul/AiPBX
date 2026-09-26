@@ -284,6 +284,7 @@ function check_conventions(): void
         'LogoutController.php',
         'ForceResetController.php',
         'ResetPasswordController.php',
+        'MobileLoginController.php',
         'GoogleAuthController.php',
     ];
     $n++;

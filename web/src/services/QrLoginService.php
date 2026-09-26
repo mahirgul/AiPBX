@@ -11,6 +11,15 @@ use chillerlan\QRCode\QROptions;
  */
 class QrLoginService
 {
+    /** Kodun amacı → geçerlilik süresi (saniye). */
+    const TTL = [
+        'screen' => 600,        // web "Dahilim" ekranındaki QR
+        'email'  => 7 * 86400,  // davet e-postasındaki mobil giriş bağlantısı
+        'google' => 120,        // Google girişi → uygulamaya dönen kod
+    ];
+
+    const ANDROID_PACKAGE = 'com.mhrgl.AiPBX';
+
     /**
      * Oturum açmış kullanıcı için yeni bir mobil QR eşleştirme kodu ve QR görseli üretir.
      *
@@ -19,6 +28,139 @@ class QrLoginService
      * @return array{success: bool, qr_token?: string, qr_data_uri?: string, expires_at?: string, expires_in?: int, server_url?: string, error?: string}
      */
     public static function generateQr(int $userId, int $ttlSeconds = 600): array
+    {
+        $res = self::createToken($userId, 'screen', $ttlSeconds);
+        if (!$res['success']) {
+            return $res;
+        }
+        $serverUrl = self::serverUrl();
+        $payload = self::payload($serverUrl, $res['token'], $res['user'], $res['expires_ts']);
+
+        return [
+            'success' => true,
+            'qr_token' => $res['token'],
+            'qr_data_uri' => self::renderQr($payload),
+            'payload' => $payload,
+            'expires_at' => $res['expires_at'],
+            'expires_in' => $ttlSeconds,
+            'server_url' => $serverUrl
+        ];
+    }
+
+    /**
+     * Davet e-postası için 7 gün geçerli, tek kullanımlık mobil giriş bağlantısı.
+     * Bağlantı yalnızca /mobile-login sayfasını açar; kod, uygulama giriş
+     * yaptığında harcanır — e-posta güvenlik tarayıcıları (Outlook Safe Links
+     * vb.) bağlantıyı önceden açsa bile kod bozulmaz. Aynı kullanıcı için
+     * önceki kullanılmamış e-posta kodları iptal edilir (yalnızca son davet geçerli).
+     *
+     * @return array{success: bool, url?: string, expires_at?: string, error?: string}
+     */
+    public static function createEmailLink(int $userId): array
+    {
+        $res = self::createToken($userId, 'email', self::TTL['email'], true);
+        if (!$res['success']) {
+            return $res;
+        }
+        return [
+            'success' => true,
+            'url' => self::serverUrl() . '/mobile-login?token=' . $res['token'],
+            'expires_at' => $res['expires_at'],
+        ];
+    }
+
+    /**
+     * Google girişi sonrası uygulamaya aipbx://auth ile dönülecek kısa ömürlü kod.
+     * Uygulama bunu /api/mobile/qr_login.php ile giriş bilgisine çevirir; oturum
+     * token'ı ve SIP şifresi artık URL'de taşınmaz.
+     */
+    public static function createGoogleCode(int $userId): array
+    {
+        return self::createToken($userId, 'google', self::TTL['google']);
+    }
+
+    /**
+     * /mobile-login sayfası için SALT-OKUNUR kontrol — kodu harcamaz.
+     *
+     * @return array{valid: bool, reason?: string, user?: array, server_url?: string, token?: string, payload?: array}
+     */
+    public static function inspectToken(string $token): array
+    {
+        $token = trim($token);
+        if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+            return ['valid' => false, 'reason' => 'invalid'];
+        }
+        $stmt = getDB()->prepare('SELECT q.expires_at, q.used_at, q.purpose, u.id, u.username, u.full_name, u.extension, u.is_active
+                                  FROM sys_user_qr_tokens q JOIN sys_users u ON u.id = q.user_id
+                                  WHERE q.token = ? LIMIT 1');
+        $stmt->execute([$token]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || $row['purpose'] === 'google') {
+            return ['valid' => false, 'reason' => 'invalid'];
+        }
+        if (!empty($row['used_at'])) {
+            return ['valid' => false, 'reason' => 'used'];
+        }
+        if (strtotime($row['expires_at']) < time()) {
+            return ['valid' => false, 'reason' => 'expired'];
+        }
+        if (empty($row['is_active']) || empty($row['extension'])) {
+            return ['valid' => false, 'reason' => 'inactive'];
+        }
+
+        $serverUrl = self::serverUrl();
+        return [
+            'valid' => true,
+            'user' => $row,
+            'server_url' => $serverUrl,
+            'token' => $token,
+            'payload' => self::payload($serverUrl, $token, $row, strtotime($row['expires_at'])),
+        ];
+    }
+
+    /** Uygulamayı açan bağlantı (iOS ve genel). */
+    public static function appLink(string $serverUrl, string $token): string
+    {
+        return 'aipbx://login?server=' . rawurlencode($serverUrl) . '&token=' . rawurlencode($token);
+    }
+
+    /**
+     * Android için intent:// bağlantısı: uygulama yüklü değilse Chrome doğrudan
+     * Play Store sayfasına düşer (browser_fallback_url).
+     */
+    public static function androidIntentLink(string $serverUrl, string $token): string
+    {
+        $fallback = 'https://play.google.com/store/apps/details?id=' . self::ANDROID_PACKAGE;
+        return 'intent://login?server=' . rawurlencode($serverUrl) . '&token=' . rawurlencode($token)
+            . '#Intent;scheme=aipbx;package=' . self::ANDROID_PACKAGE
+            . ';S.browser_fallback_url=' . rawurlencode($fallback) . ';end';
+    }
+
+    /** QR içeriğini SVG data URI olarak çizer (uygulamanın okuduğu JSON). */
+    public static function renderQr(array $payload): string
+    {
+        if (!class_exists(QRCode::class)) {
+            return '';
+        }
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        try {
+            $options = new QROptions([
+                'outputType' => QRCode::OUTPUT_MARKUP_SVG,
+                'eccLevel' => QRCode::ECC_M,
+                'addQuietzone' => true,
+                'scale' => 5,
+            ]);
+            return (new QRCode($options))->render($payloadJson);
+        } catch (\Throwable $e) {
+            return (new QRCode())->render($payloadJson);
+        }
+    }
+
+    /**
+     * @return array{success: bool, token?: string, user?: array, expires_at?: string, expires_ts?: int, error?: string}
+     */
+    private static function createToken(int $userId, string $purpose, int $ttlSeconds, bool $revokePrevious = false): array
     {
         if ($userId <= 0) {
             return ['success' => false, 'error' => 'Geçersiz kullanıcı oturumu!'];
@@ -39,24 +181,33 @@ class QrLoginService
 
         // Eski kullanılmamış token'ları temizle
         $db->prepare('DELETE FROM sys_user_qr_tokens WHERE user_id = ? AND (used_at IS NOT NULL OR expires_at < NOW())')->execute([$userId]);
+        if ($revokePrevious) {
+            $db->prepare('DELETE FROM sys_user_qr_tokens WHERE user_id = ? AND purpose = ? AND used_at IS NULL')->execute([$userId, $purpose]);
+        }
 
         // Güvenli 256-bit rastgele token
         $token = bin2hex(random_bytes(32));
-        $now = time();
-        $expTimestamp = $now + $ttlSeconds;
+        $expTimestamp = time() + $ttlSeconds;
         $expiresAt = date('Y-m-d H:i:s', $expTimestamp);
         $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-        $ins = $db->prepare('INSERT INTO sys_user_qr_tokens (user_id, token, expires_at, ip_address) VALUES (?, ?, ?, ?)');
-        $ins->execute([$userId, $token, $expiresAt, $clientIp]);
+        $ins = $db->prepare('INSERT INTO sys_user_qr_tokens (user_id, token, purpose, expires_at, ip_address) VALUES (?, ?, ?, ?, ?)');
+        $ins->execute([$userId, $token, $purpose, $expiresAt, $clientIp]);
 
-        // Sunucu URL'sini belirle
+        return ['success' => true, 'token' => $token, 'user' => $user, 'expires_at' => $expiresAt, 'expires_ts' => $expTimestamp];
+    }
+
+    private static function serverUrl(): string
+    {
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
-        $serverUrl = $scheme . '://' . $host;
+        return $scheme . '://' . $host;
+    }
 
-        // QR kod içine konulacak güvenli JSON yükü
-        $payload = [
+    /** Uygulamanın QR'dan okuduğu JSON yükü (Android/iOS handleScannedQr). */
+    private static function payload(string $serverUrl, string $token, array $user, int $expTs): array
+    {
+        return [
             'type' => 'aipbx_qr_login',
             'v' => 1,
             'server' => $serverUrl,
@@ -64,36 +215,7 @@ class QrLoginService
             'ext' => $user['extension'],
             'username' => $user['username'],
             'full_name' => $user['full_name'],
-            'exp' => $expTimestamp
-        ];
-
-        $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        // QR SVG / Data URI üret
-        $qrDataUri = '';
-        if (class_exists(QRCode::class)) {
-            try {
-                $options = new QROptions([
-                    'outputType' => QRCode::OUTPUT_MARKUP_SVG,
-                    'eccLevel' => QRCode::ECC_M,
-                    'addQuietzone' => true,
-                    'scale' => 5,
-                ]);
-                $qrDataUri = (new QRCode($options))->render($payloadJson);
-            } catch (\Throwable $e) {
-                // Fallback direct base64
-                $qrDataUri = (new QRCode())->render($payloadJson);
-            }
-        }
-
-        return [
-            'success' => true,
-            'qr_token' => $token,
-            'qr_data_uri' => $qrDataUri,
-            'payload' => $payload,
-            'expires_at' => $expiresAt,
-            'expires_in' => $ttlSeconds,
-            'server_url' => $serverUrl
+            'exp' => $expTs
         ];
     }
 
@@ -162,7 +284,7 @@ class QrLoginService
         }
 
         if (strtotime($record['expires_at']) < time()) {
-            return ['success' => false, 'error' => 'QR kodun geçerlilik süresi (10 dakika) dolmuş. Lütfen web ekranından yeni bir QR kod üretin.', 'code' => 401];
+            return ['success' => false, 'error' => 'Giriş kodunun süresi dolmuş. Lütfen yeni bir QR kod veya davet bağlantısı isteyin.', 'code' => 401];
         }
 
         if (empty($record['is_active'])) {

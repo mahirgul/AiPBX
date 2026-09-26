@@ -4,8 +4,26 @@
  */
 
 class UserService {
+    /**
+     * Admin'e bir kez gösterilecek, okunaklı (karıştırılabilen 0/O, 1/l/I yok)
+     * geçici şifre: xxxx-xxxx-xxxx, ~68 bit.
+     */
+    public static function generateReadablePassword(): string {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        $groups = [];
+        for ($g = 0; $g < 3; $g++) {
+            $chunk = '';
+            for ($i = 0; $i < 4; $i++) {
+                $chunk .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+            $groups[] = $chunk;
+        }
+        return implode('-', $groups);
+    }
+
     public static function saveUser($data) {
-        return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
+        $generated_password = '';
+        $res = PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data, &$generated_password) {
             $user_id = intval($data['user_id'] ?? 0);
             $username = trim($data['username'] ?? '');
             $password = trim($data['password'] ?? '');
@@ -89,9 +107,15 @@ class UserService {
             } else {
                 if (empty($password)) {
                     if (!empty($email)) {
+                        // Kimseye gösterilmez: kullanıcı web şifresini davet
+                        // e-postasındaki bağlantıyla kendisi belirler; mobil
+                        // girişte şifreye hiç gerek yoktur.
                         $effective_password = bin2hex(random_bytes(16));
                     } else {
-                        throw new \Exception("Yeni kullanıcı için web giriş şifresi veya aktivasyon için e-posta adresi zorunludur!");
+                        // E-posta yok: admin'e bir kez gösterilir, ilk web
+                        // girişinde değiştirilmesi zorunludur.
+                        $generated_password = self::generateReadablePassword();
+                        $effective_password = $generated_password;
                     }
                 } else {
                     $effective_password = $password;
@@ -112,7 +136,8 @@ class UserService {
                     'can_view_all_cdrs' => $can_view_cdrs,
                     'can_view_queue_monitor' => $can_view_queue_monitor,
                     'allowed_phone_mode' => $allowed_phone_mode,
-                    'is_active' => $is_active
+                    'is_active' => $is_active,
+                    'must_reset_password' => $generated_password !== '' ? 1 : 0
                 ]);
                 $user_id = (int) getDB()->lastInsertId();
                 $msg = "Yeni sistem kullanıcısı '{$username}' oluşturuldu!";
@@ -147,6 +172,10 @@ class UserService {
             }
             return $msg;
         });
+        if (!empty($res['success']) && $generated_password !== '') {
+            $res['generated_password'] = $generated_password;
+        }
+        return $res;
     }
 
     public static function deleteUser($user_id, $csrf_token) {
