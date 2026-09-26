@@ -105,3 +105,8 @@ CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
 .gnupg/
 .vboxclient*
 .xsession*
+
+# === TLS keys / certificates (never commit) ===
+*.pem
+*.key
+*.crt
