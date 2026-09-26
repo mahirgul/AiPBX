@@ -704,6 +704,8 @@ fi
 chown -R asterisk:asterisk /var/lib/asterisk/sounds/
 chmod -R 755 /var/lib/asterisk/sounds/
 chown -R asterisk:asterisk /etc/asterisk/
+chmod -R 775 /etc/asterisk/pbx
+chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
 
 systemctl restart asterisk
 systemctl enable asterisk

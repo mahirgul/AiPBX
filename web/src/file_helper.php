@@ -8,12 +8,13 @@ class FileHelper {
     /**
      * Safely write a file with automatic directory creation and ownership/permission enforcement.
      */
-    public static function writeFile($filepath, $content, $owner = 'asterisk', $group = 'asterisk', $mode = 0644) {
+    public static function writeFile($filepath, $content, $owner = 'asterisk', $group = 'asterisk', $mode = 0664) {
         $dir = dirname($filepath);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+            @mkdir($dir, 0775, true);
             if ($owner) @chown($dir, $owner);
             if ($group) @chgrp($dir, $group);
+            @chmod($dir, 0775);
         }
 
         // Doğrudan hedef dosyaya file_put_contents() yazmak atomik DEĞİL — iki
