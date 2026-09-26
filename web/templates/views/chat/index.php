@@ -772,6 +772,13 @@ function handleWsEvent(evt) {
     } else if (evt.event === 'presence') {
         updateUserPresence(evt.extension, evt.is_online);
 
+    } else if (evt.event === 'presence_snapshot') {
+        if (Array.isArray(evt.extensions)) {
+            evt.extensions.forEach(function(ext) {
+                updateUserPresence(ext, true);
+            });
+        }
+
     } else if (evt.event === 'typing') {
         if (currentConvId && evt.conversation_id === currentConvId) {
             showTypingIndicator(evt.from_name, evt.is_typing);
