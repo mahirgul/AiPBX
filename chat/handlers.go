@@ -1054,3 +1054,17 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 		"success": true,
 	})
 }
+
+// GET /api/internal/presence (Internal only)
+func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) {
+	remoteIP := r.RemoteAddr
+	if !strings.HasPrefix(remoteIP, "127.0.0.1") && !strings.HasPrefix(remoteIP, "[::1]") {
+		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
+		return
+	}
+	exts := s.hub.GetOnlineExtensions()
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"online":  exts,
+	})
+}

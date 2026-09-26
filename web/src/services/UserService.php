@@ -137,10 +137,12 @@ class UserService {
                 $effective_sip_pass = !empty($sip_password) ? $sip_password : (!empty($cur_pass) ? $cur_pass : SIPHelper::generateStrongSIPPassword());
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $effective_sip_pass);
                 markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'update', $uid);
+                markPendingSync('general_dialplan', 'extension', $extension, "Dahili Dialplan: {$extension}", 'update', $uid);
                 $msg .= " Etkili olması için Uygula sayfasından gönderin.";
             } elseif (!empty($old_extension)) {
                 // Dahili numarası kaldırıldı: eski PJSIP endpoint'inin conf'tan düşmesi için yeniden üret
                 markPendingSync('extensions', 'extension', $old_extension, "Dahili: {$old_extension} (kaldırıldı)", 'delete', $uid);
+                markPendingSync('general_dialplan', 'extension', $old_extension, "Dahili Dialplan: {$old_extension} (kaldırıldı)", 'delete', $uid);
                 $msg .= " Etkili olması için Uygula sayfasından gönderin.";
             }
             return $msg;

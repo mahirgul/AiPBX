@@ -35,6 +35,15 @@ class ChatWebSocketManager private constructor() {
     private var currentUrl: String = ""
     private var currentToken: String = ""
 
+    private val onlineExtensions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    fun isOnline(ext: String?): Boolean {
+        if (ext.isNullOrEmpty()) return false
+        return onlineExtensions.contains(ext)
+    }
+
+    fun getOnlineExtensions(): Set<String> = onlineExtensions
+
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .pingInterval(25, TimeUnit.SECONDS)
@@ -96,6 +105,7 @@ class ChatWebSocketManager private constructor() {
         webSocket?.close(1000, "Normal closure")
         webSocket = null
         isConnected = false
+        onlineExtensions.clear()
         notifyConnectionState(false)
     }
 
@@ -160,7 +170,22 @@ class ChatWebSocketManager private constructor() {
                         "presence" -> {
                             val ext = root.optString("extension")
                             val isOnline = root.optBoolean("is_online", false)
+                            if (ext.isNotEmpty()) {
+                                if (isOnline) onlineExtensions.add(ext) else onlineExtensions.remove(ext)
+                            }
                             for (l in listeners) l.onPresence(ext, isOnline)
+                        }
+                        "presence_snapshot" -> {
+                            val arr = root.optJSONArray("extensions")
+                            if (arr != null) {
+                                for (i in 0 until arr.length()) {
+                                    val ext = arr.optString(i)
+                                    if (ext.isNotEmpty()) {
+                                        onlineExtensions.add(ext)
+                                        for (l in listeners) l.onPresence(ext, true)
+                                    }
+                                }
+                            }
                         }
                         "typing" -> {
                             val convId = root.optInt("conversation_id")
@@ -233,6 +258,7 @@ class ChatWebSocketManager private constructor() {
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                 Log.i(TAG, "Chat WebSocket closed: $code / $reason")
                 isConnected = false
+                onlineExtensions.clear()
                 notifyConnectionState(false)
                 scheduleReconnect()
             }
@@ -240,6 +266,7 @@ class ChatWebSocketManager private constructor() {
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 Log.w(TAG, "Chat WebSocket failure: ${t.message}")
                 isConnected = false
+                onlineExtensions.clear()
                 notifyConnectionState(false)
                 scheduleReconnect()
             }

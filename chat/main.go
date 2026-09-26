@@ -71,6 +71,7 @@ func main() {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"status":"ok","service":"aipbx-chat"}`))
 		})
+		mux.HandleFunc(prefix+"/api/internal/presence", server.HandleInternalPresence)
 	}
 
 	// Register with and without /chat prefix for seamless reverse proxying
