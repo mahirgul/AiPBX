@@ -150,6 +150,31 @@ case "$cmd" in
                 esac
                 exec fail2ban-client set "$1" "$2" "$3"
                 ;;
+            install-override)
+                # Panelin hazırladığı kalıcı ayar dosyasını doğrulayıp jail.d'ye kurar.
+                # jail.d root'a ait kalmalı: jail dosyası çalıştırılacak komut
+                # tanımlayabildiği için web'e yazılabilir olması root demekti.
+                [ $# -eq 0 ] || die "kullanım: f2b install-override"
+                stage=/var/lib/aipbx/fail2ban-override.local
+                tmp="$(mktemp)" || exit 1
+                trap 'rm -f "$tmp"' EXIT
+                # nofollow: sembolik bağlantı ile başka bir dosya okutulamasın.
+                dd if="$stage" of="$tmp" iflag=nofollow bs=65536 count=1 status=none \
+                    || die "ara dosya okunamadı"
+                [ "$(stat -c %s "$tmp")" -lt 65536 ] || die "ara dosya çok büyük"
+                n=0
+                while IFS= read -r line || [ -n "$line" ]; do
+                    n=$((n + 1))
+                    [[ "$line" =~ ^$ ]] && continue
+                    [[ "$line" =~ ^#[^[:cntrl:]]*$ ]] && continue
+                    [[ "$line" =~ ^\[(DEFAULT|[A-Za-z0-9_-]{1,64})\]$ ]] && continue
+                    [[ "$line" =~ ^ignoreip\ =\ [0-9A-Fa-f:./\ ]{1,4000}$ ]] && continue
+                    [[ "$line" =~ ^(bantime|findtime|maxretry)\ =\ [0-9]{1,9}$ ]] && continue
+                    # Satır içeriği yazılmaz — yalnızca numarası.
+                    die "ara dosyada izin verilmeyen satır: $n"
+                done < "$tmp"
+                install -o root -g root -m 0644 "$tmp" /etc/fail2ban/jail.d/99-ai-pbx.local
+                ;;
             *) die "bilinmeyen f2b komutu: $sub" ;;
         esac
         ;;
