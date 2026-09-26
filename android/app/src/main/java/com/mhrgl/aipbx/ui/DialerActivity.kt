@@ -865,12 +865,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
 
-        binding.btnNewChat.setOnClickListener {
-            showNewChatDialog()
-        }
-
-        binding.btnNewGroup.setOnClickListener {
-            showNewGroupDialog()
+        binding.btnChatCreate.setOnClickListener { anchor ->
+            val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+            popup.menu.add(0, 1, 0, "Bireysel Sohbet")
+            popup.menu.add(0, 2, 1, "Yeni Grup")
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    1 -> { showNewChatDialog(); true }
+                    2 -> { showNewGroupDialog(); true }
+                    else -> false
+                }
+            }
+            popup.show()
         }
 
         binding.btnChatEmptyNewChat.setOnClickListener {

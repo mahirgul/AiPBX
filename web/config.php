@@ -298,8 +298,13 @@ function logLoginAttempt($ip, $username, $status) {
         // log dosyasına sahte ek satır enjekte edilebilir (fail2ban/analiz araçlarını
         // yanıltabilir), bu yüzden log satırına yazmadan önce temizleniyor.
         $safe_username = preg_replace('/[\r\n]+/', ' ', $username);
-        $log_line = sprintf("%s - [%s] FAILED_LOGIN user=%s\n", $ip, date('Y-m-d H:i:s'), $safe_username);
-        @file_put_contents('/var/log/httpd/web_login_failures.log', $log_line, FILE_APPEND);
+        // Zaman damgası saat dilimi ofsetiyle yazılıyor: portal TIMEZONE'u ile
+        // sunucunun sistem saat dilimi farklı olabilir, fail2ban ofsetsiz bir
+        // saati sistem saati sanıp satırları "gelecekte" diye yok sayardı.
+        // Dizin install.sh'de www-data'ya yazılabilir kuruluyor (/etc/fail2ban/
+        // jail.d/aipbx-web.local bu dosyayı izliyor).
+        $log_line = sprintf("%s - [%s] FAILED_LOGIN user=%s\n", $ip, date(DATE_ATOM), $safe_username);
+        @file_put_contents('/var/log/aipbx/web_login_failures.log', $log_line, FILE_APPEND);
     }
 }
 

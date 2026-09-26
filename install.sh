@@ -277,9 +277,14 @@ mkdir -p /var/lib/asterisk/moh
 mkdir -p /var/lib/aipbx/chat_files
 mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
-mkdir -p /var/log/httpd
+mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/www/faxes /var/lib/aipbx
+# Portal login failures (read by the aipbx-web fail2ban jail)
+touch /var/log/aipbx/web_login_failures.log
+chown -R www-data:adm /var/log/aipbx
+chmod 750 /var/log/aipbx
+chmod 640 /var/log/aipbx/web_login_failures.log
 chmod 755 "$(dirname "$INSTALL_DIR")" "$INSTALL_DIR"
 
 ok "Directory structure created"
@@ -490,7 +495,7 @@ step "8. Configuring Nginx (Edge 443) & Apache2 (80/8443 Backend)"
 rm -f /etc/nginx/sites-enabled/default
 systemctl reload nginx 2>/dev/null || true
 
-a2enmod rewrite proxy proxy_wstunnel proxy_http ssl headers php* 2>/dev/null || true
+a2enmod rewrite proxy proxy_wstunnel proxy_http ssl headers remoteip php* 2>/dev/null || true
 a2dismod mpm_event 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
@@ -519,6 +524,12 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     ServerName ${PORTAL_DOMAIN}
     DocumentRoot /var/www/html
 
+    # nginx forwards the TLS stream without decrypting it, so it passes the
+    # client address in a PROXY protocol header. Without this every request
+    # appeared to come from 127.0.0.1 (shared login throttling, useless
+    # fail2ban and audit logs).
+    RemoteIPProxyProtocol On
+
     SSLEngine on
     SSLCertificateFile    ${CERT_FILE}
     SSLCertificateKeyFile ${KEY_FILE}
@@ -539,7 +550,13 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     ProxyPassReverse /chat/media/ http://127.0.0.1:8086/media/
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_ssl_error.log
-    CustomLog \${APACHE_LOG_DIR}/aipbx_ssl_access.log combined
+    # Chat WebSocket and media URLs carry the session token in the query
+    # string: log those requests without it.
+    LogFormat "%a %l %u %t \\"%r\\" %>s %O \\"%{Referer}i\\" \\"%{User-Agent}i\\"" aipbx_combined
+    LogFormat "%a %l %u %t \\"%m %U %H\\" %>s %O \\"%{Referer}i\\" \\"%{User-Agent}i\\"" aipbx_noquery
+    SetEnvIf Request_URI "^/chat/(ws|media/)" aipbx_no_query
+    CustomLog \${APACHE_LOG_DIR}/aipbx_ssl_access.log aipbx_combined env=!aipbx_no_query
+    CustomLog \${APACHE_LOG_DIR}/aipbx_ssl_access.log aipbx_noquery env=aipbx_no_query
 </VirtualHost>
 VHOST
 
@@ -584,27 +601,44 @@ a2enconf aipbx-routing 2>/dev/null
 cd "$INSTALL_DIR/web" && composer install --no-dev --no-interaction --quiet 2>/dev/null || true
 
 # Nginx Stream Multiplexer on Port 443 (ALPN routing: HTTPS/WSS -> Apache 8443, TURNS -> coturn 5349)
-if ! grep -q "map \$ssl_preread_alpn_protocols" /etc/nginx/nginx.conf 2>/dev/null; then
-    sed -i '/^http {/i \
-stream {\
-    log_format stream_debug '\''$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$turn_backend status=$status bytes_s=$bytes_sent bytes_r=$bytes_received'\'';\
-    access_log /var/log/nginx/stream.log stream_debug;\
-\
-    map $ssl_preread_alpn_protocols $turn_backend {\
-        default     127.0.0.1:8443;\
-        ""          127.0.0.1:5349;\
-    }\
-\
-    server {\
-        listen 443;\
-        listen [::]:443;\
-        ssl_preread on;\
-        proxy_pass $turn_backend;\
-        proxy_timeout 3600s;\
-        proxy_connect_timeout 5s;\
-    }\
-}\
-' /etc/nginx/nginx.conf
+# nginx never decrypts TLS here, so the client address reaches Apache only
+# through a PROXY protocol header. coturn cannot parse that header, so TURNS
+# goes through a local relay (127.0.0.1:15349) that strips it.
+cat > /etc/nginx/aipbx-stream.conf << 'STREAM'
+# AI PBX edge multiplexer on 443 (managed by install.sh)
+stream {
+    log_format aipbx_stream '$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$aipbx_backend status=$status bytes_s=$bytes_sent bytes_r=$bytes_received';
+    access_log /var/log/nginx/stream.log aipbx_stream;
+
+    map $ssl_preread_alpn_protocols $aipbx_backend {
+        default     127.0.0.1:8443;
+        ""          127.0.0.1:15349;
+    }
+
+    server {
+        listen 443;
+        listen [::]:443;
+        ssl_preread on;
+        proxy_pass $aipbx_backend;
+        proxy_protocol on;
+        proxy_timeout 3600s;
+        proxy_connect_timeout 5s;
+    }
+
+    server {
+        listen 127.0.0.1:15349 proxy_protocol;
+        proxy_pass 127.0.0.1:5349;
+        proxy_timeout 3600s;
+        proxy_connect_timeout 5s;
+    }
+}
+STREAM
+# Older installs had the stream block inline in nginx.conf: replace it.
+if grep -q 'map \$ssl_preread_alpn_protocols \$turn_backend' /etc/nginx/nginx.conf 2>/dev/null; then
+    sed -i '/^stream {$/,/^}$/d' /etc/nginx/nginx.conf
+fi
+if ! grep -q 'include /etc/nginx/aipbx-stream.conf;' /etc/nginx/nginx.conf 2>/dev/null; then
+    sed -i '/^http {/i include /etc/nginx/aipbx-stream.conf;\n' /etc/nginx/nginx.conf
 fi
 
 # Ubuntu 24.04/26.04+ systemd proc isolation drop-in (allow Apache/PHP to inspect /proc/meminfo and pgrep asterisk)
@@ -840,11 +874,33 @@ bantime  = 3600
 findtime = 600
 JAIL
 
-chgrp -R www-data /etc/fail2ban/jail.d 2>/dev/null || true
-chmod 775 /etc/fail2ban/jail.d 2>/dev/null || true
+# Brute-force protection for the web portal / mobile login. Needs the real
+# client address, which Apache gets from nginx via the PROXY protocol.
+cat > /etc/fail2ban/filter.d/aipbx-web.conf << 'F2BFILTER'
+[Definition]
+failregex = ^<HOST> - \[.*\] FAILED_LOGIN user=
+ignoreregex =
+F2BFILTER
+
+cat > /etc/fail2ban/jail.d/aipbx-web.local << 'JAIL'
+[aipbx-web]
+enabled  = true
+port     = http,https
+filter   = aipbx-web
+logpath  = /var/log/aipbx/web_login_failures.log
+maxretry = 10
+bantime  = 3600
+findtime = 600
+JAIL
+
+# jail.d stays root-owned: fail2ban runs as root and a jail file can define
+# the commands it executes, so a web-writable jail.d would be a root shell.
+# The panel stages its overrides in /var/lib/aipbx and `aipbx-priv f2b
+# install-override` validates and installs them.
+chown -R root:root /etc/fail2ban/jail.d
+chmod 755 /etc/fail2ban/jail.d
 touch /etc/fail2ban/jail.d/99-ai-pbx.local
-chown root:www-data /etc/fail2ban/jail.d/99-ai-pbx.local 2>/dev/null || true
-chmod 664 /etc/fail2ban/jail.d/99-ai-pbx.local 2>/dev/null || true
+chmod 644 /etc/fail2ban/jail.d/99-ai-pbx.local
 
 systemctl enable fail2ban 2>/dev/null || true
 systemctl restart fail2ban 2>/dev/null || true

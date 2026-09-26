@@ -554,25 +554,26 @@
                         android:textColorHint="@color/text_secondary"
                         android:textSize="13sp" />
 
-                    <ImageButton
-                        android:id="@+id/btnNewGroup"
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
+                    <!-- Yazısız iki ikon (grup / sohbet) fark edilmiyordu: tek, etiketli
+                         buton; basınca "Bireysel Sohbet / Yeni Grup" menüsü açılır. -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChatCreate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
                         android:layout_marginStart="8dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Yeni Grup"
-                        android:src="@drawable/ic_group"
-                        app:tint="@color/primary" />
-
-                    <ImageButton
-                        android:id="@+id/btnNewChat"
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:layout_marginStart="4dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Yeni Sohbet"
-                        android:src="@drawable/ic_chat"
-                        app:tint="@color/primary" />
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="Yeni"
+                        android:textAllCaps="false"
+                        android:textSize="13sp"
+                        app:backgroundTint="@color/primary"
+                        app:cornerRadius="10dp"
+                        app:icon="@drawable/ic_add"
+                        app:iconPadding="4dp"
+                        app:iconSize="18dp"
+                        app:iconTint="#FFFFFF" />
                 </LinearLayout>
 
                 <!-- Chat Filter Chips (Tümü / Bireysel / Gruplar) -->
