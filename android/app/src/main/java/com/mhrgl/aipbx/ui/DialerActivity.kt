@@ -25,6 +25,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -144,9 +145,29 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val bottom = maxOf(systemBars.bottom, ime.bottom)
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
             insets
         }
+
+        ViewCompat.setWindowInsetsAnimationCallback(
+            binding.root,
+            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_STOP) {
+                override fun onProgress(
+                    insets: WindowInsetsCompat,
+                    runningAnimations: MutableList<WindowInsetsAnimationCompat>
+                ): WindowInsetsCompat {
+                    val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+                    val systemBars = insets.getInsets(
+                        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+                    )
+                    val bottom = maxOf(systemBars.bottom, ime.bottom)
+                    binding.root.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
+                    return insets
+                }
+            }
+        )
 
         setupUserHeader()
         setupDialpad()
@@ -418,6 +439,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 binding.tvTabFeatures.setTextColor(colorActive)
             }
         }
+
+        binding.bottomNav.visibility = if (tab == Tab.CHAT && isChatRoomOpen()) View.GONE else View.VISIBLE
     }
 
     // ================= TAB 1: DIALPAD =================
@@ -786,6 +809,22 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
         binding.rvChatMessages.layoutManager = msgLm
         binding.rvChatMessages.adapter = chatMessageAdapter
+
+        binding.rvChatMessages.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, oldBottom ->
+            if (bottom < oldBottom && ::chatMessageAdapter.isInitialized && chatMessageAdapter.itemCount > 0) {
+                binding.rvChatMessages.post {
+                    binding.rvChatMessages.scrollToPosition(chatMessageAdapter.itemCount - 1)
+                }
+            }
+        }
+
+        binding.etChatMessage.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && ::chatMessageAdapter.isInitialized && chatMessageAdapter.itemCount > 0) {
+                binding.rvChatMessages.postDelayed({
+                    binding.rvChatMessages.scrollToPosition(chatMessageAdapter.itemCount - 1)
+                }, 150)
+            }
+        }
 
         binding.btnChatRoomBack.setOnClickListener {
             closeChatRoom()
@@ -1161,6 +1200,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         binding.layoutChatList.visibility = View.GONE
         binding.layoutChatRoom.visibility = View.VISIBLE
+        binding.bottomNav.visibility = View.GONE
 
         chatMessageAdapter.setIsGroup(isGroup)
         chatMessageAdapter.submitList(emptyList())
@@ -1176,6 +1216,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun closeChatRoom() {
         binding.layoutChatRoom.visibility = View.GONE
         binding.layoutChatList.visibility = View.VISIBLE
+        binding.bottomNav.visibility = View.VISIBLE
         currentChatConvId = 0
         currentChatTargetExt = ""
         currentChatTargetName = ""
