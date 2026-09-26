@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../file_helper.php';
+require_once __DIR__ . '/../priv_helper.php';
 
 class MailSettingsService
 {
@@ -75,38 +76,43 @@ class MailSettingsService
 
     public static function syncPostfix(string $host, int $port, string $security, string $auth, string $user, string $pass): array
     {
+        // Postfix ayarları root yetkisiyle PrivHelper (aipbx-priv `postfix` alt
+        // komutları) üzerinden yazılıyor; her adım sabit bir postconf işlemi.
         if (empty($host)) {
-            shell_exec('sudo /usr/sbin/postconf -e "relayhost =" 2>&1');
-            shell_exec('sudo /usr/bin/systemctl reload postfix 2>&1');
+            PrivHelper::run(['postfix', 'relay-clear']);
+            PrivHelper::run(['service', 'reload', 'postfix']);
             return ['success' => true];
         }
 
-        $relay_spec = '[' . $host . ']:' . $port;
-        exec('sudo /usr/sbin/postconf -e ' . escapeshellarg('relayhost = ' . $relay_spec) . ' 2>&1', $out1, $ret1);
-
-        if ($security === 'tls' || $security === 'ssl') {
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_tls_security_level = may" 2>&1');
-        } else {
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_tls_security_level = none" 2>&1');
+        // Host sasl_passwd satırına ve relayhost değerine giriyor — boşluk,
+        // satır sonu, köşeli parantez vb. her iki dosyanın söz dizimini bozar.
+        if (!preg_match('/^[A-Za-z0-9.:_-]{1,253}$/', $host)) {
+            return ['success' => false, 'error' => 'Geçersiz relay sunucu adı: ' . $host];
         }
 
-        if ($auth === 'yes' && !empty($user)) {
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_sasl_auth_enable = yes" 2>&1');
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_sasl_security_options = noanonymous" 2>&1');
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd" 2>&1');
+        $relay_spec = '[' . $host . ']:' . $port;
+        $steps = [
+            ['postfix', 'relay', $host, (string) $port],
+            ['postfix', 'tls', ($security === 'tls' || $security === 'ssl') ? 'may' : 'none'],
+        ];
 
+        if ($auth === 'yes' && !empty($user)) {
+            $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
                 $line = $relay_spec . ' ' . $user . ':' . $pass . "\n";
                 FileHelper::writeFile('/etc/postfix/sasl_passwd', $line, null, null, 0660);
-                exec('sudo /usr/sbin/postmap /etc/postfix/sasl_passwd 2>&1', $o, $r);
+                $steps[] = ['postfix', 'postmap'];
             }
         } else {
-            shell_exec('sudo /usr/sbin/postconf -e "smtp_sasl_auth_enable = no" 2>&1');
+            $steps[] = ['postfix', 'sasl', 'off'];
         }
+        $steps[] = ['service', 'reload', 'postfix'];
 
-        exec('sudo /usr/bin/systemctl reload postfix 2>&1', $out2, $ret2);
-        if ($ret2 !== 0) {
-            return ['success' => false, 'error' => implode(' ', $out2)];
+        foreach ($steps as $step) {
+            $res = PrivHelper::run($step);
+            if (!$res['success']) {
+                return ['success' => false, 'error' => $res['output']];
+            }
         }
 
         return ['success' => true];

@@ -1,13 +1,14 @@
 <?php
 require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/../priv_helper.php';
 
 /**
  * fail2ban Yönetim Servisi
- * `fail2ban-client`'ı sudo ile çalıştırır (asterisk kullanıcısı için
- * /etc/sudoers.d/web_portal'da NOPASSWD tanımlı, 2026-08-31). Kalıcılık için
+ * `fail2ban-client`'ı root yetkisiyle PrivHelper (aipbx-priv `f2b` alt
+ * komutları) üzerinden çalıştırır — doğrudan sudo çağrısı yok. Kalıcılık için
  * jail.local'e DOKUNULMAZ — ayrı bir override dosyası (OVERRIDE_FILE) kullanılır,
- * jail.d/ dizini zaten asterisk grubuna yazılabilir (sudo gerekmez, sadece
- * fail2ban-client komutları için sudo gerekiyor).
+ * jail.d/ dizini zaten web kullanıcısının grubuna yazılabilir (root gerekmez,
+ * sadece fail2ban-client komutları için gerekiyor).
  */
 class Fail2banService {
 
@@ -22,15 +23,17 @@ class Fail2banService {
 
     const OVERRIDE_FILE = '/etc/fail2ban/jail.d/99-ai-pbx.local';
 
-    private static function run(string $args): array {
-        $cmd = 'sudo /usr/bin/fail2ban-client ' . $args . ' 2>&1';
-        exec($cmd, $out, $ret);
-        return ['success' => $ret === 0, 'output' => implode("\n", $out)];
+    private static function run(string ...$args): array {
+        return PrivHelper::run(array_merge(['f2b'], $args));
+    }
+
+    private static function get(string $jail, string $key): string {
+        return self::run('get', $jail, $key)['output'];
     }
 
     public static function listJails(): array {
-        $out = shell_exec('sudo /usr/bin/fail2ban-client status 2>&1');
-        if (!preg_match('/Jail list:\s*(.*)$/m', (string) $out, $m)) return [];
+        $out = self::run('status')['output'];
+        if (!preg_match('/Jail list:\s*(.*)$/m', $out, $m)) return [];
         $names = array_filter(array_map('trim', explode(',', $m[1])));
         return array_values($names);
     }
@@ -44,7 +47,7 @@ class Fail2banService {
         $jails = self::listJails();
         if (!in_array($jail, $jails, true)) return null;
 
-        $status = (string) shell_exec('sudo /usr/bin/fail2ban-client status ' . escapeshellarg($jail) . ' 2>&1');
+        $status = self::run('status', $jail)['output'];
         $banned_ips = [];
         if (preg_match('/Banned IP list:\s*(.*)$/m', $status, $m)) {
             $banned_ips = array_values(array_filter(preg_split('/\s+/', trim($m[1]))));
@@ -59,16 +62,16 @@ class Fail2banService {
             'currently_banned' => $currently_banned,
             'total_banned' => $total_banned,
             'banned_ips' => $banned_ips,
-            'bantime' => (int) trim((string) shell_exec('sudo /usr/bin/fail2ban-client get ' . escapeshellarg($jail) . ' bantime 2>&1')),
-            'findtime' => (int) trim((string) shell_exec('sudo /usr/bin/fail2ban-client get ' . escapeshellarg($jail) . ' findtime 2>&1')),
-            'maxretry' => (int) trim((string) shell_exec('sudo /usr/bin/fail2ban-client get ' . escapeshellarg($jail) . ' maxretry 2>&1')),
+            'bantime' => (int) trim(self::get($jail, 'bantime')),
+            'findtime' => (int) trim(self::get($jail, 'findtime')),
+            'maxretry' => (int) trim(self::get($jail, 'maxretry')),
         ];
     }
 
     public static function getIgnoreIps(): array {
         $jails = self::listJails();
         if (empty($jails)) return [];
-        $out = (string) shell_exec('sudo /usr/bin/fail2ban-client get ' . escapeshellarg($jails[0]) . ' ignoreip 2>&1');
+        $out = self::get($jails[0], 'ignoreip');
         $ips = [];
         foreach (explode("\n", $out) as $line) {
             if (preg_match('/^\s*[|`]-\s*(.+)$/', $line, $m)) {
@@ -125,7 +128,7 @@ class Fail2banService {
         if (!in_array($jail, self::listJails(), true) || !filter_var($ip, FILTER_VALIDATE_IP)) {
             return ['success' => false, 'error' => 'Geçersiz jail veya IP adresi.'];
         }
-        $res = self::run('set ' . escapeshellarg($jail) . ' unbanip ' . escapeshellarg($ip));
+        $res = self::run('set', $jail, 'unbanip', $ip);
         if (!$res['success']) {
             return ['success' => false, 'error' => 'IP ban kaldırılamadı: ' . trim($res['output'])];
         }
@@ -150,9 +153,9 @@ class Fail2banService {
             return ['success' => false, 'error' => 'Değerler mantıksız (bantime/findtime en az 60sn, maxretry en az 1 olmalı).'];
         }
 
-        $r1 = self::run('set ' . escapeshellarg($jail) . ' bantime ' . $bantime);
-        $r2 = self::run('set ' . escapeshellarg($jail) . ' findtime ' . $findtime);
-        $r3 = self::run('set ' . escapeshellarg($jail) . ' maxretry ' . $maxretry);
+        $r1 = self::run('set', $jail, 'bantime', (string) $bantime);
+        $r2 = self::run('set', $jail, 'findtime', (string) $findtime);
+        $r3 = self::run('set', $jail, 'maxretry', (string) $maxretry);
         if (!$r1['success'] || !$r2['success'] || !$r3['success']) {
             return ['success' => false, 'error' => 'Ayarlar canlıya uygulanamadı: ' . trim($r1['output'] . ' ' . $r2['output'] . ' ' . $r3['output'])];
         }
@@ -175,7 +178,7 @@ class Fail2banService {
             return ['success' => false, 'error' => $err];
         }
         foreach (self::listJails() as $jail) {
-            self::run('set ' . escapeshellarg($jail) . ' addignoreip ' . escapeshellarg($ip));
+            self::run('set', $jail, 'addignoreip', $ip);
         }
         $state = self::readOverrideState();
         if (!in_array($ip, $state['ignoreip'], true)) $state['ignoreip'][] = $ip;
@@ -195,7 +198,7 @@ class Fail2banService {
             return ['success' => false, 'error' => "{$ip} (localhost) beyaz listeden asla kaldırılamaz!"];
         }
         foreach (self::listJails() as $jail) {
-            self::run('set ' . escapeshellarg($jail) . ' delignoreip ' . escapeshellarg($ip));
+            self::run('set', $jail, 'delignoreip', $ip);
         }
         $state = self::readOverrideState();
         $state['ignoreip'] = array_values(array_diff($state['ignoreip'], [$ip]));

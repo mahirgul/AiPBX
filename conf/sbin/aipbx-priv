@@ -1,0 +1,160 @@
+#!/bin/bash
+# aipbx-priv — AI PBX web portalının root yetkisiyle çalıştırabildiği TEK komut.
+#
+# /etc/sudoers.d/aipbx www-data'ya yalnızca bu script'i açar. Önceden
+# asterisk/postconf/fail2ban-client/firewall-cmd argüman kısıtı olmadan
+# açıktı; bu da portalda bulunacak herhangi bir kod çalıştırma açığını
+# doğrudan root'a taşıyordu (ör. `sudo asterisk -C <sahte.conf>`,
+# `fail2ban-client set <jail> action ... actionban <komut>`,
+# `postconf -e mailbox_command=...`). Burada her alt komut sabit bir işleme
+# karşılık gelir ve her argüman katı bir desenle doğrulanır; hiçbir değer
+# kabuğa verilmez.
+#
+# install.sh bu dosyayı root:root 0755 olarak /usr/local/sbin'e KOPYALAR —
+# www-data'nın yazabildiği bir yerden (ör. web/ altından) asla çalıştırılmamalı.
+
+set -uo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+
+die() { echo "aipbx-priv: $*" >&2; exit 64; }
+
+RE_JAIL='^[A-Za-z0-9_-]{1,64}$'
+RE_IP='^[0-9A-Fa-f:.]{2,45}(/[0-9]{1,3})?$'
+RE_IPV4_CIDR='^[0-9]{1,3}(\.[0-9]{1,3}){3}(/[0-9]{1,2})?$'
+RE_INT='^[0-9]{1,9}$'
+RE_PORT='^[0-9]{1,5}(-[0-9]{1,5})?$'
+RE_PROTO='^(tcp|udp)$'
+RE_HOST='^[A-Za-z0-9.:_-]{1,253}$'
+RE_RICH_RULE='^rule [A-Za-z0-9 ="./:_-]{1,400}$'
+
+match() { [[ "$1" =~ $2 ]] || die "geçersiz değer: $1"; }
+
+# İsteğe bağlı son argüman: yalnızca "--permanent" kabul edilir.
+permanent_flag() {
+    case "${1:-}" in
+        '') ;;
+        --permanent) echo --permanent ;;
+        *) die "beklenmeyen argüman: $1" ;;
+    esac
+}
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift
+
+case "$cmd" in
+    service)
+        # service restart|reload UNIT
+        [ $# -eq 2 ] || die "kullanım: service restart|reload UNIT"
+        case "$1" in restart|reload) ;; *) die "geçersiz işlem: $1" ;; esac
+        case "$2" in asterisk|apache2|mariadb|postfix|fail2ban|firewalld) ;; *) die "izin verilmeyen servis: $2" ;; esac
+        exec systemctl "$1" "$2"
+        ;;
+
+    postfix)
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            relay)
+                [ $# -eq 2 ] || die "kullanım: postfix relay HOST PORT"
+                match "$1" "$RE_HOST"; match "$2" "$RE_INT"
+                exec postconf -e "relayhost = [$1]:$2"
+                ;;
+            relay-clear)
+                [ $# -eq 0 ] || die "kullanım: postfix relay-clear"
+                exec postconf -e "relayhost ="
+                ;;
+            tls)
+                [ $# -eq 1 ] || die "kullanım: postfix tls may|none"
+                case "$1" in may|none) ;; *) die "geçersiz değer: $1" ;; esac
+                exec postconf -e "smtp_tls_security_level = $1"
+                ;;
+            sasl)
+                [ $# -eq 1 ] || die "kullanım: postfix sasl on|off"
+                case "$1" in
+                    on)  exec postconf -e "smtp_sasl_auth_enable = yes" \
+                                          "smtp_sasl_security_options = noanonymous" \
+                                          "smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd" ;;
+                    off) exec postconf -e "smtp_sasl_auth_enable = no" ;;
+                    *)   die "geçersiz değer: $1" ;;
+                esac
+                ;;
+            postmap)
+                [ $# -eq 0 ] || die "kullanım: postfix postmap"
+                exec postmap /etc/postfix/sasl_passwd
+                ;;
+            *) die "bilinmeyen postfix komutu: $sub" ;;
+        esac
+        ;;
+
+    fw)
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            get-default-zone)
+                [ $# -eq 0 ] || die "kullanım: fw get-default-zone"
+                exec firewall-cmd --get-default-zone
+                ;;
+            list-all)
+                [ $# -eq 0 ] || die "kullanım: fw list-all"
+                exec firewall-cmd --list-all
+                ;;
+            add-port|remove-port)
+                # fw add-port|remove-port PORT PROTO [--permanent]
+                [ $# -eq 2 ] || [ $# -eq 3 ] || die "kullanım: fw $sub PORT PROTO [--permanent]"
+                match "$1" "$RE_PORT"; match "$2" "$RE_PROTO"
+                perm="$(permanent_flag "${3:-}")" || exit 64
+                exec firewall-cmd "--$sub=$1/$2" ${perm:+"$perm"}
+                ;;
+            add-source-rule)
+                # fw add-source-rule SUBNET PORT PROTO [--permanent]
+                [ $# -eq 3 ] || [ $# -eq 4 ] || die "kullanım: fw add-source-rule SUBNET PORT PROTO [--permanent]"
+                match "$1" "$RE_IPV4_CIDR"; match "$2" "$RE_PORT"; match "$3" "$RE_PROTO"
+                perm="$(permanent_flag "${4:-}")" || exit 64
+                exec firewall-cmd "--add-rich-rule=rule family=\"ipv4\" source address=\"$1\" port port=\"$2\" protocol=\"$3\" accept" ${perm:+"$perm"}
+                ;;
+            remove-rich-rule)
+                # fw remove-rich-rule RULE [--permanent] — RULE, `list-all` çıktısındaki metin
+                [ $# -eq 1 ] || [ $# -eq 2 ] || die "kullanım: fw remove-rich-rule RULE [--permanent]"
+                match "$1" "$RE_RICH_RULE"
+                perm="$(permanent_flag "${2:-}")" || exit 64
+                exec firewall-cmd "--remove-rich-rule=$1" ${perm:+"$perm"}
+                ;;
+            *) die "bilinmeyen fw komutu: $sub" ;;
+        esac
+        ;;
+
+    f2b)
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            status)
+                # f2b status [JAIL]
+                [ $# -le 1 ] || die "kullanım: f2b status [JAIL]"
+                [ $# -eq 1 ] && match "$1" "$RE_JAIL"
+                exec fail2ban-client status "$@"
+                ;;
+            get)
+                # f2b get JAIL bantime|findtime|maxretry|ignoreip
+                [ $# -eq 2 ] || die "kullanım: f2b get JAIL KEY"
+                match "$1" "$RE_JAIL"
+                case "$2" in bantime|findtime|maxretry|ignoreip) ;; *) die "izin verilmeyen anahtar: $2" ;; esac
+                exec fail2ban-client get "$1" "$2"
+                ;;
+            set)
+                # f2b set JAIL bantime|findtime|maxretry N
+                # f2b set JAIL unbanip|addignoreip|delignoreip IP
+                [ $# -eq 3 ] || die "kullanım: f2b set JAIL KEY VALUE"
+                match "$1" "$RE_JAIL"
+                case "$2" in
+                    bantime|findtime|maxretry)       match "$3" "$RE_INT" ;;
+                    unbanip|addignoreip|delignoreip) match "$3" "$RE_IP" ;;
+                    *) die "izin verilmeyen anahtar: $2" ;;
+                esac
+                exec fail2ban-client set "$1" "$2" "$3"
+                ;;
+            *) die "bilinmeyen f2b komutu: $sub" ;;
+        esac
+        ;;
+
+    *)
+        die "bilinmeyen komut: ${cmd:-<boş>}"
+        ;;
+esac

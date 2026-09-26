@@ -1,8 +1,8 @@
 # Clean URL Routing — Front Controller
 # /dashboard, /trunks, /fax-inbox, /cc-agent etc. are resolved by index.php
 # (the front controller). Adjust /var/www/html below if you deploy elsewhere,
-# then drop this file into /etc/httpd/conf.d/ (or your distro's equivalent)
-# and reload Apache.
+# then copy this file to /etc/apache2/conf-available/aipbx-routing.conf,
+# run `a2enconf aipbx-routing` and reload Apache. (install.sh does this for you.)
 #
 # src/, vendor/, db/, and bin/ are intentionally denied from direct HTTP
 # access — src/ is the application layer (only ever require()'d server-side

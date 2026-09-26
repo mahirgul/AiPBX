@@ -5,6 +5,7 @@
  * DashboardRepository'de, HTML çıktısı templates/views/dashboard/index.php'de.
  */
 require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/../priv_helper.php';
 
 class DashboardController extends BaseController
 {
@@ -46,11 +47,12 @@ class DashboardController extends BaseController
 
         if ($action === 'reload_asterisk') {
             // 2026-08-24: `asterisk -rx` her zaman exit code 0 döner (canlı
-            // doğrulandı) — çıktı metni AsteriskHelper::looksLikeCliFailure()
-            // ile kontrol ediliyor, önceden bu adım tamamen atlanıp her zaman
-            // "başarılı" mesajı gösteriliyordu.
-            $output = trim((string) shell_exec("sudo /usr/sbin/asterisk -rx 'core reload' 2>&1"));
-            $failed = AsteriskHelper::looksLikeCliFailure($output);
+            // doğrulandı) — execCLI() çıktı metnini looksLikeCliFailure() ile
+            // kontrol ediyor. sudo gerekmiyor: web kullanıcısı asterisk
+            // grubunda, kontrol soketine doğrudan erişiyor.
+            $res = AsteriskHelper::execCLI('core reload');
+            $output = trim($res['output']);
+            $failed = !$res['success'];
             // 2026-08-25: başarısızlıkta ham Asterisk çıktısı da audit kaydına
             // yazılıyor (önceden sadece "core reload" yazıp asıl hata metnini
             // kalıcı kayıttan dışarıda bırakıyordu).
@@ -65,7 +67,7 @@ class DashboardController extends BaseController
         if ($action === 'restart_service') {
             $allowed_services = [
                 'asterisk' => t('dashboard.service_asterisk_name'),
-                'httpd' => t('dashboard.service_httpd_name'),
+                'apache2' => t('dashboard.service_httpd_name'),
                 'mariadb' => t('dashboard.service_mariadb_name'),
                 'postfix' => t('dashboard.service_postfix_name'),
             ];
@@ -73,9 +75,9 @@ class DashboardController extends BaseController
                 // systemctl, asterisk -rx'in aksine GERÇEK bir exit code
                 // döndürüyor (canlı doğrulandı: başarısız bir restart
                 // sıfırdan farklı bir kod veriyor) — burada $ret güvenilir.
-                exec('sudo /usr/bin/systemctl restart ' . escapeshellarg($service) . ' 2>&1', $out, $ret);
-                $output = implode("\n", $out);
-                $failed = ($ret !== 0);
+                $res = PrivHelper::run(['service', 'restart', $service]);
+                $output = $res['output'];
+                $failed = !$res['success'];
                 $label = $allowed_services[$service] . ' (systemctl restart)' . ($failed ? ': ' . mb_substr($output, 0, 200) : '');
                 writeAuditLog(null, 'system_service', $service, $label, $failed ? 'restart_failed' : 'restart', $uid);
                 if ($failed) {

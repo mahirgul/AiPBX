@@ -619,12 +619,19 @@ systemctl daemon-reload
 # Allow web server (www-data) to access Asterisk control socket
 usermod -aG asterisk www-data
 
-# Sudoers permissions for AI PBX management (service restarts and postfix/asterisk controls)
+# Privileged helper: the portal's ONLY root entry point. Every subcommand maps
+# to one fixed operation with validated arguments (see conf/sbin/aipbx-priv).
+# Copied (not symlinked) so it stays root-owned and outside anything www-data can write.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/sbin/aipbx-priv
+
+# Sudoers: www-data may run the helper and nothing else as root. Granting
+# asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
+# execution bug in the portal escalate straight to root.
 cat > /etc/sudoers.d/aipbx << 'SUDOOVERRIDE'
-www-data ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/bin/systemctl restart fail2ban, /usr/bin/systemctl reload fail2ban, /usr/bin/systemctl restart firewalld, /usr/bin/systemctl reload firewalld, /usr/sbin/asterisk, /usr/sbin/postconf, /usr/sbin/postmap, /usr/sbin/postfix, /usr/bin/fail2ban-client, /usr/bin/firewall-cmd
-asterisk ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart asterisk, /usr/bin/systemctl reload asterisk, /usr/bin/systemctl restart apache2, /usr/bin/systemctl reload apache2, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart postfix, /usr/bin/systemctl reload postfix, /usr/bin/systemctl restart fail2ban, /usr/bin/systemctl reload fail2ban, /usr/bin/systemctl restart firewalld, /usr/bin/systemctl reload firewalld, /usr/sbin/asterisk, /usr/bin/fail2ban-client, /usr/bin/firewall-cmd
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/aipbx-priv
 SUDOOVERRIDE
 chmod 440 /etc/sudoers.d/aipbx
+visudo -cf /etc/sudoers.d/aipbx >/dev/null || error "Invalid sudoers file generated: /etc/sudoers.d/aipbx"
 
 # Postfix mail service initialization
 touch /etc/postfix/sasl_passwd

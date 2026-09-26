@@ -40,10 +40,8 @@ class AsteriskHelper {
 
     /**
      * `asterisk -rx` çıktısında bilinen hata kalıplarını arayan paylaşılan
-     * heuristik — execCLI() ve DashboardController'ın manuel `sudo asterisk
-     * -rx 'core reload'` çağrısı (farklı bir sudo/shell_exec yolu kullanıyor,
-     * execCLI()'yi çağırmıyor ama AYNI çıktı formatını üretiyor) aynı kontrolü
-     * paylaşsın diye ayrı bir metoda çıkarıldı.
+     * heuristik — execCLI() dışında `asterisk -rx` çıktısı işleyen yerler de
+     * aynı kontrolü paylaşsın diye ayrı bir metoda çıkarıldı.
      */
     public static function looksLikeCliFailure($output) {
         return (bool) preg_match('/no such command|not found|unable to|error|failed|invalid|usage:/i', (string) $output);

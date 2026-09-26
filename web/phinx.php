@@ -8,7 +8,7 @@
  * DDL yetkisi) kullanılıyor — çalışan uygulamanın hiçbir zaman şema
  * değiştirme yetkisi olmamalı, bu ayrım kasıtlı bir güvenlik sınırı.
  * Bu dosya web sunucusundan doğrudan erişime kapalıdır (bkz.
- * /etc/httpd/conf.d/routing.conf — /var/www/html/db Require all denied).
+ * /etc/apache2/conf-available/aipbx-routing.conf — /var/www/html/db Require all denied).
  */
 
 function phinxLoadEnv($path = null) {

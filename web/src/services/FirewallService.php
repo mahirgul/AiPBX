@@ -1,10 +1,11 @@
 <?php
 require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/../priv_helper.php';
 
 /**
  * Firewall (firewalld) Yönetim Servisi
- * `firewall-cmd`'yi sudo ile çalıştırır (asterisk kullanıcısı için
- * /etc/sudoers.d/web_portal'da NOPASSWD tanımlı, 2026-08-31).
+ * `firewall-cmd`'yi root yetkisiyle PrivHelper (aipbx-priv `fw` alt
+ * komutları) üzerinden çalıştırır — doğrudan sudo çağrısı yok.
  */
 class FirewallService {
 
@@ -61,10 +62,17 @@ class FirewallService {
         return self::coversProtectedPort($portOrRule);
     }
 
-    private static function run(string $args): array {
-        $cmd = 'sudo /usr/bin/firewall-cmd ' . $args . ' 2>&1';
-        exec($cmd, $out, $ret);
-        return ['success' => $ret === 0, 'output' => implode("\n", $out)];
+    /**
+     * Aynı `fw` işlemini önce canlıya (reload olmadan anında etkili), sonra
+     * --permanent ile uygular — ikisi de gerekiyor (biri anlık, biri kalıcılık için).
+     */
+    private static function runLiveAndPermanent(array $args): array {
+        $r1 = PrivHelper::run(array_merge(['fw'], $args));
+        $r2 = PrivHelper::run(array_merge(['fw'], $args, ['--permanent']));
+        return [
+            'success' => $r1['success'] && $r2['success'],
+            'output' => trim($r1['output'] . ' ' . $r2['output']),
+        ];
     }
 
     /**
@@ -74,17 +82,15 @@ class FirewallService {
      * uzun süredir değişmiyor) satır satır ayrıştırıyor.
      */
     public static function getStatus(): array {
-        // NOT: okuma komutları da sudo ile çalışmak ZORUNDA — firewall-cmd/
-        // fail2ban-client root olmayan kullanıcıda "Authorization failed" /
-        // "must be root" döndürüyor. Web uygulaması PHP-FPM altında 'asterisk'
-        // kullanıcısı olarak çalıştığı için sudo'suz çağrılar canlıda BOŞ liste
-        // üretiyordu (2026-08-31 denetiminde bulundu; CLI testleri root ile
-        // koştuğu için gözden kaçmıştı).
-        $zone_out = shell_exec('sudo /usr/bin/firewall-cmd --get-default-zone 2>&1');
-        $zone = trim((string) $zone_out) ?: 'public';
+        // NOT: okuma komutları da root yetkisiyle çalışmak ZORUNDA —
+        // firewall-cmd root olmayan kullanıcıda "Authorization failed"
+        // döndürüyor; web kullanıcısıyla doğrudan çağrı BOŞ liste üretir
+        // (2026-08-31 denetiminde bulundu; CLI testleri root ile koştuğu için
+        // gözden kaçmıştı).
+        $zone_out = PrivHelper::run(['fw', 'get-default-zone'])['output'];
+        $zone = trim($zone_out) ?: 'public';
 
-        $list = shell_exec('sudo /usr/bin/firewall-cmd --list-all 2>&1');
-        $list = (string) $list;
+        $list = PrivHelper::run(['fw', 'list-all'])['output'];
 
         $ports = [];
         if (preg_match('/^\s*ports:\s*(.*)$/m', $list, $m)) {
@@ -141,18 +147,15 @@ class FirewallService {
             return ['success' => false, 'error' => 'Geçersiz kaynak IP adresi!'];
         }
 
-        if ($sourceSubnet !== '') {
-            $rule = "rule family=\"ipv4\" source address=\"{$sourceSubnet}\" port port=\"{$port}\" protocol=\"{$protocol}\" accept";
-            $arg = '--add-rich-rule=' . escapeshellarg($rule);
-        } else {
-            $arg = '--add-port=' . escapeshellarg("{$port}/{$protocol}");
-        }
+        // Kaynak kısıtlı kural bir rich-rule olarak aipbx-priv tarafında
+        // üretiliyor: `rule family="ipv4" source address="…" port port="…"
+        // protocol="…" accept`.
+        $res = $sourceSubnet !== ''
+            ? self::runLiveAndPermanent(['add-source-rule', $sourceSubnet, $port, $protocol])
+            : self::runLiveAndPermanent(['add-port', $port, $protocol]);
 
-        $r1 = self::run($arg);
-        $r2 = self::run($arg . ' --permanent');
-
-        if (!$r1['success'] || !$r2['success']) {
-            return ['success' => false, 'error' => "Firewall kuralı eklenemedi: " . trim($r1['output'] . ' ' . $r2['output'])];
+        if (!$res['success']) {
+            return ['success' => false, 'error' => "Firewall kuralı eklenemedi: " . $res['output']];
         }
         writeAuditLog(null, 'firewall', $port, "Firewall kuralı eklendi: {$port}/{$protocol}" . ($sourceSubnet !== '' ? " (kaynak: {$sourceSubnet})" : ' (genel)'), 'create', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => "Kural eklendi: {$port}/{$protocol}" . ($sourceSubnet !== '' ? " ({$sourceSubnet})" : '')];
@@ -173,12 +176,10 @@ class FirewallService {
             return ['success' => false, 'error' => "Bu kural kritik bir portu (SSH/Web/SIP/RTP) kapsıyor — kaldırılamaz!"];
         }
 
-        $arg = '--remove-port=' . escapeshellarg("{$port}/{$protocol}");
-        $r1 = self::run($arg);
-        $r2 = self::run($arg . ' --permanent');
+        $res = self::runLiveAndPermanent(['remove-port', $port, $protocol]);
 
-        if (!$r1['success'] || !$r2['success']) {
-            return ['success' => false, 'error' => "Firewall kuralı kaldırılamadı: " . trim($r1['output'] . ' ' . $r2['output'])];
+        if (!$res['success']) {
+            return ['success' => false, 'error' => "Firewall kuralı kaldırılamadı: " . $res['output']];
         }
         writeAuditLog(null, 'firewall', $port, "Firewall kuralı kaldırıldı: {$port}/{$protocol}", 'delete', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => "Kural kaldırıldı: {$port}/{$protocol}"];
@@ -212,12 +213,10 @@ class FirewallService {
             return ['success' => false, 'error' => "Bu kural kritik bir servisi ({$m[1]}) kapsıyor — kaldırılamaz!"];
         }
 
-        $arg = '--remove-rich-rule=' . escapeshellarg($rule);
-        $r1 = self::run($arg);
-        $r2 = self::run($arg . ' --permanent');
+        $res = self::runLiveAndPermanent(['remove-rich-rule', $rule]);
 
-        if (!$r1['success'] || !$r2['success']) {
-            return ['success' => false, 'error' => "Kural kaldırılamadı: " . trim($r1['output'] . ' ' . $r2['output'])];
+        if (!$res['success']) {
+            return ['success' => false, 'error' => "Kural kaldırılamadı: " . $res['output']];
         }
         writeAuditLog(null, 'firewall', 'rich-rule', "Firewall rich-rule kaldırıldı: {$rule}", 'delete', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => 'Kural kaldırıldı.'];
