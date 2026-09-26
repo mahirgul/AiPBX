@@ -64,6 +64,13 @@ func (h *Hub) Run() {
 				firstConnect = true
 			}
 			h.clients[ext][client] = true
+
+			var onlineExts []string
+			for e, devs := range h.clients {
+				if len(devs) > 0 && e != ext {
+					onlineExts = append(onlineExts, e)
+				}
+			}
 			h.mu.Unlock()
 
 			log.Printf("[WS] Client connected: %s (%s) [Total devices for ext: %d]",
@@ -71,6 +78,17 @@ func (h *Hub) Run() {
 
 			if firstConnect {
 				h.broadcastPresence(ext, true)
+			}
+
+			if len(onlineExts) > 0 {
+				snapshotMsg, _ := json.Marshal(map[string]interface{}{
+					"event":      "presence_snapshot",
+					"extensions": onlineExts,
+				})
+				select {
+				case client.send <- snapshotMsg:
+				default:
+				}
 			}
 
 		case client := <-h.unregister:
@@ -98,6 +116,18 @@ func (h *Hub) IsOnline(ext string) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	return len(h.clients[ext]) > 0
+}
+
+func (h *Hub) GetOnlineExtensions() []string {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	var list []string
+	for ext, clients := range h.clients {
+		if len(clients) > 0 {
+			list = append(list, ext)
+		}
+	}
+	return list
 }
 
 func (h *Hub) broadcastPresence(ext string, isOnline bool) {
