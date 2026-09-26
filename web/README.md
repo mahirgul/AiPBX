@@ -71,7 +71,7 @@ Call routing/dialplan is deliberately **not** on Asterisk Realtime — it stays 
    ```bash
    vendor/bin/phinx migrate
    ```
-5. **Point Apache at the project root**, with `/src`, `/db`, `/vendor` denied from direct web access (see `etc/httpd/routing.conf.example` — adapt to your paths) and everything else routed through `index.php`.
+5. **Point Apache at the project root**, with `/src`, `/db`, `/vendor` denied from direct web access (see `etc/apache2/aipbx-routing.conf.example` — adapt to your paths) and everything else routed through `index.php`.
 6. **Wire up Asterisk**: point `pjsip.conf` at `#include "pbx/pjsip_*.conf"` (portal-generated) and `extensions.conf` at `#include "pbx/extensions_*.conf"`. Log in as an admin and save any PBX settings page once to trigger the first config generation.
 7. Log in with the seed admin account created by the baseline migration and change its password immediately.
 
@@ -80,7 +80,7 @@ Call routing/dialplan is deliberately **not** on Asterisk Realtime — it stays 
 - Secrets (DB credentials, AMI password, TURN secret) live only in `/etc/ai-pbx.env`, outside the web root and outside git. Nothing in this repository requires a real secret to be readable.
 - `db/`, `vendor/`, and `src/` are denied from direct HTTP access — only `index.php` (the front controller) and `api/*.php` are reachable.
 - The RBAC layer has a hardcoded circuit-breaker: the `roles` and `system_users` modules can never be revoked from the admin role, regardless of what the permission matrix says, to prevent administrative lockouts.
-- Sudo permissions for Firewall and Fail2ban are restricted via sudoers rules to specific binary invocations with strict input regex validation.
+- Root access is limited to a single helper, `/usr/local/sbin/aipbx-priv` (source: `conf/sbin/aipbx-priv`): sudoers grants the web user that script and nothing else, and every subcommand maps to one fixed firewall/fail2ban/postfix/service operation with regex-validated arguments.
 
 ## License
 

@@ -111,7 +111,7 @@ vendor/bin/phinx rollback    # undo the last one
 - **RBAC**: A per-module, per-action (`view`/`access`/`edit`/`delete`) permission matrix stored in `sys_role_permissions`, editable from `/roles`. Two modules (`roles`, `system_users`) have a hardcoded circuit-breaker in `auth.php::hasModulePermission()` that no permission-matrix row can override — this exists so a misconfigured role can never lock every admin out.
 - **CSRF**: Every state-changing form carries a token verified server-side; every `POST` handler in every Service checks it before touching the database.
 - **Secrets**: Never in source. Everything (`DB_PASS`, `AMI_PASS`, `TURN_SECRET`, ...) is read from `/etc/ai-pbx.env` at runtime — outside the web root, outside git.
-- **Firewall & Fail2ban Management**: Admin panel integrates live `firewalld` and `fail2ban` controls via `FirewallService` and `Fail2banService`. Calls are dispatched via a locked-down sudoers configuration with strict regex whitelisting on IP addresses, ports, and service names.
+- **Firewall & Fail2ban Management**: Admin panel integrates live `firewalld` and `fail2ban` controls via `FirewallService` and `Fail2banService`. Every privileged call goes through `PrivHelper` → `sudo /usr/local/sbin/aipbx-priv`, the only command sudoers grants the web user; the helper whitelists each operation and regex-validates IP addresses, ports, jail and service names, so a code-execution bug in the portal cannot reach arbitrary root commands.
 - **Ownership boundary**: Application PHP files are `root:root`, mode 644/755 — the app cannot write to its own source. Only upload/output directories (fax storage, custom sounds) are writable by the runtime user.
 
 ## Internationalization
