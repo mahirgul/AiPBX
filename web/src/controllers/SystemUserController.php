@@ -12,12 +12,18 @@ class SystemUserController extends BaseController
 
         $message = '';
         $error = '';
+        $generated_password = '';
+        $generated_for = '';
         $modules_definition = RoleRepository::modulesDefinition();
 
         if (static::isPost()) {
             if (isset($_POST['save_system_user'])) {
                 $res = PBXHelper::saveUser($_POST);
                 if ($res['success']) $message = $res['message']; else $error = $res['error'];
+                // Otomatik üretilen şifre: yalnızca bu yanıtta, kapatılana kadar
+                // duran bir kutuda gösterilir (6 sn'lik bildirimde kaybolurdu).
+                $generated_password = $res['generated_password'] ?? '';
+                $generated_for = trim($_POST['username'] ?? '');
             } elseif (isset($_POST['send_activation_mail'])) {
                 $csrf = $_POST['csrf_token'] ?? '';
                 if (!verifyCSRFToken($csrf)) {
@@ -97,6 +103,8 @@ class SystemUserController extends BaseController
             'users' => $users,
             'all_roles' => $all_roles,
             'sys_roles_full' => $sys_roles_full,
+            'generated_password' => $generated_password,
+            'generated_for' => $generated_for,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';
     }

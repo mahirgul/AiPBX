@@ -130,6 +130,70 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
         $authRes = QrLoginService::authenticateMobile($token, 'Test-Device', '127.0.0.1');
         $this->assertFalse($authRes['success']);
-        $this->assertStringContainsString('süresi (10 dakika) dolmuş', $authRes['error']);
+        $this->assertStringContainsString('süresi dolmuş', $authRes['error']);
+    }
+
+    public function testEmailLinkInspectionDoesNotConsumeToken(): void
+    {
+        $link = QrLoginService::createEmailLink($this->testUserId);
+        $this->assertTrue($link['success']);
+        $this->assertStringContainsString('/mobile-login?token=', $link['url']);
+        $token = substr($link['url'], strpos($link['url'], 'token=') + 6);
+
+        // E-posta tarayıcıları sayfayı birkaç kez açabilir: kod harcanmamalı.
+        for ($i = 0; $i < 3; $i++) {
+            $info = QrLoginService::inspectToken($token);
+            $this->assertTrue($info['valid']);
+        }
+        $this->assertSame($this->testExtension, $info['user']['extension']);
+
+        // 7 gün geçerli
+        $exp = $this->db->prepare('SELECT purpose, expires_at FROM sys_user_qr_tokens WHERE token = ?');
+        $exp->execute([$token]);
+        $row = $exp->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('email', $row['purpose']);
+        $this->assertGreaterThan(time() + 6 * 86400, strtotime($row['expires_at']));
+
+        // Uygulama girişi kodu harcar; sonra sayfa "kullanılmış" der.
+        $auth = QrLoginService::authenticateMobile($token, 'Test-Android', '127.0.0.1');
+        $this->assertTrue($auth['success']);
+        $this->assertSame('used', QrLoginService::inspectToken($token)['reason']);
+    }
+
+    public function testNewEmailLinkRevokesPreviousOne(): void
+    {
+        $first = QrLoginService::createEmailLink($this->testUserId);
+        $second = QrLoginService::createEmailLink($this->testUserId);
+        $t1 = substr($first['url'], strpos($first['url'], 'token=') + 6);
+        $t2 = substr($second['url'], strpos($second['url'], 'token=') + 6);
+
+        $this->assertSame('invalid', QrLoginService::inspectToken($t1)['reason']);
+        $this->assertTrue(QrLoginService::inspectToken($t2)['valid']);
+    }
+
+    public function testGoogleCodeIsNotAcceptedOnMobileLoginPage(): void
+    {
+        $code = QrLoginService::createGoogleCode($this->testUserId);
+        $this->assertTrue($code['success']);
+        // Yalnızca uygulamanın API ile değiş tokuşu içindir, sayfada gösterilmez.
+        $this->assertFalse(QrLoginService::inspectToken($code['token'])['valid']);
+        $auth = QrLoginService::authenticateMobile($code['token'], 'Test-Android', '127.0.0.1');
+        $this->assertTrue($auth['success']);
+        $this->assertSame($this->testExtension, $auth['response']['user']['extension']);
+    }
+
+    public function testMalformedTokenIsRejectedWithoutQuery(): void
+    {
+        $this->assertSame('invalid', QrLoginService::inspectToken("x' OR 1=1 --")['reason']);
+        $this->assertSame('invalid', QrLoginService::inspectToken('')['reason']);
+    }
+
+    public function testInvitationEmailCreatesMobileLinkForUsersWithExtension(): void
+    {
+        $res = UserInvitationService::sendInvitationEmail($this->testUserId, true);
+        $this->assertTrue($res['success']);
+        $cnt = $this->db->prepare("SELECT COUNT(*) FROM sys_user_qr_tokens WHERE user_id = ? AND purpose = 'email' AND used_at IS NULL");
+        $cnt->execute([$this->testUserId]);
+        $this->assertSame(1, (int)$cnt->fetchColumn());
     }
 }
