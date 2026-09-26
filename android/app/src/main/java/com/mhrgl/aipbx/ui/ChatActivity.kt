@@ -21,6 +21,7 @@ import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.data.ChatEventListener
+import com.mhrgl.aipbx.data.ChatUploadPrep
 import com.mhrgl.aipbx.data.ChatWebSocketManager
 import com.mhrgl.aipbx.databinding.DialogGroupInfoBinding
 import com.mhrgl.aipbx.model.ChatConversation
@@ -245,6 +246,11 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             tvAvatar.text = targetName.take(1).uppercase()
             tvAvatar.backgroundTintList = null
 
+            // Başlık yalnızca presence OLAYLARIYLA güncelleniyordu; karşı taraf
+            // zaten bağlıysa (olay çoktan geçmiş) hep "Çevrimdışı" kalıyordu.
+            // Başlangıç durumu soketin bildiği anlık listeden alınır.
+            applyTargetPresence(ChatWebSocketManager.instance.isOnline(targetExt))
+
             btnCall.setOnClickListener {
                 if (targetExt.isNotEmpty()) {
                     val intent = Intent(this, DialerActivity::class.java).apply {
@@ -292,7 +298,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         val myExt = prefs.extension ?: ""
         val baseUrl = prefs.serverUrl ?: ""
 
-        adapter = ChatMessageAdapter(myExt, baseUrl, isGroup)
+        adapter = ChatMessageAdapter(myExt, baseUrl, isGroup) { prefs.token }
         val lm = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -382,35 +388,21 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch
 
-            val tempFile = withContext(Dispatchers.IO) {
-                try {
-                    val cr = contentResolver
-                    val mime = cr.getType(uri) ?: if (type == "image") "image/jpeg" else "application/octet-stream"
-                    val ext = if (type == "image") ".jpg" else ".bin"
-                    val file = File.createTempFile("chat_upload_", ext, cacheDir)
-
-                    cr.openInputStream(uri)?.use { input ->
-                        FileOutputStream(file).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    Pair(file, mime)
-                } catch (e: Exception) {
-                    null
-                }
+            val prepared = withContext(Dispatchers.IO) {
+                ChatUploadPrep.prepare(this@ChatActivity, uri, type)
             }
 
-            if (tempFile == null) {
+            if (prepared == null) {
                 Toast.makeText(this@ChatActivity, "Dosya okunamadı.", Toast.LENGTH_SHORT).show()
                 llUploadPreview.visibility = View.GONE
                 return@launch
             }
 
-            val (file, mime) = tempFile
-            val uploadRes = apiClient.uploadChatFile(sUrl, token, file, mime)
+            val uploadRes = apiClient.uploadChatFile(sUrl, token, prepared.file, prepared.mimeType)
+            prepared.cleanup()
             uploadRes.onSuccess { res ->
                 pendingUpload = res
-                tvUploadFilename.text = res.fileName ?: file.name
+                tvUploadFilename.text = res.fileName ?: prepared.file.name
             }.onFailure {
                 Toast.makeText(this@ChatActivity, "Yükleme hatası: ${it.message}", Toast.LENGTH_LONG).show()
                 llUploadPreview.visibility = View.GONE
@@ -731,19 +723,26 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         }
     }
 
+    private fun applyTargetPresence(isOnline: Boolean) {
+        val tvStatus = findViewById<TextView>(R.id.tvTargetStatus)
+        val dot = findViewById<View>(R.id.vTargetOnlineDot)
+        tvStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
+        tvStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
+        dot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
+        )
+    }
+
     override fun onPresence(extension: String, isOnline: Boolean) {
         if (!isGroup && extension == targetExt) {
-            runOnUiThread {
-                val tvStatus = findViewById<TextView>(R.id.tvTargetStatus)
-                val dot = findViewById<View>(R.id.vTargetOnlineDot)
-                tvStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
-                tvStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
-                dot.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
-                )
-            }
+            runOnUiThread { applyTargetPresence(isOnline) }
         } else if (isGroup) {
-            loadGroupDetails()
+            // Anlık görüntü her dahili için ayrı olay üretiyor — yalnızca bu
+            // grubun üyesiyse (ya da üyeler henüz bilinmiyorsa) detayları yenile.
+            val members = currentGroupDetails?.participants
+            if (members == null || members.any { it.extension == extension }) {
+                loadGroupDetails()
+            }
         }
     }
 

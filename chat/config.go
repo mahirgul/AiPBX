@@ -15,6 +15,9 @@ type Config struct {
 	SecretKey    string
 	UploadDir    string
 	PortalDomain string
+	// Timezone, portalla aynı TIMEZONE ayarı (ör. Europe/Istanbul) — mesaj
+	// saatleri bu dilimde gösterilir. Veritabanında her zaman UTC saklanır.
+	Timezone string
 }
 
 func LoadConfig() (*Config, error) {
@@ -27,6 +30,7 @@ func LoadConfig() (*Config, error) {
 		SecretKey:    "",
 		UploadDir:    "/var/lib/aipbx/chat_files",
 		PortalDomain: "localhost",
+		Timezone:     "Europe/Istanbul",
 	}
 
 	var chatJwtSecret, turnSecret string
@@ -68,6 +72,10 @@ func LoadConfig() (*Config, error) {
 					cfg.Port = v
 				case "CHAT_UPLOAD_DIR":
 					cfg.UploadDir = v
+				case "TIMEZONE":
+					if v != "" {
+						cfg.Timezone = v
+					}
 				}
 			}
 		}

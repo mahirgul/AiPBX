@@ -16,7 +16,9 @@ import com.mhrgl.aipbx.model.ChatMessage
 class ChatMessageAdapter(
     private val myExtension: String,
     private val baseUrl: String,
-    private var isGroup: Boolean = false
+    private var isGroup: Boolean = false,
+    /** Güncel oturum tokeni — medya indirmek/açmak için (token yenilenebildiği için sağlayıcı). */
+    private val tokenProvider: () -> String? = { null }
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val messages = mutableListOf<ChatMessage>()
@@ -123,11 +125,13 @@ class ChatMessageAdapter(
             if (m.msgType == "image" && !m.attachmentUrl.isNullOrEmpty()) {
                 ivImage.visibility = View.VISIBLE
                 val fullImageUrl = resolveMediaUrl(m.attachmentUrl)
-                SimpleImageLoader.load(fullImageUrl, ivImage)
+                // Listede sunucunun ürettiği küçük resim (≈20 KB) kullanılır;
+                // yoksa orijinal görsele düşülür.
+                SimpleImageLoader.load(resolveMediaUrl(thumbPathFor(m.attachmentUrl)), ivImage, tokenProvider(), fullImageUrl)
 
                 ivImage.setOnClickListener {
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullImageUrl))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withToken(fullImageUrl)))
                         ctx.startActivity(intent)
                     } catch (e: Exception) {}
                 }
@@ -144,7 +148,7 @@ class ChatMessageAdapter(
                 llFileAttachment.setOnClickListener {
                     try {
                         val fullFileUrl = resolveMediaUrl(m.attachmentUrl)
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullFileUrl))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withToken(fullFileUrl)))
                         ctx.startActivity(intent)
                     } catch (e: Exception) {}
                 }
@@ -166,6 +170,28 @@ class ChatMessageAdapter(
                 hash = (hash * 31 + c.code) and 0x7FFFFFFF
             }
             return palette[hash % palette.size]
+        }
+
+        /**
+         * Harici tarayıcı/görüntüleyici Authorization başlığı gönderemez ve
+         * sohbet çerezine sahip değil; sunucu /chat/media/ için ?token= kabul ediyor.
+         */
+        private fun withToken(url: String): String {
+            val token = tokenProvider()
+            if (token.isNullOrEmpty()) return url
+            val sep = if (url.contains('?')) '&' else '?'
+            return url + sep + "token=" + Uri.encode(token)
+        }
+
+        /** /chat/media/images/<ad>.<uzantı> → /chat/media/thumbs/<ad>_thumb.<uzantı> (sunucunun adlandırması). */
+        private fun thumbPathFor(path: String): String {
+            val marker = "/media/images/"
+            val idx = path.indexOf(marker)
+            if (idx < 0) return path
+            val name = path.substring(idx + marker.length)
+            val dot = name.lastIndexOf('.')
+            if (dot <= 0) return path
+            return path.substring(0, idx) + "/media/thumbs/" + name.substring(0, dot) + "_thumb" + name.substring(dot)
         }
 
         private fun resolveMediaUrl(path: String): String {

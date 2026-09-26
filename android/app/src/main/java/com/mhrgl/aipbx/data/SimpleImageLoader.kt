@@ -22,7 +22,13 @@ object SimpleImageLoader {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    fun load(urlStr: String, imageView: ImageView) {
+    /**
+     * @param authToken sohbet medyası (/chat/media/…) oturum ister — verilirse
+     *   Authorization: Bearer başlığıyla indirilir, yoksa sunucu 401 döner.
+     * @param fallbackUrl ilk adres indirilemezse denenecek adres (ör. küçük
+     *   resim yoksa orijinal görsel).
+     */
+    fun load(urlStr: String, imageView: ImageView, authToken: String? = null, fallbackUrl: String? = null) {
         imageView.tag = urlStr
 
         val cached = memoryCache.get(urlStr)
@@ -35,7 +41,8 @@ object SimpleImageLoader {
 
         scope.launch {
             val bitmap = withContext(Dispatchers.IO) {
-                downloadBitmap(urlStr)
+                downloadBitmap(urlStr, authToken)
+                    ?: fallbackUrl?.let { downloadBitmap(it, authToken) }
             }
             if (bitmap != null && imageView.tag == urlStr) {
                 memoryCache.put(urlStr, bitmap)
@@ -44,14 +51,21 @@ object SimpleImageLoader {
         }
     }
 
-    private fun downloadBitmap(urlStr: String): Bitmap? {
+    private fun downloadBitmap(urlStr: String, authToken: String?): Bitmap? {
         return try {
             val url = URL(urlStr)
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 10000
             conn.readTimeout = 15000
             conn.instanceFollowRedirects = true
+            if (!authToken.isNullOrEmpty()) {
+                conn.setRequestProperty("Authorization", "Bearer $authToken")
+            }
             conn.connect()
+            if (conn.responseCode !in 200..299) {
+                conn.disconnect()
+                return null
+            }
 
             val input: InputStream = conn.inputStream
             val bytes = input.readBytes()

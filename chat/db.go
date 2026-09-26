@@ -75,8 +75,26 @@ type Contact struct {
 	UnreadCount int    `json:"unread_count"`
 }
 
+// Zaman damgaları DB'de UTC saklanır (oturum time_zone'u +00:00'a sabitleniyor,
+// NOW() sunucunun işletim sistemi saat diliminden bağımsız). İstemcilere giden
+// metin ise portalın TIMEZONE diliminde üretilir — önceden sunucu UTC iken
+// sohbet saatleri portaldan 3 saat geri görünüyordu.
+const timeLayout = "2006-01-02 15:04:05"
+
+var displayLoc = time.Local
+
+func fmtTime(t time.Time) string {
+	return t.In(displayLoc).Format(timeLayout)
+}
+
 func InitDB(cfg *Config) error {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=true&loc=Local",
+	if loc, err := time.LoadLocation(cfg.Timezone); err == nil {
+		displayLoc = loc
+	} else {
+		log.Printf("[DB] Unknown TIMEZONE %q, falling back to system local time: %v", cfg.Timezone, err)
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=true&loc=UTC&time_zone=%%27%%2B00%%3A00%%27",
 		cfg.DBUser, cfg.DBPass, cfg.DBHost, cfg.DBName)
 
 	var err error
@@ -192,9 +210,9 @@ func GetConversations(ext string) ([]Conversation, error) {
 			&cv.MemberCount, &cv.MyRole,
 		)
 		if err == nil {
-			cv.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+			cv.CreatedAt = fmtTime(createdAt)
 			if lastMsgAt.Valid {
-				tStr := lastMsgAt.Time.Format("2006-01-02 15:04:05")
+				tStr := fmtTime(lastMsgAt.Time)
 				cv.LastMessageAt = &tStr
 			}
 			convs = append(convs, cv)
@@ -230,9 +248,9 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		// Ensure both participants are active (left_at is cleared)
 		_, _ = db.Exec("UPDATE chat_participants SET left_at = NULL WHERE conversation_id = ? AND extension IN (?, ?)", cv.ID, ext1, ext2)
 
-		cv.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+		cv.CreatedAt = fmtTime(createdAt)
 		if lastMsgAt.Valid {
-			tStr := lastMsgAt.Time.Format("2006-01-02 15:04:05")
+			tStr := fmtTime(lastMsgAt.Time)
 			cv.LastMessageAt = &tStr
 		}
 		targetExt := ext2
@@ -284,7 +302,7 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 	cv.Type = "direct"
 	cv.DirectKey = directKey
 	cv.CreatedBy = creatorExt
-	cv.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
+	cv.CreatedAt = fmtTime(time.Now())
 	cv.MemberCount = 2
 	cv.MyRole = "member"
 
@@ -352,7 +370,7 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			&m.SystemEvent, &m.SystemMeta, &createdAt,
 		)
 		if err == nil {
-			m.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+			m.CreatedAt = fmtTime(createdAt)
 			list = append(list, m)
 		}
 	}
@@ -433,7 +451,7 @@ func SaveMessage(convID int, senderExt, msgType, message, attachmentURL, fileNam
 		FileName:       fileName,
 		FileSize:       fileSize,
 		MimeType:       mimeType,
-		CreatedAt:      time.Now().Format("2006-01-02 15:04:05"),
+		CreatedAt:      fmtTime(time.Now()),
 	}, nil
 }
 
@@ -522,9 +540,9 @@ func GetConversationByID(convID int) (*Conversation, error) {
 	if err != nil {
 		return nil, err
 	}
-	cv.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+	cv.CreatedAt = fmtTime(createdAt)
 	if lastMsgAt.Valid {
-		tStr := lastMsgAt.Time.Format("2006-01-02 15:04:05")
+		tStr := fmtTime(lastMsgAt.Time)
 		cv.LastMessageAt = &tStr
 	}
 	return &cv, nil
@@ -647,7 +665,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		return nil, nil, err
 	}
 
-	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	nowStr := fmtTime(time.Now())
 	sysMsg := &Message{
 		ID:             sysMsgID,
 		ConversationID: convID,
@@ -703,7 +721,7 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 		var pt Participant
 		var joinedAt time.Time
 		if err := rows.Scan(&pt.Extension, &pt.FullName, &pt.Role, &joinedAt); err == nil {
-			pt.JoinedAt = joinedAt.Format("2006-01-02 15:04:05")
+			pt.JoinedAt = fmtTime(joinedAt)
 			if pt.Extension == requesterExt {
 				conv.MyRole = pt.Role
 			}
@@ -819,7 +837,7 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 		Message:        sysMsgText,
 		SystemEvent:    "member_added",
 		SystemMeta:     sysMeta,
-		CreatedAt:      time.Now().Format("2006-01-02 15:04:05"),
+		CreatedAt:      fmtTime(time.Now()),
 	}
 
 	return added, sysMsg, nil
@@ -1046,7 +1064,7 @@ func SaveSystemMessage(convID int, event, actorExt, targetExt, text, meta string
 		Message:        text,
 		SystemEvent:    event,
 		SystemMeta:     meta,
-		CreatedAt:      time.Now().Format("2006-01-02 15:04:05"),
+		CreatedAt:      fmtTime(time.Now()),
 	}, nil
 }
 
