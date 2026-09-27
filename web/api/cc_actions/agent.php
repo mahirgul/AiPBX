@@ -71,13 +71,10 @@ if ($action === 'pause') {
     if (empty($reason)) $reason = 'Mola';
 
     if (!empty($user_ext)) {
-        // Asterisk CLI "reason" argümanı boşluk içerdiğinde ("Yemek Molası"
-        // gibi) tırnaksız gönderilirse CLI parser'ı bunu birden fazla
-        // argüman sanıp komutu reddediyor (Usage: hatası).
-        $reason_cli = str_replace('"', '', $reason);
-        // Asterisk: Belirli bir kuyruk adı verilmediğinde üyenin dahil olduğu TÜM kuyruklarda mola verilir
-        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n reason \"$reason_cli\""), $out);
-        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$user_ext reason \"$reason_cli\""), $out);
+        // Önceden burada "queue pause member X reason Y" gönderiliyordu —
+        // Asterisk gerekçeyi kuyruk adı olmadan kabul etmediği için komut
+        // "Usage" ile reddediliyor, moladaki ajana çağrı gitmeye devam ediyordu.
+        QueueHelper::pauseInAsterisk((string)$user_ext, $reason);
 
         withAgentPauseLock($db, $user_ext, function() use ($db, $user_ext, $user_name, $reason) {
             try {
@@ -200,7 +197,11 @@ if ($action === 'auto_login') {
                 if ($active_reason === false) {
                     @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$user_ext@from-internal-pbx/n queue $q_name"), $out);
                 } else {
-                    @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n queue $q_name reason $active_reason"), $out);
+                    // Gerekçe tırnaklı olmalı: "Yemek Molası" gibi boşluklu bir
+                    // gerekçe tırnaksız gidince CLI "Usage" ile reddediyor ve
+                    // moladaki ajan kuyrukta AKTİF kalıyordu.
+                    $active_reason_cli = str_replace('"', '', (string)$active_reason);
+                    @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n queue $q_name reason \"$active_reason_cli\""), $out);
                 }
             } else {
                 // If not assigned to this queue, strictly remove extension from Asterisk queue
