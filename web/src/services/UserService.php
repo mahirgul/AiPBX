@@ -53,6 +53,16 @@ class UserService {
                 $allowed_phone_mode = formatPhoneModes(parsePhoneModes($raw));
             }
 
+            // Kullanıcı adı DB'de UNIQUE (hata mesajı ham PDO hatası olurdu);
+            // dahili numara ise HİÇ kontrol edilmiyordu — iki kullanıcıya aynı
+            // dahili verilebiliyordu (aynı PJSIP endpoint'i iki hesap yazıyordu).
+            if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE username = ? AND id != ?', [$username, $user_id]) > 0) {
+                throw new \Exception("'{$username}' kullanıcı adı zaten kullanılıyor!");
+            }
+            if ($extension !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE extension = ? AND id != ?', [$extension, $user_id]) > 0) {
+                throw new \Exception("{$extension} numaralı dahili başka bir kullanıcıya atanmış!");
+            }
+
             $valid_roles = array_column(DBHelper::fetchAll('SELECT role_key FROM sys_roles'), 'role_key');
             if (!in_array($role, $valid_roles, true)) {
                 throw new \Exception("Geçersiz sistem rolü: '{$role}'");
@@ -144,7 +154,8 @@ class UserService {
                 writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'create', $_SESSION['user_id'] ?? null);
 
                 // E-posta tanımlıysa otomatik aktivasyon ve şifre belirleme maili gönder
-                if (!empty($email)) {
+                // (CSV içe aktarmada admin davetleri kapatabilir: skip_invitation).
+                if (!empty($email) && empty($data['skip_invitation'])) {
                     require_once __DIR__ . '/UserInvitationService.php';
                     $inviteRes = UserInvitationService::sendInvitationEmail($user_id, true);
                     if ($inviteRes['success']) {

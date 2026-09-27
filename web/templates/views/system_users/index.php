@@ -14,6 +14,100 @@
     </div>
 </div>
 <?php endif; ?>
+<?php if (!empty($import_preview)): ?>
+<div class="card" style="margin-bottom: 16px; border: 1px solid var(--primary);">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-file-csv" style="color: var(--primary);"></i> <?php echo t('system_users.import_preview_title'); ?> — <?php echo htmlspecialchars($import_preview['file_name']); ?></div>
+    </div>
+    <div style="padding: 0 16px 16px 16px;">
+        <?php
+        $total = count($import_preview['items']);
+        $bad = $total - $import_preview['valid_count'];
+        ?>
+        <p style="font-size: 13px; margin: 0 0 12px 0;">
+            <?php echo sprintf(t('system_users.import_preview_summary'), $total, $import_preview['valid_count'], $bad); ?>
+            <?php if ($import_preview['send_invitations']): ?><br><i class="fas fa-envelope"></i> <?php echo t('system_users.import_will_invite'); ?><?php endif; ?>
+        </p>
+        <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+            <table class="table">
+                <thead><tr>
+                    <th>#</th><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th>
+                    <th><?php echo t('system_users.field_email'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th>
+                    <th><?php echo t('system_users.field_role'); ?></th><th><?php echo t('system_users.import_col_status'); ?></th>
+                </tr></thead>
+                <tbody>
+                <?php foreach ($import_preview['items'] as $line => $item): $r = $item['row']; ?>
+                    <tr style="<?php echo $item['errors'] ? 'background: rgba(239,68,68,0.08);' : ''; ?>">
+                        <td><?php echo (int) $line; ?></td>
+                        <td><?php echo htmlspecialchars($r['username']); ?></td>
+                        <td><?php echo htmlspecialchars($r['full_name']); ?></td>
+                        <td><?php echo htmlspecialchars($r['email']); ?></td>
+                        <td><?php echo htmlspecialchars($r['extension']); ?></td>
+                        <td><?php echo htmlspecialchars($r['role']); ?></td>
+                        <td>
+                            <?php if ($item['errors']): ?>
+                                <span style="color: var(--danger); font-size: 12px;"><i class="fas fa-times-circle"></i> <?php echo htmlspecialchars(implode('; ', $item['errors'])); ?></span>
+                            <?php else: ?>
+                                <span style="color: var(--success); font-size: 12px;"><i class="fas fa-check-circle"></i> <?php echo t('system_users.import_row_ok'); ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+            <a href="/system-users" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> <?php echo t('system_users.import_cancel'); ?></a>
+            <?php if ($import_preview['valid_count'] > 0): ?>
+            <form method="POST" style="margin: 0;" onsubmit="this.querySelector('button').disabled = true;">
+                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                <input type="hidden" name="csv_import" value="1">
+                <input type="hidden" name="import_key" value="<?php echo htmlspecialchars($import_preview['key']); ?>">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-import"></i> <?php echo sprintf(t('system_users.import_confirm'), $import_preview['valid_count']); ?></button>
+            </form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php if (!empty($import_result)): ?>
+<div class="card" style="margin-bottom: 16px; border: 1px solid var(--success);">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-check-circle" style="color: var(--success);"></i> <?php echo t('system_users.import_result_title'); ?></div>
+    </div>
+    <div style="padding: 0 16px 16px 16px; font-size: 13px;">
+        <p style="margin: 0 0 10px 0;"><?php echo sprintf(t('system_users.import_result_summary'), $import_result['created'], count($import_result['failed']), $import_result['invited']); ?></p>
+        <?php if ($import_result['failed']): ?>
+            <div style="color: var(--danger); margin-bottom: 12px;">
+                <?php foreach ($import_result['failed'] as $line => $f): ?>
+                    <div><i class="fas fa-times-circle"></i> #<?php echo (int) $line; ?> <?php echo htmlspecialchars($f['username']); ?>: <?php echo htmlspecialchars($f['error']); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($import_result['generated']): ?>
+            <div style="border: 2px solid var(--warning); border-radius: 10px; padding: 12px 14px;">
+                <div style="font-weight: 700; margin-bottom: 4px;"><i class="fas fa-key" style="color: var(--warning);"></i> <?php echo t('system_users.import_generated_title'); ?></div>
+                <div style="color: var(--text-muted); margin-bottom: 10px;"><?php echo t('system_users.generated_password_hint'); ?></div>
+                <table class="table" style="margin-bottom: 10px;">
+                    <thead><tr><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th><th><?php echo t('system_users.field_password'); ?></th></tr></thead>
+                    <tbody>
+                    <?php
+                    $csvOut = "\xEF\xBB\xBFkullanici_adi;ad_soyad;dahili;sifre\r\n";
+                    foreach ($import_result['generated'] as $g):
+                        $csvOut .= implode(';', array_map(fn($v) => str_replace([';', "\r", "\n"], ' ', (string) $v), [$g['username'], $g['full_name'], $g['extension'], $g['password']])) . "\r\n";
+                    ?>
+                        <tr><td><?php echo htmlspecialchars($g['username']); ?></td><td><?php echo htmlspecialchars($g['full_name']); ?></td><td><?php echo htmlspecialchars($g['extension']); ?></td><td><code style="user-select: all;"><?php echo htmlspecialchars($g['password']); ?></code></td></tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <a class="btn btn-secondary btn-sm" download="olusturulan_sifreler.csv" href="data:text/csv;charset=utf-8;base64,<?php echo base64_encode($csvOut); ?>">
+                    <i class="fas fa-download"></i> <?php echo t('system_users.import_download_passwords'); ?>
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -25,6 +119,9 @@
             </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openRolesModal()" title="<?php echo t('system_users.roles_tooltip'); ?>">
                 <i class="fas fa-user-tag"></i> <?php echo t('system_users.roles_tooltip'); ?>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="openUserImportModal()" title="<?php echo t('system_users.import_title'); ?>">
+                <i class="fas fa-file-csv"></i> <?php echo t('system_users.import_button'); ?>
             </button>
             <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" title="<?php echo t('system_users.new_tooltip'); ?>">
                 <i class="fas fa-user-plus"></i>
@@ -400,6 +497,42 @@
 
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('system_users.save_role'); ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CSV Import Modal -->
+<div class="modal-overlay" id="userImportModal">
+    <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-file-csv" style="color: var(--primary);"></i> <?php echo t('system_users.import_title'); ?></h3>
+            <button class="btn btn-secondary" onclick="closeUserImportModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" enctype="multipart/form-data" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                <input type="hidden" name="csv_preview" value="1">
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;"><?php echo t('system_users.import_help'); ?></p>
+                <p style="font-size: 13px;"><a href="/system-users?download=user_import_template"><i class="fas fa-download"></i> <?php echo t('system_users.import_template'); ?></a></p>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.import_file'); ?></label>
+                    <input type="file" name="csv_file" accept=".csv,text/csv" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.import_default_role'); ?></label>
+                    <select name="default_role" class="form-control">
+                        <?php foreach ($all_roles as $r): ?>
+                            <option value="<?php echo htmlspecialchars($r['role_key']); ?>" <?php echo $r['role_key'] === 'cc_agent' ? 'selected' : ''; ?>><?php echo htmlspecialchars($r['role_name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <label style="display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 16px;">
+                    <input type="checkbox" name="send_invitations" value="1" checked> <?php echo t('system_users.import_send_invitations'); ?>
+                </label>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> <?php echo t('system_users.import_check'); ?></button>
                 </div>
             </form>
         </div>
