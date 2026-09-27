@@ -19,6 +19,8 @@ type User struct {
 	FullName  string `json:"full_name"`
 	Role      string `json:"role"`
 	IsActive  bool   `json:"is_active"`
+	// Token geri çekme sayacı (sys_users.token_epoch); yalnızca imza doğrulamada kullanılır.
+	TokenEpoch int64 `json:"-"`
 }
 
 type Conversation struct {
@@ -118,10 +120,10 @@ func InitDB(cfg *Config) error {
 }
 
 func GetUserByID(id int) (*User, error) {
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active FROM sys_users WHERE id = ? AND is_active = 1 LIMIT 1", id)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 LIMIT 1", id)
 	var u User
 	var active int
-	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active)
+	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active, &u.TokenEpoch)
 	if err != nil {
 		return nil, err
 	}

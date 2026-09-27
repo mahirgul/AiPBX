@@ -95,7 +95,8 @@ class SecurityController extends BaseController
                         $error = t('security.password_mismatch', 'Yeni şifreler birbiriyle uyuşmuyor.');
                     } else {
                         $newHash = password_hash($newPass, PASSWORD_DEFAULT);
-                        $upd = $db->prepare('UPDATE sys_users SET password_hash = ? WHERE id = ?');
+                        // Şifre değişince telefonlardaki oturumlar da düşer (token_epoch).
+                        $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, token_epoch = token_epoch + 1 WHERE id = ?');
                         $upd->execute([$newHash, $userId]);
                         if (function_exists('writeAuditLog')) {
                             writeAuditLog($userId, 'sys_users', $userId, "Kullanıcı '{$user['username']}' web giriş şifresini değiştirdi.", 'password_change');

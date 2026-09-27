@@ -65,23 +65,29 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 		return nil, fmt.Errorf("token expired")
 	}
 
-	// Compute HMAC SHA-256
-	mac := hmac.New(sha256.New, []byte(secretKey))
-	mac.Write([]byte(userIDStr + ":" + expiresAtStr))
-	expectedSig := hex.EncodeToString(mac.Sum(nil))
-
-	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
-		return nil, fmt.Errorf("invalid signature")
-	}
-
 	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
+	if err != nil || strconv.Itoa(userID) != userIDStr {
 		return nil, fmt.Errorf("invalid user id")
 	}
 
 	user, err := GetUserByID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("user not found or inactive: %w", err)
+	}
+
+	// İmzalanan metin PHP'deki mobileTokenPayload() ile aynı: token_epoch 0
+	// iken "id:exp", değilse "id:exp:epoch". Şifre sıfırlanınca epoch artar ve
+	// eski token'lar burada düşer (önbellek en fazla 60 sn gecikir).
+	payload := userIDStr + ":" + expiresAtStr
+	if user.TokenEpoch > 0 {
+		payload += ":" + strconv.FormatInt(user.TokenEpoch, 10)
+	}
+	mac := hmac.New(sha256.New, []byte(secretKey))
+	mac.Write([]byte(payload))
+	expectedSig := hex.EncodeToString(mac.Sum(nil))
+
+	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
+		return nil, fmt.Errorf("invalid signature")
 	}
 
 	if user.Extension == "" {
