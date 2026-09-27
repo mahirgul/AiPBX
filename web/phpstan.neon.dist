@@ -20,6 +20,7 @@ parameters:
     scanFiles:
         - config.php
     tmpDir: .phpstan-cache
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # config.php'deki define() sabitleri çalışma anında /etc/ai-pbx.env'den
         # okunuyor; PHPStan bunları göremiyor.

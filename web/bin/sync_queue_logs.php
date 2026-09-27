@@ -7,7 +7,7 @@
  * Yerel kolonlar: time (datetime string), callid, queuename, agent, event, data1..data5.
  * Hedef: `cc_queue_logs` — portal raporlarının okuduğu tablo: time_id (epoch int), call_id, queue_name, ...
  */
-require_once '/var/www/html/config.php';
+require_once dirname(__DIR__) . '/config.php';
 
 try {
     $db = getDB();
