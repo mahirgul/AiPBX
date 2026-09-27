@@ -8,8 +8,10 @@
  * GÜVENLİK: Bu araç SADECE okur/render eder. Hiçbir POST, servis yazımı,
  * config üretimi veya Asterisk reload'u tetiklemez.
  *
- * NOT: root olarak çalıştırılır — /var/www/html/bin sertleştirme gereği
- * drwxr-x--- root:root, asterisk kullanıcısı erişemiyor.
+ * NOT: root olarak çalıştırılır. bin/ dizini root'a ait ve 755 OLMALI:
+ * Asterisk özellik kodu/faks betiklerini asterisk kullanıcısıyla, /usr/local/bin
+ * bağlantıları üzerinden çalıştırıyor. 2026-09-27'ye kadar elle 750 yapılmıştı
+ * ve *60/*72 özellik kodları sessizce çalışmıyordu.
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
 
