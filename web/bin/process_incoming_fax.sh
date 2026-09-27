@@ -14,13 +14,17 @@ log() {
 # Ortam fallback'leri — kodda statik değer yok (kural: AGENTS.md)
 if [ -r /etc/ai-pbx.env ]; then
     . /etc/ai-pbx.env
-elif [ -r /etc/kbu-portal.env ]; then
-    . /etc/kbu-portal.env
 fi
 
 TIF_FILE="$1"
-EXTEN="$2"
-CALLERID="$3"
+# Değerler aşağıda SQL'e ve dosya yollarına giriyor: dialplan zaten süzüyor,
+# burada da yalnızca beklenen karakterler kalır (ikinci savunma hattı).
+EXTEN="$(printf '%s' "$2" | tr -cd '0-9+')"
+CALLERID="$(printf '%s' "$3" | tr -cd '0-9+')"
+if ! [[ "$TIF_FILE" =~ ^/var/spool/asterisk/fax/[A-Za-z0-9_.+-]+\.tif$ ]]; then
+    log "ERROR: unexpected TIF path rejected"
+    exit 1
+fi
 PAGES="${4:-1}"
 FAX_STATUS="${5:-SUCCESS}"
 if [ "$FAX_STATUS" != "SUCCESS" ]; then
@@ -71,7 +75,9 @@ chown asterisk:asterisk "$ARCHIVE_TIF" "$ARCHIVE_PDF" 2>/dev/null
 
 log "Archived: $ARCHIVE_PDF"
 
-MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER:-kbu_portal} -p${DB_PASS} ${DB_NAME:-asterisk}"
+# Parola komut satırında değil ortamda: -p<parola> `ps` çıktısında herkese görünüyordu.
+export MYSQL_PWD="${DB_PASS}"
+MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
 MYSQL_QUERY="$MYSQL_EXEC -N -s"
 
 # 3. Insert record into MySQL 'asterisk' database (use archived paths)
