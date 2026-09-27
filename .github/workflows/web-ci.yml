@@ -85,7 +85,9 @@ jobs:
             ('user', 'Kullanıcı', 'Kullanıcı', 1);"
 
       - name: Unit tests
-        run: vendor/bin/phpunit --no-coverage
+        # mail() gerçek e-posta göndermesin (CI'da MTA yok); davet testleri yalnızca
+        # gönderimin başarılı sayılmasını bekliyor.
+        run: php -d sendmail_path=/bin/true vendor/bin/phpunit --no-coverage
 
       - name: Smoke (every route in tr/en, RBAC, conventions, lint)
         run: |
