@@ -2,9 +2,9 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/auth.php';
-require_once '/var/www/html/src/repositories/MsTeamsRepository.php';
-require_once '/var/www/html/src/services/MsTeamsService.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
+require_once dirname(__DIR__, 2) . '/src/repositories/MsTeamsRepository.php';
+require_once dirname(__DIR__, 2) . '/src/services/MsTeamsService.php';
 
 final class MsTeamsTest extends TestCase
 {

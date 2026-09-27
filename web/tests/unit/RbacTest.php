@@ -3,7 +3,7 @@
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/auth.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
  * Yetki yükseltme DEVRE KESİCİSİ (auth.php::hasModulePermission).
@@ -149,7 +149,7 @@ final class RbacTest extends TestCase
 
     public function testUiDeleteFormVeUiRowActionsSilmeYetkisiYoksaGorunmez(): void
     {
-        require_once '/var/www/html/src/ui_helpers.php';
+        require_once dirname(__DIR__, 2) . '/src/ui_helpers.php';
 
         $db = getDB();
         $db->prepare(
