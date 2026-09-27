@@ -83,6 +83,11 @@ jobs:
             ('fax_user', 'Faks', 'Faks', 1),
             ('cc_manager', 'Kuyruk Yönetici', 'Kuyruk Yönetici', 1),
             ('user', 'Kullanıcı', 'Kullanıcı', 1);"
+          # bin/smoke.php sayfaları user_id=1 oturumuyla render eder (sunucularda
+          # ilk admin); dahili gerektiren sayfalar (Dahilim, sohbet) için dahilisi var.
+          mysql -h "$DB_HOST" -u root -pci-root "$DB_NAME" -e "INSERT IGNORE INTO sys_users
+            (id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active)
+            VALUES (1, 'admin', '', 'CI Admin', 'admin@example.com', 'admin', '1000', 'sip', 'ci-not-a-secret', 1);"
 
       - name: Unit tests
         # mail() gerçek e-posta göndermesin (CI'da MTA yok); davet testleri yalnızca
