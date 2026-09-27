@@ -3,7 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 define('CC_DISPATCH_ACTIVE', true);
-require_once '/var/www/html/api/cc_actions/cc_lib.php';
+require_once dirname(__DIR__, 2) . '/api/cc_actions/cc_lib.php';
 
 /**
  * Transferde ARAYANIN kanalının bulunması.

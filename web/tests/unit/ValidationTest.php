@@ -3,8 +3,8 @@
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/src/services/Fail2banService.php';
-require_once '/var/www/html/src/services/FirewallService.php';
+require_once dirname(__DIR__, 2) . '/src/services/Fail2banService.php';
+require_once dirname(__DIR__, 2) . '/src/services/FirewallService.php';
 
 /**
  * Güvenlik sayfalarının (firewall / fail2ban) giriş doğrulaması.

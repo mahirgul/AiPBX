@@ -3,9 +3,9 @@
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/tests/Fixtures.php';
-require_once '/var/www/html/src/sip_helper.php';
-require_once '/var/www/html/src/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
+require_once dirname(__DIR__, 2) . '/src/sip_helper.php';
+require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 /**
  * `sip` anahtar-değer tablosunun sözleşmesi.

@@ -2,7 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/api/mobile/auth_helper.php';
+require_once dirname(__DIR__, 2) . '/api/mobile/auth_helper.php';
 
 final class MobileApiTest extends TestCase
 {

@@ -2,11 +2,11 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/config.php';
-require_once '/var/www/html/src/core/BaseRepository.php';
-require_once '/var/www/html/src/repositories/MailSettingsRepository.php';
-require_once '/var/www/html/src/repositories/DashboardRepository.php';
-require_once '/var/www/html/src/services/MailSettingsService.php';
+require_once dirname(__DIR__, 2) . '/config.php';
+require_once dirname(__DIR__, 2) . '/src/core/BaseRepository.php';
+require_once dirname(__DIR__, 2) . '/src/repositories/MailSettingsRepository.php';
+require_once dirname(__DIR__, 2) . '/src/repositories/DashboardRepository.php';
+require_once dirname(__DIR__, 2) . '/src/services/MailSettingsService.php';
 
 final class MailSettingsTest extends TestCase
 {

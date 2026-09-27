@@ -2,8 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/tests/Fixtures.php';
-require_once '/var/www/html/src/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
+require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 /**
  * Ertelenmiş reload ("Uygula" sayfası) sisteminin sözleşmesi.
@@ -108,7 +108,7 @@ final class PendingSyncTest extends TestCase
         $_SERVER['HTTP_X_CSRF_TOKEN'] = $csrf;
 
         ob_start();
-        require '/var/www/html/api/pending_sync.php';
+        require dirname(__DIR__, 2) . '/api/pending_sync.php';
         $out = ob_get_clean();
 
         $res = json_decode($out, true);

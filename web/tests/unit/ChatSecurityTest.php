@@ -2,7 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/api/mobile/auth_helper.php';
+require_once dirname(__DIR__, 2) . '/api/mobile/auth_helper.php';
 
 final class ChatSecurityTest extends TestCase
 {
@@ -13,6 +13,15 @@ final class ChatSecurityTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+        // CANLI entegrasyon testi: asterisk_test kilidini atlayıp gerçek
+        // veritabanına bağlanır, gerçek kullanıcılar arasında sohbet açar ve
+        // 127.0.0.1:8086'daki çalışan chat servisini dener. Yalnızca açıkça
+        // istenince koşar: AIPBX_LIVE_TESTS=1 vendor/bin/phpunit
+        // (aksi halde testler kendini atlar — CI dahil).
+        if (getenv('AIPBX_LIVE_TESTS') !== '1') {
+            return;
+        }
+
         // 1. Connect to production DB for live chat service API verification
         $env = loadPortalEnv();
         $host = $env['DB_HOST'] ?? 'localhost';

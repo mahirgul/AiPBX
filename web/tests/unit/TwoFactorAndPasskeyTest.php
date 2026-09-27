@@ -2,10 +2,10 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/auth.php';
-require_once '/var/www/html/src/services/TwoFactorService.php';
-require_once '/var/www/html/src/services/PasskeyService.php';
-require_once '/var/www/html/src/services/LoginService.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
+require_once dirname(__DIR__, 2) . '/src/services/TwoFactorService.php';
+require_once dirname(__DIR__, 2) . '/src/services/PasskeyService.php';
+require_once dirname(__DIR__, 2) . '/src/services/LoginService.php';
 
 final class TwoFactorAndPasskeyTest extends TestCase
 {
