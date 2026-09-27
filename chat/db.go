@@ -506,22 +506,30 @@ func IsParticipant(convID int, ext string) (bool, error) {
 	return true, nil
 }
 
-// GetConversationIDForAttachment finds the conversation that owns this attachment (CH-3, CH-G5)
-func GetConversationIDForAttachment(filenameOrURL string) (int, error) {
-	if filenameOrURL == "" || db == nil {
-		return 0, nil
+// CanAccessAttachment: dosya adı (thumbnail'ın asıl adı) bu dahilinin aktif
+// katılımcısı olduğu bir sohbette mesaj eki ya da grup resmi olarak geçiyor mu?
+// attachment_url/avatar_url "/chat/media/<alt dizin>/<ad>" biçimindedir.
+func CanAccessAttachment(filename, ext string) (bool, error) {
+	if filename == "" || ext == "" || db == nil {
+		return false, nil
 	}
-	var convID int
-	err := db.QueryRow("SELECT conversation_id FROM chat_messages WHERE attachment_url LIKE ? LIMIT 1", "%"+filenameOrURL+"%").Scan(&convID)
-	if err == nil {
-		return convID, nil
+	var one int
+	err := db.QueryRow(`
+		SELECT 1 FROM chat_messages m
+		JOIN chat_participants p ON p.conversation_id = m.conversation_id AND p.extension = ? AND p.left_at IS NULL
+		WHERE SUBSTRING_INDEX(m.attachment_url, '/', -1) = ?
+		UNION ALL
+		SELECT 1 FROM chat_conversations c
+		JOIN chat_participants p ON p.conversation_id = c.id AND p.extension = ? AND p.left_at IS NULL
+		WHERE c.is_deleted = 0 AND SUBSTRING_INDEX(c.avatar_url, '/', -1) = ?
+		LIMIT 1`, ext, filename, ext, filename).Scan(&one)
+	if err == sql.ErrNoRows {
+		return false, nil
 	}
-	// Check group avatar (CH-G5)
-	err = db.QueryRow("SELECT id FROM chat_conversations WHERE avatar_url LIKE ? AND is_deleted = 0 LIMIT 1", "%"+filenameOrURL+"%").Scan(&convID)
-	if err == nil {
-		return convID, nil
+	if err != nil {
+		return false, err
 	}
-	return 0, nil
+	return true, nil
 }
 
 func GetConversationByID(convID int) (*Conversation, error) {
