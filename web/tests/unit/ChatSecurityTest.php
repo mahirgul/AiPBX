@@ -63,6 +63,15 @@ final class ChatSecurityTest extends TestCase
         }
     }
 
+    protected function setUp(): void
+    {
+        // testLive* testleri 127.0.0.1:8086'daki çalışan chat servisine ve canlı
+        // veritabanına bağlanır — yalnızca AIPBX_LIVE_TESTS=1 ile koşar.
+        if (str_starts_with($this->name(), 'testLive') && getenv('AIPBX_LIVE_TESTS') !== '1') {
+            $this->markTestSkipped('Canlı entegrasyon testi (AIPBX_LIVE_TESTS=1 ile çalıştırın).');
+        }
+    }
+
     public function testValidateMobileTokenWithSecretKey(): void
     {
         $payload = '1:' . (time() + 3600);
