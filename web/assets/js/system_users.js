@@ -183,3 +183,16 @@ function confirmBulkSendMail() {
     return confirm(`Seçilen ${checkboxes.length} kullanıcıya giriş ve şifre belirleme bağlantısı e-posta ile gönderilecektir. Onaylıyor musunuz?`);
 }
 
+
+// CSV ile toplu kullanıcı ekleme modalı
+function openUserImportModal() {
+    const modal = document.getElementById('userImportModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+
+function closeUserImportModal() {
+    UIHelper.closeOverlayModal('userImportModal');
+}
