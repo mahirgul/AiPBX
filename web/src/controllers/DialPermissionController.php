@@ -32,14 +32,12 @@ class DialPermissionController extends BaseController
         $rules = DialPermissionService::getRules($selected_group_id);
 
         $page_title = t('dial_permissions.title', 'Arama Yetki Grupları');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('dial_permissions/index', [
+        static::renderPage('dial_permissions/index', [
             'groups' => $groups,
             'selected_group_id' => $selected_group_id,
             'rules' => $rules,
             'message' => $message,
             'error' => $error,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

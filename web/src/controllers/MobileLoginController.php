@@ -46,6 +46,6 @@ class MobileLoginController extends BaseController
             $data['expires_at'] = $info['payload']['exp'];
         }
 
-        static::render('mobile_login/index', $data);
+        static::renderAuthPage('mobile_login/index', $data, ['title' => t('mobile_login.page_title'), 'head' => '<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">']);
     }
 }

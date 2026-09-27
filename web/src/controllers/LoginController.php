@@ -40,7 +40,7 @@ class LoginController extends BaseController
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
         $googleLoginEnabled = GoogleAuthService::isEnabled();
 
-        static::render('login/index', [
+        static::renderAuthPage('login/index', [
             'error' => $error,
             'num1' => $num1,
             'num2' => $num2,
@@ -53,6 +53,6 @@ class LoginController extends BaseController
             'site_logo_image' => $site_logo_image,
             'site_favicon_url' => $site_favicon_url,
             'googleLoginEnabled' => $googleLoginEnabled,
-        ]);
+        ], ['title' => t('login.page_title')]);
     }
 }

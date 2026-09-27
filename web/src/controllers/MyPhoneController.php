@@ -95,8 +95,7 @@ class MyPhoneController extends BaseController
         $mobileStatus = $ext !== '' ? ($pjsipStatuses["{$ext}-mob-webrtc"] ?? null) : null;
 
         $page_title = t('my_phone.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('my_phone/index', [
+        static::renderPage('my_phone/index', [
             'extDetails' => $extDetails,
             'ext' => $ext,
             'stats' => $stats,
@@ -110,7 +109,6 @@ class MyPhoneController extends BaseController
             'mobileStatus' => $mobileStatus,
             'mobileDevices' => MyPhoneRepository::getUserMobileDevices($userId),
             'voicemailMessages' => $voicemailMessages,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }

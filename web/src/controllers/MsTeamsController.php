@@ -136,8 +136,7 @@ class MsTeamsController extends BaseController
         $page_title = t('ms_teams.title');
         $active_page = 'ms_teams.php';
 
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('ms_teams/index', [
+        static::renderPage('ms_teams/index', [
             'settings'         => $settings,
             'mappings'         => $mappings,
             'extensions'       => $extensions,
@@ -148,7 +147,6 @@ class MsTeamsController extends BaseController
             'error'            => $error,
             'can_edit'         => hasModulePermission('ms_teams', 'edit'),
             'can_delete'       => hasModulePermission('ms_teams', 'delete'),
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

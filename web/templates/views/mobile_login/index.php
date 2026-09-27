@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="referrer" content="no-referrer">
-    <title><?php echo t('mobile_login.page_title'); ?> - <?php echo htmlspecialchars($site_title); ?></title>
-    <link rel="stylesheet" href="/assets/css/variables.css?v=<?php echo time(); ?>">
-    <?php renderBrandColorOverrideCSS(); ?>
-    <link rel="stylesheet" href="/assets/css/layout.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="/assets/css/components.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="/assets/css/fontawesome.min.css">
-    <link rel="stylesheet" href="/assets/css/style.css?v=<?php echo time(); ?>">
+<?php /* Düzen: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
     <style>
         .ml-section { border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
         .ml-section h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; }
@@ -20,8 +7,6 @@
         .ml-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px; }
         .ml-open { width: 100%; justify-content: center; padding: 16px; font-size: 16px; }
     </style>
-</head>
-<body class="auth-body">
     <div class="auth-card" style="max-width: 460px;">
         <div style="text-align: center; margin-bottom: 22px;">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
@@ -96,5 +81,3 @@
             </div>
         <?php endif; ?>
     </div>
-</body>
-</html>

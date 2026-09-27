@@ -32,12 +32,10 @@ class RoleController extends BaseController
         $all_permissions = RoleRepository::allPermissionsMap();
 
         $page_title = t('roles.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('roles/index', [
+        static::renderPage('roles/index', [
             'modules_definition' => $modules_definition,
             'roles' => $roles,
             'all_permissions' => $all_permissions,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -22,7 +22,7 @@ class ResetPasswordController extends BaseController
         $brand_title = getSystemSetting('brand_title', 'AI PBX');
         $brand_sub = getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi');
 
-        static::render('reset_password/index', [
+        static::renderAuthPage('reset_password/index', [
             'error' => $error,
             'success' => $success,
             'token' => $token,
@@ -31,6 +31,6 @@ class ResetPasswordController extends BaseController
             'site_title' => $site_title,
             'brand_title' => $brand_title,
             'brand_sub' => $brand_sub,
-        ]);
+        ], ['title' => t('reset_password.page_title')]);
     }
 }

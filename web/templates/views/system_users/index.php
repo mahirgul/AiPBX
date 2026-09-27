@@ -539,4 +539,4 @@
     </div>
 </div>
 
-<script src="/assets/js/system_users.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/system_users.js'); ?>"></script>

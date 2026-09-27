@@ -45,7 +45,7 @@ if (!empty($only_in_en)) {
 // sadece SABİT string literal çağrıları tarar, dinamik kullanım manuel
 // gözden geçirme gerektirir (kod tabanında bu nadir bir desen).
 $dirs = ['src', 'templates', 'modules'];
-$root_files = ['config.php', 'header.php', 'footer.php', 'auth.php', 'index.php'];
+$root_files = ['config.php', 'auth.php', 'index.php', 'templates/layouts/app_header.php', 'templates/layouts/app_footer.php'];
 $used_keys = [];
 
 $scan_paths = [];

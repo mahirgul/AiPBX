@@ -142,8 +142,7 @@ class SecurityController extends BaseController
         ];
 
         $page_title = t('security.page_title', 'Güvenlik Ayarları (2FA, Passkey & Google)');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('security/index', [
+        static::renderPage('security/index', [
             'user' => $user,
             'twoFactorEnabled' => $twoFactorEnabled,
             'setupSecret' => $setupSecret,
@@ -154,7 +153,6 @@ class SecurityController extends BaseController
             'message' => $message,
             'error' => $error,
             'csrf_token' => getCSRFToken(),
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

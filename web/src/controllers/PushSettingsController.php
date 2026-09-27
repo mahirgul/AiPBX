@@ -57,13 +57,11 @@ class PushSettingsController extends BaseController
         $page_title = 'Mobil Bildirim';
         $active_page = 'push_settings.php';
 
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('push_settings/index', [
+        static::renderPage('push_settings/index', [
             'settings' => $settings,
             'devices' => $devices,
             'message' => $message,
             'error' => $error,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

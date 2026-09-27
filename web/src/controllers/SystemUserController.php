@@ -153,8 +153,7 @@ class SystemUserController extends BaseController
         $sys_roles_full = SystemUserRepository::allRolesFull();
 
         $page_title = t('system_users.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('system_users/index', [
+        static::renderPage('system_users/index', [
             'users' => $users,
             'all_roles' => $all_roles,
             'sys_roles_full' => $sys_roles_full,
@@ -162,7 +161,6 @@ class SystemUserController extends BaseController
             'generated_for' => $generated_for,
             'import_preview' => $import_preview,
             'import_result' => $import_result,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

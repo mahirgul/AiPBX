@@ -334,5 +334,5 @@ window.TIME_GROUPS_LIST = <?php echo json_encode($time_groups, JSON_HEX_APOS | J
 window.DEST_MODULES_LIST = <?php echo json_encode($modules, JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>
 
-<script src="/assets/js/destinations_helper.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/time_conditions.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/time_conditions.js'); ?>"></script>

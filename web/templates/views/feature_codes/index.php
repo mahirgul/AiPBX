@@ -111,4 +111,4 @@
     </div>
 </div>
 
-<script src="/assets/js/feature_codes.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/feature_codes.js'); ?>"></script>

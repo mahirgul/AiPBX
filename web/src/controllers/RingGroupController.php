@@ -28,13 +28,11 @@ class RingGroupController extends BaseController
         $modules = DestinationRegistry::getModuleList();
 
         $page_title = t('ring_groups.title', 'Çalma Grupları');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('ring_groups/index', [
+        static::renderPage('ring_groups/index', [
             'ring_groups' => $ring_groups,
             'modules' => $modules,
             'message' => $message,
             'error' => $error,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

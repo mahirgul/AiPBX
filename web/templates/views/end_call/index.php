@@ -136,4 +136,4 @@
     </div>
 </div>
 
-<script src="/assets/js/end_call.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/end_call.js'); ?>"></script>

@@ -41,14 +41,12 @@ class TimeConditionController extends BaseController
         $day_names = [1 => t('tc.day_mon'), 2 => t('tc.day_tue'), 3 => t('tc.day_wed'), 4 => t('tc.day_thu'), 5 => t('tc.day_fri'), 6 => t('tc.day_sat'), 7 => t('tc.day_sun')];
 
         $page_title = t('tc.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('time_conditions/index', [
+        static::renderPage('time_conditions/index', [
             'tcs' => $tcs,
             'time_groups' => $time_groups,
             'tg_map' => $tg_map,
             'modules' => $modules,
             'day_names' => $day_names,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

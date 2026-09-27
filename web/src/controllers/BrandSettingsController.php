@@ -27,12 +27,10 @@ class BrandSettingsController extends BaseController
         $favicon_preview_url = $s['site_favicon_url'] ? preg_replace('/\?.*$/', '', $s['site_favicon_url']) . '?v=' . time() : '';
 
         $page_title = t('brand_settings.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('brand_settings/index', [
+        static::renderPage('brand_settings/index', [
             's' => $s,
             'logo_preview_url' => $logo_preview_url,
             'favicon_preview_url' => $favicon_preview_url,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

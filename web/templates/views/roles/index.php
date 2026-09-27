@@ -216,4 +216,4 @@ $group_slugs = RoleRepository::groupSlugs();
 <script>
     window.ALL_PERMISSIONS = <?php echo json_encode($all_permissions); ?>;
 </script>
-<script src="/assets/js/roles.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/roles.js'); ?>"></script>

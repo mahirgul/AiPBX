@@ -390,4 +390,4 @@
     </div>
 </div>
 
-<script src="/assets/js/queues.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/queues.js'); ?>"></script>

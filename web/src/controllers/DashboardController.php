@@ -30,9 +30,7 @@ class DashboardController extends BaseController
         $metrics = DashboardRepository::getSystemMetrics();
 
         $page_title = t('dashboard.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('dashboard/index', array_merge($stats, $metrics));
-        require_once dirname(__DIR__) . '/../footer.php';
+        static::renderPage('dashboard/index', array_merge($stats, $metrics), ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 
     /**

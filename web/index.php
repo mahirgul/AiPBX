@@ -91,17 +91,11 @@ $ROUTES = require __DIR__ . '/src/routes.php';
 
 if (!isset($ROUTES[$path])) {
     http_response_code(404);
-    echo '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>404 - Sayfa Bulunamadı</title>'
-       . '<link rel="stylesheet" href="/assets/css/variables.css">'
-       . '<link rel="stylesheet" href="/assets/css/layout.css">'
-       . '<link rel="stylesheet" href="/assets/css/components.css">'
-       . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css">'
-       . '<link rel="stylesheet" href="/assets/css/style.css"></head>'
-       . '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">'
-       . '<h2 style="color:var(--warning);"><i class="fas fa-map-signs"></i> 404 - Sayfa Bulunamadı</h2>'
-       . '<p style="margin:20px 0; color:var(--text-muted);">Aradığınız sayfa taşınmış veya mevcut değil.</p>'
-       . '<a href="/login" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Giriş Yap</a>'
-       . '</div></body></html>';
+    $auth_title = '404';
+    $auth_head = '';
+    require __DIR__ . '/templates/layouts/auth_header.php';
+    View::render('errors/404');
+    require __DIR__ . '/templates/layouts/auth_footer.php';
     exit;
 }
 

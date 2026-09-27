@@ -32,8 +32,7 @@ class QueueController extends BaseController
         $moh_classes = QueueRepository::activeMohClasses();
 
         $page_title = t('queues.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('queues/index', [
+        static::renderPage('queues/index', [
             'queues' => $queues,
             'all_agents' => $all_agents,
             'queue_agents' => $queue_agents,
@@ -41,7 +40,6 @@ class QueueController extends BaseController
             'legacy_agents' => $legacy_agents,
             'legacy_managers' => $legacy_managers,
             'moh_classes' => $moh_classes,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }
