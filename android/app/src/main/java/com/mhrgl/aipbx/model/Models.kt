@@ -35,6 +35,9 @@ data class LoginResponse(
 /** Sunucu şifreyi kabul etti ama iki adımlı doğrulama kodu istiyor (ya da kod hatalı). */
 class OtpRequiredException(message: String) : Exception(message)
 
+/** Sunucu oturumu kesin olarak reddetti (401/403: süresi doldu, şifre değişti, hesap pasif). */
+class SessionExpiredException(message: String) : Exception(message)
+
 data class UserProfile(
     @SerializedName("id") val id: Int,
     @SerializedName("username") val username: String,

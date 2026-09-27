@@ -346,7 +346,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         }
 
         if (isUsingBuiltinEarpiece) {
-            proximityWakeLock?.let { if (!it.isHeld) it.acquire() }
+            // Güvenlik zaman aşımı: bir hata yolunda release() kaçırılsa bile kilit sonsuza dek kalmasın.
+            proximityWakeLock?.let { if (!it.isHeld) it.acquire(4 * 60 * 60 * 1000L) }
         } else {
             proximityWakeLock?.let { if (it.isHeld) it.release() }
         }

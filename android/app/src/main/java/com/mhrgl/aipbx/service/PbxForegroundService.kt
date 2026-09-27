@@ -140,6 +140,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                         prefs.lastTokenRefreshTime = System.currentTimeMillis()
                     }.onFailure { err ->
                         Log.w(TAG, "Session token refresh failed: ${err.message} (M5)")
+                        if (err is com.mhrgl.aipbx.model.SessionExpiredException) handleSessionExpired(err.message)
                     }
                 }
             }
@@ -321,6 +322,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                         connectSip()
                     }.onFailure { err ->
                         Log.w(TAG, "Failed to refresh SIP credentials after recovery: ${err.message}")
+                        if (err is com.mhrgl.aipbx.model.SessionExpiredException) handleSessionExpired(err.message)
                     }
                 }
             }
@@ -805,6 +807,34 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             .build()
 
         nm.notify(10000 + (message.conversationId % 1000), notification)
+    }
+
+    /**
+     * Sunucu oturumu geri çekti (şifre sıfırlandı, hesap pasif, 30 gün yenilenmedi).
+     * Önceden yenileme her seferinde başarısız olup loglanıyor, uygulama "girişli"
+     * görünürken sohbet/API çalışmıyordu. Oturum kapatılır ve kullanıcıya bildirilir.
+     */
+    private fun handleSessionExpired(reason: String?) {
+        if (!prefs.isLoggedIn) return
+        Log.w(TAG, "Session rejected by server, signing out: $reason")
+        ChatWebSocketManager.instance.disconnect()
+        prefs.clearAuth()
+
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val intent = Intent(this, com.mhrgl.aipbx.ui.LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pi = PendingIntent.getActivity(this, 9001, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID_CHAT)
+            .setContentTitle("AiPBX oturumu sona erdi")
+            .setContentText("Şifreniz değişmiş veya oturum süresi dolmuş olabilir. Tekrar giriş yapın.")
+            .setSmallIcon(R.drawable.ic_chat)
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(9001, notification)
+
+        stopSelf()
     }
 
     // Android 15+ (API 35+) Foreground Service Timeout Handler (M19)

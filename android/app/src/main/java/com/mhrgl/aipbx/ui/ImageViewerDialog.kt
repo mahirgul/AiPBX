@@ -53,7 +53,7 @@ object ImageViewerDialog {
     }
 
     @SuppressLint("ViewConstructor", "ClickableViewAccessibility")
-    private class ZoomImageView(context: Context, private val onDismiss: () -> Unit) : ImageView(context) {
+    private class ZoomImageView(context: Context, private val onDismiss: () -> Unit) : androidx.appcompat.widget.AppCompatImageView(context) {
 
         private val baseMatrix = Matrix()
         private val zoomMatrix = Matrix()
