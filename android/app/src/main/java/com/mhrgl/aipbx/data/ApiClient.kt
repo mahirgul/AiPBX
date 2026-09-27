@@ -125,7 +125,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
         }
     }
 
-    suspend fun login(baseUrl: String, userOrExt: String, pass: String): Result<LoginResponse> =
+    suspend fun login(baseUrl: String, userOrExt: String, pass: String, otp: String? = null): Result<LoginResponse> =
         withContext(Dispatchers.IO) {
             try {
                 val cleanUrl = baseUrl.trim().trimEnd('/')
@@ -135,6 +135,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     put("username", userOrExt.trim())
                     put("password", pass.trim())
                     put("device_name", "Android-${android.os.Build.MODEL}")
+                    if (!otp.isNullOrBlank()) put("otp", otp.trim())
                 }.toString()
 
                 val request = Request.Builder()
@@ -144,9 +145,11 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
 
                 client.newCall(request).execute().use { response ->
                     val body = response.body?.string() ?: ""
-                    val result = gson.fromJson(body, LoginResponse::class.java)
-                    if (response.isSuccessful && result.success) {
+                    val result: LoginResponse? = gson.fromJson(body, LoginResponse::class.java)
+                    if (response.isSuccessful && result != null && result.success) {
                         Result.success(result)
+                    } else if (result?.otpRequired == true) {
+                        Result.failure(com.mhrgl.aipbx.model.OtpRequiredException(result.error ?: "Doğrulama kodu gerekli."))
                     } else {
                         val errMsg = result?.error ?: "Giriş başarısız (HTTP ${response.code})"
                         Result.failure(Exception(errMsg))

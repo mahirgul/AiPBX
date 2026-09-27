@@ -281,22 +281,51 @@ class LoginActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun performLogin(user: String, pass: String) {
+    private fun performLogin(user: String, pass: String, otp: String? = null) {
         binding.progressBar.visibility = View.VISIBLE
         binding.tvError.visibility = View.GONE
         binding.btnLogin.isEnabled = false
 
         lifecycleScope.launch {
-            val result = apiClient.login(prefs.serverUrl, user, pass)
+            val result = apiClient.login(prefs.serverUrl, user, pass, otp)
             binding.progressBar.visibility = View.GONE
             binding.btnLogin.isEnabled = true
 
             result.onSuccess { response ->
                 onLoginSuccess(response)
             }.onFailure { error ->
-                showError(error.localizedMessage ?: "Giriş başarısız oldu.")
+                if (error is com.mhrgl.aipbx.model.OtpRequiredException) {
+                    askOtp(user, pass, error.message ?: "")
+                } else {
+                    showError(error.localizedMessage ?: "Giriş başarısız oldu.")
+                }
             }
         }
+    }
+
+    /** İki adımlı doğrulama açık hesaplar: doğrulama uygulamasındaki 6 haneli kodu sorar. */
+    private fun askOtp(user: String, pass: String, message: String) {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            filters = arrayOf(android.text.InputFilter.LengthFilter(6))
+            hint = "123456"
+        }
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val container = android.widget.FrameLayout(this).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("İki adımlı doğrulama")
+            .setMessage(message)
+            .setView(container)
+            .setPositiveButton("Giriş") { _, _ ->
+                val code = input.text.toString().trim()
+                if (code.length == 6) performLogin(user, pass, code) else showError("6 haneli kodu girin.")
+            }
+            .setNegativeButton("İptal", null)
+            .show()
+        input.requestFocus()
     }
 
     @SuppressLint("BatteryLife")

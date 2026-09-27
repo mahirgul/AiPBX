@@ -10,6 +10,8 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var isLoggedIn: Bool = false
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String? = nil
+    /// Doluysa giriş ekranı iki adımlı doğrulama kodunu sorar (sunucunun mesajı).
+    @Published public var otpPromptMessage: String? = nil
 
     @Published public var baseUrl: String = UserDefaults.standard.string(forKey: "aipbx_base_url") ?? "https://pbx.example.com"
     @Published public var savedUsername: String = UserDefaults.standard.string(forKey: "aipbx_username") ?? ""
@@ -75,12 +77,13 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
     // MARK: - Login & Logout
 
-    public func login(serverUrl: String, username: String, pass: String) async -> Bool {
+    public func login(serverUrl: String, username: String, pass: String, otp: String? = nil) async -> Bool {
         isLoading = true
         errorMessage = nil
+        otpPromptMessage = nil
 
         do {
-            let res = try await ApiClient.shared.login(baseUrl: serverUrl, userOrExt: username, pass: pass)
+            let res = try await ApiClient.shared.login(baseUrl: serverUrl, userOrExt: username, pass: pass, otp: otp)
             if rememberMe {
                 UserDefaults.standard.set(username, forKey: "aipbx_username")
                 UserDefaults.standard.set(true, forKey: "aipbx_remember_me")
@@ -90,6 +93,10 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
             }
             await handleLoginSuccess(res: res, serverUrl: serverUrl)
             return true
+        } catch ApiError.otpRequired(let msg) {
+            self.isLoading = false
+            self.otpPromptMessage = msg
+            return false
         } catch {
             self.isLoading = false
             self.errorMessage = error.localizedDescription

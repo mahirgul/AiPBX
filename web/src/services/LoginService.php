@@ -34,8 +34,10 @@ class LoginService {
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret FROM sys_users WHERE username = ? OR extension = ?');
-        $stmt->execute([$username, $username]);
+        $stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret FROM sys_users WHERE username = ? OR extension = ? ORDER BY (username = ?) DESC, id ASC LIMIT 1');
+        // Birinin kullanıcı adı başkasının dahilisine eşitse kullanıcı adı öncelikli
+        // (mobil girişte zaten böyleydi).
+        $stmt->execute([$username, $username, $username]);
         $user = $stmt->fetch();
 
         $is_authenticated = false;
