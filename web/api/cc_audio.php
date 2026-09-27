@@ -37,15 +37,20 @@ if ($role !== 'admin' && !$can_listen && !$is_own_call) {
 $file = realpath($cdr['recording_path']);
 $allowed_dir = realpath(MONITOR_STORAGE_PATH);
 
-if (!$file || !$allowed_dir || strpos($file, $allowed_dir) !== 0 || !file_exists($file)) {
+// Sonda '/' — yalnızca önek karşılaştırması "/monitor2/..." gibi kardeş
+// dizinleri de kabul ederdi.
+if (!$file || !$allowed_dir || strpos($file, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file)) {
     http_response_code(404);
     die('Audio file not found');
 }
 
-header('Content-Type: audio/wav');
+// Kuyruk kayıt biçimi wav dışında da olabilir (record_format).
+$ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+$mime = ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'][$ext] ?? 'application/octet-stream';
+header('Content-Type: ' . $mime);
 header('Content-Length: ' . filesize($file));
 if (!empty($_GET['download'])) {
-    header('Content-Disposition: attachment; filename="cagri_kaydi_' . $id . '.wav"');
+    header('Content-Disposition: attachment; filename="cagri_kaydi_' . $id . '.' . ($ext !== '' ? $ext : 'wav') . '"');
 }
 readfile($file);
 exit;
