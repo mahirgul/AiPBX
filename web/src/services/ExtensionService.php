@@ -43,7 +43,10 @@ class ExtensionService {
 
             $permission_group_id = !empty($data['permission_group_id']) ? intval($data['permission_group_id']) : 1;
             $boss_secretary_group_id = !empty($data['boss_secretary_group_id']) ? intval($data['boss_secretary_group_id']) : null;
-            $boss_secretary_role = in_array($data['boss_secretary_role'] ?? 'none', ['none', 'boss', 'secretary'], true) ? $data['boss_secretary_role'] : 'none';
+            $boss_secretary_role = $data['boss_secretary_role'] ?? 'none';
+            if (!in_array($boss_secretary_role, ['none', 'boss', 'secretary'], true)) {
+                $boss_secretary_role = 'none';
+            }
             $voicemail_enabled = isset($data['voicemail_enabled']) ? intval($data['voicemail_enabled']) : 1;
             $voicemail_pin = preg_replace('/[^0-9]/', '', trim($data['voicemail_pin'] ?? ''));
             if (empty($voicemail_pin)) {
@@ -53,6 +56,10 @@ class ExtensionService {
             $voicemail_attach_audio = isset($data['voicemail_attach_audio']) ? intval($data['voicemail_attach_audio']) : 1;
             $vm_on_noanswer = isset($data['vm_on_noanswer']) ? intval($data['vm_on_noanswer']) : 0;
             $vm_on_busy = isset($data['vm_on_busy']) ? intval($data['vm_on_busy']) : 0;
+            // Formdaki "ulaşılamıyorsa" kutusu hiç okunmuyordu: değişken yalnızca
+            // faks dalında tanımlıydı, SIP dahilisi kaydı sütun NOT NULL olduğu için
+            // "vm_on_unavail cannot be null" ile başarısız oluyordu.
+            $vm_on_unavail = isset($data['vm_on_unavail']) ? intval($data['vm_on_unavail']) : 0;
             $vm_always = isset($data['vm_always']) ? intval($data['vm_always']) : 0;
 
             if ($extension_type === 'fax') {
