@@ -251,7 +251,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # as the asterisk user through the symlinks (feature codes, fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php; do
+for script in feature_code_action.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -347,7 +347,13 @@ TURN_SECRET=${TURN_SECRET}
 TURNS_PORT=5349
 ENVFILE
 
-chown root:www-data /etc/ai-pbx.env
+# Secrets are read by the portal (www-data) AND by the scripts Asterisk runs
+# as the asterisk user (feature codes, push wake-up, fax). With root:www-data
+# the asterisk-side scripts could not reach the database at all.
+# Group "asterisk": Asterisk is started with -G asterisk, which drops every
+# supplementary group, so only its primary group works for System() children;
+# www-data joins the asterisk group below (usermod -aG asterisk www-data).
+chown root:asterisk /etc/ai-pbx.env
 chmod 640 /etc/ai-pbx.env
 
 ok "Environment file created: /etc/ai-pbx.env"
@@ -827,6 +833,30 @@ cp -L "$CERT_FILE" /etc/coturn/aipbx.crt
 cp -L "$KEY_FILE" /etc/coturn/aipbx.key
 chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
 chmod 640 /etc/coturn/aipbx.key
+
+# Let's Encrypt renews every ~60-90 days, but coturn reads a COPY of the
+# certificate and Apache keeps the old one in memory (certonly mode): without
+# this hook TURNS (WebRTC behind strict firewalls) broke when the copied
+# certificate expired.
+if [[ "$CERT_FILE" == /etc/letsencrypt/* ]]; then
+    mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+    cat > /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh << LEHOOK
+#!/bin/bash
+# AI PBX: push renewed certificate to coturn, reload coturn and Apache.
+set -e
+LIVE="/etc/letsencrypt/live/${PORTAL_DOMAIN}"
+[ -f "\$LIVE/fullchain.pem" ] || exit 0
+# Leaf + intermediate only: some WebRTC/TURNS TLS stacks reject a chain that
+# also carries the root certificate.
+awk '/-----BEGIN CERTIFICATE-----/{n++} n<=2' "\$LIVE/fullchain.pem" > /etc/coturn/aipbx.crt
+cp -f "\$LIVE/privkey.pem" /etc/coturn/aipbx.key
+chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
+chmod 640 /etc/coturn/aipbx.key
+systemctl restart coturn >/dev/null 2>&1 || true
+systemctl reload apache2 >/dev/null 2>&1 || true
+LEHOOK
+    chmod 755 /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh
+fi
 
 mkdir -p /var/log/turnserver
 chown turnserver:turnserver /var/log/turnserver 2>/dev/null || true
