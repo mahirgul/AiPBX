@@ -9,9 +9,9 @@
  *
  * Kullanım: feature_code_action.php <dnd_toggle|cf_set|cf_cancel|queue_login|queue_logout> <dahili> [hedef|kuyruk_id]
  */
-require_once '/var/www/html/config.php';
-require_once '/var/www/html/src/asterisk_sync.php';
-require_once '/var/www/html/src/queue_helper.php';
+require_once dirname(__DIR__) . '/config.php';
+require_once dirname(__DIR__) . '/src/asterisk_sync.php';
+require_once dirname(__DIR__) . '/src/queue_helper.php';
 
 $action = $argv[1] ?? '';
 $ext = preg_replace('/[^0-9]/', '', $argv[2] ?? '');
