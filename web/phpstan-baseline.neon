@@ -1,0 +1,385 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/agent.php
+
+		-
+			message: '#^Variable \$current_reason in empty\(\) always exists and is always falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: api/cc_actions/agent.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 13
+			path: api/cc_actions/agent.php
+
+		-
+			message: '#^Variable \$user_ext might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/cc_actions/agent.php
+
+		-
+			message: '#^Variable \$user_name might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/agent.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: api/cc_actions/board.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/board.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: api/cc_actions/board.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: api/cc_actions/calls.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/calls.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/calls.php
+
+		-
+			message: '#^Variable \$user_ext might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/calls.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: api/cc_actions/cc_lib.php
+
+		-
+			message: '#^Offset 7 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: api/cc_actions/cc_lib.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/cdrs.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/cc_actions/cdrs.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: api/cc_actions/cdrs.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/notes.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 10
+			path: api/cc_actions/notes.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/cc_actions/notes.php
+
+		-
+			message: '#^Variable \$user_ext might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: api/cc_actions/notes.php
+
+		-
+			message: '#^Call to an undefined static method AsteriskHelper\:\:queryAMI\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<string\|null\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Variable \$user_ext might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: api/cc_actions/queues.php
+
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: bin/smoke.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: bin/smoke.php
+
+		-
+			message: '#^Variable \$FAILS in empty\(\) always exists and is always falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: bin/smoke.php
+
+		-
+			message: '#^Variable \$argv might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: bin/smoke.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/AsteriskSettingsController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/AsteriskSettingsController.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/BrandSettingsController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/BrandSettingsController.php
+
+		-
+			message: '#^Unsafe call to private method DashboardController\:\:handleSystemAction\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 1
+			path: src/controllers/DashboardController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/DashboardController.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/Fail2banController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/Fail2banController.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/FaxSendController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/FaxSendController.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/FirewallController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/FirewallController.php
+
+		-
+			message: '#^Offset ''access_token'' on non\-empty\-array in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.offset
+			count: 1
+			path: src/controllers/GoogleAuthController.php
+
+		-
+			message: '#^Variable \$error on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/RoleController.php
+
+		-
+			message: '#^Variable \$message on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/controllers/RoleController.php
+
+		-
+			message: '#^Offset ''error'' on array\{success\: false, sent_count\: int, skipped_count\: int, failed_count\: int, message\: ''''\|''0''\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/controllers/SystemUserController.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/repositories/CdrReportRepository.php
+
+		-
+			message: '#^Unsafe call to private method CdrReportRepository\:\:getLookupMaps\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: src/repositories/CdrReportRepository.php
+
+		-
+			message: '#^Unsafe call to private method CdrReportRepository\:\:kosullar\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: src/repositories/CdrReportRepository.php
+
+		-
+			message: '#^Unsafe call to private method QueueLogRepository\:\:calculateStats\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: src/repositories/QueueLogRepository.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/repositories/QueueRepository.php
+
+		-
+			message: '#^Variable \$vm_on_unavail might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: src/services/ExtensionService.php
+
+		-
+			message: '#^Access to undefined constant chillerlan\\QRCode\\QRCode\:\:ECC_M\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/services/QrLoginService.php
+
+		-
+			message: '#^Access to undefined constant chillerlan\\QRCode\\QRCode\:\:OUTPUT_MARKUP_SVG\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/services/QrLoginService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<non\-empty\-string\|null\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: src/services/QueueService.php
+
+		-
+			message: '#^Offset ''origdate'' on array\{id\: non\-falsy\-string, folder\: ''INBOX'', folder_name\: ''Yeni'', number\: string, callerid\: string, origdate\: string, duration\: int, duration_formatted\: non\-falsy\-string, \.\.\.\}\|array\{id\: non\-falsy\-string, folder\: ''Old'', folder_name\: ''Dinlenmiş'', number\: string, callerid\: string, origdate\: string, duration\: int, duration_formatted\: non\-falsy\-string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: src/services/VoicemailService.php
+
+		-
+			message: '#^Offset ''max_channels'' on array\{trunk_name\: mixed, callerid_override\: string, max_channels\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/sync/SyncOutboundDialplan.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed~\(0\|0\.0\|''''\|''0''\|array\{\}\|false\|null\) and ''0'' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 3
+			path: src/sync/SyncTransports.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:getAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/text_fax_helper.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:hasAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/text_fax_helper.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:removeAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/text_fax_helper.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:setAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/text_fax_helper.php

@@ -13,7 +13,8 @@
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
 
-const SMOKE_ROOT = '/var/www/html';
+// Repo kökü (sunucuda /var/www/html bu dizine bağlı; CI'da checkout dizini).
+define('SMOKE_ROOT', dirname(__DIR__));
 
 $only = null;
 // --route=<yol>: tek bir rotayı tarar. Hata ayıklama için ve kusur-enjeksiyon

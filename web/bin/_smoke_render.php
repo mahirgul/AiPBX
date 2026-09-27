@@ -25,8 +25,10 @@ if ($path === '' || $outfile === '') {
     exit(2);
 }
 
-chdir('/var/www/html');
-$ROUTES = require '/var/www/html/src/routes.php';
+// Repo kökü (sunucuda /var/www/html bu dizine bağlı; CI'da checkout dizini).
+$SMOKE_ROOT = dirname(__DIR__);
+chdir($SMOKE_ROOT);
+$ROUTES = require $SMOKE_ROOT . '/src/routes.php';
 if (!isset($ROUTES[$path]) || !is_array($ROUTES[$path])) {
     file_put_contents($outfile, json_encode([
         'path' => $path, 'status' => 'skip', 'error' => 'array-olmayan rota',
@@ -65,7 +67,7 @@ set_error_handler(function ($no, $str, $file, $line) {
     ];
     $label = $names[$no] ?? ('errno ' . $no);
     $GLOBALS['SMOKE_PHP_ERRORS'][] = "$label: $str @ "
-        . str_replace('/var/www/html/', '', $file) . ':' . $line;
+        . str_replace($GLOBALS['SMOKE_ROOT'] . '/', '', $file) . ':' . $line;
     return false;
 });
 
@@ -110,9 +112,9 @@ register_shutdown_function(function () use ($path, $lang, $role, $outfile) {
     file_put_contents($outfile, $json);
 });
 
-require '/var/www/html/auth.php';
-if (is_file('/var/www/html/vendor/autoload.php')) {
-    require_once '/var/www/html/vendor/autoload.php';
+require $SMOKE_ROOT . '/auth.php';
+if (is_file($SMOKE_ROOT . '/vendor/autoload.php')) {
+    require_once $SMOKE_ROOT . '/vendor/autoload.php';
 }
 if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
