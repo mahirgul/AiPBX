@@ -603,6 +603,21 @@ cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
 </Directory>
 ROUTING
 
+# Security headers for every response (clickjacking, MIME sniffing, version
+# disclosure). Referrer-Policy uses setifempty so pages that send their own
+# stricter policy (e.g. /mobile-login: no-referrer) are not overridden.
+# Ubuntu's security.conf is loaded after ours and would override these two.
+sed -i 's/^ServerTokens .*/ServerTokens Prod/; s/^ServerSignature .*/ServerSignature Off/' /etc/apache2/conf-available/security.conf 2>/dev/null || true
+cat > /etc/apache2/conf-available/aipbx-security.conf << 'SECHDR'
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Content-Security-Policy "frame-ancestors 'self'"
+    Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+SECHDR
+a2enconf aipbx-security 2>/dev/null
+
 a2ensite aipbx.conf 2>/dev/null
 a2dissite 000-default.conf 2>/dev/null || true
 a2enconf aipbx-routing 2>/dev/null
