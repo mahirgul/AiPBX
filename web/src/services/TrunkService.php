@@ -10,11 +10,11 @@ class TrunkService {
             $trunk_name = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['trunk_name'] ?? ''));
             $title = trim($data['title'] ?? $trunk_name);
             $ip_address = trim($data['ip_address'] ?? '');
-            $port = intval($data['port'] ?: 5060);
+            $port = intval(($data['port'] ?? '') ?: 5060);
             $transport = trim($data['transport'] ?? 'udp');
             $codecs = trim($data['codecs'] ?? 'alaw,ulaw');
             $t38 = intval($data['t38_support'] ?? 1);
-            $qualify = intval($data['qualify_frequency'] ?: 60);
+            $qualify = intval(($data['qualify_frequency'] ?? '') ?: 60);
             $send_caller_name = isset($data['send_caller_name']) ? intval($data['send_caller_name']) : 0;
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
