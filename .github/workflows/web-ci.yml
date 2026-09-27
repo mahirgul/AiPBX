@@ -1,0 +1,115 @@
+name: Web & Chat CI
+
+# Web portalı (PHP) ve sohbet servisi (Go) için her gönderimde çalışan kontroller.
+# 2026-09-27'ye kadar yalnızca Android/iOS derleniyordu; konferans/çalma grubu
+# kaydını ve push ayarlarını bozan hatalar bu yüzden fark edilmemişti.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/**'
+      - 'chat/**'
+      - '.github/workflows/web-ci.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'chat/**'
+      - '.github/workflows/web-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: web-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: PHP — lint, PHPStan, unit tests, smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: ci-root
+          MARIADB_DATABASE: asterisk_test
+          MARIADB_USER: aipbx_test
+          MARIADB_PASSWORD: ci-test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    env:
+      # Testler yalnızca asterisk_test üzerinde koşar (tests/bootstrap.php kilidi).
+      DB_HOST: 127.0.0.1
+      DB_NAME: asterisk_test
+      DB_USER: aipbx_test
+      DB_PASS: ci-test
+      # Hiçbir adım gerçek bir Asterisk'e komut göndermez.
+      AIPBX_NO_ASTERISK: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, intl, gd, curl, dom, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Language files (tr/en keys)
+        run: php bin/lint_lang.php
+
+      - name: PHPStan
+        run: php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress --error-format=github
+
+      - name: Test database schema (Phinx) and roles
+        run: |
+          printf 'DB_HOST=%s\nDB_NAME=%s\nDB_USER=%s\nDB_PASS=%s\n' "$DB_HOST" "$DB_NAME" "$DB_USER" "$DB_PASS" > tests/.env.test
+          php vendor/bin/phinx migrate -e testing
+          mysql -h "$DB_HOST" -u root -pci-root "$DB_NAME" -e "INSERT IGNORE INTO sys_roles (role_key, role_name, description, is_system) VALUES
+            ('admin', 'Yönetici', 'Tam yetkili', 1),
+            ('read_only_admin', 'İzleyici', 'İzleyici', 1),
+            ('cc_agent', 'Temsilci', 'Temsilci', 1),
+            ('fax_user', 'Faks', 'Faks', 1),
+            ('cc_manager', 'Kuyruk Yönetici', 'Kuyruk Yönetici', 1),
+            ('user', 'Kullanıcı', 'Kullanıcı', 1);"
+
+      - name: Unit tests
+        run: vendor/bin/phpunit --no-coverage
+
+      - name: Smoke (every route in tr/en, RBAC, conventions, lint)
+        run: |
+          export ASTERISK_PBX_DIR="$RUNNER_TEMP/aipbx-pbx"
+          mkdir -p "$ASTERISK_PBX_DIR"
+          php bin/smoke.php
+
+  chat:
+    name: Go — gofmt, vet, tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: chat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: chat/go.mod
+          cache-dependency-path: chat/go.sum
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./...
+      - name: Static build (CGO off — also runs on older glibc, e.g. Rocky 8)
+        run: CGO_ENABLED=0 go build -o /dev/null .
