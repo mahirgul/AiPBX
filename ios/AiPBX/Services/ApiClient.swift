@@ -6,6 +6,8 @@ public enum ApiError: LocalizedError {
     case decodingError(Error)
     case networkError(Error)
     case custom(String)
+    /// Şifre doğru ama iki adımlı doğrulama kodu gerekli (ya da kod hatalı).
+    case otpRequired(String)
 
     public var errorDescription: String? {
         switch self {
@@ -14,6 +16,7 @@ public enum ApiError: LocalizedError {
         case .decodingError(let err): return "Veri işleme hatası: \(err.localizedDescription)"
         case .networkError(let err): return "Ağ bağlantı hatası: \(err.localizedDescription)"
         case .custom(let msg): return msg
+        case .otpRequired(let msg): return msg
         }
     }
 }
@@ -57,7 +60,7 @@ public final class ApiClient {
         }
     }
 
-    public func login(baseUrl: String, userOrExt: String, pass: String) async throws -> LoginResponse {
+    public func login(baseUrl: String, userOrExt: String, pass: String, otp: String? = nil) async throws -> LoginResponse {
         let base = cleanUrl(baseUrl)
         guard let url = URL(string: "\(base)/api/mobile/login.php") else {
             throw ApiError.invalidUrl
@@ -67,11 +70,14 @@ public final class ApiClient {
         request.httpMethod = "POST"
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "username": userOrExt,
             "password": pass,
             "platform": "ios"
         ]
+        if let otp = otp, !otp.isEmpty {
+            body["otp"] = otp
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await session.data(for: request)
@@ -79,18 +85,25 @@ public final class ApiClient {
             throw ApiError.custom("Sunucu yanıtı alınamadı")
         }
 
+        // Sunucunun hata metni (kilit, pasif hesap, 2FA) kullanıcıya olduğu gibi
+        // gösterilir — önceden do/catch kendi fırlattığı hatayı yakalayıp
+        // "Veri işleme hatası"na çeviriyordu.
+        let res: LoginResponse
         do {
-            let res = try JSONDecoder().decode(LoginResponse.self, from: data)
-            if !res.success {
-                throw ApiError.custom(res.error ?? "Giriş başarısız")
-            }
-            return res
+            res = try JSONDecoder().decode(LoginResponse.self, from: data)
         } catch {
             if httpResponse.statusCode == 401 {
                 throw ApiError.custom("Kullanıcı adı veya şifre hatalı")
             }
             throw ApiError.decodingError(error)
         }
+        if res.otpRequired == true {
+            throw ApiError.otpRequired(res.error ?? "Doğrulama kodu gerekli.")
+        }
+        if !res.success {
+            throw ApiError.custom(res.error ?? "Giriş başarısız")
+        }
+        return res
     }
 
     public func googleLogin(baseUrl: String, idToken: String) async throws -> LoginResponse {

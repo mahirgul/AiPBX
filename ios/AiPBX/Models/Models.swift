@@ -47,6 +47,8 @@ public struct LoginResponse: Codable {
     public let user: UserProfile?
     public let sip: SipCredentials?
     public let pushConfig: PushConfig?
+    /// Hesapta iki adımlı doğrulama açık: şifreyle birlikte 6 haneli kod gerekli.
+    public let otpRequired: Bool?
 
     enum CodingKeys: String, CodingKey {
         case success
@@ -55,6 +57,7 @@ public struct LoginResponse: Codable {
         case user
         case sip
         case pushConfig = "push_config"
+        case otpRequired = "otp_required"
     }
 }
 

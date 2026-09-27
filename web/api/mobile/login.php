@@ -44,7 +44,7 @@ $db = getDB();
 // Kullanici adi ve dahili ayni alanda kabul ediliyor. Bir kullanicinin
 // username'i baska birinin extension'ina esitse hangi satirin donecegi
 // garanti degildi (bulgular.md 1.7). Kullanici adi eslesmesi onceliklidir.
-$stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, extension_type, sip_password, is_active
+$stmt = $db->prepare('SELECT id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active, two_factor_enabled, two_factor_secret
                       FROM sys_users
                       WHERE username = ? OR extension = ?
                       ORDER BY (username = ?) DESC, id ASC
@@ -81,68 +81,29 @@ if (empty($user['extension'])) {
     exit;
 }
 
+// İki adımlı doğrulama açık hesapta yalnızca şifre yetmez (önceden mobil
+// giriş 2FA'yı tamamen atlıyordu). Kod gönderilmediyse uygulamaya kod
+// istemesi söylenir; hatalı kod başarısız deneme sayılır (5 → 15 dk kilit).
+if (!empty($user['two_factor_enabled'])) {
+    require_once __DIR__ . '/../../src/services/TwoFactorService.php';
+    $otp = trim((string)($json['otp'] ?? $_POST['otp'] ?? ''));
+    if ($otp === '' || !TwoFactorService::verifyCode((string)$user['two_factor_secret'], $otp)) {
+        if ($otp !== '') {
+            logLoginAttempt($client_ip, $username, 'FAILED');
+        }
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'otp_required' => true,
+            'error' => $otp === ''
+                ? 'Bu hesapta iki adımlı doğrulama açık. Doğrulama uygulamanızdaki 6 haneli kodu girin.'
+                : 'Doğrulama kodu hatalı.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
 // Giriş başarılı: oturum denemesini logla
 logLoginAttempt($client_ip, $username, 'SUCCESS');
 
-$webrtc_suffix = getSystemSetting('webrtc_username_suffix', '-webrtc');
-$ws_path = getSystemSetting('pjsip_ws_path', '/ws');
-
-// Coturn TURNS (TLS/TCP)
-$turn = null;
-if (defined('TURN_SECRET') && TURN_SECRET !== '') {
-    // TURN kimlik süresi oturum süresiyle (30 gün / 2592000 sn) eşitleniyor —
-    // 24 saat sonra kampüs dışı medyanın sessizce kopması engellenir.
-    $turn_username = (time() + 2592000) . ':' . $user['extension'];
-    $turn_password = base64_encode(hash_hmac('sha1', $turn_username, TURN_SECRET, true));
-    $turn_host = defined('TURN_HOST') && TURN_HOST !== '' ? TURN_HOST : ($_SERVER['HTTP_HOST'] ?? '127.0.0.1');
-    $turn_port = defined('TURNS_PORT') && TURNS_PORT !== '' ? TURNS_PORT : '443';
-    $turn = [
-        'username' => $turn_username,
-        'credential' => $turn_password,
-        'urls' => [
-            'turns:' . $turn_host . ':' . $turn_port . '?transport=tcp'
-        ]
-    ];
-}
-
-$token = generateMobileToken($user, 30 * 86400);
-
-$host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
-$host_parts = explode(':', $host);
-$domain = $host_parts[0];
-
-$push_config = [
-    'enabled' => getSystemSetting('push_enabled', '0') === '1',
-    'provider' => getSystemSetting('push_provider', 'none'),
-    'fcm_project_id' => getSystemSetting('push_fcm_project_id', ''),
-    'fcm_app_id' => getSystemSetting('push_fcm_app_id', ''),
-    'fcm_api_key' => getSystemSetting('push_fcm_api_key', ''),
-    'fcm_sender_id' => getSystemSetting('push_fcm_sender_id', ''),
-];
-
-echo json_encode([
-    'success' => true,
-    'token' => $token,
-    'user' => [
-        'id' => (int)$user['id'],
-        'username' => $user['username'],
-        'full_name' => $user['full_name'],
-        'extension' => $user['extension'],
-        'role' => $user['role']
-    ],
-    'sip' => [
-        'extension' => $user['extension'],
-        // Mobil WebRTC için özel 3. endpoint (<dahili>-mob-webrtc)
-        'sip_username' => $user['extension'] . '-mob-webrtc',
-        // Standart SIP (PJSIP / Linphone / UDP/TCP 5060) istemcileri için:
-        'native_sip_username' => $user['extension'],
-        // WebRTC (WSS / JsSIP / SIP.js) istemcileri için:
-        'webrtc_username' => $user['extension'] . '-mob-webrtc',
-        'sip_password' => $user['sip_password'] ?? '',
-        'domain' => $domain,
-        'sip_port' => 5060,
-        'ws_url' => 'wss://' . $domain . $ws_path,
-        'turn' => $turn
-    ],
-    'push_config' => $push_config
-], JSON_UNESCAPED_UNICODE);
+echo json_encode(buildMobileLoginResponse($user), JSON_UNESCAPED_UNICODE);
