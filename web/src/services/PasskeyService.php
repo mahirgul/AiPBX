@@ -64,7 +64,7 @@ class PasskeyService
             $displayName,
             60,      // 60 saniye zaman aşımı
             true,    // Resident key (keşfedilebilir / username'siz giriş için)
-            'preferred', // Biyometrik / PIN tercih edilir
+            'required',  // Biyometrik / PIN zorunlu: passkey şifresiz tek başına giriş sağlıyor
             null,    // platform or cross-platform
             $excludeIds
         );
@@ -113,7 +113,7 @@ class PasskeyService
                 $rawClientDataJSON,
                 $rawAttestationObject,
                 $challenge,
-                false, // requireUserVerification
+                true,  // requireUserVerification — parmak izi/PIN olmadan kaydedilemez
                 true,  // requireUserPresent
                 false, // failIfRootMismatch (kendi imzalı/yerel anahtarlar için esnek)
                 false  // requireCtsProfileMatch
@@ -181,7 +181,7 @@ class PasskeyService
             $allowedCredentials,
             60,          // 60 sn timeout
             true, true, true, true, true, // usb, nfc, ble, hybrid, internal
-            'preferred'  // requireUserVerification
+            'required'   // requireUserVerification
         );
 
         $_SESSION['webauthn_auth_challenge'] = $webAuthn->getChallenge()->getBinaryString();
@@ -265,7 +265,9 @@ class PasskeyService
                 $passkey['public_key'],
                 $challenge,
                 $prevCounter,
-                false, // requireUserVerification
+                // Passkey şifre ve 2FA yerine geçiyor: yalnızca anahtara sahip olmak
+                // yetmemeli (çalınan bir güvenlik anahtarı tek başına giriş yapmasın).
+                true,  // requireUserVerification
                 true   // requireUserPresent
             );
 
