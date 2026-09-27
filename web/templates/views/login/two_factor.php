@@ -22,7 +22,7 @@
 
             <!-- TOTP 6-Digit Section -->
             <div id="section_totp">
-                <div class="form-group" style="text-align: center;">
+                <div class="form-group u-text-center">
                     <label class="form-label" style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
                         <?php echo t('login_2fa.code_prompt', 'Authenticator uygulamanızdaki 6 haneli kodu girin:'); ?>
                     </label>
@@ -59,7 +59,7 @@
                 <i class="fas fa-key"></i> <?php echo t('login_2fa.use_recovery_code', 'Cihazınıza erişemiyor musunuz? Kurtarma kodu kullanın'); ?>
             </button>
 
-            <form method="POST" action="/login-2fa" style="display: inline;">
+            <form method="POST" action="/login-2fa" class="u-inline">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                 <input type="hidden" name="action" value="cancel">
                 <button type="submit" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">

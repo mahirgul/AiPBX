@@ -1,9 +1,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-sign-out-alt" style="color: var(--primary);"></i> <?php echo t('outbound.title'); ?>
+            <i class="fas fa-sign-out-alt u-primary"></i> <?php echo t('outbound.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('outboundHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -28,7 +28,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('outbound.col_route'); ?></th>
                     <th><?php echo t('outbound.col_pattern'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('outbound.col_transform'); ?></th>
@@ -45,10 +45,10 @@
                     <?php foreach ($routes as $r): ?>
                         <?php $route_trunks = !empty($r['trunks_json']) ? (json_decode($r['trunks_json'], true) ?: []) : []; ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $r['id']; ?></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($r['route_name']); ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($r['route_name']); ?></td>
                             <td><span class="badge badge-info"><code><?php echo htmlspecialchars($r['match_pattern']); ?></code></span></td>
-                            <td class="col-hide-mobile" style="font-size: 11px;">
+                            <td class="col-hide-mobile u-fs-11">
                                 <?php if (!empty($r['strip_front'])): ?><span class="badge badge-secondary"><?php echo t('outbound.strip_front'); ?>: <?php echo intval($r['strip_front']); ?></span><?php endif; ?>
                                 <?php if (!empty($r['strip_back'])): ?><span class="badge badge-secondary"><?php echo t('outbound.strip_back'); ?>: <?php echo intval($r['strip_back']); ?></span><?php endif; ?>
                                 <?php if (!empty($r['prepend'])): ?><span class="badge badge-secondary"><?php echo t('outbound.prepend'); ?>: <code><?php echo htmlspecialchars($r['prepend']); ?></code></span><?php endif; ?>
@@ -89,8 +89,8 @@
 <div class="modal-overlay" id="routeModal">
     <div class="modal-card" style="max-width: 560px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="routeModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('outbound.new_route'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeRouteModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="routeModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('outbound.new_route'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeRouteModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -98,7 +98,7 @@
                 <input type="hidden" name="save_route" value="1">
                 <input type="hidden" name="route_id" id="modal_route_id" value="">
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_route_name'); ?></label>
                         <input type="text" name="route_name" id="modal_route_name" class="form-control" placeholder="Örn: 9+Dış Hat Araması" required>
@@ -129,51 +129,51 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 4px;">
+                <div class="form-group u-mt-4">
                     <label class="form-label"><i class="fas fa-server" style="opacity: 0.5;"></i> <?php echo t('outbound.field_trunks'); ?></label>
                     <div id="route_trunks_list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="addRouteTrunkRow()" style="margin-top: 8px;">
                         <i class="fas fa-plus"></i> <?php echo t('outbound.add_trunk'); ?>
                     </button>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('outbound.trunks_help'); ?></small>
+                    <small class="u-hint"><?php echo t('outbound.trunks_help'); ?></small>
                 </div>
 
                 <!-- Clone template for each dynamic route trunk row -->
                 <template id="route_trunk_row_template">
-                    <div class="route-trunk-row" style="display: flex; gap: 8px; align-items: center;">
-                        <select name="trunk_name[]" class="form-control route-trunk-select" style="flex: 1;">
+                    <div class="route-trunk-row u-flex-center">
+                        <select name="trunk_name[]" class="form-control route-trunk-select u-flex-1">
                             <?php foreach ($trunks as $tk): ?>
                                 <option value="<?php echo htmlspecialchars($tk['trunk_name']); ?>"><?php echo htmlspecialchars($tk['title'] . ' (' . $tk['trunk_name'] . ')'); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <input type="text" name="trunk_cid[]" class="form-control route-trunk-cid" placeholder="<?php echo htmlspecialchars(t('outbound.callerid_placeholder')); ?>" style="flex: 1;">
+                        <input type="text" name="trunk_cid[]" class="form-control route-trunk-cid u-flex-1" placeholder="<?php echo htmlspecialchars(t('outbound.callerid_placeholder')); ?>">
                         <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.route-trunk-row').remove()" title="<?php echo htmlspecialchars(t('outbound.remove')); ?>">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </template>
 
-                <div class="form-group" style="margin-top: 10px;">
+                <div class="form-group u-mt-10">
                     <label class="form-label"><?php echo t('outbound.field_group'); ?></label>
                     <input type="number" name="route_group" id="modal_route_group" class="form-control"
                            value="1" min="1" max="99" required>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                    <small class="u-hint u-fs-11">
                         <?php echo t('outbound.group_help'); ?>
                     </small>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_internal" id="modal_is_internal" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('outbound.field_internal'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_internal" id="modal_is_internal" value="1" class="u-check">
+                        <span class="u-fw-600"><?php echo t('outbound.field_internal'); ?></span>
                     </label>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('outbound.internal_help'); ?></small>
+                    <small class="u-hint u-fs-11"><?php echo t('outbound.internal_help'); ?></small>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('outbound.field_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('outbound.field_active'); ?></span>
                     </label>
                 </div>
 

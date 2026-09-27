@@ -1470,3 +1470,43 @@ body.auth-body {
     }
 }
 
+
+/* Yardımcı sınıflar — şablonlardaki tekrarlanan satır içi stillerin karşılığı.
+   :not(#u):not(#u) özgüllüğü (2,1,0) her sınıf/ID kuralını geçer ama JS ile
+   verilen satır içi stil (el.style.display = ...) yine bunları ezer —
+   yani eski satır içi stilin davranışı korunur. !important kullanılmaz. */
+.u-hint:not(#u):not(#u) { color: var(--text-muted); display: block; margin-top: 4px; }
+.u-grid-2:not(#u):not(#u) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.u-check-label:not(#u):not(#u) { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.u-check-label-6:not(#u):not(#u) { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.u-flex-between:not(#u):not(#u) { display: flex; align-items: center; justify-content: space-between; }
+.u-flex-center:not(#u):not(#u) { display: flex; align-items: center; gap: 8px; }
+.u-check:not(#u):not(#u) { width: 18px; height: 18px; accent-color: var(--primary); }
+.u-title:not(#u):not(#u) { font-size: 16px; font-weight: 700; }
+.u-strong:not(#u):not(#u) { font-weight: 700; color: var(--text-main); }
+.u-flex-gap:not(#u):not(#u) { display: flex; gap: 8px; }
+.u-btn-pad:not(#u):not(#u) { padding: 6px 12px; }
+.u-primary:not(#u):not(#u) { color: var(--primary); }
+.u-danger:not(#u):not(#u) { color: var(--danger); }
+.u-warning:not(#u):not(#u) { color: var(--warning); }
+.u-success:not(#u):not(#u) { color: var(--success); }
+.u-muted:not(#u):not(#u) { color: var(--text-muted); }
+.u-accent:not(#u):not(#u) { accent-color: var(--primary); }
+.u-fw-600:not(#u):not(#u) { font-weight: 600; }
+.u-fs-10:not(#u):not(#u) { font-size: 10px; }
+.u-fs-11:not(#u):not(#u) { font-size: 11px; }
+.u-fs-12:not(#u):not(#u) { font-size: 12px; }
+.u-text-right:not(#u):not(#u) { text-align: right; }
+.u-text-center:not(#u):not(#u) { text-align: center; }
+.u-w-auto:not(#u):not(#u) { width: auto; }
+.u-w-50:not(#u):not(#u) { width: 50px; }
+.u-m-0:not(#u):not(#u) { margin: 0; }
+.u-mb-0:not(#u):not(#u) { margin-bottom: 0; }
+.u-mb-10:not(#u):not(#u) { margin-bottom: 10px; }
+.u-mb-20:not(#u):not(#u) { margin-bottom: 20px; }
+.u-mt-4:not(#u):not(#u) { margin-top: 4px; }
+.u-mt-10:not(#u):not(#u) { margin-top: 10px; }
+.u-mt-12:not(#u):not(#u) { margin-top: 12px; }
+.u-p-24:not(#u):not(#u) { padding: 24px; }
+.u-flex-1:not(#u):not(#u) { flex: 1; }
+.u-inline:not(#u):not(#u) { display: inline; }

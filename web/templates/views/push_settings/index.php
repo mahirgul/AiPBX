@@ -3,13 +3,13 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 ?>
 
 <?php if (!empty($message)): ?>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
+    <div class="alert alert-success u-mb-20">
         <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
+    <div class="alert alert-danger u-mb-20">
         <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
     </div>
 <?php endif; ?>
@@ -44,7 +44,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 </style>
 
 <!-- Push Settings Single-Line Fixed Tabs -->
-<div class="settings-tabs" style="margin-bottom: 20px;">
+<div class="settings-tabs u-mb-20">
     <button type="button" class="settings-tab-btn active" data-tab="config" onclick="switchSettingsTab('config', this)">
         <i class="fas fa-sliders-h"></i> <?php echo t('push_settings.tab_config', 'Yapılandırma'); ?>
     </button>
@@ -60,7 +60,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-bell" style="color: var(--primary);"></i> Mobil Bildirim
+            <i class="fas fa-bell u-primary"></i> Mobil Bildirim
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('pushHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>
@@ -75,7 +75,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
             <li><strong>Katman 0 (Sıfır Bağımlılık - Varsayılan):</strong> Kalıcı WSS bağlantısı, Android 15 uyumlu <code>specialUse</code> ön plan servisi, Doze dirençli <code>AlarmManager</code> watchdog ve diriltme mekanizması. Dış servis gerektirmez; cihaz boşta veya ekran kapalıyken çağrılar sorunsuz alınır.</li>
             <li><strong>Katman 1 (İsteğe Bağlı - Google FCM):</strong> Agresif pil kısıtlaması uygulayan OEM cihazlarda (Xiaomi, Huawei vb.) veya kullanıcının uygulamayı görev yöneticisinden kaydırarak kapattığı durumlarda ekstra uyandırma garantisi sağlar. <em>Yalnızca abonenin aktif SIP kaydı yokken arka planda tetiklenir; bağlı abonelerde gecikme oluşturmaz.</em></li>
         </ul>
-        <p style="margin-bottom: 0;">FCM kullanmak istemiyorsanız Sağlayıcıyı <strong>"Yerel Altyapı (Sıfır Bağımlılık)"</strong> olarak bırakabilirsiniz. Bu durumda mobil uygulama Google ile hiçbir ağ teması kurmaz.</p>
+        <p class="u-mb-0">FCM kullanmak istemiyorsanız Sağlayıcıyı <strong>"Yerel Altyapı (Sıfır Bağımlılık)"</strong> olarak bırakabilirsiniz. Bu durumda mobil uygulama Google ile hiçbir ağ teması kurmaz.</p>
     </div>
 
     <form method="POST" autocomplete="off" class="push-settings-form">
@@ -84,21 +84,21 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
             <div class="form-group">
-                <label class="form-label" style="font-weight: 600;">Bildirim Katmanı</label>
+                <label class="form-label u-fw-600">Bildirim Katmanı</label>
                 <select name="push_enabled" class="form-control" id="pushEnabledSelect" onchange="togglePushFields()">
                     <option value="1" <?php echo ($settings['push_enabled'] === '1') ? 'selected' : ''; ?>>Aktif (Push Bildirimleri Açık)</option>
                     <option value="0" <?php echo ($settings['push_enabled'] === '0') ? 'selected' : ''; ?>>Devre Dışı (Yalnızca Katman 0 Kalıcı WSS)</option>
                 </select>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;">Push bildirimleri kapalıyken Asterisk dialplan'ına hiçbir ek bekleme veya kanca eklenmez.</small>
+                <small class="u-hint">Push bildirimleri kapalıyken Asterisk dialplan'ına hiçbir ek bekleme veya kanca eklenmez.</small>
             </div>
 
             <div class="form-group">
-                <label class="form-label" style="font-weight: 600;">Bildirim Sağlayıcısı</label>
+                <label class="form-label u-fw-600">Bildirim Sağlayıcısı</label>
                 <select name="push_provider" class="form-control" id="pushProviderSelect" onchange="togglePushFields()">
                     <option value="none" <?php echo ($settings['push_provider'] === 'none') ? 'selected' : ''; ?>>Yok / Yerel Altyapı (Sıfır Bağımlılık)</option>
                     <option value="fcm" <?php echo ($settings['push_provider'] === 'fcm') ? 'selected' : ''; ?>>Google Firebase Cloud Messaging (FCM HTTP v1)</option>
                 </select>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;">Google servisleri olmadan çalışmak için 'Yok' seçeneğini belirleyin.</small>
+                <small class="u-hint">Google servisleri olmadan çalışmak için 'Yok' seçeneğini belirleyin.</small>
             </div>
         </div>
 
@@ -109,21 +109,21 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div class="form-group">
-                    <label class="form-label">Firebase Proje Kimliği (Project ID) <span style="color: var(--danger);">*</span></label>
+                    <label class="form-label">Firebase Proje Kimliği (Project ID) <span class="u-danger">*</span></label>
                     <input type="text" name="push_fcm_project_id" class="form-control" value="<?php echo htmlspecialchars($settings['push_fcm_project_id'] ?? ''); ?>" placeholder="ör. aipbx-phone-12345">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Firebase Konsolu → Proje Ayarları → Proje Kimliği.</small>
+                    <small class="u-hint">Firebase Konsolu → Proje Ayarları → Proje Kimliği.</small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Push Uyanma Bekleme Süresi (Saniye)</label>
                     <input type="number" name="push_wait_seconds" class="form-control" min="3" max="30" value="<?php echo htmlspecialchars($settings['push_wait_seconds'] ?? '8'); ?>">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">Mobil uç bağlı değilken push uyanması için beklenecek maksimum süre (Varsayılan: 8 sn).</small>
+                    <small class="u-hint">Mobil uç bağlı değilken push uyanması için beklenecek maksimum süre (Varsayılan: 8 sn).</small>
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 16px;">
-                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>Google Servis Hesabı JSON İçeriği (Service Account) <span style="color: var(--danger);">*</span></span>
+                <label class="form-label u-flex-between">
+                    <span>Google Servis Hesabı JSON İçeriği (Service Account) <span class="u-danger">*</span></span>
                     <?php if ($has_service_account): ?>
                         <span class="badge" style="background: #28a745; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px;">
                             <i class="fas fa-check-circle"></i> Servis Hesabı Tanımlı (Özel Anahtar Korunuyor)
@@ -135,7 +135,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
                     <?php endif; ?>
                 </label>
                 <textarea name="push_fcm_service_account" class="form-control" rows="5" style="font-family: monospace; font-size: 12px;" placeholder="<?php echo $has_service_account ? 'Mevcut servis hesabı kayıtlıdır. Değiştirmek istemiyorsanız bu alanı boş bırakın.' : 'Firebase Konsolu → Proje Ayarları → Hizmet Hesapları → \'Yeni özel anahtar oluştur\' ile indirilen JSON içeriğini buraya yapıştırın...'; ?>"></textarea>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;">Güvenlik gereği kayıtlı servis hesabı anahtarı arayüzde geri gösterilmez.</small>
+                <small class="u-hint">Güvenlik gereği kayıtlı servis hesabı anahtarı arayüzde geri gösterilmez.</small>
             </div>
 
             <div style="margin-top: 20px; border-top: 1px dashed var(--border-color, #ccc); padding-top: 16px;">
@@ -147,15 +147,15 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
                 </p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 12px;">Uygulama Kimliği (App ID)</label>
+                        <label class="form-label u-fs-12">Uygulama Kimliği (App ID)</label>
                         <input type="text" name="push_fcm_app_id" class="form-control" value="<?php echo htmlspecialchars($settings['push_fcm_app_id'] ?? ''); ?>" placeholder="1:123456789:android:abcdef">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 12px;">API Anahtarı (API Key)</label>
+                        <label class="form-label u-fs-12">API Anahtarı (API Key)</label>
                         <input type="text" name="push_fcm_api_key" class="form-control" value="<?php echo htmlspecialchars($settings['push_fcm_api_key'] ?? ''); ?>" placeholder="AIzaSy...">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 12px;">GCM Gönderen Kimliği (Sender ID)</label>
+                        <label class="form-label u-fs-12">GCM Gönderen Kimliği (Sender ID)</label>
                         <input type="text" name="push_fcm_sender_id" class="form-control" value="<?php echo htmlspecialchars($settings['push_fcm_sender_id'] ?? ''); ?>" placeholder="ör. 123456789012">
                     </div>
                 </div>
@@ -188,8 +188,8 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         </p>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: flex-end;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="font-weight: 600;">Hedef Dahili veya Kayıtlı Cihaz</label>
+            <div class="form-group u-mb-0">
+                <label class="form-label u-fw-600">Hedef Dahili veya Kayıtlı Cihaz</label>
                 <select id="testTargetSelect" class="form-control">
                     <option value="">-- Cihaz Seçin --</option>
                     <?php if (empty($devices)): ?>

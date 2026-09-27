@@ -1,9 +1,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-network-wired" style="color: var(--primary);"></i> <?php echo t('trunks.header'); ?>
+            <i class="fas fa-network-wired u-primary"></i> <?php echo t('trunks.header'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('trunkHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -28,7 +28,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('trunks.col_trunk'); ?></th>
                     <th><?php echo t('trunks.col_title'); ?></th>
                     <th><?php echo t('trunks.col_ip_port'); ?></th>
@@ -54,9 +54,9 @@
                         }
                     ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $t['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $t['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-server"></i> <?php echo htmlspecialchars($t['trunk_name']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);">
+                            <td class="u-strong">
                                 <?php echo htmlspecialchars($t['title']); ?>
                                 <?php if (!empty($t['did_trim_digits'])): ?>
                                     <span class="badge badge-warning" title="DID Kırpma: Son <?php echo intval($t['did_trim_digits']); ?> hane" style="font-size: 10px; margin-left: 4px;">
@@ -100,8 +100,8 @@
 <div class="modal-overlay" id="trunkModal">
     <div class="modal-card" style="max-width: 680px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="trunkModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('trunks.new_trunk'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeTrunkModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="trunkModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('trunks.new_trunk'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeTrunkModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -119,7 +119,7 @@
 
                 <!-- TAB 1: Temel Ayarlar -->
                 <div id="trunk_tab_basic" class="trunk-tab-pane">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_trunk_name'); ?></label>
                             <input type="text" name="trunk_name" id="modal_trunk_name" class="form-control" placeholder="main_trunk" required>
@@ -143,7 +143,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_transport'); ?></label>
                             <select name="transport" id="modal_transport" class="form-control">
@@ -161,7 +161,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_outbound_proxy'); ?></label>
                             <input type="text" name="outbound_proxy" id="modal_outbound_proxy" class="form-control" placeholder="sip:proxy.operator.com:5060">
@@ -170,14 +170,14 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_match_hosts'); ?></label>
                             <input type="text" name="match_hosts" id="modal_match_hosts" class="form-control" placeholder="198.51.100.10, 198.51.100.0/24">
-                            <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.match_hosts_help'); ?></small>
+                            <small class="u-hint u-fs-11"><?php echo t('trunks.match_hosts_help'); ?></small>
                         </div>
                     </div>
 
                     <div class="form-group" style="margin-top: 14px;">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                            <span style="font-weight: 600;"><?php echo t('trunks.field_active'); ?></span>
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                            <span class="u-fw-600"><?php echo t('trunks.field_active'); ?></span>
                         </label>
                     </div>
                 </div>
@@ -185,11 +185,11 @@
                 <!-- TAB 2: Kimlik Doğrulama & Kayıt (Auth & Registration) -->
                 <div id="trunk_tab_auth" class="trunk-tab-pane" style="display: none;">
                     <div class="form-group" style="margin-bottom: 16px; background: var(--bg-card); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 0;">
-                            <input type="checkbox" name="registration_enabled" id="modal_registration_enabled" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                            <span style="font-weight: 600;"><?php echo t('trunks.field_registration_enabled'); ?></span>
+                        <label class="form-label u-check-label u-mb-0">
+                            <input type="checkbox" name="registration_enabled" id="modal_registration_enabled" value="1" class="u-check">
+                            <span class="u-fw-600"><?php echo t('trunks.field_registration_enabled'); ?></span>
                         </label>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">Operatör PJSIP Outbound Registration gerektiriyorsa işaretleyin.</small>
+                        <small class="u-hint u-fs-11">Operatör PJSIP Outbound Registration gerektiriyorsa işaretleyin.</small>
                     </div>
 
                     <div class="form-group">
@@ -206,7 +206,7 @@
                         </small>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_auth_username'); ?></label>
                             <input type="text" name="auth_username" id="modal_auth_username" class="form-control" placeholder="0XXXXXXXXXX veya kullanıcı adı">
@@ -218,7 +218,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_registration_expiration'); ?></label>
                             <input type="number" name="registration_expiration" id="modal_registration_expiration" class="form-control" value="3600" min="30" max="86400">
@@ -230,7 +230,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group" style="margin-top: 12px;">
+                    <div class="form-group u-mt-12">
                         <label class="form-label"><?php echo t('trunks.field_max_contacts'); ?></label>
                         <input type="number" name="max_contacts" id="modal_max_contacts" class="form-control" value="1" min="1" max="100">
                     </div>
@@ -244,7 +244,7 @@
                         <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;"><?php echo t('trunks.help_outbound_caller_id'); ?></small>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_from_user'); ?></label>
                             <input type="text" name="from_user" id="modal_from_user" class="form-control" placeholder="<?php echo htmlspecialchars(t('trunks.placeholder_from_user')); ?>">
@@ -259,23 +259,23 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
                         <div class="form-group">
-                            <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" name="send_caller_name" id="modal_send_caller_name" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <label class="form-label u-check-label">
+                                <input type="checkbox" name="send_caller_name" id="modal_send_caller_name" value="1" class="u-check">
                                 <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_caller_name'); ?></span>
                             </label>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" name="send_pai" id="modal_send_pai" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <label class="form-label u-check-label">
+                                <input type="checkbox" name="send_pai" id="modal_send_pai" value="1" class="u-check">
                                 <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_pai'); ?></span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group" style="margin-top: 8px;">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="send_rpid" id="modal_send_rpid" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="send_rpid" id="modal_send_rpid" value="1" class="u-check">
                             <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_rpid'); ?></span>
                         </label>
                     </div>
@@ -283,7 +283,7 @@
 
                 <!-- TAB 4: Sinyalizasyon, Medya & Gelişmiş (Signaling & Advanced) -->
                 <div id="trunk_tab_advanced" class="trunk-tab-pane" style="display: none;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_dtmf_mode'); ?></label>
                             <select name="dtmf_mode" id="modal_dtmf_mode" class="form-control">
@@ -328,7 +328,7 @@
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; background: var(--bg-card); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label form-label-help">
                                 <span><?php echo t('trunks.field_fax_detect'); ?></span>
                                 <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.fax_detect_help'); ?></span></span>
@@ -339,13 +339,13 @@
                             </select>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label"><?php echo t('trunks.field_fax_detect_timeout'); ?></label>
                             <input type="number" name="fax_detect_timeout" id="modal_fax_detect_timeout" class="form-control" value="30" min="5" max="120">
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_qualify'); ?></label>
                             <input type="number" name="qualify_frequency" id="modal_qualify_frequency" class="form-control" value="60" required>
@@ -361,7 +361,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_rtp_symmetric'); ?></label>
                             <select name="rtp_symmetric" id="modal_rtp_symmetric" class="form-control">
@@ -379,7 +379,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_force_rport'); ?></label>
                             <select name="force_rport" id="modal_force_rport" class="form-control">
@@ -399,7 +399,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div class="u-grid-2 u-mt-12">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_context'); ?></label>
                             <input type="text" name="context" id="modal_context" class="form-control" value="from-trunk-inbound">
@@ -414,39 +414,39 @@
                     <!-- Gelen Çağrı & DID Normalizasyonu / Transit Rota -->
                     <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
                         <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
-                            <i class="fas fa-random" style="color: var(--primary);"></i> <?php echo t('trunks.section_inbound_routing'); ?>
+                            <i class="fas fa-random u-primary"></i> <?php echo t('trunks.section_inbound_routing'); ?>
                         </h4>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div class="form-group" style="margin-bottom: 0;">
+                        <div class="u-grid-2">
+                            <div class="form-group u-mb-0">
                                 <label class="form-label form-label-help">
                                     <span><?php echo t('trunks.field_did_trim_digits'); ?></span>
                                     <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.did_trim_digits_help'); ?></span></span>
                                 </label>
                                 <input type="number" name="did_trim_digits" id="modal_did_trim_digits" class="form-control" value="0" min="0" max="20">
-                                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.did_trim_example'); ?></small>
+                                <small class="u-hint u-fs-11"><?php echo t('trunks.did_trim_example'); ?></small>
                             </div>
 
-                            <div class="form-group" style="margin-bottom: 0;">
+                            <div class="form-group u-mb-0">
                                 <label class="form-label"><?php echo t('trunks.field_outbound_route_group'); ?></label>
                                 <input type="number" name="outbound_route_group" id="modal_outbound_route_group" class="form-control" value="1" min="1" max="99">
-                                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.outbound_route_group_help'); ?></small>
+                                <small class="u-hint u-fs-11"><?php echo t('trunks.outbound_route_group_help'); ?></small>
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
-                            <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" name="allow_outbound_routing" id="modal_allow_outbound_routing" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                        <div class="form-group u-mb-0 u-mt-12">
+                            <label class="form-label u-check-label">
+                                <input type="checkbox" name="allow_outbound_routing" id="modal_allow_outbound_routing" value="1" class="u-check">
                                 <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_allow_outbound_routing'); ?></span>
                             </label>
-                            <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.allow_outbound_routing_help'); ?></small>
+                            <small class="u-hint u-fs-11"><?php echo t('trunks.allow_outbound_routing_help'); ?></small>
                         </div>
                     </div>
 
-                    <div class="form-group" style="margin-top: 12px;">
+                    <div class="form-group u-mt-12">
                         <label class="form-label"><?php echo t('trunks.field_custom_params'); ?></label>
                         <textarea name="custom_pjsip_params" id="modal_custom_pjsip_params" class="form-control" rows="3" placeholder="trust_id_inbound=yes&#10;inband_progress=yes" style="font-family: monospace; font-size: 12px;"></textarea>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('trunks.custom_params_help'); ?></small>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.custom_params_help'); ?></small>
                     </div>
                 </div>
 

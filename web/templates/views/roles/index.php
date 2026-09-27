@@ -4,9 +4,9 @@ $group_slugs = RoleRepository::groupSlugs();
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-user-shield" style="color: var(--warning);"></i> <?php echo t('roles.header_title'); ?>
+            <i class="fas fa-user-shield u-warning"></i> <?php echo t('roles.header_title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('roleHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -28,7 +28,7 @@ $group_slugs = RoleRepository::groupSlugs();
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th class="col-hide-mobile"><?php echo t('roles.col_role_id'); ?></th>
                     <th><?php echo t('roles.col_role'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('roles.col_description'); ?></th>
@@ -43,7 +43,7 @@ $group_slugs = RoleRepository::groupSlugs();
                 <?php else: ?>
                     <?php foreach ($roles as $r): ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $r['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
                             <td class="col-hide-mobile"><code><?php echo htmlspecialchars($r['role_key']); ?></code></td>
                             <td>
                                 <strong style="color: var(--text-main); font-size: 14px;">
@@ -76,10 +76,10 @@ $group_slugs = RoleRepository::groupSlugs();
 <div class="modal-overlay" id="roleModal" style="display: none;">
     <div class="modal-card" style="max-width: 920px; width: 95%;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="roleModalTitle">
-                <i class="fas fa-user-shield" style="color: var(--warning);"></i> <?php echo t('roles.modal_title'); ?>
+            <h3 class="u-title" id="roleModalTitle">
+                <i class="fas fa-user-shield u-warning"></i> <?php echo t('roles.modal_title'); ?>
             </h3>
-            <button class="btn btn-secondary" onclick="closeRoleModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeRoleModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
             <form method="POST" autocomplete="off" id="roleForm">
@@ -88,11 +88,11 @@ $group_slugs = RoleRepository::groupSlugs();
                 <input type="hidden" name="role_id" id="modal_role_id" value="">
 
                 <div id="modal_system_role_hint" style="display:none; background: var(--info-soft, rgba(59,130,246,0.08)); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: var(--text-muted);">
-                    <i class="fas fa-circle-info" style="color: var(--primary);"></i>
+                    <i class="fas fa-circle-info u-primary"></i>
                     <?php echo t('roles.system_role_hint'); ?>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="u-grid-2 u-mb-20">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('roles.field_role_key'); ?></label>
                         <input type="text" name="role_key" id="modal_role_key" class="form-control" placeholder="supervisor" required>
@@ -111,9 +111,9 @@ $group_slugs = RoleRepository::groupSlugs();
 
                 <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-color);">
                     <h4 style="margin:0; font-size: 14px; font-weight: 700; color: var(--text-main);">
-                        <i class="fas fa-list-check" style="color: var(--primary);"></i> <?php echo t('roles.matrix_title'); ?>
+                        <i class="fas fa-list-check u-primary"></i> <?php echo t('roles.matrix_title'); ?>
                     </h4>
-                    <div style="display: flex; gap: 8px;">
+                    <div class="u-flex-gap">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAllPerms(true)">
                             <i class="fas fa-check-double"></i> <?php echo t('roles.select_all'); ?>
                         </button>
@@ -130,10 +130,10 @@ $group_slugs = RoleRepository::groupSlugs();
                             <tr>
                                 <th><?php echo t('roles.col_module'); ?></th>
                                 <th class="col-hide-mobile"><?php echo t('roles.col_group'); ?></th>
-                                <th style="text-align: center;"><?php echo t('roles.col_perm_view'); ?></th>
-                                <th style="text-align: center;"><?php echo t('roles.col_perm_access'); ?></th>
-                                <th style="text-align: center;"><?php echo t('roles.col_perm_edit'); ?></th>
-                                <th style="text-align: center;"><?php echo t('roles.col_perm_delete'); ?></th>
+                                <th class="u-text-center"><?php echo t('roles.col_perm_view'); ?></th>
+                                <th class="u-text-center"><?php echo t('roles.col_perm_access'); ?></th>
+                                <th class="u-text-center"><?php echo t('roles.col_perm_edit'); ?></th>
+                                <th class="u-text-center"><?php echo t('roles.col_perm_delete'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -169,7 +169,7 @@ $group_slugs = RoleRepository::groupSlugs();
                             ?>
                                 <tr class="perm-group-header-row" style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
                                     <td colspan="6" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
-                                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div class="u-flex-between">
                                             <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                                                 <i class="<?php echo $icon; ?>" style="color: <?php echo $color; ?>; font-size: 13px;"></i>
                                                 <span><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?></span>
@@ -189,16 +189,16 @@ $group_slugs = RoleRepository::groupSlugs();
                                     <td class="col-hide-mobile">
                                         <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-size: 11px; border: 1px solid var(--border-color); font-weight: 500;"><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $m_info['group'])); ?></span>
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td class="u-text-center">
                                         <input type="checkbox" name="perms[<?php echo $m_key; ?>][view]" value="1" class="perm-cb perm-view" id="p_<?php echo $m_key; ?>_view">
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td class="u-text-center">
                                         <input type="checkbox" name="perms[<?php echo $m_key; ?>][access]" value="1" class="perm-cb perm-access" id="p_<?php echo $m_key; ?>_access">
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td class="u-text-center">
                                         <input type="checkbox" name="perms[<?php echo $m_key; ?>][edit]" value="1" class="perm-cb perm-edit" id="p_<?php echo $m_key; ?>_edit">
                                     </td>
-                                    <td style="text-align: center;">
+                                    <td class="u-text-center">
                                         <input type="checkbox" name="perms[<?php echo $m_key; ?>][delete]" value="1" class="perm-cb perm-delete" id="p_<?php echo $m_key; ?>_delete">
                                     </td>
                                 </tr>

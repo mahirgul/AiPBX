@@ -8,14 +8,14 @@
             <div style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                 <span><?php echo t('dashboard.system_status'); ?></span>
                 <?php if ($is_asterisk_running): ?>
-                    <span class="badge badge-success" style="font-size: 11px;"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
+                    <span class="badge badge-success u-fs-11"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
                 <?php else: ?>
-                    <span class="badge badge-danger" style="font-size: 11px;"><i class="fas fa-exclamation-triangle"></i> <?php echo t('dashboard.status_down'); ?></span>
+                    <span class="badge badge-danger u-fs-11"><i class="fas fa-exclamation-triangle"></i> <?php echo t('dashboard.status_down'); ?></span>
                 <?php endif; ?>
             </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <form method="POST" autocomplete="off" style="display: inline; margin: 0;">
+        <div class="u-flex-center">
+            <form method="POST" autocomplete="off" class="u-m-0 u-inline">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="reload_asterisk">
                 <button type="submit" class="btn btn-outline-primary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.reload_tooltip')); ?>" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -43,7 +43,7 @@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
     <!-- Kullanıcılar -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="u-flex-between">
             <div style="color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase;"><?php echo t('dashboard.card_users'); ?></div>
             <div style="width: 32px; height: 32px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--secondary); font-size: 14px;">
                 <i class="fas fa-users-cog"></i>
@@ -54,7 +54,7 @@
 
     <!-- Dahililer -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="u-flex-between">
             <div style="color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase;"><?php echo t('dashboard.card_extensions'); ?></div>
             <div style="width: 32px; height: 32px; background: rgba(0, 242, 254, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 14px;">
                 <i class="fas fa-phone-square-alt"></i>
@@ -65,7 +65,7 @@
 
     <!-- Dış Hatlar -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="u-flex-between">
             <div style="color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase;"><?php echo t('dashboard.card_trunks'); ?></div>
             <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 14px;">
                 <i class="fas fa-network-wired"></i>
@@ -76,7 +76,7 @@
 
     <!-- Gelen Fakslar -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="u-flex-between">
             <div style="color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase;"><?php echo t('dashboard.card_fax_in'); ?></div>
             <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 14px;">
                 <i class="fas fa-inbox"></i>
@@ -89,37 +89,37 @@
 <!-- 3. Sunucu Bilgileri ve Servis Yönetimi Grid -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
     <!-- Sunucu Metrikleri -->
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">
-                <i class="fas fa-microchip" style="color: var(--primary);"></i> <?php echo t('dashboard.server_metrics'); ?>
+                <i class="fas fa-microchip u-primary"></i> <?php echo t('dashboard.server_metrics'); ?>
             </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
-                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><?php echo t('dashboard.metric_version'); ?></div>
+                <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_version'); ?></div>
                 <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 2px;"><?php echo htmlspecialchars($asterisk_version); ?></div>
             </div>
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
-                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><?php echo t('dashboard.metric_ram'); ?></div>
+                <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_ram'); ?></div>
                 <div style="font-size: 14px; font-weight: 700; color: var(--success); margin-top: 2px;"><?php echo htmlspecialchars($ram_info); ?></div>
             </div>
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
-                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><?php echo t('dashboard.metric_disk'); ?></div>
+                <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_disk'); ?></div>
                 <div style="font-size: 14px; font-weight: 700; color: var(--warning); margin-top: 2px;"><?php echo htmlspecialchars($disk_info); ?></div>
             </div>
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
-                <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><?php echo t('dashboard.metric_uptime'); ?></div>
+                <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_uptime'); ?></div>
                 <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 2px;"><?php echo htmlspecialchars($uptime_info); ?></div>
             </div>
         </div>
     </div>
 
     <!-- Servis Restarts ve Reboot -->
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">
-                <i class="fas fa-cogs" style="color: var(--primary);"></i> <?php echo t('dashboard.service_control'); ?>
+                <i class="fas fa-cogs u-primary"></i> <?php echo t('dashboard.service_control'); ?>
             </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
@@ -128,7 +128,7 @@
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="asterisk">
                 <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_asterisk')); ?>">
-                    <i class="fas fa-phone-alt" style="color: var(--primary);"></i> <?php echo t('dashboard.restart_asterisk'); ?>
+                    <i class="fas fa-phone-alt u-primary"></i> <?php echo t('dashboard.restart_asterisk'); ?>
                 </button>
             </form>
 
@@ -146,7 +146,7 @@
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="mariadb">
                 <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_mariadb')); ?>">
-                    <i class="fas fa-database" style="color: var(--warning);"></i> <?php echo t('dashboard.restart_mariadb'); ?>
+                    <i class="fas fa-database u-warning"></i> <?php echo t('dashboard.restart_mariadb'); ?>
                 </button>
             </form>
 
@@ -155,7 +155,7 @@
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="postfix">
                 <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_postfix')); ?>">
-                    <i class="fas fa-paper-plane" style="color: var(--success);"></i> <?php echo t('dashboard.restart_postfix'); ?>
+                    <i class="fas fa-paper-plane u-success"></i> <?php echo t('dashboard.restart_postfix'); ?>
                 </button>
             </form>
         </div>

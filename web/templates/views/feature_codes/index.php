@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-hashtag" style="color: var(--primary);"></i> <?php echo t('fc.header_title'); ?>
+            <i class="fas fa-hashtag u-primary"></i> <?php echo t('fc.header_title'); ?>
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('featureCodesHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>
@@ -32,7 +32,7 @@
                 <?php else: ?>
                     <?php foreach ($codes as $fc): ?>
                         <tr>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($fc['title']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($fc['title']); ?></td>
                             <td><code style="font-size: 14px; font-weight: 700; color: var(--primary);"><?php
                                 $clean_c = rtrim(ltrim($fc['code'], '_'), '.X');
                                 $suffix = '';
@@ -47,7 +47,7 @@
                                         <span class="badge badge-warning"><?php echo htmlspecialchars($r); ?></span>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);"><?php echo t('fc.everyone'); ?></span>
+                                    <span class="u-muted"><?php echo t('fc.everyone'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td><?php echo uiStatusToggleForm($fc['id'], $fc['is_active'], 'feature_id'); ?></td>
@@ -68,8 +68,8 @@
 <div class="modal-overlay" id="featureCodeModal">
     <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="featureCodeModalTitle"><i class="fas fa-edit" style="color: var(--primary);"></i> <?php echo t('fc.modal_edit_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeFeatureCodeModal()" style="padding: 6px 12px;" title="<?php echo t('fc.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="featureCodeModalTitle"><i class="fas fa-edit u-primary"></i> <?php echo t('fc.modal_edit_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeFeatureCodeModal()" title="<?php echo t('fc.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -96,12 +96,12 @@
                         <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('fc.allowed_roles_help'); ?></span></span>
                     </label>
                     <input type="text" name="allowed_roles" id="modal_allowed_roles" class="form-control" placeholder="<?php echo t('fc.allowed_roles_placeholder'); ?>">
-                    <small style="color: var(--text-muted);"><?php echo t('fc.available_roles'); ?> <?php echo htmlspecialchars(implode(', ', $valid_role_keys)); ?></small>
+                    <small class="u-muted"><?php echo t('fc.available_roles'); ?> <?php echo htmlspecialchars(implode(', ', $valid_role_keys)); ?></small>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" style="width: auto;"> <?php echo t('fc.field_active'); ?>
+                    <label class="form-label u-flex-center">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" class="u-w-auto"> <?php echo t('fc.field_active'); ?>
                     </label>
                 </div>
 

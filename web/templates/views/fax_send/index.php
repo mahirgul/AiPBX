@@ -1,7 +1,7 @@
 <div class="card" style="max-width: 760px; margin: 0 auto;">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-paper-plane" style="color: var(--primary);"></i> <?php echo t('fax_send.header_title'); ?>
+            <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_send.header_title'); ?>
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSendHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>
@@ -40,7 +40,7 @@
                         <option value="<?php echo htmlspecialchars($fu['extension']); ?>"><?php echo htmlspecialchars($fu['full_name']); ?> (<?php echo htmlspecialchars($fu['extension']); ?>)</option>
                     <?php endforeach; ?>
                 </select>
-                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('fax_send.sender_admin_help'); ?></small>
+                <small class="u-hint u-fs-11"><?php echo t('fax_send.sender_admin_help'); ?></small>
             <?php else: ?>
                 <input type="text" name="sender_did" class="form-control" value="<?php echo htmlspecialchars($user_ext); ?>" readonly style="opacity: 0.8;">
             <?php endif; ?>
@@ -52,14 +52,14 @@
                 <i class="fas fa-phone-alt" style="position: absolute; left: 16px; top: 15px; color: var(--text-muted);"></i>
                 <input type="text" name="dest_number" class="form-control" style="padding-left: 44px;" required>
             </div>
-            <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('fax_send.dest_help'); ?></small>
+            <small class="u-hint u-fs-11"><?php echo t('fax_send.dest_help'); ?></small>
         </div>
 
         <div id="fax-compose-pdf" class="fax-compose-panel">
             <div class="form-group">
                 <label class="form-label"><?php echo t('fax_send.field_pdf'); ?></label>
                 <input type="file" name="pdf_file" id="fax_pdf_file_input" class="form-control" accept=".pdf">
-                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('fax_send.pdf_help'); ?></small>
+                <small class="u-hint u-fs-11"><?php echo t('fax_send.pdf_help'); ?></small>
             </div>
         </div>
 
@@ -89,7 +89,7 @@
                     <button class="ql-list" value="bullet"></button>
                 </div>
                 <div id="fax-text-editor" data-placeholder="<?php echo htmlspecialchars(t('fax_send.text_placeholder')); ?>"></div>
-                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('fax_send.text_help'); ?></small>
+                <small class="u-hint u-fs-11"><?php echo t('fax_send.text_help'); ?></small>
             </div>
         </div>
 

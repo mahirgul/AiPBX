@@ -20,7 +20,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-id-card" style="color: var(--primary);"></i> <?php echo t('brand_settings.identity_title'); ?>
+                <i class="fas fa-id-card u-primary"></i> <?php echo t('brand_settings.identity_title'); ?>
             </div>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('brandHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
@@ -54,7 +54,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-image" style="color: var(--primary);"></i> <?php echo t('brand_settings.logo_favicon_title'); ?>
+                <i class="fas fa-image u-primary"></i> <?php echo t('brand_settings.logo_favicon_title'); ?>
             </div>
         </div>
 
@@ -71,13 +71,13 @@
                 <div class="form-group" id="logo_icon_field" style="<?php echo $s['site_logo_type'] === 'image' ? 'display:none;' : ''; ?>">
                     <label class="form-label"><?php echo t('brand_settings.field_logo_icon'); ?></label>
                     <input type="text" name="site_logo_icon" id="logo_icon_input" class="form-control" value="<?php echo htmlspecialchars($s['site_logo_icon']); ?>" placeholder="fa-network-wired" oninput="updateBrandPreview()">
-                    <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('brand_settings.logo_icon_help'); ?> <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" rel="noopener"><?php echo t('brand_settings.icon_library_link'); ?></a></small>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.logo_icon_help'); ?> <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" rel="noopener"><?php echo t('brand_settings.icon_library_link'); ?></a></small>
                 </div>
 
                 <div class="form-group" id="logo_image_field" style="<?php echo $s['site_logo_type'] !== 'image' ? 'display:none;' : ''; ?>">
                     <label class="form-label"><?php echo t('brand_settings.field_logo_file'); ?></label>
                     <input type="file" name="logo_file" class="form-control" accept=".png,.jpg,.jpeg,.svg,.webp" onchange="previewFileInput(this, 'logo_preview_img')">
-                    <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('brand_settings.logo_file_help'); ?></small>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.logo_file_help'); ?></small>
                     <?php if ($s['site_logo_image']): ?>
                         <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--danger); cursor: pointer;">
                             <input type="checkbox" name="remove_logo_image" value="1"> <?php echo t('brand_settings.remove_logo'); ?>
@@ -88,7 +88,7 @@
                 <div class="form-group" style="margin-top: 20px;">
                     <label class="form-label"><?php echo t('brand_settings.field_favicon_file'); ?></label>
                     <input type="file" name="favicon_file" class="form-control" accept=".ico,.png" onchange="previewFileInput(this, 'favicon_preview_img')">
-                    <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('brand_settings.favicon_file_help'); ?></small>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.favicon_file_help'); ?></small>
                     <?php if ($s['site_favicon_url']): ?>
                         <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--danger); cursor: pointer;">
                             <input type="checkbox" name="remove_favicon" value="1"> <?php echo t('brand_settings.remove_favicon'); ?>
@@ -120,9 +120,9 @@
                         </div>
                         <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px;"><?php echo t('brand_settings.favicon_label'); ?></div>
                     </div>
-                    <div style="flex: 1;">
+                    <div class="u-flex-1">
                         <div style="font-size: 13px; font-weight: 700; color: var(--text-main);" id="brand_title_preview"><?php echo htmlspecialchars($s['brand_title']); ?></div>
-                        <div style="font-size: 11px; color: var(--text-muted);" id="brand_sub_preview"><?php echo htmlspecialchars($s['brand_sub']); ?></div>
+                        <div class="u-muted u-fs-11" id="brand_sub_preview"><?php echo htmlspecialchars($s['brand_sub']); ?></div>
                     </div>
                 </div>
             </div>
@@ -135,7 +135,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-palette" style="color: var(--primary);"></i> <?php echo t('brand_settings.colors_title'); ?>
+                <i class="fas fa-palette u-primary"></i> <?php echo t('brand_settings.colors_title'); ?>
             </div>
         </div>
 
@@ -148,17 +148,17 @@
                 <label class="form-label"><?php echo t('brand_settings.field_primary_color'); ?></label>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="color" id="primary_color_picker" value="<?php echo htmlspecialchars($s['brand_color_primary'] ?: '#0284c7'); ?>" onchange="syncColorText('primary')" style="width: 44px; height: 40px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; padding: 2px;">
-                    <input type="text" name="brand_color_primary" id="primary_color_text" class="form-control" value="<?php echo htmlspecialchars($s['brand_color_primary']); ?>" placeholder="<?php echo t('brand_settings.color_placeholder'); ?>" oninput="syncColorPicker('primary')" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1;">
+                    <input type="text" name="brand_color_primary" id="primary_color_text" class="form-control u-flex-1" value="<?php echo htmlspecialchars($s['brand_color_primary']); ?>" placeholder="<?php echo t('brand_settings.color_placeholder'); ?>" oninput="syncColorPicker('primary')" pattern="^#[0-9A-Fa-f]{6}$">
                 </div>
-                <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('brand_settings.color_help'); ?></small>
+                <small class="u-muted u-fs-11"><?php echo t('brand_settings.color_help'); ?></small>
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('brand_settings.field_secondary_color'); ?></label>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="color" id="secondary_color_picker" value="<?php echo htmlspecialchars($s['brand_color_secondary'] ?: '#2563eb'); ?>" onchange="syncColorText('secondary')" style="width: 44px; height: 40px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; padding: 2px;">
-                    <input type="text" name="brand_color_secondary" id="secondary_color_text" class="form-control" value="<?php echo htmlspecialchars($s['brand_color_secondary']); ?>" placeholder="<?php echo t('brand_settings.color_placeholder'); ?>" oninput="syncColorPicker('secondary')" pattern="^#[0-9A-Fa-f]{6}$" style="flex: 1;">
+                    <input type="text" name="brand_color_secondary" id="secondary_color_text" class="form-control u-flex-1" value="<?php echo htmlspecialchars($s['brand_color_secondary']); ?>" placeholder="<?php echo t('brand_settings.color_placeholder'); ?>" oninput="syncColorPicker('secondary')" pattern="^#[0-9A-Fa-f]{6}$">
                 </div>
-                <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('brand_settings.color_help'); ?></small>
+                <small class="u-muted u-fs-11"><?php echo t('brand_settings.color_help'); ?></small>
             </div>
         </div>
 

@@ -10,7 +10,7 @@
     <div class="auth-card" style="max-width: 460px;">
         <div style="text-align: center; margin-bottom: 22px;">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
-                <i class="fas fa-mobile-alt" style="color: var(--primary);"></i>
+                <i class="fas fa-mobile-alt u-primary"></i>
             </div>
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;"><?php echo t('mobile_login.page_title'); ?></p>
@@ -35,7 +35,7 @@
             <?php
             $openSection = function () use ($platform, $android_link, $app_link, $play_url) { ?>
                 <div class="ml-section">
-                    <h3><i class="fas fa-mobile-alt" style="color: var(--primary);"></i> <?php echo t('mobile_login.phone_title'); ?></h3>
+                    <h3><i class="fas fa-mobile-alt u-primary"></i> <?php echo t('mobile_login.phone_title'); ?></h3>
                     <a href="<?php echo htmlspecialchars($platform === 'ios' ? $app_link : $android_link); ?>" class="btn btn-primary ml-open">
                         <i class="fas fa-external-link-alt"></i> <?php echo t('mobile_login.open_app'); ?>
                     </a>
@@ -52,7 +52,7 @@
 
             $qrSection = function () use ($qr, $play_url) { ?>
                 <div class="ml-section">
-                    <h3><i class="fas fa-qrcode" style="color: var(--primary);"></i> <?php echo t('mobile_login.qr_title'); ?></h3>
+                    <h3><i class="fas fa-qrcode u-primary"></i> <?php echo t('mobile_login.qr_title'); ?></h3>
                     <?php if ($qr !== ''): ?>
                         <img class="ml-qr" src="<?php echo htmlspecialchars($qr); ?>" alt="QR">
                     <?php endif; ?>
