@@ -46,7 +46,10 @@ if (!in_array($action, $READ_ONLY_SAFE_ACTIONS, true)) {
 
 $db = getDB();
 $user = getCurrentUser();
-$user_ext = preg_replace('/[^0-9]/', '', $user['extension'] ?? '101');
+// Dahilisi olmayan kullanıcı boş kalır — aksiyonlar empty($user_ext) ile
+// reddeder. Önceden '101' varsayılıyordu: dahilisiz bir yönetici 101 adına
+// arama başlatıp mola verebiliyor, 101'in çağrı kayıtlarını görebiliyordu.
+$user_ext = preg_replace('/[^0-9]/', '', (string)($user['extension'] ?? ''));
 $user_name = $user['full_name'] ?? ('Temsilci ' . $user_ext);
 
 define('CC_DISPATCH_ACTIVE', true);

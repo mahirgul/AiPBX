@@ -63,12 +63,14 @@ if ($action === 'get_supervisor_agents') {
     $member_statuses = [];
     if (is_array($q_output)) {
         foreach ($q_output as $line) {
-            if (preg_match('/(?:PJSIP|Local)\/([0-9]+)/i', $line, $matches)) {
+            if (!preg_match('/^\s*\d+\.\s/', $line) && preg_match('/(?:PJSIP|Local)\/([0-9]+)/i', $line, $matches)) {
                 $ext_found = $matches[1];
 
-                $is_paused = (stripos($line, '(paused)') !== false);
+                // Asterisk 22: "(paused was 12 secs ago)" / "(paused:Yemek was 12 secs ago)"
+                // — düz "(paused)" hiç eşleşmiyordu, moladaki ajan HAZIR görünüyordu.
+                $is_paused = (bool) preg_match('/\(paused\b/i', $line);
                 $is_unavailable = (stripos($line, '(Unavailable)') !== false || stripos($line, '(Invalid)') !== false);
-                $is_busy = (stripos($line, '(In use)') !== false || stripos($line, '(Busy)') !== false || stripos($line, '(Ringing)') !== false);
+                $is_busy = (bool) preg_match('/\((In use|Busy|Ringing|Ring\+Inuse|On Hold)\)/i', $line);
                 $is_idle = (stripos($line, '(Not in use)') !== false);
 
                 if ($is_unavailable) {
@@ -159,14 +161,14 @@ if ($action === 'get_supervisor_agents') {
 
 if ($action === 'spy_call') {
     $role = $_SESSION['user_role'] ?? '';
-    if (!in_array($role, ['admin', 'cc_manager', 'cc_supervisor'], true)) {
+    if (!in_array($role, ['admin', 'cc_manager'], true)) {
         echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmamaktadır.']);
         exit;
     }
 
     $target_ext = preg_replace('/[^0-9]/', '', $_POST['target_ext'] ?? '');
     $mode = $_POST['mode'] ?? 'spy';
-    $supervisor_ext = preg_replace('/[^0-9]/', '', $_SESSION['user_extension'] ?? $user_ext);
+    $supervisor_ext = $user_ext;
 
     if (empty($target_ext) || empty($supervisor_ext)) {
         echo json_encode(['success' => false, 'error' => 'Hedef temsilci veya yönetici dahili numarası bulunamadı.']);
@@ -183,7 +185,9 @@ if ($action === 'spy_call') {
         'Action' => 'Originate',
         'Channel' => "Local/{$supervisor_ext}@from-internal-pbx-ortak/n",
         'Application' => 'ChanSpy',
-        'Data' => "PJSIP/{$target_ext},{$spy_flags}",
+        // Sondaki '-': ChanSpy önek eşleştirir; "PJSIP/3001" 30011'in
+        // kanalını da yakalardı. 3001-00000012 ve 3001-webrtc-… eşleşir.
+        'Data' => "PJSIP/{$target_ext}-,{$spy_flags}",
         'CallerID' => "SPY: {$target_ext} <*90>",
         'Priority' => '1',
         'Async' => 'true'

@@ -196,30 +196,9 @@ class QueueHelper {
         if ($ext === '') return false;
         $reason_cli = str_replace('"', '', trim($reason ?: 'Mola'));
 
+        self::pauseInAsterisk($ext, $reason_cli, $queue_name);
+
         $db = getDB();
-        $target_queues = [];
-        if (!empty($queue_name)) {
-            $target_queues = [preg_replace('/[^a-zA-Z0-9_-]/', '', $queue_name)];
-        } else {
-            $stmt = $db->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $q_row) {
-                $mems = json_decode($q_row['members_json'] ?? '[]', true) ?: [];
-                if (in_array($ext, array_map('strval', $mems), true)) {
-                    $target_queues[] = $q_row['queue_name'];
-                }
-            }
-        }
-
-        // Global pause
-        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n"));
-        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext"));
-
-        // Her aktif kuyruk için reason parametresiyle pause
-        foreach ($target_queues as $qn) {
-            @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n queue $qn reason \"$reason_cli\""));
-            @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext queue $qn reason \"$reason_cli\""));
-        }
-
         // Temsilcinin adını sys_users'tan al
         $stmt_user = $db->prepare("SELECT full_name FROM sys_users WHERE extension = ?");
         $stmt_user->execute([$ext]);
@@ -233,6 +212,41 @@ class QueueHelper {
         $stmt_insert->execute([$ext, $agent_name, $reason_cli]);
 
         return true;
+    }
+
+    /**
+     * Molayı yalnızca Asterisk tarafına uygular (cc_pause_logs'a dokunmaz).
+     *
+     * Asterisk sözdizimi: queue pause member <üye> [queue <kuyruk> [reason <gerekçe>]]
+     * — gerekçe YALNIZCA kuyrukla birlikte verilebilir. "…member X reason Y"
+     * biçimi "Usage" ile reddedilir (ajan ekranındaki Mola butonu bu yüzden
+     * Asterisk'te hiç mola vermiyordu). Önce gerekçesiz genel mola, sonra
+     * üyesi olunan her kuyrukta gerekçeli mola.
+     */
+    public static function pauseInAsterisk(string $ext, string $reason, ?string $queue_name = null): void {
+        $ext = preg_replace('/[^0-9]/', '', $ext);
+        if ($ext === '' || getenv('AIPBX_NO_ASTERISK') === '1') return;
+        $reason_cli = str_replace('"', '', trim($reason) ?: 'Mola');
+
+        $target_queues = [];
+        if (!empty($queue_name)) {
+            $target_queues = [preg_replace('/[^a-zA-Z0-9_-]/', '', $queue_name)];
+        } else {
+            $stmt = getDB()->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $q_row) {
+                $mems = json_decode($q_row['members_json'] ?? '[]', true) ?: [];
+                if (in_array($ext, array_map('strval', $mems), true)) {
+                    $target_queues[] = $q_row['queue_name'];
+                }
+            }
+        }
+
+        @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n"));
+        @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext"));
+        foreach ($target_queues as $qn) {
+            @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n queue $qn reason \"$reason_cli\""));
+            @exec("asterisk -rx " . escapeshellarg("queue pause member PJSIP/$ext queue $qn reason \"$reason_cli\""));
+        }
     }
 
     /**

@@ -95,7 +95,6 @@ if ($action === 'pickup_call') {
     // whitelist dışındaki her karakter (özellikle \r\n) AMI komut enjeksiyonunu
     // önlemek için burada süzülür (Action:/Channel: satırlarına ham gömülüyor).
     $target_channel = preg_replace('/[^A-Za-z0-9\/_.@;-]/', '', trim($_POST['channel'] ?? ''));
-    $mode = trim($_POST['mode'] ?? 'webrtc');
 
     if (empty($target_channel) || empty($user_ext)) {
         echo json_encode(['success' => false, 'error' => 'Geçersiz çağrı kanalı veya dahili']);
@@ -117,20 +116,27 @@ if ($action === 'pickup_call') {
                 if (preg_match('/^([a-zA-Z0-9_-]+)\s+has\s+\d+\s+calls/i', trim($qclean), $qm)) {
                     $cur_q = $qm[1];
                 }
-                if (strpos($qclean, $target_channel) !== false && $cur_q !== '') {
+                // Yalnızca bekleyen arayan satırları ("1. PJSIP/trunk-0000002a (wait: …")
+                // ve tam kanal adı — alt dize eşleşmesi …-0000001'i …-00000012'ye de uydururdu.
+                if ($cur_q !== '' && preg_match('/^\d+\.\s+(\S+)/', trim($qclean), $cm) && $cm[1] === $target_channel) {
                     $found_queue = $cur_q;
                     break;
                 }
             }
         }
-        if ($found_queue !== null) {
-            $mem_stmt = $db->prepare("SELECT members_json FROM pbx_queues WHERE queue_name = ? AND is_active = 1");
-            $mem_stmt->execute([$found_queue]);
-            $members = json_decode($mem_stmt->fetchColumn() ?: '[]', true) ?: [];
-            if (!in_array((string)$user_ext, array_map('strval', $members), true)) {
-                echo json_encode(['success' => false, 'error' => 'Bu çağrı üyesi olmadığınız bir kuyrukta bekliyor']);
-                exit;
-            }
+        // Kanal hiçbir kuyrukta beklemiyorsa (başkasının süren görüşmesi,
+        // bir dahili bacağı…) alınamaz — önceden bu durumda kontrol atlanıyor
+        // ve herhangi bir kanal temsilciye yönlendirilebiliyordu.
+        if ($found_queue === null) {
+            echo json_encode(['success' => false, 'error' => 'Bu çağrı artık kuyrukta beklemiyor']);
+            exit;
+        }
+        $mem_stmt = $db->prepare("SELECT members_json FROM pbx_queues WHERE queue_name = ? AND is_active = 1");
+        $mem_stmt->execute([$found_queue]);
+        $members = json_decode($mem_stmt->fetchColumn() ?: '[]', true) ?: [];
+        if (!in_array((string)$user_ext, array_map('strval', $members), true)) {
+            echo json_encode(['success' => false, 'error' => 'Bu çağrı üyesi olmadığınız bir kuyrukta bekliyor']);
+            exit;
         }
     }
 
@@ -139,17 +145,6 @@ if ($action === 'pickup_call') {
     if (!$res || strpos($res, 'Response: Success') === false) {
         echo json_encode(['success' => false, 'error' => 'Çağrı başka bir temsilci tarafından zaten alınmış olabilir']);
         exit;
-    }
-
-    if ($mode === 'sip') {
-        // Also trigger originate to desk phone if needed (Dual-Endpoint: Local kanal)
-        $orig_cmd = "Action: Originate\r\n" .
-                    "Channel: Local/$user_ext@cc-internal\r\n" .
-                    "Context: cc-internal\r\n" .
-                    "Exten: $user_ext\r\n" .
-                    "Priority: 1\r\n" .
-                    "CallerID: Pickup <$user_ext>\r\n\r\n";
-        sendAMICommand($orig_cmd);
     }
 
     echo json_encode(['success' => true, 'message' => "Çağrı dahilinize ($user_ext) yönlendirildi"]);
