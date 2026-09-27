@@ -3,6 +3,8 @@ require_once __DIR__ . '/../asterisk_sync.php';
 
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Common\EccLevel;
+use chillerlan\QRCode\Output\QRMarkupSVG;
 
 /**
  * Mobile QR Code Quick Login Service
@@ -144,17 +146,17 @@ class QrLoginService
             return '';
         }
         $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        try {
-            $options = new QROptions([
-                'outputType' => QRCode::OUTPUT_MARKUP_SVG,
-                'eccLevel' => QRCode::ECC_M,
-                'addQuietzone' => true,
-                'scale' => 5,
-            ]);
-            return (new QRCode($options))->render($payloadJson);
-        } catch (\Throwable $e) {
-            return (new QRCode())->render($payloadJson);
-        }
+        // php-qrcode v6 API: eski QRCode::OUTPUT_MARKUP_SVG / ECC_M sabitleri
+        // kaldırıldı — önceki kod her seferinde hata verip seçeneksiz yedek
+        // yola düşüyordu.
+        $options = new QROptions([
+            'outputInterface' => QRMarkupSVG::class,
+            'outputBase64' => true,
+            'eccLevel' => EccLevel::M,
+            'addQuietzone' => true,
+            'scale' => 5,
+        ]);
+        return (new QRCode($options))->render($payloadJson);
     }
 
     /**

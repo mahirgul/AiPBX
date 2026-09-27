@@ -91,7 +91,7 @@ class TextFaxHelper {
                 continue;
             }
 
-            if ($child->hasAttributes()) {
+            if ($child instanceof \DOMElement && $child->hasAttributes()) {
                 foreach (iterator_to_array($child->attributes) as $attr) {
                     if (strtolower($attr->name) !== 'style') {
                         $child->removeAttribute($attr->name);

@@ -189,7 +189,21 @@ if ($action === 'spy_call') {
         'Async' => 'true'
     ];
 
-    $res = AsteriskHelper::queryAMI($ami_action);
+    // AsteriskHelper::queryAMI() diye bir metot hiç yoktu: dinleme/fısıldama/
+    // araya girme her denemede "Call to undefined method" ile ölüyordu.
+    // Diğer çağrı merkezi işlemleri gibi cc_lib.php'deki sendAMICommand().
+    // (Değerler yukarıda rakama indirgenmiş / sabit listeden seçilmiş.)
+    $cmd = '';
+    foreach ($ami_action as $k => $v) {
+        $cmd .= "{$k}: {$v}\r\n";
+    }
+    $raw = (string) sendAMICommand($cmd . "\r\n");
+    $res = [];
+    foreach (preg_split('/\r?\n/', $raw) as $line) {
+        if (preg_match('/^(Response|Message):\s*(.*)$/', $line, $m) && !isset($res[$m[1]])) {
+            $res[$m[1]] = trim($m[2]);
+        }
+    }
     if (!empty($res['Response']) && strtolower($res['Response']) === 'success') {
         $mode_labels = ['spy' => 'Gizli Dinleme', 'whisper' => 'Fısıldama', 'barge' => 'Araya Girme'];
         $label = $mode_labels[$mode] ?? 'Dinleme';
