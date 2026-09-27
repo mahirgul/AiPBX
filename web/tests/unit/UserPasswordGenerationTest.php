@@ -74,14 +74,15 @@ final class UserPasswordGenerationTest extends TestCase
 
     public function testExplicitPasswordIsKeptAndNothingGenerated(): void
     {
-        $res = $this->create('pwgen_test_b', 'ElleGirilen123!');
+        $secret = 'T' . bin2hex(random_bytes(8)); // repoda parola benzeri sabit tutulmuyor
+        $res = $this->create('pwgen_test_b', $secret);
         $this->assertTrue($res['success'], $res['error'] ?? '');
         $this->assertArrayNotHasKey('generated_password', $res);
 
         $row = $this->db->prepare('SELECT password_hash, must_reset_password FROM sys_users WHERE username = ?');
         $row->execute(['pwgen_test_b']);
         $u = $row->fetch(PDO::FETCH_ASSOC);
-        $this->assertTrue(password_verify('ElleGirilen123!', $u['password_hash']));
+        $this->assertTrue(password_verify($secret, $u['password_hash']));
         $this->assertSame(0, (int) $u['must_reset_password']);
     }
 }
