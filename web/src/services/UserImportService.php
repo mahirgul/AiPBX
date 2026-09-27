@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/UserService.php';
+require_once dirname(__DIR__) . '/internal_numbers.php';
 
 /**
  * CSV ile toplu kullanıcı ekleme.
@@ -151,6 +152,8 @@ class UserImportService
                     $errors[] = 'Dahili başka bir kullanıcıya atanmış';
                 } elseif (isset($seenExts[$row['extension']])) {
                     $errors[] = 'Dahili dosyada tekrar ediyor (satır ' . $seenExts[$row['extension']] . ')';
+                } elseif (($owner = internalNumberOwner($row['extension'])) !== null) {
+                    $errors[] = "Numara kullanımda ({$owner})";
                 }
                 $seenExts[$row['extension']] = $seenExts[$row['extension']] ?? $lineNo;
             }
