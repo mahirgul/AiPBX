@@ -412,7 +412,11 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                         Result.success(result)
                     } else {
                         val errMsg = result?.error ?: "Token yenileme başarısız (HTTP ${response.code})"
-                        Result.failure(Exception(errMsg))
+                        if (response.code == 401 || response.code == 403) {
+                            Result.failure(com.mhrgl.aipbx.model.SessionExpiredException(errMsg))
+                        } else {
+                            Result.failure(Exception(errMsg))
+                        }
                     }
                 }
             } catch (e: Exception) {
