@@ -109,7 +109,8 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
     public func markAsRead(conversationId: Int, lastMessageId: Int64) {
         guard isConnected else { return }
         let payload: [String: Any] = [
-            "action": "read",
+            // Sunucu yalnızca "mark_read" tanır (chat/hub.go); "read" yok sayılıyordu.
+            "action": "mark_read",
             "conversation_id": conversationId,
             "last_message_id": lastMessageId
         ]
@@ -180,6 +181,18 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
                let online = json["is_online"] as? Bool {
                 DispatchQueue.main.async {
                     self.delegate?.webSocketDidReceivePresence(extensionNumber: ext, isOnline: online)
+                }
+            }
+
+        case "presence_snapshot":
+            // Bağlanınca sunucu o an çevrimiçi olan dahilileri tek listede
+            // gönderir; işlenmediği için zaten bağlı kişiler, yeniden bağlanana
+            // kadar çevrimdışı görünüyordu (Android'deki hatanın aynısı).
+            if let exts = json["extensions"] as? [String] {
+                DispatchQueue.main.async {
+                    for ext in exts where !ext.isEmpty {
+                        self.delegate?.webSocketDidReceivePresence(extensionNumber: ext, isOnline: true)
+                    }
                 }
             }
 

@@ -171,9 +171,10 @@ public final class ApiClient {
 
     // MARK: - Call History
 
+    // Sunucudaki uç nokta call_history.php (Android ile aynı); history.php yoktu (404).
     public func getCallHistory(baseUrl: String, token: String, filter: String = "all", limit: Int = 100, offset: Int = 0) async throws -> CallHistoryResponse {
         let base = cleanUrl(baseUrl)
-        guard let url = URL(string: "\(base)/api/mobile/history.php?filter=\(filter)&limit=\(limit)&offset=\(offset)") else {
+        guard let url = URL(string: "\(base)/api/mobile/call_history.php?filter=\(filter)&limit=\(limit)&offset=\(offset)") else {
             throw ApiError.invalidUrl
         }
 
@@ -309,7 +310,7 @@ public final class ApiClient {
 
     public func createDirectChat(baseUrl: String, token: String, targetExt: String) async throws -> ChatConversation {
         let base = cleanUrl(baseUrl)
-        guard let url = URL(string: "\(base)/chat/api/direct") else {
+        guard let url = URL(string: "\(base)/chat/api/conversations/direct") else {
             throw ApiError.invalidUrl
         }
 
@@ -318,7 +319,9 @@ public final class ApiClient {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
-        let body = ["target_ext": targetExt]
+        // Sunucu (chat/handlers.go) "target_extension" bekliyor; eski adresler ve
+        // "target_ext" alanı 404/400 döndürüyordu.
+        let body = ["target_extension": targetExt]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await session.data(for: request)
@@ -335,7 +338,7 @@ public final class ApiClient {
 
     public func createGroupChat(baseUrl: String, token: String, title: String, members: [String], description: String = "") async throws -> ChatConversation {
         let base = cleanUrl(baseUrl)
-        guard let url = URL(string: "\(base)/chat/api/group") else {
+        guard let url = URL(string: "\(base)/chat/api/conversations/group") else {
             throw ApiError.invalidUrl
         }
 
@@ -365,7 +368,7 @@ public final class ApiClient {
 
     public func leaveGroup(baseUrl: String, token: String, convId: Int) async throws -> Bool {
         let base = cleanUrl(baseUrl)
-        guard let url = URL(string: "\(base)/chat/api/group/leave") else {
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/leave") else {
             throw ApiError.invalidUrl
         }
 
