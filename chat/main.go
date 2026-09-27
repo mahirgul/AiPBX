@@ -29,6 +29,7 @@ func main() {
 	_ = os.MkdirAll(cfg.UploadDir+"/avatars", 0755)
 
 	hub := NewHub()
+	hub.secretKey = cfg.SecretKey
 	go hub.Run()
 
 	server := NewServer(cfg, hub)
