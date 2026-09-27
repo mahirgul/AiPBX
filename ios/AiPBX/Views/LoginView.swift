@@ -10,6 +10,7 @@ public struct LoginView: View {
     @State private var isPinging: Bool = false
     @State private var pingStatusText: String? = nil
     @State private var isShowingScanner: Bool = false
+    @State private var otpCode: String = ""
 
     public init() {}
 
@@ -254,6 +255,23 @@ public struct LoginView: View {
             .onAppear {
                 self.serverUrl = appState.baseUrl
                 self.username = appState.savedUsername
+            }
+            .alert("İki adımlı doğrulama", isPresented: Binding(
+                get: { appState.otpPromptMessage != nil },
+                set: { if !$0 { appState.otpPromptMessage = nil } }
+            )) {
+                TextField("123456", text: $otpCode)
+                    .keyboardType(.numberPad)
+                Button("Giriş") {
+                    let code = otpCode.trimmingCharacters(in: .whitespacesAndNewlines)
+                    otpCode = ""
+                    Task {
+                        _ = await appState.login(serverUrl: serverUrl, username: username, pass: password, otp: code)
+                    }
+                }
+                Button("İptal", role: .cancel) { otpCode = "" }
+            } message: {
+                Text(appState.otpPromptMessage ?? "")
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())

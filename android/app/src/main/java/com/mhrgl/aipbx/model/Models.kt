@@ -27,8 +27,13 @@ data class LoginResponse(
     @SerializedName("token") val token: String?,
     @SerializedName("user") val user: UserProfile?,
     @SerializedName("sip") val sip: SipCredentials?,
-    @SerializedName("push_config") val pushConfig: PushConfig? = null
+    @SerializedName("push_config") val pushConfig: PushConfig? = null,
+    /** Hesapta iki adımlı doğrulama açık: şifreyle birlikte 6 haneli kod gerekli. */
+    @SerializedName("otp_required") val otpRequired: Boolean = false
 )
+
+/** Sunucu şifreyi kabul etti ama iki adımlı doğrulama kodu istiyor (ya da kod hatalı). */
+class OtpRequiredException(message: String) : Exception(message)
 
 data class UserProfile(
     @SerializedName("id") val id: Int,
