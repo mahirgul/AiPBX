@@ -1347,6 +1347,8 @@ return [
 
     // Login
     'login.page_title' => 'Giriş Yap',
+    'login.too_many_attempts' => 'Çok fazla hatalı deneme yapıldı! Hesabınız ve IP adresiniz 15 dakika süreyle kilitlenmiştir.',
+    'login_2fa.too_many_failures' => 'Çok fazla hatalı doğrulama kodu girildi. Lütfen yeniden giriş yapın.',
     'login.field_username' => 'Kullanıcı Adı',
     'login.field_password' => 'Şifre',
     'login.security_check' => 'Güvenlik Doğrulaması:',

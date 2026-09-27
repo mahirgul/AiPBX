@@ -1347,6 +1347,8 @@ return [
 
     // Login
     'login.page_title' => 'Sign In',
+    'login.too_many_attempts' => 'Too many failed attempts! Your account and IP address are locked for 15 minutes.',
+    'login_2fa.too_many_failures' => 'Too many invalid verification codes. Please sign in again.',
     'login.field_username' => 'Username',
     'login.field_password' => 'Password',
     'login.security_check' => 'Security Check:',

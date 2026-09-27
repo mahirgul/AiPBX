@@ -36,6 +36,15 @@ class TwoFactorLoginController extends BaseController
             }
 
             $csrf = $_POST['csrf_token'] ?? '';
+            // Kaba kuvvet: hatalı 2FA denemeleri loglanıyordu ama kilit
+            // kontrol edilmiyordu — şifreyi bilen biri 6 haneli kodu sınırsız
+            // deneyebiliyordu. Web girişiyle aynı IP/kullanıcı kilidi.
+            if (checkBruteForceLockout($clientIp, $user['username'])) {
+                unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);
+                notify(t('login.too_many_attempts', 'Çok fazla hatalı deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.'), 'danger');
+                static::redirect('/login');
+                return;
+            }
             if (!verifyCSRFToken($csrf)) {
                 $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.');
             } else {
@@ -66,6 +75,7 @@ class TwoFactorLoginController extends BaseController
                 }
 
                 if ($isValid) {
+                    unset($_SESSION['pending_2fa_failures']);
                     // Oturum kimliğini yenile
                     session_regenerate_id(true);
 
@@ -102,6 +112,15 @@ class TwoFactorLoginController extends BaseController
                 } else {
                     if (function_exists('logLoginAttempt')) {
                         logLoginAttempt($clientIp, $user['username'], 'FAILED');
+                    }
+                    // Aynı bekleyen oturumda 5 hatalı koddan sonra baştan
+                    // şifreyle girmek gerekir (o adım da kilide tabi).
+                    $_SESSION['pending_2fa_failures'] = ($_SESSION['pending_2fa_failures'] ?? 0) + 1;
+                    if ($_SESSION['pending_2fa_failures'] >= 5) {
+                        unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);
+                        notify(t('login_2fa.too_many_failures', 'Çok fazla hatalı doğrulama kodu girildi. Lütfen yeniden giriş yapın.'), 'danger');
+                        static::redirect('/login');
+                        return;
                     }
                 }
             }
