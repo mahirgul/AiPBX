@@ -218,8 +218,7 @@ AiPBX/
 │   └── pbx/                # Modular dialplan, PJSIP, queue files
 │
 ├── db/                     # Database schema
-│   ├── schema.sql          # Table definitions
-│   └── seed.sql            # Initial seed data
+│   └── seed.sql            # Initial seed data (schema: web/db/migrations, Phinx)
 │
 ├── install.sh              # One-command installer
 └── README.md
