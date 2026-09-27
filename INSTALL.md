@@ -115,27 +115,21 @@ systemctl status asterisk mariadb coturn aipbx-chat
 systemctl status nginx || systemctl status apache2
 ```
 
-### 3.3 Firewall Configuration (UFW)
-If using UFW (Uncomplicated Firewall), open the necessary ports:
-```bash
-# Web & Ingress
-sudo ufw allow 80/tcp comment 'HTTP (ACME redirect)'
-sudo ufw allow 443/tcp comment 'HTTPS Portal & WebRTC WSS'
+### 3.3 Firewall (firewalld)
+The installer configures **firewalld** and disables `ufw` (running both makes one
+close what the other opens). Afterwards, manage ports and allowed networks from the
+portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 
-# Asterisk SIP Signaling & Media
-sudo ufw allow 5060/udp comment 'SIP UDP'
-sudo ufw allow 5060/tcp comment 'SIP TCP'
-sudo ufw allow 10000:20000/udp comment 'Asterisk RTP Media'
+| Port | Purpose |
+|------|---------|
+| 80/tcp, 443/tcp | Portal, WebRTC (WSS `/ws`), chat, TURNS multiplexed on 443 |
+| 5060/udp+tcp, 5061/tcp | SIP / SIP-TLS |
+| 8089/tcp | Direct Asterisk WSS (optional, `pjsip_wss_port`) |
+| 10000-20000/udp | RTP media |
+| 3478/udp+tcp, 5349/udp+tcp | STUN/TURN |
+| 49152-65535/udp | TURN relay media |
 
-# coturn NAT Traversal
-sudo ufw allow 3478/udp comment 'STUN/TURN UDP'
-sudo ufw allow 3478/tcp comment 'STUN/TURN TCP'
-sudo ufw allow 5349/tcp comment 'TURNS TLS'
-sudo ufw allow 49152:65535/udp comment 'TURN Relay Media'
-
-# Enable firewall
-sudo ufw enable
-```
+Do not enable `ufw` on top of this.
 
 ### 3.4 (Optional) Let's Encrypt Certificate Renewal / Setup
 If you installed with a self-signed certificate and point a domain later:

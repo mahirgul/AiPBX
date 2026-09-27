@@ -944,6 +944,13 @@ fi
 step "12. Configuring Firewall (firewalld) & Fail2ban"
 
 # 12a. Firewalld configuration
+# Portalın Güvenlik Duvarı sayfası firewalld'yi yönetir. Ubuntu'da ufw de
+# kurulu gelir; ikisi aynı anda etkinse biri açtığını diğeri kapatır.
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+    warn "ufw is active — disabling it; firewalld manages the firewall (portal: Firewall page)"
+    ufw disable >/dev/null 2>&1 || true
+fi
+systemctl disable --now ufw 2>/dev/null || true
 systemctl enable firewalld 2>/dev/null || true
 systemctl start firewalld 2>/dev/null || true
 
@@ -954,7 +961,6 @@ firewall-cmd --permanent --add-port=5060/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5060/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5061/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=8089/tcp 2>/dev/null || true
-firewall-cmd --permanent --add-port=8443/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=10000-20000/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=3478/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=3478/udp 2>/dev/null || true
