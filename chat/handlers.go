@@ -222,17 +222,14 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// CH-4: attachment_url ön eki denetimi (XSS önleme)
+	// CH-4: attachment_url yalnızca kendi medya yollarımız ve göndericinin kendi yüklemesi
 	if in.AttachmentURL != "" {
-		if !strings.HasPrefix(in.AttachmentURL, "/chat/media/images/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/chat/media/docs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/chat/media/thumbs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/chat/media/avatars/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/images/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/docs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/thumbs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/avatars/") {
+		if !validMediaURL(in.AttachmentURL) {
 			writeJSONError(w, http.StatusBadRequest, "Geçersiz attachment_url formatı.")
+			return
+		}
+		if !attachmentOwnedBy(s.cfg.SecretKey, in.AttachmentURL, user.Extension) {
+			writeJSONError(w, http.StatusForbidden, "Bu dosyayı iliştirme yetkiniz yok.")
 			return
 		}
 	}
@@ -433,7 +430,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 
 	randBytes := make([]byte, 8)
 	_, _ = rand.Read(randBytes)
-	uniqueBase := fmt.Sprintf("%d_%s", time.Now().Unix(), hex.EncodeToString(randBytes))
+	uniqueBase := signedUploadBase(s.cfg.SecretKey, user.Extension, fmt.Sprintf("%d_%s", time.Now().Unix(), hex.EncodeToString(randBytes)))
 	savedFileName := uniqueBase + ext
 
 	var subDir string
@@ -552,14 +549,11 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		lookupName = strings.Replace(lookupName, "_thumb.", ".", 1)
 	}
 
-	convID, err := GetConversationIDForAttachment(lookupName)
-	if err != nil || convID <= 0 {
-		http.Error(w, "Forbidden: Dosya sohbet kaydıyla eşleşmedi veya yetkisiz", http.StatusForbidden)
-		return
-	}
-
-	isPart, err := IsParticipant(convID, user.Extension)
-	if err != nil || !isPart {
+	// Dosyayı içeren sohbetlerden birinin (mesaj eki ya da grup resmi) aktif
+	// katılımcısı olmak gerekir. Tam ad eşleşmesi: LIKE '%ad%' + LIMIT 1 ilk
+	// bulduğu sohbete bakıyordu ve '_' joker karakterdi.
+	ok, err := CanAccessAttachment(lookupName, user.Extension)
+	if err != nil || !ok {
 		http.Error(w, "Forbidden: Bu medyaya erişim yetkiniz yok", http.StatusForbidden)
 		return
 	}
@@ -632,6 +626,11 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 	body.Title = strings.TrimSpace(body.Title)
 	if body.Title == "" {
 		writeJSONError(w, http.StatusBadRequest, "Grup adı zorunludur.")
+		return
+	}
+
+	if body.AvatarURL != "" && (!validMediaURL(body.AvatarURL) || !attachmentOwnedBy(s.cfg.SecretKey, body.AvatarURL, user.Extension)) {
+		writeJSONError(w, http.StatusBadRequest, "Geçersiz grup resmi.")
 		return
 	}
 
@@ -735,6 +734,18 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Grup bilgilerini güncellemek için yönetici olmalısınız.")
 		return
+	}
+
+	// Grup resmi değiştiriliyorsa yeni dosya göndericinin kendi yüklemesi olmalı
+	// (mevcut resmi aynen geri göndermek serbest).
+	if body.AvatarURL != "" {
+		cur, _ := GetConversationByID(body.ConversationID)
+		if cur == nil || cur.AvatarURL != body.AvatarURL {
+			if !validMediaURL(body.AvatarURL) || !attachmentOwnedBy(s.cfg.SecretKey, body.AvatarURL, user.Extension) {
+				writeJSONError(w, http.StatusBadRequest, "Geçersiz grup resmi.")
+				return
+			}
+		}
 	}
 
 	sysMsg, err := UpdateGroupInfo(body.ConversationID, user.Extension, body.Title, body.AvatarURL, body.Description)
@@ -1058,7 +1069,12 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 // GET /api/internal/presence (Internal only)
 func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) {
 	remoteIP := r.RemoteAddr
-	if !strings.HasPrefix(remoteIP, "127.0.0.1") && !strings.HasPrefix(remoteIP, "[::1]") {
+	// Apache ters vekili de 127.0.0.1'den bağlanır: yalnızca adrese bakmak bu
+	// uç noktayı /chat/api/internal/presence üzerinden oturumsuz herkese
+	// açıyordu (çevrimiçi dahili listesi). Vekilden gelen istek
+	// X-Forwarded-For taşır; PHP (api/mobile/contacts.php) doğrudan bağlanır.
+	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
+		(!strings.HasPrefix(remoteIP, "127.0.0.1:") && !strings.HasPrefix(remoteIP, "[::1]:")) {
 		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
 		return
 	}

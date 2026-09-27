@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +40,8 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	mu         sync.RWMutex
+	// Yükleme imzası doğrulaması için (uploads.go); main.go atar.
+	secretKey string
 }
 
 func NewHub() *Hub {
@@ -277,15 +278,10 @@ func (c *Client) handleSendMessage(in *InMessage) {
 		return
 	}
 
-	// CH-4: attachment_url ön eki denetimi
+	// CH-4: attachment_url yalnızca kendi medya yollarımız ve göndericinin kendi yüklemesi
 	if in.AttachmentURL != "" {
-		if !strings.HasPrefix(in.AttachmentURL, "/chat/media/images/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/chat/media/docs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/chat/media/thumbs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/images/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/docs/") &&
-			!strings.HasPrefix(in.AttachmentURL, "/media/thumbs/") {
-			log.Printf("[WS] Invalid attachment_url from %s: %s", c.user.Extension, in.AttachmentURL)
+		if !validMediaURL(in.AttachmentURL) || !attachmentOwnedBy(c.hub.secretKey, in.AttachmentURL, c.user.Extension) {
+			log.Printf("[WS] Rejected attachment_url from %s: %s", c.user.Extension, in.AttachmentURL)
 			return
 		}
 	}
