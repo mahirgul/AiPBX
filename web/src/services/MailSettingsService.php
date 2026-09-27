@@ -97,6 +97,11 @@ class MailSettingsService
         ];
 
         if ($auth === 'yes' && !empty($user)) {
+            // sasl_passwd satır tabanlı: satır sonu içeren bir değer dosyaya
+            // yeni kayıt ekleyebilirdi.
+            if (preg_match('/[\x00-\x1f\x7f]/', $user . $pass)) {
+                return ['success' => false, 'error' => 'SMTP kullanıcı adı/parola kontrol karakteri içeremez.'];
+            }
             $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
                 $line = $relay_spec . ' ' . $user . ':' . $pass . "\n";
