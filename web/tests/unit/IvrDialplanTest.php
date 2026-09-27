@@ -2,10 +2,10 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/config.php';
-require_once '/var/www/html/src/file_helper.php';
-require_once '/var/www/html/src/sync/DialplanBuilders.php';
-require_once '/var/www/html/src/sync/SyncIVRs.php';
+require_once dirname(__DIR__, 2) . '/config.php';
+require_once dirname(__DIR__, 2) . '/src/file_helper.php';
+require_once dirname(__DIR__, 2) . '/src/sync/DialplanBuilders.php';
+require_once dirname(__DIR__, 2) . '/src/sync/SyncIVRs.php';
 
 final class IvrDialplanTest extends TestCase
 {

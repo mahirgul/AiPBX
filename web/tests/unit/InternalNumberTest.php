@@ -2,8 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/tests/Fixtures.php';
-require_once '/var/www/html/src/internal_numbers.php';
+require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
+require_once dirname(__DIR__, 2) . '/src/internal_numbers.php';
 
 /**
  * Dahili hedef numarası kayıt defteri ve çakışma doğrulaması.

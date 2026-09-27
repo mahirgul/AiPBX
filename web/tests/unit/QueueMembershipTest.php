@@ -2,12 +2,12 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/tests/Fixtures.php';
-require_once '/var/www/html/src/helpers.php';
-require_once '/var/www/html/src/repositories/QueueRepository.php';
-require_once '/var/www/html/src/services/QueueService.php';
-require_once '/var/www/html/src/queue_helper.php';
-require_once '/var/www/html/src/sync/SyncQueues.php';
+require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
+require_once dirname(__DIR__, 2) . '/src/helpers.php';
+require_once dirname(__DIR__, 2) . '/src/repositories/QueueRepository.php';
+require_once dirname(__DIR__, 2) . '/src/services/QueueService.php';
+require_once dirname(__DIR__, 2) . '/src/queue_helper.php';
+require_once dirname(__DIR__, 2) . '/src/sync/SyncQueues.php';
 
 final class QueueMembershipTest extends TestCase
 {
@@ -161,7 +161,7 @@ final class QueueMembershipTest extends TestCase
 
     public function testSyncFeatureCodesGeneratesPauseAndUnpause(): void
     {
-        require_once '/var/www/html/src/sync/SyncFeatureCodes.php';
+        require_once dirname(__DIR__, 2) . '/src/sync/SyncFeatureCodes.php';
 
         syncFeatureCodes();
 

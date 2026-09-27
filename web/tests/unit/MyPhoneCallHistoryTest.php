@@ -2,9 +2,9 @@
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/tests/Fixtures.php';
-require_once '/var/www/html/src/asterisk_sync.php';
-require_once '/var/www/html/src/sync/SyncOutboundDialplan.php';
+require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
+require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/src/sync/SyncOutboundDialplan.php';
 
 final class MyPhoneCallHistoryTest extends TestCase
 {
