@@ -633,6 +633,11 @@ cat > /etc/apache2/conf-available/aipbx-security.conf << 'SECHDR'
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Content-Security-Policy "frame-ancestors 'self'"
     Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
+    # Yöneticinin yüklediği marka dosyaları (SVG olabilir): regex temizliği
+    # atlatılabilir; doğrudan açılan SVG'de betik hiç çalışmasın.
+    <LocationMatch "^/assets/images/brand/">
+        Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; sandbox"
+    </LocationMatch>
 </IfModule>
 SECHDR
 a2enconf aipbx-security 2>/dev/null
