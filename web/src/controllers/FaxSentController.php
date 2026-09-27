@@ -32,10 +32,8 @@ class FaxSentController extends BaseController
         $sent_faxes = FaxSentRepository::listForUser($user_role, $user_id);
 
         $page_title = t('fax_sent.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fax_sent/index', [
+        static::renderPage('fax_sent/index', [
             'sent_faxes' => $sent_faxes,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

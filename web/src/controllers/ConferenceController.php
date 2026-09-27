@@ -31,12 +31,10 @@ class ConferenceController extends BaseController
         $conferences = ConferenceService::getConferences();
 
         $page_title = t('conferences.title', 'Konferans Odaları');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('conferences/index', [
+        static::renderPage('conferences/index', [
             'conferences' => $conferences,
             'message' => $message,
             'error' => $error,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

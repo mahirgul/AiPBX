@@ -39,13 +39,11 @@ class GoogleIntegrationController extends BaseController
         ];
 
         $page_title = t('google_integration.title', 'Google ile Giriş Entegrasyonu');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('google_integration/index', [
+        static::renderPage('google_integration/index', [
             'settings' => $googleSettings,
             'message' => $message,
             'error' => $error,
             'csrf_token' => getCSRFToken(),
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -435,4 +435,4 @@
 </div>
 
 <script src="/assets/js/wavesurfer.min.js"></script>
-<script src="/assets/js/cdr_reports.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/cdr_reports.js'); ?>"></script>

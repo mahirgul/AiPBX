@@ -336,6 +336,21 @@ function getFlashNotifications() {
  * Convert Turkish and UTF-8 characters to clean 7-bit ASCII representation
  * for Asterisk configuration files and CLI commands.
  */
+/**
+ * Önbellek dostu varlık (CSS/JS) adresi: dosya değiştikçe değişen ?v=<mtime>.
+ * Önceden şablonlar ?v=time() kullanıyordu — sürüm her istekte değiştiği için
+ * tarayıcı CSS/JS dosyalarını HİÇ önbelleğe alamıyor, her sayfada yeniden
+ * indiriyordu.
+ */
+function asset(string $path): string {
+    static $cache = [];
+    if (!isset($cache[$path])) {
+        $file = __DIR__ . '/' . ltrim($path, '/');
+        $cache[$path] = $path . (is_file($file) ? '?v=' . filemtime($file) : '');
+    }
+    return $cache[$path];
+}
+
 function toCleanAscii($str) {
     if ($str === null || $str === '') return '';
 

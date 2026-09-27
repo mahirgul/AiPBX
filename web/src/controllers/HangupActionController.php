@@ -24,11 +24,9 @@ class HangupActionController extends BaseController
         $announcements = HangupActionRepository::allAnnouncementsForDropdown();
 
         $page_title = t('end_call.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('end_call/index', [
+        static::renderPage('end_call/index', [
             'actions' => $actions,
             'announcements' => $announcements,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

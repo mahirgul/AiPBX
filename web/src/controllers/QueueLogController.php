@@ -47,8 +47,7 @@ class QueueLogController extends BaseController
         }
 
         $page_title = t('queue_logs.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('queue_logs/index', [
+        static::renderPage('queue_logs/index', [
             'agent_map' => $agent_map,
             'event_filter' => $event_filter,
             'agent_filter' => $agent_filter,
@@ -66,7 +65,6 @@ class QueueLogController extends BaseController
             'stat_ring_no_answer' => $result['stat_ring_no_answer'],
             'avg_holdtime' => $result['avg_holdtime'],
             'avg_talktime' => $result['avg_talktime'] ?? 0,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }

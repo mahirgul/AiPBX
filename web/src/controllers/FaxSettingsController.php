@@ -28,11 +28,9 @@ class FaxSettingsController extends BaseController
         $fax_users = FaxSettingsRepository::faxUsersForDropdown();
 
         $page_title = t('fax_settings.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fax_settings/index', [
+        static::renderPage('fax_settings/index', [
             'mappings' => $mappings,
             'fax_users' => $fax_users,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -29,13 +29,11 @@ class ChatController extends BaseController
         ]);
         $page_title = function_exists('t') ? t('sidebar.item_chat') : 'Sohbet';
 
-        require_once dirname(__DIR__, 2) . '/header.php';
-        static::render('chat/index', [
+        static::renderPage('chat/index', [
             'user' => $user,
             'ext' => $ext,
             'token' => $token,
             'page_title' => $page_title
-        ]);
-        require_once dirname(__DIR__, 2) . '/footer.php';
+        ], ['title' => $page_title]);
     }
 }

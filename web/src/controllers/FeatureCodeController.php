@@ -26,11 +26,9 @@ class FeatureCodeController extends BaseController
         $codes = FeatureCodeRepository::allOrderedById();
 
         $page_title = t('fc.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('feature_codes/index', [
+        static::renderPage('feature_codes/index', [
             'codes' => $codes,
             'valid_role_keys' => $valid_role_keys,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

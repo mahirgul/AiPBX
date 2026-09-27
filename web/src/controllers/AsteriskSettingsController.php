@@ -25,13 +25,11 @@ class AsteriskSettingsController extends BaseController
         $active_wired_codecs = explode(',', $s['pjsip_wired_codecs']);
 
         $page_title = t('asterisk_settings.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('asterisk_settings/index', [
+        static::renderPage('asterisk_settings/index', [
             's' => $s,
             'ring_sound_options' => $ring_sound_options,
             'active_codecs' => $active_codecs,
             'active_wired_codecs' => $active_wired_codecs,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

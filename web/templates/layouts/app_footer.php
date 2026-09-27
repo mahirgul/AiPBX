@@ -149,11 +149,11 @@ if ($is_spa_request) {
 </div>
 
 <!-- 100% Offline Local JavaScript Modules -->
-<script src="/assets/js/theme.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/nav.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/modal.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/footer_notify.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/datatable_enhancer.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/theme.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/nav.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/modal.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/footer_notify.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/datatable_enhancer.js'); ?>"></script>
 
 <?php if (!empty($all_notifications)): ?>
 <script>

@@ -40,8 +40,7 @@ class AuditLogController extends BaseController
         $login_attempts = AuditLogRepository::searchLoginAttempts($start_ts, $end_ts, $login_status_filter, $login_search_query);
 
         $page_title = t('audit_log.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('audit_log/index', [
+        static::renderPage('audit_log/index', [
             'logs' => $logs,
             'user_map' => $user_map,
             'domain_filter' => $domain_filter,
@@ -53,7 +52,6 @@ class AuditLogController extends BaseController
             'login_attempts' => $login_attempts,
             'login_status_filter' => $login_status_filter,
             'login_search_query' => $login_search_query,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }
