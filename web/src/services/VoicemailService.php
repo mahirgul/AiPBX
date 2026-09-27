@@ -102,8 +102,15 @@ class VoicemailService {
 
             $dir = "/var/spool/asterisk/voicemail/default/{$ext}/{$folder}";
             $pattern = "{$dir}/{$msgNum}.*";
-            foreach (glob($pattern) ?: [] as $f) {
-                @unlink($f);
+            $files = glob($pattern) ?: [];
+            if (empty($files)) {
+                throw new \Exception("Sesli mesaj bulunamadı.");
+            }
+            foreach ($files as $f) {
+                // Önceden hata yutuluyor ve silinemese de "silindi" deniyordu.
+                if (!@unlink($f)) {
+                    throw new \Exception("Sesli mesaj silinemedi (dosya izni).");
+                }
             }
             return "Sesli mesaj silindi.";
         });

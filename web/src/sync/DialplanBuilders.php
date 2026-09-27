@@ -364,7 +364,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
                 // kayda tıklayınca yalnızca kuyruk parçası dinlenirdi.
                 // MIXMONITOR_FILENAME'i MixMonitor'un kendisi doldurur.
                 $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?kayit_var_{$q_name})";
-                $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}.{$rec_format})";
+                $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
                 $lines[] = " same => n,MixMonitor(\${REC_FILE})";
                 $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
                 $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Kuyruk kaydi: \${MIXMONITOR_FILENAME})";

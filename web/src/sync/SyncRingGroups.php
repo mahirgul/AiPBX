@@ -36,7 +36,7 @@ function __syncRingGroupsBody() {
 
         if ($record) {
             $conf .= " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?rg_rec_exists_{$id})\n";
-            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/rg_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}.wav)\n";
+            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/rg_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
             $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
             $conf .= " same => n(rg_rec_exists_{$id}),NoOp(Ring Group Record: \${MIXMONITOR_FILENAME})\n";

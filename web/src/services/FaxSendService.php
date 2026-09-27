@@ -137,7 +137,13 @@ class FaxSendService {
         $fax_id = $db->lastInsertId();
 
         // Create Asterisk Call File for outbound SendFAX()
-        self::submitCallFile($fax_id, $dest_number, $sender_did, $archived_tif);
+        try {
+            self::submitCallFile((int)$fax_id, $dest_number, $sender_did, $archived_tif);
+        } catch (\Exception $e) {
+            $db->prepare("UPDATE fax_sent SET status = 'FAILED', error_message = ?, completed_at = NOW() WHERE id = ?")
+               ->execute([$e->getMessage(), $fax_id]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
 
         return ['success' => true, 'message' => "Faks gönderim kuyruğuna eklendi! (İşlem ID: #$fax_id, Sayfa: $page_count)"];
     }
@@ -202,13 +208,21 @@ class FaxSendService {
                              "SetVar: FAX_SENDER_NAME=$sender_name_var\n" .
                              "SetVar: FAX_ID=$faxId\n";
 
-        $tmp_call_file = "/tmp/fax_$faxId.call";
+        // Geçici dosya spool ile AYNI dosya sisteminde yazılır: rename() ancak
+        // böyle atomiktir — /tmp'den taşımak kopyala+sil'e dönüşür ve Asterisk
+        // yarım dosyayı okuyabilir. 0666 (herkes yazabilir) yerine 0660.
+        $tmp_call_file = FAX_OUTGOING_SPOOL . "/.fax_$faxId.call.tmp";
         $asterisk_spool = ASTERISK_CALL_SPOOL . "/fax_$faxId.call";
 
-        file_put_contents($tmp_call_file, $call_file_content);
+        if (file_put_contents($tmp_call_file, $call_file_content) === false) {
+            throw new \Exception('Faks çağrı dosyası yazılamadı: ' . $tmp_call_file);
+        }
         @chgrp($tmp_call_file, 'asterisk');
-        chmod($tmp_call_file, 0666);
-        rename($tmp_call_file, $asterisk_spool);
+        chmod($tmp_call_file, 0660);
+        if (!rename($tmp_call_file, $asterisk_spool)) {
+            @unlink($tmp_call_file);
+            throw new \Exception('Faks çağrı dosyası Asterisk kuyruğuna bırakılamadı: ' . ASTERISK_CALL_SPOOL);
+        }
     }
 
     /**

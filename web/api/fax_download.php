@@ -62,7 +62,8 @@ if ($type === 'sent') {
 $file_path = realpath($fax['pdf_path']);
 $allowed_dir = realpath(FAX_STORAGE_PATH);
 
-if (!$file_path || !$allowed_dir || strpos($file_path, $allowed_dir) !== 0 || !file_exists($file_path)) {
+// Sonda '/': yalnızca önek karşılaştırması "/var/www/faxes2/..." gibi kardeş dizinleri de kabul ederdi.
+if (!$file_path || !$allowed_dir || strpos($file_path, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file_path)) {
     http_response_code(404);
     die('Faks dosyası sunucuda bulunamadı veya erişim engellendi');
 }

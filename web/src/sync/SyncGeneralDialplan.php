@@ -184,7 +184,10 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Set(FAXOPT(minrate)=2400)\n";
     // UNIQUEID eklenir: aynı saniyede aynı CALLERID'den 2. bir çağrı gelirse
     // (STRFTIME+CALLERID tek başına) FAX_ID çakışıp dosya üzerine yazılabilirdi.
-    $conf .= " same => n,Set(FAX_ID=\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}_\${UNIQUEID})\n";
+    // CALLERID(num) SÜZÜLEREK: FAX_FILE aşağıda System() ile /bin/sh'a çift tırnak
+    // içinde gidiyor; dış hattan gelen "$(komut)" biçimli bir numara (SIP URI
+    // kullanıcı kısmında geçerli) önceden komut olarak çalışırdı.
+    $conf .= " same => n,Set(FAX_ID=\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_\${UNIQUEID})\n";
     $conf .= " same => n,Set(FAX_FILE=/var/spool/asterisk/fax/\${FAX_ID}.tif)\n";
     // `df` seçeneği: `d` (faks hata ayıklama günlüğü) + `f` (T.38 destekli kanallarda
     // anlaşma sağlanamazsa ses bandına/G.711'e otomatik geri düşme/fallback izin ver).

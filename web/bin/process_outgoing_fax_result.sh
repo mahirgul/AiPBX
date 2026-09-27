@@ -14,8 +14,6 @@ log() {
 # Ortam fallback'leri — kodda statik değer yok (kural: AGENTS.md)
 if [ -r /etc/ai-pbx.env ]; then
     . /etc/ai-pbx.env
-elif [ -r /etc/kbu-portal.env ]; then
-    . /etc/kbu-portal.env
 fi
 
 FAX_ID="$1"
@@ -39,9 +37,12 @@ if [ "$STATUS" != "SUCCESS" ]; then
     ST="FAILED"
 fi
 
-ESCAPED_ERR=$(echo "$ERROR_MSG" | sed "s/'/''/g" | tr -d '\r\n')
+# Ters bölü de atılır: MariaDB'de \' kaçış sayılır, '' ikilemesini bozardı.
+ESCAPED_ERR=$(printf '%s' "$ERROR_MSG" | tr -d '\r\n\\' | sed "s/'/''/g")
 
-MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER:-kbu_portal} -p${DB_PASS} ${DB_NAME:-asterisk}"
+# Parola komut satırında değil ortamda: -p<parola> `ps` çıktısında herkese görünüyordu.
+export MYSQL_PWD="${DB_PASS}"
+MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
 MYSQL_QUERY="$MYSQL_EXEC -N -s"
 
 # 1. Update MySQL fax_sent table

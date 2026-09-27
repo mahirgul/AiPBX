@@ -285,12 +285,56 @@ mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
-chown -R www-data:www-data /var/www/faxes /var/lib/aipbx
+chown -R www-data:www-data /var/lib/aipbx
+# Faks dizinlerine İKİ süreç yazar: Asterisk (asterisk; gelen faks, gönderim
+# sonucu) ve portal (www-data, asterisk grubunda; giden faks arşivi ve .call
+# dosyası). Önceden /var/www/faxes www-data'nın, /var/spool/asterisk/fax root'un
+# ve outgoing spool asterisk:root 750'ydi: gelen faks TIF'i hiç yazılamıyor,
+# giden faksın .call dosyası spool'a bırakılamıyordu. setgid (2775): alt
+# dizinler asterisk grubunu miras alır.
+mkdir -p /var/www/faxes/recvd /var/www/faxes/sent /var/spool/asterisk/outgoing
+chown -R asterisk:asterisk /var/www/faxes
+chmod 2775 /var/www/faxes /var/www/faxes/recvd /var/www/faxes/sent
+# /var/spool/asterisk: Debian asterisk paketi her güncellemede buradaki TÜM
+# dizinleri "asterisk: 750" yapar (postinst) — dpkg-statoverride olan dizinlere
+# dokunmaz. Portalın ses kayıtlarını (monitor) ve sesli mesajları okuyabilmesi,
+# .call ve giden faks dosyası yazabilmesi için izinler buradan sabitlenir.
+# (Önceden /var/spool/asterisk asterisk:root 750'ydi: kayıt dinleme ve faks
+# gönderme www-data için hiç çalışmıyordu.)
+for spec in "0750 /var/spool/asterisk" "2750 /var/spool/asterisk/monitor" \
+            "2770 /var/spool/asterisk/outgoing" "2775 /var/spool/asterisk/fax" \
+            "2775 /var/spool/asterisk/fax/outgoing"; do
+    mode="${spec%% *}"; dir="${spec#* }"
+    dpkg-statoverride --list "$dir" >/dev/null 2>&1 && dpkg-statoverride --remove "$dir" >/dev/null 2>&1
+    dpkg-statoverride --update --add asterisk asterisk "$mode" "$dir"
+done
+chgrp -R asterisk /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
+chmod -R g+rX /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
 # Portal login failures (read by the aipbx-web fail2ban jail)
 touch /var/log/aipbx/web_login_failures.log
 chown -R www-data:adm /var/log/aipbx
 chmod 750 /var/log/aipbx
 chmod 640 /var/log/aipbx/web_login_failures.log
+# Faks betikleri Asterisk kullanıcısıyla (System()) çalışır ve bu dosyalara
+# yazar; /var/log'da dosyayı kendileri oluşturamadıkları için hiç log
+# düşmüyordu. logrotate de root olarak yeniden yaratmasın diye create satırı.
+for f in fax_incoming fax_outgoing; do
+    touch "/var/log/$f.log"
+    chown asterisk:adm "/var/log/$f.log"
+    chmod 640 "/var/log/$f.log"
+done
+cat > /etc/logrotate.d/aipbx-fax << 'ROT'
+/var/log/fax_incoming.log /var/log/fax_outgoing.log {
+    su root syslog
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0640 asterisk adm
+}
+ROT
 chmod 755 "$(dirname "$INSTALL_DIR")" "$INSTALL_DIR"
 
 ok "Directory structure created"
@@ -806,6 +850,16 @@ chmod -R 755 /var/lib/asterisk/sounds/
 chown -R asterisk:asterisk /etc/asterisk/
 chmod -R 775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
+
+# Asterisk'in oluşturduğu sesli mesaj/kayıt dosyaları asterisk grubuna yazılabilir
+# olsun (UMask 0002): portal (www-data, asterisk grubunda) sesli mesajı silebilsin.
+# 0022 iken silme sessizce başarısız oluyordu.
+mkdir -p /etc/systemd/system/asterisk.service.d
+cat > /etc/systemd/system/asterisk.service.d/aipbx.conf << 'UNIT'
+[Service]
+UMask=0002
+UNIT
+systemctl daemon-reload
 
 systemctl restart asterisk
 systemctl enable asterisk

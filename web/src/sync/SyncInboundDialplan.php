@@ -96,7 +96,7 @@ function __syncInboundDialplanBody() {
             // Zorunlu çağrı kaydı.
             if (!empty($d['record_call'])) {
                 $rec = "/var/spool/asterisk/monitor/inbound_"
-                     . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}_to_{$num}.wav";
+                     . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$num}.wav";
                 $conf .= " same => n,Set(REC_FILE={$rec})\n";
                 $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
                 $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
