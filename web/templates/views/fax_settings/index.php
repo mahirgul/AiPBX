@@ -1,8 +1,8 @@
 <!-- Department & Email Routing Table Card -->
 <div class="card">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-fax" style="color: var(--primary);"></i> <?php echo t('fax_settings.title'); ?></div>
-        <div style="display: flex; gap: 8px;">
+        <div class="card-title"><i class="fas fa-fax u-primary"></i> <?php echo t('fax_settings.title'); ?></div>
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSettingsHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -25,7 +25,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('fax_settings.col_dept'); ?></th>
                     <th><?php echo t('fax_settings.col_did'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('fax_settings.col_fax_user'); ?></th>
@@ -40,8 +40,8 @@
                 <?php else: ?>
                     <?php foreach ($mappings as $m): ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $m['id']; ?></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><i class="fas fa-building" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $m['id']; ?></td>
+                            <td class="u-strong"><i class="fas fa-building" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
                             <td><?php echo !empty($m['did_extension']) ? '<span class="badge badge-info">' . htmlspecialchars($m['did_extension']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
                             <td class="col-hide-mobile"><?php echo !empty($m['assigned_user_id']) ? '<span class="badge badge-warning"><i class="fas fa-fax"></i> ' . htmlspecialchars($m['fax_user_extension'] . ' - ' . $m['fax_user_name']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
                             <td><?php echo htmlspecialchars($m['notification_email'] ?: '-'); ?></td>
@@ -63,8 +63,8 @@
 <div class="modal-overlay" id="didModal">
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="didModalTitle"><i class="fas fa-fax" style="color: var(--primary);"></i> <?php echo t('fax_settings.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeFaxDidModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="didModalTitle"><i class="fas fa-fax u-primary"></i> <?php echo t('fax_settings.modal_new_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeFaxDidModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -80,7 +80,7 @@
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_settings.field_did'); ?></label>
                     <input type="text" name="did_extension" id="modal_did_extension" class="form-control" placeholder="<?php echo t('fax_settings.field_did_placeholder'); ?>">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_settings.did_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_settings.did_help'); ?></small>
                 </div>
 
                 <div class="form-group">
@@ -91,7 +91,7 @@
                             <option value="<?php echo $fu['id']; ?>"><?php echo htmlspecialchars($fu['extension'] . ' - ' . $fu['full_name']); ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_settings.fax_user_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_settings.fax_user_help'); ?></small>
                 </div>
 
                 <div class="form-group">
@@ -99,10 +99,10 @@
                     <input type="email" name="notification_email" id="modal_notification_email" class="form-control" placeholder="fax@example.com">
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('fax_settings.field_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('fax_settings.field_active'); ?></span>
                     </label>
                 </div>
 

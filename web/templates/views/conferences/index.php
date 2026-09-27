@@ -7,10 +7,10 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users-rectangle" style="color: var(--primary);"></i> <?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?>
+            <i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?>
             <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($conferences); ?></span>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -66,7 +66,7 @@
                     <?php foreach ($conferences as $cf): ?>
                         <tr>
                             <td><span class="badge badge-info" style="font-size: 13px;"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($cf['title']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($cf['title']); ?></td>
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
                                     <?php if (!empty($cf['user_pin'])): ?>
@@ -97,7 +97,7 @@
                                 <?php if ((int)$cf['record_conference'] === 1): ?>
                                     <span class="badge badge-danger" title="Oda Kaydediliyor"><i class="fas fa-microphone"></i> Kayıt</span>
                                 <?php else: ?>
-                                    <span class="text-muted" style="font-size: 11px;">-</span>
+                                    <span class="text-muted u-fs-11">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -116,7 +116,7 @@
                                         <button type="button" class="btn btn-secondary btn-sm" onclick='openEditConfModal(<?php echo json_encode($cf); ?>)' title="Düzenle">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Bu konferans odasını silmek istediğinizden emin misiniz?');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('Bu konferans odasını silmek istediğinizden emin misiniz?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_conference" value="1">
                                             <input type="hidden" name="conference_id" value="<?php echo $cf['id']; ?>">
@@ -139,8 +139,8 @@
 <div class="modal-overlay" id="liveMembersModal">
     <div class="modal-card" style="max-width: 640px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="liveMembersTitle"><i class="fas fa-users-viewfinder" style="color: var(--primary);"></i> Canlı Konferans Katılımcıları</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('liveMembersModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="liveMembersTitle"><i class="fas fa-users-viewfinder u-primary"></i> Canlı Konferans Katılımcıları</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('liveMembersModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <div id="liveMembersBody" style="min-height: 120px;">
@@ -162,8 +162,8 @@
 <div class="modal-overlay" id="confModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="confModalTitle"><i class="fas fa-users-rectangle" style="color: var(--primary);"></i> Konferans Odası</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('confModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="confModalTitle"><i class="fas fa-users-rectangle u-primary"></i> Konferans Odası</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('confModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -183,7 +183,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-key text-info"></i> Katılımcı PIN (Boş ise şifresiz)</label>
                         <input type="text" name="user_pin" id="modal_conf_user_pin" class="form-control" placeholder="ör: 1234" pattern="[0-9]*">
@@ -195,7 +195,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Maksimum Katılımcı</label>
                         <input type="number" name="max_members" id="modal_conf_max_members" class="form-control" value="50" min="2" max="500">
@@ -210,37 +210,37 @@
                 <div style="background: var(--bg-input); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                     <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px; color: var(--text-main);">Gelişmiş Seçenekler</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="wait_marked" id="modal_conf_wait_marked" value="1" style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="wait_marked" id="modal_conf_wait_marked" value="1" class="u-accent">
                             <span>Yönetici girmeden başlatma (Lider Bekle)</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="end_marked" id="modal_conf_end_marked" value="1" style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="end_marked" id="modal_conf_end_marked" value="1" class="u-accent">
                             <span>Yönetici çıkınca odayı kapat</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="record_conference" id="modal_conf_record" value="1" style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="record_conference" id="modal_conf_record" value="1" class="u-accent">
                             <span>Konferansı Ses Kaydı Yap</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="mute_on_join" id="modal_conf_mute_on_join" value="1" style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="mute_on_join" id="modal_conf_mute_on_join" value="1" class="u-accent">
                             <span>Katılımcılar sessizde girsin (Mute)</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="announce_join_leave" id="modal_conf_announce_join" value="1" checked style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="announce_join_leave" id="modal_conf_announce_join" value="1" checked class="u-accent">
                             <span>Giriş / Çıkışları anons et</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" name="announce_user_count" id="modal_conf_announce_count" value="1" checked style="accent-color: var(--primary);">
+                        <label class="u-check-label-6">
+                            <input type="checkbox" name="announce_user_count" id="modal_conf_announce_count" value="1" checked class="u-accent">
                             <span>Girişte katılımcı sayısını söyle</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_conf_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;">Oda Aktif</span>
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_conf_active" value="1" checked class="u-check">
+                        <span class="u-fw-600">Oda Aktif</span>
                     </label>
                 </div>
 
@@ -254,7 +254,7 @@
 let currentActiveRoomNumber = '';
 
 function openCreateConfModal() {
-    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Konferans Odası';
+    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Konferans Odası';
     document.getElementById('modal_conf_id').value = '0';
     document.getElementById('modal_conf_number').value = '';
     document.getElementById('modal_conf_title').value = '';
@@ -273,7 +273,7 @@ function openCreateConfModal() {
 }
 
 function openEditConfModal(cf) {
-    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Oda Düzenle: ' + escapeHtml(cf.title || '');
+    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Oda Düzenle: ' + escapeHtml(cf.title || '');
     document.getElementById('modal_conf_id').value = cf.id || '0';
     document.getElementById('modal_conf_number').value = cf.room_number || '';
     document.getElementById('modal_conf_title').value = cf.title || '';
@@ -293,7 +293,7 @@ function openEditConfModal(cf) {
 
 function showLiveMembers(roomNumber, roomTitle) {
     currentActiveRoomNumber = roomNumber;
-    document.getElementById('liveMembersTitle').innerHTML = '<i class="fas fa-users-viewfinder" style="color: var(--primary);"></i> Oda ' + escapeHtml(roomNumber) + ' - ' + escapeHtml(roomTitle);
+    document.getElementById('liveMembersTitle').innerHTML = '<i class="fas fa-users-viewfinder u-primary"></i> Oda ' + escapeHtml(roomNumber) + ' - ' + escapeHtml(roomTitle);
     UIHelper.openOverlayModal('liveMembersModal');
     refreshLiveMembers();
 }
@@ -316,8 +316,8 @@ function refreshLiveMembers() {
                 html += '<div style="padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">';
                 html += '<div>';
                 html += '<span style="font-weight: 700; color: var(--text-main); font-size: 13px;">' + escapeHtml(m.callerid || m.channel) + '</span>';
-                if (m.is_admin) html += ' <span class="badge badge-warning" style="font-size: 10px;"><i class="fas fa-crown"></i> Yönetici</span>';
-                if (m.is_muted) html += ' <span class="badge badge-danger" style="font-size: 10px;"><i class="fas fa-microphone-slash"></i> Sessizde</span>';
+                if (m.is_admin) html += ' <span class="badge badge-warning u-fs-10"><i class="fas fa-crown"></i> Yönetici</span>';
+                if (m.is_muted) html += ' <span class="badge badge-danger u-fs-10"><i class="fas fa-microphone-slash"></i> Sessizde</span>';
                 html += '<div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">' + escapeHtml(m.channel) + '</div>';
                 html += '</div>';
                 

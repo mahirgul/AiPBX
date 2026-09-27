@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-user-shield" style="color: var(--primary);"></i> <?php echo t('fail2ban.header_title'); ?>
+            <i class="fas fa-user-shield u-primary"></i> <?php echo t('fail2ban.header_title'); ?>
             <span class="badge <?php echo !empty($service_active) ? 'badge-success' : 'badge-danger'; ?>" style="margin-left: 8px; font-size: 11px;">
                 <?php echo !empty($service_active) ? t('firewall.service_active') : t('firewall.service_inactive'); ?>
             </span>
@@ -24,11 +24,11 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-gavel" style="color: var(--primary);"></i> <?php echo htmlspecialchars($j['name']); ?>
+                <i class="fas fa-gavel u-primary"></i> <?php echo htmlspecialchars($j['name']); ?>
                 <span class="badge <?php echo $j['currently_banned'] > 0 ? 'badge-danger' : 'badge-success'; ?>" style="margin-left: 8px; font-size: 11px;">
                     <?php echo sprintf(t('fail2ban.currently_banned_badge'), $j['currently_banned']); ?>
                 </span>
-                <span class="badge badge-info" style="font-size: 11px;"><?php echo sprintf(t('fail2ban.total_banned_badge'), $j['total_banned']); ?></span>
+                <span class="badge badge-info u-fs-11"><?php echo sprintf(t('fail2ban.total_banned_badge'), $j['total_banned']); ?></span>
             </div>
         </div>
 
@@ -37,7 +37,7 @@
                 <thead>
                     <tr>
                         <th><?php echo t('fail2ban.col_ip'); ?></th>
-                        <th style="text-align: right;"></th>
+                        <th class="u-text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,9 +47,9 @@
                         <?php foreach ($j['banned_ips'] as $ip): ?>
                             <tr>
                                 <td style="font-family: monospace;"><?php echo htmlspecialchars($ip); ?></td>
-                                <td style="text-align: right;">
+                                <td class="u-text-right">
                                     <?php if (hasModulePermission('fail2ban', 'edit')): ?>
-                                        <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.unban_confirm'), ENT_QUOTES); ?>');">
+                                        <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.unban_confirm'), ENT_QUOTES); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                             <input type="hidden" name="unban_ip" value="1">
                                             <input type="hidden" name="jail" value="<?php echo htmlspecialchars($j['name']); ?>">
@@ -71,15 +71,15 @@
             <input type="hidden" name="update_jail_config" value="1">
             <input type="hidden" name="jail" value="<?php echo htmlspecialchars($j['name']); ?>">
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group u-m-0">
                     <label class="form-label"><?php echo t('fail2ban.field_bantime'); ?></label>
                     <input type="number" name="bantime" class="form-control" value="<?php echo (int) $j['bantime']; ?>" min="60" required>
                 </div>
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group u-m-0">
                     <label class="form-label"><?php echo t('fail2ban.field_findtime'); ?></label>
                     <input type="number" name="findtime" class="form-control" value="<?php echo (int) $j['findtime']; ?>" min="60" required>
                 </div>
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group u-m-0">
                     <label class="form-label"><?php echo t('fail2ban.field_maxretry'); ?></label>
                     <input type="number" name="maxretry" class="form-control" value="<?php echo (int) $j['maxretry']; ?>" min="1" required>
                 </div>
@@ -92,7 +92,7 @@
 
 <div class="card" style="max-width: 620px;">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-list-check" style="color: var(--primary);"></i> <?php echo t('fail2ban.whitelist_title'); ?></div>
+        <div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('fail2ban.whitelist_title'); ?></div>
     </div>
     <div class="table-responsive">
         <table class="data-table">
@@ -100,11 +100,11 @@
                 <?php foreach ($ignoreips as $ip): $is_protected = in_array($ip, $protected_ignoreips, true); ?>
                     <tr>
                         <td style="font-family: monospace;"><?php echo htmlspecialchars($ip); ?></td>
-                        <td style="text-align: right;">
+                        <td class="u-text-right">
                             <?php if ($is_protected): ?>
                                 <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('fail2ban.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
                             <?php elseif (hasModulePermission('fail2ban', 'edit')): ?>
-                                <form method="POST" autocomplete="off" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.remove_ignoreip_confirm'), ENT_QUOTES); ?>');">
+                                <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.remove_ignoreip_confirm'), ENT_QUOTES); ?>');">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                     <input type="hidden" name="remove_ignoreip" value="1">
                                     <input type="hidden" name="ip" value="<?php echo htmlspecialchars($ip); ?>">
@@ -121,7 +121,7 @@
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px; display: flex; gap: 10px; align-items: flex-end;">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
         <input type="hidden" name="add_ignoreip" value="1">
-        <div class="form-group" style="flex: 1; margin: 0;">
+        <div class="form-group u-m-0 u-flex-1">
             <label class="form-label"><?php echo t('fail2ban.field_add_ignoreip'); ?></label>
             <input type="text" name="ip" class="form-control" placeholder="192.168.1.0/24">
         </div>

@@ -1,9 +1,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-phone-slash" style="color: var(--danger);"></i> <?php echo t('end_call.header_title'); ?>
+            <i class="fas fa-phone-slash u-danger"></i> <?php echo t('end_call.header_title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('endCallHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -26,7 +26,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th class="col-hide-mobile"><?php echo t('end_call.col_key'); ?></th>
                     <th><?php echo t('end_call.col_title'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
@@ -41,9 +41,9 @@
                 <?php else: ?>
                     <?php foreach ($actions as $act): ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $act['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $act['id']; ?></td>
                             <td class="col-hide-mobile"><code><?php echo htmlspecialchars($act['action_key']); ?></code></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($act['title']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($act['title']); ?></td>
                             <td class="col-hide-mobile">
                                 <?php echo !empty($act['internal_number'])
                                     ? '<span class="badge badge-info">' . htmlspecialchars($act['internal_number']) . '</span>'
@@ -62,7 +62,7 @@
                                 <?php if (!empty($act['anc_title'])): ?>
                                     <span class="badge badge-info"><i class="fas fa-volume-up"></i> <?php echo htmlspecialchars($act['anc_title']); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);"><?php echo t('end_call.no_announcement'); ?></span>
+                                    <span class="u-muted"><?php echo t('end_call.no_announcement'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
@@ -80,8 +80,8 @@
 <div class="modal-overlay" id="hangupModal">
     <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="hangupModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('end_call.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeHangupModal()" style="padding: 6px 12px;" title="<?php echo t('end_call.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="hangupModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('end_call.modal_new_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeHangupModal()" title="<?php echo t('end_call.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -89,7 +89,7 @@
                 <input type="hidden" name="save_hangup_action" value="1">
                 <input type="hidden" name="hangup_id" id="modal_hangup_id" value="">
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('end_call.field_action_key'); ?></label>
                         <input type="text" name="action_key" id="modal_action_key" class="form-control" placeholder="<?php echo t('end_call.field_action_key_placeholder'); ?>" required>
@@ -106,10 +106,10 @@
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
                            placeholder="ör: 1010">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('internal_number.help'); ?></small>
+                    <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('end_call.field_action_type'); ?></label>
                         <select name="action_type" id="modal_action_type" class="form-control">

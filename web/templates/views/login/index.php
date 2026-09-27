@@ -12,7 +12,7 @@
                 <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
                     <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                 <?php else: ?>
-                    <i class="fas <?php echo htmlspecialchars($site_logo_icon); ?>" style="color: var(--primary);"></i>
+                    <i class="fas <?php echo htmlspecialchars($site_logo_icon); ?> u-primary"></i>
                 <?php endif; ?>
             </div>
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>

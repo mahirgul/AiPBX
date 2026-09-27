@@ -13,9 +13,9 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-volume-up" style="color: var(--primary);"></i> <?php echo t('sounds.announcements_title'); ?>
+                <i class="fas fa-volume-up u-primary"></i> <?php echo t('sounds.announcements_title'); ?>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div class="u-flex-gap">
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('soundHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
@@ -45,7 +45,7 @@
                         <th class="col-hide-mobile"><?php echo t('sounds.col_audio_file'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('sounds.col_size_date'); ?></th>
                         <th><?php echo t('sounds.col_status'); ?></th>
-                        <th style="text-align: right;"></th>
+                        <th class="u-text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,7 +56,7 @@
                             $file_name = str_replace('custom/', '', $anc['audio_file']);
                         ?>
                             <tr>
-                                <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px;">#<?php echo $anc['id']; ?></td>
+                                <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $anc['id']; ?></td>
                                 <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')">
                                     <i class="fas fa-volume-up" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($anc['title']); ?>
                                 </td>
@@ -76,7 +76,7 @@
                                         if (file_exists($full_p)) {
                                             echo round(filesize($full_p) / 1024, 1) . ' KB | ' . date('d.m.Y H:i', filemtime($full_p));
                                         } else {
-                                            echo '<span style="color: var(--text-muted);">' . t('sounds.available') . '</span>';
+                                            echo '<span class="u-muted">' . t('sounds.available') . '</span>';
                                         }
                                     ?>
                                 </td>
@@ -106,9 +106,9 @@
     <div class="card" style="margin-bottom: 24px;">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-music" style="color: var(--primary);"></i> <?php echo t('sounds.moh_section_title'); ?>
+                <i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_section_title'); ?>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div class="u-flex-gap">
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('mohHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
@@ -137,13 +137,13 @@
                         <th class="col-hide-mobile"><?php echo t('sounds.col_mode'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('sounds.col_sort'); ?></th>
                         <th><?php echo t('sounds.col_files'); ?></th>
-                        <th style="text-align: right;"></th>
+                        <th class="u-text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($moh_classes as $mc): ?>
                         <tr>
-                            <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px;">#<?php echo $mc['id']; ?></td>
+                            <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $mc['id']; ?></td>
                             <td style="font-weight: 700; color: var(--primary);">
                                 <i class="fas fa-compact-disc"></i> <?php echo htmlspecialchars($mc['name']); ?>
                             </td>
@@ -178,8 +178,8 @@
 <div class="modal-overlay" id="uploadSoundModal">
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="soundModalTitle"><i class="fas fa-file-audio" style="color: var(--primary);"></i> <?php echo t('sounds.modal_upload_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeUploadSoundModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="soundModalTitle"><i class="fas fa-file-audio u-primary"></i> <?php echo t('sounds.modal_upload_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeUploadSoundModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" enctype="multipart/form-data" id="soundModalForm">
@@ -191,7 +191,7 @@
                 <div class="form-group" id="sound_name_group">
                     <label class="form-label"><?php echo t('sounds.field_sound_name'); ?></label>
                     <input type="text" name="sound_name" id="modal_sound_name" class="form-control" placeholder="<?php echo t('sounds.field_sound_name_placeholder'); ?>" required>
-                    <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('sounds.field_sound_name_help'); ?></small>
+                    <small class="u-muted u-fs-11"><?php echo t('sounds.field_sound_name_help'); ?></small>
                 </div>
 
                 <div class="form-group">
@@ -204,13 +204,13 @@
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
                            placeholder="ör: 1010">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('internal_number.help'); ?></small>
+                    <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" id="audio_file_label"><?php echo t('sounds.field_audio_file'); ?></label>
                     <input type="file" name="audio_file" id="modal_audio_file" class="form-control" accept=".wav,.gsm,.alaw,.ulaw,.mp3" required>
-                    <small style="color: var(--text-muted); font-size: 11px;" id="audio_file_help"><?php echo t('sounds.field_audio_file_help'); ?></small>
+                    <small class="u-muted u-fs-11" id="audio_file_help"><?php echo t('sounds.field_audio_file_help'); ?></small>
                 </div>
 
                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
@@ -226,8 +226,8 @@
 <div class="modal-overlay" id="mohModal">
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('sounds.modal_moh_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeMohModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('sounds.modal_moh_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeMohModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -237,7 +237,7 @@
                 <div class="form-group">
                     <label class="form-label"><?php echo t('sounds.field_class_name'); ?></label>
                     <input type="text" name="class_name" class="form-control" placeholder="<?php echo t('sounds.field_class_name_placeholder'); ?>" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('sounds.field_class_name_help'); ?></small>
+                    <small class="u-hint"><?php echo t('sounds.field_class_name_help'); ?></small>
                 </div>
 
                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
@@ -258,11 +258,11 @@
                     <i class="fas fa-file-audio"></i>
                 </div>
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 700; margin: 0;" id="playerModalTitle"><?php echo t('sounds.player_title'); ?></h3>
-                    <small style="color: var(--text-muted); font-size: 11px;" id="playerModalFile">custom/welcome.wav</small>
+                    <h3 class="u-title u-m-0" id="playerModalTitle"><?php echo t('sounds.player_title'); ?></h3>
+                    <small class="u-muted u-fs-11" id="playerModalFile">custom/welcome.wav</small>
                 </div>
             </div>
-            <button class="btn btn-secondary" onclick="closeAudioPlayerModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeAudioPlayerModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body" style="padding: 20px;">
             <!-- Waveform visualizer container -->
@@ -275,7 +275,7 @@
 
             <!-- Controls bar -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="u-flex-center">
                     <button class="btn btn-primary" id="wavePlayBtn" onclick="toggleWavePlay()" style="min-width: 110px;">
                         <i class="fas fa-play"></i> <?php echo t('sounds.play'); ?>
                     </button>
@@ -296,7 +296,7 @@
                 </div>
 
                 <!-- Volume control -->
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="u-flex-center">
                     <button class="btn btn-secondary btn-sm" id="muteBtn" onclick="toggleWaveMute()" style="padding: 6px 10px;">
                         <i class="fas fa-volume-up" id="muteIcon"></i>
                     </button>
@@ -319,8 +319,8 @@
 <div class="modal-overlay" id="mohUploadModal">
     <div class="modal-card" style="max-width: 480px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-music" style="color: var(--primary);"></i> <?php echo t('sounds.moh_upload_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeMohUploadModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_upload_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeMohUploadModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" enctype="multipart/form-data">
@@ -336,10 +336,10 @@
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group u-mt-12">
                     <label class="form-label"><?php echo t('sounds.moh_upload_file'); ?></label>
                     <input type="file" name="moh_audio" id="modal_moh_audio" class="form-control" accept=".wav,.gsm,.alaw,.ulaw,.mp3" required>
-                    <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('sounds.moh_upload_file_help'); ?></small>
+                    <small class="u-muted u-fs-11"><?php echo t('sounds.moh_upload_file_help'); ?></small>
                 </div>
 
                 <div style="text-align: right; margin-top: 16px;">

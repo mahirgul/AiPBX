@@ -2,7 +2,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-paper-plane" style="color: var(--primary);"></i> <?php echo t('fax_mail_settings.title'); ?>
+            <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_mail_settings.title'); ?>
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('faxMailHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>
@@ -20,7 +20,7 @@
         <input type="hidden" name="save_fax_email_settings" value="1">
 
         <!-- Yatay Sekmeler (Sabit Tek Satır) -->
-        <div class="settings-tabs" style="margin-bottom: 20px;">
+        <div class="settings-tabs u-mb-20">
             <button type="button" class="settings-tab-btn active" data-tab="email" onclick="switchSettingsTab('email', this)">
                 <i class="fas fa-envelope"></i> <?php echo t('fax_mail_settings.tab_email', 'E-Posta'); ?>
             </button>
@@ -31,17 +31,17 @@
 
         <!-- TAB 1: E-Posta & Bildirim -->
         <div class="settings-tab-pane active" id="tab_email">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="u-grid-2">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_from_address'); ?></label>
                     <input type="email" name="fax_email_from_address" class="form-control" value="<?php echo htmlspecialchars($fax_from_addr); ?>" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.from_address_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.from_address_help'); ?></small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_from_name'); ?></label>
                     <input type="text" name="fax_email_from_name" class="form-control" value="<?php echo htmlspecialchars($fax_from_name); ?>" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.from_name_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.from_name_help'); ?></small>
                 </div>
             </div>
 
@@ -87,17 +87,17 @@
 
         <!-- TAB 2: Cihaz & İletim -->
         <div class="settings-tab-pane" id="tab_device" style="display: none;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="u-grid-2">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_header_info'); ?></label>
                     <input type="text" name="fax_header_info" class="form-control" value="<?php echo htmlspecialchars($fax_header_info); ?>" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.header_info_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.header_info_help'); ?></small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_station_id'); ?></label>
                     <input type="text" name="fax_local_station_id" class="form-control" value="<?php echo htmlspecialchars($fax_station_id); ?>" required maxlength="20">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.station_id_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.station_id_help'); ?></small>
                 </div>
             </div>
 
@@ -110,13 +110,13 @@
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_retry_time'); ?></label>
                     <input type="number" name="fax_retry_time" class="form-control" value="<?php echo htmlspecialchars($fax_retry_time); ?>" min="10" max="300" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.retry_time_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.retry_time_help'); ?></small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_wait_time'); ?></label>
                     <input type="number" name="fax_wait_time" class="form-control" value="<?php echo htmlspecialchars($fax_wait_time); ?>" min="5" max="120" required>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('fax_mail_settings.wait_time_help'); ?></small>
+                    <small class="u-hint"><?php echo t('fax_mail_settings.wait_time_help'); ?></small>
                 </div>
             </div>
         </div>

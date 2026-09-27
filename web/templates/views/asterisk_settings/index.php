@@ -29,7 +29,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-network-wired" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.section1_title'); ?>
+                <i class="fas fa-network-wired u-primary"></i> <?php echo t('asterisk_settings.section1_title'); ?>
             </div>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('astHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
@@ -42,92 +42,92 @@
             <?php echo t('asterisk_settings.help_body'); ?>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="u-grid-2">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_wss_port'); ?></label>
                 <input type="number" name="pjsip_wss_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_wss_port']); ?>" required>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.wss_port_help'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.wss_port_help'); ?></small>
             </div>
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_udp_port'); ?></label>
                 <input type="number" name="pjsip_udp_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_udp_port']); ?>" required>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.udp_port_help'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.udp_port_help'); ?></small>
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+        <div class="u-grid-2 u-mt-12">
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-globe"></i> <?php echo t('asterisk_settings.field_external_ip'); ?></label>
                 <input type="text" name="pjsip_external_ip" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_external_ip']); ?>" placeholder="203.0.113.10">
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.external_ip_help'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.external_ip_help'); ?></small>
             </div>
 
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.field_local_net'); ?></label>
                 <input type="text" name="pjsip_local_net" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_local_net']); ?>" placeholder="192.168.1.0/24,10.0.0.0/24">
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.local_net_help'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.local_net_help'); ?></small>
             </div>
         </div>
 
-        <div class="form-group" style="margin-top: 12px;">
+        <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_codecs'); ?></label>
             <div style="display: flex; gap: 16px; margin-top: 6px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="opus" <?php echo in_array('opus', $active_codecs) ? 'checked' : ''; ?>> Opus
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="alaw" <?php echo in_array('alaw', $active_codecs) ? 'checked' : ''; ?>> aLaw (PCMA)
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="ulaw" <?php echo in_array('ulaw', $active_codecs) ? 'checked' : ''; ?>> uLaw (PCMU)
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="g722" <?php echo in_array('g722', $active_codecs) ? 'checked' : ''; ?>> G.722
                 </label>
             </div>
-            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.codecs_help'); ?></small>
+            <small class="u-hint"><?php echo t('asterisk_settings.codecs_help'); ?></small>
         </div>
 
-        <div class="form-group" style="margin-top: 12px;">
+        <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_video_codecs'); ?></label>
             <div style="display: flex; gap: 16px; margin-top: 6px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="vp8" <?php echo in_array('vp8', $active_codecs) ? 'checked' : ''; ?>> VP8
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="h264" <?php echo in_array('h264', $active_codecs) ? 'checked' : ''; ?>> H.264
                 </label>
             </div>
-            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.video_codecs_help'); ?></small>
+            <small class="u-hint"><?php echo t('asterisk_settings.video_codecs_help'); ?></small>
         </div>
 
-        <div class="form-group" style="margin-top: 12px;">
+        <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_wired_codecs'); ?></label>
             <div style="display: flex; gap: 16px; margin-top: 6px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="alaw" <?php echo in_array('alaw', $active_wired_codecs) ? 'checked' : ''; ?>> aLaw (PCMA)
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="ulaw" <?php echo in_array('ulaw', $active_wired_codecs) ? 'checked' : ''; ?>> uLaw (PCMU)
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="g729" <?php echo in_array('g729', $active_wired_codecs) ? 'checked' : ''; ?>> G.729
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="g722" <?php echo in_array('g722', $active_wired_codecs) ? 'checked' : ''; ?>> G.722
                 </label>
             </div>
-            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.wired_codecs_help'); ?></small>
+            <small class="u-hint"><?php echo t('asterisk_settings.wired_codecs_help'); ?></small>
         </div>
 
-        <div class="form-group" style="margin-top: 12px;">
+        <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_user_agent'); ?></label>
             <input type="text" name="pjsip_user_agent" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_user_agent'] ?? 'Asterisk PBX'); ?>" placeholder="Asterisk PBX">
-            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.user_agent_help'); ?></small>
+            <small class="u-hint"><?php echo t('asterisk_settings.user_agent_help'); ?></small>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+        <div class="u-grid-2 u-mt-12">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_direct_media'); ?></label>
                 <select name="pjsip_direct_media" class="form-control">
@@ -152,7 +152,7 @@
                     <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('asterisk_settings.qualify_help'); ?></span></span>
                 </label>
                 <input type="number" name="pjsip_qualify_frequency" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_qualify_frequency']); ?>" min="0" max="600">
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.qualify_unit'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.qualify_unit'); ?></small>
             </div>
 
             <div class="form-group">
@@ -161,7 +161,7 @@
                     <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('asterisk_settings.internal_timeout_help'); ?></span></span>
                 </label>
                 <input type="number" name="pjsip_internal_dial_timeout" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_internal_dial_timeout']); ?>" min="5" max="120" required>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.internal_timeout_unit'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.internal_timeout_unit'); ?></small>
             </div>
 
             <div class="form-group">
@@ -170,7 +170,7 @@
                     <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('asterisk_settings.external_timeout_help'); ?></span></span>
                 </label>
                 <input type="number" name="pjsip_external_dial_timeout" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_external_dial_timeout']); ?>" min="5" max="180" required>
-                <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.external_timeout_unit'); ?></small>
+                <small class="u-hint"><?php echo t('asterisk_settings.external_timeout_unit'); ?></small>
             </div>
         </div>
     </div>
@@ -181,7 +181,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-wave-square" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.rtp_section_title'); ?>
+                <i class="fas fa-wave-square u-primary"></i> <?php echo t('asterisk_settings.rtp_section_title'); ?>
             </div>
         </div>
 
@@ -219,7 +219,7 @@
             </div>
         </div>
 
-        <p style="color: var(--warning); font-size: 12px; margin-top: 12px;">
+        <p class="u-warning u-fs-12 u-mt-12">
             <i class="fas fa-triangle-exclamation"></i> <?php echo t('asterisk_settings.rtp_restart_warning'); ?>
         </p>
     </div>
@@ -230,7 +230,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-fax" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.udptl_section_title'); ?>
+                <i class="fas fa-fax u-primary"></i> <?php echo t('asterisk_settings.udptl_section_title'); ?>
             </div>
         </div>
 
@@ -265,7 +265,7 @@
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+        <div class="u-grid-2 u-mt-12">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_udptl_fec_entries'); ?></label>
                 <input type="number" name="udptl_fec_entries" class="form-control" value="<?php echo htmlspecialchars($s['udptl_fec_entries'] ?? '3'); ?>" min="0" max="9">
@@ -284,7 +284,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-bell" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.ring_section_title'); ?>
+                <i class="fas fa-bell u-primary"></i> <?php echo t('asterisk_settings.ring_section_title'); ?>
             </div>
         </div>
 
@@ -293,7 +293,7 @@
             <?php echo t('asterisk_settings.ring_help'); ?>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="u-grid-2">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_ring_incoming'); ?></label>
                 <select name="webrtc_ring_incoming" class="form-control">
@@ -325,7 +325,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-video" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.video_section_title'); ?>
+                <i class="fas fa-video u-primary"></i> <?php echo t('asterisk_settings.video_section_title'); ?>
             </div>
         </div>
 
@@ -369,7 +369,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-language" style="color: var(--primary);"></i> <?php echo t('asterisk_settings.lang_section_title'); ?>
+                <i class="fas fa-language u-primary"></i> <?php echo t('asterisk_settings.lang_section_title'); ?>
             </div>
         </div>
 
@@ -387,7 +387,7 @@
                     </option>
                 <?php endforeach; ?>
             </select>
-            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('asterisk_settings.lang_packs_help'); ?></small>
+            <small class="u-hint"><?php echo t('asterisk_settings.lang_packs_help'); ?></small>
         </div>
     </div>
     </div>

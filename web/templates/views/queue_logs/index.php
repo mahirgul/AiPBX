@@ -8,23 +8,23 @@ $formatDuration = function(int $seconds): string {
 
 <!-- Statistics Overview -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 20px;">
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_entered'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--primary);"><?php echo $stat_total_enter; ?></div>
     </div>
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_connected'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--success);"><?php echo $stat_connected; ?></div>
     </div>
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_abandoned'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--danger);"><?php echo $stat_abandon; ?></div>
     </div>
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_avg_wait'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--warning);"><?php echo $avg_holdtime; ?> sn</div>
     </div>
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;"><?php echo t('queue_logs.stat_ring_no_answer'); ?></div>
         <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: #ec4899;"><?php echo $stat_ring_no_answer; ?></div>
     </div>
@@ -33,7 +33,7 @@ $formatDuration = function(int $seconds): string {
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-list-alt" style="color: var(--primary);"></i> <?php echo t('queue_logs.header_title'); ?>
+            <i class="fas fa-list-alt u-primary"></i> <?php echo t('queue_logs.header_title'); ?>
             <?php if ($view_mode === 'grouped'): ?>
                 <span class="badge badge-info" style="font-size: 11px; margin-left: 8px;">
                     <i class="fas fa-route"></i> <?php echo t('queue_logs.mode_grouped'); ?>
@@ -44,7 +44,7 @@ $formatDuration = function(int $seconds): string {
                 </span>
             <?php endif; ?>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="u-flex-center">
             <button type="button" class="btn btn-outline-primary btn-sm" id="btnToggleAllJourneys" onclick="toggleAllQueueJourneys()" title="<?php echo t('queue_logs.btn_expand_all'); ?>" style="<?php echo ($view_mode !== 'grouped' || empty($parsed_logs)) ? 'display: none;' : ''; ?>">
                 <i class="fas fa-layer-group"></i> <span id="toggleAllJourneysText"><?php echo t('queue_logs.btn_expand_all'); ?></span>
             </button>
@@ -68,7 +68,7 @@ $formatDuration = function(int $seconds): string {
 
     <!-- Filter Form -->
     <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-        <select name="date_range" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="date_range" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_yesterday'); ?></option>
             <option value="week" <?php echo $date_filter === 'week' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_week'); ?></option>
@@ -84,7 +84,7 @@ $formatDuration = function(int $seconds): string {
             </option>
         </select>
 
-        <select name="event" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="event" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value=""><?php echo t('queue_logs.all_events'); ?></option>
             <option value="ENTERQUEUE" <?php echo $event_filter === 'ENTERQUEUE' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_enterqueue'); ?></option>
             <option value="CONNECT" <?php echo $event_filter === 'CONNECT' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_connect'); ?></option>
@@ -96,7 +96,7 @@ $formatDuration = function(int $seconds): string {
             <option value="REMOVEMEMBER" <?php echo $event_filter === 'REMOVEMEMBER' ? 'selected' : ''; ?>><?php echo t('queue_logs.event_removemember'); ?></option>
         </select>
 
-        <select name="agent" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="agent" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value=""><?php echo t('queue_logs.all_agents'); ?></option>
             <?php foreach ($agent_map as $ext => $name): ?>
                 <option value="<?php echo htmlspecialchars($ext); ?>" <?php echo $agent_filter === (string)$ext ? 'selected' : ''; ?>>
@@ -138,7 +138,7 @@ $formatDuration = function(int $seconds): string {
                         <th><?php echo t('queue_logs.col_hold_time'); ?></th>
                         <th><?php echo t('queue_logs.col_talk_time'); ?></th>
                         <th><?php echo t('queue_logs.col_journey'); ?></th>
-                        <th style="text-align: right;"><?php echo t('queue_logs.col_call_id'); ?></th>
+                        <th class="u-text-right"><?php echo t('queue_logs.col_call_id'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -152,17 +152,17 @@ $formatDuration = function(int $seconds): string {
                     <?php else: ?>
                         <?php foreach ($parsed_logs as $idx => $c): ?>
                             <tr>
-                                <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px; font-weight: 600;">#<?php echo ($idx + 1); ?></td>
+                                <td class="col-hide-mobile u-muted u-fw-600 u-fs-12">#<?php echo ($idx + 1); ?></td>
                                 <td style="white-space: nowrap; font-weight: 600;"><?php echo $c['datetime']; ?></td>
                                 <td>
-                                    <strong style="color: var(--primary);">
+                                    <strong class="u-primary">
                                         <i class="fas fa-phone-alt" style="font-size: 11px; margin-right: 4px; opacity: 0.7;"></i>
                                         <?php echo htmlspecialchars($c['caller_num']); ?>
                                     </strong>
                                 </td>
                                 <td><span class="badge badge-info"><?php echo htmlspecialchars($c['queue_name']); ?></span></td>
                                 <td>
-                                    <span class="badge <?php echo $c['status_badge']; ?>" style="font-size: 11px;">
+                                    <span class="badge <?php echo $c['status_badge']; ?> u-fs-11">
                                         <?php echo htmlspecialchars($c['status_label']); ?>
                                     </span>
                                 </td>
@@ -173,7 +173,7 @@ $formatDuration = function(int $seconds): string {
                                             <small style="color: var(--text-muted); display: block; font-size: 11px;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <span style="color: var(--text-muted); font-size: 12px;">-</span>
+                                        <span class="u-muted u-fs-12">-</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -215,15 +215,15 @@ $formatDuration = function(int $seconds): string {
                                                     <i class="fas fa-route"></i>
                                                 </span>
                                                 <span><?php echo t('queue_logs.journey_title'); ?></span>
-                                                <span class="badge badge-info" style="font-size: 11px;"><?php echo sprintf(t('queue_logs.journey_steps'), $c['steps_count']); ?></span>
+                                                <span class="badge badge-info u-fs-11"><?php echo sprintf(t('queue_logs.journey_steps'), $c['steps_count']); ?></span>
                                                 <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($c['call_id']); ?></code>
                                             </div>
                                             <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
-                                                <span><?php echo t('queue_logs.journey_wait'); ?>: <strong style="color: var(--warning);"><?php echo $formatDuration($c['hold_sec']); ?></strong></span>
+                                                <span><?php echo t('queue_logs.journey_wait'); ?>: <strong class="u-warning"><?php echo $formatDuration($c['hold_sec']); ?></strong></span>
                                                 <span>•</span>
-                                                <span><?php echo t('queue_logs.journey_talk'); ?>: <strong style="color: var(--success);"><?php echo $formatDuration($c['talk_sec']); ?></strong></span>
+                                                <span><?php echo t('queue_logs.journey_talk'); ?>: <strong class="u-success"><?php echo $formatDuration($c['talk_sec']); ?></strong></span>
                                                 <span>•</span>
-                                                <span><?php echo t('queue_logs.journey_total'); ?>: <strong style="color: var(--primary);"><?php echo $formatDuration($c['total_sec']); ?></strong></span>
+                                                <span><?php echo t('queue_logs.journey_total'); ?>: <strong class="u-primary"><?php echo $formatDuration($c['total_sec']); ?></strong></span>
                                             </div>
                                         </div>
 
@@ -249,7 +249,7 @@ $formatDuration = function(int $seconds): string {
                                                             <span class="badge <?php echo $step['badge']; ?>" style="font-size: 10px; padding: 2px 6px;">
                                                                 <?php echo htmlspecialchars($step['event']); ?>
                                                             </span>
-                                                            <span style="font-size: 12px; color: var(--text-muted);">
+                                                            <span class="u-muted u-fs-12">
                                                                 <?php echo $step['detail']; ?>
                                                             </span>
                                                         </div>
@@ -301,7 +301,7 @@ $formatDuration = function(int $seconds): string {
                         ?>
                         <?php foreach ($parsed_logs as $idx => $log): ?>
                             <tr>
-                                <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px;">#<?php echo ($idx + 1); ?></td>
+                                <td class="col-hide-mobile u-muted u-fs-12">#<?php echo ($idx + 1); ?></td>
                                 <td style="white-space: nowrap;"><?php echo $log['datetime']; ?></td>
                                 <td>
                                     <?php echo uiStatusBadge($log['event'], $queueLogBadgeMap, 'info'); ?>
@@ -311,7 +311,7 @@ $formatDuration = function(int $seconds): string {
                                     <?php if (!empty($log['agent_ext'])): ?>
                                         <strong><?php echo htmlspecialchars($log['agent_ext']); ?></strong> - <?php echo htmlspecialchars($log['agent_name']); ?>
                                     <?php else: ?>
-                                        <span style="color: var(--text-muted);"><?php echo htmlspecialchars($log['agent']); ?></span>
+                                        <span class="u-muted"><?php echo htmlspecialchars($log['agent']); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($log['call_id']); ?></td>

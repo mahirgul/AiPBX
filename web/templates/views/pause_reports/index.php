@@ -1,6 +1,6 @@
 <!-- Statistics Overview Cards -->
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_total_breaks'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--primary);">
             <?php echo $total_breaks; ?>
@@ -12,21 +12,21 @@
         <?php endif; ?>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_total_duration'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--warning);">
             <?php echo PauseReportRepository::formatSeconds($total_sec); ?>
         </div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_avg_duration'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--info);">
             <?php echo PauseReportRepository::formatSeconds($avg_sec); ?>
         </div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_top_reason'); ?></div>
         <div style="font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--success); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <?php echo htmlspecialchars($top_reason); ?>
@@ -37,7 +37,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-mug-hot" style="color: var(--warning);"></i> <?php echo t('pause_reports.header_title'); ?>
+            <i class="fas fa-mug-hot u-warning"></i> <?php echo t('pause_reports.header_title'); ?>
         </div>
         <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="Modül Rehberi">
             <i class="fas fa-question-circle"></i>
@@ -53,18 +53,18 @@
     <!-- Filter Form -->
     <form method="GET" autocomplete="off" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: flex-end;">
         <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><?php echo t('pause_reports.field_start_date'); ?></label>
+            <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_start_date'); ?></label>
             <input type="date" name="start_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($start_date); ?>">
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><?php echo t('pause_reports.field_end_date'); ?></label>
+            <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_end_date'); ?></label>
             <input type="date" name="end_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($end_date); ?>">
         </div>
 
         <?php if ($can_view_all): ?>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><?php echo t('pause_reports.field_agent_filter'); ?></label>
+                <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_agent_filter'); ?></label>
                 <select name="agent_filter" class="form-control form-control-sm" style="min-width: 180px;">
                     <option value=""><?php echo t('pause_reports.all_agents'); ?></option>
                     <?php foreach ($agents as $a):
@@ -79,7 +79,7 @@
         <?php endif; ?>
 
         <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; color: var(--text-muted); font-weight: 600;"><?php echo t('pause_reports.field_reason_filter'); ?></label>
+            <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_reason_filter'); ?></label>
             <select name="reason_filter" class="form-control form-control-sm" style="min-width: 160px;">
                 <option value=""><?php echo t('pause_reports.all_reasons'); ?></option>
                 <?php foreach ($reasons_list as $r):

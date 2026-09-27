@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users" style="color: var(--primary);"></i> <?php echo t('fc_status.header_title'); ?>
+            <i class="fas fa-users u-primary"></i> <?php echo t('fc_status.header_title'); ?>
         </div>
     </div>
     <div class="table-responsive">
@@ -27,14 +27,14 @@
                                 <?php if (!empty($u['pickup_group'])): ?>
                                     <span class="badge badge-info"><?php echo htmlspecialchars($u['pickup_group']); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);">-</span>
+                                    <span class="u-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if (!empty($u['dnd_enabled'])): ?>
                                     <span class="badge badge-danger"><i class="fas fa-bell-slash"></i> <?php echo t('fc_status.dnd_on'); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);"><?php echo t('fc_status.dnd_off'); ?></span>
+                                    <span class="u-muted"><?php echo t('fc_status.dnd_off'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -53,7 +53,7 @@
                                         echo '<span class="badge badge-secondary" title="' . htmlspecialchars(t('my_phone.cf_noanswer_label')) . ' (' . intval($u['cf_noanswer_timeout'] ?? 20) . 's)"><i class="fas fa-phone-volume"></i> ' . htmlspecialchars($u['cf_noanswer_number']) . '</span>';
                                     }
                                     if (!$hasAny) {
-                                        echo '<span style="color: var(--text-muted);">-</span>';
+                                        echo '<span class="u-muted">-</span>';
                                     }
                                 ?>
                             </td>

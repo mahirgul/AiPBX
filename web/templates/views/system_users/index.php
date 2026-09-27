@@ -17,7 +17,7 @@
 <?php if (!empty($import_preview)): ?>
 <div class="card" style="margin-bottom: 16px; border: 1px solid var(--primary);">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-file-csv" style="color: var(--primary);"></i> <?php echo t('system_users.import_preview_title'); ?> — <?php echo htmlspecialchars($import_preview['file_name']); ?></div>
+        <div class="card-title"><i class="fas fa-file-csv u-primary"></i> <?php echo t('system_users.import_preview_title'); ?> — <?php echo htmlspecialchars($import_preview['file_name']); ?></div>
     </div>
     <div style="padding: 0 16px 16px 16px;">
         <?php
@@ -46,9 +46,9 @@
                         <td><?php echo htmlspecialchars($r['role']); ?></td>
                         <td>
                             <?php if ($item['errors']): ?>
-                                <span style="color: var(--danger); font-size: 12px;"><i class="fas fa-times-circle"></i> <?php echo htmlspecialchars(implode('; ', $item['errors'])); ?></span>
+                                <span class="u-danger u-fs-12"><i class="fas fa-times-circle"></i> <?php echo htmlspecialchars(implode('; ', $item['errors'])); ?></span>
                             <?php else: ?>
-                                <span style="color: var(--success); font-size: 12px;"><i class="fas fa-check-circle"></i> <?php echo t('system_users.import_row_ok'); ?></span>
+                                <span class="u-success u-fs-12"><i class="fas fa-check-circle"></i> <?php echo t('system_users.import_row_ok'); ?></span>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -59,7 +59,7 @@
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
             <a href="/system-users" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> <?php echo t('system_users.import_cancel'); ?></a>
             <?php if ($import_preview['valid_count'] > 0): ?>
-            <form method="POST" style="margin: 0;" onsubmit="this.querySelector('button').disabled = true;">
+            <form method="POST" class="u-m-0" onsubmit="this.querySelector('button').disabled = true;">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="csv_import" value="1">
                 <input type="hidden" name="import_key" value="<?php echo htmlspecialchars($import_preview['key']); ?>">
@@ -73,7 +73,7 @@
 <?php if (!empty($import_result)): ?>
 <div class="card" style="margin-bottom: 16px; border: 1px solid var(--success);">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-check-circle" style="color: var(--success);"></i> <?php echo t('system_users.import_result_title'); ?></div>
+        <div class="card-title"><i class="fas fa-check-circle u-success"></i> <?php echo t('system_users.import_result_title'); ?></div>
     </div>
     <div style="padding: 0 16px 16px 16px; font-size: 13px;">
         <p style="margin: 0 0 10px 0;"><?php echo sprintf(t('system_users.import_result_summary'), $import_result['created'], count($import_result['failed']), $import_result['invited']); ?></p>
@@ -86,9 +86,9 @@
         <?php endif; ?>
         <?php if ($import_result['generated']): ?>
             <div style="border: 2px solid var(--warning); border-radius: 10px; padding: 12px 14px;">
-                <div style="font-weight: 700; margin-bottom: 4px;"><i class="fas fa-key" style="color: var(--warning);"></i> <?php echo t('system_users.import_generated_title'); ?></div>
-                <div style="color: var(--text-muted); margin-bottom: 10px;"><?php echo t('system_users.generated_password_hint'); ?></div>
-                <table class="table" style="margin-bottom: 10px;">
+                <div style="font-weight: 700; margin-bottom: 4px;"><i class="fas fa-key u-warning"></i> <?php echo t('system_users.import_generated_title'); ?></div>
+                <div class="u-muted u-mb-10"><?php echo t('system_users.generated_password_hint'); ?></div>
+                <table class="table u-mb-10">
                     <thead><tr><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th><th><?php echo t('system_users.field_password'); ?></th></tr></thead>
                     <tbody>
                     <?php
@@ -111,9 +111,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users-cog" style="color: var(--primary);"></i> <?php echo t('system_users.title'); ?>
+            <i class="fas fa-users-cog u-primary"></i> <?php echo t('system_users.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('userHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -144,7 +144,7 @@
             <i class="fas fa-check-square"></i>
             <span id="bulkSelectedCount">0</span> kullanıcı seçildi
         </div>
-        <form method="POST" id="bulkMailForm" style="margin: 0;" onsubmit="return confirmBulkSendMail();">
+        <form method="POST" id="bulkMailForm" class="u-m-0" onsubmit="return confirmBulkSendMail();">
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
             <input type="hidden" name="bulk_send_activation_mail" value="1">
             <input type="hidden" name="selected_users" id="bulkSelectedUsersInput" value="">
@@ -161,7 +161,7 @@
                     <th style="width: 36px; text-align: center;">
                         <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" style="cursor: pointer; accent-color: var(--primary);" title="Tümünü Seç">
                     </th>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th class="col-hide-mobile"><?php echo t('system_users.col_user'); ?></th>
                     <th><?php echo t('system_users.col_fullname'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('system_users.col_email'); ?></th>
@@ -182,11 +182,11 @@
                         $role_class = 'role-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $u['role']);
                     ?>
                         <tr>
-                            <td style="text-align: center;">
+                            <td class="u-text-center">
                                 <input type="checkbox" class="user-select-cb" value="<?php echo $u['id']; ?>" data-has-email="<?php echo !empty($u['email']) ? '1' : '0'; ?>" onchange="updateBulkActionState()" style="cursor: pointer; accent-color: var(--primary);">
                             </td>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $u['id']; ?></td>
-                            <td class="col-hide-mobile" style="font-weight: 700; color: var(--text-main);">
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $u['id']; ?></td>
+                            <td class="col-hide-mobile u-strong">
                                 <i class="fas fa-user-circle"></i> <?php echo htmlspecialchars($u['username']); ?>
                             </td>
                             <td><?php echo htmlspecialchars($u['full_name']); ?></td>
@@ -228,11 +228,11 @@
                             <td class="text-right">
                                 <div class="table-actions-cell">
                                     <?php if (!empty($u['email'])): ?>
-                                        <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo sprintf(t('system_users.send_mail_confirm'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('<?php echo sprintf(t('system_users.send_mail_confirm'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="send_activation_mail" value="1">
                                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('system_users.send_mail_tooltip'); ?>" style="color: var(--primary);">
+                                            <button type="submit" class="btn btn-secondary btn-sm u-primary" title="<?php echo t('system_users.send_mail_tooltip'); ?>">
                                                 <i class="fas fa-envelope"></i>
                                             </button>
                                         </form>
@@ -242,11 +242,11 @@
                                         </button>
                                     <?php endif; ?>
                                     <?php if (!empty($u['two_factor_enabled'])): ?>
-                                        <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm', '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm', '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="reset_2fa" value="1">
                                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('system_users.reset_2fa_tooltip', '2FA Sıfırla'); ?>" style="color: var(--warning);">
+                                            <button type="submit" class="btn btn-secondary btn-sm u-warning" title="<?php echo t('system_users.reset_2fa_tooltip', '2FA Sıfırla'); ?>">
                                                 <i class="fas fa-shield-alt"></i>
                                             </button>
                                         </form>
@@ -272,8 +272,8 @@
 <div class="modal-overlay" id="userModal">
     <div class="modal-card" style="max-width: 540px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="userModalTitle"><i class="fas fa-user-plus" style="color: var(--primary);"></i> <?php echo t('system_users.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeUserModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="userModalTitle"><i class="fas fa-user-plus u-primary"></i> <?php echo t('system_users.modal_new_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -281,7 +281,7 @@
                 <input type="hidden" name="save_system_user" value="1">
                 <input type="hidden" name="user_id" id="modal_user_id" value="0">
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_username'); ?></label>
                         <input type="text" name="username" id="modal_username" class="form-control" required placeholder="<?php echo t('system_users.field_username_placeholder'); ?>">
@@ -293,7 +293,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_fullname'); ?></label>
                         <input type="text" name="full_name" id="modal_full_name" class="form-control" required placeholder="<?php echo t('system_users.field_fullname_placeholder'); ?>">
@@ -313,25 +313,25 @@
                     </select>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_extension'); ?></label>
                         <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="ör: 3001">
-                        <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('system_users.extension_help'); ?></small>
+                        <small class="u-muted u-fs-11"><?php echo t('system_users.extension_help'); ?></small>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="form-label u-flex-between">
                             <span><?php echo t('system_users.field_sip_password'); ?></span>
                             <button type="button" class="btn btn-secondary btn-sm" onclick="if(typeof generateSipPassword === 'function'){ document.getElementById('modal_sip_password').value = generateSipPassword(); }" title="<?php echo t('system_users.gen_password_tooltip'); ?>" style="padding: 2px 8px; font-size: 10px;">
                                 <i class="fas fa-magic"></i> <?php echo t('system_users.auto_password'); ?>
                             </button>
                         </label>
                         <input type="text" name="sip_password" id="modal_sip_password" class="form-control" placeholder="<?php echo t('system_users.sip_password_placeholder'); ?>">
-                        <small style="color: var(--text-muted); font-size: 11px;"><?php echo t('system_users.sip_password_help'); ?></small>
+                        <small class="u-muted u-fs-11"><?php echo t('system_users.sip_password_help'); ?></small>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_cid_internal'); ?></label>
                         <input type="text" name="cid_internal" id="modal_cid_internal" class="form-control" placeholder="<?php echo t('system_users.cid_placeholder'); ?>">
@@ -358,11 +358,11 @@
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px;">
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_web" value="web">
-                            <span><i class="fas fa-laptop" style="color: var(--primary);"></i> Web</span>
+                            <span><i class="fas fa-laptop u-primary"></i> Web</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_mobil" value="mobil">
-                            <span><i class="fas fa-mobile-alt" style="color: var(--success);"></i> Mobil</span>
+                            <span><i class="fas fa-mobile-alt u-success"></i> Mobil</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_sip" value="sip">
@@ -390,10 +390,10 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('system_users.field_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('system_users.field_active'); ?></span>
                     </label>
                 </div>
 
@@ -407,8 +407,8 @@
 <div class="modal-overlay" id="resetPasswordModal">
     <div class="modal-card" style="max-width: 440px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-key" style="color: var(--primary);"></i> <?php echo t('system_users.reset_modal_title'); ?> <span id="reset_username_label"></span></h3>
-            <button class="btn btn-secondary" onclick="closeResetUserModal()" style="padding: 6px 12px;" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-key u-primary"></i> <?php echo t('system_users.reset_modal_title'); ?> <span id="reset_username_label"></span></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeResetUserModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -436,13 +436,13 @@
 <div class="modal-overlay" id="rolesModal">
     <div class="modal-card" style="max-width: 680px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-user-tag" style="color: var(--primary);"></i> <?php echo t('system_users.roles_modal_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeRolesModal()" style="padding: 6px 12px;" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-user-tag u-primary"></i> <?php echo t('system_users.roles_modal_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeRolesModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Roles Table -->
             <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
-                <table class="data-table" data-no-dt="true" style="font-size: 12px;">
+                <table class="data-table u-fs-12" data-no-dt="true">
                     <thead>
                         <tr>
                             <th><?php echo t('system_users.col_role_key'); ?></th>
@@ -455,7 +455,7 @@
                         <?php foreach ($sys_roles_full as $r_item): ?>
                             <tr>
                                 <td><code><?php echo htmlspecialchars($r_item['role_key']); ?></code></td>
-                                <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($r_item['role_name']); ?></td>
+                                <td class="u-strong"><?php echo htmlspecialchars($r_item['role_name']); ?></td>
                                 <td class="text-muted"><?php echo htmlspecialchars($r_item['description'] ?: '-'); ?></td>
                                 <td class="text-right">
                                     <button type="button" class="btn btn-secondary btn-sm" onclick='editSystemRole(<?php echo json_encode($r_item, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' title="<?php echo t('system_users.edit_tooltip'); ?>">
@@ -476,15 +476,15 @@
 
                 <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between;">
                     <span><i class="fas fa-edit"></i> <?php echo t('system_users.role_form_title'); ?></span>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetRoleForm()" style="font-size: 11px;"><?php echo t('system_users.clear'); ?></button>
+                    <button type="button" class="btn btn-secondary btn-sm u-fs-11" onclick="resetRoleForm()"><?php echo t('system_users.clear'); ?></button>
                 </h4>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group u-mb-0">
                         <label class="form-label"><?php echo t('system_users.field_role_key'); ?></label>
                         <input type="text" name="role_key" id="role_modal_key" class="form-control" placeholder="<?php echo t('system_users.field_role_key_placeholder'); ?>" required>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group u-mb-0">
                         <label class="form-label"><?php echo t('system_users.field_role_name'); ?></label>
                         <input type="text" name="role_name" id="role_modal_name" class="form-control" placeholder="<?php echo t('system_users.field_role_name_placeholder'); ?>" required>
                     </div>
@@ -507,8 +507,8 @@
 <div class="modal-overlay" id="userImportModal">
     <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-file-csv" style="color: var(--primary);"></i> <?php echo t('system_users.import_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeUserImportModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-file-csv u-primary"></i> <?php echo t('system_users.import_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeUserImportModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" enctype="multipart/form-data" autocomplete="off">

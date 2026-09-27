@@ -18,9 +18,9 @@ if (!$selected_group && !empty($groups)) {
 <div class="card mb-3">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-shield-alt" style="color: var(--primary);"></i> <?php echo t('dial_permissions.title', 'Arama Yetki Grupları'); ?>
+            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('dial_permissions.title', 'Arama Yetki Grupları'); ?>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -45,13 +45,13 @@ if (!$selected_group && !empty($groups)) {
 </div>
 
 <?php if (!empty($message)): ?>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
+    <div class="alert alert-success u-mb-20">
         <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
+    <div class="alert alert-danger u-mb-20">
         <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
     </div>
 <?php endif; ?>
@@ -61,7 +61,7 @@ if (!$selected_group && !empty($groups)) {
     <div class="card" style="padding: 16px;">
         <div class="card-header" style="margin-bottom: 14px;">
             <div class="card-title">
-                <i class="fas fa-layer-group" style="color: var(--primary);"></i> <?php echo t('dial_permissions.groups_list', 'Yetki Grupları'); ?>
+                <i class="fas fa-layer-group u-primary"></i> <?php echo t('dial_permissions.groups_list', 'Yetki Grupları'); ?>
             </div>
             <span class="badge badge-secondary"><?php echo count($groups); ?></span>
         </div>
@@ -77,19 +77,19 @@ if (!$selected_group && !empty($groups)) {
                         <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
                             <?php echo htmlspecialchars($g['group_name']); ?>
                             <?php if ($isDefault): ?>
-                                <span class="badge badge-info" style="font-size: 10px;"><?php echo t('dial_permissions.default_badge', 'Varsayılan'); ?></span>
+                                <span class="badge badge-info u-fs-10"><?php echo t('dial_permissions.default_badge', 'Varsayılan'); ?></span>
                             <?php endif; ?>
                         </span>
                         <?php if ($g['default_action'] === 'allow'): ?>
-                            <span class="badge badge-success" style="font-size: 10px;"><?php echo t('dial_permissions.default_allow', 'Genel İzin'); ?></span>
+                            <span class="badge badge-success u-fs-10"><?php echo t('dial_permissions.default_allow', 'Genel İzin'); ?></span>
                         <?php else: ?>
-                            <span class="badge badge-danger" style="font-size: 10px;"><?php echo t('dial_permissions.default_deny', 'Genel Engel'); ?></span>
+                            <span class="badge badge-danger u-fs-10"><?php echo t('dial_permissions.default_deny', 'Genel Engel'); ?></span>
                         <?php endif; ?>
                     </div>
                     <?php if (!empty($g['description'])): ?>
                         <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;"><?php echo htmlspecialchars($g['description']); ?></div>
                     <?php endif; ?>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+                    <div class="u-flex-between u-muted u-fs-11">
                         <span><i class="fas fa-list-ol"></i> <?php echo (int)$g['rules_count']; ?> kural</span>
                         <span><i class="fas fa-phone-alt"></i> <?php echo (int)$g['users_count']; ?> abone</span>
                         <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
@@ -98,7 +98,7 @@ if (!$selected_group && !empty($groups)) {
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <?php if (!$isDefault): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Bu yetki grubunu silmek istediğinizden emin misiniz?');">
+                                    <form method="POST" class="u-inline" onsubmit="return confirm('Bu yetki grubunu silmek istediğinizden emin misiniz?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_group" value="1">
                                         <input type="hidden" name="group_id" value="<?php echo $g['id']; ?>">
@@ -120,7 +120,7 @@ if (!$selected_group && !empty($groups)) {
         <div class="card-header" style="margin-bottom: 16px;">
             <div>
                 <div class="card-title">
-                    <i class="fas fa-sliders-h" style="color: var(--primary);"></i> 
+                    <i class="fas fa-sliders-h u-primary"></i> 
                     <span><?php echo htmlspecialchars($selected_group['group_name'] ?? ''); ?></span>
                     <span style="font-size: 13px; font-weight: normal; color: var(--text-muted); margin-left: 8px;">
                         (<?php echo t('dial_permissions.base_mode', 'Temel Mod:'); ?> 
@@ -129,7 +129,7 @@ if (!$selected_group && !empty($groups)) {
                 </div>
             </div>
             <?php if (hasModulePermission('dial_permissions', 'edit') && $selected_group): ?>
-                <div style="display: flex; gap: 8px;">
+                <div class="u-flex-gap">
                     <button class="btn btn-primary btn-sm" onclick="openCreateRuleModal(<?php echo $selected_group['id']; ?>)">
                         <i class="fas fa-plus"></i> <?php echo t('dial_permissions.add_rule_btn', 'Yeni Kural Ekle'); ?>
                     </button>
@@ -195,14 +195,14 @@ if (!$selected_group && !empty($groups)) {
                                         <span class="badge badge-danger"><i class="fas fa-ban"></i> <?php echo t('dial_permissions.action_deny', 'ENGELLE'); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td style="color: var(--text-muted); font-size: 12px;"><?php echo htmlspecialchars($r['description'] ?? '-'); ?></td>
+                                <td class="u-muted u-fs-12"><?php echo htmlspecialchars($r['description'] ?? '-'); ?></td>
                                 <td class="text-right">
                                     <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
                                         <div style="display: inline-flex; gap: 4px;">
                                             <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRuleModal(<?php echo json_encode($r); ?>)' title="Düzenle">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Bu kuralı silmek istediğinizden emin misiniz?');">
+                                            <form method="POST" class="u-inline" onsubmit="return confirm('Bu kuralı silmek istediğinizden emin misiniz?');">
                                                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                                 <input type="hidden" name="delete_rule" value="1">
                                                 <input type="hidden" name="rule_id" value="<?php echo $r['id']; ?>">
@@ -226,8 +226,8 @@ if (!$selected_group && !empty($groups)) {
 <div class="modal-overlay" id="groupModal">
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="groupModalTitle"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Yetki Grubu</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('groupModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="groupModalTitle"><i class="fas fa-shield-alt u-primary"></i> Yetki Grubu</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('groupModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -254,9 +254,9 @@ if (!$selected_group && !empty($groups)) {
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_group_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;">Aktif</span>
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_group_active" value="1" checked class="u-check">
+                        <span class="u-fw-600">Aktif</span>
                     </label>
                 </div>
 
@@ -270,8 +270,8 @@ if (!$selected_group && !empty($groups)) {
 <div class="modal-overlay" id="ruleModal">
     <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="ruleModalTitle"><i class="fas fa-filter" style="color: var(--primary);"></i> Yetki Kuralı</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('ruleModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="ruleModalTitle"><i class="fas fa-filter u-primary"></i> Yetki Kuralı</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('ruleModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" id="ruleForm" autocomplete="off">
@@ -295,7 +295,7 @@ if (!$selected_group && !empty($groups)) {
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">İşlem / Karar</label>
                         <select name="action" id="modal_rule_action" class="form-control">
@@ -323,7 +323,7 @@ if (!$selected_group && !empty($groups)) {
 
 <script>
 function openCreateGroupModal() {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Yetki Grubu Ekle';
+    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Grubu Ekle';
     document.getElementById('modal_group_id').value = '0';
     document.getElementById('modal_group_name').value = '';
     document.getElementById('modal_group_desc').value = '';
@@ -333,7 +333,7 @@ function openCreateGroupModal() {
 }
 
 function openEditGroupModal(g) {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Yetki Grubu Düzenle: ' + escapeHtml(g.group_name || '');
+    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Yetki Grubu Düzenle: ' + escapeHtml(g.group_name || '');
     document.getElementById('modal_group_id').value = g.id || '0';
     document.getElementById('modal_group_name').value = g.group_name || '';
     document.getElementById('modal_group_desc').value = g.description || '';
@@ -343,7 +343,7 @@ function openEditGroupModal(g) {
 }
 
 function openCreateRuleModal(groupId) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Yetki Kuralı Ekle';
+    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Kuralı Ekle';
     document.getElementById('modal_rule_id').value = '0';
     document.getElementById('modal_rule_group_id').value = groupId;
     document.getElementById('modal_rule_pattern').value = '';
@@ -355,7 +355,7 @@ function openCreateRuleModal(groupId) {
 }
 
 function openEditRuleModal(r) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Kural Düzenle: ' + escapeHtml(r.pattern || '');
+    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Kural Düzenle: ' + escapeHtml(r.pattern || '');
     document.getElementById('modal_rule_id').value = r.id || '0';
     document.getElementById('modal_rule_group_id').value = r.group_id;
     document.getElementById('modal_rule_pattern').value = r.pattern || '';

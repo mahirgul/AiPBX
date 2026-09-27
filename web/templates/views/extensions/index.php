@@ -1,14 +1,14 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-phone-alt" style="color: var(--primary);"></i> <?php echo t('extensions.title'); ?>
+            <i class="fas fa-phone-alt u-primary"></i> <?php echo t('extensions.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('extHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('extensions', 'edit')): ?>
-                <form method="POST" autocomplete="off" style="display:inline;">
+                <form method="POST" autocomplete="off" class="u-inline">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                     <input type="hidden" name="sync_all_extensions" value="1">
                     <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
@@ -32,13 +32,13 @@
     </div>
 
     <?php if (!empty($message)): ?>
-        <div class="alert alert-success" style="margin-bottom: 20px;">
+        <div class="alert alert-success u-mb-20">
             <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
         </div>
     <?php endif; ?>
 
     <?php if (!empty($error)): ?>
-        <div class="alert alert-danger" style="margin-bottom: 20px;">
+        <div class="alert alert-danger u-mb-20">
             <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
@@ -47,7 +47,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('extensions.col_extension'); ?></th>
                     <th><?php echo t('extensions.col_fullname'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_username'); ?></th>
@@ -84,9 +84,9 @@
                         }
                         ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $e['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $e['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($e['extension']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($e['full_name']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($e['full_name']); ?></td>
                             <td class="col-hide-mobile"><?php echo htmlspecialchars($e['username']); ?></td>
                             <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
@@ -102,7 +102,7 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
-                                    <span class="text-muted" style="font-size: 12px;"><?php echo t('extensions.no_sip_registration'); ?></span>
+                                    <span class="text-muted u-fs-12"><?php echo t('extensions.no_sip_registration'); ?></span>
                                 <?php elseif (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0 && empty($e['sip_password'])): ?>
                                     <span class="text-muted" style="font-size: 12px; font-style: italic;"><i class="fas fa-unlock"></i> <?php echo t('extensions.no_auth_required'); ?></span>
                                 <?php else: ?>
@@ -123,14 +123,14 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <div style="display: flex; flex-direction: column; gap: 3px;">
-                                    <span class="badge badge-secondary" style="font-size: 10px;" title="Arama Yetki Grubu">
+                                    <span class="badge badge-secondary u-fs-10" title="Arama Yetki Grubu">
                                         <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars($e['permission_group_name'] ?? 'Her Yöne Açık'); ?>
                                     </span>
                                     <?php if (!empty($e['boss_secretary_role']) && $e['boss_secretary_role'] !== 'none'): ?>
                                         <?php if ($e['boss_secretary_role'] === 'boss'): ?>
-                                            <span class="badge badge-warning" style="font-size: 10px;" title="Şef / Müdür"><i class="fas fa-crown"></i> Şef</span>
+                                            <span class="badge badge-warning u-fs-10" title="Şef / Müdür"><i class="fas fa-crown"></i> Şef</span>
                                         <?php else: ?>
-                                            <span class="badge badge-info" style="font-size: 10px;" title="Sekreter"><i class="fas fa-user-tie"></i> Sekreter</span>
+                                            <span class="badge badge-info u-fs-10" title="Sekreter"><i class="fas fa-user-tie"></i> Sekreter</span>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (($e['extension_type'] ?? 'sip') !== 'fax' && (int)($e['voicemail_enabled'] ?? 1) === 1): ?>
@@ -156,8 +156,8 @@
 <div class="modal-overlay" id="extensionModal">
     <div class="modal-card" style="max-width: 560px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="extensionModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('extensions.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeExtensionModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="extensionModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('extensions.modal_new_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeExtensionModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -177,14 +177,14 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('extensions.field_type'); ?></label>
                         <select name="extension_type" id="modal_extension_type" class="form-control" onchange="toggleExtensionTypeFields()">
                             <option value="sip"><?php echo t('extensions.type_option_sip'); ?></option>
                             <option value="fax"><?php echo t('extensions.type_option_fax'); ?></option>
                         </select>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('extensions.type_help'); ?></small>
+                        <small class="u-hint u-fs-11"><?php echo t('extensions.type_help'); ?></small>
                     </div>
 
                     <div class="form-group" id="sip_auth_digest_group">
@@ -193,7 +193,7 @@
                             <option value="1"><?php echo t('extensions.auth_digest_enabled'); ?></option>
                             <option value="0"><?php echo t('extensions.auth_digest_disabled'); ?></option>
                         </select>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"><?php echo t('extensions.auth_digest_help'); ?></small>
+                        <small class="u-hint u-fs-11"><?php echo t('extensions.auth_digest_help'); ?></small>
                     </div>
                 </div>
 
@@ -201,7 +201,7 @@
                     <label class="form-label"><?php echo t('extensions.field_outbound_group'); ?></label>
                     <input type="number" name="outbound_group" id="modal_outbound_group" class="form-control"
                            value="1" min="1" max="99" required>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                    <small class="u-hint u-fs-11">
                         <?php echo t('extensions.outbound_group_help'); ?>
                     </small>
                 </div>
@@ -221,7 +221,7 @@
                     <input type="password" name="sip_password" id="modal_sip_password" autocomplete="new-password" class="form-control" minlength="6" placeholder="<?php echo t('extensions.sip_password_placeholder'); ?>" required>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('extensions.field_cid_internal'); ?></label>
                         <input type="text" name="cid_internal" id="modal_cid_internal" class="form-control" placeholder="<?php echo t('extensions.cid_placeholder'); ?>">
@@ -233,7 +233,7 @@
                 </div>
                 <small style="color: var(--text-muted); font-size: 11px; margin-top: -8px; margin-bottom: 10px; display: block;"><?php echo t('extensions.cid_help'); ?></small>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-shield-alt text-info"></i> <?php echo t('extensions.field_permission_group', 'Arama Yetki Grubu'); ?></label>
                         <select name="permission_group_id" id="modal_permission_group_id" class="form-control">
@@ -255,47 +255,47 @@
                 </div>
 
                 <div class="card" id="voicemail_settings_group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);"><i class="fas fa-voicemail" style="color: var(--primary);"></i> Sesli Posta (Voicemail)</span>
+                    <div class="u-flex-between u-mb-10">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);"><i class="fas fa-voicemail u-primary"></i> Sesli Posta (Voicemail)</span>
                         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
-                            <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked style="accent-color: var(--primary);">
+                            <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked class="u-accent">
                             <span>Sesli Posta Kutusu Etkin</span>
                         </label>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div class="form-group" style="margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 11px;">Sesli Posta PIN (Şifre)</label>
-                            <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control" placeholder="Boş ise dahili no" style="font-size: 12px;">
+                            <label class="form-label u-fs-11">Sesli Posta PIN (Şifre)</label>
+                            <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control u-fs-12" placeholder="Boş ise dahili no">
                         </div>
                         <div class="form-group" style="margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 11px;">Sesli Posta E-posta</label>
-                            <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control" placeholder="ornek@alanadi.com" style="font-size: 12px;">
+                            <label class="form-label u-fs-11">Sesli Posta E-posta</label>
+                            <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="ornek@alanadi.com">
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="vm_on_noanswer" id="modal_vm_on_noanswer" value="1" style="accent-color: var(--primary);">
+                            <input type="checkbox" name="vm_on_noanswer" id="modal_vm_on_noanswer" value="1" class="u-accent">
                             <span>Cevapsızda</span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="vm_on_busy" id="modal_vm_on_busy" value="1" style="accent-color: var(--primary);">
+                            <input type="checkbox" name="vm_on_busy" id="modal_vm_on_busy" value="1" class="u-accent">
                             <span>Meşgulde</span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="vm_on_unavail" id="modal_vm_on_unavail" value="1" style="accent-color: var(--primary);">
+                            <input type="checkbox" name="vm_on_unavail" id="modal_vm_on_unavail" value="1" class="u-accent">
                             <span>Ulaşılamadığında</span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="vm_always" id="modal_vm_always" value="1" style="accent-color: var(--primary);">
+                            <input type="checkbox" name="vm_always" id="modal_vm_always" value="1" class="u-accent">
                             <span>Her Zaman Sesli Posta</span>
                         </label>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('extensions.field_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('extensions.field_active'); ?></span>
                     </label>
                 </div>
 

@@ -7,7 +7,7 @@
 <div class="header-phone-drawer" id="headerSoftphoneDrawer">
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
         <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-            <i class="fas fa-th" style="color: var(--primary);"></i> <?php echo t('softphone_drawer.title'); ?>
+            <i class="fas fa-th u-primary"></i> <?php echo t('softphone_drawer.title'); ?>
         </div>
         <button type="button" class="btn btn-secondary" onclick="closeHeaderSoftphoneDrawer()" style="padding: 2px 8px; font-size: 11px;" title="<?php echo t('softphone_drawer.close_tooltip'); ?>">
             <i class="fas fa-times"></i>

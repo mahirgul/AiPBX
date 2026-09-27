@@ -289,7 +289,7 @@ $token = $token ?? '';
                     </div>
                     <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                         <span style="font-weight: 600; color: var(--text-main);"><?php echo htmlspecialchars($user['full_name'] ?? ''); ?></span>
-                        <span style="color: var(--text-muted); font-size: 11px;">(#<?php echo htmlspecialchars($ext); ?>)</span>
+                        <span class="u-muted u-fs-11">(#<?php echo htmlspecialchars($ext); ?>)</span>
                     </div>
                 </div>
                 <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 11px; padding: 3px 8px; border-radius: 8px;">
@@ -366,9 +366,9 @@ $token = $token ?? '';
                 <!-- Dosya / Resim Yükleme Önizleme Barı -->
                 <div id="chat-upload-preview-bar" style="display: none; padding: 8px 16px; background: rgba(0, 242, 254, 0.08); border-top: 1px solid var(--border-color); align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-main);">
-                        <i class="fas fa-cloud-upload-alt" style="color: var(--primary);"></i>
-                        <span id="chat-upload-filename" style="font-weight: 600;">dosya.png</span>
-                        <span id="chat-upload-filesize" style="color: var(--text-muted);">(0 KB)</span>
+                        <i class="fas fa-cloud-upload-alt u-primary"></i>
+                        <span id="chat-upload-filename" class="u-fw-600">dosya.png</span>
+                        <span id="chat-upload-filesize" class="u-muted">(0 KB)</span>
                     </div>
                     <button class="btn btn-sm" style="border: none; background: transparent; color: var(--danger);" onclick="cancelUploadPreview()">
                         <i class="fas fa-times"></i>
@@ -420,7 +420,7 @@ $token = $token ?? '';
     <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
         <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
             <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-users" style="color: var(--primary);"></i> Yeni Grup Oluştur
+                <i class="fas fa-users u-primary"></i> Yeni Grup Oluştur
             </h4>
             <button type="button" class="btn btn-sm" style="border: none; background: transparent; color: var(--text-muted); font-size: 16px; cursor: pointer;" onclick="closeNewGroupModal()">
                 <i class="fas fa-times"></i>
@@ -433,7 +433,7 @@ $token = $token ?? '';
                     <i class="fas fa-camera"></i>
                 </div>
                 <input type="file" id="new-group-avatar-file" style="display: none;" accept="image/*" onchange="handleNewGroupAvatarSelect(event)">
-                <div style="flex: 1;">
+                <div class="u-flex-1">
                     <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Grup Adı *</label>
                     <input type="text" id="new-group-title" placeholder="Grup konusunu veya adını girin..." maxlength="100" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none;">
                 </div>
@@ -486,14 +486,14 @@ $token = $token ?? '';
                     <i class="fas fa-users"></i>
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="u-flex-center">
                         <h4 id="group-info-title" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-word;">Grup</h4>
                         <button id="group-info-edit-btn" class="btn btn-sm btn-outline-secondary" style="display: none; padding: 1px 6px; font-size: 11px; border-radius: 6px;" onclick="promptEditGroupInfo()" title="Grup Adını / Açıklamasını Düzenle">
                             <i class="fas fa-pencil-alt"></i>
                         </button>
                     </div>
                     <p id="group-info-desc" style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); word-break: break-word;"></p>
-                    <div id="group-info-meta" style="margin-top: 4px; font-size: 11px; color: var(--text-muted);"></div>
+                    <div id="group-info-meta" class="u-muted u-fs-11 u-mt-4"></div>
                 </div>
             </div>
 
@@ -1235,7 +1235,7 @@ function appendMessageToUI(msg) {
             ${contentHtml}
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10.5px; opacity: 0.8;">
                 <span>${formatTime(msg.created_at)}</span>
-                ${isMe ? '<i class="fas fa-check-double" style="font-size: 10px;"></i>' : ''}
+                ${isMe ? '<i class="fas fa-check-double u-fs-10"></i>' : ''}
             </div>
         </div>
     `;
@@ -1604,7 +1604,7 @@ function openNewGroupModal() {
                     ${escapeHtml((u.full_name || u.extension).charAt(0).toUpperCase())}
                 </div>
                 <div style="flex: 1; min-width: 0; font-size: 13px; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                    ${escapeHtml(u.full_name)} <span style="color: var(--text-muted); font-size: 11px;">(#${escapeHtml(u.extension)})</span>
+                    ${escapeHtml(u.full_name)} <span class="u-muted u-fs-11">(#${escapeHtml(u.extension)})</span>
                 </div>
             `;
             listEl.appendChild(row);
@@ -1799,9 +1799,9 @@ function renderGroupInfo(conv) {
                 </div>
                 <div style="min-width: 0;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                        ${escapeHtml(p.full_name)} ${isMe ? '<span style="color: var(--text-muted); font-size: 11px;">(Siz)</span>' : ''}
+                        ${escapeHtml(p.full_name)} ${isMe ? '<span class="u-muted u-fs-11">(Siz)</span>' : ''}
                     </div>
-                    <div style="font-size: 11px; color: var(--text-muted);">
+                    <div class="u-muted u-fs-11">
                         #${escapeHtml(p.extension)}
                     </div>
                 </div>
@@ -1879,7 +1879,7 @@ function openAddMembersModal() {
                     ${escapeHtml((u.full_name || u.extension).charAt(0).toUpperCase())}
                 </div>
                 <div style="flex: 1; min-width: 0; font-size: 13px; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                    ${escapeHtml(u.full_name)} <span style="color: var(--text-muted); font-size: 11px;">(#${escapeHtml(u.extension)})</span>
+                    ${escapeHtml(u.full_name)} <span class="u-muted u-fs-11">(#${escapeHtml(u.extension)})</span>
                 </div>
             `;
             listEl.appendChild(row);

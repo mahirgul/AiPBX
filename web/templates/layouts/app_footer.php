@@ -82,7 +82,7 @@ if ($is_spa_request) {
 
         <!-- Sol: Saat ve Tarih -->
         <div class="footer-left-group">
-            <div class="footer-stat-pill" id="footer-clock" style="font-weight: 700; color: var(--text-main);">
+            <div class="footer-stat-pill u-strong" id="footer-clock">
                 <i class="far fa-clock"></i> <?php echo t('footer.loading'); ?>
             </div>
         </div>

@@ -1,9 +1,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-shield-alt" style="color: var(--primary);"></i> <?php echo t('audit_log.header_title_pbx'); ?>
+            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('audit_log.header_title_pbx'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('auditHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -18,7 +18,7 @@
     <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
         <input type="hidden" name="login_status" value="<?php echo htmlspecialchars($login_status_filter); ?>">
         <input type="hidden" name="login_search" value="<?php echo htmlspecialchars($login_search_query); ?>">
-        <select name="date_range" class="form-control form-control-sm" style="width: auto;">
+        <select name="date_range" class="form-control form-control-sm u-w-auto">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_yesterday'); ?></option>
             <option value="week" <?php echo $date_filter === 'week' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_week'); ?></option>
@@ -26,7 +26,7 @@
             <option value="all" <?php echo $date_filter === 'all' ? 'selected' : ''; ?>><?php echo t('audit_log.range_all'); ?></option>
         </select>
 
-        <select name="domain" class="form-control form-control-sm" style="width: auto;">
+        <select name="domain" class="form-control form-control-sm u-w-auto">
             <option value=""><?php echo t('audit_log.all_domains'); ?></option>
             <?php foreach (array_keys($domain_map) as $d): ?>
                 <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $domain_filter === $d ? 'selected' : ''; ?>>
@@ -35,7 +35,7 @@
             <?php endforeach; ?>
         </select>
 
-        <select name="action" class="form-control form-control-sm" style="width: auto;">
+        <select name="action" class="form-control form-control-sm u-w-auto">
             <option value=""><?php echo t('audit_log.all_actions'); ?></option>
             <option value="create" <?php echo $action_filter === 'create' ? 'selected' : ''; ?>><?php echo t('pending_sync.action_create'); ?></option>
             <option value="update" <?php echo $action_filter === 'update' ? 'selected' : ''; ?>><?php echo t('pending_sync.action_update'); ?></option>
@@ -48,7 +48,7 @@
             <option value="restart_failed" <?php echo $action_filter === 'restart_failed' ? 'selected' : ''; ?>><?php echo t('audit_log.action_restart_failed'); ?></option>
         </select>
 
-        <select name="user" class="form-control form-control-sm" style="width: auto;">
+        <select name="user" class="form-control form-control-sm u-w-auto">
             <option value=""><?php echo t('audit_log.all_users'); ?></option>
             <?php foreach ($user_map as $uid => $uname): ?>
                 <option value="<?php echo htmlspecialchars((string)$uid); ?>" <?php echo $user_filter === (string)$uid ? 'selected' : ''; ?>>
@@ -108,7 +108,7 @@
                                 <?php if (!empty($log['domain'])): ?>
                                     <span class="badge badge-info"><?php echo htmlspecialchars(t('pending_sync.domain_' . $log['domain'], $log['domain'])); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);">—</span>
+                                    <span class="u-muted">—</span>
                                 <?php endif; ?>
                             </td>
                             <td><?php echo uiStatusBadge($log['action'], $auditActionBadgeMap, 'info', $auditActionLabelMap[$log['action']] ?? $log['action']); ?></td>
@@ -125,7 +125,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-door-open" style="color: var(--primary);"></i> <?php echo t('audit_log.header_title_logins'); ?>
+            <i class="fas fa-door-open u-primary"></i> <?php echo t('audit_log.header_title_logins'); ?>
         </div>
     </div>
 
@@ -136,7 +136,7 @@
         <input type="hidden" name="user" value="<?php echo htmlspecialchars($user_filter); ?>">
         <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_query); ?>">
 
-        <select name="login_status" class="form-control form-control-sm" style="width: auto;">
+        <select name="login_status" class="form-control form-control-sm u-w-auto">
             <option value=""><?php echo t('audit_log.all_statuses'); ?></option>
             <option value="SUCCESS" <?php echo $login_status_filter === 'SUCCESS' ? 'selected' : ''; ?>><?php echo t('audit_log.login_success'); ?></option>
             <option value="FAILED" <?php echo $login_status_filter === 'FAILED' ? 'selected' : ''; ?>><?php echo t('audit_log.login_failed'); ?></option>

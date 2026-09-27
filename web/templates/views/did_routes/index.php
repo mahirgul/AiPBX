@@ -5,9 +5,9 @@ $destOptionsCache = [];
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-route" style="color: var(--primary);"></i> <?php echo t('did.title'); ?>
+            <i class="fas fa-route u-primary"></i> <?php echo t('did.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('didHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -29,7 +29,7 @@ $destOptionsCache = [];
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('did.col_did'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('did.col_desc'); ?></th>
                     <th><?php echo t('did.col_target'); ?></th>
@@ -49,11 +49,11 @@ $destOptionsCache = [];
                         $destLabel = DidRouteRepository::resolveDestLabel($r['dest_type'], $r['dest_id'], $r['did_number'], $destOptionsCache, $didDeptMap);
                     ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $r['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
                             <td>
                                 <span class="badge badge-info"><i class="fas fa-phone-volume"></i> <?php echo htmlspecialchars($r['did_number']); ?></span>
                             </td>
-                            <td class="col-hide-mobile" style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($r['title']); ?></td>
+                            <td class="col-hide-mobile u-strong"><?php echo htmlspecialchars($r['title']); ?></td>
                             <td>
                                 <span class="badge <?php echo DestinationRegistry::badgeClassFor($r['dest_type']); ?>"><?php echo htmlspecialchars($modName); ?></span>
                             </td>
@@ -91,8 +91,8 @@ $destOptionsCache = [];
 <div class="modal-overlay" id="didModal">
     <div class="modal-card" style="max-width: 540px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="didModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('did.new_route'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeDidModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="didModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('did.new_route'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeDidModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -110,7 +110,7 @@ $destOptionsCache = [];
                     <input type="text" name="title" id="modal_title" class="form-control" required placeholder="ör: Santral Ana Hat">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('did.field_dest_type'); ?></label>
                         <select name="dest_type" id="modal_dest_type" class="form-control">
@@ -136,22 +136,22 @@ $destOptionsCache = [];
                             <option value="<?php echo htmlspecialchars($lang_code); ?>"><?php echo htmlspecialchars(LANGUAGE_LABELS[$lang_code] ?? $lang_code); ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('did.language_help'); ?></small>
+                    <small class="u-hint"><?php echo t('did.language_help'); ?></small>
                 </div>
 
                 <div class="form-group" style="margin-top: 12px; background: var(--bg-input); padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
                     <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer;">
                         <input type="checkbox" name="record_call" id="modal_record_call" value="1" style="width: 18px; height: 18px; accent-color: var(--danger);">
                         <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">
-                            <i class="fas fa-microphone" style="color: var(--danger);"></i> <?php echo t('did.field_record_call'); ?>
+                            <i class="fas fa-microphone u-danger"></i> <?php echo t('did.field_record_call'); ?>
                         </span>
                     </label>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('did.field_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('did.field_active'); ?></span>
                     </label>
                 </div>
 
