@@ -203,7 +203,10 @@ class PasskeyService
             return ['success' => false, 'error' => 'Doğrulama oturumu zaman aşımına uğradı. Lütfen sayfayı yenileyin.'];
         }
 
+        // Challenge tek kullanımlık: başarısız denemede de düşer (önceden
+        // yalnızca başarıda siliniyordu, aynı challenge'la tekrar denenebiliyordu).
         $challenge = $_SESSION['webauthn_auth_challenge'];
+        unset($_SESSION['webauthn_auth_challenge']);
 
         // Hem standart base64 hem de URL-safe base64 varyantlarını oluştur
         $stdBase64 = strtr($credentialIdBase64, '-_', '+/');
