@@ -1416,10 +1416,13 @@ function updateUserPresence(extension, isOnline) {
 // 14. Dahiliyi Doğrudan Ara (Santral Entegrasyonu)
 function callTargetExtension() {
     if (!currentTargetExt) return;
-    if (window.parent && window.parent.dialNumber) {
-        window.parent.dialNumber(currentTargetExt);
-    } else if (typeof makeCall === 'function') {
-        makeCall(currentTargetExt);
+    // Portalın yazılım telefonu (header_phone.js). Önceden var olmayan
+    // dialNumber()/makeCall() aranıyor, bulunamayınca tarayıcıda tel:
+    // bağlantısı açılıyordu.
+    if (typeof headerPhoneMakeCall === 'function') {
+        const input = document.getElementById('header-quick-dial-input');
+        if (input) input.value = currentTargetExt;
+        headerPhoneMakeCall();
     } else {
         window.location.href = 'tel:' + currentTargetExt;
     }
