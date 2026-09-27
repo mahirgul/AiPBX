@@ -19,6 +19,13 @@ require_once __DIR__ . '/../../src/services/GoogleAuthService.php';
 
 $client_ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
+// Google ile giriş kapalıyken bu uç nokta da çalışmamalı (önceden bakılmıyordu).
+if (!GoogleAuthService::isEnabled()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Google ile giriş bu sunucuda etkin değil.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $input_raw = file_get_contents('php://input');
 $json = json_decode($input_raw, true) ?: [];
 
@@ -92,6 +99,16 @@ if (empty($user['extension'])) {
     echo json_encode([
         'success' => false,
         'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (!empty($user['two_factor_enabled'])) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'otp_required' => true,
+        'error' => 'Bu hesapta iki adımlı doğrulama açık. Kullanıcı adı, şifre ve doğrulama koduyla giriş yapın.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

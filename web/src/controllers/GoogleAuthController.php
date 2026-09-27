@@ -100,6 +100,22 @@ class GoogleAuthController extends BaseController
             return;
         }
 
+        // İki adımlı doğrulama açık hesapta Google girişi 2FA'yı atlamasın.
+        // Web: şifreli girişteki gibi kod adımına. Mobil: tarayıcıdan uygulamaya
+        // dönen akışta kod adımı yok — şifre + kod ya da QR ile girilir.
+        if (!empty($user['two_factor_enabled'])) {
+            if ($isMobile) {
+                self::renderMobileCallback(false, 'İki adımlı doğrulama', null, 'Bu hesapta iki adımlı doğrulama açık. Uygulamaya kullanıcı adı, şifre ve doğrulama koduyla ya da web portalındaki QR kodla girin.');
+                return;
+            }
+            session_regenerate_id(true);
+            $_SESSION['pending_2fa_user_id'] = $user['id'];
+            $_SESSION['pending_2fa_username'] = $user['username'];
+            $_SESSION['pending_2fa_full_name'] = $user['full_name'];
+            static::redirect('/login-2fa');
+            return;
+        }
+
         // 7. Mobil Giriş Yönlendirmesi
         if ($isMobile) {
             // Uygulamaya giriş yanıtının kendisi (oturum token'ı + SIP şifresi)

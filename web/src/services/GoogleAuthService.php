@@ -183,7 +183,17 @@ class GoogleAuthService
         }
 
         $data = json_decode($response, true);
-        return is_array($data) ? $data : null;
+        if (!is_array($data) || !self::isEmailVerified($data)) {
+            return null;
+        }
+        return $data;
+    }
+
+    /** Google'ın e-postayı doğruladığı bilgisi (OIDC email_verified). */
+    private static function isEmailVerified(array $data): bool
+    {
+        $v = $data['email_verified'] ?? ($data['verified_email'] ?? false);
+        return $v === true || $v === 'true' || $v === 1 || $v === '1';
     }
 
     /**
@@ -216,8 +226,15 @@ class GoogleAuthService
         }
 
         // E-posta Google tarafından doğrulanmış mı?
-        $verified = $data['email_verified'] ?? false;
-        if ($verified !== true && $verified !== 'true' && $verified !== 1 && $verified !== '1') {
+        if (!self::isEmailVerified($data)) {
+            return null;
+        }
+
+        // Token BU sunucunun Google istemcisi için verilmiş olmalı (aud). Önceden
+        // bakılmıyordu: başka herhangi bir uygulama için alınmış bir Google
+        // token'ı da o e-postanın AiPBX hesabına giriş sağlıyordu.
+        $clientId = self::getClientId();
+        if ($clientId === '' || !hash_equals($clientId, (string)($data['aud'] ?? ''))) {
             return null;
         }
 
@@ -237,7 +254,8 @@ class GoogleAuthService
         $db = getDB();
         $stmt = $db->prepare('
             SELECT id, username, full_name, email, role, extension, extension_type,
-                   sip_password, theme_preference, language_preference, is_active, must_reset_password
+                   sip_password, theme_preference, language_preference, is_active, must_reset_password,
+                   two_factor_enabled
             FROM sys_users
             WHERE LOWER(TRIM(email)) = ? AND is_active = 1
             LIMIT 1
