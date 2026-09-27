@@ -169,11 +169,12 @@
                             <th><?php echo t('cc_supervisor.col_agent_name'); ?></th>
                             <th><?php echo t('cc_supervisor.col_status'); ?></th>
                             <th><?php echo t('cc_supervisor.col_pause_detail'); ?></th>
+                            <?php if ($can_spy): ?><th class="text-right"><?php echo t('cc_supervisor.col_action'); ?></th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody id="sup-agents-tbody">
                         <tr>
-                            <td colspan="4" class="text-center text-muted u-p-24">
+                            <td colspan="<?php echo $can_spy ? 5 : 4; ?>" class="text-center text-muted u-p-24">
                                 <?php echo t('cc_supervisor.loading_agents'); ?>
                             </td>
                         </tr>
@@ -213,6 +214,9 @@
 </style>
 
 <script>
+// Dinle / Fısılda / Dahil Ol (api/cc.php spy_call yalnızca admin/cc_manager'a izin verir).
+// Önceden bu butonlar hiç kullanılmayan cc_supervisor şablonundaydı; panoda yoktu.
+const CAN_SPY = <?php echo json_encode($can_spy); ?>;
 var boardUnifiedTimer = null;
 var boardUnifiedClockTimer = null;
 
@@ -357,7 +361,7 @@ function renderAgentsStatus(agents, queueFilter) {
     if (countBadge) countBadge.innerText = filtered.length + ' Temsilci';
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + (CAN_SPY ? 5 : 4) + '" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
         return;
     }
 
@@ -380,16 +384,44 @@ function renderAgentsStatus(agents, queueFilter) {
             detail = '<span style="color: var(--success); font-weight: 500;">Çağrı Bekliyor</span>';
         }
 
+        let actions = '';
+        if (CAN_SPY && a.is_in_call) {
+            const ext = escapeHtml(a.extension);
+            actions = `
+                <div style="display: inline-flex; gap: 4px;">
+                    <button class="btn btn-outline-info btn-sm" onclick="spyCall('${ext}', 'spy')" title="Gizli dinle (yalnızca siz duyarsınız)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-headphones"></i> Dinle</button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="spyCall('${ext}', 'whisper')" title="Fısılda (yalnızca temsilci duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-comment-dots"></i> Fısılda</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="spyCall('${ext}', 'barge')" title="Dahil ol (iki taraf da duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-users"></i> Dahil Ol</button>
+                </div>`;
+        }
+
         html += `
             <tr>
                 <td style="font-weight: 700; font-family: monospace; color: var(--text-main); font-size: 13px;">${escapeHtml(a.extension)}</td>
                 <td class="u-fw-600">${escapeHtml(a.full_name || a.extension)}</td>
                 <td>${statusBadge}</td>
                 <td class="u-fs-12">${detail}</td>
+                ${CAN_SPY ? `<td class="text-right">${actions}</td>` : ''}
             </tr>
         `;
     });
     tbody.innerHTML = html;
+}
+
+function spyCall(targetExt, mode) {
+    const modeNames = { spy: 'Gizli Dinleme', whisper: 'Fısıldama', barge: 'Araya Girme' };
+    if (!confirm(`${targetExt} numaralı temsilcinin görüşmesine ${modeNames[mode] || 'Dinleme'} modunda bağlanılsın mı?\nTelefonunuz çaldırılacak.`)) return;
+
+    fetch('/api/cc.php?action=spy_call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN || '') + '&target_ext=' + encodeURIComponent(targetExt) + '&mode=' + encodeURIComponent(mode)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (window.showFooterToast) window.showFooterToast(data.success ? data.message : (data.error || 'İşlem başlatılamadı'), data.success ? 'success' : 'error');
+    })
+    .catch(e => { if (window.showFooterToast) window.showFooterToast('İstek gönderilemedi: ' + e, 'error'); });
 }
 
 function pickupCall(channel) {

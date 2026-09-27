@@ -39,6 +39,8 @@ class CcBoardController extends BaseController
 
         static::renderPage('cc_board/index', [
             'my_queues' => $my_queues,
+            // api/cc.php spy_call ile aynı kural
+            'can_spy' => in_array($user['role'] ?? '', ['admin', 'cc_manager'], true),
         ], $page);
     }
 }
