@@ -113,7 +113,13 @@ class FaxSentService {
         $stmt2->execute([$fax['user_id'], $fax['sender_extension'], $fax['destination_number'], $fax['pdf_path'], $fax['tif_path'], $fax['pages']]);
         $new_fax_id = $db->lastInsertId();
 
-        FaxSendService::submitCallFile($new_fax_id, $fax['destination_number'], $fax['sender_extension'], $fax['tif_path']);
+        try {
+            FaxSendService::submitCallFile((int)$new_fax_id, $fax['destination_number'], $fax['sender_extension'], $fax['tif_path']);
+        } catch (\Exception $e) {
+            $db->prepare("UPDATE fax_sent SET status = 'FAILED', error_message = ?, completed_at = NOW() WHERE id = ?")
+               ->execute([$e->getMessage(), $new_fax_id]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
 
         writeAuditLog(null, 'fax_sent', $new_fax_id, "Giden Faks yeniden gönderildi: " . $fax['sender_extension'] . " -> " . $fax['destination_number'] . " (orijinal kayıt #$fax_id)", 'resend', $_SESSION['user_id'] ?? null);
 
