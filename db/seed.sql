@@ -14,7 +14,7 @@
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_feature_codes` WRITE;
 /*!40000 ALTER TABLE `pbx_feature_codes` DISABLE KEYS */;
-INSERT INTO `pbx_feature_codes` VALUES
+INSERT IGNORE INTO `pbx_feature_codes` VALUES
 (1,'dnd_toggle','Rahatsız Etme (DND) Aç/Kapa','*78',NULL,1,'2026-08-19 20:56:03'),
 (2,'cf_set','Çağrı Yönlendirme Ayarla','*72',NULL,1,'2026-08-19 20:56:03'),
 (3,'cf_cancel','Çağrı Yönlendirme İptal','*73',NULL,1,'2026-08-19 20:56:03'),
@@ -33,7 +33,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_hangup_actions` WRITE;
 /*!40000 ALTER TABLE `pbx_hangup_actions` DISABLE KEYS */;
-INSERT INTO `pbx_hangup_actions` VALUES
+INSERT IGNORE INTO `pbx_hangup_actions` VALUES
 (1,'hangup','Çağrıyı Kapat','hangup',NULL,1,'2026-08-10 14:53:18',NULL),
 (2,'busy','Meşgul Tonu Ver','busy',NULL,1,'2026-08-10 14:53:18','1050'),
 (3,'congestion','Şebeke Meşgul','congestion',NULL,1,'2026-08-10 14:53:18',NULL);
@@ -45,7 +45,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_moh_classes` WRITE;
 /*!40000 ALTER TABLE `pbx_moh_classes` DISABLE KEYS */;
-INSERT INTO `pbx_moh_classes` VALUES
+INSERT IGNORE INTO `pbx_moh_classes` VALUES
 (1,'default','/var/lib/asterisk/moh','files','alpha',1,'2026-08-10 11:54:57'),
 (2,'custom','/var/lib/asterisk/moh/custom','files','alpha',1,'2026-08-10 11:54:57');
 /*!40000 ALTER TABLE `pbx_moh_classes` ENABLE KEYS */;
@@ -56,7 +56,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pjsipsettings` WRITE;
 /*!40000 ALTER TABLE `pjsipsettings` DISABLE KEYS */;
-INSERT INTO `pjsipsettings` VALUES
+INSERT IGNORE INTO `pjsipsettings` VALUES
 ('bindaddr','0.0.0.0',1,0),
 ('bindport','5060',1,0),
 ('externip_val','',1,0),
@@ -84,7 +84,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_settings` WRITE;
 /*!40000 ALTER TABLE `sys_settings` DISABLE KEYS */;
-INSERT INTO `sys_settings` VALUES
+INSERT IGNORE INTO `sys_settings` VALUES
 ('brand_color_primary',''),
 ('brand_color_secondary',''),
 ('brand_sub','Santral & Çağrı Merkezi'),
@@ -167,7 +167,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_roles` WRITE;
 /*!40000 ALTER TABLE `sys_roles` DISABLE KEYS */;
-INSERT INTO `sys_roles` VALUES
+INSERT IGNORE INTO `sys_roles` VALUES
 (1,'admin','Yönetici','Tam yetkili sistem yöneticisi',1,'2026-08-12 13:15:29'),
 (2,'read_only_admin','İzleyici','Tüm panelleri görüntüleyebilir fakat düzenleme/silme yapamaz',1,'2026-08-12 13:15:29'),
 (3,'cc_agent','Temsilci','Temsilci ekranı, mola yönetimi ve arama kayıtları erişimi',1,'2026-08-12 13:15:29'),
@@ -181,7 +181,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_role_permissions` WRITE;
 /*!40000 ALTER TABLE `sys_role_permissions` DISABLE KEYS */;
-INSERT INTO `sys_role_permissions` VALUES
+INSERT IGNORE INTO `sys_role_permissions` VALUES
 (1,'admin','dashboard',1,1,1,1,'2026-08-12 13:15:31'),
 (2,'admin','trunks',1,1,1,1,'2026-08-12 13:15:31'),
 (3,'admin','did_routes',1,1,1,1,'2026-08-12 13:15:31'),
@@ -327,7 +327,7 @@ SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `phinx_migrations` WRITE;
 /*!40000 ALTER TABLE `phinx_migrations` DISABLE KEYS */;
-INSERT INTO `phinx_migrations` VALUES
+INSERT IGNORE INTO `phinx_migrations` VALUES
 (20260822043221,'BaselineSchema','2026-08-22 01:37:52','2026-08-22 01:37:52',0),
 (20260822044405,'AddLanguagePreferenceToUsers','2026-08-22 01:44:31','2026-08-22 01:44:31',0),
 (20260824095141,'CreateSysPendingSync','2026-08-24 03:52:00','2026-08-24 03:52:00',0),
