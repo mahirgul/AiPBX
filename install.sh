@@ -169,6 +169,7 @@ MIGRATOR_USER="aipbx_migrator"
 MIGRATOR_PASS=$(gen_pass 20)
 AMI_USER="aipbx-manager"
 AMI_PASS=$(gen_hex 16)
+ODBC_PASS=$(gen_hex 16)   # Asterisk → MariaDB (CDR + queue_log via ODBC)
 TURN_SECRET=$(gen_hex 32)
 
 ok "All credentials generated"
@@ -278,6 +279,7 @@ mkdir -p /var/spool/asterisk/monitor
 mkdir -p /var/lib/asterisk/sounds/custom
 mkdir -p /var/lib/asterisk/sounds/tr
 mkdir -p /var/lib/asterisk/moh
+mkdir -p /var/lib/asterisk/moh/custom   # seed.sql's "custom" MOH class
 mkdir -p /var/lib/aipbx/chat_files
 mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
@@ -381,36 +383,9 @@ FLUSH PRIVILEGES;
 "
 
 # Load schema and seed (fresh install only)
-TABLE_COUNT=$(mysql -sN -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='asterisk';" 2>/dev/null || echo "0")
-
-if [[ "${TABLE_COUNT:-0}" -eq 0 ]]; then
-    info "Loading database schema..."
-    mysql asterisk < "$INSTALL_DIR/db/schema.sql"
-    mysql asterisk < "$INSTALL_DIR/db/seed.sql"
-
-    # Create admin user with generated random password (no hardcoded admin123!)
-    ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
-    mysql asterisk -e "
-    INSERT IGNORE INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
-    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
-    "
-    ok "Database schema loaded and admin user created"
-else
-    warn "Database already has ${TABLE_COUNT} tables — schema not reloaded."
-    ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
-    ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
-    if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
-        mysql asterisk -e "
-        INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
-        VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
-        "
-        ok "Admin user created in existing database"
-    else
-        mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
-        ok "Admin password updated in existing database"
-    fi
-fi
-
+# Schema, seed data and the admin user are applied after Composer is installed
+# (Phinx migrations are the single source of truth for the schema; see
+# "Database schema (Phinx migrations)" below).
 ok "MariaDB configured"
 
 # ============================================================================
@@ -625,6 +600,43 @@ a2enconf aipbx-routing 2>/dev/null
 # Composer dependencies
 cd "$INSTALL_DIR/web" && composer install --no-dev --no-interaction --quiet 2>/dev/null || true
 
+# Database schema (Phinx migrations), seed data, admin user, ODBC user.
+# Migrations are the single source of truth: the old db/schema.sql had fallen
+# behind (no conference / boss-secretary / permission-group tables, 48 missing
+# columns) and migrations never ran on fresh installs. Re-running install.sh
+# upgrades an existing database the same way.
+info "Applying database migrations..."
+( cd "$INSTALL_DIR/web" && php vendor/bin/phinx migrate -e production ) \
+    || error "Database migrations failed (see output above)"
+# seed.sql uses INSERT IGNORE: safe on a migrated or already-seeded database.
+mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
+
+ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
+ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
+if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
+    mysql asterisk -e "
+    INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
+    VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
+    "
+    ok "Admin user created"
+else
+    mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
+    ok "Admin password updated in existing database"
+fi
+
+# Asterisk writes CDRs (cdr_adaptive_odbc → asteriskcdr) and queue_log
+# (extconfig → asteriskqueue) through ODBC; call reports, call history and
+# call-center reports read those tables. This user did not exist before, so
+# nothing was ever recorded.
+mysql -e "
+DROP USER IF EXISTS 'asterisk_odbc'@'localhost';
+CREATE USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
+GRANT SELECT, INSERT ON asterisk.asteriskcdr TO 'asterisk_odbc'@'localhost';
+GRANT SELECT, INSERT ON asterisk.asteriskqueue TO 'asterisk_odbc'@'localhost';
+FLUSH PRIVILEGES;
+"
+ok "Database schema migrated, seed data and ODBC user in place"
+
 # Nginx Stream Multiplexer on Port 443 (ALPN routing: HTTPS/WSS -> Apache 8443, TURNS -> coturn 5349)
 # nginx never decrypts TLS here, so the client address reaches Apache only
 # through a PROXY protocol header. coturn cannot parse that header, so TURNS
@@ -717,11 +729,33 @@ step "9. Configuring Asterisk PBX"
 mkdir -p /etc/asterisk/pbx
 cp "$INSTALL_DIR/asterisk-config/pbx/"*.conf /etc/asterisk/pbx/ 2>/dev/null || true
 
-for f in extensions.conf pjsip.conf queues.conf musiconhold.conf http.conf rtp.conf modules.conf; do
+for f in extensions.conf pjsip.conf queues.conf musiconhold.conf http.conf rtp.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf; do
     if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
 done
+# res_odbc.conf ships with a ${ODBC_PASS} placeholder (no secret in the repo).
+sed -i "s/\${ODBC_PASS}/${ODBC_PASS}/" /etc/asterisk/res_odbc.conf
+chown asterisk:asterisk /etc/asterisk/res_odbc.conf
+chmod 640 /etc/asterisk/res_odbc.conf
+
+# ODBC data source "asterisk" used by res_odbc.conf (MariaDB Connector/ODBC).
+cat > /etc/odbc.ini << 'ODBCINI'
+[asterisk]
+Description = AI PBX MariaDB (Asterisk CDR / queue_log)
+Driver      = MariaDB Unicode
+Server      = localhost
+Socket      = /run/mysqld/mysqld.sock
+Database    = asterisk
+Charset     = utf8mb4
+ODBCINI
+
+# seed.sql enables SIP-TLS (5061) and WSS (8089) with these two files; without
+# them both transports failed to load on every fresh install.
+cp -L "$CERT_FILE" /etc/asterisk/keys/fullchain.pem
+cp -L "$KEY_FILE" /etc/asterisk/keys/privkey.pem
+chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
+chmod 640 /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
 
 cat > /etc/asterisk/manager.conf << MANAGER
 [general]
@@ -869,6 +903,12 @@ chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/n
 chmod 640 /etc/coturn/aipbx.key
 systemctl restart coturn >/dev/null 2>&1 || true
 systemctl reload apache2 >/dev/null 2>&1 || true
+# Asterisk SIP-TLS / WSS transports (pjsip_transports.conf)
+cp -f "\$LIVE/fullchain.pem" /etc/asterisk/keys/fullchain.pem
+cp -f "\$LIVE/privkey.pem" /etc/asterisk/keys/privkey.pem
+chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
+chmod 640 /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
+asterisk -rx "module reload res_pjsip.so" >/dev/null 2>&1 || true
 LEHOOK
     chmod 755 /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh
 fi

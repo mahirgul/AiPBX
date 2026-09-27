@@ -41,7 +41,7 @@ sudo bash install.sh
    - coturn WebRTC TURN secret key
    - Web portal initial `admin` user
 3. **Software Stack Setup**: Installs Asterisk 22, MariaDB 11, Web Server, PHP 8 with all necessary extensions, Go, coturn, and fail2ban.
-4. **Database Migration**: Creates the schema from `db/schema.sql` and loads initial tables from `db/seed.sql`.
+4. **Database Migration**: Builds (or upgrades) the schema with the Phinx migrations in `web/db/migrations` and loads initial data from `db/seed.sql`; creates the ODBC user Asterisk uses to write CDRs and queue logs.
 5. **Reverse Proxy Configuration**: Deploys reverse proxy rules for `/ws` (Asterisk WebRTC SIP) and `/chat/ws` (Go Chat).
 6. **Credential Safe**: Prints full credentials in a formatted terminal summary and writes a protected file to `/root/aipbx-credentials.txt` (`chmod 600`).
 
