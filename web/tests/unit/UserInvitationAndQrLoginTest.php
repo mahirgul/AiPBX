@@ -12,6 +12,8 @@ final class UserInvitationAndQrLoginTest extends TestCase
     private PDO $db;
     private int $testUserId = 0;
     private string $testExtension = '9876';
+    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    private string $testSipSecret = '';
 
     protected function setUp(): void
     {
@@ -21,9 +23,10 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $stmt = $this->db->prepare("DELETE FROM sys_users WHERE username = 'inv_test_user' OR extension = ?");
         $stmt->execute([$this->testExtension]);
 
+        $this->testSipSecret = 'S' . bin2hex(random_bytes(8));
         $ins = $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, extension, is_active, sip_password)
-                                  VALUES ('inv_test_user', ?, 'Aktivasyon Test', 'inv_test@example.com', 'cc_agent', ?, 1, 'sipPass123')");
-        $ins->execute([password_hash('InitPass123!', PASSWORD_DEFAULT), $this->testExtension]);
+                                  VALUES ('inv_test_user', ?, 'Aktivasyon Test', 'inv_test@example.com', 'cc_agent', ?, 1, ?)");
+        $ins->execute([password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT), $this->testExtension, $this->testSipSecret]);
         $this->testUserId = (int)$this->db->lastInsertId();
     }
 
@@ -105,7 +108,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $this->assertSame($this->testExtension, $loginData['user']['extension']);
         $this->assertSame($this->testExtension, $loginData['sip']['extension']);
         $this->assertSame($this->testExtension . '-mob-webrtc', $loginData['sip']['sip_username']);
-        $this->assertSame('sipPass123', $loginData['sip']['sip_password']);
+        $this->assertSame($this->testSipSecret, $loginData['sip']['sip_password']);
 
         // 4. Durum kontrolü: Artık kullanılmış olmalı
         $statusAfter = QrLoginService::checkStatus($token);

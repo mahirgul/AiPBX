@@ -10,6 +10,8 @@ require_once '/var/www/html/src/services/LoginService.php';
 final class TwoFactorAndPasskeyTest extends TestCase
 {
     private int $testUserId;
+    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    private string $testPassword = '';
 
     protected function setUp(): void
     {
@@ -27,7 +29,8 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $db->exec("DELETE FROM sys_users WHERE username IN ('test_2fa_user', 'test_normal_user')");
 
         // Test için 2FA kullanıcısı oluştur
-        $passHash = password_hash('SecretPassword123!', PASSWORD_DEFAULT);
+        $this->testPassword = 'T' . bin2hex(random_bytes(8));
+        $passHash = password_hash($this->testPassword, PASSWORD_DEFAULT);
         $stmt = $db->prepare('INSERT INTO sys_users (username, password_hash, full_name, email, role, is_active, language_preference) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute(['test_2fa_user', $passHash, 'Test 2FA User', 'test2fa@example.com', 'admin', 1, 'tr']);
         $this->testUserId = (int)$db->lastInsertId();
@@ -137,7 +140,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $this->assertFalse($disFail['success']);
 
         // Doğru şifre ile kapatma başarılı olmalı
-        $disSuccess = TwoFactorService::disableTwoFactor($this->testUserId, 'SecretPassword123!');
+        $disSuccess = TwoFactorService::disableTwoFactor($this->testUserId, $this->testPassword);
         $this->assertTrue($disSuccess['success']);
 
         $stmt->execute([$this->testUserId]);
@@ -190,7 +193,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
         // 1. 2FA aktif kullanıcı giriş denemesi -> /login-2fa'ya yönlendirilmeli
         $post2fa = [
             'username' => 'test_2fa_user',
-            'password' => 'SecretPassword123!',
+            'password' => $this->testPassword,
             'captcha_answer' => 7,
             'csrf_token' => $csrf,
         ];
@@ -205,7 +208,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $_SESSION['captcha_num2'] = 5;
         $postNormal = [
             'username' => 'test_normal_user',
-            'password' => 'SecretPassword123!',
+            'password' => $this->testPassword,
             'captcha_answer' => 7,
             'csrf_token' => getCSRFToken(),
         ];

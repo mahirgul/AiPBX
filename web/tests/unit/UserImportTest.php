@@ -10,6 +10,12 @@ final class UserImportTest extends TestCase
     private PDO $db;
     private const PREFIX = 'csvtest_';
 
+    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    private static function tempSecret(): string
+    {
+        return 'T' . bin2hex(random_bytes(8));
+    }
+
     protected function setUp(): void
     {
         $this->db = getDB();
@@ -86,7 +92,7 @@ final class UserImportTest extends TestCase
         $rows = [
             2 => ['username' => 'csvtest_e', 'full_name' => 'E-postalı', 'email' => 'csvtest_e@example.com', 'extension' => '', 'role' => 'cc_agent', 'password' => ''],
             3 => ['username' => 'csvtest_f', 'full_name' => 'E-postasız', 'email' => '', 'extension' => '', 'role' => 'cc_agent', 'password' => ''],
-            4 => ['username' => 'csvtest_g', 'full_name' => 'Şifreli', 'email' => '', 'extension' => '', 'role' => 'cc_agent', 'password' => 'CokGizli123'],
+            4 => ['username' => 'csvtest_g', 'full_name' => 'Şifreli', 'email' => '', 'extension' => '', 'role' => 'cc_agent', 'password' => self::tempSecret()],
         ];
         $res = UserImportService::import($rows, false, 'test-token');
 
@@ -112,7 +118,7 @@ final class UserImportTest extends TestCase
         $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, role, extension, is_active) VALUES ('csvtest_h', 'x', 'H', 'cc_agent', '7106', 1)")->execute();
         $res = UserService::saveUser([
             'csrf_token' => 'test-token', 'username' => 'csvtest_i', 'full_name' => 'I',
-            'password' => 'CokGizli123', 'role' => 'cc_agent', 'extension' => '7106',
+            'password' => self::tempSecret(), 'role' => 'cc_agent', 'extension' => '7106',
         ]);
         $this->assertFalse($res['success']);
         $this->assertStringContainsString('başka bir kullanıcıya atanmış', $res['error']);

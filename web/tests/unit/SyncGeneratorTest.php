@@ -147,7 +147,7 @@ final class SyncGeneratorTest extends TestCase
         $db = getDB();
         try {
             $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
-            $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES ('testext1', '', 'Test User 1', '7001', 'Pass7001!', 1, 'sip', 1, 'user')")->execute();
+            $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES ('testext1', '', 'Test User 1', '7001', ?, 1, 'sip', 1, 'user')")->execute(['S' . bin2hex(random_bytes(8))]);
             syncAllExtensions();
             $conf = $this->endpointsConf();
 
