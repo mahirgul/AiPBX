@@ -107,7 +107,6 @@ function setHeaderPhoneMode(mode) {
     }
     localStorage.setItem("phone_mode", mode);
     updateHeaderPhoneModeUI();
-    if (typeof updatePhoneModeUI === "function") updatePhoneModeUI();
     if (window.notify) {
         window.notify.success(mode === "sip" ? "Telefon Modu: Masaüstü SIP Telefon" : "Telefon Modu: WebRTC (Tarayıcı)");
     }
@@ -150,7 +149,8 @@ function handleHeaderBreakChange(reason) {
         .then(data => {
             if (data.success) {
                 if (window.notify) window.notify.success("Moladan dönüldü, aktif durumdasınız");
-                if (typeof checkAgentStatus === "function") checkAgentStatus();
+                // Temsilci ekranı açıksa hemen yenile (checkAgentStatus diye bir fonksiyon yoktu).
+                if (typeof loadAgentQueues === "function") loadAgentQueues();
             } else {
                 if (window.notify) window.notify.error(data.error || "Moladan dönülemedi");
             }
@@ -168,7 +168,8 @@ function handleHeaderBreakChange(reason) {
         .then(data => {
             if (data.success) {
                 if (window.notify) window.notify.warning("Mola başlatıldı: " + reason);
-                if (typeof checkAgentStatus === "function") checkAgentStatus();
+                // Temsilci ekranı açıksa hemen yenile (checkAgentStatus diye bir fonksiyon yoktu).
+                if (typeof loadAgentQueues === "function") loadAgentQueues();
             } else {
                 if (window.notify) window.notify.error(data.error || "Mola başlatılamadı");
             }
