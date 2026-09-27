@@ -3,6 +3,7 @@ require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/RoleService.php';
 require_once __DIR__ . '/../services/TwoFactorService.php';
 require_once __DIR__ . '/../services/UserInvitationService.php';
+require_once __DIR__ . '/../services/UserImportService.php';
 
 class SystemUserController extends BaseController
 {
@@ -14,6 +15,16 @@ class SystemUserController extends BaseController
         $error = '';
         $generated_password = '';
         $generated_for = '';
+        $import_preview = null;
+        $import_result = null;
+
+        // CSV şablonu indirme (yalnızca admin — requireRole yukarıda)
+        if (($_GET['download'] ?? '') === 'user_import_template') {
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="kullanici_sablonu.csv"');
+            echo UserImportService::templateCsv();
+            exit;
+        }
         $modules_definition = RoleRepository::modulesDefinition();
 
         if (static::isPost()) {
@@ -24,6 +35,50 @@ class SystemUserController extends BaseController
                 // duran bir kutuda gösterilir (6 sn'lik bildirimde kaybolurdu).
                 $generated_password = $res['generated_password'] ?? '';
                 $generated_for = trim($_POST['username'] ?? '');
+            } elseif (isset($_POST['csv_preview'])) {
+                // 1. adım: dosyayı doğrula, HİÇBİR ŞEY yazma; geçerli satırları
+                // onay adımına kadar oturumda tut.
+                if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+                    $error = 'Geçersiz CSRF güvenlik kodu!';
+                } elseif (empty($_FILES['csv_file']['tmp_name']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
+                    $error = 'Lütfen bir CSV dosyası seçin.';
+                } else {
+                    $parsed = UserImportService::parse((string) file_get_contents($_FILES['csv_file']['tmp_name']));
+                    if (!$parsed['success']) {
+                        $error = $parsed['error'];
+                    } else {
+                        $defaultRole = trim($_POST['default_role'] ?? 'cc_agent');
+                        $checked = UserImportService::validate($parsed['rows'], $defaultRole);
+                        $valid = [];
+                        foreach ($checked as $line => $item) {
+                            if (!$item['errors']) { $valid[$line] = $item['row']; }
+                        }
+                        $key = bin2hex(random_bytes(16));
+                        $_SESSION['user_import'] = [
+                            'key' => $key,
+                            'rows' => $valid,
+                            'send_invitations' => !empty($_POST['send_invitations']),
+                        ];
+                        $import_preview = [
+                            'key' => $key,
+                            'items' => $checked,
+                            'valid_count' => count($valid),
+                            'send_invitations' => !empty($_POST['send_invitations']),
+                            'file_name' => basename((string) ($_FILES['csv_file']['name'] ?? '')),
+                        ];
+                    }
+                }
+            } elseif (isset($_POST['csv_import'])) {
+                // 2. adım: onaylanan önizlemedeki geçerli satırları ekle.
+                $pending = $_SESSION['user_import'] ?? null;
+                unset($_SESSION['user_import']);
+                if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+                    $error = 'Geçersiz CSRF güvenlik kodu!';
+                } elseif (!$pending || !hash_equals($pending['key'], (string) ($_POST['import_key'] ?? ''))) {
+                    $error = 'İçe aktarma oturumu bulunamadı veya süresi doldu; dosyayı yeniden yükleyin.';
+                } else {
+                    $import_result = UserImportService::import($pending['rows'], (bool) $pending['send_invitations'], (string) $_POST['csrf_token']);
+                }
             } elseif (isset($_POST['send_activation_mail'])) {
                 $csrf = $_POST['csrf_token'] ?? '';
                 if (!verifyCSRFToken($csrf)) {
@@ -105,6 +160,8 @@ class SystemUserController extends BaseController
             'sys_roles_full' => $sys_roles_full,
             'generated_password' => $generated_password,
             'generated_for' => $generated_for,
+            'import_preview' => $import_preview,
+            'import_result' => $import_result,
         ]);
         require_once dirname(__DIR__) . '/../footer.php';
     }
