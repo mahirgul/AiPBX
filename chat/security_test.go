@@ -2,12 +2,18 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestExtractToken(t *testing.T) {
@@ -157,23 +163,35 @@ func TestIsParticipantWithDB(t *testing.T) {
 	}
 }
 
-func TestValidateUserToken(t *testing.T) {
-	cfg, err := LoadConfig()
-	if err != nil {
-		t.Fatal(err)
+// TestValidateBearerTokenRejectsForgedTokens: imza/süre/biçim kontrolleri
+// veritabanına gitmeden önce yapılır, bu yüzden test DB ve canlı sır
+// gerektirmez. (Önceki test canlı sistemin sırrı ve 2026-10-06'da süresi
+// dolacak gömülü bir token ile gerçek DB'ye bağlanıyordu.)
+func TestValidateBearerTokenRejectsForgedTokens(t *testing.T) {
+	const secret = "test-secret-not-used-anywhere"
+	sign := func(payload, key string) string {
+		mac := hmac.New(sha256.New, []byte(key))
+		mac.Write([]byte(payload))
+		return hex.EncodeToString(mac.Sum(nil))
 	}
-	t.Logf("Config SecretKey length: %d", len(cfg.SecretKey))
+	future := strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10)
+	past := strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10)
+	enc := func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
 
-	if err := InitDB(cfg); err != nil {
-		t.Fatal(err)
+	cases := map[string]string{
+		"empty":         "",
+		"not base64":    "%%%not-base64%%%",
+		"wrong format":  enc("1:" + future),
+		"expired":       enc("1:" + past + ":" + sign("1:"+past, secret)),
+		"wrong secret":  enc("1:" + future + ":" + sign("1:"+future, "another-secret")),
+		"tampered user": enc("2:" + future + ":" + sign("1:"+future, secret)),
+		"bad expiry":    enc("1:soon:" + sign("1:soon", secret)),
 	}
-
-	token := "MToxNzkxMzAwMDQ4OmYwYjYzZDBmNjNhMTY4OGQ3NjM1Y2U0YzM0MjMyZDExODdiNWJlZjUzOGU0Yjg0ZTk2Mjg0OTI3YTJkMDhmYjI="
-	user, err := ValidateBearerToken(token, cfg.SecretKey)
-	if err != nil {
-		t.Fatalf("ValidateBearerToken failed: %v", err)
+	for name, tok := range cases {
+		if _, err := ValidateBearerToken(tok, secret); err == nil {
+			t.Errorf("%s: forged token was accepted", name)
+		}
 	}
-	t.Logf("Validated user: %s (Ext: %s)", user.FullName, user.Extension)
 }
 
 func TestGroupSecurityCH_G(t *testing.T) {
