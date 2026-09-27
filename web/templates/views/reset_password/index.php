@@ -2,7 +2,7 @@
     <div class="auth-card" style="max-width: 420px;">
         <div style="text-align: center; margin-bottom: 24px;">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
-                <i class="fas fa-key" style="color: var(--primary);"></i>
+                <i class="fas fa-key u-primary"></i>
             </div>
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;"><?php echo htmlspecialchars($brand_sub); ?></p>

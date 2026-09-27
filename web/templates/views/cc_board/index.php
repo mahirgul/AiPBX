@@ -1,7 +1,7 @@
 <div style="display: flex; flex-direction: column; gap: 20px;" id="cc-board-root">
 
     <!-- Üst Bar: Kuyruk/Tarih Filtresi & Tam Ekran -->
-    <div class="card page-header-card" style="margin-bottom: 0;">
+    <div class="card page-header-card u-mb-0">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 242, 254, 0.15); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px;">
@@ -30,7 +30,7 @@
                 </select>
 
                 <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(0, 0, 0, 0.04); border-radius: 6px; font-weight: 700;">
-                    <i class="far fa-clock" style="color: var(--primary);"></i>
+                    <i class="far fa-clock u-primary"></i>
                     <span id="board-clock" style="font-family: monospace; font-size: 13px; color: var(--text-main);">--:--</span>
                     <span id="board-day" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">-</span>
                 </div>
@@ -49,19 +49,19 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;" class="cc-board-kpi-grid">
         <!-- 1. Bekleyen Çağrı -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--danger); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span class="cc-board-label" style="color: var(--danger);"><?php echo t('cc_board.waiting_call'); ?></span>
+            <div class="u-flex-between">
+                <span class="cc-board-label u-danger"><?php echo t('cc_board.waiting_call'); ?></span>
                 <i class="fas fa-phone-volume" style="color: var(--danger); opacity: 0.7; font-size: 14px;"></i>
             </div>
             <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
-                <div class="cc-board-val-compact" style="color: var(--danger);" id="board-waiting-calls">0</div>
+                <div class="cc-board-val-compact u-danger" id="board-waiting-calls">0</div>
                 <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Maks: <span id="board-max-wait" style="font-family: monospace; font-weight: 700; color: var(--text-main);">00:00</span></span>
             </div>
         </div>
 
         <!-- 2. Cevaplanan / Toplam Çağrı -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--secondary); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.answered_call'); ?> / <?php echo t('cc_board.total_call'); ?></span>
                 <i class="fas fa-phone-alt" style="color: var(--secondary); opacity: 0.7; font-size: 14px;"></i>
             </div>
@@ -74,14 +74,14 @@
 
         <!-- 3. Kaçan Çağrılar (Cevapsız & Terk) -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--warning); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.missed_call'); ?> / <?php echo t('cc_board.abandoned_call'); ?></span>
                 <i class="fas fa-phone-slash" style="color: var(--warning); opacity: 0.7; font-size: 14px;"></i>
             </div>
             <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
-                <span class="cc-board-val-compact" style="color: var(--danger);" id="board-missed-calls">0</span>
+                <span class="cc-board-val-compact u-danger" id="board-missed-calls">0</span>
                 <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">/</span>
-                <span class="cc-board-val-compact" style="color: var(--warning);" id="board-abandoned-calls">0</span>
+                <span class="cc-board-val-compact u-warning" id="board-abandoned-calls">0</span>
                 <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Terk: %<span id="board-abandon-rate">0</span></span>
                 <span id="board-missed-rate" style="display: none;">0</span>
             </div>
@@ -89,7 +89,7 @@
 
         <!-- 4. Süreler (Ortalama Bekleme / Konuşma) -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.avg_wait'); ?> / <?php echo t('cc_board.avg_talk'); ?></span>
                 <i class="fas fa-stopwatch" style="color: var(--primary); opacity: 0.7; font-size: 14px;"></i>
             </div>
@@ -102,18 +102,18 @@
 
         <!-- 5. Temsilciler & SLA -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid #6366f1; display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.agents_logged_in'); ?> & SLA</span>
                 <i class="fas fa-headset" style="color: #6366f1; opacity: 0.7; font-size: 14px;"></i>
             </div>
             <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px;">
                 <div>
-                    <span class="cc-board-val-compact" style="color: var(--success);" id="board-agents-available">0</span>
-                    <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">/ <span id="board-agents-logged-in">0</span></span>
+                    <span class="cc-board-val-compact u-success" id="board-agents-available">0</span>
+                    <span class="u-muted u-fw-600 u-fs-12">/ <span id="board-agents-logged-in">0</span></span>
                     <span style="font-size: 11px; color: var(--danger); font-weight: 600; margin-left: 4px;">(<span id="board-active-calls">0</span> aktif)</span>
                     <span id="board-agents-total" style="display: none;">0</span>
                 </div>
-                <div style="text-align: right;">
+                <div class="u-text-right">
                     <span style="font-size: 15px; font-weight: 800; color: #6366f1;"><span id="board-sla-pct">0</span>%</span>
                     <span style="font-size: 10px; color: var(--text-muted); display: block;"><span id="board-sla-threshold">20</span>sn</span>
                 </div>
@@ -126,7 +126,7 @@
         <div class="card" style="display: flex; flex-direction: column;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
-                    <i class="fas fa-phone-volume" style="color: var(--danger);"></i>
+                    <i class="fas fa-phone-volume u-danger"></i>
                     <span><?php echo t('cc_supervisor.waiting_calls_live'); ?></span>
                 </div>
                 <span class="badge badge-danger" id="waiting-badge">0 Çağrı Bekliyor</span>
@@ -143,7 +143,7 @@
                     </thead>
                     <tbody id="sup-waiting-calls-tbody">
                         <tr>
-                            <td colspan="4" class="text-center text-muted" style="padding: 24px;">
+                            <td colspan="4" class="text-center text-muted u-p-24">
                                 <i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> <?php echo t('cc_supervisor.no_waiting_calls'); ?>
                             </td>
                         </tr>
@@ -156,7 +156,7 @@
         <div class="card" style="display: flex; flex-direction: column;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
-                    <i class="fas fa-users-cog" style="color: var(--primary);"></i>
+                    <i class="fas fa-users-cog u-primary"></i>
                     <span><?php echo t('cc_supervisor.agent_status_title'); ?></span>
                 </div>
                 <span class="badge badge-info" id="agents-count-badge">0 Temsilci</span>
@@ -173,7 +173,7 @@
                     </thead>
                     <tbody id="sup-agents-tbody">
                         <tr>
-                            <td colspan="4" class="text-center text-muted" style="padding: 24px;">
+                            <td colspan="4" class="text-center text-muted u-p-24">
                                 <?php echo t('cc_supervisor.loading_agents'); ?>
                             </td>
                         </tr>
@@ -320,7 +320,7 @@ function renderWaitingCalls(calls, queueFilter) {
     if (badge) badge.innerText = filtered.length + ' Çağrı Bekliyor';
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Kuyruklarda bekleyen çağrı bulunmuyor.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Kuyruklarda bekleyen çağrı bulunmuyor.</td></tr>';
         return;
     }
 
@@ -357,7 +357,7 @@ function renderAgentsStatus(agents, queueFilter) {
     if (countBadge) countBadge.innerText = filtered.length + ' Temsilci';
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
         return;
     }
 
@@ -373,7 +373,7 @@ function renderAgentsStatus(agents, queueFilter) {
             detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : 'Görüşmede';
         } else if (a.is_paused) {
             statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> Molada</span>';
-            detail = `<span style="color: var(--warning); font-weight: 600;">${escapeHtml(a.pause_reason || 'Mola')}</span>`;
+            detail = `<span class="u-warning u-fw-600">${escapeHtml(a.pause_reason || 'Mola')}</span>`;
             if (a.pause_duration) detail += ` (${escapeHtml(a.pause_duration)})`;
         } else if (a.is_logged_in) {
             statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> Boşta</span>';
@@ -383,9 +383,9 @@ function renderAgentsStatus(agents, queueFilter) {
         html += `
             <tr>
                 <td style="font-weight: 700; font-family: monospace; color: var(--text-main); font-size: 13px;">${escapeHtml(a.extension)}</td>
-                <td style="font-weight: 600;">${escapeHtml(a.full_name || a.extension)}</td>
+                <td class="u-fw-600">${escapeHtml(a.full_name || a.extension)}</td>
                 <td>${statusBadge}</td>
-                <td style="font-size: 12px;">${detail}</td>
+                <td class="u-fs-12">${detail}</td>
             </tr>
         `;
     });

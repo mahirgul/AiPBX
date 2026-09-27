@@ -8,10 +8,10 @@ use PBX\Destinations\DestinationRegistry;
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-user-tie" style="color: var(--primary);"></i> <?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?>
+            <i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?>
             <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($groups); ?></span>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -70,7 +70,7 @@ use PBX\Destinations\DestinationRegistry;
                         ?>
                         <tr>
                             <td><span class="badge badge-primary">Grup <?php echo (int)$g['group_number']; ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($g['group_name']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($g['group_name']); ?></td>
                             <td>
                                 <span class="badge badge-warning" style="font-size: 13px;">
                                     <i class="fas fa-crown"></i> <?php echo htmlspecialchars($g['boss_extension']); ?>
@@ -82,7 +82,7 @@ use PBX\Destinations\DestinationRegistry;
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                                     <?php if (empty($secs)): ?>
-                                        <span class="text-muted" style="font-size: 12px;">Tanımlı değil</span>
+                                        <span class="text-muted u-fs-12">Tanımlı değil</span>
                                     <?php else: ?>
                                         <?php foreach ($secs as $s_ext): ?>
                                             <span class="badge badge-info"><i class="fas fa-user"></i> <?php echo htmlspecialchars($s_ext); ?></span>
@@ -111,7 +111,7 @@ use PBX\Destinations\DestinationRegistry;
                                         <button type="button" class="btn btn-secondary btn-sm" onclick='openEditBsModal(<?php echo json_encode($g); ?>)' title="Düzenle">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Bu grubu silmek istediğinizden emin misiniz?');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('Bu grubu silmek istediğinizden emin misiniz?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_group" value="1">
                                             <input type="hidden" name="group_id" value="<?php echo $g['id']; ?>">
@@ -134,8 +134,8 @@ use PBX\Destinations\DestinationRegistry;
 <div class="modal-overlay" id="bsModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="bsModalTitle"><i class="fas fa-user-tie" style="color: var(--primary);"></i> Şef - Sekreter Grubu</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('bsModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="bsModalTitle"><i class="fas fa-user-tie u-primary"></i> Şef - Sekreter Grubu</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('bsModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -165,22 +165,22 @@ use PBX\Destinations\DestinationRegistry;
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">Bu numara arandığında çağrı doğrudan sekreterlere aktarılır.</small>
+                    <small class="u-hint u-fs-11">Bu numara arandığında çağrı doğrudan sekreterlere aktarılır.</small>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><i class="fas fa-user-friends text-info"></i> Sekreter Dahilileri</label>
                     <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: var(--bg-card); display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <?php foreach ($extensions as $ext): ?>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
-                                <input type="checkbox" name="secretaries[]" value="<?php echo htmlspecialchars($ext['extension']); ?>" class="bs-secretary-chk" style="accent-color: var(--primary);">
+                            <label class="u-check-label-6 u-fs-12">
+                                <input type="checkbox" name="secretaries[]" value="<?php echo htmlspecialchars($ext['extension']); ?>" class="bs-secretary-chk u-accent">
                                 <span><?php echo htmlspecialchars($ext['extension']); ?> (<?php echo htmlspecialchars($ext['full_name']); ?>)</span>
                             </label>
                         <?php endforeach; ?>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Çalma Şekli</label>
                         <select name="ring_strategy" id="modal_bs_strategy" class="form-control">
@@ -193,7 +193,7 @@ use PBX\Destinations\DestinationRegistry;
                         <label class="form-label">Çalma Süresi (Zaman Aşımı)</label>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <input type="number" name="ring_timeout" id="modal_bs_timeout" class="form-control" value="20" min="5" max="120" required>
-                            <span style="font-size: 12px; color: var(--text-muted);">saniye</span>
+                            <span class="u-muted u-fs-12">saniye</span>
                         </div>
                     </div>
                 </div>
@@ -201,10 +201,10 @@ use PBX\Destinations\DestinationRegistry;
                 <div class="form-group">
                     <label class="form-label">VIP / Beyaz Liste Dahilileri (Doğrudan Bağlanabilenler)</label>
                     <input type="text" name="whitelist_extensions" id="modal_bs_whitelist" class="form-control" placeholder="ör: 1005, 1006 (virgülle ayırın)">
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">Bu dahililer şefi aradığında sekretere takılmadan doğrudan şef çalar.</small>
+                    <small class="u-hint u-fs-11">Bu dahililer şefi aradığında sekretere takılmadan doğrudan şef çalar.</small>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Sekreterler Açmazsa Hedef Tipi</label>
                         <select name="fallback_dest_type" id="modal_bs_dest_type" class="form-control" onchange="loadBsDestOptions()">
@@ -222,10 +222,10 @@ use PBX\Destinations\DestinationRegistry;
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_bs_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;">Grup Aktif</span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_bs_active" value="1" checked class="u-check">
+                        <span class="u-fw-600">Grup Aktif</span>
                     </label>
                 </div>
 
@@ -266,7 +266,7 @@ function loadBsDestOptions(callback) {
 }
 
 function openCreateBsModal() {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Şef - Sekreter Grubu';
+    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Şef - Sekreter Grubu';
     document.getElementById('modal_bs_id').value = '0';
     document.getElementById('modal_bs_group_number').value = '<?php echo count($groups) + 1; ?>';
     document.getElementById('modal_bs_group_name').value = '';
@@ -283,7 +283,7 @@ function openCreateBsModal() {
 }
 
 function openEditBsModal(g) {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Grup Düzenle: ' + escapeHtml(g.group_name || '');
+    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Grup Düzenle: ' + escapeHtml(g.group_name || '');
     document.getElementById('modal_bs_id').value = g.id || '0';
     document.getElementById('modal_bs_group_number').value = g.group_number || 1;
     document.getElementById('modal_bs_group_name').value = g.group_name || '';

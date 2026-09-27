@@ -24,7 +24,7 @@
                                 <th><?php echo t('cc_agent.col_queue'); ?></th>
                                 <th><?php echo t('cc_agent.col_caller'); ?></th>
                                 <th><?php echo t('cc_agent.col_wait'); ?></th>
-                                <th style="text-align: right;"><?php echo t('cc_agent.col_action'); ?></th>
+                                <th class="u-text-right"><?php echo t('cc_agent.col_action'); ?></th>
                             </tr>
                         </thead>
                         <tbody id="waiting-calls-tbody">
@@ -51,7 +51,7 @@
                                 <th><?php echo t('cc_agent.col_number'); ?></th>
                                 <th><?php echo t('cc_agent.col_duration'); ?></th>
                                 <th><?php echo t('cc_agent.col_status'); ?></th>
-                                <th style="text-align: right;"><?php echo t('cc_agent.col_note'); ?></th>
+                                <th class="u-text-right"><?php echo t('cc_agent.col_note'); ?></th>
                             </tr>
                         </thead>
                         <tbody id="active-calls-tbody">
@@ -81,8 +81,8 @@
                         <th><?php echo t('cc_agent.col_caller'); ?></th>
                         <th><?php echo t('cc_agent.col_duration'); ?></th>
                         <th><?php echo t('cc_agent.col_status'); ?></th>
-                        <th style="text-align: right;"><?php echo t('cc_agent.col_recording'); ?></th>
-                        <th style="text-align: right;"><?php echo t('cc_agent.col_note'); ?></th>
+                        <th class="u-text-right"><?php echo t('cc_agent.col_recording'); ?></th>
+                        <th class="u-text-right"><?php echo t('cc_agent.col_note'); ?></th>
                     </tr>
                 </thead>
                 <tbody id="agent-cdr-table">
@@ -102,8 +102,8 @@
 <div class="modal-overlay" id="callNoteModal">
     <div class="modal-card" style="max-width: 480px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-sticky-note" style="color: var(--primary);"></i> <?php echo t('cc_agent.note_modal_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeNoteModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title"><i class="fas fa-sticky-note u-primary"></i> <?php echo t('cc_agent.note_modal_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeNoteModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <input type="hidden" id="note_call_id" value="">

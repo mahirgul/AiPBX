@@ -8,10 +8,10 @@ use PBX\Destinations\DestinationRegistry;
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users" style="color: var(--primary);"></i> <?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?>
+            <i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?>
             <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($ring_groups); ?></span>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -71,7 +71,7 @@ use PBX\Destinations\DestinationRegistry;
                         ?>
                         <tr>
                             <td><span class="badge badge-info" style="font-size: 13px;"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($rg['group_number']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($rg['name']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($rg['name']); ?></td>
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                                     <?php foreach ($num_array as $num): ?>
@@ -97,7 +97,7 @@ use PBX\Destinations\DestinationRegistry;
                                 <?php if ((int)$rg['record_call'] === 1): ?>
                                     <span class="badge badge-danger" title="Görüşme Kaydediliyor"><i class="fas fa-microphone"></i> Kayıt</span>
                                 <?php else: ?>
-                                    <span class="text-muted" style="font-size: 11px;">-</span>
+                                    <span class="text-muted u-fs-11">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -113,7 +113,7 @@ use PBX\Destinations\DestinationRegistry;
                                         <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo json_encode($rg); ?>)' title="Düzenle">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Bu çalma grubunu silmek istediğinizden emin misiniz?');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('Bu çalma grubunu silmek istediğinizden emin misiniz?');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_ring_group" value="1">
                                             <input type="hidden" name="ring_group_id" value="<?php echo $rg['id']; ?>">
@@ -136,8 +136,8 @@ use PBX\Destinations\DestinationRegistry;
 <div class="modal-overlay" id="rgModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="rgModalTitle"><i class="fas fa-users" style="color: var(--primary);"></i> Çalma Grubu</h3>
-            <button class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('rgModal')" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="rgModalTitle"><i class="fas fa-users u-primary"></i> Çalma Grubu</h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('rgModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -160,12 +160,12 @@ use PBX\Destinations\DestinationRegistry;
                 <div class="form-group">
                     <label class="form-label">Çalacak Numaralar (Dahili & Harici GSM/Sabit)</label>
                     <textarea name="numbers_list" id="modal_rg_numbers" class="form-control" rows="3" placeholder="ör: 1001, 1002, 05051234567, 02129876543" required></textarea>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                    <small class="u-hint u-fs-11">
                         Numaraları virgülle veya boşlukla ayırarak yazabilirsiniz. Santral dahilileri ve harici numaralar aynı grupta birlikte çalabilir.
                     </small>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Çalma Stratejisi</label>
                         <select name="ring_strategy" id="modal_rg_strategy" class="form-control">
@@ -179,26 +179,26 @@ use PBX\Destinations\DestinationRegistry;
                         <label class="form-label">Çalma Süresi (Zaman Aşımı)</label>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <input type="number" name="ring_timeout" id="modal_rg_timeout" class="form-control" value="30" min="5" max="300" required>
-                            <span style="font-size: 12px; color: var(--text-muted);">saniye</span>
+                            <span class="u-muted u-fs-12">saniye</span>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Arayan Numaraya Ön Ek (CID Prefix)</label>
                         <input type="text" name="cid_prefix" id="modal_rg_cid_prefix" class="form-control" placeholder="ör: [SATIŞ] ">
                     </div>
 
                     <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 8px;">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                            <input type="checkbox" name="record_call" id="modal_rg_record" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                            <span style="font-weight: 600;">Görüşmeyi Ses Kaydı Yap</span>
+                        <label class="form-label u-check-label u-m-0">
+                            <input type="checkbox" name="record_call" id="modal_rg_record" value="1" checked class="u-check">
+                            <span class="u-fw-600">Görüşmeyi Ses Kaydı Yap</span>
                         </label>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label">Kimse Açmazsa Hedef Tipi</label>
                         <select name="fallback_dest_type" id="modal_rg_dest_type" class="form-control" onchange="loadRgDestOptions()">
@@ -216,10 +216,10 @@ use PBX\Destinations\DestinationRegistry;
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_rg_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;">Grup Aktif</span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_rg_active" value="1" checked class="u-check">
+                        <span class="u-fw-600">Grup Aktif</span>
                     </label>
                 </div>
 
@@ -260,7 +260,7 @@ function loadRgDestOptions(callback) {
 }
 
 function openCreateRgModal() {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Çalma Grubu';
+    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Çalma Grubu';
     document.getElementById('modal_rg_id').value = '0';
     document.getElementById('modal_rg_number').value = '';
     document.getElementById('modal_rg_name').value = '';
@@ -278,7 +278,7 @@ function openCreateRgModal() {
 }
 
 function openEditRgModal(rg) {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Çalma Grubu Düzenle: ' + escapeHtml(rg.name || '');
+    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Çalma Grubu Düzenle: ' + escapeHtml(rg.name || '');
     document.getElementById('modal_rg_id').value = rg.id || '0';
     document.getElementById('modal_rg_number').value = rg.group_number || '';
     document.getElementById('modal_rg_name').value = rg.name || '';

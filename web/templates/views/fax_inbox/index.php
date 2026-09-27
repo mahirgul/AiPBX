@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-inbox" style="color: var(--primary);"></i> <?php echo t('fax_inbox.header_title'); ?>
+            <i class="fas fa-inbox u-primary"></i> <?php echo t('fax_inbox.header_title'); ?>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
             <div style="font-size: 13px; color: var(--text-muted);">
@@ -36,7 +36,7 @@
         <table class="data-table" data-no-dt="true">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('fax_inbox.col_did'); ?></th>
                     <th><?php echo t('fax_inbox.col_caller'); ?></th>
                     <th><?php echo t('fax_inbox.col_date'); ?></th>
@@ -52,7 +52,7 @@
                 <?php else: ?>
                     <?php foreach ($faxes as $fax): ?>
                         <tr style="<?php echo empty($fax['is_read']) ? 'font-weight: 700;' : ''; ?>">
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $fax['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $fax['id']; ?></td>
                             <td><span class="badge badge-info"><?php echo htmlspecialchars($fax['did_extension']); ?></span></td>
                             <td style="font-weight: inherit; color: var(--text-main);">
                                 <?php if (empty($fax['is_read'])): ?><i class="fas fa-circle" style="font-size: 6px; color: var(--primary); margin-right: 6px;" title="<?php echo t('fax_inbox.unread_tooltip'); ?>"></i><?php endif; ?>
@@ -104,8 +104,8 @@
 <div class="modal-overlay" id="pdfModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-file-pdf" style="color: var(--danger);"></i> <?php echo t('fax_inbox.preview_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closePdfModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i> <?php echo t('fax_inbox.close'); ?></button>
+            <h3 class="u-title"><i class="fas fa-file-pdf u-danger"></i> <?php echo t('fax_inbox.preview_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closePdfModal()"><i class="fas fa-times"></i> <?php echo t('fax_inbox.close'); ?></button>
         </div>
         <div class="modal-body" style="padding: 0; min-height: 500px;">
             <iframe id="pdfFrame" src="" style="width: 100%; height: 550px; border: none;"></iframe>

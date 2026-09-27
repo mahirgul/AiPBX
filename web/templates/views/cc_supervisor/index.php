@@ -1,7 +1,7 @@
 <div style="display: flex; flex-direction: column; gap: 20px;">
 
     <!-- Top Header Bar with Multi-Queue Filter & Auto Refresh Controls -->
-    <div class="card page-header-card" style="margin-bottom: 0;">
+    <div class="card page-header-card u-mb-0">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 20px;">
@@ -35,25 +35,25 @@
         <div class="card" style="padding: 16px; border-left: 4px solid var(--danger);">
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;"><?php echo t('cc_supervisor.stat_waiting'); ?></div>
             <div style="font-size: 28px; font-weight: 800; color: var(--danger); margin-top: 6px;" id="stat-waiting-count">0</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cc_supervisor.stat_waiting_desc'); ?></div>
+            <div class="u-muted u-fs-11 u-mt-4"><?php echo t('cc_supervisor.stat_waiting_desc'); ?></div>
         </div>
 
         <div class="card" style="padding: 16px; border-left: 4px solid var(--success);">
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;"><?php echo t('cc_supervisor.stat_active_agents'); ?></div>
             <div style="font-size: 28px; font-weight: 800; color: var(--success); margin-top: 6px;" id="stat-active-agents">0</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cc_supervisor.stat_active_agents_desc'); ?></div>
+            <div class="u-muted u-fs-11 u-mt-4"><?php echo t('cc_supervisor.stat_active_agents_desc'); ?></div>
         </div>
 
         <div class="card" style="padding: 16px; border-left: 4px solid var(--warning);">
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;"><?php echo t('cc_supervisor.stat_paused_agents'); ?></div>
             <div style="font-size: 28px; font-weight: 800; color: var(--warning); margin-top: 6px;" id="stat-paused-agents">0</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cc_supervisor.stat_paused_agents_desc'); ?></div>
+            <div class="u-muted u-fs-11 u-mt-4"><?php echo t('cc_supervisor.stat_paused_agents_desc'); ?></div>
         </div>
 
         <div class="card" style="padding: 16px; border-left: 4px solid var(--info);">
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;"><?php echo t('cc_supervisor.stat_today_answered'); ?></div>
             <div style="font-size: 28px; font-weight: 800; color: var(--primary); margin-top: 6px;" id="stat-today-answered">0</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cc_supervisor.stat_today_answered_desc'); ?></div>
+            <div class="u-muted u-fs-11 u-mt-4"><?php echo t('cc_supervisor.stat_today_answered_desc'); ?></div>
         </div>
     </div>
 
@@ -61,7 +61,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-phone-volume" style="color: var(--danger);"></i> <?php echo t('cc_supervisor.waiting_calls_live'); ?>
+                <i class="fas fa-phone-volume u-danger"></i> <?php echo t('cc_supervisor.waiting_calls_live'); ?>
             </div>
             <span class="badge badge-danger" id="waiting-badge">0 Çağrı Bekliyor</span>
         </div>
@@ -79,7 +79,7 @@
                 </thead>
                 <tbody id="sup-waiting-calls-tbody">
                     <tr>
-                        <td colspan="5" class="text-center text-muted" style="padding: 24px;"><?php echo t('cc_supervisor.no_waiting_calls'); ?></td>
+                        <td colspan="5" class="text-center text-muted u-p-24"><?php echo t('cc_supervisor.no_waiting_calls'); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -90,7 +90,7 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-users-cog" style="color: var(--primary);"></i> <?php echo t('cc_supervisor.agent_status_title'); ?>
+                <i class="fas fa-users-cog u-primary"></i> <?php echo t('cc_supervisor.agent_status_title'); ?>
             </div>
             <span class="badge badge-info" id="agents-count-badge">0 Temsilci</span>
         </div>
@@ -109,7 +109,7 @@
                 </thead>
                 <tbody id="sup-agents-tbody">
                     <tr>
-                        <td colspan="6" class="text-center text-muted" style="padding: 24px;"><?php echo t('cc_supervisor.loading_agents'); ?></td>
+                        <td colspan="6" class="text-center text-muted u-p-24"><?php echo t('cc_supervisor.loading_agents'); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -163,7 +163,7 @@ function renderWaitingCalls(calls, queueFilter) {
     if (statCount) statCount.innerText = filtered.length;
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Bekleyen çağrı bulunmuyor.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted u-p-24"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Bekleyen çağrı bulunmuyor.</td></tr>';
         return;
     }
 
@@ -178,7 +178,7 @@ function renderWaitingCalls(calls, queueFilter) {
                 <td style="font-weight: 700; color: var(--warning);">${escapeHtml(c.wait_time)} sn</td>
                 <td><span class="badge badge-danger">Kuyrukta Çalıyor</span></td>
                 <td class="text-right">
-                    <button class="btn btn-success btn-sm" onclick="pickupCall('${escapeHtml(c.channel)}')" style="font-weight: 600;">
+                    <button class="btn btn-success btn-sm u-fw-600" onclick="pickupCall('${escapeHtml(c.channel)}')">
                         <i class="fas fa-hand-holding-medical"></i> Çağrıyı Al
                     </button>
                 </td>
@@ -219,13 +219,13 @@ function fetchAgentsStatus(queueFilter) {
 
                 if (a.status_key === 'READY') {
                     statusBadge = '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Boşta / Hazır</span>';
-                    callDetailsHtml = '<span style="color: var(--success); font-weight: 600;">Çağrı Bekliyor</span>';
+                    callDetailsHtml = '<span class="u-success u-fw-600">Çağrı Bekliyor</span>';
                 } else if (a.status_key === 'BUSY') {
                     statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone-alt"></i> Görüşmede</span>';
                     const connNum = a.connected_number ? escapeHtml(a.connected_number) : 'Müşteri';
                     const durFmt = a.duration_formatted ? escapeHtml(a.duration_formatted) : '00:00';
                     callDetailsHtml = `
-                        <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="u-flex-center">
                             <span style="font-weight: 700; color: var(--danger);"><i class="fas fa-phone-volume"></i> ${connNum}</span>
                             <span class="badge badge-secondary" style="font-family: monospace; font-size: 11px;">${durFmt}</span>
                         </div>
@@ -245,13 +245,13 @@ function fetchAgentsStatus(queueFilter) {
                     `;
                 } else if (a.status_key === 'PAUSED') {
                     statusBadge = '<span class="badge badge-warning"><i class="fas fa-coffee"></i> Molada</span>';
-                    callDetailsHtml = '<span style="color: var(--warning); font-weight: 600;">Mola Alındı</span>';
+                    callDetailsHtml = '<span class="u-warning u-fw-600">Mola Alındı</span>';
                 }
 
                 html += `
                     <tr>
                         <td style="font-weight: 700; color: var(--primary);">PJSIP/${escapeHtml(a.extension)}</td>
-                        <td style="font-weight: 700; color: var(--text-main);">${escapeHtml(a.full_name)}</td>
+                        <td class="u-strong">${escapeHtml(a.full_name)}</td>
                         <td><span class="badge badge-info">${escapeHtml(a.queue_title || a.queue_name)}</span></td>
                         <td>${statusBadge}</td>
                         <td>${callDetailsHtml}</td>
@@ -263,7 +263,7 @@ function fetchAgentsStatus(queueFilter) {
             if (html) {
                 tbody.innerHTML = html;
             } else {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding: 24px;"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
             }
 
             document.getElementById('stat-active-agents').innerText = activeCount;

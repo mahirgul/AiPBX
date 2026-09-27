@@ -12,7 +12,7 @@ $action_label_map = [
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-cloud-upload-alt" style="color: var(--primary);"></i> <?php echo t('pending_sync.header_title'); ?>
+            <i class="fas fa-cloud-upload-alt u-primary"></i> <?php echo t('pending_sync.header_title'); ?>
         </div>
     </div>
 
@@ -32,9 +32,9 @@ $action_label_map = [
             <input type="hidden" name="apply" value="1">
 
             <?php foreach ($pending as $domain => $rows): ?>
-                <div style="margin-bottom: 20px;">
+                <div class="u-mb-20">
                     <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--text-main);">
-                        <i class="fas fa-folder-open" style="color: var(--primary);"></i>
+                        <i class="fas fa-folder-open u-primary"></i>
                         <?php echo htmlspecialchars(t('pending_sync.domain_' . $domain, $domain)); ?>
                         <span class="badge badge-secondary"><?php echo count($rows); ?></span>
                     </div>

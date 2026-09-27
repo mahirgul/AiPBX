@@ -1,36 +1,36 @@
 <!-- Statistics Overview -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_total'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--text-main);"><?php echo $stat_total; ?></div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cdr_reports.stat_total_desc'); ?></div>
+        <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_total_desc'); ?></div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_answered'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--success);"><?php echo $stat_answered; ?> <span style="font-size: 14px; color: var(--text-muted); font-weight: 600;">(%<?php echo $answer_rate; ?>)</span></div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cdr_reports.stat_answered_desc'); ?></div>
+        <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_answered_desc'); ?></div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_talk_time'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--primary);"><?php echo round($stat_total_billsec / 60, 1); ?> <span style="font-size: 14px; color: var(--text-muted); font-weight: 600;">dk</span></div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cdr_reports.stat_talk_time_desc'); ?></div>
+        <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_talk_time_desc'); ?></div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card u-mb-0">
         <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_recordings'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--warning);"><?php echo $stat_recordings_count; ?></div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><?php echo t('cdr_reports.stat_recordings_desc'); ?></div>
+        <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_recordings_desc'); ?></div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-file-audio" style="color: var(--primary);"></i> <?php echo t('cdr_reports.title'); ?>
+            <i class="fas fa-file-audio u-primary"></i> <?php echo t('cdr_reports.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('cdrHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -47,7 +47,7 @@
 
     <!-- Filter Form Bar -->
     <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: var(--bg-input); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
-        <select name="date_range" id="date_range_select" class="form-control form-control-sm" style="width: auto;" onchange="toggleCustomDates(); if (this.value !== 'custom') this.form.submit();">
+        <select name="date_range" id="date_range_select" class="form-control form-control-sm u-w-auto" onchange="toggleCustomDates(); if (this.value !== 'custom') this.form.submit();">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_yesterday'); ?></option>
             <option value="week" <?php echo $date_filter === 'week' ? 'selected' : ''; ?>><?php echo t('cdr_reports.range_week'); ?></option>
@@ -56,12 +56,12 @@
         </select>
 
         <div id="custom_date_inputs" style="display: <?php echo $date_filter === 'custom' ? 'flex' : 'none'; ?>; gap: 8px; align-items: center;">
-            <input type="date" name="start_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($start_date); ?>" style="width: auto;">
-            <span style="color: var(--text-muted); font-size: 12px;">-</span>
-            <input type="date" name="end_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($end_date); ?>" style="width: auto;">
+            <input type="date" name="start_date" class="form-control form-control-sm u-w-auto" value="<?php echo htmlspecialchars($start_date); ?>">
+            <span class="u-muted u-fs-12">-</span>
+            <input type="date" name="end_date" class="form-control form-control-sm u-w-auto" value="<?php echo htmlspecialchars($end_date); ?>">
         </div>
 
-        <select name="status" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="status" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_statuses'); ?></option>
             <option value="ANSWERED" <?php echo $status_filter === 'ANSWERED' ? 'selected' : ''; ?>><?php echo t('cdr_reports.status_answered'); ?></option>
             <option value="NO ANSWER" <?php echo $status_filter === 'NO ANSWER' ? 'selected' : ''; ?>><?php echo t('cdr_reports.status_no_answer'); ?></option>
@@ -71,7 +71,7 @@
         </select>
 
         <?php if ($can_view_all): ?>
-        <select name="agent" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="agent" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_agents'); ?></option>
             <?php foreach ($agents as $ag): ?>
                 <option value="<?php echo htmlspecialchars($ag['extension']); ?>" <?php echo $agent_filter === $ag['extension'] ? 'selected' : ''; ?>>
@@ -81,14 +81,14 @@
         </select>
         <?php endif; ?>
 
-        <select name="device" class="form-control form-control-sm" style="width: auto;" onchange="this.form.submit()">
+        <select name="device" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value=""><?php echo t('cdr_reports.all_devices'); ?></option>
             <option value="mobil" <?php echo ($device_filter ?? '') === 'mobil' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_mobile'); ?></option>
             <option value="webrtc" <?php echo ($device_filter ?? '') === 'webrtc' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_webrtc'); ?></option>
             <option value="sip" <?php echo ($device_filter ?? '') === 'sip' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_sip'); ?></option>
         </select>
 
-        <select name="view_mode" class="form-control form-control-sm" style="width: auto; font-weight: 600;" onchange="this.form.submit()">
+        <select name="view_mode" class="form-control form-control-sm u-fw-600 u-w-auto" onchange="this.form.submit()">
             <option value="grouped" <?php echo ($view_mode ?? 'grouped') === 'grouped' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_grouped'); ?></option>
             <option value="raw" <?php echo ($view_mode ?? 'grouped') === 'raw' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_raw'); ?></option>
         </select>
@@ -131,7 +131,7 @@
             <tbody>
                 <?php if (empty($cdrs)): ?>
                     <tr>
-                        <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                        <td colspan="10" class="u-muted u-text-center u-p-24">
                             <?php echo t('cdr_reports.empty'); ?>
                         </td>
                     </tr>
@@ -190,7 +190,7 @@
                                         <small style="color: var(--text-muted); display: block; font-size: 11px;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted);">-</span>
+                                    <span class="u-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -210,7 +210,7 @@
                                         <i class="fas fa-phone-alt"></i> <?php echo t('cdr_reports.device_sip'); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted); font-size: 12px;">-</span>
+                                    <span class="u-muted u-fs-12">-</span>
                                 <?php endif; ?>
                             </td>
                             <?php
@@ -240,14 +240,14 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge <?php echo $badge_class; ?>" style="font-size: 11px;">
+                                <span class="badge <?php echo $badge_class; ?> u-fs-11">
                                     <?php echo htmlspecialchars($status_label); ?>
                                 </span>
                             </td>
                             <td style="max-width: 220px;">
                                 <?php if (!empty($c['note_disposition']) || !empty($c['note_text']) || !empty($c['note_customer_name'])): ?>
                                     <?php if (!empty($c['note_disposition'])): ?>
-                                        <span class="badge badge-info" style="font-size: 10px;"><?php echo htmlspecialchars($c['note_disposition']); ?></span>
+                                        <span class="badge badge-info u-fs-10"><?php echo htmlspecialchars($c['note_disposition']); ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($c['note_customer_name'])): ?>
                                         <div style="font-size: 12px; font-weight: 600; color: var(--text-main); margin-top: 2px;"><?php echo htmlspecialchars($c['note_customer_name']); ?></div>
@@ -258,7 +258,7 @@
                                         </div>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted); font-size: 12px;">-</span>
+                                    <span class="u-muted u-fs-12">-</span>
                                 <?php endif; ?>
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
@@ -270,9 +270,9 @@
                                         <i class="fas fa-download"></i>
                                     </a>
                                 <?php elseif ($has_rec): ?>
-                                    <span class="badge badge-secondary" title="<?php echo t('cdr_reports.locked_tooltip'); ?>" style="font-size: 10px;"><i class="fas fa-lock"></i> <?php echo t('cdr_reports.locked'); ?></span>
+                                    <span class="badge badge-secondary u-fs-10" title="<?php echo t('cdr_reports.locked_tooltip'); ?>"><i class="fas fa-lock"></i> <?php echo t('cdr_reports.locked'); ?></span>
                                 <?php else: ?>
-                                    <span style="color: var(--text-muted); font-size: 12px;">-</span>
+                                    <span class="u-muted u-fs-12">-</span>
                                 <?php endif; ?>
 
                                 <?php if ($can_delete_cdr): ?>
@@ -296,15 +296,15 @@
                                                     <i class="fas fa-route"></i>
                                                 </span>
                                                 <span><?php echo t('cdr_reports.journey_title'); ?></span>
-                                                <span class="badge badge-info" style="font-size: 11px;"><?php echo count($c['legs']); ?> <?php echo t('cdr_reports.legs_count'); ?></span>
+                                                <span class="badge badge-info u-fs-11"><?php echo count($c['legs']); ?> <?php echo t('cdr_reports.legs_count'); ?></span>
                                                 <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($c['linkedid'] ?? $c['call_id']); ?></code>
                                             </div>
                                             <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
                                                 <span><?php echo t('cdr_reports.journey_wait'); ?>: <strong style="color: var(--text-main);"><?php echo sprintf('%02d:%02d', intdiv($ring, 60), $ring % 60); ?></strong></span>
                                                 <span>•</span>
-                                                <span><?php echo t('cdr_reports.journey_talk'); ?>: <strong style="color: var(--success);"><?php echo sprintf('%02d:%02d', intdiv($bill, 60), $bill % 60); ?></strong></span>
+                                                <span><?php echo t('cdr_reports.journey_talk'); ?>: <strong class="u-success"><?php echo sprintf('%02d:%02d', intdiv($bill, 60), $bill % 60); ?></strong></span>
                                                 <span>•</span>
-                                                <span><?php echo t('cdr_reports.journey_total'); ?>: <strong style="color: var(--primary);"><?php echo sprintf('%02d:%02d', intdiv($dur, 60), $dur % 60); ?></strong></span>
+                                                <span><?php echo t('cdr_reports.journey_total'); ?>: <strong class="u-primary"><?php echo sprintf('%02d:%02d', intdiv($dur, 60), $dur % 60); ?></strong></span>
                                             </div>
                                         </div>
 
@@ -332,14 +332,14 @@
                                                             <span style="font-family: monospace; font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--bg-card); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
                                                                 <?php echo $legTime; ?>
                                                             </span>
-                                                            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">
+                                                            <span class="u-strong u-fs-12">
                                                                 <i class="fas <?php echo $info['icon']; ?>" style="color: var(--primary); font-size: 11px; margin-right: 4px;"></i>
                                                                 <?php echo htmlspecialchars($info['title']); ?>
                                                             </span>
                                                             <span class="badge <?php echo $info['badge']; ?>" style="font-size: 10px; padding: 2px 6px;">
                                                                 <?php echo htmlspecialchars($info['badge_text']); ?>
                                                             </span>
-                                                            <span style="font-size: 11px; color: var(--text-muted);">
+                                                            <span class="u-muted u-fs-11">
                                                                 <?php echo htmlspecialchars($info['detail']); ?>
                                                             </span>
                                                         </div>
@@ -385,11 +385,11 @@
                     <i class="fas fa-file-audio"></i>
                 </div>
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 700; margin: 0;" id="cdrModalTitle"><?php echo t('cdr_reports.player_title'); ?></h3>
-                    <small style="color: var(--text-muted); font-size: 11px;" id="cdrModalInfo"><?php echo t('cdr_reports.player_caller_prefix'); ?> -</small>
+                    <h3 class="u-title u-m-0" id="cdrModalTitle"><?php echo t('cdr_reports.player_title'); ?></h3>
+                    <small class="u-muted u-fs-11" id="cdrModalInfo"><?php echo t('cdr_reports.player_caller_prefix'); ?> -</small>
                 </div>
             </div>
-            <button class="btn btn-secondary" onclick="closeCdrAudioModal()" style="padding: 6px 12px;" title="<?php echo t('cdr_reports.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeCdrAudioModal()" title="<?php echo t('cdr_reports.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body" style="padding: 20px;">
             <!-- Waveform Visualizer Canvas Container -->
@@ -402,7 +402,7 @@
 
             <!-- Controls bar -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="u-flex-center">
                     <button class="btn btn-primary" id="cdrWavePlayBtn" onclick="toggleCdrWavePlay()" style="min-width: 44px;" title="<?php echo t('cdr_reports.play_pause_tooltip'); ?>">
                         <i class="fas fa-play"></i>
                     </button>
@@ -423,7 +423,7 @@
                 </div>
 
                 <!-- Volume slider -->
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="u-flex-center">
                     <button class="btn btn-secondary btn-sm" id="cdrMuteBtn" onclick="toggleCdrMute()" style="padding: 6px 10px;" title="<?php echo t('cdr_reports.mute_tooltip'); ?>">
                         <i class="fas fa-volume-up" id="cdrMuteIcon"></i>
                     </button>

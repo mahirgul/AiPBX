@@ -66,7 +66,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_dashboard_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-dashboard">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-dashboard')" title="<?php echo t('sidebar.group_dashboard'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-chart-pie" style="color: var(--primary);"></i> <span class="nav-text"><?php echo t('sidebar.group_dashboard'); ?></span>
+                        <i class="fas fa-chart-pie u-primary"></i> <span class="nav-text"><?php echo t('sidebar.group_dashboard'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -108,7 +108,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_trunk_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-trunks">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-trunks')" title="<?php echo t('sidebar.group_trunks'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-network-wired" style="color: var(--primary);"></i> <span class="nav-text"><?php echo t('sidebar.group_trunks'); ?></span>
+                        <i class="fas fa-network-wired u-primary"></i> <span class="nav-text"><?php echo t('sidebar.group_trunks'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -150,7 +150,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_pbx_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-pbx">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-pbx')" title="<?php echo t('sidebar.group_pbx'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-phone-alt" style="color: var(--primary);"></i> <span class="nav-text"><?php echo t('sidebar.group_pbx'); ?></span>
+                        <i class="fas fa-phone-alt u-primary"></i> <span class="nav-text"><?php echo t('sidebar.group_pbx'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -239,7 +239,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_admin_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-admin">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-admin')" title="<?php echo t('sidebar.group_admin'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-user-shield" style="color: var(--warning);"></i> <span class="nav-text"><?php echo t('sidebar.group_admin'); ?></span>
+                        <i class="fas fa-user-shield u-warning"></i> <span class="nav-text"><?php echo t('sidebar.group_admin'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -316,7 +316,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_security_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-security">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-security')" title="<?php echo t('sidebar.group_security'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-shield-halved" style="color: var(--danger);"></i> <span class="nav-text"><?php echo t('sidebar.group_security'); ?></span>
+                        <i class="fas fa-shield-halved u-danger"></i> <span class="nav-text"><?php echo t('sidebar.group_security'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -369,7 +369,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo ($is_fax_active && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-fax">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-fax')" title="<?php echo t('sidebar.group_fax'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-fax" style="color: var(--primary);"></i> <span class="nav-text"><?php echo t('sidebar.group_fax'); ?></span>
+                        <i class="fas fa-fax u-primary"></i> <span class="nav-text"><?php echo t('sidebar.group_fax'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -425,7 +425,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <li class="nav-group <?php echo (($is_cc_active || $active_page === 'cc_supervisor.php') && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-cc">
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-cc')" title="<?php echo t('sidebar.group_cc'); ?>">
                     <span class="toggle-title">
-                        <i class="fas fa-headset" style="color: var(--success);"></i> <span class="nav-text"><?php echo t('sidebar.group_cc'); ?></span>
+                        <i class="fas fa-headset u-success"></i> <span class="nav-text"><?php echo t('sidebar.group_cc'); ?></span>
                     </span>
                     <i class="fas fa-chevron-down chevron-icon"></i>
                 </button>
@@ -433,7 +433,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                     <?php if ($can_view_supervisor_monitor || hasModulePermission('cc_board', 'view')): ?>
                         <li>
                             <a href="/cc-board" class="nav-link <?php echo ($active_page === 'cc_board.php' || $active_page === 'cc_supervisor.php') ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_cc_board_unified_tooltip'); ?>">
-                                <i class="fas fa-chart-line" style="color: var(--primary);"></i> <span class="nav-text"><?php echo t('sidebar.item_cc_board_unified'); ?></span>
+                                <i class="fas fa-chart-line u-primary"></i> <span class="nav-text"><?php echo t('sidebar.item_cc_board_unified'); ?></span>
                             </a>
                         </li>
                     <?php endif; ?>

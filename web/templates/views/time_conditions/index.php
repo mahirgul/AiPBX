@@ -15,9 +15,9 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-clock" style="color: var(--warning);"></i> <?php echo t('tc.header'); ?>
+                <i class="fas fa-clock u-warning"></i> <?php echo t('tc.header'); ?>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div class="u-flex-gap">
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
@@ -41,7 +41,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th class="col-hide-mobile" style="width: 50px;">#</th>
+                        <th class="col-hide-mobile u-w-50">#</th>
                         <th><?php echo t('tc.col_condition'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
                         <th><?php echo t('tc.col_rules'); ?></th>
@@ -71,8 +71,8 @@
                             }
                         ?>
                             <tr>
-                                <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $tc['id']; ?></td>
-                                <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($tc['title']); ?></td>
+                                <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $tc['id']; ?></td>
+                                <td class="u-strong"><?php echo htmlspecialchars($tc['title']); ?></td>
                                 <td class="col-hide-mobile">
                                     <?php echo !empty($tc['internal_number'])
                                         ? '<span class="badge badge-info">' . htmlspecialchars($tc['internal_number']) . '</span>'
@@ -89,9 +89,9 @@
                                         ?>
                                             <div style="font-size: 12px; background: rgba(0,0,0,0.02); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
                                                 <strong>#<?php echo ($idx + 1); ?>:</strong>
-                                                <span class="badge badge-info" style="font-size: 10px;"><i class="fas fa-calendar-check"></i> <?php echo htmlspecialchars($tgTitle); ?></span>
+                                                <span class="badge badge-info u-fs-10"><i class="fas fa-calendar-check"></i> <?php echo htmlspecialchars($tgTitle); ?></span>
                                                 <span>➔</span>
-                                                <span class="badge badge-success" style="font-size: 10px;"><i class="fas fa-check"></i> <?php echo htmlspecialchars($mName); ?>: <?php echo $mLabel !== null ? htmlspecialchars($mLabel) : '<span title="' . htmlspecialchars(sprintf(t('tc.not_found_tooltip'), $r['match_dest_id'])) . '"><i class="fas fa-exclamation-triangle"></i> ' . htmlspecialchars(t('tc.not_found')) . '</span>'; ?></span>
+                                                <span class="badge badge-success u-fs-10"><i class="fas fa-check"></i> <?php echo htmlspecialchars($mName); ?>: <?php echo $mLabel !== null ? htmlspecialchars($mLabel) : '<span title="' . htmlspecialchars(sprintf(t('tc.not_found_tooltip'), $r['match_dest_id'])) . '"><i class="fas fa-exclamation-triangle"></i> ' . htmlspecialchars(t('tc.not_found')) . '</span>'; ?></span>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
@@ -119,9 +119,9 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-calendar-alt" style="color: var(--primary);"></i> <?php echo t('tc.groups_title'); ?>
+                <i class="fas fa-calendar-alt u-primary"></i> <?php echo t('tc.groups_title'); ?>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div class="u-flex-gap">
                 <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
                     <i class="fas fa-question-circle"></i>
                 </button>
@@ -137,7 +137,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th class="col-hide-mobile" style="width: 50px;">#</th>
+                        <th class="col-hide-mobile u-w-50">#</th>
                         <th><?php echo t('tc.col_group'); ?></th>
                         <th><?php echo t('tc.col_hours'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('tc.col_days'); ?></th>
@@ -159,8 +159,8 @@
                             $h_arr = !empty($tg['holidays_json']) ? json_decode($tg['holidays_json'], true) : [];
                         ?>
                             <tr>
-                                <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $tg['id']; ?></td>
-                                <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($tg['title']); ?></td>
+                                <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $tg['id']; ?></td>
+                                <td class="u-strong"><?php echo htmlspecialchars($tg['title']); ?></td>
                                 <td>
                                     <span class="badge badge-info">
                                         <i class="fas fa-clock"></i> <?php echo htmlspecialchars(substr($tg['time_start'], 0, 5)); ?> - <?php echo htmlspecialchars(substr($tg['time_end'], 0, 5)); ?>
@@ -171,9 +171,9 @@
                                 </td>
                                 <td class="col-hide-mobile">
                                     <?php if (!empty($h_arr)): ?>
-                                        <small style="color: var(--text-muted);"><?php echo sprintf(t('tc.holidays_count'), count($h_arr)); ?></small>
+                                        <small class="u-muted"><?php echo sprintf(t('tc.holidays_count'), count($h_arr)); ?></small>
                                     <?php else: ?>
-                                        <small style="color: var(--text-muted);">-</small>
+                                        <small class="u-muted">-</small>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -195,8 +195,8 @@
 <div class="modal-overlay" id="tcModal">
     <div class="modal-card" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="tcModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('tc.new_condition'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeTcModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="tcModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('tc.new_condition'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeTcModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -214,20 +214,20 @@
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
                            placeholder="ör: 1010">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('internal_number.help'); ?></small>
+                    <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
                 <div class="form-group" style="margin-top: 10px; margin-bottom: 15px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('tc.field_active'); ?></span>
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('tc.field_active'); ?></span>
                     </label>
                 </div>
 
                 <!-- Dynamic Rules Container -->
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <label class="form-label" style="margin-bottom: 0;"><i class="fas fa-list-ol"></i> <?php echo t('tc.rules_label'); ?></label>
+                <div class="u-mb-20">
+                    <div class="u-flex-between u-mb-10">
+                        <label class="form-label u-mb-0"><i class="fas fa-list-ol"></i> <?php echo t('tc.rules_label'); ?></label>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="addTcRuleRow()" title="Kural Ekle">
                             <i class="fas fa-plus-circle"></i>
                         </button>
@@ -244,7 +244,7 @@
                         <i class="fas fa-moon"></i> <?php echo t('tc.default_target_box'); ?>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label"><?php echo t('tc.field_dest_type'); ?></label>
                             <select name="nomatch_dest_type" id="modal_nomatch_dest_type" class="form-control">
                                 <?php foreach ($modules as $m): ?>
@@ -252,7 +252,7 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label"><?php echo t('tc.field_dest_id'); ?></label>
                             <select name="nomatch_dest_id" id="modal_nomatch_dest_id" class="form-control">
                                 <option value=""><?php echo t('tc.loading'); ?></option>
@@ -271,8 +271,8 @@
 <div class="modal-overlay" id="tgModal">
     <div class="modal-card" style="max-width: 540px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="tgModalTitle"><i class="fas fa-plus-circle" style="color: var(--primary);"></i> <?php echo t('tc.new_group'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeTgModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="tgModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('tc.new_group'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeTgModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -285,7 +285,7 @@
                     <input type="text" name="title" id="modal_tg_title" class="form-control" required placeholder="ör: Standart Hafta İçi Mesaisi">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('tc.field_time_start'); ?></label>
                         <input type="time" name="time_start" id="modal_tg_time_start" class="form-control" required value="08:30">
@@ -312,13 +312,13 @@
                 <div class="form-group">
                     <label class="form-label"><?php echo t('tc.field_holidays'); ?></label>
                     <input type="text" name="holidays" id="modal_tg_holidays" class="form-control" placeholder="ör: 2026-01-01, 2026-04-23, 2026-05-19, 2026-07-15, 2026-08-30, 2026-10-29">
-                    <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('tc.holidays_help'); ?></small>
+                    <small class="u-hint"><?php echo t('tc.holidays_help'); ?></small>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="is_active" id="modal_tg_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span style="font-weight: 600;"><?php echo t('tc.field_group_active'); ?></span>
+                <div class="form-group u-mt-10">
+                    <label class="form-label u-check-label">
+                        <input type="checkbox" name="is_active" id="modal_tg_is_active" value="1" checked class="u-check">
+                        <span class="u-fw-600"><?php echo t('tc.field_group_active'); ?></span>
                     </label>
                 </div>
 

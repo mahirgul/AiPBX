@@ -1,9 +1,9 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-layer-group" style="color: var(--primary);"></i> <?php echo t('queues.title'); ?>
+            <i class="fas fa-layer-group u-primary"></i> <?php echo t('queues.title'); ?>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div class="u-flex-gap">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('queueHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
@@ -26,7 +26,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 50px;">#</th>
+                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('queues.col_queue'); ?></th>
                     <th><?php echo t('queues.col_desc'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
@@ -46,9 +46,9 @@
                         $members = !empty($q['members_json']) ? json_decode($q['members_json'], true) : [];
                     ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted" style="font-size: 12px;">#<?php echo $q['id']; ?></td>
+                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $q['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-headset"></i> <?php echo htmlspecialchars($q['queue_name']); ?></span></td>
-                            <td style="font-weight: 700; color: var(--text-main);"><?php echo htmlspecialchars($q['title']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($q['title']); ?></td>
                             <td class="col-hide-mobile">
                                 <?php echo !empty($q['internal_number'])
                                     ? '<span class="badge badge-info">' . htmlspecialchars($q['internal_number']) . '</span>'
@@ -67,7 +67,7 @@
                                     endforeach;
                                 else:
                                 ?>
-                                    <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('queues.not_assigned'); ?></span>
+                                    <span class="u-muted u-fs-12"><?php echo t('queues.not_assigned'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="col-hide-mobile">
@@ -99,8 +99,8 @@
 <div class="modal-overlay" id="queueModal">
     <div class="modal-card" style="max-width: 720px;">
         <div class="modal-header">
-            <h3 style="font-size: 16px; font-weight: 700;" id="queueModalTitle"><i class="fas fa-layer-group" style="color: var(--primary);"></i> <?php echo t('queues.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary" onclick="closeQueueModal()" style="padding: 6px 12px;"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="queueModalTitle"><i class="fas fa-layer-group u-primary"></i> <?php echo t('queues.modal_new_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeQueueModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -132,14 +132,14 @@
 
                 <!-- 1. Temel Tanımlamalar -->
                 <div id="queue_tab_basic" class="queue-tab-pane active">
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-                            <span style="font-weight: 600;"><?php echo t('queues.field_active'); ?></span>
+                    <div class="form-group u-mb-10">
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
+                            <span class="u-fw-600"><?php echo t('queues.field_active'); ?></span>
                         </label>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_queue_name'); ?></label>
                             <input type="text" name="queue_name" id="modal_queue_name" class="form-control" placeholder="<?php echo t('queues.field_queue_name_placeholder'); ?>" required>
@@ -156,7 +156,7 @@
                         <input type="text" name="internal_number" id="modal_internal_number"
                                class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
                                placeholder="ör: 1010">
-                        <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('internal_number.help'); ?></small>
+                        <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                     </div>
                 </div>
 
@@ -197,7 +197,7 @@
 
                 <!-- 3. Anons ve MOH Ayarları -->
                 <div id="queue_tab_announcements" class="queue-tab-pane" style="display: none;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_musicclass'); ?></label>
                             <select name="musicclass" id="modal_musicclass" class="form-control">
@@ -221,13 +221,13 @@
                                 <option value="<?php echo htmlspecialchars($lang_code); ?>"><?php echo htmlspecialchars(LANGUAGE_LABELS[$lang_code] ?? $lang_code); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('queues.language_help'); ?></small>
+                        <small class="u-hint"><?php echo t('queues.language_help'); ?></small>
                     </div>
                 </div>
 
                 <!-- 4. Gelişmiş Asterisk Kuyruk Davranışları -->
                 <div id="queue_tab_behavior" class="queue-tab-pane" style="display: none;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label form-label-help">
                                 <span><?php echo t('queues.field_announce_frequency'); ?></span>
@@ -249,7 +249,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label form-label-help">
                                 <span><?php echo t('queues.field_ringinuse'); ?></span>
@@ -289,11 +289,11 @@
 
                 <!-- 5. Zaman Aşımı, Yönlendirme & Ses Kaydı -->
                 <div id="queue_tab_timeout" class="queue-tab-pane" style="display: none;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_max_wait_seconds'); ?></label>
                             <input type="number" name="max_wait_seconds" id="modal_max_wait_seconds" class="form-control" value="300" min="30" max="1800" required>
-                            <small style="color: var(--text-muted); display: block; margin-top: 4px;"><?php echo t('queues.max_wait_help'); ?></small>
+                            <small class="u-hint"><?php echo t('queues.max_wait_help'); ?></small>
                         </div>
 
                         <div class="form-group">
@@ -306,7 +306,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="u-grid-2">
                         <div class="form-group" id="modal_fallback_target_group" style="display:none;">
                             <label class="form-label"><?php echo t('queues.field_fallback_target'); ?></label>
                             <select name="fallback_target" id="modal_fallback_target" class="form-control">
@@ -320,7 +320,7 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_record_enabled'); ?></label>
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
-                                <input type="checkbox" name="record_enabled" id="modal_record_enabled" value="1" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                <input type="checkbox" name="record_enabled" id="modal_record_enabled" value="1" checked class="u-check">
                                 <span style="font-weight: 600; font-size: 13px;"><?php echo t('queues.record_enabled_label'); ?></span>
                             </label>
                         </div>
@@ -337,7 +337,7 @@
                         </label>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; background: var(--bg-sidebar); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                             <?php if (empty($queue_agents)): ?>
-                                <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('queues.no_agents'); ?></span>
+                                <span class="u-muted u-fs-12"><?php echo t('queues.no_agents'); ?></span>
                             <?php endif; ?>
                             <?php foreach (array_merge($queue_agents, $legacy_agents) as $agent):
                                 $is_legacy = !in_array($agent['role'], QueueRepository::AGENT_ROLES, true);
@@ -364,7 +364,7 @@
                         </label>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 140px; overflow-y: auto; background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
                             <?php if (empty($queue_managers)): ?>
-                                <span style="color: var(--text-muted); font-size: 12px;"><?php echo t('queues.no_managers'); ?></span>
+                                <span class="u-muted u-fs-12"><?php echo t('queues.no_managers'); ?></span>
                             <?php endif; ?>
                             <?php foreach (array_merge($queue_managers, $legacy_managers) as $manager):
                                 $is_legacy = !in_array($manager['role'], QueueRepository::MANAGER_ROLES, true);
