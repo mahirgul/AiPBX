@@ -957,7 +957,7 @@ function renderContactsList() {
 
         item.innerHTML = `
             <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-                ${initial}
+                ${escapeHtml(initial)}
                 <span id="contact-dot-${u.extension}" style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: ${onlineColor}; border: 2px solid var(--bg-card);"></span>
             </div>
             <div style="flex: 1; min-width: 0;">
