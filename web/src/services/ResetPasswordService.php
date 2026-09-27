@@ -32,7 +32,12 @@ class ResetPasswordService {
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
         $db = getDB();
-        $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, must_reset_password = 0, reset_token = NULL, reset_token_expires = NULL WHERE id = ?');
+        // "Şifremi unuttum" sıfırlamasında telefonlardaki oturumlar da düşer
+        // (token_epoch). Davet/ilk şifre belirlemede (must_reset_password=1)
+        // düşmez: kullanıcı e-postadaki bağlantıyla uygulamaya zaten girmiş
+        // olabilir. token_epoch ÖNCE atanmalı — MariaDB SET'i soldan sağa
+        // uygular, must_reset_password aşağıda 0 oluyor.
+        $upd = $db->prepare('UPDATE sys_users SET token_epoch = token_epoch + IF(must_reset_password = 1, 0, 1), password_hash = ?, must_reset_password = 0, reset_token = NULL, reset_token_expires = NULL WHERE id = ?');
         $upd->execute([$new_hash, $user['id']]);
         unset($_SESSION['pending_reset_user_id']);
 

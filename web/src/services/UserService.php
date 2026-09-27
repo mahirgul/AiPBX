@@ -282,6 +282,10 @@ class UserService {
                 $up_fields['sip_password'] = $new_sip_password;
             }
             DBHelper::update('sys_users', $up_fields, 'id', $user_id);
+            if (!empty($new_password)) {
+                // Yönetici şifreyi sıfırladıysa telefonlardaki oturumlar da düşsün.
+                getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
+            }
 
             // Şifrelerin KENDİSİ asla loglanmaz — sadece "hangi şifre türü
             // değişti" bilgisi (web girişi / SIP / ikisi de).

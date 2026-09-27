@@ -16,15 +16,25 @@ function getMobileTokenSecret(): string
 }
 
 /**
+ * İmzalanan metin. token_epoch 0 iken eski biçim ("id:exp") — böylece sütun
+ * eklenmeden önce verilmiş token'lar geçerli kalır. chat/auth.go aynısını yapar.
+ */
+function mobileTokenPayload(int $userId, int $expiresAt, int $epoch): string
+{
+    return $epoch > 0 ? "{$userId}:{$expiresAt}:{$epoch}" : "{$userId}:{$expiresAt}";
+}
+
+/**
  * Generate HMAC Bearer token for given user array or user ID
  */
 function generateMobileToken($user, int $ttl = 2592000): string
 {
     $userId = is_array($user) ? (int)$user['id'] : (int)$user;
+    $stmt = getDB()->prepare('SELECT token_epoch FROM sys_users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $epoch = (int) $stmt->fetchColumn();
     $expiresAt = time() + $ttl;
-    $payload = $userId . ':' . $expiresAt;
-    $secret_key = getMobileTokenSecret();
-    $sig = hash_hmac('sha256', $payload, $secret_key);
+    $sig = hash_hmac('sha256', mobileTokenPayload($userId, $expiresAt, $epoch), getMobileTokenSecret());
     return base64_encode($userId . ':' . $expiresAt . ':' . $sig);
 }
 
@@ -79,22 +89,21 @@ function validateMobileToken(?string $token): ?array
         return null;
     }
 
-    // HMAC verification
-    $payload = $userId . ':' . $expiresAt;
-    $secret_key = getMobileTokenSecret();
-    $expected_sig = hash_hmac('sha256', $payload, $secret_key);
-
-    if (!hash_equals($expected_sig, $sig)) {
-        return null;
-    }
-
     // DB user check - T-6: sip_password eklendi ki refresh.php parolayı boş döndürmesin
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, username, full_name, role, extension, extension_type, sip_password, is_active FROM sys_users WHERE id = ?');
+    $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, is_active, token_epoch FROM sys_users WHERE id = ?');
     $stmt->execute([(int)$userId]);
     $user = $stmt->fetch();
 
     if (!$user || empty($user['is_active'])) {
+        return null;
+    }
+
+    // HMAC verification (token_epoch dahil — şifre sıfırlanınca eski token'lar düşer)
+    $payload = mobileTokenPayload((int)$userId, (int)$expiresAt, (int)$user['token_epoch']);
+    $expected_sig = hash_hmac('sha256', $payload, getMobileTokenSecret());
+
+    if (!hash_equals($expected_sig, $sig) || $userId !== (string)(int)$userId) {
         return null;
     }
 

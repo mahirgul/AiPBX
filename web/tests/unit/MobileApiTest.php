@@ -67,6 +67,21 @@ final class MobileApiTest extends TestCase
         $this->assertSame('8888', $validatedUser['extension']);
     }
 
+    public function testTokenEpochArtincaEskiTokenGecersizYenisiGecerli(): void
+    {
+        $db = getDB();
+        $old = generateMobileToken(self::$testUserId, 3600);
+        $this->assertNotNull(validateMobileToken($old));
+
+        $db->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([self::$testUserId]);
+        try {
+            $this->assertNull(validateMobileToken($old), 'Şifre sıfırlanınca eski token düşmeli');
+            $this->assertNotNull(validateMobileToken(generateMobileToken(self::$testUserId, 3600)));
+        } finally {
+            $db->prepare('UPDATE sys_users SET token_epoch = 0 WHERE id = ?')->execute([self::$testUserId]);
+        }
+    }
+
     public function testKullaniciAdiEslesmesiDahiliEslesmesineOncelikli(): void
     {
         $db = getDB();
