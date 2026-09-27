@@ -24,11 +24,16 @@ function parseAsteriskQueuesOutput($raw_output) {
 
         if (!$current_queue) continue;
 
+        // Bekleyen arayan satırları ("1. PJSIP/trunk-0000002a (wait: …") üye
+        // değildir — önceden üye sayılıp panoda "giriş yapan/müsait temsilci"
+        // sayısını şişiriyordu.
+        if (preg_match('/^\d+\.\s/', $trimmed)) continue;
+
         if (preg_match('/(?:PJSIP|Local)\/([0-9a-zA-Z_-]+)/i', $trimmed, $mm)) {
             $ext = $mm[1];
-            $is_paused = (stripos($trimmed, '(paused)') !== false || stripos($trimmed, 'paused') !== false);
+            $is_paused = (bool) preg_match('/\(paused\b/i', $trimmed);
             $is_unavailable = (stripos($trimmed, '(Unavailable)') !== false || stripos($trimmed, '(Invalid)') !== false);
-            $is_busy = (stripos($trimmed, '(In use)') !== false || stripos($trimmed, '(Busy)') !== false || stripos($trimmed, '(Ringing)') !== false);
+            $is_busy = (bool) preg_match('/\((In use|Busy|Ringing|Ring\+Inuse|On Hold)\)/i', $trimmed);
 
             // ÜYELİK ≠ CİHAZ DURUMU: kuyruk üyeleri listesinde satır varsa temsilci
             // kuyruğun ÜYESİDİR; cihazı (WebRTC/SIP kaydı) çevrimdışı olsa bile.
@@ -166,7 +171,9 @@ function findAgentCallDetails($ext, $lines = null): array
         if (count($c) < 14 || $c[0] === '') continue;
         $chanData[$c[0]] = [
             'callerid' => trim($c[7] ?? ''),
-            'duration' => intval($c[10] ?? 0),
+            // 10 = amaflags (hep 3), 11 = süre — önceden 10 okunuyor, her
+            // görüşme "00:03" görünüyordu (canlı çıktıyla doğrulandı).
+            'duration' => intval($c[11] ?? 0),
         ];
     }
 

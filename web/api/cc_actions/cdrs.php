@@ -23,9 +23,14 @@ if ($action === 'my_cdrs') {
         }
     }
 
-    if (empty($user_ext) || $user['role'] === 'admin') {
+    // Tümünü görme yetkisi (admin / can_view_all_cdrs) önceden hesaplanıp hiç
+    // kullanılmıyordu; dahilisi olmayan herkes ise TÜM kayıtları görüyordu.
+    if ($can_view_all) {
         $stmt = $db->prepare('SELECT id, call_id, start_time, caller_num, agent_extension, agent_name, duration, billsec, status, recording_path FROM cdrs ORDER BY start_time DESC LIMIT 30');
         $stmt->execute();
+    } elseif (empty($user_ext)) {
+        echo json_encode(['success' => true, 'cdrs' => [], 'can_listen_recordings' => $can_listen, 'can_view_all_cdrs' => false]);
+        exit;
     } else {
         $stmt = $db->prepare('SELECT id, call_id, start_time, caller_num, agent_extension, agent_name, duration, billsec, status, recording_path FROM cdrs WHERE (agent_extension = ? OR caller_num = ?) ORDER BY start_time DESC LIMIT 30');
         $stmt->execute([$user_ext, $user_ext]);
@@ -36,7 +41,7 @@ if ($action === 'my_cdrs') {
     foreach ($cdrs as &$c) {
         $has_rec = (!empty($c['recording_path']) && file_exists($c['recording_path']));
         $c['has_recording'] = $has_rec;
-        $c['can_listen'] = $can_listen || ($c['agent_extension'] === $user_ext) || ($c['caller_num'] === $user_ext);
+        $c['can_listen'] = $can_listen || ($user_ext !== '' && ($c['agent_extension'] === $user_ext || $c['caller_num'] === $user_ext));
         $c['audio_url'] = $has_rec ? '/api/cc_audio.php?id=' . $c['id'] : null;
     }
     unset($c);
