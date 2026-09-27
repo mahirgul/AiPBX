@@ -37,13 +37,11 @@ class IvrController extends BaseController
         $announcements = IvrRepository::activeAnnouncements();
 
         $page_title = t('ivr.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('ivrs/index', [
+        static::renderPage('ivrs/index', [
             'ivrs' => $ivrs,
             'entries_by_ivr' => $entries_by_ivr,
             'modules' => $modules,
             'announcements' => $announcements,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -30,12 +30,10 @@ class DidRouteController extends BaseController
         $didDeptMap = DidRouteRepository::didDepartmentMap();
 
         $page_title = t('did.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('did_routes/index', [
+        static::renderPage('did_routes/index', [
             'routes' => $routes,
             'modules' => $modules,
             'didDeptMap' => $didDeptMap,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -305,4 +305,4 @@
     </div>
 </div>
 
-<script src="/assets/js/extensions.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/extensions.js'); ?>"></script>

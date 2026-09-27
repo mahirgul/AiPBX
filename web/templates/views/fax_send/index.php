@@ -105,7 +105,7 @@
     </form>
 </div>
 
-<link rel="stylesheet" href="/assets/css/quill.snow.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="<?php echo asset('/assets/css/quill.snow.css'); ?>">
 <style>
     .fax-compose-tab-btn {
         background: none; border: none; border-bottom: 3px solid transparent;
@@ -140,5 +140,5 @@
         #fax-text-toolbar button { width: 22px; }
     }
 </style>
-<script src="/assets/js/quill.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/fax_send.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/quill.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/fax_send.js'); ?>"></script>

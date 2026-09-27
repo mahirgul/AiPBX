@@ -1,8 +1,11 @@
 <?php
-require_once __DIR__ . '/auth.php';
-requireLogin();
-$module_key = getModuleKeyForPage();
-requireModulePermission($module_key, 'view');
+/**
+ * Uygulama sayfalarının ortak düzeninin üst yarısı (head + sidebar + topbar).
+ * YALNIZCA BaseController::renderPage() tarafından dahil edilir; oturum ve
+ * modül yetkisi kontrolü orada yapılır — bu şablon güvenlik kararı vermez.
+ *
+ * Beklenen değişkenler (renderPage tanımlar): $page_title
+ */
 $db = getDB();
 
 $user = getCurrentUser();
@@ -58,7 +61,7 @@ if ($is_spa_request) {
     // günceller — sidebar.php'nin kendisi bu istekte hiç çalışmadığı için
     // gerekli fonksiyon burada ayrıca require ediliyor (aynı sidebar.php'deki
     // savunmacı desen).
-    require_once __DIR__ . '/src/asterisk_sync.php';
+    require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
     $pending_sync_count_for_spa = hasModulePermission('pending_sync', 'view') ? getPendingSyncCount() : 0;
     ob_start();
     echo '<div id="spa-page-data" data-title="' . htmlspecialchars(($page_title ?? '') . ' - ' . $site_title) . '" data-page="' . htmlspecialchars($active_page) . '" data-pending-sync-count="' . (int)$pending_sync_count_for_spa . '"></div>';
@@ -78,7 +81,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="tr" data-theme="<?php echo htmlspecialchars($theme); ?>">
+<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="<?php echo htmlspecialchars($theme); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -119,7 +122,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         <?php $ring_in = getSystemSetting('webrtc_ring_incoming', ''); $ring_out = getSystemSetting('webrtc_ring_outgoing', ''); ?>
         window.WEBRTC_RING_INCOMING_URL = "<?php echo $ring_in !== '' ? '/api/sound_play.php?file=' . urlencode($ring_in) : ''; ?>";
         window.WEBRTC_RING_OUTGOING_URL = "<?php echo $ring_out !== '' ? '/api/sound_play.php?file=' . urlencode($ring_out) : ''; ?>";
-        window.LANG_APPLYING = "<?php echo t('topbar.applying'); ?>";
+        window.LANG_APPLYING = <?php echo json_encode(t('topbar.applying'), JSON_UNESCAPED_UNICODE); ?>;
         if ("serviceWorker" in navigator && window.isSecureContext) {
             var isSelfSignedHost = location.protocol === 'https:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname));
             if (!isSelfSignedHost) {
@@ -129,29 +132,29 @@ if (!$is_cc_agent && !empty($user['extension'])) {
             }
         }
     </script>
-    <link rel="stylesheet" href="/assets/css/variables.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo asset('/assets/css/variables.css'); ?>">
     <?php renderBrandColorOverrideCSS(); ?>
-    <link rel="stylesheet" href="/assets/css/layout.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="/assets/css/components.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo asset('/assets/css/layout.css'); ?>">
+    <link rel="stylesheet" href="<?php echo asset('/assets/css/components.css'); ?>">
     <link rel="stylesheet" href="/assets/css/fontawesome.min.css">
-    <link rel="stylesheet" href="/assets/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo asset('/assets/css/style.css'); ?>">
     <audio id="globalRemoteAudio" autoplay></audio>
-    <script src="/assets/js/jssip.min.js?v=<?php echo time(); ?>"></script>
-    <script src="/assets/js/ui_helper.js?v=<?php echo time(); ?>"></script>
-    <script src="/assets/js/header_phone.js?v=<?php echo time(); ?>"></script>
-    <script src="/assets/js/spa_router.js?v=<?php echo time(); ?>"></script>
+    <script src="<?php echo asset('/assets/js/jssip.min.js'); ?>"></script>
+    <script src="<?php echo asset('/assets/js/ui_helper.js'); ?>"></script>
+    <script src="<?php echo asset('/assets/js/header_phone.js'); ?>"></script>
+    <script src="<?php echo asset('/assets/js/spa_router.js'); ?>"></script>
 </head>
 <body>
 <div class="app-container">
-    <?php require_once __DIR__ . '/templates/sidebar.php'; ?>
+    <?php require_once dirname(__DIR__) . '/sidebar.php'; ?>
 
     <!-- Mobile Overlay Backdrop -->
     <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
     <!-- Main Content Area -->
     <main class="main-wrapper">
-        <?php require_once __DIR__ . '/templates/topbar.php'; ?>
-        <?php require_once __DIR__ . '/templates/softphone_drawer.php'; ?>
-        <?php require_once __DIR__ . '/templates/phone_settings_modal.php'; ?>
+        <?php require_once dirname(__DIR__) . '/topbar.php'; ?>
+        <?php require_once dirname(__DIR__) . '/softphone_drawer.php'; ?>
+        <?php require_once dirname(__DIR__) . '/phone_settings_modal.php'; ?>
 
         <section class="content-area">

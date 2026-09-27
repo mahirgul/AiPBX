@@ -18,8 +18,7 @@ class FaxMailSettingsController extends BaseController
         $sys_settings = FaxMailSettingsRepository::allSettings();
 
         $page_title = t('fax_mail_settings.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fax_mail_settings/index', [
+        static::renderPage('fax_mail_settings/index', [
             'fax_from_addr' => $sys_settings['fax_email_from_address'] ?? 'fax@example.com',
             'fax_from_name' => $sys_settings['fax_email_from_name'] ?? 'AI PBX Faks Sistemi',
             'fax_rx_enabled' => $sys_settings['fax_email_rx_enabled'] ?? 'yes',
@@ -31,7 +30,6 @@ class FaxMailSettingsController extends BaseController
             'fax_max_retries' => $sys_settings['fax_max_retries'] ?? '3',
             'fax_retry_time' => $sys_settings['fax_retry_time'] ?? '60',
             'fax_wait_time' => $sys_settings['fax_wait_time'] ?? '30',
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

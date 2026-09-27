@@ -40,12 +40,10 @@ class SoundController extends BaseController
         $moh_classes = SoundRepository::allMohClasses();
 
         $page_title = t('sounds.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('sounds/index', [
+        static::renderPage('sounds/index', [
             'announcements' => $announcements,
             'moh_classes' => $moh_classes,
             'custom_dir' => $custom_dir,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

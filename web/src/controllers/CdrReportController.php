@@ -93,8 +93,7 @@ class CdrReportController extends BaseController
         $answer_rate = $stat_total > 0 ? round(($stat_answered / $stat_total) * 100, 1) : 0;
 
         $page_title = t('cdr_reports.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('cdr_reports/index', [
+        static::renderPage('cdr_reports/index', [
             'user_ext' => $user_ext,
             'can_view_all' => $can_view_all,
             'can_listen_all' => $can_listen_all,
@@ -120,7 +119,6 @@ class CdrReportController extends BaseController
             'stat_total_billsec' => $stat_total_billsec,
             'stat_recordings_count' => $stat_recordings_count,
             'answer_rate' => $answer_rate,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }

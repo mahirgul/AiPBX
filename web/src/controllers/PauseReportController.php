@@ -41,8 +41,7 @@ class PauseReportController extends BaseController
         $reasons_list = PauseReportRepository::distinctReasons();
 
         $page_title = t('pause_reports.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('pause_reports/index', [
+        static::renderPage('pause_reports/index', [
             'start_date' => $start_date,
             'end_date' => $end_date,
             'agent_filter' => $agent_filter,
@@ -56,7 +55,6 @@ class PauseReportController extends BaseController
             'agents' => $agents,
             'reasons_list' => $reasons_list,
             'logs' => $logs,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }

@@ -50,11 +50,9 @@ class PendingSyncController extends BaseController
         $pending = getPendingSyncList();
 
         $page_title = t('pending_sync.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('pending_sync/index', [
+        static::renderPage('pending_sync/index', [
             'pending' => $pending,
             'domain_map' => PENDING_SYNC_DOMAIN_MAP,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title]);
     }
 }

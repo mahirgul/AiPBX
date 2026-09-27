@@ -27,11 +27,9 @@ class OutboundRouteController extends BaseController
         $trunks = OutboundRouteRepository::activeTrunksForDropdown();
 
         $page_title = t('outbound.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('outbound_routes/index', [
+        static::renderPage('outbound_routes/index', [
             'routes' => $routes,
             'trunks' => $trunks,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

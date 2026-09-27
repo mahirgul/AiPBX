@@ -456,4 +456,4 @@
     </div>
 </div>
 
-<script src="/assets/js/trunks.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/trunks.js'); ?>"></script>

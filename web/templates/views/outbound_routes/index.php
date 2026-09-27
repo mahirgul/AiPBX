@@ -183,4 +183,4 @@
     </div>
 </div>
 
-<script src="/assets/js/outbound_routes.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/outbound_routes.js'); ?>"></script>

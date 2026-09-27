@@ -28,13 +28,11 @@ class FaxSendController extends BaseController
         $fax_users = ($user_role === 'admin') ? FaxSettingsRepository::faxUsersForDropdown() : [];
 
         $page_title = t('fax_send.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fax_send/index', [
+        static::renderPage('fax_send/index', [
             'user_ext' => $user_ext,
             'user_role' => $user_role,
             'fax_users' => $fax_users,
             'csrf_token' => $csrf_token,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

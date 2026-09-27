@@ -34,8 +34,7 @@ class FaxInboxController extends BaseController
         $result = FaxInboxRepository::search($user_role, $user_ext, $search, $date_from, $date_to, $per_page, $offset, $user_id);
 
         $page_title = t('fax_inbox.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fax_inbox/index', [
+        static::renderPage('fax_inbox/index', [
             'search' => $search,
             'date_from' => $date_from,
             'date_to' => $date_to,
@@ -45,7 +44,6 @@ class FaxInboxController extends BaseController
             'total_count' => $result['total_count'],
             'total_pages' => $result['total_pages'],
             'faxes' => $result['faxes'],
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

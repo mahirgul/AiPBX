@@ -112,4 +112,4 @@
     </div>
 </div>
 
-<script src="/assets/js/fax_settings.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/fax_settings.js'); ?>"></script>

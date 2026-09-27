@@ -40,14 +40,12 @@ class Fail2banController extends BaseController
         $ignoreips = Fail2banService::getIgnoreIps();
 
         $page_title = t('fail2ban.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('fail2ban/index', [
+        static::renderPage('fail2ban/index', [
             'service_active' => (bool) fail2ban_is_active(),
             'jails' => $jails,
             'ignoreips' => $ignoreips,
             'protected_ignoreips' => Fail2banService::PROTECTED_IGNOREIPS,
             'csrf_token' => getCSRFToken(),
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -161,5 +161,5 @@ $destOptionsCache = [];
     </div>
 </div>
 
-<script src="/assets/js/destinations_helper.js?v=<?php echo time(); ?>"></script>
-<script src="/assets/js/did_routes.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/did_routes.js'); ?>"></script>

@@ -29,14 +29,12 @@ class BossSecretaryController extends BaseController
         $modules = DestinationRegistry::getModuleList();
 
         $page_title = t('boss_secretary.title', 'Şef - Sekreter Grupları');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('boss_secretary/index', [
+        static::renderPage('boss_secretary/index', [
             'groups' => $groups,
             'extensions' => $extensions,
             'modules' => $modules,
             'message' => $message,
             'error' => $error,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

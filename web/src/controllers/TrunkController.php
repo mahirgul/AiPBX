@@ -27,11 +27,9 @@ class TrunkController extends BaseController
         $trunk_statuses = TrunkRepository::livePjsipStatuses();
 
         $page_title = t('trunks.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('trunks/index', [
+        static::renderPage('trunks/index', [
             'trunks' => $trunks,
             'trunk_statuses' => $trunk_statuses,
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

@@ -38,12 +38,10 @@ class FirewallController extends BaseController
         $status = FirewallService::getStatus();
 
         $page_title = t('firewall.title');
-        require_once dirname(__DIR__) . '/../header.php';
-        static::render('firewall/index', [
+        static::renderPage('firewall/index', [
             'status' => $status,
             'protected_ports' => FirewallService::PROTECTED_PORTS,
             'csrf_token' => getCSRFToken(),
-        ]);
-        require_once dirname(__DIR__) . '/../footer.php';
+        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 }

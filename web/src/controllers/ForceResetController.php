@@ -38,7 +38,7 @@ class ForceResetController extends BaseController
             $maskedEmail = $visible . str_repeat('*', max(1, mb_strlen($local) - 2)) . '@' . $domain;
         }
 
-        static::render('force_reset/index', [
+        static::renderAuthPage('force_reset/index', [
             'error' => $error,
             'sent' => $sent,
             'csrf_token' => $csrf_token,
@@ -47,6 +47,6 @@ class ForceResetController extends BaseController
             'site_title' => $site_title,
             'maskedEmail' => $maskedEmail,
             'user' => $user,
-        ]);
+        ], ['title' => t('force_reset.page_title')]);
     }
 }

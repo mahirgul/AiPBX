@@ -353,4 +353,4 @@
 </div>
 
 <script src="/assets/js/wavesurfer.min.js"></script>
-<script src="/assets/js/sounds.js?v=<?php echo time(); ?>"></script>
+<script src="<?php echo asset('/assets/js/sounds.js'); ?>"></script>
