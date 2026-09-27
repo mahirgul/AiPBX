@@ -112,8 +112,14 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
     if ($number === '') return null;
     $db = getDB();
 
-    $u = $db->prepare("SELECT full_name, extension_type FROM sys_users WHERE extension = ? LIMIT 1");
-    $u->execute([$number]);
+    // Kullanıcı düzenlenirken kendi dahilisi çakışma sayılmaz ($skipSource = 'user').
+    if ($skipSource === 'user' && $skipId > 0) {
+        $u = $db->prepare("SELECT full_name, extension_type FROM sys_users WHERE extension = ? AND id != ? LIMIT 1");
+        $u->execute([$number, $skipId]);
+    } else {
+        $u = $db->prepare("SELECT full_name, extension_type FROM sys_users WHERE extension = ? LIMIT 1");
+        $u->execute([$number]);
+    }
     if ($row = $u->fetch(PDO::FETCH_ASSOC)) {
         $tip = ($row['extension_type'] === 'fax') ? 'faks dahilisi' : 'dahili';
         return "{$tip}: " . $row['full_name'];
@@ -235,4 +241,22 @@ function internalNumberRouteWarning(string $number): ?string
     }
 
     return null;
+}
+
+/**
+ * Numara başka bir kayıt (dahili, özellik kodu, IVR, kuyruk, konferans, çalma
+ * grubu…) tarafından kullanılıyorsa anlaşılır bir hata fırlatır.
+ *
+ * Konferans ve çalma grubu servisleri bu fonksiyonu çağırıyordu ama fonksiyon
+ * hiç tanımlanmamıştı: kayıt "Call to undefined function" ile ölüyordu.
+ *
+ * @param string|null $source  kaydın kendi kaynağı ('conference', 'ring_group', 'user'…)
+ * @param int         $id      düzenlenen kaydın id'si (kendi numarası çakışma sayılmaz)
+ */
+function internalNumberValidate(string $number, ?string $source = null, int $id = 0): void
+{
+    $owner = internalNumberOwner($number, $source, $id);
+    if ($owner !== null) {
+        throw new \Exception("{$number} numarası zaten kullanımda ({$owner}).");
+    }
 }

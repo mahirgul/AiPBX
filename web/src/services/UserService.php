@@ -62,6 +62,11 @@ class UserService {
             if ($extension !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE extension = ? AND id != ?', [$extension, $user_id]) > 0) {
                 throw new \Exception("{$extension} numaralı dahili başka bir kullanıcıya atanmış!");
             }
+            // Kuyruk, IVR, konferans, çalma grubu, özellik kodu vb. ile de çakışmasın.
+            if ($extension !== '') {
+                require_once dirname(__DIR__) . '/internal_numbers.php';
+                internalNumberValidate($extension, 'user', $user_id);
+            }
 
             $valid_roles = array_column(DBHelper::fetchAll('SELECT role_key FROM sys_roles'), 'role_key');
             if (!in_array($role, $valid_roles, true)) {
