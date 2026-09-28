@@ -1,9 +1,9 @@
 <?php
 /**
- * Sistem Güncelleme API'si (yalnızca admin).
- *   GET  ?action=status  → durum + günlük sonu (sayfa ilerlemeyi yoklar)
- *   POST action=check    → GitHub'da yeni sürüm var mı
- *   POST action=start    → güncellemeyi arka planda başlat (allow_calls=1 isteğe bağlı)
+ * System Update API (admin only).
+ *   GET  ?action=status  → state + log tail (the page polls progress)
+ *   POST action=check    → is a newer release available on GitHub
+ *   POST action=start    → start the update in the background (optional allow_calls=1)
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/SystemUpdateService.php';
@@ -13,7 +13,7 @@ header('Cache-Control: no-store');
 
 if (($_SESSION['user_role'] ?? '') !== 'admin') {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Yetkisiz']);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }
 
@@ -32,12 +32,12 @@ if ($action === 'status') {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'POST gerekli']);
+    echo json_encode(['success' => false, 'error' => 'POST required']);
     exit;
 }
 if (!verifyCSRFToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Geçersiz CSRF doğrulama kodu']);
+    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
     exit;
 }
 
@@ -51,4 +51,4 @@ if ($action === 'start') {
 }
 
 http_response_code(400);
-echo json_encode(['success' => false, 'error' => 'Geçersiz işlem']);
+echo json_encode(['success' => false, 'error' => 'Invalid action']);

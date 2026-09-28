@@ -2165,4 +2165,6 @@ return [
     'system_update.confirm' => 'Update AiPBX to %s? Asterisk will be restarted.',
     'system_update.up_to_date' => 'The system is up to date.',
     'system_update.unreachable' => 'Could not get version information (GitHub may be unreachable).',
+    'system_update.already_running' => 'An update is already running.',
+    'system_update.start_failed' => 'The update could not be started.',
 ];

@@ -16,21 +16,21 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?label=release" alt="Latest release"></a>
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
-  <img src="https://img.shields.io/badge/Web_Server-Nginx%20%7C%20Apache-blue?logo=nginx" alt="Nginx & Apache">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
-  <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Website-aipbx.bid-blue?logo=google-chrome" alt="Website"></a>
   <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Docs-aipbx.bid-success?logo=google-chrome" alt="Docs"></a>
 </p>
 
 <p align="center">
   <a href="#quick-install">Quick Install</a> •
+  <a href="#updating">Updating</a> •
   <a href="#features">Features</a> •
   <a href="#architecture">Architecture</a> •
-  <a href="https://aipbx.bid">Website</a> •
+  <a href="CHANGELOG.md">Changelog</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -39,109 +39,110 @@
 ## Quick Install
 
 ```bash
-# One-liner curl installation (Recommended)
+# One-liner installation (installs the latest release)
 curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
 ```
 
-Or manually clone and run:
+Or clone manually and install the latest release:
 
 ```bash
 git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
-cd /opt/aipbx && sudo bash install.sh
+cd /opt/aipbx
+git checkout "$(git tag -l 'v*' --sort=-v:refname | head -1)"
+sudo bash install.sh
 ```
 
-The installer will:
-1. Ask for your **FQDN** (domain name) — or use your IP with a self-signed cert
-2. Generate **strong random passwords** for all services automatically
-3. Install and configure everything (Asterisk, MariaDB, Apache2, coturn, Chat service)
-4. Display all credentials at the end and save them to `/root/aipbx-credentials.txt`
+The installer:
+1. Asks for your **FQDN** — with Let's Encrypt if DNS points to the server, otherwise a self-signed
+   certificate; leave it blank for a LAN-only install announced as `aipbx.local` via mDNS
+2. Generates **strong random secrets** for every service (no default passwords)
+3. Installs and configures Asterisk, MariaDB, Nginx + Apache, PHP, coturn, the Go chat service,
+   firewalld and fail2ban, and builds the database from migrations
+4. Prints the credentials and saves them to `/root/aipbx-credentials.txt`
 
 > **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
+>
+> Developers: `AIPBX_REF=main` installs the current development branch instead of the latest release.
 
-After install, open `https://<your-server>` in your browser and log in with the credentials shown.
+After installing, open `https://<your-server>` and log in with the admin credentials shown.
+
+---
+
+## Updating
+
+Releases are published as git tags (`vX.Y.Z`) with notes in [CHANGELOG.md](CHANGELOG.md).
+
+```bash
+sudo aipbx-update --check   # installed vs. latest release
+sudo aipbx-update           # update to the latest release
+```
+
+Or from the portal: **Admin → System Update** (admin only) shows the installed and latest version, the
+release notes and an **Update** button with live progress. A new release is also checked for every night.
+
+Every update:
+- refuses to start during active calls (Asterisk is restarted) or over hand-edited code;
+- backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/`;
+- applies database migrations, new packages and system settings **without touching passwords,
+  certificates, the admin password or your firewall choices**;
+- verifies services, the portal and every page — and **rolls back automatically** (code, database
+  and settings) if anything fails.
+
+Keep customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf`
+files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 
 ---
 
 ## Features
 
 ### 📞 PBX Management
-- **Extension management** — PJSIP-based, dual-endpoint (SIP + WebRTC)
-- **Calling permission groups (Call Barring)** — Prefix and exact match rule sets (`0`, `05`, `00`), per-extension assignment, default allow-all
-- **Native Voicemail** — Asterisk native voicemail, user configurable triggers (unconditional, busy, no-answer, unavailable) via MyPhone or star codes (`*97` personal inbox, `*98` general login), in-browser player
-- **Boss - Secretary groups** — Executive interception, simultaneous (`ringall`) or sequential secretary dialing, VIP whitelist bypass, and automatic failover
-- **Ring groups** — Virtual extension numbers mixing internal extensions and external mobile/PSTN numbers with simultaneous/sequential hunting
-- **Conference rooms** — Asterisk ConfBridge with virtual extensions, moderator/user PINs, wait-for-leader, join muted, and live web moderation (mute/kick)
-- **Trunk management** — dynamic PJSIP trunk configuration
-- **Call routing** — DID mapping, outbound routes, time conditions
-- **IVR** — multi-level voice menus with time-based routing
-- **Queue management** — call queues, dynamic agent login/logout, hold music
-- **Feature codes** — `*81` queue login (all or `*81<queue>`), `*80` queue logout, `*72` call forward, `*60` DND, `*43` intercom, `*90` spy, `*91` whisper, `*92` barge, `*97` my voicemail, `*98` voicemail login
-- **In-band disconnect supervision** — cadence-based disconnect tone detection (`from-trunk-kapanma-tonu`) for analog/legacy trunks without out-of-band hangup signaling
-- **Auto-rollback** — failed Asterisk reloads are automatically reverted
+- **Extension management** — PJSIP-based, one number on desk phone, browser and mobile at once
+  (SIP + WebRTC + mobile endpoints)
+- **Calling permission groups (call barring)** — prefix and exact-match rules (`0`, `05`, `00`),
+  per-extension assignment, default allow-all
+- **Voicemail** — Asterisk voicemail with unconditional / busy / no-answer / unavailable triggers,
+  managed in *My Phone* or with feature codes (`*97` own mailbox, `*98` mailbox login), in-browser player
+- **Boss – secretary groups** — executive interception, simultaneous or sequential secretary ringing,
+  VIP whitelist bypass, automatic failover
+- **Ring groups** — virtual numbers mixing extensions and external numbers, simultaneous or sequential
+- **Conference rooms** — ConfBridge with PINs, wait-for-leader, join muted and live web moderation (mute/kick)
+- **Trunks, DID routing, outbound routes, time conditions, multi-level IVR**
+- **Queues** — dynamic agent login/logout, static agents, hold music, recording
+- **Feature codes** — `*81`/`*80` queue login/logout, `*72` call forward, `*60` DND, `*43` intercom,
+  `*90`/`*91`/`*92` spy/whisper/barge, `*97`/`*98` voicemail
+- **In-band disconnect supervision** — disconnect-tone detection for analog/legacy trunks
+- **Safe apply** — generated configuration is reloaded atomically; a failed Asterisk reload is rolled back
 
-### 📠 Fax System
+### 📠 Fax
 - **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
-- **WYSIWYG fax editor** — compose rich-text faxes directly in the browser
-- **PDF upload & send**
-- **Fax retry**
-- **Email notification** — incoming faxes forwarded by email automatically
+- **Compose in the browser** (rich-text editor) or **upload a PDF**; resend failed faxes
+- **E-mail notification** with the fax attached; per-DID recipients
 
 ### 📊 Call Center & Supervision
-- **Real-time agent panel & wallboard** — live queue status, active calls, agent break selector
-- **Live Call Spy, Whisper & Barge** — silent monitoring (`*90`), private agent coaching (`*91`), and three-way barge-in (`*92`) via web buttons or feature codes
-- **Real-time customer call tracking** — live caller number and talk duration on supervisor board via Local channel bridge traversal
-- **Dynamic queue login/logout** — via star codes (`*81`/`*80`) with audio confirmation (`queue-agentlogin-success` / beeps) or web UI
-- **Intelligent call transfer** — bridge-traversal caller preservation (`findCallerChannelForAgent`) prevents dropped lines during attended transfer
-- **Auto-desk navigation** — answering incoming queue calls in WebRTC automatically shifts SPA view to agent CRM/notes (`/cc-agent`)
-- **CDR reporting & Call Journey** — detailed call records, linkedid call grouping with expandable step-by-step call timeline, filtering, export
-- **Call recording playback** — listen to recordings in the browser with waveform player
-
-### 🔐 Security & Two-Factor Authentication
-- **FIDO2 / WebAuthn Passkeys** — Passwordless biometric authentication using Touch ID, Face ID, Windows Hello, or hardware security keys (YubiKey)
-- **TOTP Two-Factor Authentication (2FA)** — Authenticator apps (Google / Microsoft / 1Password) with offline SVG QR code generation and single-use recovery codes
-- **Role-Based Access Control (RBAC)** — Granular permission matrix per role and module
-- **Integrated SBC, Firewall & Fail2ban** — Dynamic IP whitelisting and real-time brute force defense
+- **Agent desk and wallboard** — live queues, waiting callers (with pickup), agent states
+  (idle / ringing / in call / on break), SLA, answered / missed / abandoned statistics
+- **Breaks with reasons**, applied in Asterisk per queue, and break reports
+- **Listen, whisper and barge** — from the wallboard or with `*90`/`*91`/`*92`
+- **Call transfer** that keeps the caller connected through queue Local channels
+- **CDR reports and call journey** — calls grouped by linkedid with a step-by-step timeline,
+  filters, export and recording playback with a waveform player
 
 ### 🌐 WebRTC Softphone
-- **In-browser SIP phone** — zero-install browser phone embedded directly in topbar
-- **Resilient TURN/STUN** — 30-minute automatic credential renewal eliminates silent audio on extended shifts
-- **Opus + DTLS-SRTP** — high-quality, end-to-end encrypted audio
+- **Browser phone** built into the portal header — no installation
+- **TURN/STUN (coturn)** multiplexed on port 443 for strict networks; credentials refreshed automatically
+- **Opus + DTLS-SRTP** encrypted audio
 
-### 💬 Real-Time Messaging & Group Chat
-- **1-to-1 & Multi-user Group Rooms** — Real-time team messaging powered by high-performance Go WebSocket daemon (`aipbx-chat`)
-- **Rich Group Management** — Create groups, assign admin roles, invite/remove participants (up to 256 members per group)
-- **Media & File Sharing** — Image compression, thumbnail generation, and secure attachment delivery
-- **System Audit Trail** — System-generated messages for member additions, removals, and role updates
-- **Presence & Delivery Receipts** — Real-time typing indicators, read receipts, and online status tracking
-- **FCM Push Notifications** — Background notifications with conversation grouping for both direct and group messages
+### 💬 Messaging & Group Chat
+- **1-to-1 and group chat** (Go WebSocket service `aipbx-chat`), group admins, member management
+- **Photos and files** with thumbnails; access limited to the conversation's participants
+- **Presence, typing indicators, read receipts**; push notifications on mobile
 
-### 💼 Microsoft Teams Integration
-- **Direct Routing (SBC / SIP TLS 5061)** — Native connection to Microsoft Phone System with TLS mutual authentication and SRTP
-- **User & Extension Mapping** — Link PBX extensions with Microsoft 365 UPNs and E.164 phone numbers
-- **Incoming Webhooks & Adaptive Cards** — Real-time Teams channel notifications for missed calls, voicemails, queue alarms, and incoming faxes
-- **Dynamic M365 PowerShell Generator** — Ready-to-execute PowerShell setup scripts generated dynamically from your PBX configuration
-
-### 📱 Android App (Build 33 · v1.0.32)
-- **Native Kotlin** application with zero external cloud dependencies
-- **PJSIP + WebRTC** dual engine with Opus HD audio & DTLS-SRTP encryption
-- **FCM Push & Persistent Foreground Service** — instantaneous wake-up for incoming calls
-- **Full Group Chat & Instant Messaging** — Direct 1-to-1 messaging, multi-user group chat rooms, quick group creation (`+ Yeni Grup`), conversation filter chips (All, Direct, Groups), participant management, admin roles, and real-time WebSocket updates
-- **Corporate Directory & Live Presence** — 50+ extensions with live status & 1-tap dialing
-- **Detailed Call History & In-App Log Viewer** — full diagnostics and call filtering
-- **Available on Google Play Console** — automated Closed Testing track pipeline and direct signed APK downloads
-
-### 🍎 iOS App (SwiftUI & CallKit)
-- **Native SwiftUI** modern application for iPhone & iPad (iOS 16.0+)
-- **Embedded WebRTC Voice Engine** with zero external cloud dependencies
-- **CallKit & AudioSession Integration** — Native iOS lock-screen incoming calls, audio routing, speaker and mute
-- **Full Group Chat & Direct Messaging** — Instant messaging, multi-party group rooms, contact picker, and real-time WebSocket communication
-- **Corporate Directory & Live Presence** — 50+ extensions with live presence indicators and 1-tap call/chat
-- **PBX Features & In-App Diagnostics** — DND, Call Forwarding, live log viewer, and log sharing via iOS ShareSheet
-- **Automated GitHub Actions CI/CD** — compiled automatically on macOS runners into unsigned `.ipa` and Simulator `.zip` artifacts
-
-### 📲 Mobile-First Web Management Portal
-- **WhatsApp/Telegram-Style Master-Detail Chat** — Fluid responsive navigation on smartphones (`<= 768px`) with hardware/browser back-button popstate support
-- **Optimized Mobile Views** — Touch-friendly responsive layouts for My Phone (`/my_phone`), Role Permission Matrix (`/roles`), Mobile Push Settings (`/push-settings`), and Pending Sync (`/pending-sync`)
+### 📱 Mobile Apps
+- **Android** (Kotlin, v1.0.46) — WebRTC calling with push wake-up and a foreground service, chat,
+  directory with presence, call history, DND / call forward, in-app log viewer
+- **iOS** (SwiftUI, CallKit) — calling with native incoming-call screen, chat, directory, features
+- **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
+  one-time link in the invitation e-mail
 
 <p align="center">
   <img src="docs/img/app_dialer.jpg" width="18%" alt="Dialer">
@@ -151,77 +152,65 @@ After install, open `https://<your-server>` in your browser and log in with the 
   <img src="docs/img/app_login.jpg" width="18%" alt="Setup">
 </p>
 
-### ⚡ Ingress & Reverse Proxy (Nginx & Apache)
-- **High-concurrency Nginx support** — event-driven WebSocket multiplexer, TLS 1.3, PHP-FPM FastCGI
-- **Native Apache 2.4 support** — `mod_proxy_wstunnel` and `.htaccess` compatibility
-- **Unified Port 443** — multiplexes Asterisk WebRTC SIP (`/ws`) and Go Chat (`/chat/ws`)
-- **Ready-to-use Nginx template** — available in `conf/nginx/aipbx.conf.example`
+### 💼 Microsoft Teams Integration
+- **Direct Routing** over SIP-TLS 5061 with SRTP
+- **User ↔ extension mapping** (Microsoft 365 UPN, E.164)
+- **Teams channel notifications** (missed calls, voicemail, queue alarms, faxes)
+- **Generated PowerShell** setup scripts from your PBX configuration
 
-### 🔐 Two-Factor Authentication (2FA) & Passkeys (WebAuthn / FIDO2)
-- **Authenticator App Support (TOTP / RFC 6238)** — Compatible with Google Authenticator, Microsoft Authenticator, 1Password, Apple Passwords/Keychain, Authy, etc.
-- **100% Offline & Private QR Codes** — Embedded native SVG QR code generator runs entirely on-premise without external third-party CDN or Google Chart dependencies (ideal for air-gapped PBX intranets).
-- **Single-Use Backup Recovery Codes** — Generates 8 cryptographically hashed emergency recovery codes (`XXXX-XXXX`) with instant clipboard copy and `.txt` file export.
-- **FIDO2 / WebAuthn Passkeys** — One-click passwordless and biometric authentication using Apple Touch ID / Face ID, Windows Hello, Android Biometrics, or hardware security keys (YubiKey, SoloKey).
-- **Two-Step Login Flow (`/login-2fa`)** — Automatic redirection upon password verification with clock drift tolerance ($\pm 30$ seconds) and recovery code fallback.
-- **Direct Passkey Login Button** — Log in with a single tap directly from the login page without entering passwords.
-- **Self-Service Security Center (`/security`)** — Accessible from the footer profile menu for every authenticated user to manage 2FA, register/delete passkeys, and change passwords.
-- **Admin Emergency 2FA Reset** — Dedicated 2FA status indicator and instant reset button in System Users (`/system-users`) if an employee loses their device.
-
-### 🔒 Security
-- **Optional Multi-Factor & Passkeys** — Hardware-grade FIDO2 / WebAuthn passkeys and RFC 6238 TOTP authenticators.
-- **Granular RBAC** — modular role-permission matrix (`sys_role_permissions`) with strict read-only viewer mode, including `my_phone` and `chat` controls.
-- **Math CAPTCHA** + brute-force lockout (5 failures → 15-min IP ban).
-- **CSRF protection** — token on every POST form.
-- **fail2ban integration** & **Firewall management** — control firewalld and fail2ban directly from the web UI.
-- **Credentials served via API** — never embedded in page source.
+### 🔐 Authentication & Security
+- **Two-factor authentication (TOTP)** with offline QR codes and single-use recovery codes — enforced
+  for portal, mobile and Google sign-in
+- **Passkeys (WebAuthn / FIDO2)** — passwordless sign-in with biometrics or PIN
+- **Google sign-in** (optional) with token audience and verified e-mail checks
+- **Sessions revoked on password change** — mobile and chat tokens stop working immediately
+- **User invitations** — generated passwords, forced first-login change, mobile sign-in link
+- **RBAC** — per-role module permissions; security-critical pages are admin-only
+- **Brute-force protection** — math CAPTCHA, account/IP lockout and a fail2ban jail using the real
+  client address (PROXY protocol from the 443 edge)
+- **Firewall and fail2ban management** from the portal through a single, argument-validated root
+  helper (`aipbx-priv`) — the portal never runs arbitrary commands as root
+- **Hardening** — CSRF tokens, security headers, sandboxed uploaded files, Asterisk HTTP on loopback
 
 ### 🌍 Multi-language
-- Turkish 🇹🇷 and English 🇬🇧 (1,740+ translation keys with 100% parity)
-- Easy to extend with the `t()` function
+- Turkish 🇹🇷 and English 🇬🇧 (2,000+ keys, parity checked in CI)
 
 ---
 
 ## Architecture
 
 ```
+Internet ──443──▶ nginx (stream, ALPN, PROXY protocol)
+                    ├─ HTTPS / WSS ──▶ Apache + PHP (127.0.0.1:8443)
+                    │                    ├─ /ws       ──▶ Asterisk WebSocket (127.0.0.1:8088)
+                    │                    └─ /chat/…   ──▶ aipbx-chat (127.0.0.1:8086)
+                    └─ TURNS ─────────▶ coturn
+         ──5060/5061, RTP──▶ Asterisk 22 (PJSIP)  ──ODBC──▶ MariaDB (CDR, queue_log)
+```
+
+```
 AiPBX/
-├── conf/                   # Nginx & web server production templates
-│   └── nginx/aipbx.conf.example
-│
-├── web/                    # PHP MVC Web Portal
+├── web/                    # PHP MVC portal
 │   ├── src/
-│   │   ├── controllers/    # 37 page controllers
-│   │   ├── services/       # 26 business logic services
-│   │   ├── repositories/   # 28 database repositories
-│   │   └── sync/           # 13 Asterisk config generators
-│   ├── templates/views/    # 36 PHP view templates
-│   ├── api/                # REST API layer (WebAuthn, call control, WebRTC creds)
-│   ├── assets/             # CSS, JS, fonts
-│   ├── lang/               # Language files (tr/en - 1,740+ keys)
-│   └── db/migrations/      # Phinx database migrations
-│
-├── android/                # Kotlin Android App
-│   └── app/src/main/
-│       └── java/com/mhrgl/aipbx/
-│
-├── ios/                    # Swift & SwiftUI iOS App (GitHub Actions CI/CD)
-│   ├── AiPBX/              # App, Models, Services, Views, Resources
-│   └── AiPBX.xcodeproj/    # Xcode project & schemes
-│
-├── chat/                   # Go WebSocket Chat Service
-│   ├── main.go
-│   ├── hub.go              # WebSocket hub
-│   ├── handlers.go         # HTTP/WS handlers
-│   └── db.go               # Database layer
-│
-├── asterisk-config/        # Asterisk reference configuration
-│   └── pbx/                # Modular dialplan, PJSIP, queue files
-│
-├── db/                     # Database schema
-│   └── seed.sql            # Initial seed data (schema: web/db/migrations, Phinx)
-│
-├── install.sh              # One-command installer
-└── README.md
+│   │   ├── controllers/    # 50 page controllers
+│   │   ├── services/       # 39 services (business logic)
+│   │   ├── repositories/   # 32 repositories
+│   │   └── sync/           # 19 Asterisk configuration generators
+│   ├── templates/          # layouts + 51 views
+│   ├── api/                # JSON endpoints (call control, mobile, chat token, WebAuthn…)
+│   ├── lang/               # tr / en
+│   ├── db/migrations/      # Phinx migrations (the database schema)
+│   └── tests/              # PHPUnit
+├── chat/                   # Go WebSocket chat service
+├── android/                # Kotlin app
+├── ios/                    # SwiftUI app
+├── asterisk-config/        # Asterisk base configuration
+├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
+├── db/seed.sql             # initial roles, permissions, settings
+├── scripts/release.sh      # publishes a release
+├── install.sh              # installer (--upgrade mode used by aipbx-update)
+├── VERSION · CHANGELOG.md
+└── README.md · INSTALL.md · ARCHITECTURE.md
 ```
 
 ### Technology Stack
@@ -229,49 +218,46 @@ AiPBX/
 | Layer | Technology |
 |-------|-----------|
 | PBX | Asterisk 22 (PJSIP, res_fax, AMI, ODBC) |
-| Web Backend | PHP 8.x, strict MVC, Composer |
-| Web Frontend | Vanilla JS + CSS (no framework) |
+| Web | PHP 8, MVC, Composer; vanilla JS + CSS |
 | Database | MariaDB (Phinx migrations) |
+| Edge | nginx stream on 443 (ALPN + PROXY protocol) → Apache |
 | Chat | Go + gorilla/websocket |
-| Android | Kotlin, PJSIP, WebRTC, FCM |
-| iOS | Swift 5.9, SwiftUI, WebKit, CallKit, Combine |
 | WebRTC | coturn TURN/STUN, DTLS-SRTP, Opus |
-| Security | WebAuthn (FIDO2 / Passkeys), TOTP 2FA, fail2ban, RBAC, CSRF, CAPTCHA |
+| Android | Kotlin, WebRTC, FCM |
+| iOS | Swift, SwiftUI, CallKit |
+| CI | GitHub Actions: PHPStan, PHPUnit, page smoke tests, Go tests, Android/iOS builds |
 
 ---
 
-## Post-Install
+## After Installing
 
-All credentials (admin password, DB passwords, AMI key, TURN secret) are generated randomly during install and saved to `/root/aipbx-credentials.txt`.
-
-You can change all passwords later from **Admin Panel → Settings → System**.
-
-To add a real TLS certificate after install (if you skipped Let's Encrypt):
-```bash
-certbot --apache -d your-domain.com
-```
+- Credentials are in `/root/aipbx-credentials.txt` — note them and delete the file.
+- Service secrets live in `/etc/ai-pbx.env`.
+- To switch a self-signed install to a Let's Encrypt certificate later, see [INSTALL.md](INSTALL.md#35-switching-to-a-lets-encrypt-certificate).
+- Ports, updating and troubleshooting: [INSTALL.md](INSTALL.md).
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please check out our [Contributing Guidelines](CONTRIBUTING.md) for details on code style, commit conventions, and sandbox testing.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for code style, commit conventions
+and testing.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feat/my-feature`)
 3. Commit your changes (`git commit -m 'feat: add awesome feature'`)
-4. Push to the branch (`git push origin feat/my-feature`)
-5. Open a Pull Request
+4. Push the branch and open a Pull Request
+
+Code comments, commit messages and documentation are written in English.
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT License](LICENSE).
 
 ---
 
 ## Author & Creator
 
 **Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [@mahirgul](https://github.com/mahirgul)
-

@@ -1,17 +1,17 @@
 #!/bin/bash
-# aipbx-priv — AI PBX web portalının root yetkisiyle çalıştırabildiği TEK komut.
+# aipbx-priv — the ONLY command the AI PBX web portal may run as root.
 #
-# /etc/sudoers.d/aipbx www-data'ya yalnızca bu script'i açar. Önceden
-# asterisk/postconf/fail2ban-client/firewall-cmd argüman kısıtı olmadan
-# açıktı; bu da portalda bulunacak herhangi bir kod çalıştırma açığını
-# doğrudan root'a taşıyordu (ör. `sudo asterisk -C <sahte.conf>`,
+# /etc/sudoers.d/aipbx grants www-data this script and nothing else. Before,
+# asterisk/postconf/fail2ban-client/firewall-cmd were allowed without argument
+# restrictions, so any code execution bug in the portal led straight to root
+# (e.g. `sudo asterisk -C <fake.conf>`,
 # `fail2ban-client set <jail> action ... actionban <komut>`,
-# `postconf -e mailbox_command=...`). Burada her alt komut sabit bir işleme
-# karşılık gelir ve her argüman katı bir desenle doğrulanır; hiçbir değer
-# kabuğa verilmez.
+# `postconf -e mailbox_command=...`). Here every subcommand maps to one fixed
+# operation and every argument is validated against a strict pattern; no value
+# ever reaches a shell.
 #
-# install.sh bu dosyayı root:root 0755 olarak /usr/local/sbin'e KOPYALAR —
-# www-data'nın yazabildiği bir yerden (ör. web/ altından) asla çalıştırılmamalı.
+# install.sh COPIES this file to /usr/local/sbin as root:root 0755 — it must
+# never run from a location www-data can write to (e.g. under web/).
 
 set -uo pipefail
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
@@ -28,14 +28,14 @@ RE_PROTO='^(tcp|udp)$'
 RE_HOST='^[A-Za-z0-9.:_-]{1,253}$'
 RE_RICH_RULE='^rule [A-Za-z0-9 ="./:_-]{1,400}$'
 
-match() { [[ "$1" =~ $2 ]] || die "geçersiz değer: $1"; }
+match() { [[ "$1" =~ $2 ]] || die "invalid value: $1"; }
 
-# İsteğe bağlı son argüman: yalnızca "--permanent" kabul edilir.
+# Optional last argument: only "--permanent" is accepted.
 permanent_flag() {
     case "${1:-}" in
         '') ;;
         --permanent) echo --permanent ;;
-        *) die "beklenmeyen argüman: $1" ;;
+        *) die "unexpected argument: $1" ;;
     esac
 }
 
@@ -45,9 +45,9 @@ cmd="${1:-}"
 case "$cmd" in
     service)
         # service restart|reload UNIT
-        [ $# -eq 2 ] || die "kullanım: service restart|reload UNIT"
-        case "$1" in restart|reload) ;; *) die "geçersiz işlem: $1" ;; esac
-        case "$2" in asterisk|apache2|mariadb|postfix|fail2ban|firewalld) ;; *) die "izin verilmeyen servis: $2" ;; esac
+        [ $# -eq 2 ] || die "usage: service restart|reload UNIT"
+        case "$1" in restart|reload) ;; *) die "invalid operation: $1" ;; esac
+        case "$2" in asterisk|apache2|mariadb|postfix|fail2ban|firewalld) ;; *) die "service not allowed: $2" ;; esac
         exec systemctl "$1" "$2"
         ;;
 
@@ -55,34 +55,34 @@ case "$cmd" in
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             relay)
-                [ $# -eq 2 ] || die "kullanım: postfix relay HOST PORT"
+                [ $# -eq 2 ] || die "usage: postfix relay HOST PORT"
                 match "$1" "$RE_HOST"; match "$2" "$RE_INT"
                 exec postconf -e "relayhost = [$1]:$2"
                 ;;
             relay-clear)
-                [ $# -eq 0 ] || die "kullanım: postfix relay-clear"
+                [ $# -eq 0 ] || die "usage: postfix relay-clear"
                 exec postconf -e "relayhost ="
                 ;;
             tls)
-                [ $# -eq 1 ] || die "kullanım: postfix tls may|none"
-                case "$1" in may|none) ;; *) die "geçersiz değer: $1" ;; esac
+                [ $# -eq 1 ] || die "usage: postfix tls may|none"
+                case "$1" in may|none) ;; *) die "invalid value: $1" ;; esac
                 exec postconf -e "smtp_tls_security_level = $1"
                 ;;
             sasl)
-                [ $# -eq 1 ] || die "kullanım: postfix sasl on|off"
+                [ $# -eq 1 ] || die "usage: postfix sasl on|off"
                 case "$1" in
                     on)  exec postconf -e "smtp_sasl_auth_enable = yes" \
                                           "smtp_sasl_security_options = noanonymous" \
                                           "smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd" ;;
                     off) exec postconf -e "smtp_sasl_auth_enable = no" ;;
-                    *)   die "geçersiz değer: $1" ;;
+                    *)   die "invalid value: $1" ;;
                 esac
                 ;;
             postmap)
-                [ $# -eq 0 ] || die "kullanım: postfix postmap"
+                [ $# -eq 0 ] || die "usage: postfix postmap"
                 exec postmap /etc/postfix/sasl_passwd
                 ;;
-            *) die "bilinmeyen postfix komutu: $sub" ;;
+            *) die "unknown postfix command: $sub" ;;
         esac
         ;;
 
@@ -90,35 +90,35 @@ case "$cmd" in
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             get-default-zone)
-                [ $# -eq 0 ] || die "kullanım: fw get-default-zone"
+                [ $# -eq 0 ] || die "usage: fw get-default-zone"
                 exec firewall-cmd --get-default-zone
                 ;;
             list-all)
-                [ $# -eq 0 ] || die "kullanım: fw list-all"
+                [ $# -eq 0 ] || die "usage: fw list-all"
                 exec firewall-cmd --list-all
                 ;;
             add-port|remove-port)
                 # fw add-port|remove-port PORT PROTO [--permanent]
-                [ $# -eq 2 ] || [ $# -eq 3 ] || die "kullanım: fw $sub PORT PROTO [--permanent]"
+                [ $# -eq 2 ] || [ $# -eq 3 ] || die "usage: fw $sub PORT PROTO [--permanent]"
                 match "$1" "$RE_PORT"; match "$2" "$RE_PROTO"
                 perm="$(permanent_flag "${3:-}")" || exit 64
                 exec firewall-cmd "--$sub=$1/$2" ${perm:+"$perm"}
                 ;;
             add-source-rule)
                 # fw add-source-rule SUBNET PORT PROTO [--permanent]
-                [ $# -eq 3 ] || [ $# -eq 4 ] || die "kullanım: fw add-source-rule SUBNET PORT PROTO [--permanent]"
+                [ $# -eq 3 ] || [ $# -eq 4 ] || die "usage: fw add-source-rule SUBNET PORT PROTO [--permanent]"
                 match "$1" "$RE_IPV4_CIDR"; match "$2" "$RE_PORT"; match "$3" "$RE_PROTO"
                 perm="$(permanent_flag "${4:-}")" || exit 64
                 exec firewall-cmd "--add-rich-rule=rule family=\"ipv4\" source address=\"$1\" port port=\"$2\" protocol=\"$3\" accept" ${perm:+"$perm"}
                 ;;
             remove-rich-rule)
-                # fw remove-rich-rule RULE [--permanent] — RULE, `list-all` çıktısındaki metin
-                [ $# -eq 1 ] || [ $# -eq 2 ] || die "kullanım: fw remove-rich-rule RULE [--permanent]"
+                # fw remove-rich-rule RULE [--permanent] — RULE is the text shown by `list-all`
+                [ $# -eq 1 ] || [ $# -eq 2 ] || die "usage: fw remove-rich-rule RULE [--permanent]"
                 match "$1" "$RE_RICH_RULE"
                 perm="$(permanent_flag "${2:-}")" || exit 64
                 exec firewall-cmd "--remove-rich-rule=$1" ${perm:+"$perm"}
                 ;;
-            *) die "bilinmeyen fw komutu: $sub" ;;
+            *) die "unknown fw command: $sub" ;;
         esac
         ;;
 
@@ -127,41 +127,41 @@ case "$cmd" in
         case "$sub" in
             status)
                 # f2b status [JAIL]
-                [ $# -le 1 ] || die "kullanım: f2b status [JAIL]"
+                [ $# -le 1 ] || die "usage: f2b status [JAIL]"
                 [ $# -eq 1 ] && match "$1" "$RE_JAIL"
                 exec fail2ban-client status "$@"
                 ;;
             get)
                 # f2b get JAIL bantime|findtime|maxretry|ignoreip
-                [ $# -eq 2 ] || die "kullanım: f2b get JAIL KEY"
+                [ $# -eq 2 ] || die "usage: f2b get JAIL KEY"
                 match "$1" "$RE_JAIL"
-                case "$2" in bantime|findtime|maxretry|ignoreip) ;; *) die "izin verilmeyen anahtar: $2" ;; esac
+                case "$2" in bantime|findtime|maxretry|ignoreip) ;; *) die "key not allowed: $2" ;; esac
                 exec fail2ban-client get "$1" "$2"
                 ;;
             set)
                 # f2b set JAIL bantime|findtime|maxretry N
                 # f2b set JAIL unbanip|addignoreip|delignoreip IP
-                [ $# -eq 3 ] || die "kullanım: f2b set JAIL KEY VALUE"
+                [ $# -eq 3 ] || die "usage: f2b set JAIL KEY VALUE"
                 match "$1" "$RE_JAIL"
                 case "$2" in
                     bantime|findtime|maxretry)       match "$3" "$RE_INT" ;;
                     unbanip|addignoreip|delignoreip) match "$3" "$RE_IP" ;;
-                    *) die "izin verilmeyen anahtar: $2" ;;
+                    *) die "key not allowed: $2" ;;
                 esac
                 exec fail2ban-client set "$1" "$2" "$3"
                 ;;
             install-override)
-                # Panelin hazırladığı kalıcı ayar dosyasını doğrulayıp jail.d'ye kurar.
-                # jail.d root'a ait kalmalı: jail dosyası çalıştırılacak komut
-                # tanımlayabildiği için web'e yazılabilir olması root demekti.
-                [ $# -eq 0 ] || die "kullanım: f2b install-override"
+                # Validates the persistent settings file staged by the panel and
+                # installs it into jail.d. jail.d must stay root-owned: a jail file
+                # can define commands to run, so a web-writable one meant root.
+                [ $# -eq 0 ] || die "usage: f2b install-override"
                 stage=/var/lib/aipbx/fail2ban-override.local
                 tmp="$(mktemp)" || exit 1
                 trap 'rm -f "$tmp"' EXIT
-                # nofollow: sembolik bağlantı ile başka bir dosya okutulamasın.
+                # nofollow: a symlink must not make us read some other file.
                 dd if="$stage" of="$tmp" iflag=nofollow bs=65536 count=1 status=none \
-                    || die "ara dosya okunamadı"
-                [ "$(stat -c %s "$tmp")" -lt 65536 ] || die "ara dosya çok büyük"
+                    || die "staged file could not be read"
+                [ "$(stat -c %s "$tmp")" -lt 65536 ] || die "staged file too large"
                 n=0
                 while IFS= read -r line || [ -n "$line" ]; do
                     n=$((n + 1))
@@ -170,43 +170,43 @@ case "$cmd" in
                     [[ "$line" =~ ^\[(DEFAULT|[A-Za-z0-9_-]{1,64})\]$ ]] && continue
                     [[ "$line" =~ ^ignoreip\ =\ [0-9A-Fa-f:./\ ]{1,4000}$ ]] && continue
                     [[ "$line" =~ ^(bantime|findtime|maxretry)\ =\ [0-9]{1,9}$ ]] && continue
-                    # Satır içeriği yazılmaz — yalnızca numarası.
-                    die "ara dosyada izin verilmeyen satır: $n"
+                    # Only the line number is reported, never its content.
+                    die "line not allowed in staged file: $n"
                 done < "$tmp"
                 install -o root -g root -m 0644 "$tmp" /etc/fail2ban/jail.d/99-ai-pbx.local
                 ;;
-            *) die "bilinmeyen f2b komutu: $sub" ;;
+            *) die "unknown f2b command: $sub" ;;
         esac
         ;;
 
     update)
-        # Sistem Güncelleme sayfası: sürüm kontrolü ve güncellemeyi başlatma.
-        # Güncelleme arka planda ayrı bir systemd birimi olarak koşar (portal
-        # Apache'si güncelleme sırasında yeniden başlatılıyor, istek içinden
-        # çalıştırılamaz); ilerleme /var/lib/aipbx/update-status.json'dan okunur.
+        # System Update page: version check and starting an update. The update
+        # runs in the background as a separate systemd unit (the portal's Apache
+        # is restarted during it, so it cannot run inside a request); progress
+        # is read from /var/lib/aipbx/update-status.json.
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             check)
-                [ $# -eq 0 ] || die "kullanım: update check"
+                [ $# -eq 0 ] || die "usage: update check"
                 exec /usr/local/sbin/aipbx-update --check
                 ;;
             start)
                 # update start [--allow-calls]
-                [ $# -le 1 ] || die "kullanım: update start [--allow-calls]"
+                [ $# -le 1 ] || die "usage: update start [--allow-calls]"
                 extra=""
-                case "${1:-}" in '') ;; --allow-calls) extra="--allow-calls" ;; *) die "beklenmeyen argüman: $1" ;; esac
+                case "${1:-}" in '') ;; --allow-calls) extra="--allow-calls" ;; *) die "unexpected argument: $1" ;; esac
                 if systemctl is-active --quiet aipbx-update.service; then
-                    die "güncelleme zaten çalışıyor"
+                    die "an update is already running"
                 fi
                 systemctl reset-failed aipbx-update.service >/dev/null 2>&1 || true
                 exec systemd-run --quiet --collect --unit=aipbx-update \
                     --description="AiPBX update" /usr/local/sbin/aipbx-update --yes $extra
                 ;;
-            *) die "bilinmeyen update komutu: $sub" ;;
+            *) die "unknown update command: $sub" ;;
         esac
         ;;
 
     *)
-        die "bilinmeyen komut: ${cmd:-<boş>}"
+        die "unknown command: ${cmd:-<empty>}"
         ;;
 esac

@@ -2165,4 +2165,6 @@ return [
     'system_update.confirm' => 'AiPBX %s sürümüne güncellensin mi? Asterisk yeniden başlatılacak.',
     'system_update.up_to_date' => 'Sistem güncel.',
     'system_update.unreachable' => 'Sürüm bilgisi alınamadı (GitHub\'a ulaşılamıyor olabilir).',
+    'system_update.already_running' => 'Bir güncelleme zaten sürüyor.',
+    'system_update.start_failed' => 'Güncelleme başlatılamadı.',
 ];
