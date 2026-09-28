@@ -1,0 +1,212 @@
+#!/bin/bash
+# aipbx-update — AiPBX'i yayınlanmış bir sürüme (git etiketi vX.Y.Z) günceller.
+#
+#   aipbx-update --check              yeni sürüm var mı? (portal için durum dosyası yazar)
+#   aipbx-update                      en son sürüme güncelle (onay sorar)
+#   aipbx-update --to v2.1.0          belirli bir sürüme güncelle
+#   aipbx-update --yes                onay sormadan (portal / otomasyon)
+#   aipbx-update --allow-calls        süren görüşme olsa da devam et (görüşmeler düşer)
+#
+# Akış: kontrol → yedek (veritabanı, /etc/ai-pbx.env, /etc/asterisk) → kodu
+# etikete çek → `install.sh --upgrade` (migration'lar, izinler, servis ayarları;
+# şifreler yeniden üretilmez) → doğrulama. Herhangi bir adım başarısız olursa
+# kod, veritabanı ve sistem ayarları otomatik olarak önceki sürüme döner.
+#
+# install.sh bu dosyayı /usr/local/sbin'e root:root 0755 KOPYALAR.
+
+set -uo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C.UTF-8
+
+# Güncelleme sırasında install.sh bu dosyanın /usr/local/sbin'deki kopyasını
+# yeniler; çalışan bir bash betiğinin üzerine yazmak onu bozar. Bu yüzden
+# geçici bir kopyadan çalışılır.
+if [[ -z "${AIPBX_UPDATE_REEXEC:-}" ]]; then
+    tmp="$(mktemp /tmp/aipbx-update.XXXXXX)"
+    cp "$0" "$tmp" && chmod 700 "$tmp"
+    AIPBX_UPDATE_REEXEC="$tmp" exec bash "$tmp" "$@"
+fi
+trap 'rm -f "$AIPBX_UPDATE_REEXEC"' EXIT
+
+INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
+STATE_DIR=/var/lib/aipbx
+STATUS_FILE="$STATE_DIR/update-status.json"   # portal okur (www-data)
+CHECK_FILE="$STATE_DIR/update-check.json"     # portal okur (www-data)
+LOG_FILE=/var/log/aipbx/update.log
+BACKUP_ROOT=/var/backups/aipbx
+KEEP_BACKUPS=5
+
+MODE=update; TARGET=""; ASSUME_YES=false; ALLOW_CALLS=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check) MODE=check ;;
+        --to) TARGET="${2:-}"; shift ;;
+        --yes|-y) ASSUME_YES=true ;;
+        --allow-calls) ALLOW_CALLS=true ;;
+        -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "Bilinmeyen argüman: $1 (--help)" >&2; exit 64 ;;
+    esac
+    shift
+done
+
+[[ $EUID -eq 0 ]] || { echo "Root olarak çalıştırın: sudo aipbx-update" >&2; exit 1; }
+[[ -d "$INSTALL_DIR/.git" ]] || { echo "$INSTALL_DIR bir AiPBX git kurulumu değil" >&2; exit 1; }
+
+mkdir -p "$STATE_DIR" "$(dirname "$LOG_FILE")" "$BACKUP_ROOT"
+chmod 700 "$BACKUP_ROOT"
+touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"; }
+json_str() { printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'; }
+
+# state: running | done | failed | rolled_back
+status() {
+    local state="$1" step="$2"
+    local tmpf; tmpf="$(mktemp "$STATE_DIR/.update-status.XXXXXX")"
+    printf '{"state":%s,"step":%s,"from":%s,"to":%s,"updated_at":%s}\n' \
+        "$(json_str "$state")" "$(json_str "$step")" "$(json_str "${CURRENT:-}")" \
+        "$(json_str "${TARGET:-}")" "$(json_str "$(date -Iseconds)")" > "$tmpf"
+    chmod 644 "$tmpf"; mv -f "$tmpf" "$STATUS_FILE"
+}
+
+git_in() { git -C "$INSTALL_DIR" "$@"; }
+ver_of() { echo "${1#v}"; }
+# a < b ?  (sürüm karşılaştırması)
+ver_lt() { [[ "$(ver_of "$1")" != "$(ver_of "$2")" && "$(printf '%s\n%s\n' "$(ver_of "$1")" "$(ver_of "$2")" | sort -V | head -1)" == "$(ver_of "$1")" ]]; }
+
+CURRENT="v$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION" 2>/dev/null || echo 0.0.0)"
+CURRENT_COMMIT="$(git_in rev-parse HEAD)"
+
+# ---------------------------------------------------------------- sürümleri al
+if ! git_in fetch --quiet --tags --force origin 2>>"$LOG_FILE"; then
+    log "HATA: GitHub'a ulaşılamadı (git fetch)"
+    [[ "$MODE" == check ]] && printf '{"ok":false,"error":"GitHub\x27a ulaşılamadı","current":%s,"checked_at":%s}\n' \
+        "$(json_str "$CURRENT")" "$(json_str "$(date -Iseconds)")" > "$CHECK_FILE" && chmod 644 "$CHECK_FILE"
+    exit 2
+fi
+LATEST="$(git_in tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
+
+if [[ "$MODE" == check ]]; then
+    available=false; notes=""
+    if [[ -n "$LATEST" ]] && ver_lt "$CURRENT" "$LATEST"; then
+        available=true
+        # Mevcut sürümden sonraki tüm sürümlerin notları (etiket açıklamaları).
+        while read -r t; do
+            ver_lt "$CURRENT" "$t" || continue
+            notes+="## ${t}"$'\n'"$(git_in tag -l --format='%(contents)' "$t")"$'\n\n'
+        done < <(git_in tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname)
+    fi
+    printf '{"ok":true,"current":%s,"latest":%s,"available":%s,"notes":%s,"checked_at":%s}\n' \
+        "$(json_str "$CURRENT")" "$(json_str "${LATEST:-}")" "$available" "$(json_str "$notes")" \
+        "$(json_str "$(date -Iseconds)")" > "$CHECK_FILE"
+    chmod 644 "$CHECK_FILE"
+    echo "Kurulu: $CURRENT   En son: ${LATEST:-yok}   $([[ $available == true ]] && echo 'GÜNCELLEME VAR' || echo 'güncel')"
+    exit 0
+fi
+
+# ------------------------------------------------------------------ hedef sürüm
+[[ -n "$TARGET" ]] || TARGET="$LATEST"
+[[ "$TARGET" == v* ]] || TARGET="v$TARGET"
+if [[ -z "$TARGET" || -z "$(git_in tag -l "$TARGET")" ]]; then
+    echo "Sürüm bulunamadı: ${TARGET:-(etiket yok)}" >&2; exit 1
+fi
+if ! ver_lt "$CURRENT" "$TARGET"; then
+    echo "Kurulu sürüm ($CURRENT) zaten $TARGET veya daha yeni."; exit 0
+fi
+
+# ------------------------------------------------------------------ ön kontroller
+# Kodda elle yapılmış değişiklik: güncelleme bunların üzerine yazardı.
+dirty="$(git_in status --porcelain --untracked-files=no)"
+if [[ -n "$dirty" ]]; then
+    echo "$INSTALL_DIR içinde değiştirilmiş dosyalar var; güncelleme bunları silerdi:" >&2
+    echo "$dirty" >&2
+    echo "Kişisel ayarlar kodda değil /etc/ai-pbx.env, portal ve *_custom.conf dosyalarında tutulmalı." >&2
+    status failed "Kodda elle yapılmış değişiklik var"
+    exit 1
+fi
+
+calls="$(asterisk -rx 'core show channels count' 2>/dev/null | sed -n 's/^\([0-9]\+\) active call.*/\1/p')"
+if [[ "${calls:-0}" -gt 0 && "$ALLOW_CALLS" != true ]]; then
+    echo "Şu an ${calls} görüşme sürüyor; güncelleme Asterisk'i yeniden başlatır ve bunlar düşer." >&2
+    echo "Görüşmeler bitince tekrar deneyin ya da --allow-calls ile zorlayın." >&2
+    status failed "Süren görüşme var (${calls})"
+    exit 3
+fi
+
+if [[ "$ASSUME_YES" != true ]]; then
+    read -r -p "AiPBX $CURRENT → $TARGET güncellensin mi? [e/H]: " ans
+    [[ "${ans,,}" == e || "${ans,,}" == evet || "${ans,,}" == y || "${ans,,}" == yes ]] || { echo "İptal edildi."; exit 0; }
+fi
+
+log "===== Güncelleme başladı: $CURRENT → $TARGET ====="
+status running "Yedek alınıyor"
+
+# ------------------------------------------------------------------ yedek
+BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)_${CURRENT}"
+mkdir -p "$BACKUP_DIR"
+echo "$CURRENT_COMMIT" > "$BACKUP_DIR/commit"
+echo "$CURRENT" > "$BACKUP_DIR/version"
+cp -p /etc/ai-pbx.env "$BACKUP_DIR/ai-pbx.env"
+tar czf "$BACKUP_DIR/etc-asterisk.tgz" -C / etc/asterisk 2>>"$LOG_FILE"
+mysqldump --single-transaction --routines --triggers --databases asterisk 2>>"$LOG_FILE" | gzip > "$BACKUP_DIR/asterisk-db.sql.gz"
+if ! zcat "$BACKUP_DIR/asterisk-db.sql.gz" 2>/dev/null | tail -n 1 | grep -q 'Dump completed'; then
+    log "HATA: veritabanı yedeği alınamadı, güncelleme yapılmadı"
+    status failed "Veritabanı yedeği alınamadı"
+    exit 1
+fi
+log "Yedek: $BACKUP_DIR"
+# Eski yedekleri temizle (son $KEEP_BACKUPS kalır)
+ls -1dt "$BACKUP_ROOT"/*/ 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -rf
+
+# ------------------------------------------------------------------ geri dönüş
+rollback() {
+    log "!!! $1 — önceki sürüme ($CURRENT) dönülüyor"
+    status running "Geri alınıyor: $1"
+    git_in checkout --quiet --force "$CURRENT_COMMIT" >>"$LOG_FILE" 2>&1
+    # Veritabanı tamamen yedekteki hâline: yeni migration'ların eklediği tablolar
+    # dökümde olmadığı için önce veritabanı silinir — ama YALNIZCA döküm eksiksizse.
+    if zcat "$BACKUP_DIR/asterisk-db.sql.gz" | tail -n 1 | grep -q 'Dump completed'; then
+        if mysql -e 'DROP DATABASE IF EXISTS asterisk' 2>>"$LOG_FILE" \
+           && zcat "$BACKUP_DIR/asterisk-db.sql.gz" | mysql 2>>"$LOG_FILE"; then
+            log "Veritabanı yedekten geri yüklendi"
+        else
+            log "UYARI: veritabanı geri yüklenemedi — elle: zcat $BACKUP_DIR/asterisk-db.sql.gz | mysql"
+        fi
+    else
+        log "UYARI: yedek eksik görünüyor, veritabanına dokunulmadı: $BACKUP_DIR"
+    fi
+    cp -p "$BACKUP_DIR/ai-pbx.env" /etc/ai-pbx.env
+    bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 \
+        || log "UYARI: önceki sürümün sistem ayarları yeniden uygulanamadı"
+    log "===== Geri alındı: $CURRENT ($1) ====="
+    status rolled_back "$1"
+    exit 1
+}
+
+# ------------------------------------------------------------------ uygula
+status running "Kod $TARGET sürümüne alınıyor"
+git_in checkout --quiet --force --detach "$TARGET" >>"$LOG_FILE" 2>&1 || rollback "Kod alınamadı"
+
+status running "Sistem güncelleniyor (paketler, veritabanı, servisler)"
+log "install.sh --upgrade çalışıyor..."
+bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 || rollback "install.sh --upgrade başarısız"
+
+# ------------------------------------------------------------------ doğrulama
+status running "Doğrulanıyor"
+sleep 3
+for svc in mariadb apache2 nginx asterisk; do
+    systemctl is-active --quiet "$svc" || rollback "$svc servisi çalışmıyor"
+done
+domain="$(grep -m1 '^PORTAL_DOMAIN=' /etc/ai-pbx.env | cut -d= -f2-)"
+code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domain}:443:127.0.0.1" "https://${domain}/login")"
+[[ "$code" == 200 ]] || rollback "Portal yanıt vermiyor (HTTP $code)"
+if ! (cd "$INSTALL_DIR/web" && timeout 900 php bin/smoke.php >>"$LOG_FILE" 2>&1); then
+    rollback "Sayfa testleri (smoke) başarısız"
+fi
+
+log "===== Güncelleme tamamlandı: $CURRENT → $TARGET ====="
+CURRENT_BEFORE="$CURRENT"; CURRENT="$TARGET"
+status done "Güncellendi: $CURRENT_BEFORE → $TARGET"
+# Portalın "güncelleme var" bilgisi tazelensin.
+bash "$AIPBX_UPDATE_REEXEC" --check >/dev/null 2>&1 || true
+echo "AiPBX $TARGET sürümüne güncellendi. Yedek: $BACKUP_DIR"

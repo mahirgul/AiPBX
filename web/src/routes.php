@@ -51,6 +51,7 @@ return [
     '/audit-log'       => ['controller' => AuditLogController::class, 'action' => 'index', 'module' => 'audit_log.php'],
     '/firewall'        => ['controller' => FirewallController::class, 'action' => 'index', 'module' => 'firewall.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
+    '/system-update'   => ['controller' => SystemUpdateController::class, 'action' => 'index', 'module' => 'system_update.php'],
     '/brand-settings'  => ['controller' => BrandSettingsController::class, 'action' => 'index', 'module' => 'brand_settings.php'],
     '/push-settings'   => ['controller' => PushSettingsController::class, 'action' => 'index', 'module' => 'push_settings.php'],
     '/fax-settings'    => ['controller' => FaxSettingsController::class, 'action' => 'index', 'module' => 'fax_settings.php'],

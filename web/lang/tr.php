@@ -2143,4 +2143,26 @@ return [
     // My Phone
     'my_phone.tab_voicemail' => 'Sesli Posta',
     'my_phone.voicemail_inbox' => 'Sesli Posta Kutum',
+
+    // Sistem Güncelleme
+    'sidebar.item_system_update' => 'Sistem Güncelleme',
+    'system_update.page_title' => 'Sistem Güncelleme',
+    'system_update.help_title' => 'Güncelleme nasıl çalışır?',
+    'system_update.help_body' => 'Güncelleme önce veritabanının, ayarların ve Asterisk yapılandırmasının yedeğini alır, sonra yeni sürümü kurar ve her şeyin çalıştığını test eder. Bir sorun çıkarsa otomatik olarak önceki sürüme döner. Güncelleme sırasında Asterisk yeniden başlatılır: süren görüşmeler düşer, bu yüzden görüşme varken başlamaz. Sunucudan komutla da yapılabilir: <code>sudo aipbx-update</code>',
+    'system_update.current' => 'Kurulu sürüm',
+    'system_update.latest' => 'En son sürüm',
+    'system_update.checked_at' => 'Son kontrol',
+    'system_update.never_checked' => 'Henüz kontrol edilmedi',
+    'system_update.btn_check' => 'Güncellemeleri Kontrol Et',
+    'system_update.btn_update' => 'Güncelle',
+    'system_update.allow_calls' => 'Süren görüşmeler olsa da güncelle (görüşmeler düşer)',
+    'system_update.notes' => 'Yenilikler',
+    'system_update.log' => 'Güncelleme günlüğü',
+    'system_update.state_running' => 'Güncelleme sürüyor',
+    'system_update.state_done' => 'Güncelleme tamamlandı',
+    'system_update.state_failed' => 'Güncelleme başlamadı',
+    'system_update.state_rolled_back' => 'Güncelleme başarısız oldu, önceki sürüme dönüldü',
+    'system_update.confirm' => 'AiPBX %s sürümüne güncellensin mi? Asterisk yeniden başlatılacak.',
+    'system_update.up_to_date' => 'Sistem güncel.',
+    'system_update.unreachable' => 'Sürüm bilgisi alınamadı (GitHub\'a ulaşılamıyor olabilir).',
 ];

@@ -2143,4 +2143,26 @@ return [
     // My Phone
     'my_phone.tab_voicemail' => 'Voicemail',
     'my_phone.voicemail_inbox' => 'Voicemail Inbox',
+
+    // Sistem Güncelleme
+    'sidebar.item_system_update' => 'System Update',
+    'system_update.page_title' => 'System Update',
+    'system_update.help_title' => 'How does updating work?',
+    'system_update.help_body' => 'The update first backs up the database, settings and Asterisk configuration, then installs the new version and tests that everything works. If anything fails it automatically returns to the previous version. Asterisk is restarted during the update: ongoing calls are dropped, so it does not start while calls are active. It can also be run on the server: <code>sudo aipbx-update</code>',
+    'system_update.current' => 'Installed version',
+    'system_update.latest' => 'Latest version',
+    'system_update.checked_at' => 'Last checked',
+    'system_update.never_checked' => 'Not checked yet',
+    'system_update.btn_check' => 'Check for Updates',
+    'system_update.btn_update' => 'Update',
+    'system_update.allow_calls' => 'Update even with ongoing calls (calls will drop)',
+    'system_update.notes' => 'What\'s new',
+    'system_update.log' => 'Update log',
+    'system_update.state_running' => 'Update in progress',
+    'system_update.state_done' => 'Update completed',
+    'system_update.state_failed' => 'Update did not start',
+    'system_update.state_rolled_back' => 'Update failed, returned to the previous version',
+    'system_update.confirm' => 'Update AiPBX to %s? Asterisk will be restarted.',
+    'system_update.up_to_date' => 'The system is up to date.',
+    'system_update.unreachable' => 'Could not get version information (GitHub may be unreachable).',
 ];

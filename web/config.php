@@ -198,6 +198,15 @@ function verifyCSRFToken($token) {
 // Marka & Görünüm'de logo resmi yüklenmemişse / varsayılana dönülünce kullanılan AiPBX logosu.
 const BRAND_DEFAULT_LOGO_URL = '/assets/images/aipbx-logo.png';
 
+// Kurulu AiPBX sürümü: repo kökündeki VERSION (yayınlar bin/release.sh ile
+// etiketlenir; güncelleme conf/sbin/aipbx-update). Dosya yoksa (geliştirme
+// kopyası vb.) "dev".
+define('AIPBX_VERSION', (function (): string {
+    $f = dirname(__DIR__) . '/VERSION';
+    $v = is_readable($f) ? trim((string) file_get_contents($f)) : '';
+    return preg_match('/^\d+\.\d+\.\d+/', $v) ? $v : 'dev';
+})());
+
 function getSystemSetting($key, $default = '') {
     try {
         $db = getDB();
