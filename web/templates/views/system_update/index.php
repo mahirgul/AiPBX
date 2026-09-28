@@ -2,6 +2,13 @@
 $latest = $check['latest'] ?? '';
 $available = !empty($check['available']);
 $state = $status['state'] ?? '';
+$state_labels = [
+    'running' => t('system_update.state_running'),
+    'done' => t('system_update.state_done'),
+    'failed' => t('system_update.state_failed'),
+    'rolled_back' => t('system_update.state_rolled_back'),
+];
+$state_colors = ['running' => 'var(--info, #0ea5e9)', 'done' => 'var(--success)', 'failed' => 'var(--danger)', 'rolled_back' => 'var(--warning)'];
 ?>
 <div class="card">
     <div class="card-header">
@@ -45,7 +52,11 @@ $state = $status['state'] ?? '';
         </label>
     </div>
 
-    <div id="su-state" class="u-fw-600" style="margin-bottom: 10px;"></div>
+    <div id="su-state" class="u-fw-600" style="margin-bottom: 10px; color: <?php echo $state_colors[$state] ?? 'inherit'; ?>;">
+        <?php if ($state !== ''): ?>
+            <?php echo htmlspecialchars(($state_labels[$state] ?? $state) . (!empty($status['step']) ? ' — ' . $status['step'] : '') . (!empty($status['updated_at']) ? ' (' . date('d.m.Y H:i', strtotime($status['updated_at'])) . ')' : '')); ?>
+        <?php endif; ?>
+    </div>
 
     <div id="su-notes-box" style="<?php echo $available ? '' : 'display: none;'; ?> margin-bottom: 16px;">
         <div class="u-strong" style="margin-bottom: 6px;"><?php echo t('system_update.notes'); ?></div>
@@ -135,5 +146,6 @@ function suStart() {
     });
 }
 
+(function () { const l = document.getElementById('su-log'); if (l) l.scrollTop = l.scrollHeight; })();
 <?php if ($state === 'running'): ?>suPoll();<?php endif; ?>
 </script>
