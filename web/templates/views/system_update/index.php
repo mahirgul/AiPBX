@@ -116,8 +116,7 @@ function suRender(d) {
 }
 
 function suRefresh() {
-    // Güncelleme Apache'yi yeniden başlatır: o sırada istek başarısız olabilir,
-    // yoklama sessizce devam eder.
+    // The update restarts Apache: requests may fail meanwhile, polling just continues.
     return fetch('/api/system_update.php?action=status', { cache: 'no-store' })
         .then(r => r.json()).then(suRender).catch(() => {});
 }

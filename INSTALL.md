@@ -16,83 +16,59 @@ This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 
 ## 🚀 1. Quick Automated Install (Recommended)
 
-The automated script configures Asterisk 22, MariaDB 11, the Web Portal, WebRTC WSS reverse proxy, coturn, Go Chat service, and security tools in one command.
+The installer sets up Asterisk 22, MariaDB, the web portal, the 443 edge (nginx + Apache), coturn,
+the Go chat service and the security tooling in one command. It installs the **latest published
+release** (see [CHANGELOG.md](CHANGELOG.md)).
 
 ```bash
-# One-liner curl installation (Recommended)
 curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
 ```
 
-Alternatively, you can manually clone and run:
+Or clone manually:
 
 ```bash
-# Alternative: Clone & run locally
 git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
 cd /opt/aipbx
+git checkout "$(git tag -l 'v*' --sort=-v:refname | head -1)"   # latest release
 sudo bash install.sh
 ```
+
+Useful variables: `AIPBX_FQDN=pbx.example.com` (skip the domain prompt), `AIPBX_REF=main` (install the
+development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default `/opt/aipbx`).
 
 ### What the installer automates:
 1. **Interactive FQDN & TLS Provisioning**: Prompts for your domain. If your DNS is pointed to the server, it obtains a free **Let's Encrypt TLS** certificate via Certbot. If you do not have an active domain yet, it automatically provisions a secure **self-signed TLS certificate** with SAN support.
 2. **Dynamic Cryptographic Credentials**: Automatically generates unique, random secrets for:
    - MariaDB application runtime user (`aipbx_portal`)
    - MariaDB schema migration user (`aipbx_migrator`)
-   - Asterisk Manager Interface (`admin` AMI secret)
+   - Asterisk Manager Interface user (`aipbx-manager`)
+   - Asterisk → MariaDB ODBC user (`asterisk_odbc`, CDR and queue_log)
    - coturn WebRTC TURN secret key
    - Web portal initial `admin` user
-3. **Software Stack Setup**: Installs Asterisk 22, MariaDB 11, Web Server, PHP 8 with all necessary extensions, Go, coturn, and fail2ban.
+3. **Software Stack Setup**: Installs Asterisk 22, MariaDB, nginx, Apache 2.4 + PHP 8 with all necessary extensions, Go, coturn, firewalld and fail2ban.
 4. **Database Migration**: Builds (or upgrades) the schema with the Phinx migrations in `web/db/migrations` and loads initial data from `db/seed.sql`; creates the ODBC user Asterisk uses to write CDRs and queue logs.
-5. **Reverse Proxy Configuration**: Deploys reverse proxy rules for `/ws` (Asterisk WebRTC SIP) and `/chat/ws` (Go Chat).
+5. **Edge & Reverse Proxy**: nginx on 443 routes TLS by ALPN to Apache (portal, `/ws` Asterisk WebRTC, `/chat/*` chat service) or coturn (TURNS), passing the real client address with the PROXY protocol.
 6. **Credential Safe**: Prints full credentials in a formatted terminal summary and writes a protected file to `/root/aipbx-credentials.txt` (`chmod 600`).
 
 ---
 
-## 🌐 2. Web Server Configuration
+## 🌐 2. How Traffic Flows
 
-AI PBX supports both **Apache 2.4** and **Nginx**. The default automated installer configures Apache, but you can switch to or deploy with high-concurrency Nginx at any time.
-
-### Option A: Apache 2.4 (Default)
-Apache comes pre-configured with `mod_proxy_wstunnel` and `mod_ssl`.
-- VirtualHost config: `/etc/apache2/sites-available/aipbx.conf`
-- Restart / Status:
-  ```bash
-  sudo systemctl restart apache2
-  ```
-
-### Option B: Nginx + PHP-FPM (High-Concurrency Alternative)
-For environments handling large volumes of concurrent WebRTC sessions, Nginx provides superior event-driven WebSocket scaling.
-
-#### Step 1: Install Nginx & PHP-FPM
-```bash
-sudo apt-get update
-sudo apt-get install -y nginx php-fpm
+```
+Internet ──443──▶ nginx (stream: ALPN + PROXY protocol, no TLS termination)
+                    ├─ HTTPS / WSS ──▶ Apache + PHP on 127.0.0.1:8443
+                    │                    ├─ /ws      ──▶ Asterisk WebSocket (127.0.0.1:8088)
+                    │                    └─ /chat/…  ──▶ aipbx-chat (127.0.0.1:8086)
+                    └─ TURNS ─────────▶ coturn (via a local PROXY-protocol-stripping relay)
+Internet ──80───▶ Apache (Let's Encrypt HTTP-01, redirect to HTTPS)
 ```
 
-#### Step 2: Deploy the AI PBX Nginx Configuration
-A production-ready template is included in the repository at [`conf/nginx/aipbx.conf.example`](file:///home/pbx/conf/nginx/aipbx.conf.example):
-```bash
-# Copy template
-sudo cp /opt/aipbx/conf/nginx/aipbx.conf.example /etc/nginx/sites-available/aipbx.conf
+- nginx stream config: `/etc/nginx/aipbx-stream.conf`
+- Apache virtual host: `/etc/apache2/sites-available/aipbx.conf`
+- Apache only listens on loopback for HTTPS, so client addresses come from the PROXY protocol header
+  (fail2ban, login throttling and audit logs see the real IP).
 
-# Edit server_name and SSL certificate paths to match your FQDN
-sudo nano /etc/nginx/sites-available/aipbx.conf
-
-# Enable site
-sudo ln -sf /etc/nginx/sites-available/aipbx.conf /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-```
-
-#### Step 3: Stop Apache and Start Nginx
-```bash
-# Disable Apache to free port 80/443
-sudo systemctl stop apache2
-sudo systemctl disable apache2
-
-# Test and start Nginx
-sudo nginx -t
-sudo systemctl enable nginx
-sudo systemctl start nginx
-```
+These files are managed by the installer and rewritten on every update — do not edit them by hand.
 
 ---
 
@@ -110,9 +86,7 @@ Log in using:
 ### 3.2 Service Health Check
 Run the following command to verify that all system services are active and running:
 ```bash
-systemctl status asterisk mariadb coturn aipbx-chat
-# plus whichever web server you are using:
-systemctl status nginx || systemctl status apache2
+systemctl status asterisk mariadb nginx apache2 coturn aipbx-chat
 ```
 
 ### 3.3 Updating
@@ -147,16 +121,16 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 
 Do not enable `ufw` on top of this.
 
-### 3.5 (Optional) Let's Encrypt Certificate Renewal / Setup
-If you installed with a self-signed certificate and point a domain later:
-- **With Nginx**:
-  ```bash
-  sudo certbot --nginx -d pbx.yourdomain.com
-  ```
-- **With Apache**:
-  ```bash
-  sudo certbot --apache -d pbx.yourdomain.com
-  ```
+### 3.5 Switching to a Let's Encrypt Certificate
+If you installed with a self-signed certificate and later point the portal's domain
+(`PORTAL_DOMAIN` in `/etc/ai-pbx.env`) to the server:
+
+```bash
+sudo certbot certonly --apache -d pbx.yourdomain.com
+sudo bash /opt/aipbx/install.sh --upgrade   # uses the new certificate everywhere, installs the renewal hook
+```
+
+The renewal hook copies renewed certificates to coturn and Asterisk automatically.
 
 ---
 
@@ -164,12 +138,17 @@ If you installed with a self-signed certificate and point a domain later:
 
 | Purpose | File Path |
 |---------|-----------|
-| Generated Credentials | `/root/aipbx-credentials.txt` |
-| System Environment Secrets | `/etc/ai-pbx.env` (`chmod 640 root:www-data`) |
-| Web Portal Document Root | `/var/www/html` |
-| Nginx Configuration Template | `/opt/aipbx/conf/nginx/aipbx.conf.example` |
-| Active Nginx VirtualHost | `/etc/nginx/sites-available/aipbx.conf` |
-| Active Apache VirtualHost | `/etc/apache2/sites-available/aipbx.conf` |
-| Asterisk Configuration Base | `/etc/asterisk/pbx/` |
-| coturn TURN Configuration | `/etc/turnserver.conf` |
-| Go Chat Systemd Unit | `/etc/systemd/system/aipbx-chat.service` |
+| Installed code (git checkout of a release) | `/opt/aipbx` (`VERSION` = installed version) |
+| Generated credentials (delete after noting) | `/root/aipbx-credentials.txt` |
+| Service secrets | `/etc/ai-pbx.env` (`640 root:asterisk`) |
+| Web document root | `/var/www/html` → `/opt/aipbx/web` |
+| Generated Asterisk configuration | `/etc/asterisk/pbx/` |
+| nginx 443 edge | `/etc/nginx/aipbx-stream.conf` |
+| Apache virtual host | `/etc/apache2/sites-available/aipbx.conf` |
+| coturn | `/etc/turnserver.conf` |
+| Chat service unit | `/etc/systemd/system/aipbx-chat.service` |
+| Root helper used by the portal | `/usr/local/sbin/aipbx-priv` |
+| Updater | `/usr/local/sbin/aipbx-update` |
+| Update backups / log | `/var/backups/aipbx/` · `/var/log/aipbx/update.log` |
+| Fax archive | `/var/www/faxes/` |
+| Call recordings | `/var/spool/asterisk/monitor/` |
