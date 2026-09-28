@@ -25,8 +25,8 @@ AI PBX is organized as a unified monorepo:
 | `asterisk-config/` | PBX Dialplan &amp; PJSIP Configs | Asterisk 22, PJSIP, SpanDSP |
 | `chat/` | High-Concurrency Chat Engine | Go (Gorilla WebSocket) |
 | `android/` | Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
-| `docs/` | Documentation &amp; Landing Page | HTML5, CSS3, Vanilla JS |
-| `install.sh` | Turnkey Auto-Installer | Bash (Ubuntu 22/24/26 LTS) |
+| `docs/` | Images used by the README and docs (the aipbx.bid website is maintained separately) | PNG, JPG |
+| `install.sh` | Turnkey Auto-Installer | Bash (Ubuntu 26.04 LTS) |
 
 ---
 
