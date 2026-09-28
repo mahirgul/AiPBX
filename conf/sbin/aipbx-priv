@@ -179,6 +179,33 @@ case "$cmd" in
         esac
         ;;
 
+    update)
+        # Sistem Güncelleme sayfası: sürüm kontrolü ve güncellemeyi başlatma.
+        # Güncelleme arka planda ayrı bir systemd birimi olarak koşar (portal
+        # Apache'si güncelleme sırasında yeniden başlatılıyor, istek içinden
+        # çalıştırılamaz); ilerleme /var/lib/aipbx/update-status.json'dan okunur.
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            check)
+                [ $# -eq 0 ] || die "kullanım: update check"
+                exec /usr/local/sbin/aipbx-update --check
+                ;;
+            start)
+                # update start [--allow-calls]
+                [ $# -le 1 ] || die "kullanım: update start [--allow-calls]"
+                extra=""
+                case "${1:-}" in '') ;; --allow-calls) extra="--allow-calls" ;; *) die "beklenmeyen argüman: $1" ;; esac
+                if systemctl is-active --quiet aipbx-update.service; then
+                    die "güncelleme zaten çalışıyor"
+                fi
+                systemctl reset-failed aipbx-update.service >/dev/null 2>&1 || true
+                exec systemd-run --quiet --collect --unit=aipbx-update \
+                    --description="AiPBX update" /usr/local/sbin/aipbx-update --yes $extra
+                ;;
+            *) die "bilinmeyen update komutu: $sub" ;;
+        esac
+        ;;
+
     *)
         die "bilinmeyen komut: ${cmd:-<boş>}"
         ;;

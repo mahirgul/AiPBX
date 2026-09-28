@@ -8,6 +8,12 @@
 #   cd /opt/aipbx
 #   sudo bash install.sh
 #
+# Upgrade mode (used by `aipbx-update`, can also be run by hand):
+#   sudo bash install.sh --upgrade
+#   Re-applies every system step of the checked-out version WITHOUT generating
+#   new secrets: credentials, domain and certificate are read from the existing
+#   installation; the admin password and firewall ports are left alone.
+#
 # What this script does:
 #   - Generates strong random passwords for all services (no hardcoded defaults)
 #   - Asks for FQDN — uses Let's Encrypt if provided, self-signed if not
@@ -30,6 +36,29 @@ step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 
 # --- Root check ---
 [[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
+
+# --- Mode: fresh install (default) or --upgrade ---
+AIPBX_MODE=install
+for arg in "$@"; do
+    case "$arg" in
+        --upgrade) AIPBX_MODE=upgrade ;;
+        *) error "Unknown argument: $arg (supported: --upgrade)" ;;
+    esac
+done
+if [[ "$AIPBX_MODE" == "upgrade" && ! -f /etc/ai-pbx.env ]]; then
+    error "--upgrade needs an existing installation (/etc/ai-pbx.env not found)"
+fi
+is_upgrade() { [[ "$AIPBX_MODE" == "upgrade" ]]; }
+
+# Reads KEY=value from the existing environment file (upgrade mode).
+env_get() {
+    grep -m1 "^$1=" /etc/ai-pbx.env 2>/dev/null | cut -d= -f2-
+}
+# Appends KEY=value only when the key is missing: new settings introduced by a
+# release are added, values the admin edited are never overwritten.
+env_ensure() {
+    grep -q "^$1=" /etc/ai-pbx.env || echo "$1=$2" >> /etc/ai-pbx.env
+}
 
 # --- Script and install directories ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
@@ -54,7 +83,7 @@ prompt_read() {
 }
 
 # If running via curl pipe or outside a cloned repository:
-if [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
+if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     step "Bootstrapping Repository"
     info "Running via remote curl installer. Cloning AiPBX to $INSTALL_DIR..."
     
@@ -81,7 +110,11 @@ fi
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
 echo "  ╔══════════════════════════════════════════════════════════════╗"
+if is_upgrade; then
+echo "  ║                    AI PBX — Upgrade                          ║"
+else
 echo "  ║              AI PBX — Fresh Installation                    ║"
+fi
 echo "  ║         Open Source Enterprise Phone System                  ║"
 echo "  ╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
@@ -95,6 +128,23 @@ echo ""
 step "1. Domain / FQDN Configuration"
 
 SERVER_IP=$(hostname -I | awk '{print $1}')
+if is_upgrade; then
+    # Domain and certificate come from the existing installation.
+    PORTAL_DOMAIN="$(env_get PORTAL_DOMAIN)"
+    [[ -n "$PORTAL_DOMAIN" ]] || error "PORTAL_DOMAIN missing in /etc/ai-pbx.env"
+    USE_MDNS=false
+    [[ "${PORTAL_DOMAIN,,}" == *.local ]] && USE_MDNS=true
+    if [[ -f "/etc/letsencrypt/live/$PORTAL_DOMAIN/fullchain.pem" ]]; then
+        USE_LETSENCRYPT=true; USE_SELFSIGNED=false
+        CERT_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/fullchain.pem"
+        KEY_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/privkey.pem"
+    else
+        USE_LETSENCRYPT=false; USE_SELFSIGNED=true
+        CERT_FILE="/etc/ssl/aipbx/aipbx.crt"
+        KEY_FILE="/etc/ssl/aipbx/aipbx.key"
+    fi
+    ok "Upgrading ${PORTAL_DOMAIN} (certificate: ${CERT_FILE})"
+else
 echo ""
 echo -e "  Your server's IP address: ${YELLOW}$SERVER_IP${NC}"
 echo ""
@@ -140,6 +190,7 @@ else
         info "A self-signed certificate will be used for $PORTAL_DOMAIN"
     fi
 fi
+fi   # install mode
 
 echo ""
 
@@ -160,6 +211,24 @@ gen_hex() {
     openssl rand -hex "$len"
 }
 
+if is_upgrade; then
+    # Existing secrets are reused: regenerating them would lock the portal,
+    # Asterisk, chat and TURN out of each other.
+    DB_USER="$(env_get DB_USER)"; DB_PASS="$(env_get DB_PASS)"
+    MIGRATOR_USER="$(env_get MIGRATOR_DB_USER)"; MIGRATOR_PASS="$(env_get MIGRATOR_DB_PASS)"
+    AMI_USER="$(env_get AMI_USER)"; AMI_PASS="$(env_get AMI_PASS)"
+    TURN_SECRET="$(env_get TURN_SECRET)"
+    ODBC_PASS="$(env_get ODBC_DB_PASS)"
+    if [[ -z "$ODBC_PASS" ]]; then
+        # Installs before 2.0.0 kept it only in res_odbc.conf.
+        ODBC_PASS="$(sed -n 's/^[[:space:]]*password[[:space:]]*=>*[[:space:]]*//p' /etc/asterisk/res_odbc.conf 2>/dev/null | head -1)"
+    fi
+    if [[ -z "$ODBC_PASS" || "$ODBC_PASS" == *'${'* ]]; then ODBC_PASS=$(gen_hex 16); fi
+    for v in DB_USER DB_PASS MIGRATOR_USER MIGRATOR_PASS AMI_USER AMI_PASS TURN_SECRET; do
+        [[ -n "${!v}" ]] || error "$v could not be read from /etc/ai-pbx.env"
+    done
+    ok "Existing credentials loaded"
+else
 # All passwords generated randomly — no static defaults
 ADMIN_PASS=$(gen_pass 16)
 ADMIN_SIP_PASS=$(gen_hex 12)
@@ -173,6 +242,7 @@ ODBC_PASS=$(gen_hex 16)   # Asterisk → MariaDB (CDR + queue_log via ODBC)
 TURN_SECRET=$(gen_hex 32)
 
 ok "All credentials generated"
+fi   # install mode
 echo ""
 
 # ============================================================================
@@ -270,6 +340,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Outgoing fax pending sweep (detect unanswered / stale spool files)
 * * * * * root /usr/local/bin/fax_pending_sweep.sh >/dev/null 2>&1
+
+# Daily check for a new AiPBX release (shown on the portal's System Update page)
+37 4 * * * root /usr/local/sbin/aipbx-update --check >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
 
@@ -344,6 +417,12 @@ ok "Directory structure created"
 # ============================================================================
 step "5. Creating Environment Configuration"
 
+if is_upgrade; then
+    # The environment file belongs to the installation (admins edit it):
+    # only keys added by newer releases are appended.
+    env_ensure ODBC_DB_PASS "$ODBC_PASS"
+    ok "Environment file kept (missing keys added)"
+else
 cat > /etc/ai-pbx.env << ENVFILE
 # AI PBX - Environment Configuration
 # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -391,7 +470,11 @@ MAIL_FROM_NAME=AI PBX Portal
 TURN_HOST=${PORTAL_DOMAIN}
 TURN_SECRET=${TURN_SECRET}
 TURNS_PORT=5349
+
+# --- Asterisk -> MariaDB (CDR / queue_log through ODBC) ---
+ODBC_DB_PASS=${ODBC_PASS}
 ENVFILE
+fi   # install mode
 
 # Secrets are read by the portal (www-data) AND by the scripts Asterisk runs
 # as the asterisk user (feature codes, push wake-up, fax). With root:www-data
@@ -415,13 +498,13 @@ systemctl enable mariadb
 # Create database
 mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# Create app users (drop first to allow re-run)
+# App users: created when missing, password (re)applied — safe to re-run
 mysql -e "
-DROP USER IF EXISTS '${DB_USER}'@'localhost';
-DROP USER IF EXISTS '${MIGRATOR_USER}'@'localhost';
-CREATE USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
 GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO '${DB_USER}'@'localhost';
-CREATE USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
+CREATE USER IF NOT EXISTS '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
+ALTER USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
 GRANT ALL PRIVILEGES ON asterisk.* TO '${MIGRATOR_USER}'@'localhost';
 FLUSH PRIVILEGES;
 "
@@ -437,7 +520,10 @@ ok "MariaDB configured"
 # ============================================================================
 step "7. TLS Certificate Setup"
 
-if [[ "$USE_LETSENCRYPT" == "true" ]]; then
+if is_upgrade; then
+    [[ -f "$CERT_FILE" && -f "$KEY_FILE" ]] || error "Certificate not found: $CERT_FILE"
+    info "Keeping the existing certificate ($CERT_FILE)"
+elif [[ "$USE_LETSENCRYPT" == "true" ]]; then
     info "Requesting Let's Encrypt certificate for $PORTAL_DOMAIN..."
     systemctl start apache2 2>/dev/null || true
     if certbot certonly --apache -d "$PORTAL_DOMAIN" \
@@ -453,7 +539,7 @@ if [[ "$USE_LETSENCRYPT" == "true" ]]; then
     fi
 fi
 
-if [[ "$USE_SELFSIGNED" == "true" ]]; then
+if ! is_upgrade && [[ "$USE_SELFSIGNED" == "true" ]]; then
     info "Generating self-signed TLS certificate..."
     mkdir -p /etc/ssl/aipbx
 
@@ -660,6 +746,7 @@ info "Applying database migrations..."
 # seed.sql uses INSERT IGNORE: safe on a migrated or already-seeded database.
 mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
 
+if ! is_upgrade; then
 ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
 ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
 if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
@@ -672,14 +759,15 @@ else
     mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
     ok "Admin password updated in existing database"
 fi
+fi   # install mode — the admin password is never touched on upgrade
 
 # Asterisk writes CDRs (cdr_adaptive_odbc → asteriskcdr) and queue_log
 # (extconfig → asteriskqueue) through ODBC; call reports, call history and
 # call-center reports read those tables. This user did not exist before, so
 # nothing was ever recorded.
 mysql -e "
-DROP USER IF EXISTS 'asterisk_odbc'@'localhost';
-CREATE USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
+CREATE USER IF NOT EXISTS 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
+ALTER USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
 GRANT SELECT, INSERT ON asterisk.asteriskcdr TO 'asterisk_odbc'@'localhost';
 GRANT SELECT, INSERT ON asterisk.asteriskqueue TO 'asterisk_odbc'@'localhost';
 FLUSH PRIVILEGES;
@@ -743,6 +831,8 @@ usermod -aG asterisk www-data
 # to one fixed operation with validated arguments (see conf/sbin/aipbx-priv).
 # Copied (not symlinked) so it stays root-owned and outside anything www-data can write.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/sbin/aipbx-priv
+# Güncelleme komutu (sudo aipbx-update); portal da aipbx-priv üzerinden çağırır.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
@@ -826,11 +916,12 @@ info "Installing Asterisk sound prompts (Turkish & WebRTC/IVR sounds)..."
 mkdir -p /var/lib/asterisk/sounds/custom /var/lib/asterisk/sounds/tr
 
 if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
-    cp -a "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
+    # -n: sounds uploaded from the portal with the same name are kept (upgrade)
+    cp -an "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
 fi
 
 if [[ -d "$INSTALL_DIR/sounds/tr" ]]; then
-    cp -a "$INSTALL_DIR/sounds/tr/"* /var/lib/asterisk/sounds/tr/
+    cp -an "$INSTALL_DIR/sounds/tr/"* /var/lib/asterisk/sounds/tr/
 fi
 
 # Set default language to Turkish in asterisk.conf
@@ -906,7 +997,8 @@ WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
         systemctl enable aipbx-chat 2>/dev/null || true
-        systemctl start aipbx-chat 2>/dev/null || true
+        # restart (not start): on upgrade the freshly built binary must take over
+        systemctl restart aipbx-chat 2>/dev/null || true
         ok "Chat service built and started"
     fi
 fi
@@ -1013,6 +1105,9 @@ systemctl disable --now ufw 2>/dev/null || true
 systemctl enable firewalld 2>/dev/null || true
 systemctl start firewalld 2>/dev/null || true
 
+# Ports are opened on the first install only; on upgrade the admin's own
+# choices (portal Firewall page) must not be reverted.
+if ! is_upgrade; then
 firewall-cmd --permanent --add-service=http 2>/dev/null || true
 firewall-cmd --permanent --add-service=https 2>/dev/null || true
 firewall-cmd --permanent --add-service=ssh 2>/dev/null || true
@@ -1027,6 +1122,7 @@ firewall-cmd --permanent --add-port=5349/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5349/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=49152-65535/udp 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
+fi   # install mode
 
 # 12b. Asterisk security logging
 sed -i "s/^;security\.log => security/security.log => security/" /etc/asterisk/logger.conf 2>/dev/null || true
@@ -1077,6 +1173,12 @@ chmod 644 /etc/fail2ban/jail.d/99-ai-pbx.local
 systemctl enable fail2ban 2>/dev/null || true
 systemctl restart fail2ban 2>/dev/null || true
 ok "firewall and fail2ban configured"
+
+if is_upgrade; then
+    echo ""
+    ok "Upgrade to $(cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo '?') applied"
+    exit 0
+fi
 
 # ============================================================================
 # STEP 13: SAVE CREDENTIALS TO FILE

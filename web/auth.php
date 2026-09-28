@@ -141,6 +141,7 @@ function getModuleKeyForPage($page = null) {
         'audit_log.php'            => 'audit_log',
         'firewall.php'              => 'firewall',
         'fail2ban.php'              => 'fail2ban',
+        'system_update.php'         => 'system_update',
         'push_settings.php'         => 'push_settings',
         'ms_teams.php'              => 'ms_teams',
         'mail_settings.php'         => 'mail_settings',
@@ -198,7 +199,8 @@ function hasModulePermission($module_key, $action = 'access') {
     // (kendi rolünü admin yapma) yol açabiliyordu — 2026-08-21 denetiminde bulundu).
     // 'firewall' ve 'fail2ban' de aynı circuit-breaker'a dahildir (2026-08-31 / 2026-09-01
     // RbacTest): bu sayfalar gerçek sudo çalıştırır, admin dışındaki hiçbir role ASLA açılamaz.
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'], true)) {
+    // 'system_update' de: sistemi güncelleyip servisleri yeniden başlatır.
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update'], true)) {
         return $role === 'admin';
     }
 

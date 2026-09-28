@@ -307,6 +307,13 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if (($role ?? '') === 'admin'): ?>
+                        <li>
+                            <a href="/system-update" class="nav-link <?php echo $active_page === 'system_update.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_system_update'); ?>">
+                                <i class="fas fa-cloud-arrow-down"></i> <span class="nav-text"><?php echo t('sidebar.item_system_update'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </li>
         <?php endif; ?>

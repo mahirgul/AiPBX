@@ -85,6 +85,7 @@ if ($is_spa_request) {
             <div class="footer-stat-pill u-strong" id="footer-clock">
                 <i class="far fa-clock"></i> <?php echo t('footer.loading'); ?>
             </div>
+            <div class="footer-stat-pill u-muted u-fs-11" title="AiPBX">v<?php echo htmlspecialchars(AIPBX_VERSION); ?></div>
         </div>
 
         <!-- Sağ: Kullanıcı Menüsü -->
