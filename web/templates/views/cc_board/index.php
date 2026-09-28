@@ -121,9 +121,12 @@
         </div>
     </div>
     <!-- 2. BÖLÜM: Canlı Operasyon Tabloları (Bekleyen Çağrılar & Temsilci İzleme) -->
-    <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 16px;" class="cc-board-ops-grid">
+    <!-- Panel başına en az 640px sığmıyorsa alt alta: ekran genişliğine (992px) değil
+         gerçek içerik alanına göre. Önceden 1fr/1.1fr sütunlar tablo içeriğinden dar
+         olamadığı için sağ panel ekrandan taşıyordu. -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 640px), 1fr)); gap: 16px;" class="cc-board-ops-grid">
         <!-- Sol Panel: Canlı Bekleyen Çağrılar (Interactive Pickup) -->
-        <div class="card" style="display: flex; flex-direction: column;">
+        <div class="card" style="display: flex; flex-direction: column; min-width: 0;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
                     <i class="fas fa-phone-volume u-danger"></i>
@@ -153,7 +156,7 @@
         </div>
 
         <!-- Sağ Panel: Canlı Temsilci Durumları & Mola Takibi -->
-        <div class="card" style="display: flex; flex-direction: column;">
+        <div class="card" style="display: flex; flex-direction: column; min-width: 0;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
                     <i class="fas fa-users-cog u-primary"></i>
@@ -201,9 +204,6 @@
 @media (max-width: 992px) {
     .cc-board-kpi-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-    }
-    .cc-board-ops-grid {
-        grid-template-columns: 1fr !important;
     }
 }
 @media (max-width: 576px) {
@@ -403,9 +403,9 @@ function renderAgentsStatus(agents, queueFilter) {
             <tr>
                 <td style="font-weight: 700; font-family: monospace; color: var(--text-main); font-size: 13px;">${escapeHtml(a.extension)}</td>
                 <td class="u-fw-600">${escapeHtml(a.full_name || a.extension)}</td>
-                <td>${statusBadge}</td>
+                <td style="white-space: nowrap;">${statusBadge}</td>
                 <td class="u-fs-12">${detail}</td>
-                ${CAN_SPY ? `<td class="text-right">${actions}</td>` : ''}
+                ${CAN_SPY ? `<td class="text-right" style="white-space: nowrap;">${actions}</td>` : ''}
             </tr>
         `;
     });
