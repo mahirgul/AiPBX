@@ -97,7 +97,8 @@ if ($action === 'get_board_stats') {
             // is_unavailable burada da (available sayımındaki gibi) dışlanıyor.
             if (!empty($m['in_queue']) && empty($m['is_unavailable'])) {
                 $logged_in++;
-                if (empty($m['is_paused']) && empty($m['is_busy'])) $available++;
+                // Telefonu çalan temsilci müsait değil (çağrı ona gidiyor).
+                if (empty($m['is_paused']) && empty($m['is_busy']) && empty($m['is_ringing'])) $available++;
                 if (!empty($m['is_busy'])) $active_calls_live++;
             }
         }
