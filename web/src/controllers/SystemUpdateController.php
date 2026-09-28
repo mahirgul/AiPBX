@@ -2,9 +2,9 @@
 require_once __DIR__ . '/../services/SystemUpdateService.php';
 
 /**
- * /system-update — kurulu sürüm, yeni sürüm ve güncelleme (yalnızca admin).
- * İşlemler JS ile /api/system_update.php üzerinden yapılır (güncelleme
- * sırasında Apache yeniden başladığı için ilerleme sayfada yoklanır).
+ * /system-update — installed version, latest release and updating (admin only).
+ * Actions go through /api/system_update.php via JS (Apache restarts during an
+ * update, so the page polls for progress).
  */
 class SystemUpdateController extends BaseController
 {

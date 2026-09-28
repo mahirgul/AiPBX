@@ -94,14 +94,26 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     fi
     
     if [[ -d "$INSTALL_DIR/.git" ]]; then
-        info "Existing repository found in $INSTALL_DIR, updating..."
-        git -C "$INSTALL_DIR" fetch origin main
-        git -C "$INSTALL_DIR" reset --hard origin/main
+        info "Existing repository found in $INSTALL_DIR, fetching..."
+        git -C "$INSTALL_DIR" fetch --quiet --tags --force origin
     else
         mkdir -p "$(dirname "$INSTALL_DIR")"
-        git clone --depth 1 https://github.com/mahirgul/AiPBX.git "$INSTALL_DIR"
+        # Full clone (not --depth 1): aipbx-update later checks out release tags.
+        git clone --quiet https://github.com/mahirgul/AiPBX.git "$INSTALL_DIR"
     fi
-    SCRIPT_DIR="$INSTALL_DIR"
+    # Install the latest published release by default so that the installed
+    # version matches VERSION/CHANGELOG and aipbx-update works from a known
+    # release. AIPBX_REF=main (or any tag/commit) installs something else.
+    AIPBX_REF="${AIPBX_REF:-$(git -C "$INSTALL_DIR" tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)}"
+    AIPBX_REF="${AIPBX_REF:-main}"
+    if [[ "$AIPBX_REF" == main ]]; then
+        git -C "$INSTALL_DIR" checkout --quiet main && git -C "$INSTALL_DIR" reset --quiet --hard origin/main
+    else
+        git -C "$INSTALL_DIR" checkout --quiet --force --detach "$AIPBX_REF"
+    fi
+    info "Installing AiPBX ${AIPBX_REF}"
+    # Re-run the installer from the checked-out release (it may differ from this copy).
+    exec bash "$INSTALL_DIR/install.sh" "$@"
 fi
 
 # ============================================================================
@@ -161,8 +173,8 @@ else
 fi
 
 if [[ -z "$PORTAL_DOMAIN_INPUT" || "${PORTAL_DOMAIN_INPUT,,}" == *.local ]]; then
-    # Yerel kurulum: Let's Encrypt .local için sertifika veremez; self-signed
-    # sertifika (SAN: alan adı + sunucu IP) üretilir, ad LAN'a mDNS ile duyurulur.
+    # Local install: Let's Encrypt cannot issue for .local; a self-signed
+    # certificate (SAN: name + server IP) is generated and the name is announced on the LAN via mDNS.
     PORTAL_DOMAIN="${PORTAL_DOMAIN_INPUT:-aipbx.local}"
     PORTAL_DOMAIN="${PORTAL_DOMAIN,,}"
     USE_SELFSIGNED=true
@@ -359,21 +371,21 @@ mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/lib/aipbx
-# Faks dizinlerine İKİ süreç yazar: Asterisk (asterisk; gelen faks, gönderim
-# sonucu) ve portal (www-data, asterisk grubunda; giden faks arşivi ve .call
-# dosyası). Önceden /var/www/faxes www-data'nın, /var/spool/asterisk/fax root'un
-# ve outgoing spool asterisk:root 750'ydi: gelen faks TIF'i hiç yazılamıyor,
-# giden faksın .call dosyası spool'a bırakılamıyordu. setgid (2775): alt
-# dizinler asterisk grubunu miras alır.
+# TWO processes write to the fax directories: Asterisk (user asterisk; incoming
+# faxes, send results) and the portal (www-data, member of group asterisk;
+# outgoing fax archive and the .call file). Previously /var/www/faxes belonged to
+# www-data, /var/spool/asterisk/fax to root and the outgoing spool was
+# asterisk:root 750: incoming TIFFs could never be written and outgoing .call
+# files could not be dropped. setgid (2775): subdirectories inherit group asterisk.
 mkdir -p /var/www/faxes/recvd /var/www/faxes/sent /var/spool/asterisk/outgoing
 chown -R asterisk:asterisk /var/www/faxes
 chmod 2775 /var/www/faxes /var/www/faxes/recvd /var/www/faxes/sent
-# /var/spool/asterisk: Debian asterisk paketi her güncellemede buradaki TÜM
-# dizinleri "asterisk: 750" yapar (postinst) — dpkg-statoverride olan dizinlere
-# dokunmaz. Portalın ses kayıtlarını (monitor) ve sesli mesajları okuyabilmesi,
-# .call ve giden faks dosyası yazabilmesi için izinler buradan sabitlenir.
-# (Önceden /var/spool/asterisk asterisk:root 750'ydi: kayıt dinleme ve faks
-# gönderme www-data için hiç çalışmıyordu.)
+# /var/spool/asterisk: the Debian asterisk package resets EVERY directory here
+# to "asterisk: 750" on each upgrade (postinst) but leaves directories with a
+# dpkg-statoverride alone. The permissions the portal needs — reading call
+# recordings (monitor) and voicemail, writing .call and outgoing fax files —
+# are pinned here. (Previously /var/spool/asterisk was asterisk:root 750:
+# recording playback and fax sending never worked for www-data.)
 for spec in "0750 /var/spool/asterisk" "2750 /var/spool/asterisk/monitor" \
             "2770 /var/spool/asterisk/outgoing" "2775 /var/spool/asterisk/fax" \
             "2775 /var/spool/asterisk/fax/outgoing"; do
@@ -388,9 +400,9 @@ touch /var/log/aipbx/web_login_failures.log
 chown -R www-data:adm /var/log/aipbx
 chmod 750 /var/log/aipbx
 chmod 640 /var/log/aipbx/web_login_failures.log
-# Faks betikleri Asterisk kullanıcısıyla (System()) çalışır ve bu dosyalara
-# yazar; /var/log'da dosyayı kendileri oluşturamadıkları için hiç log
-# düşmüyordu. logrotate de root olarak yeniden yaratmasın diye create satırı.
+# The fax scripts run as the asterisk user (System()) and write these files;
+# they cannot create files in /var/log themselves, so nothing was ever logged.
+# The logrotate "create" line keeps logrotate from recreating them as root.
 for f in fax_incoming fax_outgoing; do
     touch "/var/log/$f.log"
     chown asterisk:adm "/var/log/$f.log"
@@ -543,8 +555,8 @@ if ! is_upgrade && [[ "$USE_SELFSIGNED" == "true" ]]; then
     info "Generating self-signed TLS certificate..."
     mkdir -p /etc/ssl/aipbx
 
-    # Tarayıcılar CN'e bakmaz, sadece subjectAltName'e bakar — SAN olmadan
-    # sertifika "kabul et" dense bile WSS/TURNS bağlantılarında reddedilir.
+    # Browsers ignore the CN and only look at subjectAltName — without a SAN the
+    # certificate is rejected for WSS/TURNS even after "accept the risk".
     CERT_SAN="DNS:${PORTAL_DOMAIN},IP:${SERVER_IP}"
     if [[ "$PORTAL_DOMAIN" =~ ^[0-9.]+$ ]]; then CERT_SAN="IP:${SERVER_IP}"; fi
     openssl req -x509 -nodes -days 3650 \
@@ -563,7 +575,7 @@ if ! is_upgrade && [[ "$USE_SELFSIGNED" == "true" ]]; then
     ok "Self-signed certificate generated (valid 10 years)"
 fi
 
-# Yerel .local adını LAN'a mDNS ile duyur (hostname'i değiştirmeden alias olarak).
+# Announce the local .local name on the LAN via mDNS (as an alias, hostname unchanged).
 if [[ "${USE_MDNS:-false}" == "true" ]]; then
     grep -qE "[[:space:]]${PORTAL_DOMAIN}([[:space:]]|$)" /etc/hosts || echo "127.0.0.1 ${PORTAL_DOMAIN}" >> /etc/hosts
     cat > /etc/systemd/system/aipbx-mdns.service << MDNS
@@ -719,8 +731,8 @@ cat > /etc/apache2/conf-available/aipbx-security.conf << 'SECHDR'
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Content-Security-Policy "frame-ancestors 'self'"
     Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
-    # Yöneticinin yüklediği marka dosyaları (SVG olabilir): regex temizliği
-    # atlatılabilir; doğrudan açılan SVG'de betik hiç çalışmasın.
+    # Brand files uploaded by the admin (may be SVG): the regex clean-up can be
+    # bypassed, so no script may ever run in an SVG opened directly.
     <LocationMatch "^/assets/images/brand/">
         Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; sandbox"
     </LocationMatch>
@@ -831,7 +843,7 @@ usermod -aG asterisk www-data
 # to one fixed operation with validated arguments (see conf/sbin/aipbx-priv).
 # Copied (not symlinked) so it stays root-owned and outside anything www-data can write.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/sbin/aipbx-priv
-# Güncelleme komutu (sudo aipbx-update); portal da aipbx-priv üzerinden çağırır.
+# Update command (sudo aipbx-update); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
@@ -947,9 +959,9 @@ chown -R asterisk:asterisk /etc/asterisk/
 chmod -R 775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
 
-# Asterisk'in oluşturduğu sesli mesaj/kayıt dosyaları asterisk grubuna yazılabilir
-# olsun (UMask 0002): portal (www-data, asterisk grubunda) sesli mesajı silebilsin.
-# 0022 iken silme sessizce başarısız oluyordu.
+# Voicemail/recording files created by Asterisk are group-writable (UMask 0002)
+# so the portal (www-data, group asterisk) can delete voicemail; with 0022
+# deletion silently failed.
 mkdir -p /etc/systemd/system/asterisk.service.d
 cat > /etc/systemd/system/asterisk.service.d/aipbx.conf << 'UNIT'
 [Service]
@@ -1027,7 +1039,7 @@ min-port=49152
 max-port=65535
 TURNCONF
 
-# coturn "turnserver" kullanıcısıyla çalışır; root'a ait 600 anahtarı okuyamaz.
+# coturn runs as "turnserver" and cannot read a root-owned 600 key.
 mkdir -p /etc/coturn
 cp -L "$CERT_FILE" /etc/coturn/aipbx.crt
 cp -L "$KEY_FILE" /etc/coturn/aipbx.key
@@ -1095,8 +1107,8 @@ fi
 step "12. Configuring Firewall (firewalld) & Fail2ban"
 
 # 12a. Firewalld configuration
-# Portalın Güvenlik Duvarı sayfası firewalld'yi yönetir. Ubuntu'da ufw de
-# kurulu gelir; ikisi aynı anda etkinse biri açtığını diğeri kapatır.
+# The portal's Firewall page manages firewalld. Ubuntu also ships ufw; with
+# both enabled one closes what the other opens.
 if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
     warn "ufw is active — disabling it; firewalld manages the firewall (portal: Firewall page)"
     ufw disable >/dev/null 2>&1 || true
