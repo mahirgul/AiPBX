@@ -33,7 +33,9 @@ function parseAsteriskQueuesOutput($raw_output) {
             $ext = $mm[1];
             $is_paused = (bool) preg_match('/\(paused\b/i', $trimmed);
             $is_unavailable = (stripos($trimmed, '(Unavailable)') !== false || stripos($trimmed, '(Invalid)') !== false);
-            $is_busy = (bool) preg_match('/\((In use|Busy|Ringing|Ring\+Inuse|On Hold)\)/i', $trimmed);
+            // Yalnızca çalan telefon görüşme sayılmaz (ayrı: is_ringing).
+            $is_busy = (bool) preg_match('/\((In use|Busy|Ring\+Inuse|On Hold)\)/i', $trimmed);
+            $is_ringing = !$is_busy && stripos($trimmed, '(Ringing)') !== false;
 
             // ÜYELİK ≠ CİHAZ DURUMU: kuyruk üyeleri listesinde satır varsa temsilci
             // kuyruğun ÜYESİDİR; cihazı (WebRTC/SIP kaydı) çevrimdışı olsa bile.
@@ -43,6 +45,7 @@ function parseAsteriskQueuesOutput($raw_output) {
                 'is_paused' => $is_paused,
                 'is_unavailable' => $is_unavailable,
                 'is_busy' => $is_busy,
+                'is_ringing' => $is_ringing,
                 'raw_line' => $trimmed
             ];
         }
