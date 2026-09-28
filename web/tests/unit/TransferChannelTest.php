@@ -112,12 +112,17 @@ final class TransferChannelTest extends TestCase
             "   Members: ",
             "      Temsilci 3001 (Local/3001@from-internal-pbx/n from hint:3001@from-internal-pbx) (ringinuse disabled) (paused:Yemek Molası was 42 secs ago) (Not in use) has taken no calls yet",
             "      Temsilci 3002 (Local/3002@from-internal-pbx/n from hint:3002@from-internal-pbx) (ringinuse disabled) (In use) has taken 3 calls",
+            "      Temsilci 3003 (Local/3003@from-internal-pbx/n from hint:3003@from-internal-pbx) (ringinuse disabled) (Ringing) has taken 1 calls",
             "   Callers: ",
             "      1. PJSIP/ccisgw-00000116 (wait:0:07, prio:0)",
         ];
         $q = parseAsteriskQueuesOutput($out)['queue_cc'];
 
-        $this->assertSame(['3001', '3002'], array_map('strval', array_keys($q['members'])));
+        $this->assertSame(['3001', '3002', '3003'], array_map('strval', array_keys($q['members'])));
+        // Yalnızca çalan telefon görüşme değildir.
+        $this->assertFalse($q['members']['3003']['is_busy']);
+        $this->assertTrue($q['members']['3003']['is_ringing']);
+        $this->assertFalse($q['members']['3002']['is_ringing']);
         $this->assertTrue($q['members']['3001']['is_paused']);
         $this->assertFalse($q['members']['3002']['is_paused']);
         $this->assertTrue($q['members']['3002']['is_busy']);

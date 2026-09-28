@@ -70,7 +70,10 @@ if ($action === 'get_supervisor_agents') {
                 // — düz "(paused)" hiç eşleşmiyordu, moladaki ajan HAZIR görünüyordu.
                 $is_paused = (bool) preg_match('/\(paused\b/i', $line);
                 $is_unavailable = (stripos($line, '(Unavailable)') !== false || stripos($line, '(Invalid)') !== false);
-                $is_busy = (bool) preg_match('/\((In use|Busy|Ringing|Ring\+Inuse|On Hold)\)/i', $line);
+                // "Ringing" = telefon çalıyor, henüz görüşme YOK (dinlenecek bir şey yok).
+                // "Ring+Inuse" = görüşmedeyken ikinci çağrı çalıyor → görüşmede.
+                $is_busy = (bool) preg_match('/\((In use|Busy|Ring\+Inuse|On Hold)\)/i', $line);
+                $is_ringing = !$is_busy && stripos($line, '(Ringing)') !== false;
                 $is_idle = (stripos($line, '(Not in use)') !== false);
 
                 if ($is_unavailable) {
@@ -78,6 +81,9 @@ if ($action === 'get_supervisor_agents') {
                     $in_q = false;
                 } elseif ($is_busy) {
                     $status_key = 'BUSY';
+                    $in_q = true;
+                } elseif ($is_ringing) {
+                    $status_key = 'RINGING';
                     $in_q = true;
                 } elseif ($is_idle) {
                     $status_key = $is_paused ? 'PAUSED' : 'READY';
@@ -144,6 +150,7 @@ if ($action === 'get_supervisor_agents') {
                 // is_logged_in -> "Boşta", hicbiri yoksa "Çevrimdışı".
                 'is_logged_in' => (bool)$st_info['in_queue'],
                 'is_in_call' => ($st_info['status_key'] === 'BUSY'),
+                'is_ringing' => ($st_info['status_key'] === 'RINGING'),
                 'connected_number' => $call_details['connected_number'] ?? '',
                 'duration' => $call_details['duration'] ?? 0,
                 'duration_formatted' => $call_details['duration_formatted'] ?? '00:00',
@@ -189,7 +196,8 @@ if ($action === 'spy_call') {
         // kanalını da yakalardı. 3001-00000012 ve 3001-webrtc-… eşleşir.
         'Data' => "PJSIP/{$target_ext}-,{$spy_flags}",
         'CallerID' => "SPY: {$target_ext} <*90>",
-        'Priority' => '1',
+        // Priority YOK: Exten/Context olmadan verilen Priority, Asterisk'te
+        // "Extension does not exist" hatasına yol açıyordu (dinleme hiç başlamıyordu).
         'Async' => 'true'
     ];
 

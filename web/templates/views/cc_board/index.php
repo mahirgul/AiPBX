@@ -375,6 +375,10 @@ function renderAgentsStatus(agents, queueFilter) {
             const partner = a.connected_number || a.call_partner;
             const dur = a.duration_formatted ? ` <span class="badge badge-secondary" style="font-family: monospace; font-size: 10px; margin-left: 4px;">${escapeHtml(a.duration_formatted)}</span>` : '';
             detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : 'Görüşmede';
+        } else if (a.is_ringing) {
+            // Telefon çalıyor: görüşme henüz başlamadı, dinleme butonları yok.
+            statusBadge = '<span class="badge badge-info"><i class="fas fa-bell"></i> Çalıyor</span>';
+            detail = '<span style="color: var(--info, #0ea5e9); font-weight: 600;">Çağrı çalıyor</span>';
         } else if (a.is_paused) {
             statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> Molada</span>';
             detail = `<span class="u-warning u-fw-600">${escapeHtml(a.pause_reason || 'Mola')}</span>`;
