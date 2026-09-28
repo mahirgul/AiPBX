@@ -53,6 +53,8 @@ class SystemUpdateService
         fseek($fh, max(0, $size - 64 * 1024));
         $data = (string) stream_get_contents($fh);
         fclose($fh);
+        // install.sh renkli çıktı üretir; terminal renk kodları sayfada çöp gibi görünür.
+        $data = (string) preg_replace('/\x1b\[[0-9;]*[A-Za-z]/', '', $data);
         $all = preg_split('/\r?\n/', rtrim($data));
         return implode("\n", array_slice($all, -$lines));
     }

@@ -64,7 +64,7 @@ status() {
     local state="$1" step="$2"
     local tmpf; tmpf="$(mktemp "$STATE_DIR/.update-status.XXXXXX")"
     printf '{"state":%s,"step":%s,"from":%s,"to":%s,"updated_at":%s}\n' \
-        "$(json_str "$state")" "$(json_str "$step")" "$(json_str "${CURRENT:-}")" \
+        "$(json_str "$state")" "$(json_str "$step")" "$(json_str "${FROM_VERSION:-${CURRENT:-}}")" \
         "$(json_str "${TARGET:-}")" "$(json_str "$(date -Iseconds)")" > "$tmpf"
     chmod 644 "$tmpf"; mv -f "$tmpf" "$STATUS_FILE"
 }
@@ -180,6 +180,7 @@ rollback() {
         || log "UYARI: önceki sürümün sistem ayarları yeniden uygulanamadı"
     log "===== Geri alındı: $CURRENT ($1) ====="
     status rolled_back "$1"
+    bash "$AIPBX_UPDATE_REEXEC" --check >/dev/null 2>&1 || true
     exit 1
 }
 
@@ -205,8 +206,8 @@ if ! (cd "$INSTALL_DIR/web" && timeout 900 php bin/smoke.php >>"$LOG_FILE" 2>&1)
 fi
 
 log "===== Güncelleme tamamlandı: $CURRENT → $TARGET ====="
-CURRENT_BEFORE="$CURRENT"; CURRENT="$TARGET"
-status done "Güncellendi: $CURRENT_BEFORE → $TARGET"
+FROM_VERSION="$CURRENT"
+status done "Güncellendi: $CURRENT → $TARGET"
 # Portalın "güncelleme var" bilgisi tazelensin.
 bash "$AIPBX_UPDATE_REEXEC" --check >/dev/null 2>&1 || true
 echo "AiPBX $TARGET sürümüne güncellendi. Yedek: $BACKUP_DIR"

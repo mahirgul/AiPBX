@@ -1471,6 +1471,9 @@ body.auth-body {
 }
 
 
+/* Devre dışı butonlar kullanılabilir gibi görünmesin (tıklanamadığı belli olsun). */
+.btn:disabled, .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
 /* Yardımcı sınıflar — şablonlardaki tekrarlanan satır içi stillerin karşılığı.
    :not(#u):not(#u) özgüllüğü (2,1,0) her sınıf/ID kuralını geçer ama JS ile
    verilen satır içi stil (el.style.display = ...) yine bunları ezer —

@@ -115,7 +115,23 @@ systemctl status asterisk mariadb coturn aipbx-chat
 systemctl status nginx || systemctl status apache2
 ```
 
-### 3.3 Firewall (firewalld)
+### 3.3 Updating
+Releases are published as git tags (`vX.Y.Z`, see `CHANGELOG.md`). To update an installation:
+
+```bash
+sudo aipbx-update --check   # installed vs. latest version
+sudo aipbx-update           # update to the latest release
+```
+
+or from the portal: **Admin → System Update** (admin only). The update:
+1. refuses to run while calls are active (`--allow-calls` to force) or when files under `/opt/aipbx` were edited by hand;
+2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
+3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;
+4. verifies services, the portal and every page; on any failure it restores the previous code, database and settings automatically.
+
+Keep local customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf` files) — they survive updates.
+
+### 3.4 Firewall (firewalld)
 The installer configures **firewalld** and disables `ufw` (running both makes one
 close what the other opens). Afterwards, manage ports and allowed networks from the
 portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
@@ -131,7 +147,7 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 
 Do not enable `ufw` on top of this.
 
-### 3.4 (Optional) Let's Encrypt Certificate Renewal / Setup
+### 3.5 (Optional) Let's Encrypt Certificate Renewal / Setup
 If you installed with a self-signed certificate and point a domain later:
 - **With Nginx**:
   ```bash
