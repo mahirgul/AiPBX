@@ -56,6 +56,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # A manual run with release_tag builds that release's code, not the
+          # branch it was started from (otherwise another version's app would be
+          # attached to the release).
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
