@@ -10,8 +10,15 @@ on:
     branches: [ main ]
     paths:
       - 'android/**'
+  release:
+    types: [ published ]
   workflow_dispatch:
     inputs:
+      release_tag:
+        description: 'Attach the APK to this existing GitHub Release (e.g. v2.0.0); skips Google Play'
+        required: false
+        default: ''
+        type: string
       track:
         description: 'Google Play Track (alpha = Closed Testing, internal = Internal Testing, beta = Open Testing, production = Production)'
         required: true
@@ -43,6 +50,8 @@ jobs:
     name: Build Android App & Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write   # gh release upload
 
     steps:
       - name: Checkout repository
@@ -102,6 +111,16 @@ jobs:
             android/app/build/outputs/mapping/release/mapping.txt
           retention-days: 14
 
+      - name: Attach APK to GitHub Release
+        if: ${{ github.event_name == 'release' || inputs.release_tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        run: |
+          # Fixed asset name: https://github.com/<repo>/releases/latest/download/aipbx-latest.apk
+          cp android/app/build/outputs/apk/release/app-release.apk aipbx-latest.apk
+          gh release upload "$RELEASE_TAG" aipbx-latest.apk --clobber --repo "$GITHUB_REPOSITORY"
+
       - name: Check Google Play Upload Eligibility
         id: check_upload
         if: ${{ github.event_name != 'pull_request' }}
@@ -109,7 +128,13 @@ jobs:
           PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
           IS_PUSH: ${{ github.event_name == 'push' }}
           INPUT_UPLOAD: ${{ inputs.upload_to_play }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "Building for GitHub Release $RELEASE_TAG -> Google Play upload skipped."
+            echo "can_upload=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           echo "GitHub Event: ${{ github.event_name }}"
           if [ -n "$PLAY_KEY_JSON" ]; then
             echo "Google Play Service Account Secret: MEVCUT"
