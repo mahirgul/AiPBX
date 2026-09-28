@@ -19,7 +19,16 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 [[ "$(git rev-parse --abbrev-ref HEAD)" == main ]] || { echo "main dalında olmalısınız" >&2; exit 1; }
-git diff --quiet && git diff --cached --quiet || { echo "Commit edilmemiş değişiklik var" >&2; exit 1; }
+# Yayın commit'i yalnızca VERSION + CHANGELOG.md içerir: sahneye alınmış başka
+# değişiklik varsa ona karışırdı. Diğer dosyalardaki commit edilmemiş işler
+# (ör. docs/) yayını engellemez ama etikete de girmez.
+git diff --cached --quiet || { echo "Sahneye alınmış (staged) değişiklik var; önce commit edin veya geri alın" >&2; exit 1; }
+if ! git diff --quiet -- . ':!VERSION' ':!CHANGELOG.md'; then
+    echo "Uyarı: commit edilmemiş değişiklikler var; bunlar bu sürüme GİRMEZ:" >&2
+    git diff --name-only -- . ':!VERSION' ':!CHANGELOG.md' | sed 's/^/  /' >&2
+fi
+git fetch -q origin main
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || { echo "Yerel main origin/main ile aynı değil (önce push/pull)" >&2; exit 1; }
 git rev-parse -q --verify "refs/tags/v$VER" >/dev/null && { echo "v$VER zaten var" >&2; exit 1; }
 
 PREV="$(tr -d '[:space:]' < VERSION)"
