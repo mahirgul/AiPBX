@@ -10,13 +10,23 @@ on:
     branches: [ main ]
     paths:
       - 'ios/**'
+  release:
+    types: [ published ]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Attach the IPA and simulator build to this existing GitHub Release (e.g. v2.0.0)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build:
     name: Build iOS App
     runs-on: macos-14
     timeout-minutes: 30
+    permissions:
+      contents: write   # gh release upload
 
     steps:
       - name: Checkout repository
@@ -93,3 +103,11 @@ jobs:
             ios/build/AiPBX-unsigned.ipa
             ios/build/AiPBX-Simulator.zip
           retention-days: 14
+
+      - name: Attach IPA and simulator build to GitHub Release
+        if: ${{ github.event_name == 'release' || inputs.release_tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" ios/build/AiPBX-unsigned.ipa ios/build/AiPBX-Simulator.zip --clobber --repo "$GITHUB_REPOSITORY"
