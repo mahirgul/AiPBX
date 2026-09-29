@@ -1710,7 +1710,6 @@ return [
     'my_phone.col_actions' => 'Action',
     'my_phone.btn_call' => 'Call',
     'my_phone.btn_save_settings' => 'Save Settings',
-    'my_phone.general_title' => 'General Settings',
     'my_phone.settings_title' => 'My Phone & Device Settings',
     'my_phone.preferred_mode' => 'Active Phone Mode',
     'my_phone.active_phone_modes' => 'Active Phone Modes',
