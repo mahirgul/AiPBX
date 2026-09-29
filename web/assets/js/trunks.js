@@ -114,7 +114,7 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_trunk_id').value = item.id || '';
     const nameEl = document.getElementById('modal_trunk_name');
     nameEl.value = item.trunk_name || '';
-    nameEl.readOnly = true;
+    nameEl.readOnly = false;
 
     // Tab 1: Basic
     document.getElementById('modal_title').value = item.title || '';
