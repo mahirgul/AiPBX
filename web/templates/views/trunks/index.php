@@ -86,7 +86,14 @@
                                 <?php echo uiStatusToggleForm($t['id'], $t['is_active'], 'trunk_id'); ?>
                             </td>
                             <td class="text-right">
-                                <?php echo uiRowActions($t, 'openEditTrunkModal', 'trunk_id', 'delete_trunk', sprintf(t('trunks.confirm_delete'), $t['title'] . ' (' . $t['trunk_name'] . ')')); ?>
+                                <?php
+                                    $actions = uiRowActions($t, 'openEditTrunkModal', 'trunk_id', 'delete_trunk', sprintf(t('trunks.confirm_delete'), $t['title'] . ' (' . $t['trunk_name'] . ')'));
+                                    if (hasModulePermission('trunks', 'edit')) {
+                                        $cell = '<div class="table-actions-cell">';
+                                        $actions = substr_replace($actions, $cell . uiEditButton($t, 'openCopyTrunkModal', t('trunks.copy'), 'fa-copy'), strpos($actions, $cell), strlen($cell));
+                                    }
+                                    echo $actions;
+                                ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

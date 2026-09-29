@@ -29,6 +29,9 @@ class TrunkService {
             if (!$is_valid_ip && !$is_valid_hostname) {
                 throw new \Exception("Geçersiz IP adresi veya sunucu adı: '{$ip_address}'");
             }
+            if ($trunk_id <= 0 && DBHelper::fetchOne("SELECT id FROM pbx_trunks WHERE trunk_name = ?", [$trunk_name])) {
+                throw new \Exception("'{$trunk_name}' sistem adıyla bir trunk zaten var — farklı bir ad girin.");
+            }
             if ($port < 1 || $port > 65535) {
                 throw new \Exception("Port numarası 1-65535 aralığında olmalıdır!");
             }

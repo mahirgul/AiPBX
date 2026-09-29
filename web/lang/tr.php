@@ -121,6 +121,7 @@ return [
     'trunks.tab_media' => 'Medya & Faks',
     'trunks.tab_network' => 'Ağ & NAT',
     'trunks.tab_routing' => 'Yönlendirme',
+    'trunks.copy' => 'Kopyala',
     'trunks.tab_advanced' => 'Gelişmiş',
     'trunks.field_auth_username' => 'SIP Kullanıcı Adı (Auth Username)',
     'trunks.field_auth_password' => 'SIP Parolası (Auth Password)',
