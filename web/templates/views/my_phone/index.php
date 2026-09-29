@@ -443,36 +443,32 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 <input type="hidden" name="action" value="save_settings">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
-            <!-- Kart: Genel -->
+            <!-- Kart: Rahatsız Etmeyin -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-sliders-h u-primary"></i> <?php echo t('my_phone.general_title'); ?>
+                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-minus-circle u-danger"></i> <?php echo t('my_phone.dnd_label'); ?>
                 </h3>
-                    <!-- Rahatsız Etmeyin (DND) Switch -->
-                    <div class="form-group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                        <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">
-                                    <i class="fas fa-minus-circle u-danger"></i> <?php echo t('my_phone.dnd_label'); ?>
-                                </div>
-                                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px;">
-                                    <?php echo t('my_phone.dnd_desc'); ?>
-                                </small>
-                            </div>
-                            <input type="checkbox" name="dnd_enabled" value="1" <?php echo $isDnd ? 'checked' : ''; ?> style="width: 20px; height: 20px; cursor: pointer;">
-                        </label>
-                    </div>
+                <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; margin: 0 0 18px;">
+                    <small style="color: var(--text-muted); font-size: 12px; line-height: 1.4;"><?php echo t('my_phone.dnd_desc'); ?></small>
+                    <input type="checkbox" name="dnd_enabled" value="1" <?php echo $isDnd ? 'checked' : ''; ?> style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
+                </label>
+                    <?php if (hasModulePermission('my_phone', 'edit')): ?>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                            <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                            <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
+                        </button>
+                    <?php endif; ?>
+            </div>
 
-                    <!-- Aktif Telefon Modu (Web, Mobil, SIP, Görüntü) -->
-                    <div class="form-group" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?>
-                            </label>
-                            <span class="badge badge-info u-fw-600 u-fs-10">
-                                <?php echo count($activeModes); ?> / 4 <?php echo t('my_phone.modes_active'); ?>
-                            </span>
-                        </div>
+            <!-- Kart: Telefon Modları -->
+            <div class="card" style="padding: 24px; border-radius: 14px;">
+                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?></span>
+                    <span class="badge badge-info u-fw-600 u-fs-10"><?php echo count($activeModes); ?> / 4 <?php echo t('my_phone.modes_active'); ?></span>
+                </h3>
                         <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 12px; line-height: 1.4;">
                             <?php echo t('my_phone.phone_modes_desc'); ?>
                         </small>
@@ -522,8 +518,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 </div>
                             </label>
                         </div>
-                    </div>
-
+                <div style="margin-top: 18px;"></div>
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
                         <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
