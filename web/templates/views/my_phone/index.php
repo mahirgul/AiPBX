@@ -117,6 +117,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         min-width: 100% !important;
         max-width: 100% !important;
     }
+    .my-phone-subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .my-phone-subpane[hidden] { display: none !important; }
     #tab-pane-history {
         padding: 14px 12px !important;
     }
@@ -445,6 +447,15 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <input type="hidden" name="action" value="save_settings">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
+                    <div class="my-phone-subtabs" role="tablist">
+                        <button type="button" class="btn btn-sm btn-primary" data-subtab="general" onclick="switchMyPhoneSubtab('general')"><i class="fas fa-sliders-h"></i> <?php echo t('my_phone.subtab_general'); ?></button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-subtab="forward" onclick="switchMyPhoneSubtab('forward')"><i class="fas fa-share"></i> <?php echo t('my_phone.subtab_forward'); ?></button>
+                        <?php if (!$isFaxUser): ?>
+                        <button type="button" class="btn btn-sm btn-secondary" data-subtab="voicemail" onclick="switchMyPhoneSubtab('voicemail')"><i class="fas fa-voicemail"></i> <?php echo t('my_phone.subtab_voicemail'); ?></button>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="my-phone-subpane" data-subpane="general">
                     <!-- Rahatsız Etmeyin (DND) Switch -->
                     <div class="form-group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
                         <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0;">
@@ -460,6 +471,70 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </label>
                     </div>
 
+                    <!-- Aktif Telefon Modu (Web, Mobil, SIP, Görüntü) -->
+                    <div class="form-group" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label class="form-label" style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?>
+                            </label>
+                            <span class="badge badge-info u-fw-600 u-fs-10">
+                                <?php echo count($activeModes); ?> / 4 <?php echo t('my_phone.modes_active'); ?>
+                            </span>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 12px; line-height: 1.4;">
+                            <?php echo t('my_phone.phone_modes_desc'); ?>
+                        </small>
+
+                        <div class="my-phone-modes-grid">
+                            <!-- Web (Tarayıcı) -->
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
+                                <input type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary);">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-laptop u-primary u-fs-12"></i> <?php echo t('my_phone.mode_web'); ?>
+                                    </span>
+                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_web_sub'); ?></small>
+                                </div>
+                            </label>
+
+                            <!-- Mobil (Uygulama) -->
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
+                                <input type="checkbox" name="phone_modes[]" value="mobil" <?php echo in_array('mobil', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--success);">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-mobile-alt u-success u-fs-12"></i> <?php echo t('my_phone.mode_mobil'); ?>
+                                    </span>
+                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_mobil_sub'); ?></small>
+                                </div>
+                            </label>
+
+                            <!-- SIP (Masaüstü) -->
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
+                                <input type="checkbox" name="phone_modes[]" value="sip" <?php echo in_array('sip', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--secondary);">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-phone-alt" style="color: var(--secondary); font-size: 12px;"></i> <?php echo t('my_phone.mode_sip_desk'); ?>
+                                    </span>
+                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_sip_sub'); ?></small>
+                                </div>
+                            </label>
+
+                            <!-- Görüntü (Video) -->
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
+                                <input type="checkbox" name="phone_modes[]" value="video" <?php echo in_array('video', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: #8b5cf6;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-video" style="color: #8b5cf6; font-size: 12px;"></i> <?php echo t('my_phone.mode_video'); ?>
+                                    </span>
+                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_video_sub'); ?></small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    </div>
+
+                    <div class="my-phone-subpane" data-subpane="forward" hidden>
                     <!-- Çağrı Yönlendirme Seçenekleri (Her Zaman, Meşgulken, Cevapsızken) -->
                     <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
@@ -528,67 +603,9 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </div>
                     </div>
 
-                    <!-- Aktif Telefon Modu (Web, Mobil, SIP, Görüntü) -->
-                    <div class="form-group" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?>
-                            </label>
-                            <span class="badge badge-info u-fw-600 u-fs-10">
-                                <?php echo count($activeModes); ?> / 4 <?php echo t('my_phone.modes_active'); ?>
-                            </span>
-                        </div>
-                        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 12px; line-height: 1.4;">
-                            <?php echo t('my_phone.phone_modes_desc'); ?>
-                        </small>
-
-                        <div class="my-phone-modes-grid">
-                            <!-- Web (Tarayıcı) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-laptop u-primary u-fs-12"></i> <?php echo t('my_phone.mode_web'); ?>
-                                    </span>
-                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_web_sub'); ?></small>
-                                </div>
-                            </label>
-
-                            <!-- Mobil (Uygulama) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="mobil" <?php echo in_array('mobil', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--success);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-mobile-alt u-success u-fs-12"></i> <?php echo t('my_phone.mode_mobil'); ?>
-                                    </span>
-                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_mobil_sub'); ?></small>
-                                </div>
-                            </label>
-
-                            <!-- SIP (Masaüstü) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="sip" <?php echo in_array('sip', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--secondary);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-phone-alt" style="color: var(--secondary); font-size: 12px;"></i> <?php echo t('my_phone.mode_sip_desk'); ?>
-                                    </span>
-                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_sip_sub'); ?></small>
-                                </div>
-                            </label>
-
-                            <!-- Görüntü (Video) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="video" <?php echo in_array('video', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: #8b5cf6;">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-video" style="color: #8b5cf6; font-size: 12px;"></i> <?php echo t('my_phone.mode_video'); ?>
-                                    </span>
-                                    <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_video_sub'); ?></small>
-                                </div>
-                            </label>
-                        </div>
                     </div>
 
+                    <div class="my-phone-subpane" data-subpane="voicemail" hidden>
                     <?php if (!$isFaxUser): ?>
                     <!-- Sesli Posta (Voicemail) Tercihleri -->
                     <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 18px;">
@@ -634,6 +651,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    </div>
 
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
                         <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
@@ -988,6 +1007,21 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 /**
  * Kişisel Telefonum Sayfası JS İşlevleri
  */
+function switchMyPhoneSubtab(name) {
+    document.querySelectorAll('.my-phone-subpane').forEach(function (p) { p.hidden = (p.dataset.subpane !== name); });
+    document.querySelectorAll('.my-phone-subtabs [data-subtab]').forEach(function (b) {
+        const on = (b.dataset.subtab === name);
+        b.classList.toggle('btn-primary', on);
+        b.classList.toggle('btn-secondary', !on);
+    });
+    try { localStorage.setItem('my_phone_settings_subtab', name); } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', function () {
+    let saved = null;
+    try { saved = localStorage.getItem('my_phone_settings_subtab'); } catch (e) {}
+    if (saved && document.querySelector('.my-phone-subtabs [data-subtab="' + saved + '"]')) switchMyPhoneSubtab(saved);
+});
+
 function switchMyPhoneTab(tabName) {
     const paneHistory = document.getElementById("tab-pane-history");
     const paneSettings = document.getElementById("tab-pane-settings");
