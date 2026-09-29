@@ -4,7 +4,7 @@ require_once __DIR__ . '/../auth.php';
 requireLogin();
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'fax_user';
+$role = $_SESSION['user_role'] ?? 'user';
 
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) {

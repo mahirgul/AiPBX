@@ -1151,7 +1151,7 @@ return [
     'roles.new_tooltip' => 'Yeni Rol Oluştur',
     'roles.help_title' => 'Rol & İzin Yönetimi Rehberi',
     'roles.help_body' => 'Kullanıcı gruplarının sistem modüllerine (Görüntüleme, Erişim, Düzenleme, Silme) erişim izinlerini detaylı olarak yapılandırır.',
-    'roles.help_system' => 'Sistem Rolleri: <code>admin</code>, <code>read_only_admin</code>, <code>cc_agent</code>, <code>fax_user</code> temel korumalı rollerdir.',
+    'roles.help_system' => 'Sistem Rolleri: <code>admin</code>, <code>read_only_admin</code>, <code>cc_agent</code>, <code>fax_user</code>, <code>user</code> temel korumalı rollerdir.',
     'roles.read_only_badge' => 'Sadece İzleyici (Değişiklik Yapılamaz)',
     'roles.help_custom' => 'Özel Roller: İhtiyaca özel yeni rol tanımlanarak modül bazlı yetkiler özelleştirilebilir.',
     'roles.col_role_id' => 'Rol ID',
