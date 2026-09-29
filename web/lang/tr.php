@@ -1710,7 +1710,6 @@ return [
     'my_phone.col_actions' => 'İşlem',
     'my_phone.btn_call' => 'Ara',
     'my_phone.btn_save_settings' => 'Ayarları Kaydet',
-    'my_phone.general_title' => 'Genel Ayarlar',
     'my_phone.settings_title' => 'Telefon & Cihaz Ayarlarım',
     'my_phone.preferred_mode' => 'Aktif Telefon Modu',
     'my_phone.active_phone_modes' => 'Aktif Telefon Modları',
