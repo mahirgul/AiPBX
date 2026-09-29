@@ -237,7 +237,7 @@ class FaxSendService {
     public static function resolveOutboundDialNumber(string $rawNumber): string {
         $db = getDB();
         $routes = $db->query(
-            "SELECT match_pattern, prepend, append, strip_front, strip_back FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY id ASC"
+            "SELECT match_pattern, prepend, append, strip_front, strip_back FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC"
         )->fetchAll();
 
         foreach ($routes as $r) {
