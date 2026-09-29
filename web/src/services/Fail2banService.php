@@ -20,7 +20,7 @@ class Fail2banService {
      */
     const PROTECTED_IGNOREIPS = ['127.0.0.0/8', '::1'];
 
-    const OVERRIDE_FILE = '/etc/fail2ban/jail.d/99-ai-pbx.local';
+    const OVERRIDE_FILE = '/etc/fail2ban/jail.d/zz-ai-pbx.local';
 
     /**
      * jail.d root'a ait (jail dosyası çalıştırılacak komut tanımlayabildiği
