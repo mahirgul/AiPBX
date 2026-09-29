@@ -224,6 +224,7 @@ return [
     'outbound.callerid_default' => 'Varsayılan Caller ID',
     'outbound.type_internal' => 'Kurum İçi',
     'outbound.type_external' => 'Harici',
+    'outbound.copy' => 'Kopyala',
     'outbound.confirm_delete' => '%s rotasını silmek istediğinize emin misiniz?',
     'outbound.new_route' => 'Yeni Giden Rota Ekle',
     'outbound.field_route_name' => 'Rota Açıklama İsmi *',

@@ -90,6 +90,19 @@ function openEditRouteModal(item) {
     }
 }
 
+// Opens the create dialog pre-filled with an existing route's settings.
+function openCopyRouteModal(item) {
+    if (!item) return;
+    openEditRouteModal(item);
+    document.getElementById('modal_route_id').value = '';
+    document.getElementById('modal_route_name').value = (item.route_name || '') + ' (kopya)';
+    const title = document.getElementById('routeModalTitle');
+    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> Giden Rota Kopyala: ' + escapeHtml(item.route_name || item.match_pattern || '');
+    const pat = document.getElementById('modal_match_pattern');
+    pat.focus();
+    pat.select();
+}
+
 function closeRouteModal() {
     UIHelper.closeOverlayModal('routeModal');
 }
