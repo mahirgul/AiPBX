@@ -841,6 +841,9 @@ ProcSubset=all
 ProtectProc=default
 InaccessiblePaths=
 InaccessiblePaths=/boot /root -/etc/ssh -/etc/apt -/etc/.git -/etc/.svn
+# ProtectSystem=full makes /etc read-only for Apache and for aipbx-priv run
+# through sudo inside it: "Apply" could not write any Asterisk config.
+ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d
 APACHEOVERRIDE
 systemctl daemon-reload
 
