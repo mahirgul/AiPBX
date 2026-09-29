@@ -13,7 +13,12 @@ require_once __DIR__ . '/asterisk_helper.php';
  */
 function writePBXConf($filename, $content) {
     $file_path = ASTERISK_PBX_DIR . '/' . $filename;
-    FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0644);
+    // A failed write used to pass silently: the reload then succeeded with the
+    // old file and the pending change was marked as applied.
+    if (FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0644) === false) {
+        $err = error_get_last()['message'] ?? 'unknown error';
+        throw new \Exception("Yapılandırma dosyası yazılamadı: {$file_path} ({$err})");
+    }
     return $file_path;
 }
 
