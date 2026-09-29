@@ -2,11 +2,18 @@
  * Global Modal Dialog Module (Accessibility, Keyboard & Backdrop Handling)
  */
 
+// Edit dialogs (anything with a form) close only through their own close /
+// cancel buttons: a stray backdrop click or Escape used to discard half-done work.
+function isEditModal(modal) {
+    return !!modal.querySelector('form');
+}
+
 // Global Keyboard ESC and Backdrop Click Listeners
 document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+                if (isEditModal(modal)) return;
                 modal.style.display = 'none';
                 modal.classList.remove('active');
             });
@@ -16,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal-overlay')) {
+        if (e.target.classList.contains('modal-overlay') && !isEditModal(e.target)) {
             e.target.style.display = 'none';
             e.target.classList.remove('active');
             const pdfFrame = document.getElementById('pdfFrame');

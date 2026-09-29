@@ -157,7 +157,7 @@ document.addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const openModals = document.querySelectorAll('.modal[style*="display: block"]');
-        openModals.forEach(m => UIHelper.closeModal(m));
+        openModals.forEach(m => { if (!m.querySelector('form')) UIHelper.closeModal(m); });
     }
 });
 

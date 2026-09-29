@@ -159,17 +159,3 @@ function toggleRowPassword(btn) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    const modal = document.getElementById('extensionModal');
-    if (modal) {
-        // Arka plana tıklayınca kapat
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) closeExtensionModal();
-        });
-    }
-
-    // ESC ile kapat
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeExtensionModal();
-    });
-});
