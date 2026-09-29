@@ -35,7 +35,7 @@ class FaxSendService {
         // doğrulanır, POST manipülasyonuyla var olmayan/pasif bir dahili
         // TSID/başlığa enjekte edilemez (2026-08-31, kullanıcı isteği).
         $requested_sender_did = preg_replace('/[^0-9]/', '', trim($post['sender_did'] ?? ''));
-        $current_role = $_SESSION['user_role'] ?? 'fax_user';
+        $current_role = $_SESSION['user_role'] ?? 'user';
         if ($current_role === 'admin' && $requested_sender_did !== '') {
             $valid_ext = DBHelper::fetchColumn(
                 "SELECT extension FROM sys_users WHERE extension = ? AND extension_type = 'fax' AND is_active = 1",

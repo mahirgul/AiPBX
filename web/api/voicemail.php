@@ -6,7 +6,7 @@ require_once __DIR__ . '/../src/services/VoicemailService.php';
 requireLogin();
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'fax_user';
+$role = $_SESSION['user_role'] ?? 'user';
 $userExt = trim($user['extension'] ?? '');
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');

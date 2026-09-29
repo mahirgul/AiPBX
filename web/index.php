@@ -112,6 +112,8 @@ if ($ROUTES[$path] === 'role') {
         header('Location: /cc-agent');
     } elseif ($role === 'cc_manager') {
         header('Location: /cc-supervisor');
+    } elseif ($role === 'user') {
+        header('Location: /my-phone');
     } else {
         header('Location: /fax-inbox');
     }

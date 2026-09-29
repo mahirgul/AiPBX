@@ -116,7 +116,7 @@ class RoleService {
         $is_sys = $stmt->fetchColumn();
 
         if ($is_sys) {
-            return ['error' => 'Sistem temel rolleri (admin, read_only_admin, cc_agent, fax_user) silinemez!'];
+            return ['error' => 'Sistem temel rolleri (admin, read_only_admin, cc_agent, fax_user, user) silinemez!'];
         }
 
         $count_stmt = $db->prepare("SELECT COUNT(*) FROM sys_users WHERE role = ?");

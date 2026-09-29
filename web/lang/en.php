@@ -1151,7 +1151,7 @@ return [
     'roles.new_tooltip' => 'Create New Role',
     'roles.help_title' => 'Role & Permission Management Guide',
     'roles.help_body' => 'Configures user groups\' access permissions (View, Access, Edit, Delete) to system modules in detail.',
-    'roles.help_system' => 'System Roles: <code>admin</code>, <code>read_only_admin</code>, <code>cc_agent</code>, <code>fax_user</code> are base protected roles.',
+    'roles.help_system' => 'System Roles: <code>admin</code>, <code>read_only_admin</code>, <code>cc_agent</code>, <code>fax_user</code>, <code>user</code> are base protected roles.',
     'roles.read_only_badge' => 'Read Only (Modifications Disabled)',
     'roles.help_custom' => 'Custom Roles: New roles can be defined for specific needs, with module-level permissions customized.',
     'roles.col_role_id' => 'Role ID',

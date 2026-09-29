@@ -11,7 +11,7 @@ class CdrReportController extends BaseController
         }
 
         $user = getCurrentUser();
-        $role = $_SESSION['user_role'] ?? 'fax_user';
+        $role = $_SESSION['user_role'] ?? 'user';
         $user_ext = $user['extension'] ?? '';
 
         // Permission checks

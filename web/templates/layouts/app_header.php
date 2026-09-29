@@ -9,7 +9,7 @@
 $db = getDB();
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'fax_user';
+$role = $_SESSION['user_role'] ?? 'user';
 $theme = $_SESSION['theme'] ?? 'light';
 $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
