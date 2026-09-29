@@ -75,7 +75,14 @@
                                 <?php echo uiStatusToggleForm($r['id'], $r['is_active'], 'route_id'); ?>
                             </td>
                             <td class="text-right">
-                                <?php echo uiRowActions($r, 'openEditRouteModal', 'route_id', 'delete_route', sprintf(t('outbound.confirm_delete'), $r['route_name'])); ?>
+                                <?php
+                                    $actions = uiRowActions($r, 'openEditRouteModal', 'route_id', 'delete_route', sprintf(t('outbound.confirm_delete'), $r['route_name']));
+                                    if (hasModulePermission('outbound_routes', 'edit')) {
+                                        $cell = '<div class="table-actions-cell">';
+                                        $actions = substr_replace($actions, $cell . uiEditButton($r, 'openCopyRouteModal', t('outbound.copy'), 'fa-copy'), strpos($actions, $cell), strlen($cell));
+                                    }
+                                    echo $actions;
+                                ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

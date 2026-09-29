@@ -85,6 +85,14 @@ class RouteService {
             if (empty($trunks)) {
                 throw new \Exception("En az bir dış hat eklemelisiniz!");
             }
+            // Asterisk keeps only the first of two identical patterns in a context.
+            $dup = DBHelper::fetchOne(
+                "SELECT route_name FROM pbx_outbound_routes WHERE match_pattern = ? AND route_group = ? AND id <> ?",
+                [$match_pattern, $route_group, $route_id]
+            );
+            if ($dup) {
+                throw new \Exception("'{$match_pattern}' deseni bu grupta zaten '{$dup['route_name']}' rotasında kullanılıyor — farklı bir desen girin.");
+            }
 
             $is_new = ($route_id <= 0);
             DBHelper::save('pbx_outbound_routes', [
