@@ -207,11 +207,14 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 <i class="fas fa-history"></i> <?php echo t('my_phone.tab_history'); ?>
                 <span class="badge" style="background: rgba(0,0,0,0.15); font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($calls); ?></span>
             </button>
-            <button type="button" class="btn btn-sm <?php echo $currentTab === 'settings' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-settings" onclick="switchMyPhoneTab('settings')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-sliders-h"></i> <?php echo t('my_phone.tab_settings'); ?>
+            <button type="button" class="btn btn-sm <?php echo $currentTab === 'calls' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-calls" onclick="switchMyPhoneTab('calls')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+                <i class="fas fa-phone-alt"></i> <?php echo t('my_phone.tab_calls'); ?>
                 <?php if ($isDnd || $hasActiveCf): ?>
                     <span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px; border-radius: 10px;"><i class="fas fa-check"></i> Aktif</span>
                 <?php endif; ?>
+            </button>
+            <button type="button" class="btn btn-sm <?php echo $currentTab === 'settings' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-settings" onclick="switchMyPhoneTab('settings')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+                <i class="fas fa-sliders-h"></i> <?php echo t('my_phone.tab_settings'); ?>
             </button>
             <?php if (!$isFaxUser): ?>
             <button type="button" class="btn btn-sm <?php echo $currentTab === 'voicemail' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-voicemail" onclick="switchMyPhoneTab('voicemail')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
@@ -229,8 +232,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
                 <div class="u-flex-center">
                     <a href="/my-phone?tab=history" class="btn btn-secondary btn-sm" title="Yenile"><i class="fas fa-sync-alt"></i></a>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('settings')" title="Telefon Ayarlarına Git">
-                        <i class="fas fa-sliders-h"></i> <?php echo t('my_phone.tab_settings'); ?>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('calls')" title="<?php echo htmlspecialchars(t('my_phone.tab_calls')); ?>">
+                        <i class="fas fa-phone-alt"></i> <?php echo t('my_phone.tab_calls'); ?>
                     </button>
                 </div>
             </div>
@@ -433,9 +436,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
         </div>
 
-        <!-- TAB 2: TELEFON & CİHAZ AYARLARI (Geniş 3 Kolonlu Izgara Düzeni) -->
-        <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
-            
+        <!-- TAB: Call settings (general, forwarding, voicemail) -->
+        <div id="tab-pane-calls" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'calls' ? 'grid' : 'none'; ?>;">
             <!-- Settings cards share one form (display: contents) so any Save stores every setting. -->
             <form method="POST" action="/my-phone" class="my-phone-settings-form">
                 <input type="hidden" name="action" value="save_settings">
@@ -673,6 +675,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             <?php endif; ?>
             </form>
 
+        </div>
+
+        <!-- TAB 2: TELEFON & CİHAZ AYARLARI (Geniş 3 Kolonlu Izgara Düzeni) -->
+        <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
+            
             <!-- Kart 2: WebRTC Aygıt & Zil Sesi Ayarları -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
@@ -834,7 +841,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <i class="fas fa-info-circle text-primary" style="font-size: 18px;"></i>
                     <span>Telesekreterinize bırakılan sesli mesajları aşağıdan dinleyebilir veya telefonunuzdan <strong>*97</strong> tuşlayarak sesli menüyle yönetebilirsiniz.</span>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('settings')" style="font-size: 11.5px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('calls')" style="font-size: 11.5px;">
                     <i class="fas fa-cog"></i> Sesli Posta Ayarları
                 </button>
             </div>
@@ -1015,50 +1022,26 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
  * Kişisel Telefonum Sayfası JS İşlevleri
  */
 function switchMyPhoneTab(tabName) {
-    const paneHistory = document.getElementById("tab-pane-history");
-    const paneSettings = document.getElementById("tab-pane-settings");
-    const paneVoicemail = document.getElementById("tab-pane-voicemail");
-    const btnHistory = document.getElementById("btn-tab-history");
-    const btnSettings = document.getElementById("btn-tab-settings");
-    const btnVoicemail = document.getElementById("btn-tab-voicemail");
-
-    if (paneHistory) paneHistory.style.display = (tabName === "history") ? "block" : "none";
-    if (paneSettings) paneSettings.style.display = (tabName === "settings") ? "grid" : "none";
-    if (paneVoicemail) paneVoicemail.style.display = (tabName === "voicemail") ? "block" : "none";
-
-    [btnHistory, btnSettings, btnVoicemail].forEach(b => {
-        if (!b) return;
-        b.classList.remove("btn-primary");
-        b.classList.add("btn-secondary");
+    const panes = { history: "block", calls: "grid", settings: "grid", voicemail: "block" };
+    if (!panes[tabName]) tabName = "history";
+    Object.keys(panes).forEach(function (name) {
+        const pane = document.getElementById("tab-pane-" + name);
+        const btn = document.getElementById("btn-tab-" + name);
+        if (pane) pane.style.display = (name === tabName) ? panes[name] : "none";
+        if (btn) {
+            btn.classList.toggle("btn-primary", name === tabName);
+            btn.classList.toggle("btn-secondary", name !== tabName);
+        }
     });
 
-    if (tabName === "settings") {
-        if (btnSettings) {
-            btnSettings.classList.remove("btn-secondary");
-            btnSettings.classList.add("btn-primary");
-        }
-        history.replaceState(null, "", "/my-phone?tab=settings");
-        localStorage.setItem("my_phone_active_tab", "settings");
-        if (typeof loadMyPhoneAudioDevices === "function") {
-            loadMyPhoneAudioDevices();
-        }
-    } else if (tabName === "voicemail") {
-        if (btnVoicemail) {
-            btnVoicemail.classList.remove("btn-secondary");
-            btnVoicemail.classList.add("btn-primary");
-        }
-        history.replaceState(null, "", "/my-phone?tab=voicemail");
-        localStorage.setItem("my_phone_active_tab", "voicemail");
-    } else {
-        if (btnHistory) {
-            btnHistory.classList.remove("btn-secondary");
-            btnHistory.classList.add("btn-primary");
-        }
-        const urlParams = new URLSearchParams(window.location.search);
-        urlParams.delete("tab");
-        const queryStr = urlParams.toString();
-        history.replaceState(null, "", "/my-phone" + (queryStr ? "?" + queryStr : ""));
-        localStorage.setItem("my_phone_active_tab", "history");
+    const urlParams = new URLSearchParams(window.location.search);
+    if (tabName === "history") urlParams.delete("tab"); else urlParams.set("tab", tabName);
+    const queryStr = urlParams.toString();
+    history.replaceState(null, "", "/my-phone" + (queryStr ? "?" + queryStr : ""));
+    try { localStorage.setItem("my_phone_active_tab", tabName); } catch (e) {}
+
+    if (tabName === "settings" && typeof loadMyPhoneAudioDevices === "function") {
+        loadMyPhoneAudioDevices();
     }
 }
 
@@ -1264,9 +1247,13 @@ function startQrPolling() {
 function initMyPhone() {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get("tab");
-    if (tabParam === "settings" || (!tabParam && localStorage.getItem("my_phone_active_tab") === "settings")) {
-        switchMyPhoneTab("settings");
-    } else {
+    let savedTab = null;
+    try { savedTab = localStorage.getItem("my_phone_active_tab"); } catch (e) {}
+    const startTab = tabParam || savedTab;
+    if (startTab === "settings" || startTab === "calls") {
+        switchMyPhoneTab(startTab);
+    }
+    if (startTab !== "settings") {
         loadMyPhoneAudioDevices();
     }
 
