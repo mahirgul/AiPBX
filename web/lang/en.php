@@ -76,6 +76,7 @@ return [
     'dashboard.not_configured' => 'Not configured',
 
     // Trunks
+    'common.drag_to_reorder' => 'Drag to reorder',
     'trunks.title' => 'Trunk Settings',
     'trunks.header' => 'SIP Trunk Management',
     'trunks.help_title' => 'SIP Trunk Management Guide',

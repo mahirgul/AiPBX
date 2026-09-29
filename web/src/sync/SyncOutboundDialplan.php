@@ -29,7 +29,7 @@ function __syncOutboundDialplanBody() {
     }
 
     $db = getDB();
-    $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY id ASC")->fetchAll();
+    $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
     // Rotalar gruba gore ayrilir. Her grup kendi context'ini alir; kullanici

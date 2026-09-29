@@ -40,6 +40,60 @@ const UIHelper = {
     },
 
     /**
+     * Drag-and-drop row ordering for tables whose rows carry data-id and a
+     * .row-drag-handle cell; the new order is saved to /api/reorder.php.
+     */
+    enableRowReorder(table, entity) {
+        const tbody = table && table.querySelector('tbody');
+        if (!tbody || tbody.dataset.reorder === '1') return;
+        tbody.dataset.reorder = '1';
+        const order = () => Array.from(tbody.querySelectorAll('tr[data-id]')).map(r => r.dataset.id);
+        let dragging = null;
+        let before = '';
+
+        tbody.addEventListener('mousedown', e => {
+            const tr = e.target.closest('tr[data-id]');
+            if (tr) tr.draggable = !!e.target.closest('.row-drag-handle');
+        });
+        tbody.addEventListener('dragstart', e => {
+            dragging = e.target.closest('tr[data-id]');
+            if (!dragging) return;
+            before = order().join(',');
+            dragging.classList.add('row-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragging.dataset.id);
+        });
+        tbody.addEventListener('dragover', e => {
+            if (!dragging) return;
+            e.preventDefault();
+            const over = e.target.closest('tr[data-id]');
+            if (!over || over === dragging) return;
+            const box = over.getBoundingClientRect();
+            tbody.insertBefore(dragging, e.clientY > box.top + box.height / 2 ? over.nextSibling : over);
+        });
+        tbody.addEventListener('dragend', () => {
+            if (!dragging) return;
+            dragging.classList.remove('row-dragging');
+            dragging.draggable = false;
+            dragging = null;
+            const ids = order();
+            if (ids.join(',') === before) return;
+            const body = new URLSearchParams({ csrf_token: window.CSRF_TOKEN || '', entity: entity });
+            ids.forEach(id => body.append('ids[]', id));
+            fetch('/api/reorder.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            }).then(r => r.json()).then(res => {
+                if (!res.success) throw new Error(res.error || 'save failed');
+            }).catch(err => {
+                alert('Sıralama kaydedilemedi: ' + err.message);
+                location.reload();
+            });
+        });
+    },
+
+    /**
      * GET from /api/cc.php?action=X (optionally with an extra query string suffix)
      */
     ccGet(action, extraQuery = '') {

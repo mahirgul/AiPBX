@@ -174,6 +174,9 @@ class TrunkService {
 
             $is_new = ($trunk_id <= 0);
             $id = DBHelper::save('pbx_trunks', $trunk_data);
+            if ($is_new) {
+                getDB()->prepare("UPDATE pbx_trunks SET sort_order = (SELECT m FROM (SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM pbx_trunks) x) WHERE id = ?")->execute([$id]);
+            }
             if ($renamed) {
                 // PJSIP sections and outbound routes are keyed by the system name.
                 SIPHelper::deleteSettings($old_name);

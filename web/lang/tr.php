@@ -76,6 +76,7 @@ return [
     'dashboard.not_configured' => 'Yapılandırılmamış',
 
     // Trunks (Dış Hat Ayarları)
+    'common.drag_to_reorder' => 'Sıralamak için sürükleyin',
     'trunks.title' => 'Dış Hat Ayarları',
     'trunks.header' => 'SIP Dış Hat Yönetimi',
     'trunks.help_title' => 'SIP Dış Hat Yönetimi Rehberi',

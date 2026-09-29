@@ -95,7 +95,7 @@ class RouteService {
             }
 
             $is_new = ($route_id <= 0);
-            DBHelper::save('pbx_outbound_routes', [
+            $saved_id = DBHelper::save('pbx_outbound_routes', [
                 'id' => $route_id,
                 'route_name' => $route_name,
                 'match_pattern' => $match_pattern,
@@ -108,6 +108,9 @@ class RouteService {
                 'route_group' => $route_group,
                 'is_active' => $is_active
             ]);
+            if ($is_new) {
+                getDB()->prepare("UPDATE pbx_outbound_routes SET sort_order = (SELECT m FROM (SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM pbx_outbound_routes) x) WHERE id = ?")->execute([$saved_id]);
+            }
 
             markPendingSync('outbound_dialplan', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('ivrs', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);

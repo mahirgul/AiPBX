@@ -1,3 +1,4 @@
+<?php $can_reorder = hasModulePermission('outbound_routes', 'edit'); ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -25,9 +26,10 @@
     </div>
 
     <div class="table-responsive">
-        <table class="data-table">
+        <table class="data-table" id="routesTable" data-no-dt="true">
             <thead>
                 <tr>
+                    <?php if ($can_reorder): ?><th class="row-drag-handle"></th><?php endif; ?>
                     <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('outbound.col_route'); ?></th>
                     <th><?php echo t('outbound.col_pattern'); ?></th>
@@ -40,11 +42,12 @@
             </thead>
             <tbody>
                 <?php if (empty($routes)): ?>
-                    <?php echo uiTableEmptyRow(8, t('outbound.empty'), 'fa-sign-out-alt'); ?>
+                    <?php echo uiTableEmptyRow(8 + ($can_reorder ? 1 : 0), t('outbound.empty'), 'fa-sign-out-alt'); ?>
                 <?php else: ?>
                     <?php foreach ($routes as $r): ?>
                         <?php $route_trunks = !empty($r['trunks_json']) ? (json_decode($r['trunks_json'], true) ?: []) : []; ?>
-                        <tr>
+                        <tr data-id="<?php echo (int)$r['id']; ?>">
+                            <?php if ($can_reorder): ?><td class="row-drag-handle" title="<?php echo htmlspecialchars(t('common.drag_to_reorder')); ?>"><i class="fas fa-grip-vertical"></i></td><?php endif; ?>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
                             <td class="u-strong"><?php echo htmlspecialchars($r['route_name']); ?></td>
                             <td><span class="badge badge-info"><code><?php echo htmlspecialchars($r['match_pattern']); ?></code></span></td>
@@ -191,3 +194,7 @@
 </div>
 
 <script src="<?php echo asset('/assets/js/outbound_routes.js'); ?>"></script>
+
+<?php if ($can_reorder): ?>
+<script>UIHelper.enableRowReorder(document.getElementById('routesTable'), 'outbound_routes');</script>
+<?php endif; ?>

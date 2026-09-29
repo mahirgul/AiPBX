@@ -1,3 +1,4 @@
+<?php $can_reorder = hasModulePermission('trunks', 'edit'); ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -25,9 +26,10 @@
     </div>
 
     <div class="table-responsive">
-        <table class="data-table">
+        <table class="data-table" id="trunksTable" data-no-dt="true">
             <thead>
                 <tr>
+                    <?php if ($can_reorder): ?><th class="row-drag-handle"></th><?php endif; ?>
                     <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('trunks.col_trunk'); ?></th>
                     <th><?php echo t('trunks.col_title'); ?></th>
@@ -42,7 +44,7 @@
             </thead>
             <tbody>
                 <?php if (empty($trunks)): ?>
-                    <?php echo uiTableEmptyRow(10, t('trunks.empty'), 'fa-server'); ?>
+                    <?php echo uiTableEmptyRow(10 + ($can_reorder ? 1 : 0), t('trunks.empty'), 'fa-server'); ?>
                 <?php else: ?>
                     <?php foreach ($trunks as $t):
                         $live_class = AsteriskHelper::classifyStatus($trunk_statuses[$t['trunk_name']] ?? null);
@@ -53,7 +55,8 @@
                             default: $live_badge = 'badge-secondary'; $live_text = t('trunks.status_unknown');
                         }
                     ?>
-                        <tr>
+                        <tr data-id="<?php echo (int)$t['id']; ?>">
+                            <?php if ($can_reorder): ?><td class="row-drag-handle" title="<?php echo htmlspecialchars(t('common.drag_to_reorder')); ?>"><i class="fas fa-grip-vertical"></i></td><?php endif; ?>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $t['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-server"></i> <?php echo htmlspecialchars($t['trunk_name']); ?></span></td>
                             <td class="u-strong">
@@ -495,3 +498,7 @@
 </div>
 
 <script src="<?php echo asset('/assets/js/trunks.js'); ?>"></script>
+
+<?php if ($can_reorder): ?>
+<script>UIHelper.enableRowReorder(document.getElementById('trunksTable'), 'trunks');</script>
+<?php endif; ?>

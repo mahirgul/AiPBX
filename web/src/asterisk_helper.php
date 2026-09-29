@@ -132,7 +132,7 @@ class AsteriskHelper {
     public static function getPrimaryTrunkName() {
         try {
             $db = getDB();
-            $row = $db->query("SELECT trunk_name FROM pbx_trunks WHERE is_active = 1 ORDER BY id ASC LIMIT 1")->fetch();
+            $row = $db->query("SELECT trunk_name FROM pbx_trunks WHERE is_active = 1 ORDER BY sort_order ASC, id ASC LIMIT 1")->fetch();
             return !empty($row['trunk_name']) ? $row['trunk_name'] : null;
         } catch (\Exception $e) {
             return null;
