@@ -9,7 +9,7 @@ class FaxSendController extends BaseController
 
         $user_id = $_SESSION['user_id'];
         $user_ext = $_SESSION['extension'] ?? '8960';
-        $user_role = $_SESSION['user_role'] ?? 'fax_user';
+        $user_role = $_SESSION['user_role'] ?? 'user';
 
         $message = '';
         $error = '';

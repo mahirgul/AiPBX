@@ -155,7 +155,7 @@ function getModuleKeyForPage($page = null) {
 function getRolePermissionsMap($role_key = null) {
     static $cache = [];
     if ($role_key === null) {
-        $role_key = $_SESSION['user_role'] ?? 'fax_user';
+        $role_key = $_SESSION['user_role'] ?? 'user';
     }
     
     if (isset($cache[$role_key])) {

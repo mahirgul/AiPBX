@@ -30,7 +30,7 @@ class UserService {
             $sip_password = trim($data['sip_password'] ?? '');
             $full_name = trim($data['full_name'] ?? '');
             $email = trim($data['email'] ?? '');
-            $role = trim($data['role'] ?? 'cc_agent');
+            $role = trim($data['role'] ?? 'user');
             $extension = trim($data['extension'] ?? '');
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');

@@ -36,6 +36,7 @@ public struct RoleBadgeView: View {
         case "admin": return "Yönetici"
         case "cc_agent": return "Temsilci"
         case "standard_user": return "Standart"
+        case "user": return "Kullanıcı"
         default: return role.capitalized
         }
     }

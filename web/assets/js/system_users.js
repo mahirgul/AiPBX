@@ -11,7 +11,7 @@ function openCreateUserModal() {
     document.getElementById('modal_password').value = '';
     document.getElementById('modal_full_name').value = '';
     document.getElementById('modal_email').value = '';
-    document.getElementById('modal_role').value = 'cc_agent';
+    document.getElementById('modal_role').value = 'user';
     document.getElementById('modal_extension').value = '';
     if (document.getElementById('modal_sip_password')) document.getElementById('modal_sip_password').value = '';
     if (document.getElementById('modal_cid_internal')) document.getElementById('modal_cid_internal').value = '';
@@ -47,7 +47,7 @@ function openEditUserModal(u) {
     document.getElementById('modal_password').value = '';
     document.getElementById('modal_full_name').value = u.full_name || '';
     document.getElementById('modal_email').value = u.email || '';
-    document.getElementById('modal_role').value = u.role || 'cc_agent';
+    document.getElementById('modal_role').value = u.role || 'user';
     document.getElementById('modal_extension').value = u.extension || '';
     if (document.getElementById('modal_sip_password')) document.getElementById('modal_sip_password').value = u.sip_password || '';
     if (document.getElementById('modal_cid_internal')) document.getElementById('modal_cid_internal').value = u.cid_internal || '';

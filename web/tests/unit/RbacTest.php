@@ -45,7 +45,7 @@ final class RbacTest extends TestCase
             'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
              VALUES (?, ?, 1, 1, 1, 1)'
         );
-        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user'] as $rol) {
+        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $rol) {
             foreach (self::KILITLI as $modul) {
                 $stmt->execute([$rol, $modul]);
             }
@@ -60,7 +60,7 @@ final class RbacTest extends TestCase
     #[DataProvider('kilitliModuller')]
     public function testDbdeACIKCA_IZIN_VERILSE_BILE_adminDisindakiRollerReddedilir(string $modul): void
     {
-        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user'] as $rol) {
+        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $rol) {
             $_SESSION['user_role'] = $rol;
 
             $this->assertFalse(

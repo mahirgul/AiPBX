@@ -123,7 +123,7 @@ class ExtensionService {
                     'password_hash' => '',
                     'full_name' => $full_name,
                     'email' => '',
-                    'role' => 'fax_user',
+                    'role' => 'user',
                     'extension' => $extension,
                     'sip_password' => $extension_type === 'sip' ? $sip_password : '',
                     'sip_auth_digest' => $sip_auth_digest,
