@@ -91,6 +91,9 @@ function openCreateTrunkModal() {
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');
     if (allowOutEl) allowOutEl.checked = false;
     document.getElementById('modal_outbound_route_group').value = 1;
+    document.getElementById('modal_cid_keep_last').value = 0;
+    document.getElementById('modal_cid_prepend').value = '';
+    updateCidNormPreview();
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);
@@ -166,6 +169,9 @@ function openEditTrunkModal(item) {
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');
     if (allowOutEl) allowOutEl.checked = (item.allow_outbound_routing == 1);
     document.getElementById('modal_outbound_route_group').value = item.outbound_route_group || 1;
+    document.getElementById('modal_cid_keep_last').value = item.cid_keep_last || 0;
+    document.getElementById('modal_cid_prepend').value = item.cid_prepend || '';
+    updateCidNormPreview();
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);
@@ -175,6 +181,21 @@ function openEditTrunkModal(item) {
         modal.style.display = 'flex';
         modal.classList.add('active');
     }
+}
+
+// Mirrors buildTrunkCidNormalizeLine(): keep the last N digits, then prepend.
+function updateCidNormPreview() {
+    const box = document.getElementById('cid_norm_preview');
+    if (!box) return;
+    const keep = parseInt(document.getElementById('modal_cid_keep_last').value, 10) || 0;
+    const prepend = document.getElementById('modal_cid_prepend').value.replace(/[^0-9+]/g, '');
+    if (keep <= 0 && prepend === '') {
+        box.textContent = '';
+        return;
+    }
+    const sample = '03704187840';
+    const out = prepend + (keep > 0 ? sample.slice(-keep) : sample);
+    box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
 }
 
 function closeTrunkModal() {
