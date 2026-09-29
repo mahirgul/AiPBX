@@ -114,6 +114,9 @@
                     <button type="button" class="modal-tab-btn active trunk-tab-btn" data-tab="basic" onclick="switchTrunkTab('basic', this)"><i class="fas fa-sliders-h"></i> <?php echo t('trunks.tab_basic'); ?></button>
                     <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="auth" onclick="switchTrunkTab('auth', this)"><i class="fas fa-key"></i> <?php echo t('trunks.tab_auth'); ?></button>
                     <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="callerid" onclick="switchTrunkTab('callerid', this)"><i class="fas fa-id-badge"></i> <?php echo t('trunks.tab_callerid'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="media" onclick="switchTrunkTab('media', this)"><i class="fas fa-fax"></i> <?php echo t('trunks.tab_media'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="network" onclick="switchTrunkTab('network', this)"><i class="fas fa-network-wired"></i> <?php echo t('trunks.tab_network'); ?></button>
+                    <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="routing" onclick="switchTrunkTab('routing', this)"><i class="fas fa-random"></i> <?php echo t('trunks.tab_routing'); ?></button>
                     <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="advanced" onclick="switchTrunkTab('advanced', this)"><i class="fas fa-cogs"></i> <?php echo t('trunks.tab_advanced'); ?></button>
                 </div>
 
@@ -281,8 +284,8 @@
                     </div>
                 </div>
 
-                <!-- TAB 4: Sinyalizasyon, Medya & Gelişmiş (Signaling & Advanced) -->
-                <div id="trunk_tab_advanced" class="trunk-tab-pane" style="display: none;">
+                <!-- TAB: Media & fax / Network & NAT / Routing / Advanced -->
+                <div id="trunk_tab_media" class="trunk-tab-pane" style="display: none;">
                     <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_dtmf_mode'); ?></label>
@@ -345,7 +348,10 @@
                         </div>
                     </div>
 
-                    <div class="u-grid-2 u-mt-12">
+                </div>
+
+                <div id="trunk_tab_network" class="trunk-tab-pane" style="display: none;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_qualify'); ?></label>
                             <input type="number" name="qualify_frequency" id="modal_qualify_frequency" class="form-control" value="60" required>
@@ -399,7 +405,10 @@
                         </div>
                     </div>
 
-                    <div class="u-grid-2 u-mt-12">
+                </div>
+
+                <div id="trunk_tab_routing" class="trunk-tab-pane" style="display: none;">
+                    <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_context'); ?></label>
                             <input type="text" name="context" id="modal_context" class="form-control" value="from-trunk-inbound">
@@ -462,7 +471,10 @@
                         <div class="u-fs-11 u-mt-12" id="cid_norm_preview" data-label="<?php echo htmlspecialchars(t('trunks.outbound_cid_preview'), ENT_QUOTES); ?>"></div>
                     </div>
 
-                    <div class="form-group u-mt-12">
+                </div>
+
+                <div id="trunk_tab_advanced" class="trunk-tab-pane" style="display: none;">
+                    <div class="form-group">
                         <label class="form-label"><?php echo t('trunks.field_custom_params'); ?></label>
                         <textarea name="custom_pjsip_params" id="modal_custom_pjsip_params" class="form-control" rows="3" placeholder="trust_id_inbound=yes&#10;inband_progress=yes" style="font-family: monospace; font-size: 12px;"></textarea>
                         <small class="u-hint u-fs-11"><?php echo t('trunks.custom_params_help'); ?></small>
