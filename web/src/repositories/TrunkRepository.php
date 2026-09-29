@@ -7,7 +7,7 @@ class TrunkRepository extends BaseRepository
 
     public static function allOrdered(): array
     {
-        return static::findAll('id ASC');
+        return static::findAll('sort_order ASC, id ASC');
     }
 
     public static function livePjsipStatuses(): array

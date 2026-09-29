@@ -5,11 +5,11 @@ class OutboundRouteRepository extends BaseRepository
 
     public static function allOrdered(): array
     {
-        return static::findAll('id ASC');
+        return static::findAll('sort_order ASC, id ASC');
     }
 
     public static function activeTrunksForDropdown(): array
     {
-        return static::db()->query("SELECT trunk_name, title FROM pbx_trunks WHERE is_active = 1 ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
+        return static::db()->query("SELECT trunk_name, title FROM pbx_trunks WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
     }
 }
