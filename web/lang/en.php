@@ -224,6 +224,7 @@ return [
     'outbound.callerid_default' => 'Default Caller ID',
     'outbound.type_internal' => 'Internal',
     'outbound.type_external' => 'External',
+    'outbound.copy' => 'Copy',
     'outbound.confirm_delete' => 'Are you sure you want to delete the route %s?',
     'outbound.new_route' => 'Add New Outbound Route',
     'outbound.field_route_name' => 'Route Description Name *',
