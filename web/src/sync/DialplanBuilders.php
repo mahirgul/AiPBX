@@ -44,6 +44,20 @@ function buildCallCenterFallbackLines($action = 'hangup', $target = '') {
  * (FaxSendService::submitCallFile()) bu ayara HİÇ bakmaz, her zaman isimsizdir —
  * bu fonksiyonun kapsamı dışında, ayrı bir origination yolu.
  */
+/**
+ * Trunk outbound caller ID normalization: keep the last N digits, then prepend.
+ * E.g. keep 4 + prepend 90370418: 7840 → 903704187840.
+ */
+function buildTrunkCidNormalizeLine($norm) {
+    $keep = intval($norm['keep_last'] ?? 0);
+    $prepend = preg_replace('/[^0-9+]/', '', (string)($norm['prepend'] ?? ''));
+    if ($keep <= 0 && $prepend === '') {
+        return '';
+    }
+    $core = $keep > 0 ? "\${CALLERID(num):-{$keep}}" : "\${CALLERID(num)}";
+    return " same => n,ExecIf(\$[\"\${CALLERID(num)}\" != \"\"]?Set(CALLERID(num)={$prepend}{$core}))\n";
+}
+
 function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
     $lines = '';
     $override = preg_replace('/[^0-9]/', '', trim($trunk_entry['callerid_override'] ?? ''));

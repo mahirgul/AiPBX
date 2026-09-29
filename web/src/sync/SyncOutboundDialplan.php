@@ -19,8 +19,13 @@ function __syncOutboundDialplanBody() {
     // Trunk kanal sinirlari. Rotanin trunks_json'inda bu bilgi yok; sinir
     // trunk'in kendi kaydinda (pbx_trunks.max_channels) tutuluyor.
     $trunk_limitleri = [];
-    foreach (getDB()->query("SELECT trunk_name, max_channels FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
+    $trunk_cid_norm = [];
+    foreach (getDB()->query("SELECT trunk_name, max_channels, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limitleri[$tl['trunk_name']] = intval($tl['max_channels']);
+        $trunk_cid_norm[$tl['trunk_name']] = [
+            'keep_last' => max(0, min(20, intval($tl['cid_keep_last'] ?? 0))),
+            'prepend' => preg_replace('/[^0-9+]/', '', (string)($tl['cid_prepend'] ?? '')),
+        ];
     }
 
     $db = getDB();
@@ -100,7 +105,11 @@ function __syncOutboundDialplanBody() {
             $dial_num = $prepend . $core . $append;
 
             // İlk denenecek trunk'ın CID'i, kayıt dosyası adı belirlenmeden önce uygulanır.
+            // The original caller number is restored before every trunk attempt,
+            // so a fallback trunk's normalization does not stack on the previous one.
+            $conf .= " same => n,Set(AIPBX_SRC_CID=\${CALLERID(num)})\n";
             $conf .= buildTrunkCallerIdLine($trunk_chain[0], $is_internal);
+            $conf .= buildTrunkCidNormalizeLine($trunk_cid_norm[$trunk_chain[0]['trunk_name']] ?? null);
 
             $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}_to_{$dial_num}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
@@ -116,7 +125,9 @@ function __syncOutboundDialplanBody() {
                 $step = $idx + 1;
                 if ($idx > 0) {
                     $conf .= " same => n(try{$step}),NoOp(Trying trunk {$t['trunk_name']})\n";
+                    $conf .= " same => n,Set(CALLERID(num)=\${AIPBX_SRC_CID})\n";
                     $conf .= buildTrunkCallerIdLine($t, $is_internal);
+                    $conf .= buildTrunkCidNormalizeLine($trunk_cid_norm[$t['trunk_name']] ?? null);
                 }
                 // Trunk kanal siniri. `max_channels` panelde giriliyor ve
                 // veritabanina yaziliyordu ama dialplan'a HIC yansimiyordu:

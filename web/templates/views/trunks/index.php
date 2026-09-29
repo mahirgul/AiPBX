@@ -443,6 +443,25 @@
                         </div>
                     </div>
 
+                    <!-- Giden Çağrı Arayan No Normalizasyonu -->
+                    <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
+                            <i class="fas fa-phone-alt u-primary"></i> <?php echo t('trunks.section_outbound_cid'); ?>
+                        </h4>
+                        <div class="u-grid-2">
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_cid_keep_last'); ?></label>
+                                <input type="number" name="cid_keep_last" id="modal_cid_keep_last" class="form-control" value="0" min="0" max="20" oninput="updateCidNormPreview()">
+                            </div>
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_cid_prepend'); ?></label>
+                                <input type="text" name="cid_prepend" id="modal_cid_prepend" class="form-control" maxlength="30" inputmode="numeric" placeholder="90370418" oninput="updateCidNormPreview()">
+                            </div>
+                        </div>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.outbound_cid_help'); ?></small>
+                        <div class="u-fs-11 u-mt-12" id="cid_norm_preview" data-label="<?php echo htmlspecialchars(t('trunks.outbound_cid_preview'), ENT_QUOTES); ?>"></div>
+                    </div>
+
                     <div class="form-group u-mt-12">
                         <label class="form-label"><?php echo t('trunks.field_custom_params'); ?></label>
                         <textarea name="custom_pjsip_params" id="modal_custom_pjsip_params" class="form-control" rows="3" placeholder="trust_id_inbound=yes&#10;inband_progress=yes" style="font-family: monospace; font-size: 12px;"></textarea>
