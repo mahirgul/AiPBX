@@ -298,6 +298,7 @@ apt-get install -y \
   fail2ban \
   firewalld \
   ghostscript \
+  lame \
   libtiff-tools \
   postfix \
   libsasl2-modules \
@@ -334,7 +335,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # as the asterisk user through the symlinks (feature codes, fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php; do
+for script in feature_code_action.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -352,6 +353,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Outgoing fax pending sweep (detect unanswered / stale spool files)
 * * * * * root /usr/local/bin/fax_pending_sweep.sh >/dev/null 2>&1
+
+# Call recordings: finished WAVs → mono 16 kbps MP3 (~8x smaller)
+*/5 * * * * root /usr/local/bin/recordings_to_mp3.php >/dev/null 2>&1
 
 # Daily check for a new AiPBX release (shown on the portal's System Update page)
 37 4 * * * root /usr/local/sbin/aipbx-update --check >/dev/null 2>&1
@@ -829,10 +833,14 @@ fi
 
 # Ubuntu 24.04/26.04+ systemd proc isolation drop-in (allow Apache/PHP to inspect /proc/meminfo and pgrep asterisk)
 mkdir -p /etc/systemd/system/apache2.service.d
+# Ubuntu's apache2 unit makes /etc/sudoers{,.d} inaccessible, which breaks
+# every portal call to aipbx-priv. Reset the list and restore the rest of it.
 cat > /etc/systemd/system/apache2.service.d/override.conf << 'APACHEOVERRIDE'
 [Service]
 ProcSubset=all
 ProtectProc=default
+InaccessiblePaths=
+InaccessiblePaths=/boot /root -/etc/ssh -/etc/apt -/etc/.git -/etc/.svn
 APACHEOVERRIDE
 systemctl daemon-reload
 
