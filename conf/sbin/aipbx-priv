@@ -173,7 +173,9 @@ case "$cmd" in
                     # Only the line number is reported, never its content.
                     die "line not allowed in staged file: $n"
                 done < "$tmp"
-                install -o root -g root -m 0644 "$tmp" /etc/fail2ban/jail.d/99-ai-pbx.local
+                # zz-: fail2ban reads jail.d in name order and this must win.
+                install -o root -g root -m 0644 "$tmp" /etc/fail2ban/jail.d/zz-ai-pbx.local
+                rm -f /etc/fail2ban/jail.d/99-ai-pbx.local
                 ;;
             *) die "unknown f2b command: $sub" ;;
         esac
