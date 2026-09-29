@@ -1202,8 +1202,14 @@ JAIL
 # install-override` validates and installs them.
 chown -R root:root /etc/fail2ban/jail.d
 chmod 755 /etc/fail2ban/jail.d
-touch /etc/fail2ban/jail.d/99-ai-pbx.local
-chmod 644 /etc/fail2ban/jail.d/99-ai-pbx.local
+# The panel's overrides must be read last: fail2ban sorts jail.d by name, so
+# "99-..." sorted before asterisk.local / aipbx-web.local and was overridden.
+if [[ -f /etc/fail2ban/jail.d/99-ai-pbx.local ]]; then
+    mv -n /etc/fail2ban/jail.d/99-ai-pbx.local /etc/fail2ban/jail.d/zz-ai-pbx.local
+    rm -f /etc/fail2ban/jail.d/99-ai-pbx.local
+fi
+touch /etc/fail2ban/jail.d/zz-ai-pbx.local
+chmod 644 /etc/fail2ban/jail.d/zz-ai-pbx.local
 
 systemctl enable fail2ban 2>/dev/null || true
 systemctl restart fail2ban 2>/dev/null || true
