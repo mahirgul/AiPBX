@@ -963,6 +963,21 @@ fi
 
 chown -R asterisk:asterisk /var/lib/asterisk/sounds/
 chmod -R 755 /var/lib/asterisk/sounds/
+
+# Debian's Asterisk searches prompts in /usr/share/asterisk/sounds, where
+# "custom" points at /usr/local/share/asterisk/sounds. The portal stores sounds
+# in /var/lib/asterisk/sounds/{custom,tr}; without these links every IVR,
+# announcement and Turkish prompt failed with "does not exist in any format".
+link_sound_dir() {  # link_sound_dir TARGET LINK
+    if [[ -d "$2" && ! -L "$2" ]]; then
+        cp -an "$2"/. "$1"/ 2>/dev/null || true
+        rm -rf "$2"
+    fi
+    mkdir -p "$(dirname "$2")"
+    ln -sfn "$1" "$2"
+}
+link_sound_dir /var/lib/asterisk/sounds/custom /usr/local/share/asterisk/sounds
+link_sound_dir /var/lib/asterisk/sounds/tr /usr/share/asterisk/sounds/tr
 chown -R asterisk:asterisk /etc/asterisk/
 chmod -R 775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
