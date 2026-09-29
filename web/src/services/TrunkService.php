@@ -101,6 +101,9 @@ class TrunkService {
             $allow_outbound_routing = isset($data['allow_outbound_routing']) ? intval($data['allow_outbound_routing']) : 0;
             $outbound_route_group = max(1, intval($data['outbound_route_group'] ?? 1));
             $max_channels = max(0, intval($data['max_channels'] ?? 0));
+            $cid_keep_last = max(0, min(20, intval($data['cid_keep_last'] ?? 0)));
+            $cid_prepend = preg_replace('/[^0-9+]/', '', trim($data['cid_prepend'] ?? ''));
+            $cid_prepend = substr($cid_prepend, 0, 30);
 
             $direct_media = in_array(strtolower(trim($data['direct_media'] ?? '')), ['no', 'yes', 'nonat'], true)
                 ? strtolower(trim($data['direct_media']))
@@ -148,6 +151,8 @@ class TrunkService {
                 'allow_outbound_routing' => $allow_outbound_routing,
                 'outbound_route_group' => $outbound_route_group,
                 'max_channels' => $max_channels,
+                'cid_keep_last' => $cid_keep_last,
+                'cid_prepend' => $cid_prepend !== '' ? $cid_prepend : null,
                 'direct_media' => $direct_media,
                 'timers' => $timers,
                 'rtp_symmetric' => $rtp_symmetric,
