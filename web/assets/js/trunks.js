@@ -198,6 +198,21 @@ function updateCidNormPreview() {
     box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
 }
 
+// Opens the create dialog pre-filled with an existing trunk's settings.
+function openCopyTrunkModal(item) {
+    if (!item) return;
+    openEditTrunkModal(item);
+    document.getElementById('modal_trunk_id').value = '';
+    const nameEl = document.getElementById('modal_trunk_name');
+    nameEl.readOnly = false;
+    nameEl.value = (item.trunk_name || 'trunk') + '_copy';
+    document.getElementById('modal_title').value = (item.title || item.trunk_name || '') + ' (kopya)';
+    const title = document.getElementById('trunkModalTitle');
+    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> Dış Hat Kopyala: ' + escapeHtml(item.title || item.trunk_name || '');
+    nameEl.focus();
+    nameEl.select();
+}
+
 function closeTrunkModal() {
     UIHelper.closeOverlayModal('trunkModal');
 }

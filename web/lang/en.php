@@ -121,6 +121,7 @@ return [
     'trunks.tab_media' => 'Media & Fax',
     'trunks.tab_network' => 'Network & NAT',
     'trunks.tab_routing' => 'Routing',
+    'trunks.copy' => 'Copy',
     'trunks.tab_advanced' => 'Advanced',
     'trunks.field_auth_username' => 'SIP Username (Auth Username)',
     'trunks.field_auth_password' => 'SIP Password (Auth Password)',
