@@ -1694,6 +1694,7 @@ return [
     'my_phone.stat_total_duration' => 'Toplam Konuşma',
     'my_phone.recent_calls' => 'Son Aramalarım',
     'my_phone.tab_history' => 'Çağrı Geçmişim',
+    'my_phone.tab_calls' => 'Çağrı Ayarları',
     'my_phone.tab_settings' => 'Telefon & Cihaz Ayarları',
     'my_phone.filter_all' => 'Tümü',
     'my_phone.filter_in' => 'Gelenler',
