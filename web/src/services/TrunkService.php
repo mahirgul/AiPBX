@@ -29,7 +29,12 @@ class TrunkService {
             if (!$is_valid_ip && !$is_valid_hostname) {
                 throw new \Exception("Geçersiz IP adresi veya sunucu adı: '{$ip_address}'");
             }
-            if ($trunk_id <= 0 && DBHelper::fetchOne("SELECT id FROM pbx_trunks WHERE trunk_name = ?", [$trunk_name])) {
+            $old_name = null;
+            if ($trunk_id > 0) {
+                $old_name = DBHelper::fetchOne("SELECT trunk_name FROM pbx_trunks WHERE id = ?", [$trunk_id])['trunk_name'] ?? null;
+            }
+            $renamed = ($old_name !== null && $old_name !== $trunk_name);
+            if (($trunk_id <= 0 || $renamed) && DBHelper::fetchOne("SELECT id FROM pbx_trunks WHERE trunk_name = ?", [$trunk_name])) {
                 throw new \Exception("'{$trunk_name}' sistem adıyla bir trunk zaten var — farklı bir ad girin.");
             }
             if ($port < 1 || $port > 65535) {
@@ -169,6 +174,11 @@ class TrunkService {
 
             $is_new = ($trunk_id <= 0);
             $id = DBHelper::save('pbx_trunks', $trunk_data);
+            if ($renamed) {
+                // PJSIP sections and outbound routes are keyed by the system name.
+                SIPHelper::deleteSettings($old_name);
+                self::renameInOutboundRoutes($old_name, $trunk_name);
+            }
             SIPHelper::syncTrunkToSIP($trunk_data);
 
             markPendingSync('trunks', 'trunk', $trunk_name, "Trunk: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
@@ -180,6 +190,27 @@ class TrunkService {
             markPendingSync('inbound_dialplan', 'trunk', $trunk_name, "Trunk gelen rota/DID ayarı: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return "SIP Trunk '{$title}' ({$trunk_name}) kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
         });
+    }
+
+    private static function renameInOutboundRoutes(string $old, string $new): void {
+        $db = getDB();
+        $rows = $db->query("SELECT id, trunks_json FROM pbx_outbound_routes WHERE trunks_json IS NOT NULL AND trunks_json <> ''")->fetchAll(PDO::FETCH_ASSOC);
+        $upd = $db->prepare("UPDATE pbx_outbound_routes SET trunks_json = ? WHERE id = ?");
+        foreach ($rows as $r) {
+            $list = json_decode($r['trunks_json'], true);
+            if (!is_array($list)) continue;
+            $changed = false;
+            foreach ($list as &$t) {
+                if (($t['trunk_name'] ?? '') === $old) {
+                    $t['trunk_name'] = $new;
+                    $changed = true;
+                }
+            }
+            unset($t);
+            if ($changed) {
+                $upd->execute([json_encode($list, JSON_UNESCAPED_UNICODE), $r['id']]);
+            }
+        }
     }
 
     public static function deleteTrunk($trunk_id, $csrf_token) {
