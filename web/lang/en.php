@@ -1694,6 +1694,7 @@ return [
     'my_phone.stat_total_duration' => 'Total Talk Time',
     'my_phone.recent_calls' => 'Recent Calls',
     'my_phone.tab_history' => 'Call History',
+    'my_phone.tab_calls' => 'Call Settings',
     'my_phone.tab_settings' => 'Phone & Device Settings',
     'my_phone.filter_all' => 'All',
     'my_phone.filter_in' => 'Incoming',

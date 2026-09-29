@@ -63,7 +63,7 @@ class MyPhoneController extends BaseController
                 writeAuditLog(null, 'user_settings', 'phone', $logDetail, 'update', $userId);
                 static::notifySuccess(t('my_phone.msg_settings_saved'));
             }
-            static::redirect('/my-phone?tab=settings');
+            static::redirect('/my-phone?tab=calls');
             return;
         }
 
@@ -74,7 +74,7 @@ class MyPhoneController extends BaseController
         $voicemailMessages = VoicemailService::getVoicemailMessages($ext);
 
         $tab = trim($_GET['tab'] ?? 'history');
-        if (!in_array($tab, ['history', 'settings', 'voicemail'], true)) {
+        if (!in_array($tab, ['history', 'calls', 'settings', 'voicemail'], true)) {
             $tab = 'history';
         }
 
