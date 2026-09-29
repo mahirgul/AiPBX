@@ -117,8 +117,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         min-width: 100% !important;
         max-width: 100% !important;
     }
-    .my-phone-subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-    .my-phone-subpane[hidden] { display: none !important; }
+    .my-phone-settings-form { display: contents; }
     #tab-pane-history {
         padding: 14px 12px !important;
     }
@@ -437,25 +436,16 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         <!-- TAB 2: TELEFON & CİHAZ AYARLARI (Geniş 3 Kolonlu Izgara Düzeni) -->
         <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
             
-            <!-- Kart 1: Telefon & Yönlendirme Ayarları -->
+            <!-- Settings cards share one form (display: contents) so any Save stores every setting. -->
+            <form method="POST" action="/my-phone" class="my-phone-settings-form">
+                <input type="hidden" name="action" value="save_settings">
+                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+
+            <!-- Kart: Genel -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-sliders-h u-primary"></i> <?php echo t('my_phone.settings_title'); ?>
+                    <i class="fas fa-sliders-h u-primary"></i> <?php echo t('my_phone.general_title'); ?>
                 </h3>
-
-                <form method="POST" action="/my-phone">
-                    <input type="hidden" name="action" value="save_settings">
-                    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-
-                    <div class="my-phone-subtabs" role="tablist">
-                        <button type="button" class="btn btn-sm btn-primary" data-subtab="general" onclick="switchMyPhoneSubtab('general')"><i class="fas fa-sliders-h"></i> <?php echo t('my_phone.subtab_general'); ?></button>
-                        <button type="button" class="btn btn-sm btn-secondary" data-subtab="forward" onclick="switchMyPhoneSubtab('forward')"><i class="fas fa-share"></i> <?php echo t('my_phone.subtab_forward'); ?></button>
-                        <?php if (!$isFaxUser): ?>
-                        <button type="button" class="btn btn-sm btn-secondary" data-subtab="voicemail" onclick="switchMyPhoneSubtab('voicemail')"><i class="fas fa-voicemail"></i> <?php echo t('my_phone.subtab_voicemail'); ?></button>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="my-phone-subpane" data-subpane="general">
                     <!-- Rahatsız Etmeyin (DND) Switch -->
                     <div class="form-group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
                         <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0;">
@@ -532,13 +522,23 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </div>
                     </div>
 
-                    </div>
+                    <?php if (hasModulePermission('my_phone', 'edit')): ?>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                            <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                            <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
+                        </button>
+                    <?php endif; ?>
+            </div>
 
-                    <div class="my-phone-subpane" data-subpane="forward" hidden>
+            <!-- Kart: Yönlendirme -->
+            <div class="card" style="padding: 24px; border-radius: 14px;">
                     <!-- Çağrı Yönlendirme Seçenekleri (Her Zaman, Meşgulken, Cevapsızken) -->
-                    <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                    <div class="u-mb-20">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                            <div style="font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-share u-warning"></i> <?php echo t('my_phone.cf_card_title'); ?>
                             </div>
                             <?php
@@ -603,14 +603,24 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </div>
                     </div>
 
-                    </div>
+                    <?php if (hasModulePermission('my_phone', 'edit')): ?>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                            <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                            <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
+                        </button>
+                    <?php endif; ?>
+            </div>
 
-                    <div class="my-phone-subpane" data-subpane="voicemail" hidden>
-                    <?php if (!$isFaxUser): ?>
+            <?php if (!$isFaxUser): ?>
+            <!-- Kart: Sesli Posta -->
+            <div class="card" style="padding: 24px; border-radius: 14px;">
                     <!-- Sesli Posta (Voicemail) Tercihleri -->
-                    <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                    <div class="u-mb-20">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                            <div style="font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-voicemail u-primary"></i> Sesli Posta (Voicemail) Ayarları
                             </div>
                             <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 12px;">
@@ -650,10 +660,6 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </label>
                         </div>
                     </div>
-                    <?php endif; ?>
-
-                    </div>
-
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
                         <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
@@ -663,8 +669,9 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
                         </button>
                     <?php endif; ?>
-                </form>
             </div>
+            <?php endif; ?>
+            </form>
 
             <!-- Kart 2: WebRTC Aygıt & Zil Sesi Ayarları -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
@@ -1007,21 +1014,6 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 /**
  * Kişisel Telefonum Sayfası JS İşlevleri
  */
-function switchMyPhoneSubtab(name) {
-    document.querySelectorAll('.my-phone-subpane').forEach(function (p) { p.hidden = (p.dataset.subpane !== name); });
-    document.querySelectorAll('.my-phone-subtabs [data-subtab]').forEach(function (b) {
-        const on = (b.dataset.subtab === name);
-        b.classList.toggle('btn-primary', on);
-        b.classList.toggle('btn-secondary', !on);
-    });
-    try { localStorage.setItem('my_phone_settings_subtab', name); } catch (e) {}
-}
-document.addEventListener('DOMContentLoaded', function () {
-    let saved = null;
-    try { saved = localStorage.getItem('my_phone_settings_subtab'); } catch (e) {}
-    if (saved && document.querySelector('.my-phone-subtabs [data-subtab="' + saved + '"]')) switchMyPhoneSubtab(saved);
-});
-
 function switchMyPhoneTab(tabName) {
     const paneHistory = document.getElementById("tab-pane-history");
     const paneSettings = document.getElementById("tab-pane-settings");
