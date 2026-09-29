@@ -98,16 +98,7 @@ class TwoFactorLoginController extends BaseController
                         writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' 2FA ile başarılı oturum açtı.", 'two_factor_login');
                     }
 
-                    if ($user['role'] === 'admin') {
-                        $redirect = '/dashboard';
-                    } elseif ($user['role'] === 'cc_agent') {
-                        $redirect = '/cc-agent';
-                    } elseif ($user['role'] === 'cc_manager') {
-                        $redirect = '/cc-supervisor';
-                    } else {
-                        $redirect = '/fax-inbox';
-                    }
-                    static::redirect($redirect);
+                    static::redirect(roleHomePath($user['role']));
                     return;
                 } else {
                     if (function_exists('logLoginAttempt')) {

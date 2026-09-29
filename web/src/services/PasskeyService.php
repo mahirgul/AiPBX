@@ -304,16 +304,7 @@ class PasskeyService
                 writeAuditLog($passkey['user_id'], 'sys_users', $passkey['user_id'], "Kullanıcı '{$passkey['username']}' Passkey ({$passkey['device_name']}) ile giriş yaptı.", 'passkey_login');
             }
 
-            // Role yönlendirmesi
-            if ($passkey['role'] === 'admin') {
-                $redirect = '/dashboard';
-            } elseif ($passkey['role'] === 'cc_agent') {
-                $redirect = '/cc-agent';
-            } elseif ($passkey['role'] === 'cc_manager') {
-                $redirect = '/cc-supervisor';
-            } else {
-                $redirect = '/fax-inbox';
-            }
+            $redirect = roleHomePath($passkey['role']);
 
             return ['success' => true, 'redirect' => $redirect];
         } catch (\Exception $e) {

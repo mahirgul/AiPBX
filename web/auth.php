@@ -90,6 +90,19 @@ function getOtherActiveAdmins($exclude_user_id, $window_seconds = 120) {
     }
 }
 
+/**
+ * Landing page after sign-in for a role (all login flows and "/" use this).
+ */
+function roleHomePath(string $role): string {
+    return match ($role) {
+        'admin' => '/dashboard',
+        'cc_agent' => '/cc-agent',
+        'cc_manager' => '/cc-supervisor',
+        'fax_user' => '/fax-inbox',
+        default => '/my-phone',
+    };
+}
+
 function _isSessionActivityFresh() {
     $idle_limit = 3600;
     return !isset($_SESSION['last_activity']) || (time() - $_SESSION['last_activity']) <= $idle_limit;

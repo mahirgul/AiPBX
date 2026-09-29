@@ -83,15 +83,7 @@ class LoginService {
             // Reset captcha
             unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
-            // Role-based redirect
-            if ($user['role'] === 'admin') {
-                $redirect = '/dashboard';
-            } elseif ($user['role'] === 'cc_agent') {
-                $redirect = '/cc-agent';
-            } else {
-                $redirect = '/fax-inbox';
-            }
-            return ['redirect' => $redirect];
+            return ['redirect' => roleHomePath($user['role'])];
         }
 
         logLoginAttempt($clientIp, $username, 'FAILED');
