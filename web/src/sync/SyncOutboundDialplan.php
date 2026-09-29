@@ -114,8 +114,6 @@ function __syncOutboundDialplanBody() {
             $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}_to_{$dial_num}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
             $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
-            $conf .= " same => n,Set(CDR(dst)={$dial_num})\n";
-            $conf .= " same => n,Set(__SAVED_DST={$dial_num})\n";
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";
 
             // Sırayla dene: bir trunk CHANUNAVAIL/CONGESTION dönerse bir sonrakine geç.
@@ -177,14 +175,10 @@ function __syncOutboundDialplanBody() {
         } else {
             $conf .= "exten => _NXXXXXX,1,NoOp(Fallback Outbound Call)\n";
             $conf .= " same => n,Set(CDR(direction)=outbound)\n";
-            $conf .= " same => n,Set(CDR(dst)=\${EXTEN})\n";
-            $conf .= " same => n,Set(__SAVED_DST=\${EXTEN})\n";
             $conf .= " same => n,Dial(PJSIP/\${EXTEN}@{$fallback_trunk},{$external_dial_timeout},T)\n";
             $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n\n";
             $conf .= "exten => _05XXXXXXXXX,1,NoOp(Fallback Mobile Outbound Call)\n";
             $conf .= " same => n,Set(CDR(direction)=outbound)\n";
-            $conf .= " same => n,Set(CDR(dst)=\${EXTEN})\n";
-            $conf .= " same => n,Set(__SAVED_DST=\${EXTEN})\n";
             $conf .= " same => n,Dial(PJSIP/\${EXTEN}@{$fallback_trunk},{$external_dial_timeout},T)\n";
             $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n\n";
         }
@@ -203,36 +197,28 @@ function __syncOutboundDialplanBody() {
     $conf .= "; ---- Giden Cagri Durum Yonetimi (D-1 / D-2) ----\n";
     $conf .= "[sub-outbound-status]\n";
     $conf .= "exten => s,1,NoOp(Outbound Status: s - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(\${IF(\$[\"\${HANGUPCAUSE}\" != \"\" & \"\${HANGUPCAUSE}\" != \"0\"]?\${HANGUPCAUSE}:16)})\n\n";
     $conf .= "exten => ANSWER,1,NoOp(Outbound Status: ANSWER - Normal Hangup)\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(16)\n\n";
     $conf .= "exten => BUSY,1,NoOp(Outbound Status: BUSY - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(17)\n\n";
     $conf .= "exten => CONGESTION,1,NoOp(Outbound Status: CONGESTION - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(34)\n\n";
     $conf .= "exten => CHANUNAVAIL,1,NoOp(Outbound Status: CHANUNAVAIL - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(\${IF(\$[\"\${HANGUPCAUSE}\" != \"\" & \"\${HANGUPCAUSE}\" != \"0\"]?\${HANGUPCAUSE}:1)})\n\n";
     $conf .= "exten => NOANSWER,1,NoOp(Outbound Status: NOANSWER - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(19)\n\n";
     $conf .= "exten => CANCEL,1,NoOp(Outbound Status: CANCEL)\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(16)\n\n";
-    $conf .= "exten => DONTCALL,1,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
+    $conf .= "exten => DONTCALL,1,NoOp(Outbound Status: DONTCALL)\n";
     $conf .= " same => n,Hangup(21)\n\n";
-    $conf .= "exten => TORTURE,1,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
+    $conf .= "exten => TORTURE,1,NoOp(Outbound Status: TORTURE)\n";
     $conf .= " same => n,Hangup(21)\n\n";
-    $conf .= "exten => INVALIDARGS,1,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
+    $conf .= "exten => INVALIDARGS,1,NoOp(Outbound Status: INVALIDARGS)\n";
     $conf .= " same => n,Hangup(38)\n\n";
     $conf .= "exten => i,1,NoOp(Outbound Status: Unknown status - Cause: \${HANGUPCAUSE})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
     $conf .= " same => n,Hangup(\${IF(\$[\"\${HANGUPCAUSE}\" != \"\" & \"\${HANGUPCAUSE}\" != \"0\"]?\${HANGUPCAUSE}:16)})\n\n";
-    $conf .= "exten => e,1,ExecIf(\$[\"\${SAVED_DST}\" != \"\"]?Set(CDR(dst)=\${SAVED_DST}))\n";
+    $conf .= "exten => e,1,NoOp(Outbound Status: e)\n";
     $conf .= " same => n,Hangup(16)\n\n";
     $conf .= "exten => h,1,NoOp(Outbound Channel Hangup Complete)\n\n";
 
