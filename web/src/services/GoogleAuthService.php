@@ -298,16 +298,7 @@ class GoogleAuthService
             writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' Google ({$user['email']}) ile giriş yaptı.", 'google_login');
         }
 
-        // Rol yönlendirmesi
-        if ($user['role'] === 'admin') {
-            return '/dashboard';
-        } elseif ($user['role'] === 'cc_agent') {
-            return '/cc-agent';
-        } elseif ($user['role'] === 'cc_manager') {
-            return '/cc-supervisor';
-        } else {
-            return '/fax-inbox';
-        }
+        return roleHomePath($user['role']);
     }
 
     /**

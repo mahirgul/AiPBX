@@ -105,18 +105,7 @@ if ($ROUTES[$path] === 'role') {
         header('Location: /login');
         exit;
     }
-    $role = $_SESSION['user_role'] ?? '';
-    if ($role === 'admin') {
-        header('Location: /dashboard');
-    } elseif ($role === 'cc_agent') {
-        header('Location: /cc-agent');
-    } elseif ($role === 'cc_manager') {
-        header('Location: /cc-supervisor');
-    } elseif ($role === 'user') {
-        header('Location: /my-phone');
-    } else {
-        header('Location: /fax-inbox');
-    }
+    header('Location: ' . roleHomePath($_SESSION['user_role'] ?? ''));
     exit;
 }
 
