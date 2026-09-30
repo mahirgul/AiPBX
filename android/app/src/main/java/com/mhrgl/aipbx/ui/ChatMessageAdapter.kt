@@ -40,8 +40,37 @@ class ChatMessageAdapter(
         notifyDataSetChanged()
     }
 
+    private var receiptRead = 0L
+    private var receiptDelivered = 0L
+
+    private fun statusFor(id: Long): String = when {
+        receiptRead > 0 && id <= receiptRead -> "read"
+        receiptDelivered > 0 && id <= receiptDelivered -> "delivered"
+        else -> "sent"
+    }
+
+    /** Applies a "receipts" event to own messages (ids up to read/delivered). */
+    fun applyReceipts(readUpto: Long, deliveredUpto: Long) {
+        receiptRead = maxOf(receiptRead, readUpto)
+        receiptDelivered = maxOf(receiptDelivered, deliveredUpto)
+        messages.forEachIndexed { i, m ->
+            val mine = m.isMe || m.senderExt == myExtension
+            if (!mine || m.id <= 0 || m.msgType == "system") return@forEachIndexed
+            val status = statusFor(m.id)
+            if (status != m.status && rank(status) > rank(m.status)) {
+                m.status = status
+                notifyItemChanged(i)
+            }
+        }
+    }
+
+    private fun rank(status: String?): Int = when (status) { "read" -> 2; "delivered" -> 1; else -> 0 }
+
     fun addMessage(msg: ChatMessage) {
         if (msg.id > 0 && messages.any { it.id == msg.id }) return
+        if ((msg.isMe || msg.senderExt == myExtension) && msg.id > 0 && rank(statusFor(msg.id)) > rank(msg.status)) {
+            msg.status = statusFor(msg.id)
+        }
         messages.add(msg)
         notifyItemInserted(messages.size - 1)
     }
@@ -94,6 +123,7 @@ class ChatMessageAdapter(
         private val tvSenderName: TextView? = itemView.findViewById(R.id.tvSenderName)
         private val tvMessage: TextView = itemView.findViewById(R.id.tvMessage)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
+        private val tvStatus: TextView? = itemView.findViewById(R.id.tvStatus)
         private val ivImage: ImageView = itemView.findViewById(R.id.ivImage)
         private val llFileAttachment: LinearLayout = itemView.findViewById(R.id.llFileAttachment)
         private val tvFileName: TextView = itemView.findViewById(R.id.tvFileName)
@@ -155,6 +185,13 @@ class ChatMessageAdapter(
             }
 
             tvTime.text = formatTime(m.createdAt)
+            tvStatus?.let { tv ->
+                when (m.status) {
+                    "read" -> { tv.text = "✓✓"; tv.setTextColor(0xFF7DD3FC.toInt()) }
+                    "delivered" -> { tv.text = "✓✓"; tv.setTextColor(0xFFE0F2FE.toInt()) }
+                    else -> { tv.text = "✓"; tv.setTextColor(0xFFE0F2FE.toInt()) }
+                }
+            }
         }
 
         private fun getDeterministicColor(ext: String): Int {
