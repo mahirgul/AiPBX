@@ -121,6 +121,9 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 
 Do not enable `ufw` on top of this.
 
+**Recommended:** if only your carrier and local phones use SIP, allow 5060/5061 only from those
+addresses instead of the whole internet — see [docs/security.md](docs/security.md#firewall).
+
 ### 3.5 Switching to a Let's Encrypt Certificate
 If you installed with a self-signed certificate and later point the portal's domain
 (`PORTAL_DOMAIN` in `/etc/ai-pbx.env`) to the server:
@@ -131,6 +134,13 @@ sudo bash /opt/aipbx/install.sh --upgrade   # uses the new certificate everywher
 ```
 
 The renewal hook copies renewed certificates to coturn and Asterisk automatically.
+
+### 3.6 E-mail Relay
+Fax-to-e-mail, voicemail notifications and invitations are sent through postfix. Set your relay on
+**Admin → E-Mail** — see [docs/mail.md](docs/mail.md).
+
+### 3.7 Next Steps
+Trunks, routes, roles, recordings, sounds and troubleshooting: [documentation](docs/README.md).
 
 ---
 
@@ -151,4 +161,8 @@ The renewal hook copies renewed certificates to coturn and Asterisk automaticall
 | Updater | `/usr/local/sbin/aipbx-update` |
 | Update backups / log | `/var/backups/aipbx/` · `/var/log/aipbx/update.log` |
 | Fax archive | `/var/www/faxes/` |
-| Call recordings | `/var/spool/asterisk/monitor/` |
+| Call recordings (converted to MP3 every 5 min) | `/var/spool/asterisk/monitor/` |
+| Uploaded / Turkish sounds | `/var/lib/asterisk/sounds/custom/` · `/var/lib/asterisk/sounds/tr/` |
+| Apache sandbox override | `/etc/systemd/system/apache2.service.d/override.conf` |
+| Portal fail2ban overrides | `/etc/fail2ban/jail.d/zz-ai-pbx.local` |
+| Maintenance cron jobs | `/etc/cron.d/aipbx` |
