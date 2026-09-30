@@ -28,6 +28,7 @@ class DashboardController extends BaseController
 
         $stats = DashboardRepository::getStats();
         $metrics = DashboardRepository::getSystemMetrics();
+        $metrics['live'] = DashboardRepository::getLiveStats();
 
         $page_title = t('dashboard.title');
         static::renderPage('dashboard/index', array_merge($stats, $metrics), ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
