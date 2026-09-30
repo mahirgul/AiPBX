@@ -193,6 +193,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
 
     override fun onPause() {
         super.onPause()
+        sendTypingState(false)
         if (activeConversationId == convId) {
             activeConversationId = 0
         }
@@ -237,6 +238,14 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             pendingUpload = null
             llUploadPreview.visibility = View.GONE
         }
+
+        etMessage.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                sendTypingState(!s.isNullOrEmpty())
+            }
+        })
 
         etMessage.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus && ::adapter.isInitialized && adapter.itemCount > 0) {
@@ -385,7 +394,31 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         }
     }
 
+    private val typingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var typingSent = false
+    private var typingSentAt = 0L
+    private val stopTyping = Runnable { sendTypingState(false) }
+
+    /** "typing" is refreshed at most every 3 s and cleared after 4 s without input. */
+    private fun sendTypingState(typing: Boolean) {
+        if (convId <= 0) return
+        typingHandler.removeCallbacks(stopTyping)
+        if (typing) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (!typingSent || now - typingSentAt > 3000) {
+                ChatWebSocketManager.instance.sendTyping(convId, true)
+                typingSent = true
+                typingSentAt = now
+            }
+            typingHandler.postDelayed(stopTyping, 4000)
+        } else if (typingSent) {
+            ChatWebSocketManager.instance.sendTyping(convId, false)
+            typingSent = false
+        }
+    }
+
     private fun sendMessage() {
+        sendTypingState(false)
         val text = etMessage.text.toString().trim()
         val upload = pendingUpload
 
@@ -756,10 +789,28 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         }
     }
 
+    private fun lastSeenText(): String {
+        val iso = ChatWebSocketManager.instance.getLastSeen(targetExt) ?: return "Çevrimdışı"
+        return try {
+            val t = java.time.OffsetDateTime.parse(iso).atZoneSameInstant(java.time.ZoneId.systemDefault())
+            val hm = t.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            if (t.toLocalDate() == java.time.LocalDate.now()) "Son görülme $hm"
+            else "Son görülme " + t.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm"))
+        } catch (e: Exception) {
+            "Çevrimdışı"
+        }
+    }
+
+    override fun onReceipts(conversationId: Int, readUpto: Long, deliveredUpto: Long) {
+        if (conversationId == convId) {
+            runOnUiThread { if (::adapter.isInitialized) adapter.applyReceipts(readUpto, deliveredUpto) }
+        }
+    }
+
     private fun applyTargetPresence(isOnline: Boolean) {
         val tvStatus = findViewById<TextView>(R.id.tvTargetStatus)
         val dot = findViewById<View>(R.id.vTargetOnlineDot)
-        tvStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
+        tvStatus.text = if (isOnline) "Çevrimiçi" else lastSeenText()
         tvStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
         dot.backgroundTintList = android.content.res.ColorStateList.valueOf(
             if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
