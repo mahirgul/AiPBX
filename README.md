@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://aipbx.bid">🌐 <strong>Official Website & Documentation: aipbx.bid</strong></a>
+  📖 <a href="docs/README.md"><strong>Documentation</strong></a> · 🌐 <a href="https://aipbx.bid"><strong>Website: aipbx.bid</strong></a>
 </p>
 
 <p align="center">
@@ -22,13 +22,14 @@
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
-  <a href="https://aipbx.bid"><img src="https://img.shields.io/badge/Docs-aipbx.bid-success?logo=google-chrome" alt="Docs"></a>
+  <a href="docs/README.md"><img src="https://img.shields.io/badge/docs-GitHub-success?logo=readthedocs&logoColor=white" alt="Docs"></a>
 </p>
 
 <p align="center">
   <a href="#quick-install">Quick Install</a> •
   <a href="#updating">Updating</a> •
   <a href="#features">Features</a> •
+  <a href="docs/README.md">Documentation</a> •
   <a href="#architecture">Architecture</a> •
   <a href="CHANGELOG.md">Changelog</a> •
   <a href="#contributing">Contributing</a>
@@ -106,12 +107,20 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   VIP whitelist bypass, automatic failover
 - **Ring groups** — virtual numbers mixing extensions and external numbers, simultaneous or sequential
 - **Conference rooms** — ConfBridge with PINs, wait-for-leader, join muted and live web moderation (mute/kick)
-- **Trunks, DID routing, outbound routes, time conditions, multi-level IVR**
+- **Trunks** — IP or registration based, tabbed settings, copy, rename and drag-and-drop ordering;
+  inbound DID trimming, transit routing between PBXes and carriers, per-trunk **outbound caller ID
+  normalization** (keep last N digits + prefix, e.g. extension `7840` → `903704187840`)
+- **Outbound routes** — Asterisk patterns, strip/prepend, trunk failover chain, route groups for PBXes
+  with different number formats, copy and ordering, duplicate patterns rejected
+- **DID routing, time conditions, multi-level IVR**
 - **Queues** — dynamic agent login/logout, static agents, hold music, recording
 - **Feature codes** — `*81`/`*80` queue login/logout, `*72` call forward, `*60` DND, `*43` intercom,
   `*90`/`*91`/`*92` spy/whisper/barge, `*97`/`*98` voicemail
 - **In-band disconnect supervision** — disconnect-tone detection for analog/legacy trunks
-- **Safe apply** — generated configuration is reloaded atomically; a failed Asterisk reload is rolled back
+- **Safe apply** — generated configuration is reloaded atomically; a failed write or Asterisk reload is
+  rolled back and the change stays pending
+- **Call recordings** — converted automatically to mono 16 kbps MP3 (~8× smaller than WAV), played in
+  CDR reports, *My Phone* and the apps
 
 ### 📠 Fax
 - **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
@@ -138,7 +147,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Presence, typing indicators, read receipts**; push notifications on mobile
 
 ### 📱 Mobile Apps
-- **Android** (Kotlin, v1.0.46) — WebRTC calling with push wake-up and a foreground service, chat,
+- **Android** (Kotlin) — WebRTC calling with push wake-up and a foreground service, chat,
   directory with presence, call history, DND / call forward, in-app log viewer
 - **iOS** (SwiftUI, CallKit) — calling with native incoming-call screen, chat, directory, features
 - **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
@@ -165,12 +174,14 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Google sign-in** (optional) with token audience and verified e-mail checks
 - **Sessions revoked on password change** — mobile and chat tokens stop working immediately
 - **User invitations** — generated passwords, forced first-login change, mobile sign-in link
-- **RBAC** — per-role module permissions; security-critical pages are admin-only
+- **RBAC** — built-in roles (admin, viewer, queue manager, agent, fax, **user** — the default) and custom
+  roles with per-module permissions; security-critical pages are admin-only
 - **Brute-force protection** — math CAPTCHA, account/IP lockout and a fail2ban jail using the real
   client address (PROXY protocol from the 443 edge)
 - **Firewall and fail2ban management** from the portal through a single, argument-validated root
   helper (`aipbx-priv`) — the portal never runs arbitrary commands as root
-- **Hardening** — CSRF tokens, security headers, sandboxed uploaded files, Asterisk HTTP on loopback
+- **Hardening** — CSRF tokens, security headers, sandboxed uploaded files, Asterisk HTTP on loopback,
+  Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language
 - Turkish 🇹🇷 and English 🇬🇧 (2,000+ keys, parity checked in CI)
@@ -205,6 +216,8 @@ AiPBX/
 ├── android/                # Kotlin app
 ├── ios/                    # SwiftUI app
 ├── asterisk-config/        # Asterisk base configuration
+├── sounds/                 # Turkish system prompts
+├── docs/                   # administrator documentation
 ├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
 ├── db/seed.sql             # initial roles, permissions, settings
 ├── scripts/release.sh      # publishes a release
@@ -234,7 +247,9 @@ AiPBX/
 - Credentials are in `/root/aipbx-credentials.txt` — note them and delete the file.
 - Service secrets live in `/etc/ai-pbx.env`.
 - To switch a self-signed install to a Let's Encrypt certificate later, see [INSTALL.md](INSTALL.md#35-switching-to-a-lets-encrypt-certificate).
-- Ports, updating and troubleshooting: [INSTALL.md](INSTALL.md).
+- Ports and updating: [INSTALL.md](INSTALL.md).
+- Set an e-mail relay (fax-to-e-mail, voicemail, invitations): [docs/mail.md](docs/mail.md).
+- Configuring trunks, routes, roles and more: [documentation](docs/README.md).
 
 ---
 
