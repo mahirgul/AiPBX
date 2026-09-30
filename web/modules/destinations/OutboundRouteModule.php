@@ -7,7 +7,7 @@ class OutboundRouteModule implements PBXDestinationInterface {
 
     public function getOptions(): array {
         $db = \getDB();
-        $stmt = $db->query("SELECT id, CONCAT(route_name, ' (', match_pattern, ')') AS name FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY seq ASC, route_name ASC");
+        $stmt = $db->query("SELECT id, CONCAT(route_name, ' (', match_pattern, ')') AS name FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC");
         return $stmt ? $stmt->fetchAll(\PDO::FETCH_ASSOC) : [];
     }
 
