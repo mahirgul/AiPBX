@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## Unreleased
+
+- Trunks: outbound caller ID normalization (keep last N digits + prefix); copy a
+  trunk; rename its system name (routes follow); drag-and-drop ordering; the
+  edit dialog is split into Media & Fax, Network & NAT, Routing and Advanced.
+- Outbound routes: copy, drag-and-drop ordering, duplicate patterns in the same
+  group are rejected.
+- Roles: new default `user` role (My Phone, chat, own calls); one landing page
+  per role for every sign-in method.
+- Call recordings are converted to mono 16 kbps MP3 (~8x smaller) and the CDR
+  follows the new file.
+- My Phone: call settings (DND, phone modes, forwarding, voicemail) have their
+  own tab.
+- Edit dialogs no longer close on an outside click or Esc, stay anchored at the
+  top and widen to fit their tabs.
+- Ubuntu 26.04 fixes: the portal can write Asterisk configs and run its root
+  helper inside Apache's systemd sandbox; uploaded and Turkish sounds are found
+  by Asterisk; portal fail2ban settings are read last; a config that cannot be
+  written no longer counts as applied.
+- Turkish voicemail prompts renamed to Asterisk's names; the read-only
+  `CDR(dst)` is no longer set.
+- Documentation moved to `docs/` (GitHub-readable pages).
+
 ## 2.0.0
 
 - Versioning and updates: `aipbx-update` command and a System Update page in the

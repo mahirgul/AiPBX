@@ -171,15 +171,16 @@ Asterisk feature codes (*81 queue login, *80 queue logout, *60 DND, *72 forward)
   - `Models / Entities`: Domain representations.
 
 ### 4.2 Asterisk Synchronization & Rollback
-- Configuration changes in the Web Portal (adding extensions, IVR menus, queues) generate new Asterisk `.conf` files in a staging buffer.
-- The portal executes an atomic AMI reload (`sip reload` / `core reload`).
-- If Asterisk reports a syntax error or reload failure, the changes are rolled back automatically to the previous working state.
+- Changes made in the portal are saved to the database and listed as pending (`sys_pending_sync`, grouped by domain: extensions, trunks, inbound/outbound dialplan, queues, …).
+- **Apply** runs the generator of each pending domain (`web/src/sync/`), writes the `.conf` files under `/etc/asterisk/pbx/` atomically and reloads the matching Asterisk modules.
+- If a file cannot be written or Asterisk reports a reload failure, the previous working file is restored and reloaded; the domain stays pending and the error is recorded in the audit log.
 
 ### 4.3 Role-Based Access Control (RBAC)
 Granular security policies are enforced via the `sys_role_permissions` database matrix:
-- **Matrix Dimensions**: Roles (`admin`, `read_only_admin`, `cc_manager`, `cc_agent`, `standard_user`, `fax_user`) mapped against modules (`extensions`, `trunks`, `inbound_routes`, `outbound_routes`, `queues`, `ivrs`, `time_conditions`, `sounds`, `call_center`, `fax`, `my_phone`, `chat`, `settings`, etc.) with discrete flags: `can_view`, `can_access`, `can_edit`, `can_delete`.
+- **Matrix Dimensions**: Roles (`admin`, `read_only_admin`, `cc_manager`, `cc_agent`, `fax_user`, `user`, plus custom roles) mapped against modules (`extensions`, `trunks`, `inbound_routes`, `outbound_routes`, `queues`, `ivrs`, `time_conditions`, `sounds`, `call_center`, `fax`, `my_phone`, `chat`, `settings`, etc.) with discrete flags: `can_view`, `can_access`, `can_edit`, `can_delete`.
 - **Strict Read-Only Viewer Mode (`read_only_admin`)**: All form submissions, destructive API endpoints, and modal modification triggers are denied at the controller layer and visually disabled in the UI.
-- **Self-Service Boundaries**: `standard_user` is restricted to personal softphone settings (`my_phone`), extension chat (`chat`), and their own CDRs; system `fax_user` accounts are automatically excluded from interactive chat directories.
+- **Self-Service Boundaries**: `user` (the default role for new extensions and users) is restricted to personal phone settings (`my_phone`), chat (`chat`) and their own CDRs; system `fax_user` accounts are automatically excluded from interactive chat directories.
+- **Landing pages**: every sign-in path (password, 2FA, Google, passkey) uses `roleHomePath()` in `auth.php`.
 
 ### 4.4 Mobile-First Responsive UX & Adaptive Layouts
 - **Master-Detail Sliding Navigation**: On mobile viewport widths (< 768px), dual-pane views such as `/chat` automatically collapse into single-screen sliding panels. Selecting a conversation slides the message history into view while hiding the conversation drawer.
@@ -210,7 +211,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
   - Watchdog race-condition guards preventing spurious `DISCONNECTED` restarts.
   - Foreground Service (`PbxForegroundService`) with ongoing status notification for high-reliability background survival.
   - Firebase Cloud Messaging (FCM) wakeup service with conversation-level notification grouping.
-- **Diagnostics System**: Integrated [`AppLogManager`](file:///home/pbx/android/app/src/main/java/com/mhrgl/aipbx/util/AppLogManager.kt) capturing runtime system parameters and Logcat traces with one-click export/sharing.
+- **Diagnostics System**: Integrated [`AppLogManager`](android/app/src/main/java/com/mhrgl/aipbx/util/AppLogManager.kt) capturing runtime system parameters and Logcat traces with one-click export/sharing.
 
 ---
 
@@ -265,6 +266,8 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 1. **Principle of Least Privilege (Database)**:
    - `aipbx_portal`: Restricted solely to runtime DML (`SELECT`, `INSERT`, `UPDATE`, `DELETE`).
    - `aipbx_migrator`: Dedicated user for schema migrations (`CREATE`, `ALTER`, `DROP`).
-2. **Strict Environment Isolation**: All production secrets, AMI passwords, and TLS paths are stored in `/etc/ai-pbx.env` (`chmod 640 root:www-data`), completely detached from source code.
+2. **Strict Environment Isolation**: All production secrets, AMI passwords, and TLS paths are stored in `/etc/ai-pbx.env` (`640 root:asterisk`), completely detached from source code.
 3. **fail2ban Protection**: Pre-configured jails monitor Asterisk SIP registration failures, Web Portal login brute-force attacks, and Nginx rate limit triggers.
 4. **HSTS & TLS Hardening**: TLS 1.2 and TLS 1.3 only, modern cipher suites, and mandatory HTTP-to-HTTPS redirection.
+5. **Single Root Entry Point**: the portal reaches root only through `sudo /usr/local/sbin/aipbx-priv`, whose subcommands map to fixed operations with validated arguments.
+6. **Apache Sandbox**: Ubuntu's hardened `apache2.service` is kept; the installer's override only makes `/etc/sudoers*` readable and `/etc/asterisk`, `/etc/postfix`, `/etc/fail2ban/jail.d` writable.
