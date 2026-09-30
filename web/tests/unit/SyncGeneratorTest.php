@@ -41,6 +41,9 @@ final class SyncGeneratorTest extends TestCase
             'GUVENLIK: testler CANLI config dizinine yonlendirilmis!'
         );
         $this->assertStringStartsWith(sys_get_temp_dir(), ASTERISK_PBX_DIR);
+        // rtp.conf / udptl.conf / voicemail.conf / asterisk.conf writers use this one.
+        $this->assertNotSame('/etc/asterisk', ASTERISK_CONF_DIR, 'GUVENLIK: testler CANLI /etc/asterisk dizinine yaziyor!');
+        $this->assertStringStartsWith(sys_get_temp_dir(), ASTERISK_CONF_DIR);
     }
 
     public function testCanliAsteriskeKomutGitmiyor(): void

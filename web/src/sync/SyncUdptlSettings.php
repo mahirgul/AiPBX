@@ -3,7 +3,7 @@
  * UDPTL (T.38 Faks Medya Portları & FEC) Senkronizasyonu (/etc/asterisk/udptl.conf)
  */
 
-const UDPTL_CONF_PATH = '/etc/asterisk/udptl.conf';
+define('UDPTL_CONF_PATH', ASTERISK_CONF_DIR . '/udptl.conf');
 
 function syncUdptlSettings()
 {
