@@ -118,7 +118,7 @@ class AsteriskSettingsService {
             'video_max_resolution' => in_array($post['video_max_resolution'] ?? '', ['640x360', '960x540', '1280x720', '1920x1080'], true)
                 ? $post['video_max_resolution'] : '1280x720',
             'video_max_framerate' => in_array(intval($post['video_max_framerate'] ?? 24), [15, 24, 30], true)
-                ? strval(intval($post['video_max_framerate'])) : '24',
+                ? strval(intval($post['video_max_framerate'] ?? 24)) : '24',
 
             'system_default_language' => in_array($post['system_default_language'] ?? '', getAvailableLanguages(), true)
                 ? $post['system_default_language'] : 'tr',
