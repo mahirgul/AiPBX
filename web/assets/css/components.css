@@ -1530,3 +1530,13 @@ body.auth-body {
 .row-drag-handle { width: 28px; cursor: grab; color: var(--text-muted); text-align: center; }
 .row-drag-handle:active { cursor: grabbing; }
 tr.row-dragging { opacity: 0.45; }
+
+/* Dashboard: live status */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); animation: livePulse 2s infinite; }
+@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+.dash-trunk-usage { display: flex; flex-direction: column; gap: 8px; }
+.dash-trunk-row { display: grid; grid-template-columns: minmax(90px, 180px) 1fr auto; align-items: center; gap: 12px; font-size: 13px; }
+.dash-trunk-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-trunk-bar { height: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+.dash-trunk-bar > span { display: block; height: 100%; background: var(--primary); transition: width 0.4s; }
+.dash-trunk-count { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; white-space: nowrap; }

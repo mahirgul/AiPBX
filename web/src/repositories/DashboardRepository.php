@@ -54,6 +54,67 @@ class DashboardRepository extends BaseRepository
         ];
     }
 
+    /**
+     * Live call figures for the dashboard (also served by api/dashboard_live.php).
+     */
+    public static function getLiveStats(): array
+    {
+        $live = [
+            'active_calls' => 0,
+            'active_channels' => 0,
+            'calls_processed' => 0,
+            'queue_waiting' => 0,
+            'trunk_usage' => [],
+            'today_total' => 0,
+            'today_answered' => 0,
+            'today_missed' => 0,
+        ];
+
+        $count = AsteriskHelper::execCLI('core show channels count')['output'] ?? '';
+        if (preg_match('/(\d+) active channels?/', $count, $m)) $live['active_channels'] = (int)$m[1];
+        if (preg_match('/(\d+) active calls?/', $count, $m)) $live['active_calls'] = (int)$m[1];
+        if (preg_match('/(\d+) calls? processed/', $count, $m)) $live['calls_processed'] = (int)$m[1];
+
+        $queues = AsteriskHelper::execCLI('queue show')['output'] ?? '';
+        if (preg_match_all('/ has (\d+) calls? /', $queues, $mm)) {
+            $live['queue_waiting'] = array_sum(array_map('intval', $mm[1]));
+        }
+
+        // Channels in use per trunk: PJSIP channel names start with "PJSIP/<trunk>-".
+        $channels = AsteriskHelper::execCLI('core show channels concise')['output'] ?? '';
+        $per_trunk = [];
+        foreach (explode("\n", $channels) as $line) {
+            if (preg_match('#^PJSIP/(.+)-[0-9a-f]{8}!#', $line, $m)) {
+                $per_trunk[$m[1]] = ($per_trunk[$m[1]] ?? 0) + 1;
+            }
+        }
+        $db = static::db();
+        $trunks = $db->query('SELECT trunk_name, title, max_channels FROM pbx_trunks WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($trunks as $t) {
+            $live['trunk_usage'][] = [
+                'name' => $t['trunk_name'],
+                'title' => $t['title'] ?: $t['trunk_name'],
+                'in_use' => $per_trunk[$t['trunk_name']] ?? 0,
+                'max' => (int)$t['max_channels'],
+            ];
+        }
+
+        // Today's calls, one per call (linkedid), answered if any leg was answered.
+        $row = $db->query(
+            "SELECT COUNT(*) AS total, COALESCE(SUM(answered), 0) AS answered FROM (
+                 SELECT MAX(disposition = 'ANSWERED') AS answered
+                 FROM asteriskcdr
+                 WHERE calldate >= CURDATE()
+                 GROUP BY COALESCE(NULLIF(linkedid, ''), uniqueid)
+             ) calls"
+        )->fetch(PDO::FETCH_ASSOC);
+        $live['today_total'] = (int)($row['total'] ?? 0);
+        $live['today_answered'] = (int)($row['answered'] ?? 0);
+        $live['today_missed'] = $live['today_total'] - $live['today_answered'];
+
+        return $live;
+    }
+
     public static function getSystemMetrics(): array
     {
         exec('pgrep asterisk', $ast_pids);
