@@ -172,7 +172,8 @@ INSERT IGNORE INTO `sys_roles` VALUES
 (2,'read_only_admin','İzleyici','Tüm panelleri görüntüleyebilir fakat düzenleme/silme yapamaz',1,'2026-08-12 13:15:29'),
 (3,'cc_agent','Temsilci','Temsilci ekranı, mola yönetimi ve arama kayıtları erişimi',1,'2026-08-12 13:15:29'),
 (4,'fax_user','Faks','Gelen/giden faks yönetimi ve faks gönderimi',1,'2026-08-12 13:15:29'),
-(5,'cc_manager','Kuyruk Yönetici','Çağrı merkezi canlı takip, kuyruk yöneticisi, temsilciler, molalar ve raporlar yetkilisi',1,'2026-08-14 00:35:09');
+(5,'cc_manager','Kuyruk Yönetici','Çağrı merkezi canlı takip, kuyruk yöneticisi, temsilciler, molalar ve raporlar yetkilisi',1,'2026-08-14 00:35:09'),
+(6,'user','Kullanıcı','Telefonum, rehber, sohbet ve kendi arama geçmişi (faks ve çağrı merkezi yetkisi yok)',1,'2026-09-30 00:00:00');
 /*!40000 ALTER TABLE `sys_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -318,7 +319,9 @@ INSERT IGNORE INTO `sys_role_permissions` VALUES
 (376,'admin','pending_sync',1,1,1,1,'2026-09-18 08:10:51'),
 (377,'admin','audit_log',1,1,1,1,'2026-09-18 08:10:51'),
 (381,'admin','firewall',1,1,1,1,'2026-09-18 07:48:47'),
-(382,'admin','fail2ban',1,1,1,1,'2026-09-18 07:48:47');
+(382,'admin','fail2ban',1,1,1,1,'2026-09-18 07:48:47'),
+(383,'user','my_phone',1,1,1,0,'2026-09-30 00:00:00'),
+(384,'user','chat',1,1,1,0,'2026-09-30 00:00:00');
 /*!40000 ALTER TABLE `sys_role_permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
