@@ -379,7 +379,7 @@ function toCleanAscii($str) {
  * sync layer, so an unvalidated value here is a config-injection vector.
  */
 function sanitizeDestType($type) {
-    $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail'];
+    $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route'];
     $type = trim((string)$type);
     return in_array($type, $valid, true) ? $type : 'hangup';
 }
