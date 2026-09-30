@@ -15,6 +15,8 @@ interface ChatEventListener {
     fun onPresence(extension: String, isOnline: Boolean) {}
     fun onTyping(conversationId: Int, fromName: String, isTyping: Boolean) {}
     fun onMessagesRead(conversationId: Int, readerExt: String, lastMessageId: Long) {}
+    /** Own messages up to readUpto are read, up to deliveredUpto delivered (by every other participant). */
+    fun onReceipts(conversationId: Int, readUpto: Long, deliveredUpto: Long) {}
     fun onGroupCreated(conversation: ChatConversation) {}
     fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {}
     fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {}
@@ -38,6 +40,24 @@ class ChatWebSocketManager private constructor() {
     private var currentToken: String = ""
 
     private val onlineExtensions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    /** ext -> ISO time the user was last active (from presence events). */
+    private val lastSeen = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /**
+     * Whether the user is looking at the app. The foreground service keeps the
+     * socket open in the background; the server must not show the user online then.
+     */
+    @Volatile private var appActive = false
+
+    fun setActive(active: Boolean) {
+        appActive = active
+        webSocket?.send(JSONObject().apply {
+            put("action", "set_active")
+            put("active", active)
+        }.toString())
+    }
+
+    fun getLastSeen(ext: String?): String? = if (ext.isNullOrEmpty()) null else lastSeen[ext]
 
     fun isOnline(ext: String?): Boolean {
         if (ext.isNullOrEmpty()) return false
@@ -95,7 +115,7 @@ class ChatWebSocketManager private constructor() {
             .removePrefix("http://")
             .trimEnd('/')
 
-        val fullWsUrl = "$wsProto$cleanHost/chat/ws?token=$token"
+        val fullWsUrl = "$wsProto$cleanHost/chat/ws?token=$token&active=${if (appActive) 1 else 0}"
 
         Log.i(TAG, "Connecting to Chat WS: $fullWsUrl")
 
@@ -164,6 +184,8 @@ class ChatWebSocketManager private constructor() {
                 isConnecting = false
                 isConnected = true
                 reconnectAttempts = 0
+                // The state may have changed while the handshake was running.
+                setActive(appActive)
                 notifyConnectionState(true)
             }
 
@@ -186,6 +208,7 @@ class ChatWebSocketManager private constructor() {
                             val isOnline = root.optBoolean("is_online", false)
                             if (ext.isNotEmpty()) {
                                 if (isOnline) onlineExtensions.add(ext) else onlineExtensions.remove(ext)
+                                root.optString("last_seen").takeIf { it.isNotEmpty() }?.let { lastSeen[ext] = it }
                             }
                             for (l in listeners) l.onPresence(ext, isOnline)
                         }
@@ -199,6 +222,9 @@ class ChatWebSocketManager private constructor() {
                                     if (ext.isNotEmpty()) snapshot.add(ext)
                                 }
                             }
+                            root.optJSONObject("last_seen")?.let { seen ->
+                                seen.keys().forEach { k -> seen.optString(k).takeIf { it.isNotEmpty() }?.let { lastSeen[k] = it } }
+                            }
                             val wentOffline = onlineExtensions.filter { it !in snapshot }
                             onlineExtensions.retainAll(snapshot)
                             onlineExtensions.addAll(snapshot)
@@ -210,6 +236,12 @@ class ChatWebSocketManager private constructor() {
                             val fromName = root.optString("from_name")
                             val isTyping = root.optBoolean("is_typing", false)
                             for (l in listeners) l.onTyping(convId, fromName, isTyping)
+                        }
+                        "receipts" -> {
+                            val convId = root.optInt("conversation_id")
+                            val readUpto = root.optLong("read_upto")
+                            val deliveredUpto = root.optLong("delivered_upto")
+                            for (l in listeners) l.onReceipts(convId, readUpto, deliveredUpto)
                         }
                         "messages_read" -> {
                             val convId = root.optInt("conversation_id")

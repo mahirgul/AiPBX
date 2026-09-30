@@ -200,7 +200,9 @@ data class ChatMessage(
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("is_me") var isMe: Boolean = false,
     @SerializedName("system_event") val systemEvent: String? = null,
-    @SerializedName("system_meta") val systemMeta: String? = null
+    @SerializedName("system_meta") val systemMeta: String? = null,
+    /** Own messages: "sent", "delivered" or "read". */
+    @SerializedName("status") var status: String? = null
 )
 
 data class ChatUploadResponse(

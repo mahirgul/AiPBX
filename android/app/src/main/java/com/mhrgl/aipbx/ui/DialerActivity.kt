@@ -2040,6 +2040,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
+    override fun onReceipts(conversationId: Int, readUpto: Long, deliveredUpto: Long) {
+        if (conversationId == currentChatConvId) {
+            runOnUiThread {
+                if (::chatMessageAdapter.isInitialized) chatMessageAdapter.applyReceipts(readUpto, deliveredUpto)
+            }
+        }
+    }
+
     override fun onTyping(conversationId: Int, fromName: String, isTyping: Boolean) {
         if (isChatRoomOpen() && conversationId == currentChatConvId) {
             runOnUiThread {

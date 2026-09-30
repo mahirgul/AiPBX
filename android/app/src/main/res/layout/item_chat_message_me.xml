@@ -98,6 +98,16 @@
                 android:text="14:30"
                 android:textColor="#E0F2FE"
                 android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="✓"
+                android:textColor="#E0F2FE"
+                android:textSize="11sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
