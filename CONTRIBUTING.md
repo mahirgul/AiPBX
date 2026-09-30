@@ -39,20 +39,46 @@ cd AiPBX
 git remote add upstream https://github.com/mahirgul/AiPBX.git
 ```
 
-### 2. Isolated Sandboxed Testing (Recommended: LXC)
-To test `install.sh` or full-stack features without polluting your host machine, use an isolated Linux container:
-```bash
-# Launch a clean Ubuntu container
-lxc launch ubuntu:24.04 aipbx-dev
-lxc exec aipbx-dev -- bash
+### 2. Testing
 
-# Inside container:
-git clone https://github.com/<your-username>/AiPBX.git /opt/aipbx
-cd /opt/aipbx
-sudo bash install.sh
+Before every push (CI runs the same checks):
+
+```bash
+cd web
+php bin/lint_lang.php                    # tr/en language keys
+php bin/smoke.php                        # every page renders, RBAC, conventions
+php vendor/bin/phinx migrate -e testing  # test database (tests/.env.test)
+set -a; . tests/.env.test; set +a; php vendor/bin/phpunit
+php -d memory_limit=2G vendor/bin/phpstan analyse
+(cd ../chat && gofmt -l . && go vet ./... && go test ./...)
 ```
 
-### 3. Android App Development
+Unit tests never touch the live system: generated configs go to a temporary
+directory (`ASTERISK_PBX_DIR`, `ASTERISK_CONF_DIR`) and no command reaches Asterisk.
+
+### 3. End-to-end tests on Ubuntu 26.04 (LXD)
+
+`scripts/e2e/run.sh` installs the current commit in an LXD container and uses it
+like an administrator: portal login, saving and applying a trunk (from inside
+Apache's systemd sandbox), the root helper, custom and Turkish sounds, firewall,
+backups, the MP3 converter and migrations.
+
+```bash
+# once: a clean Ubuntu 26.04 container with two snapshots
+lxc launch ubuntu:26.04 aipbx-test
+lxc snapshot aipbx-test pristine
+lxc exec aipbx-test -- bash -c 'curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | AIPBX_REF=v2.0.0 bash'
+lxc snapshot aipbx-test installed-200
+
+scripts/e2e/run.sh fresh     # install from scratch
+scripts/e2e/run.sh upgrade   # upgrade the v2.0.0 install
+scripts/e2e/run.sh           # both
+```
+
+The container is reset to a snapshot on every run. Run it before a release and
+after changes to `install.sh`, migrations, seed data or system integration.
+
+### 4. Android App Development
 - Open the `android/` directory in **Android Studio**.
 - Build the release or debug APK:
   ```bash
