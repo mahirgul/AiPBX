@@ -440,10 +440,17 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             break;
 
         case 'outbound_route':
-            // Gelen DID çağrısını doğrudan Giden Rotalar üzerinden dış hatta aktar
-            $target = !empty($orig_did) ? $orig_did : (!empty($dest_id) ? $dest_id : '${EXTEN}');
+            // The call is dialled out with the DID itself; the chosen route
+            // selects the outbound route group whose patterns decide the trunk.
+            $target = !empty($orig_did) ? $orig_did : '${EXTEN}';
+            $group = 1;
+            if (is_numeric($dest_id)) {
+                $st = $db->prepare("SELECT route_group FROM pbx_outbound_routes WHERE id = ?");
+                $st->execute([(int)$dest_id]);
+                $group = max(1, (int)($st->fetchColumn() ?: 1));
+            }
             $lines[] = " same => n,Set(CDR(direction)=outbound)";
-            $lines[] = " same => n,Goto(from-internal-outbound-1,{$target},1)";
+            $lines[] = " same => n,Goto(from-internal-outbound-{$group},{$target},1)";
             break;
 
         case 'announcement':
