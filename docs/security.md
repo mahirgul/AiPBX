@@ -21,6 +21,13 @@ firewall-cmd --reload
 The web softphone and the mobile apps connect over 443 and are not affected. RTP (10000–20000/udp) must
 stay open for carrier audio. The **Firewall** page shows and removes these rules.
 
+Asterisk's own TLS WebSocket (8089) listens on loopback only: browsers and the mobile apps use 443
+`/ws`, which goes through the nginx/Apache edge. Earlier versions opened 8089 publicly; installing or
+updating closes it.
+
+**SSH** is left as the operating system configured it. If root can log in with a password, the
+installer prints a warning; prefer key-only logins and allow port 22 only from trusted networks.
+
 ## fail2ban
 
 Jails: `asterisk` (failed SIP registrations/auth), `aipbx-web` (portal logins, using the real client IP
