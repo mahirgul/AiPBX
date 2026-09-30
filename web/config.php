@@ -55,6 +55,8 @@ define('FAX_OUTGOING_SPOOL', portalEnv('FAX_OUTGOING_SPOOL', '/var/spool/asteris
 define('SOUNDS_CUSTOM_DIR', portalEnv('SOUNDS_CUSTOM_DIR', '/var/lib/asterisk/sounds/custom'));
 define('PJSIP_DTLS_CERT', portalEnv('PJSIP_DTLS_CERT', '/etc/asterisk/keys/asterisk.pem'));
 define('ASTERISK_PBX_DIR', portalEnv('ASTERISK_PBX_DIR', '/etc/asterisk/pbx'));
+// Asterisk's own config files (rtp.conf, udptl.conf, voicemail.conf, asterisk.conf); tests redirect it.
+define('ASTERISK_CONF_DIR', portalEnv('ASTERISK_CONF_DIR', '/etc/asterisk'));
 define('MOH_BASE_DIR', portalEnv('MOH_BASE_DIR', '/var/lib/asterisk/moh'));
 define('ASTERISK_CALL_SPOOL', portalEnv('ASTERISK_CALL_SPOOL', '/var/spool/asterisk/outgoing'));
 define('SYNC_QUEUE_LOGS_SCRIPT', portalEnv('SYNC_QUEUE_LOGS_SCRIPT', '/usr/local/bin/sync_queue_logs.php'));
