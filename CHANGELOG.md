@@ -27,6 +27,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 - Turkish voicemail prompts renamed to Asterisk's names; the read-only
   `CDR(dst)` is no longer set.
 - Documentation moved to `docs/` (GitHub-readable pages).
+- Daily backups: `aipbx-backup` dumps the database and configuration every
+  night to `/var/backups/aipbx-daily` (14 days, optional rsync copy).
+- Security: Asterisk's direct WSS port 8089 listens on loopback only and is
+  closed in the firewall; the installer warns about password root SSH logins.
+- "Outbound route" as a destination saves correctly and sends the call to the
+  chosen route; removing a local network in Asterisk settings takes effect.
 
 ## 2.0.0
 

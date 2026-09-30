@@ -299,6 +299,7 @@ apt-get install -y \
   firewalld \
   ghostscript \
   lame \
+  rsync \
   libtiff-tools \
   postfix \
   libsasl2-modules \
@@ -359,6 +360,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Daily check for a new AiPBX release (shown on the portal's System Update page)
 37 4 * * * root /usr/local/sbin/aipbx-update --check >/dev/null 2>&1
+
+# Daily backup of the database and configuration (/var/backups/aipbx-daily, 14 days)
+30 2 * * * root /usr/local/sbin/aipbx-backup >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
 
@@ -856,6 +860,8 @@ usermod -aG asterisk www-data
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/sbin/aipbx-priv
 # Update command (sudo aipbx-update); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
+# Daily database/configuration backup (cron below).
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local/sbin/aipbx-backup
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
@@ -1152,7 +1158,6 @@ firewall-cmd --permanent --add-service=ssh 2>/dev/null || true
 firewall-cmd --permanent --add-port=5060/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5060/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5061/tcp 2>/dev/null || true
-firewall-cmd --permanent --add-port=8089/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=10000-20000/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=3478/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=3478/udp 2>/dev/null || true
@@ -1161,6 +1166,13 @@ firewall-cmd --permanent --add-port=5349/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=49152-65535/udp 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
 fi   # install mode
+
+# Asterisk's direct WSS (8089) now listens on loopback only; clients use 443 /ws.
+# Close the port that earlier versions opened.
+if firewall-cmd --permanent --query-port=8089/tcp >/dev/null 2>&1; then
+    firewall-cmd --permanent --remove-port=8089/tcp >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+fi
 
 # 12b. Asterisk security logging
 sed -i "s/^;security\.log => security/security.log => security/" /etc/asterisk/logger.conf 2>/dev/null || true
@@ -1338,6 +1350,12 @@ systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}runn
 systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
 echo ""
 
+ssh_cfg="$(sshd -T 2>/dev/null)"
+if grep -qi '^permitrootlogin yes' <<<"$ssh_cfg" && grep -qi '^passwordauthentication yes' <<<"$ssh_cfg"; then
+    echo -e "  ${YELLOW}⚠️  SSH allows root login with a password. Consider key-only logins and${NC}"
+    echo -e "  ${YELLOW}   limiting port 22 to trusted networks (see docs/security.md).${NC}"
+    echo ""
+fi
 echo -e "  ${BOLD}📄 All credentials saved to:${NC} ${CYAN}${CREDS_FILE}${NC}"
 echo -e "  ${YELLOW}⚠️  Note these credentials now! Delete the file after saving them securely.${NC}"
 echo ""
