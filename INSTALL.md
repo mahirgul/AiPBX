@@ -114,7 +114,6 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 |------|---------|
 | 80/tcp, 443/tcp | Portal, WebRTC (WSS `/ws`), chat, TURNS multiplexed on 443 |
 | 5060/udp+tcp, 5061/tcp | SIP / SIP-TLS |
-| 8089/tcp | Direct Asterisk WSS (optional, `pjsip_wss_port`) |
 | 10000-20000/udp | RTP media |
 | 3478/udp+tcp, 5349/udp+tcp | STUN/TURN |
 | 49152-65535/udp | TURN relay media |
@@ -139,7 +138,23 @@ The renewal hook copies renewed certificates to coturn and Asterisk automaticall
 Fax-to-e-mail, voicemail notifications and invitations are sent through postfix. Set your relay on
 **Admin → E-Mail** — see [docs/mail.md](docs/mail.md).
 
-### 3.7 Next Steps
+### 3.7 Backups
+`aipbx-backup` runs every night at 02:30 (`/etc/cron.d/aipbx`) and writes
+`/var/backups/aipbx-daily/aipbx-YYYYmmdd-HHMM/` with a full database dump (`db.sql.gz`) and
+`config.tgz` (`/etc/ai-pbx.env`, `/etc/asterisk`, uploaded sounds, music on hold, certificates).
+Backups older than 14 days are removed. Optional settings in `/etc/ai-pbx.env`:
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `AIPBX_BACKUP_DIR` | `/var/backups/aipbx-daily` | where backups are written |
+| `AIPBX_BACKUP_KEEP_DAYS` | `14` | retention |
+| `AIPBX_BACKUP_COPY_TO` | — | rsync destination for an off-server copy (`user@host:/path`, root's SSH key) |
+
+Run one by hand with `sudo aipbx-backup`; results are logged to `/var/log/aipbx/backup.log`.
+Call recordings are not included — copy `/var/spool/asterisk/monitor` separately. Restore a database
+with `zcat db.sql.gz | sudo mysql`. Other databases on the same server are not backed up.
+
+### 3.8 Next Steps
 Trunks, routes, roles, recordings, sounds and troubleshooting: [documentation](docs/README.md).
 
 ---
@@ -160,6 +175,7 @@ Trunks, routes, roles, recordings, sounds and troubleshooting: [documentation](d
 | Root helper used by the portal | `/usr/local/sbin/aipbx-priv` |
 | Updater | `/usr/local/sbin/aipbx-update` |
 | Update backups / log | `/var/backups/aipbx/` · `/var/log/aipbx/update.log` |
+| Daily backups / log | `/var/backups/aipbx-daily/` · `/var/log/aipbx/backup.log` |
 | Fax archive | `/var/www/faxes/` |
 | Call recordings (converted to MP3 every 5 min) | `/var/spool/asterisk/monitor/` |
 | Uploaded / Turkish sounds | `/var/lib/asterisk/sounds/custom/` · `/var/lib/asterisk/sounds/tr/` |

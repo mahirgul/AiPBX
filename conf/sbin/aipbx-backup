@@ -1,0 +1,74 @@
+#!/bin/bash
+# aipbx-backup — daily backup of the AiPBX database and configuration.
+#
+# Run by cron (/etc/cron.d/aipbx) as root. Each run creates
+#   <dir>/aipbx-YYYYmmdd-HHMM/db.sql.gz     full dump of the AiPBX database
+#   <dir>/aipbx-YYYYmmdd-HHMM/config.tgz    /etc/ai-pbx.env, /etc/asterisk, uploaded
+#                                            sounds and music on hold, certificates
+# and removes backups older than the retention period.
+#
+# Optional settings in /etc/ai-pbx.env:
+#   AIPBX_BACKUP_DIR        default /var/backups/aipbx-daily
+#   AIPBX_BACKUP_KEEP_DAYS  default 14
+#   AIPBX_BACKUP_COPY_TO    rsync destination for an off-server copy,
+#                           e.g. backup@nas.example.com:/srv/aipbx (root's SSH key)
+#
+# Call recordings are not included (they are large); copy
+# /var/spool/asterisk/monitor separately if needed.
+
+set -uo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+
+ENV_FILE=/etc/ai-pbx.env
+LOG_FILE=/var/log/aipbx/backup.log
+
+env_get() { [[ -r "$ENV_FILE" ]] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//"; }
+log() { mkdir -p "$(dirname "$LOG_FILE")"; echo "$(date '+%F %T') $*" | tee -a "$LOG_FILE"; }
+
+DEST="$(env_get AIPBX_BACKUP_DIR)"; DEST="${DEST:-/var/backups/aipbx-daily}"
+KEEP="$(env_get AIPBX_BACKUP_KEEP_DAYS)"; KEEP="${KEEP:-14}"
+[[ "$KEEP" =~ ^[0-9]+$ ]] || KEEP=14
+COPY_TO="$(env_get AIPBX_BACKUP_COPY_TO)"
+DB="$(env_get DB_NAME)"; DB="${DB:-asterisk}"
+
+exec 9>/run/aipbx-backup.lock
+flock -n 9 || { log "another backup is running"; exit 0; }
+
+umask 077
+mkdir -p "$DEST"
+STAMP="$(date +%Y%m%d-%H%M)"
+WORK="$DEST/.aipbx-$STAMP.partial"
+rm -rf "$WORK"
+mkdir -p "$WORK"
+
+if ! mysqldump --single-transaction --routines --triggers --events --hex-blob --databases "$DB" 2>>"$LOG_FILE" \
+        | gzip > "$WORK/db.sql.gz" \
+   || ! zcat "$WORK/db.sql.gz" | tail -n 1 | grep -q 'Dump completed'; then
+    log "FAILED: database dump of '$DB' is incomplete"
+    rm -rf "$WORK"
+    exit 1
+fi
+
+paths=()
+for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt; do
+    [[ -e "/$p" ]] && paths+=("$p")
+done
+if ! tar czf "$WORK/config.tgz" -C / "${paths[@]}" 2>>"$LOG_FILE"; then
+    log "FAILED: configuration archive"
+    rm -rf "$WORK"
+    exit 1
+fi
+
+mv "$WORK" "$DEST/aipbx-$STAMP"
+find "$DEST" -maxdepth 1 -type d -name 'aipbx-*' -mtime +"$KEEP" -exec rm -rf {} +
+log "OK: $DEST/aipbx-$STAMP ($(du -sh "$DEST/aipbx-$STAMP" | cut -f1)), keeping $KEEP days"
+
+if [[ -n "$COPY_TO" ]]; then
+    if rsync -a --delete -e "ssh -o BatchMode=yes -o ConnectTimeout=20" "$DEST"/ "$COPY_TO"/ 2>>"$LOG_FILE"; then
+        log "OK: copied to $COPY_TO"
+    else
+        log "FAILED: copy to $COPY_TO"
+        exit 1
+    fi
+fi
