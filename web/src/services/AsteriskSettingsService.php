@@ -188,6 +188,9 @@ class AsteriskSettingsService {
             $pj_stmt->execute(["netmask_{$net_index}", $net_mask]);
             $net_index++;
         }
+        // Drop entries beyond the new list, otherwise a removed network stays active.
+        $stale = $db->prepare("DELETE FROM pjsipsettings WHERE keyword REGEXP '^(localnet|netmask)_[0-9]+$' AND CAST(SUBSTRING_INDEX(keyword, '_', -1) AS UNSIGNED) >= ?");
+        $stale->execute([$net_index]);
 
         // Bu tek kayıt işlemi birden fazla domain'i BİRDEN etkiliyor (port/IP/ağ
         // değişikliği transport'ları, kodek/timeout değişikliği dahili+dialplan'ı,
