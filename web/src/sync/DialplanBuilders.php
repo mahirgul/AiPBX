@@ -440,17 +440,20 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             break;
 
         case 'outbound_route':
-            // The call is dialled out with the DID itself; the chosen route
-            // selects the outbound route group whose patterns decide the trunk.
+            // Sent straight to the chosen route (its trunks, number manipulation
+            // and caller ID) with the DID as the dialled number; the route's
+            // pattern is not checked. Inactive/missing route: normal group-1 routing.
             $target = !empty($orig_did) ? $orig_did : '${EXTEN}';
-            $group = 1;
+            $route_active = false;
             if (is_numeric($dest_id)) {
-                $st = $db->prepare("SELECT route_group FROM pbx_outbound_routes WHERE id = ?");
+                $st = $db->prepare("SELECT 1 FROM pbx_outbound_routes WHERE id = ? AND is_active = 1");
                 $st->execute([(int)$dest_id]);
-                $group = max(1, (int)($st->fetchColumn() ?: 1));
+                $route_active = (bool)$st->fetchColumn();
             }
             $lines[] = " same => n,Set(CDR(direction)=outbound)";
-            $lines[] = " same => n,Goto(from-internal-outbound-{$group},{$target},1)";
+            $lines[] = $route_active
+                ? " same => n,Goto(outbound-route-" . (int)$dest_id . ",{$target},1)"
+                : " same => n,Goto(from-internal-outbound-1,{$target},1)";
             break;
 
         case 'announcement':
