@@ -126,13 +126,14 @@ final class MyPhoneCallHistoryTest extends TestCase
         $this->assertSame('Bob Destek', $found['party_name'], 'Internal callee Bob Destek must be resolved from directory');
     }
 
-    public function testSyncOutboundDialplanIncludesDstAndSavedDstPreservation(): void
+    public function testSyncOutboundDialplanDoesNotSetReadOnlyCdrDst(): void
     {
         Fixtures::load();
         $db = getDB();
         $db->prepare("INSERT INTO pbx_outbound_routes (route_name, match_pattern, prepend, append, strip_front, strip_back, is_active, route_group, trunks_json)
                       VALUES ('TestRoute', '_0X.', '0', '', 0, 0, 1, 1, ?)")
            ->execute([json_encode([['trunk_name' => Fixtures::TRUNK_NAME]])]);
+        $routeId = (int)$db->lastInsertId();
 
         $res = syncOutboundDialplan();
         $this->assertTrue($res);
@@ -141,9 +142,11 @@ final class MyPhoneCallHistoryTest extends TestCase
         $this->assertFileExists($confPath);
         $content = file_get_contents($confPath);
 
-        $this->assertStringContainsString('Set(CDR(dst)=', $content);
-        $this->assertStringContainsString('Set(__SAVED_DST=', $content);
+        // Asterisk 22 rejects Set(CDR(dst)) ("read-only variable"); the CDR keeps the dialled number.
+        $this->assertStringNotContainsString('Set(CDR(dst)=', $content);
+        $this->assertStringNotContainsString('SAVED_DST', $content);
         $this->assertStringContainsString('[sub-outbound-status]', $content);
-        $this->assertStringContainsString('ExecIf($["${SAVED_DST}" != ""]?Set(CDR(dst)=${SAVED_DST}))', $content);
+        // Each route is also reachable directly (destination "outbound route").
+        $this->assertStringContainsString("[outbound-route-{$routeId}]", $content);
     }
 }
