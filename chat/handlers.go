@@ -179,12 +179,17 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	for i := range messages {
-		messages[i].IsMe = messages[i].SenderExt == user.Extension
-	}
-
 	// Otomatik okundu yap
 	_ = MarkConversationAsRead(convID, user.Extension, 0)
+	s.hub.PushReceipts(convID)
+
+	readUpto, deliveredUpto, _ := GetReceipts(convID, user.Extension)
+	for i := range messages {
+		messages[i].IsMe = messages[i].SenderExt == user.Extension
+		if messages[i].IsMe && messages[i].SystemEvent == "" {
+			messages[i].Status = MessageStatus(messages[i].ID, readUpto, deliveredUpto)
+		}
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"success":  true,
@@ -254,6 +259,7 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 
 	// WS ile canlı ilet
 	saved.IsMe = true
+	saved.Status = "sent"
 	senderPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
 		"data":  saved,
@@ -261,6 +267,7 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 	s.hub.SendToExtension(user.Extension, senderPayload)
 
 	saved.IsMe = false
+	saved.Status = ""
 	otherPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
 		"data":  saved,
@@ -273,7 +280,9 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 		if ext == user.Extension {
 			continue
 		}
-		s.hub.SendToExtension(ext, otherPayload)
+		if s.hub.SendToExtension(ext, otherPayload) {
+			_ = MarkDelivered(convID, ext, saved.ID)
+		}
 
 		// FCM Push
 		bodyPreview := saved.Message
@@ -311,8 +320,10 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 
 		TriggerFcmPush(ext, pushTitle, pushBody, "new_message", extra)
 	}
+	s.hub.PushReceipts(convID)
 
 	saved.IsMe = true
+	saved.Status = "sent"
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"message": saved,
@@ -351,6 +362,7 @@ func (s *Server) HandleMarkRead(w http.ResponseWriter, r *http.Request, user *Us
 			s.hub.SendToExtension(ext, out)
 		}
 	}
+	s.hub.PushReceipts(body.ConversationID)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
@@ -592,11 +604,14 @@ func (s *Server) HandleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ?active=0: a background connection (e.g. the Android foreground service)
+	// that must not make the user look online; it sends set_active later.
 	client := &Client{
-		hub:  s.hub,
-		conn: conn,
-		user: user,
-		send: make(chan []byte, 256),
+		hub:    s.hub,
+		conn:   conn,
+		user:   user,
+		send:   make(chan []byte, 256),
+		active: r.URL.Query().Get("active") != "0",
 	}
 
 	client.hub.register <- client

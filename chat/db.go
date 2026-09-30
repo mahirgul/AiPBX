@@ -67,6 +67,8 @@ type Message struct {
 	SystemMeta     string `json:"system_meta,omitempty"`
 	CreatedAt      string `json:"created_at"`
 	IsMe           bool   `json:"is_me,omitempty"`
+	// Own messages only: "sent", "delivered" or "read" (see GetReceipts).
+	Status string `json:"status,omitempty"`
 }
 
 type Contact struct {
@@ -467,10 +469,80 @@ func MarkConversationAsRead(convID int, ext string, lastMsgID int64) error {
 
 	_, err := db.Exec(`
 		UPDATE chat_participants
-		SET last_read_message_id = GREATEST(last_read_message_id, ?)
+		SET last_read_message_id = GREATEST(last_read_message_id, ?),
+		    last_delivered_message_id = GREATEST(last_delivered_message_id, ?)
 		WHERE conversation_id = ? AND extension = ?
-	`, lastMsgID, convID, ext)
+	`, lastMsgID, lastMsgID, convID, ext)
 	return err
+}
+
+// MarkDelivered records that messages up to msgID reached one of ext's devices.
+func MarkDelivered(convID int, ext string, msgID int64) error {
+	_, err := db.Exec(`
+		UPDATE chat_participants
+		SET last_delivered_message_id = GREATEST(last_delivered_message_id, ?)
+		WHERE conversation_id = ? AND extension = ?
+	`, msgID, convID, ext)
+	return err
+}
+
+// MarkAllDelivered is called when ext connects: everything sent to it so far
+// has now been delivered. Returns the conversations whose marker moved.
+func MarkAllDelivered(ext string) ([]int, error) {
+	rows, err := db.Query(`
+		SELECT p.conversation_id, MAX(m.id)
+		FROM chat_participants p
+		JOIN chat_messages m ON m.conversation_id = p.conversation_id AND m.id > p.last_delivered_message_id
+		WHERE p.extension = ? AND p.left_at IS NULL
+		GROUP BY p.conversation_id
+	`, ext)
+	if err != nil {
+		return nil, err
+	}
+	type mark struct {
+		conv int
+		upto int64
+	}
+	var marks []mark
+	for rows.Next() {
+		var m mark
+		if err := rows.Scan(&m.conv, &m.upto); err == nil {
+			marks = append(marks, m)
+		}
+	}
+	rows.Close()
+
+	var changed []int
+	for _, m := range marks {
+		if MarkDelivered(m.conv, ext, m.upto) == nil {
+			changed = append(changed, m.conv)
+		}
+	}
+	return changed, nil
+}
+
+// GetReceipts returns, from viewerExt's point of view, up to which message id
+// every other active participant has read and has received.
+func GetReceipts(convID int, viewerExt string) (readUpto, deliveredUpto int64, err error) {
+	var r, d sql.NullInt64
+	err = db.QueryRow(`
+		SELECT MIN(last_read_message_id), MIN(last_delivered_message_id)
+		FROM chat_participants
+		WHERE conversation_id = ? AND extension <> ? AND left_at IS NULL
+	`, convID, viewerExt).Scan(&r, &d)
+	return r.Int64, d.Int64, err
+}
+
+// MessageStatus maps an own message id to its receipt state.
+func MessageStatus(id, readUpto, deliveredUpto int64) string {
+	switch {
+	case readUpto > 0 && id <= readUpto:
+		return "read"
+	case deliveredUpto > 0 && id <= deliveredUpto:
+		return "delivered"
+	default:
+		return "sent"
+	}
 }
 
 func GetParticipants(convID int) ([]string, error) {

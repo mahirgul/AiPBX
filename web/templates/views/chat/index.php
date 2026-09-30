@@ -656,7 +656,7 @@ function initChatWebSocket() {
     }
 
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProto}//${window.location.host}/chat/ws?token=${encodeURIComponent(window.CHAT_TOKEN)}`;
+    const wsUrl = `${wsProto}//${window.location.host}/chat/ws?token=${encodeURIComponent(window.CHAT_TOKEN)}&active=${document.hidden ? 0 : 1}`;
 
     badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...';
     badge.style.color = 'var(--text-muted)';
@@ -674,6 +674,7 @@ function initChatWebSocket() {
 
     state.ws.onopen = function() {
         ws = state.ws;
+        sendChatActive();
         if (state.reconnectTimer) {
             clearTimeout(state.reconnectTimer);
             state.reconnectTimer = null;
@@ -770,18 +771,28 @@ function handleWsEvent(evt) {
         loadConversations();
 
     } else if (evt.event === 'presence') {
+        if (evt.last_seen) chatLastSeen[evt.extension] = evt.last_seen;
         updateUserPresence(evt.extension, evt.is_online);
 
     } else if (evt.event === 'presence_snapshot') {
-        if (Array.isArray(evt.extensions)) {
-            evt.extensions.forEach(function(ext) {
-                updateUserPresence(ext, true);
-            });
-        }
+        // The snapshot is the full list: everyone not in it is offline.
+        Object.assign(chatLastSeen, evt.last_seen || {});
+        const online = new Set(Array.isArray(evt.extensions) ? evt.extensions : []);
+        document.querySelectorAll('[id^="contact-dot-"]').forEach(function (dot) {
+            const ext = dot.id.replace('contact-dot-', '');
+            if (!online.has(ext)) updateUserPresence(ext, false);
+        });
+        if (currentTargetExt && !online.has(currentTargetExt)) updateUserPresence(currentTargetExt, false);
+        online.forEach(function (ext) { updateUserPresence(ext, true); });
 
     } else if (evt.event === 'typing') {
         if (currentConvId && evt.conversation_id === currentConvId) {
             showTypingIndicator(evt.from_name, evt.is_typing);
+        }
+
+    } else if (evt.event === 'receipts') {
+        if (currentConvId && evt.conversation_id === currentConvId) {
+            applyReceipts(evt.read_upto, evt.delivered_upto);
         }
 
     } else if (evt.event === 'messages_read') {
@@ -1029,6 +1040,7 @@ async function startDirectChatWith(targetExt, targetName) {
 // 7. Konuşmayı Aç
 async function openConversation(conv, pushHistory = true) {
     currentConvId = conv.id;
+    currentReceipts = { read: 0, delivered: 0 };
     currentConv = conv;
     currentTargetExt = conv.target_ext || '';
     const isGroup = conv.type === 'group';
@@ -1161,6 +1173,17 @@ async function loadMessages(convId) {
 }
 
 // 8. Mesajı Ekrana Ekle
+// A hidden portal tab does not make the user look online.
+function sendChatActive() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'set_active', active: !document.hidden }));
+    }
+}
+if (!window.__chatVisibilityHooked) {
+    window.__chatVisibilityHooked = true;
+    document.addEventListener('visibilitychange', function () { sendChatActive(); });
+}
+
 function appendMessageToUI(msg) {
     const scrollEl = document.getElementById('chat-messages-scroll');
 
@@ -1235,7 +1258,7 @@ function appendMessageToUI(msg) {
             ${contentHtml}
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10.5px; opacity: 0.8;">
                 <span>${formatTime(msg.created_at)}</span>
-                ${isMe ? '<i class="fas fa-check-double u-fs-10"></i>' : ''}
+                ${isMe ? `<span class="msg-tick" data-msg-id="${msg.id}">${tickHtml(msg.status || statusFromReceipts(msg.id))}</span>` : ''}
             </div>
         </div>
     `;
@@ -1394,11 +1417,45 @@ function markCurrentConversationRead(lastMsgId) {
     }
 }
 
+// Receipts of the open conversation (server "receipts" event), used for own
+// messages appended after the event arrived.
+window.currentReceipts = { read: 0, delivered: 0 };
+
+function statusFromReceipts(id) {
+    if (currentReceipts.read && id <= currentReceipts.read) return 'read';
+    if (currentReceipts.delivered && id <= currentReceipts.delivered) return 'delivered';
+    return 'sent';
+}
+
+function tickHtml(status) {
+    if (status === 'read') return '<i class="fas fa-check-double u-fs-10" style="color: #7dd3fc;" title="Okundu"></i>';
+    if (status === 'delivered') return '<i class="fas fa-check-double u-fs-10" title="İletildi"></i>';
+    return '<i class="fas fa-check u-fs-10" title="Gönderildi"></i>';
+}
+
+function applyReceipts(readUpto, deliveredUpto) {
+    currentReceipts = { read: readUpto || 0, delivered: deliveredUpto || 0 };
+    document.querySelectorAll('#chat-messages-scroll .msg-tick').forEach(function (el) {
+        el.innerHTML = tickHtml(statusFromReceipts(parseInt(el.dataset.msgId, 10)));
+    });
+}
+
 function markUiMessagesAsRead(lastMsgId) {
-    // Ekranda okunmamış tek tikleri çift tike çevir
+    // Superseded by the "receipts" event, which also covers delivery and groups.
 }
 
 // 13. Varlık ve Durum Güncellemesi
+window.chatLastSeen = window.chatLastSeen || {};
+
+function lastSeenText(extension) {
+    const iso = chatLastSeen[extension];
+    if (!iso) return 'Çevrimdışı';
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    const hm = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    return 'Son görülme ' + (sameDay ? hm : d.toLocaleDateString('tr-TR') + ' ' + hm);
+}
+
 function updateUserPresence(extension, isOnline) {
     // Rehberdeki noktayı güncelle
     const dot = document.getElementById(`contact-dot-${extension}`);
@@ -1408,7 +1465,7 @@ function updateUserPresence(extension, isOnline) {
     // Eğer şu an açık olan konuşmaysa
     if (currentTargetExt === extension) {
         document.getElementById('active-target-status-dot').style.background = isOnline ? '#10b981' : '#9ca3af';
-        document.getElementById('active-target-status-text').textContent = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+        document.getElementById('active-target-status-text').textContent = isOnline ? 'Çevrimiçi' : lastSeenText(extension);
         document.getElementById('active-target-status-text').style.color = isOnline ? '#10b981' : 'var(--text-muted)';
     }
 }

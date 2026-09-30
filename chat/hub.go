@@ -32,6 +32,10 @@ type Client struct {
 	conn *websocket.Conn
 	user *User
 	send chan []byte
+	// active: the user is actually using this device (app in foreground /
+	// portal tab visible). An extension is online while any client is active.
+	// Guarded by hub.mu.
+	active bool
 }
 
 type Hub struct {
@@ -42,6 +46,8 @@ type Hub struct {
 	mu         sync.RWMutex
 	// Yükleme imzası doğrulaması için (uploads.go); main.go atar.
 	secretKey string
+	// When each extension last went offline (in memory, reset on restart).
+	lastSeen map[string]time.Time
 }
 
 func NewHub() *Hub {
@@ -50,6 +56,80 @@ func NewHub() *Hub {
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		lastSeen:   make(map[string]time.Time),
+	}
+}
+
+// activeLocked reports whether ext has an active client; caller holds h.mu.
+func (h *Hub) activeLocked(ext string) bool {
+	for c := range h.clients[ext] {
+		if c.active {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *Hub) lastSeenLocked(ext string) string {
+	if t, ok := h.lastSeen[ext]; ok {
+		return t.Format(time.RFC3339)
+	}
+	return ""
+}
+
+// SetActive changes a client's active state and announces presence changes.
+func (h *Hub) SetActive(c *Client, active bool) {
+	h.mu.Lock()
+	ext := c.user.Extension
+	if _, ok := h.clients[ext][c]; !ok {
+		h.mu.Unlock()
+		return
+	}
+	before := h.activeLocked(ext)
+	c.active = active
+	after := h.activeLocked(ext)
+	if before && !after {
+		h.lastSeen[ext] = time.Now()
+	}
+	seen := h.lastSeenLocked(ext)
+	h.mu.Unlock()
+	if before != after {
+		h.broadcastPresence(ext, after, seen)
+	}
+}
+
+// deliverPending marks everything sent to ext so far as delivered (ext just
+// connected) and updates the senders' receipts.
+func (h *Hub) deliverPending(ext string) {
+	convs, err := MarkAllDelivered(ext)
+	if err != nil {
+		log.Printf("[Hub] MarkAllDelivered(%s): %v", ext, err)
+		return
+	}
+	for _, convID := range convs {
+		h.PushReceipts(convID)
+	}
+}
+
+// PushReceipts sends every participant of convID up to which message id the
+// others have received and read ("receipts" event).
+func (h *Hub) PushReceipts(convID int) {
+	participants, err := GetParticipants(convID)
+	if err != nil {
+		return
+	}
+	for _, ext := range participants {
+		readUpto, deliveredUpto, err := GetReceipts(convID, ext)
+		if err != nil {
+			continue
+		}
+		msg, _ := json.Marshal(map[string]interface{}{
+			"event":           "receipts",
+			"conversation_id": convID,
+			"read_upto":       readUpto,
+			"delivered_upto":  deliveredUpto,
+		})
+		h.SendToExtension(ext, msg)
 	}
 }
 
@@ -59,17 +139,23 @@ func (h *Hub) Run() {
 		case client := <-h.register:
 			h.mu.Lock()
 			ext := client.user.Extension
-			firstConnect := false
+			before := h.activeLocked(ext)
 			if _, ok := h.clients[ext]; !ok {
 				h.clients[ext] = make(map[*Client]bool)
-				firstConnect = true
 			}
 			h.clients[ext][client] = true
+			after := h.activeLocked(ext)
 
 			var onlineExts []string
-			for e, devs := range h.clients {
-				if len(devs) > 0 && e != ext {
+			seenMap := map[string]string{}
+			for e := range h.clients {
+				if e != ext && h.activeLocked(e) {
 					onlineExts = append(onlineExts, e)
+				}
+			}
+			for e := range h.lastSeen {
+				if e != ext && !h.activeLocked(e) {
+					seenMap[e] = h.lastSeenLocked(e)
 				}
 			}
 			h.mu.Unlock()
@@ -77,8 +163,8 @@ func (h *Hub) Run() {
 			log.Printf("[WS] Client connected: %s (%s) [Total devices for ext: %d]",
 				client.user.FullName, ext, len(h.clients[ext]))
 
-			if firstConnect {
-				h.broadcastPresence(ext, true)
+			if !before && after {
+				h.broadcastPresence(ext, true, "")
 			}
 
 			// Liste boş olsa da gönderilir: istemci anlık görüntüyü tam liste
@@ -89,24 +175,31 @@ func (h *Hub) Run() {
 			snapshotMsg, _ := json.Marshal(map[string]interface{}{
 				"event":      "presence_snapshot",
 				"extensions": onlineExts,
+				"last_seen":  seenMap,
 			})
 			select {
 			case client.send <- snapshotMsg:
 			default:
 			}
+			go h.deliverPending(ext)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
 			ext := client.user.Extension
 			if clients, ok := h.clients[ext]; ok {
 				if _, ok := clients[client]; ok {
+					before := h.activeLocked(ext)
 					delete(clients, client)
 					close(client.send)
 					if len(clients) == 0 {
 						delete(h.clients, ext)
-						h.mu.Unlock()
 						log.Printf("[WS] All devices disconnected for ext: %s", ext)
-						h.broadcastPresence(ext, false)
+					}
+					if before && !h.activeLocked(ext) {
+						h.lastSeen[ext] = time.Now()
+						seen := h.lastSeenLocked(ext)
+						h.mu.Unlock()
+						h.broadcastPresence(ext, false, seen)
 						continue
 					}
 				}
@@ -119,27 +212,31 @@ func (h *Hub) Run() {
 func (h *Hub) IsOnline(ext string) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return len(h.clients[ext]) > 0
+	return h.activeLocked(ext)
 }
 
 func (h *Hub) GetOnlineExtensions() []string {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	var list []string
-	for ext, clients := range h.clients {
-		if len(clients) > 0 {
+	for ext := range h.clients {
+		if h.activeLocked(ext) {
 			list = append(list, ext)
 		}
 	}
 	return list
 }
 
-func (h *Hub) broadcastPresence(ext string, isOnline bool) {
-	msg, _ := json.Marshal(map[string]interface{}{
+func (h *Hub) broadcastPresence(ext string, isOnline bool, lastSeen string) {
+	payload := map[string]interface{}{
 		"event":     "presence",
 		"extension": ext,
 		"is_online": isOnline,
-	})
+	}
+	if lastSeen != "" {
+		payload["last_seen"] = lastSeen
+	}
+	msg, _ := json.Marshal(payload)
 	h.BroadcastToAll(msg)
 }
 
@@ -200,6 +297,7 @@ type InMessage struct {
 	LastMessageID  int64  `json:"last_message_id"`
 	IsTyping       bool   `json:"is_typing"`
 	TargetExt      string `json:"target_ext"`
+	Active         *bool  `json:"active"`
 }
 
 func (c *Client) readPump() {
@@ -242,6 +340,11 @@ func (c *Client) readPump() {
 
 		case "mark_read":
 			c.handleMarkRead(&in)
+
+		case "set_active":
+			if in.Active != nil {
+				c.hub.SetActive(c, *in.Active)
+			}
 		}
 	}
 }
@@ -306,6 +409,7 @@ func (c *Client) handleSendMessage(in *InMessage) {
 
 	// Send to sender (flagged as is_me=true)
 	saved.IsMe = true
+	saved.Status = "sent"
 	senderPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
 		"data":  saved,
@@ -314,6 +418,7 @@ func (c *Client) handleSendMessage(in *InMessage) {
 
 	// Send to others (flagged as is_me=false)
 	saved.IsMe = false
+	saved.Status = ""
 	otherPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
 		"data":  saved,
@@ -327,7 +432,9 @@ func (c *Client) handleSendMessage(in *InMessage) {
 			continue
 		}
 
-		delivered := c.hub.SendToExtension(ext, otherPayload)
+		if c.hub.SendToExtension(ext, otherPayload) {
+			_ = MarkDelivered(convID, ext, saved.ID)
+		}
 
 		// Trigger FCM push notification for recipient
 		// Even if delivered to web, mobile app might be in background
@@ -365,9 +472,8 @@ func (c *Client) handleSendMessage(in *InMessage) {
 		}
 
 		TriggerFcmPush(ext, pushTitle, pushBody, "new_message", extra)
-
-		_ = delivered
 	}
+	c.hub.PushReceipts(convID)
 }
 
 func (c *Client) handleTyping(in *InMessage) {
@@ -411,6 +517,7 @@ func (c *Client) handleMarkRead(in *InMessage) {
 			c.hub.SendToExtension(ext, out)
 		}
 	}
+	c.hub.PushReceipts(in.ConversationID)
 }
 
 func (c *Client) writePump() {
