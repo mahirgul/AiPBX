@@ -36,6 +36,9 @@ if (getenv('DB_NAME') !== 'asterisk_test') {
 $tmpConf = sys_get_temp_dir() . '/aipbx-test-conf';
 if (!is_dir($tmpConf)) { mkdir($tmpConf, 0755, true); }
 putenv('ASTERISK_PBX_DIR=' . $tmpConf);
+// Asterisk's own files (rtp.conf, udptl.conf, …) too — they used to be written to the live /etc/asterisk.
+if (!is_dir($tmpConf . '/etc')) { mkdir($tmpConf . '/etc', 0755, true); }
+putenv('ASTERISK_CONF_DIR=' . $tmpConf . '/etc');
 
 // KİLİT 3 — canlı Asterisk'e hiçbir CLI komutu gitmesin.
 putenv('AIPBX_NO_ASTERISK=1');

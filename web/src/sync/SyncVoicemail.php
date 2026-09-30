@@ -17,7 +17,7 @@ function __syncVoicemailBody() {
     )->fetchAll(PDO::FETCH_ASSOC);
 
     // 1. Ensure /etc/asterisk/voicemail.conf includes pbx/voicemail_pbx.conf
-    $main_vm_conf = '/etc/asterisk/voicemail.conf';
+    $main_vm_conf = ASTERISK_CONF_DIR . '/voicemail.conf';
     if (is_file($main_vm_conf)) {
         $vm_content = @file_get_contents($main_vm_conf);
         if ($vm_content !== false && strpos($vm_content, 'voicemail_pbx.conf') === false) {

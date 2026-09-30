@@ -299,7 +299,7 @@ require_once __DIR__ . '/sync/SyncPermissions.php';
  */
 function syncDefaultLanguage($lang) {
     $lang = preg_replace('/[^a-zA-Z_]/', '', $lang) ?: 'en';
-    $conf_path = '/etc/asterisk/asterisk.conf';
+    $conf_path = ASTERISK_CONF_DIR . '/asterisk.conf';
     $content = @file_get_contents($conf_path);
     if ($content === false) return false;
 

@@ -16,7 +16,7 @@
  * Asterisk restart'ı ister (bkz. AsteriskHelper::reloadRTP).
  */
 
-const RTP_CONF_PATH = '/etc/asterisk/rtp.conf';
+define('RTP_CONF_PATH', ASTERISK_CONF_DIR . '/rtp.conf');
 
 function syncRtpSettings()
 {
