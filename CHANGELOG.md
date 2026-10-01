@@ -5,34 +5,55 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
-## Unreleased
+## 2.1.0
 
-- Trunks: outbound caller ID normalization (keep last N digits + prefix); copy a
-  trunk; rename its system name (routes follow); drag-and-drop ordering; the
-  edit dialog is split into Media & Fax, Network & NAT, Routing and Advanced.
-- Outbound routes: copy, drag-and-drop ordering, duplicate patterns in the same
-  group are rejected.
-- Roles: new default `user` role (My Phone, chat, own calls); one landing page
-  per role for every sign-in method.
-- Call recordings are converted to mono 16 kbps MP3 (~8x smaller) and the CDR
+Fixes for Ubuntu 26.04 installations — update recommended. On v2.0.0 the
+portal could not write Asterisk configuration ("Apply" changed nothing), could
+not run its root helper (firewall, fail2ban, mail, updates) and uploaded or
+Turkish sounds were not found, so IVRs and announcements hung up.
+
+**Telephony**
+- Trunks: outbound caller ID normalization (keep the last N digits and add a
+  prefix, e.g. extension 7840 → 903704187840); copy a trunk; rename its system
+  name (routes follow); drag-and-drop order; the edit dialog is split into
+  Media & Fax, Network & NAT, Routing and Advanced tabs.
+- Outbound routes: copy, drag-and-drop order; a pattern already used in the
+  same group is refused.
+- "Outbound route" as an inbound/IVR destination: the list loads, the choice is
+  saved, and calls go to exactly that route.
+- Removing a local network in Asterisk settings now takes effect.
+- Call recordings are converted to mono 16 kbps MP3 (about 8x smaller); the CDR
   follows the new file.
+- Turkish voicemail prompts renamed to the names Asterisk uses.
+
+**Portal**
+- Dashboard: live active calls, channels, queue callers, today's calls and
+  per-trunk channel usage.
+- New default role `user` (My Phone, chat, own calls); every sign-in method
+  opens the right page for the role.
 - My Phone: call settings (DND, phone modes, forwarding, voicemail) have their
   own tab.
-- Edit dialogs no longer close on an outside click or Esc, stay anchored at the
-  top and widen to fit their tabs.
-- Ubuntu 26.04 fixes: the portal can write Asterisk configs and run its root
-  helper inside Apache's systemd sandbox; uploaded and Turkish sounds are found
-  by Asterisk; portal fail2ban settings are read last; a config that cannot be
-  written no longer counts as applied.
-- Turkish voicemail prompts renamed to Asterisk's names; the read-only
-  `CDR(dst)` is no longer set.
-- Documentation moved to `docs/` (GitHub-readable pages).
-- Daily backups: `aipbx-backup` dumps the database and configuration every
-  night to `/var/backups/aipbx-daily` (14 days, optional rsync copy).
-- Security: Asterisk's direct WSS port 8089 listens on loopback only and is
-  closed in the firewall; the installer warns about password root SSH logins.
-- "Outbound route" as a destination saves correctly and sends the call to the
-  chosen route; removing a local network in Asterisk settings takes effect.
+- Edit dialogs close only with their own buttons, stay anchored at the top and
+  widen to fit their tabs.
+
+**Chat**
+- Sent / delivered / read ticks (web and Android 1.0.48).
+- Online status follows real use: a phone in the pocket or a hidden browser tab
+  no longer shows "online"; offline contacts show their last-seen time.
+- Android sends "typing…".
+
+**System and security**
+- Nightly backup of the database and configuration (`aipbx-backup`,
+  `/var/backups/aipbx-daily`, 14 days, optional off-server copy).
+- Asterisk's direct WSS port 8089 listens on loopback only and is closed in
+  the firewall.
+- fail2ban settings from the portal are applied (they were overridden).
+- A configuration file that cannot be written no longer counts as applied.
+- The installer warns when root can log in over SSH with a password.
+- Documentation in `docs/`; end-to-end install/upgrade test (`scripts/e2e`).
+
+**After updating:** existing WAV recordings are converted to MP3 in the
+background during the following hours.
 
 ## 2.0.0
 
