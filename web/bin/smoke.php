@@ -163,7 +163,7 @@ if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
  */
 function check_rbac(): void
 {
-    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/asterisk-settings'];
+    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings'];
     $n = 0;
 
     // Ayrım saf boyutla yapılır. Canlıda ölçüldü (2026-09-01): engellenen istek

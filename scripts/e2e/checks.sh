@@ -77,6 +77,51 @@ check "nothing left pending after Apply" test "$(mysql -Nse 'SELECT COUNT(*) FRO
 f2b="$("${CURL[@]}" -b "$JAR" "$URL/fail2ban")"
 check "portal reaches root helper (fail2ban page lists jails)" grep -q 'aipbx-web' <<<"$f2b"
 
+# --- Certificates (aipbx-cert through systemd-run, outside Apache's sandbox) ---
+served_fp() {   # fingerprint of the certificate Apache serves through the 443 multiplexer
+    # ALPN http/1.1 goes to Apache; without ALPN the multiplexer would hand it to coturn.
+    echo | openssl s_client -connect 127.0.0.1:443 -servername "$DOMAIN" -alpn http/1.1 2>/dev/null \
+        | openssl x509 -noout -fingerprint -sha256 2>/dev/null
+}
+file_fp() { openssl x509 -noout -fingerprint -sha256 -in "$1" 2>/dev/null; }
+copies_match() {
+    local a; a="$(file_fp /etc/ssl/aipbx/active.crt)"
+    [ -n "$a" ] && [ "$a" = "$(file_fp /etc/coturn/aipbx.crt)" ] \
+        && [ "$a" = "$(file_fp /etc/asterisk/keys/fullchain.pem)" ] && [ "$a" = "$(served_fp)" ]
+}
+check "fresh install: certificate mode recorded" grep -qE '^(selfsigned|letsencrypt)$' /etc/ssl/aipbx/mode
+check "Apache, coturn and Asterisk use the active certificate" copies_match
+certs_page="$("${CURL[@]}" -b "$JAR" "$URL/certificates")"
+check "certificates page renders" grep -q 'fa-certificate' <<<"$certs_page"
+
+PKI="$(mktemp -d)"
+openssl req -x509 -nodes -newkey rsa:2048 -days 30 -subj "/CN=E2E Test CA" \
+    -addext "basicConstraints=critical,CA:TRUE" -keyout "$PKI/ca.key" -out "$PKI/ca.crt" 2>/dev/null
+openssl req -nodes -newkey rsa:2048 -subj "/CN=$DOMAIN" -keyout "$PKI/leaf.key" -out "$PKI/leaf.csr" 2>/dev/null
+openssl x509 -req -in "$PKI/leaf.csr" -CA "$PKI/ca.crt" -CAkey "$PKI/ca.key" -days 30 \
+    -extfile <(printf 'subjectAltName=DNS:%s\nbasicConstraints=CA:FALSE\n' "$DOMAIN") -out "$PKI/leaf.crt" 2>/dev/null
+"${CURL[@]}" -b "$JAR" -o /dev/null -F "csrf_token=$APP_CSRF" -F action=upload \
+    -F "cert=@$PKI/leaf.crt" -F "chain=@$PKI/ca.crt" -F "key=@$PKI/leaf.key" "$URL/certificates"
+sleep 2
+check "uploaded certificate becomes active" grep -qx custom /etc/ssl/aipbx/mode
+check "uploaded certificate is served and copied to coturn and Asterisk" \
+    bash -c "[ \"\$(openssl x509 -noout -fingerprint -sha256 -in $PKI/leaf.crt)\" = \"\$(openssl x509 -noout -fingerprint -sha256 -in /etc/ssl/aipbx/active.crt)\" ]"
+check "after upload all services use the same certificate" copies_match
+check "upload stage is cleaned up" bash -c '! ls /var/lib/aipbx/cert-stage/*.pem 2>/dev/null | grep -q .'
+
+# A key that does not belong to the certificate must be refused by the portal.
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$PKI/other.key" 2>/dev/null
+"${CURL[@]}" -b "$JAR" -o /dev/null -F "csrf_token=$APP_CSRF" -F action=upload \
+    -F "cert=@$PKI/leaf.crt" -F "key=@$PKI/other.key" "$URL/certificates"
+check "mismatched key is refused, active certificate unchanged" \
+    bash -c "[ \"\$(openssl x509 -noout -fingerprint -sha256 -in $PKI/leaf.crt)\" = \"\$(openssl x509 -noout -fingerprint -sha256 -in /etc/ssl/aipbx/active.crt)\" ]"
+
+"${CURL[@]}" -b "$JAR" -o /dev/null --data-urlencode "csrf_token=$APP_CSRF" -d action=selfsigned "$URL/certificates"
+sleep 2
+check "switch back to self-signed" grep -qx selfsigned /etc/ssl/aipbx/mode
+check "after switching back all services use the same certificate" copies_match
+rm -rf "$PKI"
+
 # --- Sounds -------------------------------------------------------------------
 E2E_DP=/etc/asterisk/pbx/extensions_zz_e2e.conf
 cat > "$E2E_DP" <<'EOF'

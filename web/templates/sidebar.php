@@ -338,6 +338,11 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                             <i class="fas fa-user-shield"></i> <span class="nav-text"><?php echo t('sidebar.item_fail2ban'); ?></span>
                         </a>
                     </li>
+                    <li>
+                        <a href="/certificates" class="nav-link <?php echo $active_page === 'certificates.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_certificates'); ?>">
+                            <i class="fas fa-certificate"></i> <span class="nav-text"><?php echo t('sidebar.item_certificates'); ?></span>
+                        </a>
+                    </li>
                 </ul>
             </li>
         <?php endif; ?>
