@@ -541,8 +541,10 @@ ok "MariaDB configured"
 step "7. TLS Certificate Setup"
 
 if is_upgrade; then
-    [[ -f "$CERT_FILE" && -f "$KEY_FILE" ]] || error "Certificate not found: $CERT_FILE"
-    info "Keeping the existing certificate ($CERT_FILE)"
+    # With /etc/ssl/aipbx/mode the active certificate is kept below (it may be
+    # an uploaded one); older installs still point at CERT_FILE.
+    [[ -f /etc/ssl/aipbx/mode || ( -f "$CERT_FILE" && -f "$KEY_FILE" ) ]] || error "Certificate not found: $CERT_FILE"
+    info "Keeping the existing certificate"
 elif [[ "$USE_LETSENCRYPT" == "true" ]]; then
     info "Requesting Let's Encrypt certificate for $PORTAL_DOMAIN..."
     systemctl start apache2 2>/dev/null || true
@@ -581,6 +583,20 @@ if ! is_upgrade && [[ "$USE_SELFSIGNED" == "true" ]]; then
     CERT_FILE="/etc/ssl/aipbx/aipbx.crt"
     KEY_FILE="/etc/ssl/aipbx/aipbx.key"
     ok "Self-signed certificate generated (valid 10 years)"
+fi
+
+# One active certificate (/etc/ssl/aipbx/active.*) serves Apache, coturn and
+# Asterisk; aipbx-cert copies it to each. The Certificates page switches it
+# later (Let's Encrypt, uploaded, self-signed), so an upgrade keeps whatever
+# is active instead of going back to the installer's choice.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-cert" /usr/local/sbin/aipbx-cert
+if is_upgrade && [[ -f /etc/ssl/aipbx/mode && -f /etc/ssl/aipbx/active.crt && -f /etc/ssl/aipbx/active.key ]]; then
+    info "Keeping the active certificate ($(cat /etc/ssl/aipbx/mode))"
+else
+    CERT_MODE=selfsigned
+    [[ "$CERT_FILE" == /etc/letsencrypt/* ]] && CERT_MODE=letsencrypt
+    /usr/local/sbin/aipbx-cert deploy --no-reload "$CERT_MODE" "$CERT_FILE" "$KEY_FILE" \
+        || error "Could not install the TLS certificate ($CERT_FILE)"
 fi
 
 # Announce the local .local name on the LAN via mDNS (as an alias, hostname unchanged).
@@ -666,8 +682,8 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     RemoteIPProxyProtocol On
 
     SSLEngine on
-    SSLCertificateFile    ${CERT_FILE}
-    SSLCertificateKeyFile ${KEY_FILE}
+    SSLCertificateFile    /etc/ssl/aipbx/active.crt
+    SSLCertificateKeyFile /etc/ssl/aipbx/active.key
     SSLProtocol TLSv1.2 TLSv1.3
     SSLHonorCipherOrder on
     Header always set Strict-Transport-Security "max-age=31536000"
@@ -920,12 +936,8 @@ Database    = asterisk
 Charset     = utf8mb4
 ODBCINI
 
-# seed.sql enables SIP-TLS (5061) and WSS (8089) with these two files; without
-# them both transports failed to load on every fresh install.
-cp -L "$CERT_FILE" /etc/asterisk/keys/fullchain.pem
-cp -L "$KEY_FILE" /etc/asterisk/keys/privkey.pem
-chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
-chmod 640 /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
+# seed.sql enables SIP-TLS (5061) and WSS (8089) with /etc/asterisk/keys/
+# fullchain.pem and privkey.pem; aipbx-cert wrote them in step 7.
 
 cat > /etc/asterisk/manager.conf << MANAGER
 [general]
@@ -1073,42 +1085,19 @@ min-port=49152
 max-port=65535
 TURNCONF
 
-# coturn runs as "turnserver" and cannot read a root-owned 600 key.
-mkdir -p /etc/coturn
-cp -L "$CERT_FILE" /etc/coturn/aipbx.crt
-cp -L "$KEY_FILE" /etc/coturn/aipbx.key
-chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
-chmod 640 /etc/coturn/aipbx.key
+# coturn's certificate (/etc/coturn/aipbx.*) is the copy aipbx-cert wrote in step 7.
 
-# Let's Encrypt renews every ~60-90 days, but coturn reads a COPY of the
-# certificate and Apache keeps the old one in memory (certonly mode): without
-# this hook TURNS (WebRTC behind strict firewalls) broke when the copied
-# certificate expired.
-if [[ "$CERT_FILE" == /etc/letsencrypt/* ]]; then
-    mkdir -p /etc/letsencrypt/renewal-hooks/deploy
-    cat > /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh << LEHOOK
+# Let's Encrypt renews every ~60-90 days, but coturn and Asterisk read copies
+# and Apache keeps the old certificate in memory: the deploy hook hands each
+# renewal to aipbx-cert. Written on every install, because Let's Encrypt can
+# be switched on later from the Certificates page.
+mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+cat > /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh << 'LEHOOK'
 #!/bin/bash
-# AI PBX: push renewed certificate to coturn, reload coturn and Apache.
-set -e
-LIVE="/etc/letsencrypt/live/${PORTAL_DOMAIN}"
-[ -f "\$LIVE/fullchain.pem" ] || exit 0
-# Full chain: Let's Encrypt's chain (leaf, YE1, Root YE, X2 cross-signs) needs
-# the cross-signs for clients that do not yet trust the newer roots.
-cp -f "\$LIVE/fullchain.pem" /etc/coturn/aipbx.crt
-cp -f "\$LIVE/privkey.pem" /etc/coturn/aipbx.key
-chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
-chmod 640 /etc/coturn/aipbx.key
-systemctl restart coturn >/dev/null 2>&1 || true
-systemctl reload apache2 >/dev/null 2>&1 || true
-# Asterisk SIP-TLS / WSS transports (pjsip_transports.conf)
-cp -f "\$LIVE/fullchain.pem" /etc/asterisk/keys/fullchain.pem
-cp -f "\$LIVE/privkey.pem" /etc/asterisk/keys/privkey.pem
-chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
-chmod 640 /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem
-asterisk -rx "module reload res_pjsip.so" >/dev/null 2>&1 || true
+# AiPBX: deploy a renewed certificate while Let's Encrypt is the active source.
+exec /usr/local/sbin/aipbx-cert renewal-hook
 LEHOOK
-    chmod 755 /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh
-fi
+chmod 755 /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh
 
 mkdir -p /var/log/turnserver
 chown turnserver:turnserver /var/log/turnserver 2>/dev/null || true
@@ -1338,8 +1327,8 @@ if [[ "${USE_LETSENCRYPT:-false}" == "true" ]]; then
 else
     echo -e "  ⚠️  Self-signed certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
     echo -e "     Your browser will show a warning — click Advanced → Proceed to continue."
-    echo -e "     To upgrade to a real certificate later:"
-    echo -e "     ${CYAN}certbot --apache -d ${PORTAL_DOMAIN}${NC}"
+    echo -e "     WebRTC TURNS (calls behind strict firewalls) needs a trusted certificate."
+    echo -e "     Get one later in the portal: ${CYAN}Security → Certificates${NC}"
 fi
 echo ""
 

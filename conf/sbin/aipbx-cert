@@ -1,0 +1,266 @@
+#!/bin/bash
+# aipbx-cert — TLS certificate management for AiPBX (root).
+#
+# One active certificate serves the portal (Apache), TURNS (coturn) and
+# SIP-TLS/WSS (Asterisk). It lives in /etc/ssl/aipbx/active.{crt,key};
+# coturn and Asterisk get copies because they run as their own users.
+# /etc/ssl/aipbx/mode records where it came from: letsencrypt, custom or
+# selfsigned.
+#
+#   aipbx-cert deploy [--no-reload] MODE CRT KEY   install.sh / internal
+#   aipbx-cert letsencrypt [--dry-run] [--email ADDR]
+#   aipbx-cert renew [--dry-run]
+#   aipbx-cert custom [--allow-mismatch]           staged by the portal
+#   aipbx-cert selfsigned
+#   aipbx-cert renewal-hook                         certbot deploy hook
+#
+# The portal runs the user-facing commands through aipbx-priv, which starts
+# them with systemd-run: Apache's sandbox keeps /etc read-only, and certbot
+# --apache has to change the Apache configuration temporarily.
+
+set -uo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+
+TLS_DIR=/etc/ssl/aipbx
+ACTIVE_CRT=$TLS_DIR/active.crt
+ACTIVE_KEY=$TLS_DIR/active.key
+MODE_FILE=$TLS_DIR/mode
+SELF_CRT=$TLS_DIR/aipbx.crt     # name kept from install.sh
+SELF_KEY=$TLS_DIR/aipbx.key
+CUSTOM_CRT=$TLS_DIR/custom.crt
+CUSTOM_KEY=$TLS_DIR/custom.key
+STAGE_DIR=/var/lib/aipbx/cert-stage
+STATUS_FILE=/var/lib/aipbx/cert-status.json
+ENV_FILE=/etc/ai-pbx.env
+
+ACTION="${1:-}"
+
+# Last result for the portal (shown on the Certificates page).
+record() {
+    local ok="$1" msg="$2"
+    mkdir -p "$(dirname "$STATUS_FILE")"
+    msg="$(printf '%s' "$msg" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g' | cut -c1-500)"
+    printf '{"action":"%s","ok":%s,"at":"%s","message":"%s"}\n' \
+        "$ACTION" "$ok" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$msg" > "$STATUS_FILE.tmp" \
+        && chmod 644 "$STATUS_FILE.tmp" && mv -f "$STATUS_FILE.tmp" "$STATUS_FILE"
+}
+
+die() {
+    echo "aipbx-cert: $*" >&2
+    record false "$*"
+    exit 1
+}
+
+domain() {
+    local d
+    d="$(grep -m1 '^PORTAL_DOMAIN=' "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d "\"'")"
+    [[ "$d" =~ ^[A-Za-z0-9.-]{1,253}$ ]] || die "PORTAL_DOMAIN missing or invalid in $ENV_FILE"
+    echo "${d,,}"
+}
+
+server_ip() { hostname -I 2>/dev/null | awk '{print $1}'; }
+
+key_matches() {
+    local a b
+    a="$(openssl x509 -noout -pubkey -in "$1" 2>/dev/null | sha256sum)" || return 1
+    b="$(openssl pkey -pubout -in "$2" 2>/dev/null | sha256sum)" || return 1
+    [ -n "$a" ] && [ "$a" = "$b" ]
+}
+
+reload_services() {
+    if apache2ctl configtest >/dev/null 2>&1; then
+        systemctl reload apache2 >/dev/null 2>&1 || true
+    else
+        echo "aipbx-cert: apache configtest failed, Apache not reloaded" >&2
+    fi
+    systemctl restart coturn >/dev/null 2>&1 || true
+    if systemctl is-active --quiet asterisk; then
+        asterisk -rx "module reload res_pjsip.so" >/dev/null 2>&1 || true
+    fi
+}
+
+# deploy [--no-reload] MODE CRT KEY
+do_deploy() {
+    local reload=1
+    [ "${1:-}" = --no-reload ] && { reload=0; shift; }
+    [ $# -eq 3 ] || die "usage: deploy [--no-reload] MODE CRT KEY"
+    local mode="$1" crt="$2" key="$3"
+    case "$mode" in letsencrypt|custom|selfsigned) ;; *) die "invalid mode: $mode" ;; esac
+    [ -r "$crt" ] && [ -r "$key" ] || die "certificate or key not found: $crt $key"
+    openssl x509 -noout -in "$crt" 2>/dev/null || die "not a certificate: $crt"
+    key_matches "$crt" "$key" || die "the private key does not belong to the certificate"
+
+    mkdir -p "$TLS_DIR" /etc/coturn /etc/asterisk/keys
+    # Copy to a temporary name first so a reader never sees a half-written pair.
+    install -o root -g root -m 0644 "$crt" "$ACTIVE_CRT.new"
+    install -o root -g root -m 0600 "$key" "$ACTIVE_KEY.new"
+    mv -f "$ACTIVE_CRT.new" "$ACTIVE_CRT"
+    mv -f "$ACTIVE_KEY.new" "$ACTIVE_KEY"
+
+    # coturn runs as "turnserver" and Asterisk as "asterisk": they read copies.
+    # The whole chain goes to coturn: Let's Encrypt's chain needs its
+    # cross-signs for clients that do not trust the newer roots yet.
+    install -m 0644 "$crt" /etc/coturn/aipbx.crt
+    install -m 0640 "$key" /etc/coturn/aipbx.key
+    chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
+    install -m 0640 "$crt" /etc/asterisk/keys/fullchain.pem
+    install -m 0640 "$key" /etc/asterisk/keys/privkey.pem
+    chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem 2>/dev/null || true
+
+    echo "$mode" > "$MODE_FILE"
+    chmod 644 "$MODE_FILE"
+    [ "$reload" = 1 ] && reload_services
+    echo "OK: active certificate ($mode) deployed to Apache, coturn and Asterisk"
+}
+
+le_live() { echo "/etc/letsencrypt/live/$1"; }
+
+# certbot prints the useful part of a failure on these lines.
+certbot_errors() { grep -E 'Detail:|Type:|Domain:|Hint:|Error|error:|Challenge failed|unauthorized|Timeout|too many' | head -12; }
+
+do_letsencrypt() {
+    local dry=0 email=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry-run) dry=1 ;;
+            --email) shift; email="${1:-}"
+                [[ "$email" =~ ^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}$ ]] || die "invalid email" ;;
+            *) die "unexpected argument: $1" ;;
+        esac
+        shift
+    done
+    local d; d="$(domain)" || exit 1
+    [[ "$d" == *.local ]] && die "Let's Encrypt cannot issue certificates for .local names ($d)"
+    [[ "$d" =~ ^[0-9.]+$ ]] && die "Let's Encrypt needs a domain name, not an IP address ($d)"
+    command -v certbot >/dev/null || die "certbot is not installed"
+
+    local args=(certonly --apache -d "$d" --cert-name "$d" --non-interactive --agree-tos)
+    if [ -n "$email" ]; then args+=(--email "$email"); else args+=(--register-unsafely-without-email); fi
+
+    # Always validate against the staging server first: a failure there costs
+    # nothing, while failed production attempts count against rate limits.
+    local out
+    echo "== test against the Let's Encrypt staging server"
+    out="$(certbot "${args[@]}" --dry-run 2>&1)"
+    if [ $? -ne 0 ]; then
+        echo "$out" | tail -25
+        die "validation failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"
+    fi
+    if [ "$dry" = 1 ]; then
+        record true "test passed: $d is reachable for validation"
+        echo "OK: test passed, $d can get a Let's Encrypt certificate"
+        return 0
+    fi
+
+    echo "== requesting the certificate"
+    # --keep-until-expiring: an existing, still valid certificate is reused.
+    out="$(certbot "${args[@]}" --keep-until-expiring 2>&1)"
+    if [ $? -ne 0 ]; then
+        echo "$out" | tail -25
+        die "certificate request failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"
+    fi
+    do_deploy letsencrypt "$(le_live "$d")/fullchain.pem" "$(le_live "$d")/privkey.pem" || exit 1
+    record true "Let's Encrypt certificate installed for $d"
+}
+
+do_renew() {
+    local dry=0
+    case "${1:-}" in '') ;; --dry-run) dry=1 ;; *) die "unexpected argument: $1" ;; esac
+    local d; d="$(domain)" || exit 1
+    [ -f "/etc/letsencrypt/renewal/$d.conf" ] || die "no Let's Encrypt certificate for $d"
+    # Without a terminal certbot sleeps up to 8 minutes before renewing (meant
+    # for its timer); someone is waiting on the page here.
+    local out
+    if [ "$dry" = 1 ]; then
+        out="$(certbot renew --cert-name "$d" --dry-run --non-interactive --no-random-sleep-on-renew 2>&1)" \
+            || { echo "$out" | tail -25; die "renewal test failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"; }
+        record true "renewal test passed"
+        echo "OK: renewal test passed"
+        return 0
+    fi
+    out="$(certbot renew --cert-name "$d" --force-renewal --non-interactive --no-random-sleep-on-renew 2>&1)" \
+        || { echo "$out" | tail -25; die "renewal failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"; }
+    # The deploy hook does this too; repeat it in case the hook is missing.
+    do_deploy letsencrypt "$(le_live "$d")/fullchain.pem" "$(le_live "$d")/privkey.pem" || exit 1
+    record true "certificate renewed"
+}
+
+# Reads a staged file without following symlinks (the stage is web-writable).
+read_staged() {
+    local src="$1" dst="$2" max="$3"
+    dd if="$src" of="$dst" iflag=nofollow bs="$max" count=1 status=none 2>/dev/null \
+        || die "staged file missing: $(basename "$src")"
+    [ "$(stat -c %s "$dst")" -lt "$max" ] || die "staged file too large: $(basename "$src")"
+}
+
+do_custom() {
+    local allow_mismatch=0
+    case "${1:-}" in '') ;; --allow-mismatch) allow_mismatch=1 ;; *) die "unexpected argument: $1" ;; esac
+    local d; d="$(domain)" || exit 1
+    local tmp; tmp="$(mktemp -d)" || exit 1
+    trap 'rm -rf "$tmp"' EXIT
+    read_staged "$STAGE_DIR/cert.pem" "$tmp/cert.pem" 65536
+    read_staged "$STAGE_DIR/key.pem" "$tmp/key.pem" 16384
+    rm -f "$STAGE_DIR/cert.pem" "$STAGE_DIR/key.pem"
+
+    # Nothing but certificates in the chain file, nothing but one key in the key file.
+    grep -vE '^-----(BEGIN|END) CERTIFICATE-----$|^[A-Za-z0-9+/=]*$' "$tmp/cert.pem" | grep -q . \
+        && die "the certificate file contains something other than PEM certificates"
+    openssl crl2pkcs7 -nocrl -certfile "$tmp/cert.pem" >/dev/null 2>&1 || die "the certificate file cannot be read"
+    openssl pkey -in "$tmp/key.pem" -passin pass: -out "$tmp/key.clean" 2>/dev/null \
+        || die "the private key cannot be read (it must not be password protected)"
+    key_matches "$tmp/cert.pem" "$tmp/key.clean" || die "the private key does not belong to the certificate"
+    openssl x509 -checkend 0 -noout -in "$tmp/cert.pem" >/dev/null 2>&1 || die "the certificate has expired"
+    if ! openssl x509 -noout -checkhost "$d" -in "$tmp/cert.pem" 2>/dev/null | grep -q 'does match'; then
+        [ "$allow_mismatch" = 1 ] || die "the certificate is not valid for $d"
+    fi
+
+    install -o root -g root -m 0644 "$tmp/cert.pem" "$CUSTOM_CRT"
+    install -o root -g root -m 0600 "$tmp/key.clean" "$CUSTOM_KEY"
+    do_deploy custom "$CUSTOM_CRT" "$CUSTOM_KEY" || exit 1
+    record true "uploaded certificate installed"
+}
+
+do_selfsigned() {
+    [ $# -eq 0 ] || die "usage: selfsigned"
+    local d ip san
+    d="$(domain)" || exit 1; ip="$(server_ip)"
+    # Regenerate when missing or issued for another name.
+    if ! { [ -r "$SELF_CRT" ] && [ -r "$SELF_KEY" ] \
+            && openssl x509 -noout -checkhost "$d" -in "$SELF_CRT" 2>/dev/null | grep -q 'does match'; }; then
+        mkdir -p "$TLS_DIR"
+        # Browsers ignore the CN and only look at subjectAltName.
+        san="DNS:${d}"; [ -n "$ip" ] && san="$san,IP:$ip"
+        [[ "$d" =~ ^[0-9.]+$ ]] && san="IP:$d"
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+            -keyout "$SELF_KEY" -out "$SELF_CRT" \
+            -subj "/O=AiPBX/CN=${d}" -addext "subjectAltName=${san}" 2>/dev/null \
+            || die "could not generate a self-signed certificate"
+        chmod 600 "$SELF_KEY"; chmod 644 "$SELF_CRT"
+    fi
+    do_deploy selfsigned "$SELF_CRT" "$SELF_KEY" || exit 1
+    record true "self-signed certificate active"
+}
+
+# certbot deploy hook: only follow renewals while Let's Encrypt is the active source.
+do_renewal_hook() {
+    local d mode
+    d="$(domain)" || exit 1
+    [ "${RENEWED_LINEAGE:-$(le_live "$d")}" = "$(le_live "$d")" ] || exit 0
+    mode="$(cat "$MODE_FILE" 2>/dev/null || echo letsencrypt)"
+    [ "$mode" = letsencrypt ] || exit 0
+    do_deploy letsencrypt "$(le_live "$d")/fullchain.pem" "$(le_live "$d")/privkey.pem"
+}
+
+[ "$(id -u)" -eq 0 ] || { echo "aipbx-cert: must run as root" >&2; exit 1; }
+[ $# -gt 0 ] && shift
+case "$ACTION" in
+    deploy)       do_deploy "$@" ;;
+    letsencrypt)  do_letsencrypt "$@" ;;
+    renew)        do_renew "$@" ;;
+    custom)       do_custom "$@" ;;
+    selfsigned)   do_selfsigned "$@" ;;
+    renewal-hook) do_renewal_hook ;;
+    *) echo "usage: aipbx-cert deploy|letsencrypt|renew|custom|selfsigned|renewal-hook" >&2; exit 64 ;;
+esac
