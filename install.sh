@@ -806,7 +806,9 @@ stream {
 
     map $ssl_preread_alpn_protocols $aipbx_backend {
         default     127.0.0.1:8443;
+        # Browsers send no ALPN for TURNS; RFC 7443 clients send stun.turn.
         ""          127.0.0.1:15349;
+        ~stun\.turn 127.0.0.1:15349;
     }
 
     server {
@@ -1090,9 +1092,9 @@ if [[ "$CERT_FILE" == /etc/letsencrypt/* ]]; then
 set -e
 LIVE="/etc/letsencrypt/live/${PORTAL_DOMAIN}"
 [ -f "\$LIVE/fullchain.pem" ] || exit 0
-# Leaf + intermediate only: some WebRTC/TURNS TLS stacks reject a chain that
-# also carries the root certificate.
-awk '/-----BEGIN CERTIFICATE-----/{n++} n<=2' "\$LIVE/fullchain.pem" > /etc/coturn/aipbx.crt
+# Full chain: Let's Encrypt's chain (leaf, YE1, Root YE, X2 cross-signs) needs
+# the cross-signs for clients that do not yet trust the newer roots.
+cp -f "\$LIVE/fullchain.pem" /etc/coturn/aipbx.crt
 cp -f "\$LIVE/privkey.pem" /etc/coturn/aipbx.key
 chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
 chmod 640 /etc/coturn/aipbx.key
