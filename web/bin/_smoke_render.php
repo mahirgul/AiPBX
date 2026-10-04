@@ -37,8 +37,14 @@ if (!isset($ROUTES[$path]) || !is_array($ROUTES[$path])) {
 }
 $route = $ROUTES[$path];
 
+// Optional query string (SMOKE_QUERY="export=pdf&date_range=week"), e.g. for exports.
+$query = (string) getenv('SMOKE_QUERY');
+if ($query !== '') {
+    parse_str($query, $_GET);
+}
+
 // index.php'nin dispatch ortamını birebir taklit et.
-$_SERVER['REQUEST_URI']    = $path;
+$_SERVER['REQUEST_URI']    = $path . ($query !== '' ? '?' . $query : '');
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['SCRIPT_NAME']    = '/index.php';
 // RBAC ve aktif-sekme mantığı basename($_SERVER['PHP_SELF']) üzerinden çalışıyor.

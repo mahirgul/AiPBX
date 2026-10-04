@@ -51,6 +51,7 @@ $formatDuration = function(int $seconds): string {
             <button type="button" class="btn-help" onclick="toggleModuleHelp('qlogHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
+<?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
             <a href="/queue-logs" class="btn btn-secondary btn-sm" title="<?php echo t('queue_logs.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></a>
         </div>
     </div>

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/CdrReportService.php';
+require_once __DIR__ . '/../services/ReportExport.php';
 
 class CdrReportController extends BaseController
 {
@@ -93,6 +94,29 @@ class CdrReportController extends BaseController
         $stat_avg_talk         = $ozet['ort_konusma'];
         $stat_avg_ring         = $ozet['ort_calma'];
 
+        $format = $_GET['export'] ?? '';
+        if (in_array($format, ['pdf', 'xlsx'], true)) {
+            // Every filtered call, not just this page (capped per format).
+            $limit = min($stat_total, $format === 'pdf' ? ReportExport::PDF_MAX_ROWS : ReportExport::XLSX_MAX_ROWS);
+            $all = [];
+            for ($p = 1; count($all) < $limit; $p++) {
+                $batch = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $p, 1000, $device_filter, $view_mode, $direction_filter, $trunk_filter);
+                if (!$batch) {
+                    break;
+                }
+                array_push($all, ...$batch);
+            }
+            $filters = array_filter([
+                t('cdr_reports.col_status') => $status_filter !== '' ? static::statusLabel($status_filter) : '',
+                t('export.f_extension') => $agent_filter,
+                t('cdr_reports.col_direction') => $direction_filter !== '' ? t('cdr_reports.dir_' . $direction_filter) : '',
+                t('export.f_trunk') => $trunk_filter !== '' ? ($trunks[$trunk_filter] ?? $trunk_filter) : '',
+                t('export.f_device') => $device_filter,
+                t('export.f_search') => $search_query,
+            ], fn($v) => $v !== '');
+            ReportExport::send(static::exportDoc(array_slice($all, 0, $limit), $ozet, $start_ts, $end_ts, $filters, $stat_total), $format, 'call-report');
+        }
+
         $toplam_sayfa  = max(1, (int)ceil($stat_total / $sayfa_boyutu));
         if ($sayfa > $toplam_sayfa) $sayfa = $toplam_sayfa;
 
@@ -135,5 +159,95 @@ class CdrReportController extends BaseController
             'stat_recordings_count' => $stat_recordings_count,
             'answer_rate' => $answer_rate,
         ], ['title' => $page_title]);
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'ANSWERED' => t('cdr_reports.status_answered_label'),
+            'NO ANSWER', 'NOANSWER', 'CANCEL' => t('cdr_reports.status_no_answer_label'),
+            'BUSY' => t('cdr_reports.status_busy_label'),
+            'ABANDON' => t('cdr_reports.status_abandon_label'),
+            'FAILED' => t('cdr_reports.status_failed_label'),
+            default => $status,
+        };
+    }
+
+    /** One row per call with the same columns as the page, plus what only fits in a spreadsheet. */
+    protected static function exportDoc(array $calls, array $ozet, ?string $from, ?string $to, array $filters, int $total): array
+    {
+        $rows = [];
+        foreach ($calls as $c) {
+            $f = $c['flow'] ?? null;
+            $path = $f ? implode(' → ', array_map(fn($n) => $n['kind'] === 'trunk'
+                ? $n['label'] . ($n['number'] !== '' ? ': ' . $n['number'] : '')
+                : $n['id'] . ($n['label'] !== '' ? ' ' . $n['label'] : ''), $f['path'])) : '';
+            $note = trim(implode(' · ', array_filter([$c['note_disposition'] ?? '', $c['note_customer_name'] ?? '', $c['note_text'] ?? ''])));
+            $rows[] = [
+                strtotime((string) $c['start_time']),
+                $f ? t('cdr_reports.dir_' . $f['direction']) : '',
+                $f['caller_number'] ?? ($c['caller_num'] ?? ''),
+                $f['caller_name'] ?? '',
+                $f['in_trunk_title'] ?? '',
+                $f['dialed_number'] ?? '',
+                $c['route'] ?? ($c['queue_name'] ?? ''),
+                $f['out_trunk_title'] ?? '',
+                $f['out_number'] ?? '',
+                $c['agent_extension'] ?? '',
+                $c['agent_name'] ?? '',
+                $c['device_type'] ?? '',
+                (int) ($c['ring_sec'] ?? 0),
+                (int) ($c['billsec'] ?? 0),
+                (int) ($c['duration'] ?? 0),
+                static::statusLabel((string) $c['status']),
+                !empty($f['transferred']) ? t('cdr_reports.transferred') : '',
+                $path,
+                $note,
+            ];
+        }
+        $rate = $ozet['toplam'] > 0 ? round($ozet['cevaplanan'] * 100 / $ozet['toplam'], 1) : 0;
+        $kpis = [
+            [t('cdr_reports.stat_total'), (string) $ozet['toplam'], ''],
+            [t('cdr_reports.stat_answered'), (string) $ozet['cevaplanan'], ReportExport::format($rate, 'pct')],
+            [t('cdr_reports.stat_talk_time'), ReportExport::format($ozet['toplam_sure'], 'dur'), ''],
+            [t('cdr_reports.stat_recordings'), (string) $ozet['kayitli'], ''],
+        ];
+        foreach (['gelen' => 'inbound', 'giden' => 'outbound', 'dahili' => 'internal', 'transit' => 'transit'] as $k => $dir) {
+            if (isset($ozet[$k])) {
+                $kpis[] = [t('cdr_reports.dir_' . $dir), (string) $ozet[$k], ''];
+            }
+        }
+        return [
+            'title' => t('cdr_reports.title'),
+            'period' => static::periodLabel($from, $to),
+            'filters' => $filters,
+            'kpis' => $kpis,
+            'sections' => [[
+                'title' => t('cdr_reports.title'),
+                'total' => $total,
+                'columns' => [
+                    [t('cdr_reports.col_datetime'), 'datetime'], [t('cdr_reports.col_direction'), 'text'],
+                    [t('cdr_reports.col_caller'), 'text'], [t('export.col_caller_name'), 'text'], [t('export.col_in_trunk'), 'text'],
+                    [t('cdr_reports.col_callee'), 'text'], [t('cdr_reports.col_route'), 'text'],
+                    [t('export.col_out_trunk'), 'text'], [t('export.col_sent_number'), 'text'],
+                    [t('cdr_reports.col_answered_by'), 'text'], [t('export.col_answered_name'), 'text'], [t('cdr_reports.col_device'), 'text'],
+                    [t('cdr_reports.col_ring'), 'dur'], [t('cdr_reports.col_talk'), 'dur'], [t('export.col_total'), 'dur'],
+                    [t('cdr_reports.col_status'), 'text'], [t('cdr_reports.transferred'), 'text'], [t('export.col_path'), 'text'],
+                    [t('cdr_reports.col_note'), 'text'],
+                ],
+                'pdf_columns' => [0, 1, 2, 4, 5, 7, 9, 13, 15],
+                'rows' => $rows,
+            ]],
+        ];
+    }
+
+    public static function periodLabel(?string $from, ?string $to): string
+    {
+        if (!$from || !$to) {
+            return t('export.all_time');
+        }
+        $a = date('d.m.Y', strtotime($from));
+        $b = date('d.m.Y', strtotime($to));
+        return $a === $b ? $a : "{$a} – {$b}";
     }
 }

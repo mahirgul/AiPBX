@@ -39,9 +39,12 @@
         <div class="card-title">
             <i class="fas fa-mug-hot u-warning"></i> <?php echo t('pause_reports.header_title'); ?>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="Modül Rehberi">
-            <i class="fas fa-question-circle"></i>
-        </button>
+        <div class="u-flex-gap">
+            <?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="Modül Rehberi">
+                <i class="fas fa-question-circle"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Collapsible Help Box -->
