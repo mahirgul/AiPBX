@@ -149,10 +149,14 @@
                 // bulundu). loadSPAPage() ile aynı desen: HTTP hatasında sert
                 // (tam sayfa) yönlendirmeye düş.
                 if (!res.ok) throw new Error('HTTP ' + res.status);
+                if (!isHtmlResponse(res)) {
+                    return downloadResponse(res, actionUrl).then(() => null);
+                }
                 const finalUrl = res.url || actionUrl;
                 return res.text().then(html => ({ html, url: finalUrl }));
             })
             .then(data => {
+                if (data === null) return; // a file was downloaded
                 if (mySeq !== requestSeq) return; // daha yeni bir navigasyon zaten başladı
                 renderSPAPage(data.html, data.url, true);
             })
@@ -170,6 +174,35 @@
         });
     }
 
+    // A link or form may answer with a file (report PDF/Excel, recording...):
+    // putting that into the page showed raw bytes. Anything that is not HTML
+    // is saved as a download instead and the page stays where it was.
+    function isHtmlResponse(res) {
+        const type = (res.headers.get('Content-Type') || '').toLowerCase();
+        const disposition = (res.headers.get('Content-Disposition') || '').toLowerCase();
+        return type.includes('text/html') && !disposition.startsWith('attachment');
+    }
+
+    function downloadResponse(res, url) {
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const m = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+        let name = m ? decodeURIComponent(m[1]) : '';
+        if (!name) {
+            try { name = new URL(url, window.location.origin).pathname.split('/').pop() || 'download'; } catch (e) { name = 'download'; }
+        }
+        return res.blob().then(blob => {
+            const objectUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = objectUrl;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+            completeProgress();
+        });
+    }
+
     function loadSPAPage(url, pushHistory) {
         startProgress();
         const mySeq = ++requestSeq;
@@ -183,9 +216,13 @@
         })
         .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!isHtmlResponse(res)) {
+                return downloadResponse(res, url).then(() => null);
+            }
             return res.text();
         })
         .then(html => {
+            if (html === null) return; // a file was downloaded, the page stays as it is
             if (mySeq !== requestSeq) return; // daha yeni bir navigasyon zaten başladı
             renderSPAPage(html, url, pushHistory);
         })
