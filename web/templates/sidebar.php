@@ -456,6 +456,13 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if (hasModulePermission('queue_reports', 'view')): ?>
+                        <li>
+                            <a href="/queue-reports" class="nav-link <?php echo $active_page === 'queue_reports.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_queue_reports'); ?>">
+                                <i class="fas fa-chart-column"></i> <span class="nav-text"><?php echo t('sidebar.item_queue_reports'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                     <?php if (hasModulePermission('pause_reports', 'view')): ?>
                         <li>
                             <a href="/pause-reports" class="nav-link <?php echo $active_page === 'pause_reports.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_pause_reports'); ?>">

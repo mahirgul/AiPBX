@@ -321,7 +321,10 @@ INSERT IGNORE INTO `sys_role_permissions` VALUES
 (381,'admin','firewall',1,1,1,1,'2026-09-18 07:48:47'),
 (382,'admin','fail2ban',1,1,1,1,'2026-09-18 07:48:47'),
 (383,'user','my_phone',1,1,1,0,'2026-09-30 00:00:00'),
-(384,'user','chat',1,1,1,0,'2026-09-30 00:00:00');
+(384,'user','chat',1,1,1,0,'2026-09-30 00:00:00'),
+(385,'admin','queue_reports',1,1,1,1,'2026-10-04 00:00:00'),
+(386,'read_only_admin','queue_reports',1,1,0,0,'2026-10-04 00:00:00'),
+(387,'cc_manager','queue_reports',1,1,0,0,'2026-10-04 00:00:00');
 /*!40000 ALTER TABLE `sys_role_permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
