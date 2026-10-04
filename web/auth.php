@@ -159,6 +159,7 @@ function getModuleKeyForPage($page = null) {
         'system_update.php'         => 'system_update',
         'push_settings.php'         => 'push_settings',
         'ms_teams.php'              => 'ms_teams',
+        'ai_tts.php'                => 'ai_tts',
         'mail_settings.php'         => 'mail_settings',
     ];
     return $map[$page] ?? str_replace('.php', '', $page);

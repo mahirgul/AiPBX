@@ -58,6 +58,7 @@ class RoleRepository extends BaseRepository
             'certificates'       => ['title' => 'Sertifikalar', 'group' => 'Güvenlik', 'actions' => self::VAE, 'admin_only' => true],
             'google_integration' => ['title' => 'Google ile Giriş', 'group' => 'Entegrasyonlar', 'actions' => self::VAE, 'admin_only' => true],
             'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Entegrasyonlar', 'actions' => $all],
+            'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'Yapay Zekâ', 'actions' => $all],
             'fax_inbox'          => ['title' => 'Gelen Fakslar', 'group' => 'Faks Sistemi', 'actions' => $all],
             'fax_send'           => ['title' => 'Faks Gönder', 'group' => 'Faks Sistemi', 'actions' => self::VAE],
             'fax_sent'           => ['title' => 'Giden Fakslar', 'group' => 'Faks Sistemi', 'actions' => $all],
@@ -89,6 +90,7 @@ class RoleRepository extends BaseRepository
             'Yönetim' => 'admin_mgmt',
             'Güvenlik' => 'security',
             'Entegrasyonlar' => 'integrations',
+            'Yapay Zekâ' => 'ai',
             'Faks Sistemi' => 'fax_system',
             'Çağrı Merkezi' => 'call_center',
         ];

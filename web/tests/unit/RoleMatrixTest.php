@@ -22,7 +22,7 @@ final class RoleMatrixTest extends TestCase
     /** Sidebar group id => matrix group. */
     private const SIDEBAR_GROUPS = [
         'group-dashboard' => 'Genel', 'group-trunks' => 'Dış Hat Yönetimi', 'group-pbx' => 'PBX Yönetimi',
-        'group-admin' => 'Yönetim', 'group-security' => 'Güvenlik', 'group-integrations' => 'Entegrasyonlar',
+        'group-admin' => 'Yönetim', 'group-security' => 'Güvenlik', 'group-integrations' => 'Entegrasyonlar', 'group-ai' => 'Yapay Zekâ',
         'group-fax' => 'Faks Sistemi', 'group-cc' => 'Çağrı Merkezi',
     ];
 
