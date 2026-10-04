@@ -124,7 +124,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
         </label>
         <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter"></i></button>
         <span class="u-muted u-fs-12"><?php echo date('d.m.Y', $from); ?><?php echo date('Y-m-d', $from) !== date('Y-m-d', $to) ? ' – ' . date('d.m.Y', $to) : ''; ?></span>
-        <a href="<?php echo $h($url(['export' => 'csv'])); ?>" class="btn btn-secondary btn-sm" style="margin-left: auto;" title="<?php echo $h(t('queue_reports.export_tooltip')); ?>"><i class="fas fa-file-csv"></i> CSV</a>
+        <span style="margin-left: auto; display: inline-flex; gap: 6px;"><?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?></span>
     </form>
 </div>
 

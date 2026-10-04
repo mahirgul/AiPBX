@@ -65,6 +65,7 @@ $filter_url = function (array $override) {
             <button type="button" class="btn-help" onclick="toggleModuleHelp('cdrHelpBox')" title="Modül Rehberi">
                 <i class="fas fa-question-circle"></i>
             </button>
+<?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
             <a href="/cdr-reports" class="btn btn-secondary btn-sm" title="<?php echo t('cdr_reports.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></a>
         </div>
     </div>

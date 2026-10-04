@@ -4,7 +4,7 @@ class PauseReportRepository extends BaseRepository
 {
     protected static string $table = 'cc_pause_logs';
 
-    public static function search(string $startDate, string $endDate, bool $canViewAll, string $userExt, string $agentFilter, string $reasonFilter): array
+    public static function search(string $startDate, string $endDate, bool $canViewAll, string $userExt, string $agentFilter, string $reasonFilter, int $limit = 500): array
     {
         $sql = "SELECT p.*, TIMESTAMPDIFF(SECOND, p.start_time, IFNULL(p.end_time, NOW())) AS duration_sec
                 FROM cc_pause_logs p WHERE DATE(p.start_time) BETWEEN ? AND ?";
@@ -24,7 +24,7 @@ class PauseReportRepository extends BaseRepository
             $params[] = $reasonFilter;
         }
 
-        $sql .= " ORDER BY p.start_time DESC LIMIT 500";
+        $sql .= " ORDER BY p.start_time DESC LIMIT " . max(1, $limit);
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();

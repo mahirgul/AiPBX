@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../repositories/QueueReportRepository.php';
 require_once __DIR__ . '/../services/QueueStats.php';
+require_once __DIR__ . '/../services/ReportExport.php';
 
 /**
  * /queue-reports — Queue Report Centre: service level, queues, agents,
@@ -63,8 +64,19 @@ class QueueReportController extends BaseController
                 break;
         }
 
-        if (($_GET['export'] ?? '') === 'csv') {
-            static::csv($tab, $data);
+        $format = $_GET['export'] ?? '';
+        if (in_array($format, ['pdf', 'xlsx'], true)) {
+            // The export is the whole report, whatever tab is open.
+            $notes = QueueReportRepository::notes($from, $to);
+            $data['dist'] = QueueStats::distribution($calls);
+            $data['buckets'] = QueueStats::waitBuckets($calls);
+            $data['by_queue'] = QueueStats::byQueue($calls, $sl);
+            $data['by_agent'] = QueueStats::byAgent($calls, QueueReportRepository::ringMisses($from, $to, $queue !== '' ? [$queue] : []),
+                QueueReportRepository::pauses($from, $to), $notes['per_agent']);
+            $data['lost'] = $lost;
+            $data['repeat'] = QueueStats::repeatCallers($calls);
+            $data['notes'] = $notes;
+            ReportExport::send(static::exportDoc($data), $format, 'queue-report');
         }
 
         static::renderPage('queue_reports/index', $data, ['title' => t('queue_reports.title')]);
@@ -98,55 +110,110 @@ class QueueReportController extends BaseController
         }
     }
 
-    protected static function csv(string $tab, array $d): void
+    protected static function exportDoc(array $d): array
     {
-        $rows = [];
-        $fmt = fn($ts) => $ts ? date('Y-m-d H:i:s', (int) $ts) : '';
-        switch ($tab) {
-            case 'overview':
-            case 'queues':
-                $rows[] = ['queue', 'offered', 'answered', 'lost', 'short_abandons', 'answer_rate', 'service_level', 'asa', 'aht', 'max_wait', 'avg_lost_wait'];
-                $groups = $tab === 'queues' ? $d['by_queue'] : ['*' => $d['kpis']];
-                foreach ($groups as $q => $k) {
-                    $rows[] = [$d['queues'][$q] ?? $q, $k['offered'], $k['answered'], $k['lost'], $k['short_abandons'], $k['answer_rate'], $k['service_level'], $k['asa'], $k['aht'], $k['max_wait'], $k['avg_lost_wait']];
-                }
-                break;
-            case 'agents':
-                $rows[] = ['extension', 'name', 'answered', 'share', 'talk_total', 'aht', 'talk_max', 'avg_ring', 'missed_rings', 'pickup_rate', 'agent_hangups', 'transfers', 'pause_count', 'pause_seconds', 'notes'];
-                foreach ($d['by_agent'] as $ext => $a) {
-                    $rows[] = [$ext, $d['agent_names'][$ext] ?? '', $a['answered'], $a['share'], $a['talk_total'], $a['aht'], $a['talk_max'], $a['avg_ring'], $a['missed_rings'], $a['pickup_rate'], $a['agent_hangups'], $a['transfers'], $a['pause_count'], $a['pause_seconds'], $a['notes']];
-                }
-                break;
-            case 'lost':
-                $rows[] = ['time', 'queue', 'caller', 'wait', 'reason', 'resolved', 'resolved_at'];
-                foreach ($d['lost'] as $l) {
-                    $rows[] = [$fmt($l['enter_ts']), $d['queues'][$l['queue_name']] ?? $l['queue_name'], $l['caller'], $l['wait'], $l['lost'], $l['resolved_how'], $fmt($l['resolved_at'])];
-                }
-                break;
-            case 'repeat':
-                $rows[] = ['caller', 'calls', 'answered', 'lost', 'first', 'last'];
-                foreach ($d['repeat'] as $r) {
-                    $rows[] = [$r['caller'], $r['calls'], $r['answered'], $r['lost'], $fmt($r['first']), $fmt($r['last'])];
-                }
-                break;
-            case 'notes':
-                $rows[] = ['disposition', 'extension', 'name', 'count'];
-                foreach ($d['notes']['per_disposition'] as $disp => $per) {
-                    foreach ($per as $ext => $n) {
-                        $rows[] = [$disp, $ext, $d['agent_names'][$ext] ?? '', $n];
-                    }
-                }
-                break;
+        $k = $d['kpis'];
+        $names = $d['agent_names'];
+        $qt = fn($q) => $d['queues'][$q] ?? $q;
+        $series = fn(array $rows) => [
+            [t('queue_reports.answered'), 'primary', array_column($rows, 'answered')],
+            [t('queue_reports.lost'), 'danger', array_column($rows, 'lost')],
+        ];
+
+        $hours = $d['dist']['hours'];
+        $active = array_keys(array_filter($hours, fn($v) => $v['offered'] > 0));
+        $hourRows = [];
+        if ($active) {
+            for ($i = min($active); $i <= max($active); $i++) {
+                $hourRows[sprintf('%02d:00', $i)] = $hours[$i];
+            }
         }
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="queue-report-' . $tab . '-' . date('Ymd', $d['from']) . '-' . date('Ymd', $d['to']) . '.csv"');
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF");   // BOM: Excel opens UTF-8 (Turkish characters) correctly
-        foreach ($rows as $r) {
-            // A leading = + - @ would make Excel evaluate the cell (CSV injection).
-            fputcsv($out, array_map(fn($v) => is_string($v) && preg_match('/^[=+\-@]/', $v) ? "'" . $v : $v, $r), ';', '"', '');
+        $bucketLabel = fn($b) => $b['to'] === null ? $b['from'] . '+ ' . t('queue_reports.seconds_short') : $b['from'] . '-' . $b['to'] . ' ' . t('queue_reports.seconds_short');
+
+        $sections = [];
+        $sections[] = [
+            'title' => t('queue_reports.chart_hourly'),
+            'chart' => ['labels' => array_keys($hourRows), 'series' => $series(array_values($hourRows))],
+            'columns' => [[t('queue_reports.col_hour'), 'text'], [t('queue_reports.col_offered'), 'int'], [t('queue_reports.answered'), 'int'], [t('queue_reports.lost'), 'int']],
+            'rows' => array_map(fn($h, $v) => [$h, $v['offered'], $v['answered'], $v['lost']], array_keys($hourRows), array_values($hourRows)),
+        ];
+        if (count($d['dist']['days']) > 1) {
+            $days = $d['dist']['days'];
+            $sections[] = [
+                'title' => t('queue_reports.chart_daily'),
+                'chart' => ['labels' => array_map(fn($x) => date('d.m', strtotime($x)), array_keys($days)), 'series' => $series(array_values($days))],
+                'columns' => [[t('export.col_date'), 'text'], [t('queue_reports.col_offered'), 'int'], [t('queue_reports.answered'), 'int'], [t('queue_reports.lost'), 'int']],
+                'rows' => array_map(fn($x, $v) => [date('d.m.Y', strtotime($x)), $v['offered'], $v['answered'], $v['lost']], array_keys($days), array_values($days)),
+            ];
         }
-        fclose($out);
-        exit;
+        $sections[] = [
+            'title' => t('queue_reports.chart_wait'),
+            'chart' => ['labels' => array_map($bucketLabel, $d['buckets']), 'series' => $series($d['buckets'])],
+            'columns' => [[t('queue_reports.col_wait'), 'text'], [t('queue_reports.answered'), 'int'], [t('queue_reports.lost'), 'int']],
+            'rows' => array_map(fn($b) => [$bucketLabel($b), $b['answered'], $b['lost']], $d['buckets']),
+        ];
+        $sections[] = [
+            'title' => t('queue_reports.tab_queues'),
+            'columns' => [[t('queue_reports.col_queue'), 'text'], [t('queue_reports.col_offered'), 'int'], [t('queue_reports.answered'), 'int'], [t('queue_reports.lost'), 'int'],
+                [t('export.col_answer_rate'), 'pct'], [sprintf(t('queue_reports.col_sl'), $d['sl']), 'pct'], ['ASA', 'dur'], ['AHT', 'dur'],
+                [t('queue_reports.col_max_wait'), 'dur'], [t('queue_reports.col_lost_wait'), 'dur']],
+            'rows' => array_map(fn($q, $v) => [$qt($q), $v['offered'], $v['answered'], $v['lost'], $v['answer_rate'], $v['service_level'], $v['asa'], $v['aht'], $v['max_wait'], $v['avg_lost_wait']],
+                array_keys($d['by_queue']), array_values($d['by_queue'])),
+        ];
+        $sections[] = [
+            'title' => t('queue_reports.tab_agents'),
+            'columns' => [[t('queue_reports.col_agent'), 'text'], [t('export.col_name'), 'text'], [t('queue_reports.answered'), 'int'], [t('export.col_share'), 'pct'],
+                [t('queue_reports.col_talk_total'), 'dur'], ['AHT', 'dur'], [t('queue_reports.col_talk_max'), 'dur'], [t('queue_reports.col_avg_ring'), 'dur'],
+                [t('queue_reports.col_missed'), 'int'], [t('queue_reports.col_pickup'), 'pct'], [t('queue_reports.col_agent_hangup'), 'int'],
+                [t('export.col_pause_count'), 'int'], [t('export.col_pause_time'), 'dur'], [t('queue_reports.col_notes'), 'int']],
+            'rows' => array_map(fn($ext, $a) => [(string) $ext, $names[$ext] ?? '', $a['answered'], $a['share'], $a['talk_total'], $a['aht'], $a['talk_max'], $a['avg_ring'],
+                $a['missed_rings'], $a['pickup_rate'], $a['agent_hangups'], $a['pause_count'], $a['pause_seconds'], $a['notes']], array_keys($d['by_agent']), array_values($d['by_agent'])),
+        ];
+        $sections[] = [
+            'title' => t('queue_reports.tab_lost'),
+            'note' => t('queue_reports.lost_hint'),
+            'columns' => [[t('queue_reports.col_time'), 'datetime'], [t('queue_reports.col_caller'), 'text'], [t('queue_reports.col_queue'), 'text'],
+                [t('queue_reports.col_wait'), 'dur'], [t('queue_reports.col_reason'), 'text'], [t('queue_reports.col_callback'), 'text'], [t('export.col_callback_time'), 'datetime']],
+            'rows' => array_map(fn($l) => [$l['enter_ts'], $l['caller'], $qt($l['queue_name']), $l['wait'],
+                t($l['lost'] === 'abandon' ? 'queue_reports.reason_abandon' : 'queue_reports.reason_timeout'),
+                $l['resolved_at'] !== null ? t('queue_reports.resolved_' . $l['resolved_how']) : t('queue_reports.unresolved'), $l['resolved_at']], $d['lost']),
+        ];
+        $sections[] = [
+            'title' => t('queue_reports.tab_repeat'),
+            'note' => t('queue_reports.repeat_hint'),
+            'columns' => [[t('queue_reports.col_caller'), 'text'], [t('queue_reports.col_calls'), 'int'], [t('queue_reports.answered'), 'int'], [t('queue_reports.lost'), 'int'],
+                [t('queue_reports.col_first'), 'datetime'], [t('queue_reports.col_last'), 'datetime']],
+            'rows' => array_map(fn($r) => [$r['caller'], $r['calls'], $r['answered'], $r['lost'], $r['first'], $r['last']], $d['repeat']),
+        ];
+        $noteRows = [];
+        foreach ($d['notes']['per_disposition'] as $disp => $per) {
+            foreach ($per as $ext => $n) {
+                $noteRows[] = [$disp === '-' ? t('queue_reports.no_disposition') : $disp, (string) $ext, $names[$ext] ?? '', $n];
+            }
+        }
+        $sections[] = [
+            'title' => t('queue_reports.tab_notes'),
+            'columns' => [[t('queue_reports.col_disposition'), 'text'], [t('queue_reports.col_agent'), 'text'], [t('export.col_name'), 'text'], [t('export.col_count'), 'int']],
+            'rows' => $noteRows,
+        ];
+
+        return [
+            'title' => t('queue_reports.title'),
+            'period' => date('d.m.Y', $d['from']) . (date('Ymd', $d['from']) !== date('Ymd', $d['to']) ? ' – ' . date('d.m.Y', $d['to']) : ''),
+            'filters' => array_filter([
+                t('queue_reports.col_queue') => $d['queue'] !== '' ? $qt($d['queue']) : '',
+                t('queue_reports.sl_target') => $d['sl'] . ' ' . t('queue_reports.seconds_short'),
+            ]),
+            'kpis' => [
+                [t('queue_reports.kpi_offered'), (string) $k['offered'], ''],
+                [t('queue_reports.kpi_answered'), (string) $k['answered'], ReportExport::format($k['answer_rate'], 'pct')],
+                [t('queue_reports.kpi_lost'), (string) $k['lost'], ReportExport::format($k['lost_rate'], 'pct')],
+                [t('queue_reports.kpi_sl'), ReportExport::format($k['service_level'], 'pct'), sprintf(t('queue_reports.kpi_sl_sub'), $d['sl'])],
+                [t('queue_reports.kpi_asa'), ReportExport::format($k['asa'], 'dur'), sprintf(t('queue_reports.kpi_max_wait'), ReportExport::format($k['max_wait'], 'dur'))],
+                [t('queue_reports.kpi_aht'), ReportExport::format($k['aht'], 'dur'), sprintf(t('queue_reports.kpi_talk_total'), ReportExport::format($k['talk_total'], 'dur'))],
+                [t('queue_reports.kpi_unresolved'), (string) ($d['unresolved'] ?? 0), t('queue_reports.kpi_unresolved_sub')],
+            ],
+            'sections' => $sections,
+        ];
     }
 }

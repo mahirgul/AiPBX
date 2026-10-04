@@ -207,6 +207,66 @@ function check_rbac(): void
 
 if ($only === null || $only === 'rbac') { check_rbac(); }
 
+// ---------------------------------------------------------------- EXPORTS
+/**
+ * Every page with the PDF/Excel buttons (templates/export_buttons.php) must
+ * answer ?export=pdf|xlsx with a real file: the view and the controller are
+ * checked against each other, then each export is downloaded.
+ */
+function check_exports(): void
+{
+    $views = [];
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/index.php') as $f) {
+        if (str_contains((string) file_get_contents($f), 'export_buttons.php')) {
+            $views[] = basename(dirname($f)) . '/index';
+        }
+    }
+    $ROUTES = require SMOKE_ROOT . '/src/routes.php';
+    $n = 0;
+    foreach ($views as $view) {
+        $route = null;
+        foreach ($ROUTES as $path => $r) {
+            if (!is_array($r)) continue;
+            $src = (string) @file_get_contents(SMOKE_ROOT . '/src/controllers/' . $r['controller'] . '.php');
+            if (str_contains($src, "renderPage('{$view}'")) {
+                $route = $path;
+                if (!str_contains($src, 'ReportExport::send(')) {
+                    fail('export', $view, 'the page shows export buttons but ' . $r['controller'] . ' does not handle ?export=');
+                    continue 2;
+                }
+                break;
+            }
+        }
+        if ($route === null) {
+            fail('export', $view, 'no route renders this view');
+            continue;
+        }
+        foreach (['pdf' => '%PDF-', 'xlsx' => "PK\x03\x04"] as $format => $magic) {
+            $out = tempnam(sys_get_temp_dir(), 'smoke');
+            $bin = tempnam(sys_get_temp_dir(), 'smoke');
+            $cmd = 'SMOKE_QUERY=' . escapeshellarg('export=' . $format . '&date_range=month') . ' php '
+                . escapeshellarg(SMOKE_ROOT . '/bin/_smoke_render.php') . ' ' . escapeshellarg($route) . ' tr admin '
+                . escapeshellarg($out) . ' > ' . escapeshellarg($bin) . ' 2>/dev/null';
+            exec($cmd);
+            $body = (string) file_get_contents($bin);
+            $d = json_decode((string) file_get_contents($out), true) ?: [];
+            @unlink($out);
+            @unlink($bin);
+            $n++;
+            if (($d['status'] ?? '') === 'fatal') {
+                fail('export', "{$route} {$format}", $d['error'] ?? 'fatal');
+            } elseif (!str_starts_with($body, $magic)) {
+                fail('export', "{$route} {$format}", 'not a ' . $format . ' file (' . strlen($body) . ' bytes)');
+            }
+            foreach (($d['php_errors'] ?? []) as $e) {
+                fail('export', "{$route} {$format}", $e);
+            }
+        }
+    }
+    group_done('export', $n);
+}
+if ($only === null || $only === 'exports') { check_exports(); }
+
 // ----------------------------------------------------------- KONVANSİYON
 /**
  * Dosyanın YORUMSUZ hâlini döner (string literal'ler korunur).
