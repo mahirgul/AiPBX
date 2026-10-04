@@ -1,30 +1,12 @@
 /**
  * Role & Permission Matrix UI Logic
  */
-// 'roles'/'system_users'/'firewall'/'fail2ban'/'mail_settings' auth.php'de admin dışı
-// hiçbir role asla açılmıyor (bkz. auth.php hasModulePermission() circuit-breaker) — bu
-// modüllerin checkbox'ları burada da admin-olmayan bir rol düzenlenirken kilitlenip
-// işaretsiz bırakılır, ki arayüz yanıltıcı bir "izinli" görünümü göstermesin.
-const ADMIN_ONLY_LOCKED_MODULES = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'];
-const ADMIN_ONLY_LOCKED_EDIT_MODULES = ['push_settings'];
-
+// Admin-only modules have no checkboxes at all (the matrix shows them locked);
+// for "admin only edit" modules the edit/delete boxes are locked for other roles.
+// Both lists come from RoleRepository::modulesDefinition().
 function applyAdminOnlyModuleLock(roleKey) {
     const isAdmin = (roleKey === 'admin');
-    ADMIN_ONLY_LOCKED_MODULES.forEach(modKey => {
-        ['view', 'access', 'edit', 'delete'].forEach(action => {
-            const el = document.getElementById(`p_${modKey}_${action}`);
-            if (!el) return;
-            if (!isAdmin) {
-                el.checked = false;
-                el.disabled = true;
-                el.title = 'Bu modüle yalnızca "admin" rolü erişebilir (sistem tarafından kilitli)';
-            } else {
-                el.disabled = false;
-                el.title = '';
-            }
-        });
-    });
-    ADMIN_ONLY_LOCKED_EDIT_MODULES.forEach(modKey => {
+    (window.ADMIN_ONLY_EDIT_MODULES || []).forEach(modKey => {
         ['edit', 'delete'].forEach(action => {
             const el = document.getElementById(`p_${modKey}_${action}`);
             if (!el) return;

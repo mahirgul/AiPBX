@@ -55,25 +55,26 @@ class RoleService {
 
             // Update Permissions Matrix
             $perms_post = $data['perms'] ?? [];
-            // 'roles'/'system_users'/'firewall'/'fail2ban'/'mail_settings' auth.php'de
-            // admin dışı hiçbir role ASLA açılmıyor (bkz. hasModulePermission() circuit-breaker)
-            // — burada da aynı kısıtlama uygulanır, ki izin matrisi ekranı admin-olmayan bir
-            // role bu modüller için yanıltıcı bir "izinli" görünümü göstermesin.
-            $locked_admin_only_modules = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'];
-            $locked_admin_only_edit_modules = ['push_settings'];
+            // The matrix definition says which boxes exist for each module
+            // (RoleRepository::modulesDefinition()); anything else is stored as 0.
+            // Admin-only modules are never granted to another role — auth.php
+            // refuses them anyway, the matrix must not suggest otherwise.
             foreach ($modulesDefinition as $mod_key => $mod_info) {
-                if (in_array($mod_key, $locked_admin_only_modules, true) && $role_key !== 'admin') {
-                    $can_view = $can_access = $can_edit = $can_delete = 0;
-                } elseif (in_array($mod_key, $locked_admin_only_edit_modules, true) && $role_key !== 'admin') {
-                    $can_view = isset($perms_post[$mod_key]['view']) ? 1 : 0;
-                    $can_access = isset($perms_post[$mod_key]['access']) ? 1 : 0;
-                    $can_edit = $can_delete = 0; // Sudo / API sırrı içeren modüller admin dışına açılamaz
-                } else {
-                    $can_view = isset($perms_post[$mod_key]['view']) ? 1 : 0;
-                    $can_access = isset($perms_post[$mod_key]['access']) ? 1 : 0;
-                    $can_edit = isset($perms_post[$mod_key]['edit']) ? 1 : 0;
-                    $can_delete = isset($perms_post[$mod_key]['delete']) ? 1 : 0;
+                $actions = $mod_info['actions'] ?? RoleRepository::ALL_ACTIONS;
+                $isAdmin = ($role_key === 'admin');
+                $grant = [];
+                foreach (RoleRepository::ALL_ACTIONS as $action) {
+                    if (!in_array($action, $actions, true)) {
+                        $grant[$action] = 0;
+                    } elseif (!empty($mod_info['admin_only'])) {
+                        $grant[$action] = $isAdmin ? 1 : 0;
+                    } elseif (!empty($mod_info['admin_only_edit']) && !$isAdmin && in_array($action, ['edit', 'delete'], true)) {
+                        $grant[$action] = 0;
+                    } else {
+                        $grant[$action] = isset($perms_post[$mod_key][$action]) ? 1 : 0;
+                    }
                 }
+                [$can_view, $can_access, $can_edit, $can_delete] = [$grant['view'], $grant['access'], $grant['edit'], $grant['delete']];
 
                 $stmt = $db->prepare("INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
                     VALUES (?, ?, ?, ?, ?, ?)

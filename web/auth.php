@@ -216,7 +216,8 @@ function hasModulePermission($module_key, $action = 'access') {
     // RbacTest): bu sayfalar gerçek sudo çalıştırır, admin dışındaki hiçbir role ASLA açılamaz.
     // 'system_update' de: sistemi güncelleyip servisleri yeniden başlatır.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates'], true)) {
+    // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration'], true)) {
         return $role === 'admin';
     }
 
