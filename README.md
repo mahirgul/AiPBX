@@ -146,8 +146,8 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 
 ### 🌐 WebRTC Softphone
 - **Browser phone** built into the portal header — no installation
-- **TURNS (coturn)** relay for clients behind NAT and strict firewalls — on 5349, or on 443 through the
-  edge multiplexer (`TURNS_PORT=443`); per-user, time-limited credentials refreshed automatically
+- **TURNS (coturn)** relay for clients behind NAT and strict firewalls — clients use 443, which the
+  nginx multiplexer hands to coturn (5349); per-user, time-limited credentials refreshed automatically
 - **NAT handled in the generator** — public/private address mapping for ICE and every SIP transport;
   see [WebRTC, NAT and TURN](docs/webrtc-nat.md)
 - **Opus + DTLS-SRTP** encrypted audio

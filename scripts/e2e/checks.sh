@@ -155,6 +155,7 @@ while IFS='|' read -r name _; do
     [[ "$n" -eq 1 && -f "/var/lib/asterisk/sounds/tr/$name.wav" ]] || tr_bad+=" $name($n)"
 done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/tr/README-tts.txt")
 if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (one WAV each)"; else fail "Turkish prompts installed (one WAV each)" "${tr_bad:0:200}"; fi
+check "clients are given TURNS on 443" grep -q "^TURNS_PORT=443$" /etc/ai-pbx.env
 check "Asterisk finds a Turkish prompt" bash -c 'asterisk -rx "core show file formats" >/dev/null && test -r /usr/share/asterisk/sounds/tr/vm-intro.wav'
 tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts?tab=providers")"
 check "Cloud TTS page renders" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "save_provider" <<<"$1"' _ "$tts_page"

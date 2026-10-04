@@ -78,7 +78,7 @@ date_default_timezone_set(portalEnv('TIMEZONE', 'Europe/Istanbul'));
 define('TURN_SECRET', portalEnv('TURN_SECRET'));
 define('CHAT_JWT_SECRET', portalEnv('CHAT_JWT_SECRET'));
 define('TURN_HOST', portalEnv('TURN_HOST', 'pbx.example.com'));
-define('TURNS_PORT', portalEnv('TURNS_PORT', '5349'));
+define('TURNS_PORT', portalEnv('TURNS_PORT', '443'));
 
 // Hardened Session Configuration for Public Security
 if (session_status() === PHP_SESSION_NONE) {
