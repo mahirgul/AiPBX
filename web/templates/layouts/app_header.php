@@ -19,7 +19,7 @@ $is_trunk_active = in_array($active_page, ['trunks.php', 'did_routes.php', 'outb
 $is_pbx_active = in_array($active_page, ['time_conditions.php', 'ivrs.php', 'extensions.php', 'queues.php', 'sounds.php', 'end_call.php', 'ring_groups.php', 'conferences.php', 'boss_secretary.php']) || str_contains($request_uri, '/ring-groups') || str_contains($request_uri, '/conferences') || str_contains($request_uri, '/boss-secretary');
 $is_admin_active = in_array($active_page, ['system_users.php', 'roles.php', 'asterisk_settings.php', 'brand_settings.php', 'fax_mail_settings.php', 'fax_settings.php', 'pending_sync.php', 'audit_log.php', 'push_settings.php', 'mail_settings.php', 'system_update.php']);
 $is_fax_active = in_array($active_page, ['fax_inbox.php', 'fax_send.php', 'fax_sent.php']);
-$is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc_board.php', 'queue_logs.php', 'pause_reports.php']);
+$is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc_board.php', 'queue_logs.php', 'pause_reports.php', 'queue_reports.php']);
 $is_security_active = in_array($active_page, ['firewall.php', 'fail2ban.php', 'certificates.php']);
 $is_teams_active = in_array($active_page, ['ms_teams.php']);
 $is_google_active = in_array($active_page, ['google_integration.php']) || str_contains($request_uri, '/google-integration');
@@ -31,7 +31,7 @@ $can_view_trunks_group = hasModulePermission('trunks', 'view') || hasModulePermi
 $can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModulePermission('ivrs', 'view') || hasModulePermission('extensions', 'view') || hasModulePermission('queues', 'view') || hasModulePermission('sounds', 'view') || hasModulePermission('end_call', 'view') || hasModulePermission('ring_groups', 'view') || hasModulePermission('conferences', 'view') || hasModulePermission('boss_secretary', 'view');
 $can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('pending_sync', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('audit_log', 'view') || hasModulePermission('mail_settings', 'view');
 $can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
-$can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view');
+$can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view') || hasModulePermission('queue_reports', 'view');
 $can_view_integrations_group = ($role === 'admin') || hasModulePermission('ms_teams', 'view');
 $can_view_teams_group = $can_view_integrations_group;
 

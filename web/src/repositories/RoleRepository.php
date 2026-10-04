@@ -48,6 +48,7 @@ class RoleRepository extends BaseRepository
             'queue_monitor'      => ['title' => 'Kuyruk İzleme', 'group' => 'Çağrı Merkezi'],
             'cc_board'           => ['title' => 'Canlı Pano', 'group' => 'Çağrı Merkezi'],
             'pause_reports'      => ['title' => 'Mola Raporları', 'group' => 'Çağrı Merkezi'],
+            'queue_reports'      => ['title' => 'Kuyruk Rapor Merkezi', 'group' => 'Çağrı Merkezi'],
             'queue_logs'         => ['title' => 'Kuyruk Logları', 'group' => 'Çağrı Merkezi'],
             'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Entegrasyonlar'],
         ];

@@ -59,6 +59,7 @@ return [
     '/fax-mail-settings' => ['controller' => FaxMailSettingsController::class, 'action' => 'index', 'module' => 'fax_mail_settings.php'],
     '/mail-settings'   => ['controller' => MailSettingsController::class, 'action' => 'index', 'module' => 'mail_settings.php'],
     '/cdr-reports'     => ['controller' => CdrReportController::class, 'action' => 'index', 'module' => 'cdr_reports.php'],
+    '/queue-reports'   => ['controller' => QueueReportController::class, 'action' => 'index', 'module' => 'queue_reports.php'],
     '/pause-reports'   => ['controller' => PauseReportController::class, 'action' => 'index', 'module' => 'pause_reports.php'],
     '/queue-logs'      => ['controller' => QueueLogController::class, 'action' => 'index', 'module' => 'queue_logs.php'],
     '/cc-agent'        => ['controller' => CcAgentController::class, 'action' => 'index', 'module' => 'cc_agent.php'],

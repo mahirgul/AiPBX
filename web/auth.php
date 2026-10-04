@@ -147,6 +147,7 @@ function getModuleKeyForPage($page = null) {
         'cc_supervisor.php'     => 'queue_monitor',
         'cc_board.php'          => 'cc_board',
         'pause_reports.php'     => 'pause_reports',
+        'queue_reports.php'     => 'queue_reports',
         'queue_logs.php'        => 'queue_logs',
         'feature_codes.php'        => 'feature_codes',
         'feature_codes_status.php' => 'feature_codes',

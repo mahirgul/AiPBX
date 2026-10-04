@@ -198,6 +198,14 @@ $formatDuration = function(int $seconds): string {
                                     </button>
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;">
+                                    <?php if (!empty($c['has_recording']) && !empty($c['cdr_id'])): ?>
+                                        <?php if ($can_listen_all || (!empty($user_ext) && $c['agent_ext'] === $user_ext)): ?>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo (int) $c['cdr_id']; ?>, '<?php echo htmlspecialchars(addslashes($c['caller_num']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars($c['datetime'], ENT_QUOTES); ?>')" title="<?php echo t('cdr_reports.listen_tooltip'); ?>"><i class="fas fa-play"></i></button>
+                                            <a href="/api/cc_audio.php?id=<?php echo (int) $c['cdr_id']; ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('cdr_reports.download_tooltip'); ?>"><i class="fas fa-download"></i></a>
+                                        <?php else: ?>
+                                            <span class="badge badge-secondary u-fs-10" title="<?php echo t('cdr_reports.locked_tooltip'); ?>"><i class="fas fa-lock"></i></span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                     <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-hover, rgba(0,0,0,0.03)); padding: 2px 6px; border-radius: 4px;" title="Call ID: <?php echo htmlspecialchars($c['call_id']); ?>">
                                         <?php echo htmlspecialchars(strlen($c['call_id']) > 16 ? substr($c['call_id'], 0, 16) . '…' : $c['call_id']); ?>
                                     </code>
@@ -348,6 +356,8 @@ $formatDuration = function(int $seconds): string {
         require dirname(__DIR__, 2) . '/pagination.php';
     ?>
 </div>
+
+<?php require dirname(__DIR__, 2) . '/cdr_audio_player.php'; ?>
 
 <script>
 function toggleQueueJourney(id) {
