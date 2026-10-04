@@ -1002,6 +1002,10 @@ link_sound_dir() {  # link_sound_dir TARGET LINK
 link_sound_dir /var/lib/asterisk/sounds/custom /usr/local/share/asterisk/sounds
 link_sound_dir /var/lib/asterisk/sounds/tr /usr/share/asterisk/sounds/tr
 chown -R asterisk:asterisk /etc/asterisk/
+# The portal (www-data, in the asterisk group) writes rtp.conf, udptl.conf,
+# voicemail.conf and asterisk.conf atomically (temp file + rename in the same
+# directory): without group write on /etc/asterisk those settings never applied.
+chmod 775 /etc/asterisk
 chmod -R 775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
 
@@ -1083,6 +1087,11 @@ log-file=/var/log/turnserver/turnserver.log
 simple-log
 min-port=49152
 max-port=65535
+# Relay on the server's own address. TURNS arrives through the 443 nginx
+# multiplexer (127.0.0.1), and coturn relays on the address the client came
+# in on: a loopback relay that Asterisk's media never matched, so calls that
+# needed TURN had no audio.
+relay-ip=${SERVER_IP}
 TURNCONF
 
 # coturn's certificate (/etc/coturn/aipbx.*) is the copy aipbx-cert wrote in step 7.
