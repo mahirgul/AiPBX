@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 2.2.1
+
+**WebRTC**
+- Clients are given TURNS on port 443 (`TURNS_PORT=443`); the built-in nginx
+  hands it to coturn on 5349. Calls now get audio on networks that allow only
+  443 (hotels, hospitals, guest Wi-Fi, strict corporate networks). Updating
+  switches the old default 5349 to 443; clients pick it up at their next
+  sign-in or credential refresh.
+
+**Install**
+- `sox` is installed explicitly (sound uploads, Cloud TTS announcements).
+
 ## 2.2.0
 
 Call-center reporting, certificates from the portal, Cloud TTS and a complete
