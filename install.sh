@@ -299,6 +299,7 @@ apt-get install -y \
   firewalld \
   ghostscript \
   lame \
+  sox \
   rsync \
   libtiff-tools \
   postfix \
