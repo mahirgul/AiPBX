@@ -146,6 +146,19 @@ check "Asterisk plays an uploaded (custom) sound" bash -c "grep 'E2E custom=' /v
 check "Asterisk plays a Turkish prompt" bash -c "grep 'E2E tr=' /var/log/asterisk/messages.log | tail -n 1 | grep -q SUCCESS"
 rm -f "$E2E_DP"; asterisk -rx "dialplan reload" >/dev/null
 
+# --- Turkish prompts and Cloud TTS ---------------------------------------------
+# Every prompt listed in README-tts.txt is installed once, in the shipped WAV
+# (an older .gsm of the same name would win on format cost).
+tr_bad=""
+while IFS='|' read -r name _; do
+    n=$(compgen -G "/var/lib/asterisk/sounds/tr/$name.*" | wc -l)
+    [[ "$n" -eq 1 && -f "/var/lib/asterisk/sounds/tr/$name.wav" ]] || tr_bad+=" $name($n)"
+done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/tr/README-tts.txt")
+if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (one WAV each)"; else fail "Turkish prompts installed (one WAV each)" "${tr_bad:0:200}"; fi
+check "Asterisk finds a Turkish prompt" bash -c 'asterisk -rx "core show file formats" >/dev/null && test -r /usr/share/asterisk/sounds/tr/vm-intro.wav'
+tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts")"
+check "Cloud TTS page renders" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "save_provider" <<<"$1"' _ "$tts_page"
+
 # --- Security and maintenance --------------------------------------------------
 check "Asterisk WSS 8089 listens on loopback only" bash -c '! ss -ltn | grep -E "(0\.0\.0\.0|\*|\[::\]):8089 "'
 check "port 8089 closed in the firewall" bash -c '! firewall-cmd --query-port=8089/tcp'
