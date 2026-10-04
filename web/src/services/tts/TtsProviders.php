@@ -133,7 +133,7 @@ abstract class TtsProvider
 
     abstract public static function id(): string;
     abstract public static function title(): string;
-    /** @return list<array{key: string, label: string, secret: bool, default?: string, optional?: bool}> */
+    /** @return list<array{key: string, label: string, secret: bool, default?: string, optional?: bool, json?: bool}> */
     abstract public static function fields(): array;
     /** Longest text one request accepts; longer text is split. */
     abstract public static function maxChars(): int;
@@ -172,23 +172,101 @@ abstract class TtsProvider
     }
 }
 
-/** Google Cloud Text-to-Speech, API key. */
+/** Google Cloud Text-to-Speech: API key, or a service account JSON key. */
 final class GoogleTts extends TtsProvider
 {
     private const BASE = 'https://texttospeech.googleapis.com/v1';
+    private const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
+    /** @var array<string, array{token: string, exp: int}> access tokens per service account (this process) */
+    private static array $tokens = [];
 
     public static function id(): string { return 'google'; }
     public static function title(): string { return 'Google Cloud Text-to-Speech'; }
     public static function maxChars(): int { return 4500; }   // 5000 bytes per request
     public static function fields(): array
     {
-        return [['key' => 'api_key', 'label' => 'API key', 'secret' => true]];
+        // Either one is enough: organisations often forbid API keys.
+        return [
+            ['key' => 'service_account', 'label' => 'Service account JSON', 'secret' => true, 'json' => true, 'optional' => true],
+            ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true],
+        ];
+    }
+
+    public function configured(): bool
+    {
+        return $this->cfg('service_account') !== '' || $this->cfg('api_key') !== '';
+    }
+
+    /**
+     * Checks a pasted/uploaded service account key; returns it re-encoded.
+     * @throws TtsException
+     */
+    public static function validateServiceAccount(string $json): string
+    {
+        $sa = json_decode($json, true);
+        if (!is_array($sa) || ($sa['type'] ?? '') !== 'service_account' || empty($sa['client_email']) || empty($sa['private_key'])) {
+            throw new TtsException('Google: not a service account JSON key');
+        }
+        if (!@openssl_pkey_get_private((string) $sa['private_key'])) {
+            throw new TtsException('Google: the service account private key cannot be read');
+        }
+        $keep = array_intersect_key($sa, array_flip(['type', 'project_id', 'private_key_id', 'private_key', 'client_email', 'token_uri']));
+        return (string) json_encode($keep, JSON_UNESCAPED_SLASHES);
+    }
+
+    /** OAuth access token from a signed JWT (RFC 7523), cached until shortly before it expires. */
+    private function token(): string
+    {
+        $sa = json_decode($this->cfg('service_account'), true) ?: [];
+        $email = (string) ($sa['client_email'] ?? '');
+        $cached = self::$tokens[$email] ?? null;
+        if ($cached && $cached['exp'] > time() + 60) {
+            return $cached['token'];
+        }
+        $tokenUri = (string) ($sa['token_uri'] ?? 'https://oauth2.googleapis.com/token');
+        if (!preg_match('#^https://[a-z0-9.-]+\.googleapis\.com/#', $tokenUri)) {
+            throw new TtsException('Google: unexpected token_uri');
+        }
+        $now = time();
+        $b64 = fn(string $s) => rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
+        $unsigned = $b64(json_encode(['alg' => 'RS256', 'typ' => 'JWT', 'kid' => (string) ($sa['private_key_id'] ?? '')]))
+            . '.' . $b64(json_encode(['iss' => $email, 'scope' => self::SCOPE, 'aud' => $tokenUri, 'iat' => $now, 'exp' => $now + 3600]));
+        if (!openssl_sign($unsigned, $sig, (string) ($sa['private_key'] ?? ''), OPENSSL_ALGO_SHA256)) {
+            throw new TtsException('Google: could not sign with the service account key');
+        }
+        $r = TtsHttp::request('POST', $tokenUri, ['Content-Type' => 'application/x-www-form-urlencoded'], http_build_query([
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion' => $unsigned . '.' . $b64($sig),
+        ]));
+        $data = json_decode($r['body'], true);
+        if ($r['status'] >= 400 || empty($data['access_token'])) {
+            $msg = is_array($data) ? (($data['error_description'] ?? '') ?: ($data['error'] ?? '')) : '';
+            throw new TtsException('Google ' . $r['status'] . ': ' . ($msg ?: TtsHttp::errorText($r)));
+        }
+        self::$tokens[$email] = ['token' => (string) $data['access_token'], 'exp' => $now + (int) ($data['expires_in'] ?? 3600)];
+        return self::$tokens[$email]['token'];
+    }
+
+    /** @return array{0: string, 1: array<string, string>} [query suffix, headers] */
+    private function auth(): array
+    {
+        if ($this->cfg('service_account') !== '') {
+            return ['', ['Authorization' => 'Bearer ' . $this->token()]];
+        }
+        return ['key=' . rawurlencode($this->cfg('api_key')), []];
+    }
+
+    private static function url(string $path, string $query): string
+    {
+        $q = implode('&', array_filter([$query]));
+        return self::BASE . $path . ($q !== '' ? (str_contains($path, '?') ? '&' : '?') . $q : '');
     }
 
     public function voices(string $language = ''): array
     {
-        $url = self::BASE . '/voices?key=' . rawurlencode($this->cfg('api_key')) . ($language !== '' ? '&languageCode=' . rawurlencode($language) : '');
-        $data = TtsHttp::json(TtsHttp::request('GET', $url), 'Google');
+        [$key, $headers] = $this->auth();
+        $path = '/voices' . ($language !== '' ? '?languageCode=' . rawurlencode($language) : '');
+        $data = TtsHttp::json(TtsHttp::request('GET', self::url($path, $key), $headers), 'Google');
         $out = [];
         foreach ($data['voices'] ?? [] as $v) {
             foreach ($v['languageCodes'] ?? [] as $lang) {
@@ -200,12 +278,13 @@ final class GoogleTts extends TtsProvider
 
     public function synthesize(string $text, string $voice, string $language, float $speed): string
     {
+        [$key, $headers] = $this->auth();
         $body = json_encode([
             'input' => ['text' => $text],
             'voice' => ['languageCode' => $language, 'name' => $voice],
             'audioConfig' => ['audioEncoding' => 'MP3', 'speakingRate' => $speed],
         ], JSON_UNESCAPED_UNICODE);
-        $r = TtsHttp::request('POST', self::BASE . '/text:synthesize?key=' . rawurlencode($this->cfg('api_key')), ['Content-Type' => 'application/json; charset=utf-8'], $body);
+        $r = TtsHttp::request('POST', self::url('/text:synthesize', $key), $headers + ['Content-Type' => 'application/json; charset=utf-8'], $body);
         $data = TtsHttp::json($r, 'Google');
         $audio = base64_decode((string) ($data['audioContent'] ?? ''), true);
         if (!$audio) {

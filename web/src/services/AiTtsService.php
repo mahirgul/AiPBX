@@ -79,7 +79,9 @@ class AiTtsService
             $fields = [];
             foreach ($cls::fields() as $f) {
                 $v = $cfg[$f['key']] ?? '';
-                $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? SecretBox::mask($v) : ''];
+                // A service account key is shown by its account, not by its last characters.
+                $masked = !empty($f['json']) ? (string) (json_decode($v, true)['client_email'] ?? '') : SecretBox::mask($v);
+                $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? $masked : ''];
             }
             $out[] = ['id' => $cls::id(), 'title' => $cls::title(), 'configured' => (new $cls($cfg))->configured(), 'fields' => $fields, 'max_chars' => $cls::maxChars()];
         }
@@ -109,6 +111,9 @@ class AiTtsService
                 continue;
             }
             $v = trim((string) ($post[$f['key']] ?? ''));
+            if ($v !== '' && !empty($f['json']) && $cls === GoogleTts::class) {
+                $v = GoogleTts::validateServiceAccount($v);
+            }
             if ($f['secret']) {
                 if ($v !== '') {
                     $set->execute([$key, SecretBox::encrypt($v)]);

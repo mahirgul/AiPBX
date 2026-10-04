@@ -23,7 +23,13 @@ class AiTtsController extends BaseController
             } else {
                 try {
                     if (isset($_POST['save_provider'])) {
-                        AiTtsService::saveProvider((string) $_POST['save_provider'], $_POST);
+                        $post = $_POST;
+                        // A service account key can be uploaded as its .json file instead of pasted.
+                        $up = $_FILES['service_account_file'] ?? null;
+                        if ($up && ($up['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK && $up['size'] < 65536 && is_uploaded_file($up['tmp_name'])) {
+                            $post['service_account'] = (string) file_get_contents($up['tmp_name']);
+                        }
+                        AiTtsService::saveProvider((string) $_POST['save_provider'], $post);
                         $message = t(!empty($_POST['clear']) ? 'ai_tts.msg_provider_cleared' : 'ai_tts.msg_provider_saved');
                         $tab = 'providers';
                     } elseif (isset($_POST['delete_tts_id'])) {
