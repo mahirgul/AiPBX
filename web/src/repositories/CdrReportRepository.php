@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../services/CdrCallAnalyzer.php';
 
 class CdrReportRepository extends BaseRepository
 {
@@ -15,7 +16,7 @@ class CdrReportRepository extends BaseRepository
     /**
      * Kullanıcı ve DID haritalarını belleğe alır (hızlı O(1) arama için).
      */
-    private static function getLookupMaps(): array
+    protected static function getLookupMaps(): array
     {
         static $maps = null;
         if ($maps !== null) {
@@ -88,12 +89,12 @@ class CdrReportRepository extends BaseRepository
     /**
      * Arama metodunu görünüm moduna göre dallandırır.
      */
-    public static function search(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $viewMode = 'grouped'): array
+    public static function search(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
         if ($viewMode === 'raw') {
             return static::searchRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $sayfa, $boyut, $deviceFilter);
         }
-        return static::searchGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $sayfa, $boyut, $deviceFilter);
+        return static::searchGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $sayfa, $boyut, $deviceFilter, $directionFilter, $trunkFilter);
     }
 
     /**
@@ -118,91 +119,113 @@ class CdrReportRepository extends BaseRepository
         foreach ($rows as &$r) {
             $r['total_legs'] = 1;
             $r['legs'] = [];
+            // The call-center table has no channel data: only caller and agent are known.
+            $r['flow'] = null;
         }
         return $rows;
     }
 
-    /**
-     * Birleştirilmiş (Grouped by linkedid) Çağrı Listesi.
-     * 1 Müşteri Araması = 1 Satır.
-     */
-    public static function searchGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = ''): array
+    /** Trunk names and titles (pbx_trunks) for the filter and for labelling channels. */
+    public static function trunkTitles(): array
     {
-        [$userMap, $didMap] = static::getLookupMaps();
+        static $map = null;
+        if ($map === null) {
+            $map = [];
+            try {
+                foreach (static::db()->query("SELECT trunk_name, title FROM pbx_trunks ORDER BY title")->fetchAll(PDO::FETCH_ASSOC) as $t) {
+                    $map[$t['trunk_name']] = $t['title'] !== '' ? $t['title'] : $t['trunk_name'];
+                }
+            } catch (\Throwable $e) {
+                // no trunk table: channel names are shown as they are
+            }
+        }
+        return $map;
+    }
 
+    /** Queue names as configured (pbx_queues.title) for the route column. */
+    protected static function queueTitles(): array
+    {
+        static $map = null;
+        if ($map === null) {
+            $map = [];
+            try {
+                foreach (static::db()->query("SELECT queue_name, title FROM pbx_queues")->fetchAll(PDO::FETCH_ASSOC) as $q) {
+                    if ($q['title'] !== '') {
+                        $map[$q['queue_name']] = $q['title'];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // keep technical names
+            }
+        }
+        return $map;
+    }
+
+    public static function analyzer(): CdrCallAnalyzer
+    {
+        [$userMap] = static::getLookupMaps();
+        return new CdrCallAnalyzer(static::trunkTitles(), $userMap);
+    }
+
+    /**
+     * One row per call (legs grouped by linkedid), with what the direction
+     * and trunk filters need. Used by both the list and the summary so they
+     * always count the same calls.
+     *
+     * @return array{0: string, 1: array}
+     */
+    protected static function groupedCallsSql(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter, string $directionFilter, string $trunkFilter): array
+    {
         $where = " WHERE 1=1";
         $params = [];
 
         if (!$canViewAll) {
             $where .= " AND (c.src = ? OR c.dst = ? OR c.accountcode = ? OR c.dstchannel LIKE ? OR c.channel LIKE ?)";
-            $params[] = $userExt;
-            $params[] = $userExt;
-            $params[] = $userExt;
-            $params[] = "PJSIP/{$userExt}-%";
-            $params[] = "PJSIP/{$userExt}-%";
+            array_push($params, $userExt, $userExt, $userExt, "PJSIP/{$userExt}-%", "PJSIP/{$userExt}-%");
         }
-
         if ($startTs && $endTs) {
             $where .= " AND c.calldate >= ? AND c.calldate <= ?";
-            $params[] = $startTs;
-            $params[] = $endTs;
+            array_push($params, $startTs, $endTs);
         }
-
         if (!empty($agentFilter)) {
             $where .= " AND (c.dst = ? OR c.src = ? OR c.accountcode = ? OR c.dstchannel LIKE ? OR c.channel LIKE ? OR c.dstchannel LIKE ?)";
-            $params[] = $agentFilter;
-            $params[] = $agentFilter;
-            $params[] = $agentFilter;
-            $params[] = "PJSIP/{$agentFilter}-%";
-            $params[] = "PJSIP/{$agentFilter}-%";
-            $params[] = "Local/{$agentFilter}@%";
+            array_push($params, $agentFilter, $agentFilter, $agentFilter, "PJSIP/{$agentFilter}-%", "PJSIP/{$agentFilter}-%", "Local/{$agentFilter}@%");
         }
-
         if (!empty($deviceFilter)) {
             $where .= " AND (c.dstchannel LIKE ? OR c.channel LIKE ?)";
-            $params[] = "%-{$deviceFilter}%";
-            $params[] = "%-{$deviceFilter}%";
+            array_push($params, "%-{$deviceFilter}%", "%-{$deviceFilter}%");
         }
-
         if (!empty($searchQuery)) {
-            $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?)";
-            for ($i = 0; $i < 7; $i++) {
+            $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.did LIKE ? OR c.clid LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?)";
+            for ($i = 0; $i < 9; $i++) {
                 $params[] = "%$searchQuery%";
             }
         }
 
-        $having = "";
-        if (!empty($statusFilter)) {
-            if ($statusFilter === 'ANSWERED') {
-                $having = " HAVING status = 'ANSWERED'";
-            } elseif ($statusFilter === 'NO ANSWER') {
-                $having = " HAVING status = 'NO ANSWER'";
-            } elseif ($statusFilter === 'BUSY') {
-                $having = " HAVING status = 'BUSY'";
-            } elseif ($statusFilter === 'ABANDON') {
-                $having = " HAVING status = 'ABANDON'";
-            } elseif ($statusFilter === 'FAILED') {
-                $having = " HAVING status NOT IN ('ANSWERED', 'NO ANSWER', 'BUSY', 'ABANDON')";
-            }
-        }
+        // Extension vs trunk channels: see CdrCallAnalyzer::endpoint().
+        $ext = "'" . CdrCallAnalyzer::SQL_EXT_CHANNEL . "'";
+        $isTrunk = fn(string $col) => "({$col} LIKE 'PJSIP/%' AND {$col} NOT REGEXP {$ext})";
+        $answeredBilled = "COALESCE(
+                MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Queue' THEN c.billsec END),
+                MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.billsec END),
+                0)";
 
-        $sayfa = max(1, $sayfa);
-        $boyut = max(1, $boyut);
-        $offset = ($sayfa - 1) * $boyut;
-
-        $sql = "SELECT 
+        $inner = "SELECT
             coalesce(nullif(c.linkedid, ''), c.uniqueid) AS linkedid,
             MIN(c.calldate) AS start_time,
-            MAX(c.calldate + INTERVAL greatest(c.duration, c.billsec) SECOND) AS end_time,
-            TIMESTAMPDIFF(SECOND, MIN(c.calldate), MAX(c.calldate + INTERVAL greatest(c.duration, c.billsec) SECOND)) AS duration,
+            GREATEST(0, TIMESTAMPDIFF(SECOND, MIN(c.calldate), MAX(c.calldate + INTERVAL greatest(c.duration, c.billsec) SECOND))) AS duration,
             COUNT(*) AS total_legs,
-            MAX(c.id) AS max_id,
             COALESCE(
                 MAX(CASE WHEN c.userfield IS NOT NULL AND c.userfield != '' THEN c.id END),
                 MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.id END),
                 MAX(c.id)
             ) AS id,
-            SUBSTRING_INDEX(GROUP_CONCAT(c.src ORDER BY c.id ASC), ',', 1) AS caller_num,
+            SUBSTRING_INDEX(GROUP_CONCAT(c.src ORDER BY c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\\n'), '\\n', 1) AS caller_num,
+            SUBSTRING_INDEX(GROUP_CONCAT(c.channel ORDER BY c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\\n'), '\\n', 1) AS first_channel,
+            GROUP_CONCAT(c.dstchannel ORDER BY c.id SEPARATOR '\\n') AS dst_channels,
+            MAX(c.lastapp IN ('Dial', 'Queue') AND " . $isTrunk('c.dstchannel') . ") AS out_trunk,
+            MAX(c.disposition = 'ANSWERED' AND c.lastapp IN ('Dial', 'Queue')
+                AND (c.dstchannel REGEXP {$ext} OR c.dstchannel REGEXP '^Local/[0-9]+@')) AS ext_answered,
             MAX(CASE WHEN c.lastapp = 'Queue' THEN SUBSTRING_INDEX(c.lastdata, ',', 1) END) AS queue_name,
             MAX(CASE WHEN c.did IS NOT NULL AND c.did != '' THEN c.did END) AS did,
             COALESCE(
@@ -210,33 +233,13 @@ class CdrReportRepository extends BaseRepository
                 MAX(CASE WHEN c.dstchannel LIKE 'Local/%' AND c.disposition = 'ANSWERED' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(c.dstchannel, '/', -1), '@', 1) END),
                 MAX(CASE WHEN c.dst REGEXP '^[0-9]{3,5}$' AND c.dst != c.src THEN c.dst END)
             ) AS agent_extension,
-            CASE 
+            CASE
                 WHEN SUM(c.disposition = 'ANSWERED') > 0 THEN 'ANSWERED'
                 WHEN SUM(c.disposition = 'BUSY') > 0 THEN 'BUSY'
                 WHEN MAX(c.lastapp) = 'Queue' THEN 'ABANDON'
                 ELSE 'NO ANSWER'
             END AS status,
-            COALESCE(
-                MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Queue' THEN c.billsec END),
-                MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.billsec END),
-                0
-            ) AS billsec,
-            COALESCE(
-                MAX(CASE 
-                    WHEN c.disposition = 'ANSWERED' AND c.dstchannel LIKE '%-mob-webrtc%' THEN 'mobil'
-                    WHEN c.disposition = 'ANSWERED' AND c.dstchannel LIKE '%-webrtc%' THEN 'webrtc'
-                    WHEN c.disposition = 'ANSWERED' AND c.dstchannel LIKE '%-sip%' THEN 'sip'
-                    WHEN c.disposition = 'ANSWERED' AND c.channel LIKE '%-mob-webrtc%' THEN 'mobil'
-                    WHEN c.disposition = 'ANSWERED' AND c.channel LIKE '%-webrtc%' THEN 'webrtc'
-                    WHEN c.disposition = 'ANSWERED' AND c.channel LIKE '%-sip%' THEN 'sip'
-                END),
-                MAX(CASE 
-                    WHEN c.dstchannel LIKE '%-mob-webrtc%' THEN 'mobil'
-                    WHEN c.dstchannel LIKE '%-webrtc%' THEN 'webrtc'
-                    WHEN c.dstchannel LIKE '%-sip%' THEN 'sip'
-                END),
-                ''
-            ) AS device_type,
+            {$answeredBilled} AS billsec,
             MAX(CASE WHEN c.userfield IS NOT NULL AND c.userfield != '' THEN c.userfield END) AS recording_path,
             MAX(n.customer_name) AS note_customer_name,
             MAX(n.phone) AS note_phone,
@@ -245,11 +248,61 @@ class CdrReportRepository extends BaseRepository
         FROM asteriskcdr c
         LEFT JOIN callcenter_notes n ON (n.call_id = c.uniqueid OR n.call_id = c.linkedid)"
         . $where
-        . " GROUP BY coalesce(nullif(c.linkedid, ''), c.uniqueid)"
-        . $having
-        . " ORDER BY start_time DESC LIMIT " . $boyut . " OFFSET " . $offset;
+        . " GROUP BY coalesce(nullif(c.linkedid, ''), c.uniqueid)";
 
-        $stmt = static::db()->prepare($sql);
+        $inTrunk = $isTrunk('g.first_channel');
+        $direction = "CASE
+                WHEN {$inTrunk} AND g.out_trunk AND NOT g.ext_answered THEN '" . CdrCallAnalyzer::TRANSIT . "'
+                WHEN {$inTrunk} THEN '" . CdrCallAnalyzer::INBOUND . "'
+                WHEN g.out_trunk THEN '" . CdrCallAnalyzer::OUTBOUND . "'
+                ELSE '" . CdrCallAnalyzer::INTERNAL . "'
+            END";
+
+        $filters = [];
+        $outerParams = [];
+        $statusSql = [
+            'ANSWERED' => "g.status = 'ANSWERED'",
+            'NO ANSWER' => "g.status = 'NO ANSWER'",
+            'BUSY' => "g.status = 'BUSY'",
+            'ABANDON' => "g.status = 'ABANDON'",
+            'FAILED' => "g.status NOT IN ('ANSWERED', 'NO ANSWER', 'BUSY', 'ABANDON')",
+        ];
+        if (isset($statusSql[$statusFilter])) {
+            $filters[] = $statusSql[$statusFilter];
+        }
+        if (in_array($directionFilter, [CdrCallAnalyzer::INBOUND, CdrCallAnalyzer::OUTBOUND, CdrCallAnalyzer::INTERNAL, CdrCallAnalyzer::TRANSIT], true)) {
+            $filters[] = "{$direction} = ?";
+            $outerParams[] = $directionFilter;
+        }
+        if ($trunkFilter !== '' && preg_match('/^[A-Za-z0-9_.-]{1,64}$/', $trunkFilter)) {
+            $like = 'PJSIP/' . addcslashes($trunkFilter, '%_\\') . '-%';
+            $filters[] = "(g.first_channel LIKE ? OR g.dst_channels LIKE ?)";
+            array_push($outerParams, $like, '%' . $like);
+        }
+
+        $sql = "SELECT g.*, {$direction} AS direction,
+                GREATEST(0, g.duration - g.billsec) AS ring_sec
+            FROM ({$inner}) g"
+            . ($filters ? ' WHERE ' . implode(' AND ', $filters) : '');
+
+        return [$sql, array_merge($params, $outerParams)];
+    }
+
+    /**
+     * Birleştirilmiş (Grouped by linkedid) Çağrı Listesi.
+     * 1 Müşteri Araması = 1 Satır.
+     */
+    public static function searchGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
+    {
+        [$userMap, $didMap] = static::getLookupMaps();
+        [$sql, $params] = static::groupedCallsSql($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
+
+        $sayfa = max(1, $sayfa);
+        $boyut = max(1, $boyut);
+        $offset = ($sayfa - 1) * $boyut;
+
+        static::db()->exec('SET SESSION group_concat_max_len = 65535');
+        $stmt = static::db()->prepare($sql . " ORDER BY g.start_time DESC LIMIT " . $boyut . " OFFSET " . $offset);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -259,6 +312,7 @@ class CdrReportRepository extends BaseRepository
 
         $linkedIds = array_unique(array_filter(array_column($rows, 'linkedid')));
         $legsByLinkedId = static::fetchLegsForLinkedIds($linkedIds);
+        $analyzer = static::analyzer();
 
         foreach ($rows as &$r) {
             $lid = $r['linkedid'];
@@ -268,28 +322,32 @@ class CdrReportRepository extends BaseRepository
             $r['ring_sec'] = max(0, $r['duration'] - $r['billsec']);
             $r['answer_time'] = date('Y-m-d H:i:s', strtotime($r['start_time']) + $r['ring_sec']);
 
-            // Temsilci Adı
-            $ext = $r['agent_extension'] ?? '';
-            $r['agent_name'] = !empty($ext) && isset($userMap[$ext]) ? $userMap[$ext] : '';
-
-            // Rota Başlığı Formatlama
-            $did = $r['did'] ?? '';
-            $q = $r['queue_name'] ?? '';
-            if (!empty($q)) {
-                $r['queue_name'] = !empty($did) ? "{$q} ({$did})" : $q;
-            } elseif (!empty($did) && isset($didMap[$did])) {
-                $r['queue_name'] = "{$didMap[$did]} ({$did})";
-            } elseif (!empty($did)) {
-                $r['queue_name'] = "Gelen Hat: {$did}";
-            } else {
-                $r['queue_name'] = ($r['agent_extension'] && $r['caller_num'] && strlen($r['caller_num']) <= 5) ? 'Dahili Görüşme' : 'Genel Rota';
-            }
-
-            // Alt Bacaklar
             $r['legs'] = $legsByLinkedId[$lid] ?? [];
             if (empty($r['total_legs']) || count($r['legs']) > (int)$r['total_legs']) {
                 $r['total_legs'] = count($r['legs']);
             }
+
+            $flow = $r['legs'] ? $analyzer->analyze($r['legs']) : null;
+            $r['flow'] = $flow;
+            if ($flow) {
+                // Only an AiPBX extension; a number behind an outgoing trunk is not one.
+                $r['agent_extension'] = $flow['answered_ext'];
+            }
+            $ext = $r['agent_extension'] ?? '';
+            $r['agent_name'] = !empty($ext) && isset($userMap[$ext]) ? $userMap[$ext] : '';
+            $r['device_type'] = $flow['answered_device'] ?? '';
+
+            // Route: the queue, or the DID's title, of what was dialed.
+            $did = $flow['dialed_number'] ?? ($r['did'] ?? '');
+            $q = $r['queue_name'] ?? '';
+            if ($q !== '') {
+                $r['route'] = static::queueTitles()[$q] ?? $q;
+            } elseif ($did !== '' && isset($didMap[$did])) {
+                $r['route'] = $didMap[$did];
+            } else {
+                $r['route'] = '';
+            }
+            $r['queue_name'] = $r['route'];
         }
         unset($r);
 
@@ -310,7 +368,7 @@ class CdrReportRepository extends BaseRepository
 
         $in = implode(',', array_fill(0, count($linkedIds), '?'));
         $sql = "SELECT c.id, c.uniqueid, coalesce(nullif(c.linkedid, ''), c.uniqueid) AS linkedid,
-                       c.calldate, c.src, c.dst, c.did, c.dcontext, c.channel, c.dstchannel,
+                       c.calldate, c.clid, c.src, c.dst, c.did, c.dcontext, c.channel, c.dstchannel, c.accountcode,
                        c.lastapp, c.lastdata, c.duration, c.billsec, c.disposition, c.userfield,
                        CASE
                            WHEN c.dstchannel LIKE '%-mob-webrtc%' THEN 'mobil'
@@ -323,18 +381,19 @@ class CdrReportRepository extends BaseRepository
                        END AS device_type
                 FROM asteriskcdr c
                 WHERE c.linkedid IN ($in) OR c.uniqueid IN ($in)
-                ORDER BY c.calldate ASC, c.id ASC";
+                ORDER BY c.calldate ASC, (c.channel LIKE 'Local/%') ASC, c.id ASC";
 
         $stmt = static::db()->prepare($sql);
         $stmt->execute(array_merge($linkedIds, $linkedIds));
         $allLegs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $analyzer = static::analyzer();
         $grouped = [];
         foreach ($allLegs as $leg) {
             $lid = $leg['linkedid'];
             $dst = $leg['dst'] ?? '';
             $leg['agent_name'] = !empty($dst) && isset($userMap[$dst]) ? $userMap[$dst] : '';
-            $leg['leg_info'] = static::formatLegDescription($leg);
+            $leg['leg_info'] = static::formatLegDescription($leg, $analyzer, $userMap);
             $grouped[$lid][] = $leg;
         }
 
@@ -342,80 +401,93 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Bir çağrı bacağını analiz edip Türkçe/İngilizce görsel ve açıklayıcı format üretir.
+     * One line describing a leg in the call journey: who was reached, over
+     * which trunk, and how it ended.
+     *
+     * @param array<string, string> $userMap extension => name
      */
-    public static function formatLegDescription(array $leg): array
+    public static function formatLegDescription(array $leg, ?CdrCallAnalyzer $analyzer = null, array $userMap = []): array
     {
+        $analyzer ??= new CdrCallAnalyzer();
         $app = $leg['lastapp'] ?? '';
         $disp = $leg['disposition'] ?? '';
-        $dst = $leg['dst'] ?? '';
-        $agentName = $leg['agent_name'] ?? '';
-        $dev = $leg['device_type'] ?? '';
         $dur = (int)($leg['duration'] ?? 0);
         $bill = (int)($leg['billsec'] ?? 0);
-        $lastdata = $leg['lastdata'] ?? '';
+        $lastdata = (string)($leg['lastdata'] ?? '');
 
-        $title = '';
-        $detail = '';
         $badge = 'badge-secondary';
         $badgeText = $disp;
-        $icon = 'fa-phone';
-
         if ($disp === 'ANSWERED') {
             $badge = 'badge-success';
-            $badgeText = t('cdr_reports.status_answered_label', 'Cevaplandı');
-        } elseif (in_array($disp, ['NO ANSWER', 'CANCEL', 'NOANSWER'])) {
+            $badgeText = t('cdr_reports.status_answered_label');
+        } elseif (in_array($disp, ['NO ANSWER', 'CANCEL', 'NOANSWER'], true)) {
             $badge = 'badge-warning';
-            $badgeText = t('cdr_reports.status_no_answer_label', 'Cevapsız');
+            $badgeText = t('cdr_reports.status_no_answer_label');
         } elseif ($disp === 'BUSY') {
             $badge = 'badge-info';
-            $badgeText = t('cdr_reports.status_busy_label', 'Meşgul');
+            $badgeText = t('cdr_reports.status_busy_label');
         } elseif ($disp === 'ABANDON' || $disp === 'FAILED') {
             $badge = 'badge-danger';
-            $badgeText = ($disp === 'ABANDON') ? t('cdr_reports.status_abandon_label', 'Terk Edildi') : t('cdr_reports.status_failed_label', 'Başarısız');
+            $badgeText = ($disp === 'ABANDON') ? t('cdr_reports.status_abandon_label') : t('cdr_reports.status_failed_label');
         }
 
-        $devStr = !empty($dev) ? ' [' . strtoupper($dev) . ']' : '';
-        $agentStr = !empty($agentName) ? "{$dst} ({$agentName}){$devStr}" : "{$dst}{$devStr}";
+        $target = $analyzer->endpoint($leg['dstchannel'] ?? '');
+        if ($target['kind'] === 'trunk') {
+            $number = preg_match('#^(?:PJSIP|SIP|IAX2)/([^@/,&]+)@#', $lastdata, $d) ? $d[1] : (string)($leg['dst'] ?? '');
+            $targetLabel = $analyzer->trunkTitle($target['id']) . ' → ' . $number;
+        } elseif ($target['kind'] === 'ext') {
+            $name = $userMap[$target['id']] ?? '';
+            $targetLabel = $target['id'] . ($name !== '' ? " ({$name})" : '') . ($target['device'] !== '' ? ' [' . strtoupper($target['device']) . ']' : '');
+        } else {
+            $targetLabel = (string)($target['id'] !== '' ? $target['id'] : ($leg['dst'] ?? ''));
+        }
 
+        $icon = 'fa-phone';
         if ($app === 'Queue') {
             $icon = 'fa-users';
-            $qName = explode(',', $lastdata)[0] ?? 'Kuyruk';
+            $qName = explode(',', $lastdata)[0] ?: t('cdr_reports.queue');
             if ($disp === 'ANSWERED') {
-                $title = "Kuyruk Görüşmesi: {$qName}";
-                $detail = "Temsilci ile {$bill} sn görüşme sağlandı.";
+                $title = sprintf(t('cdr_reports.leg_queue_answered'), $qName, $targetLabel);
+                $detail = sprintf(t('cdr_reports.leg_talk_detail'), $bill);
             } else {
-                $title = "Kuyruk Beklemesi: {$qName}";
-                $detail = "Arayan kuyrukta {$dur} sn bekledi.";
+                $title = sprintf(t('cdr_reports.leg_queue_wait'), $qName, $targetLabel);
+                $detail = sprintf(t('cdr_reports.leg_wait_detail'), $dur);
             }
         } elseif ($app === 'Dial') {
-            $icon = 'fa-phone-volume';
+            $icon = $target['kind'] === 'trunk' ? 'fa-arrow-right-from-bracket' : 'fa-phone-volume';
             if ($disp === 'ANSWERED') {
-                $title = "Temsilci Çağrıyı Yanıtladı: {$agentStr}";
-                $detail = ($bill > 0) ? "{$bill} sn net konuşuldu." : "Görüşme sağlandı.";
-            } elseif (in_array($disp, ['NO ANSWER', 'CANCEL', 'NOANSWER'])) {
+                $title = sprintf(t($target['kind'] === 'trunk' ? 'cdr_reports.leg_trunk_answered' : 'cdr_reports.leg_answered'), $targetLabel);
+                $detail = $bill > 0 ? sprintf(t('cdr_reports.leg_talk_detail'), $bill) : t('cdr_reports.leg_connected');
+            } elseif (in_array($disp, ['NO ANSWER', 'CANCEL', 'NOANSWER'], true)) {
                 if ($dur > 0) {
-                    $title = "Temsilci Çaldırıldı: {$agentStr}";
-                    $detail = "{$dur} sn çaldı, yanıtlanmadı (Zaman aşımı).";
+                    $title = sprintf(t($target['kind'] === 'trunk' ? 'cdr_reports.leg_trunk_tried' : 'cdr_reports.leg_rang'), $targetLabel);
+                    $detail = sprintf(t('cdr_reports.leg_rang_detail'), $dur);
                 } else {
-                    $title = "Eşzamanlı Cihaz: {$agentStr}";
-                    $detail = "Çağrı başka cihazdan yanıtlandığı veya zaman aşımına uğradığı için iptal edildi.";
+                    $title = sprintf(t('cdr_reports.leg_parallel'), $targetLabel);
+                    $detail = t('cdr_reports.leg_parallel_detail');
                 }
             } else {
-                $title = "Temsilci Arama Denemesi: {$agentStr}";
-                $detail = "Sonuç: {$disp}";
+                $title = sprintf(t('cdr_reports.leg_try'), $targetLabel);
+                $detail = sprintf(t('cdr_reports.leg_result'), $disp);
             }
         } elseif ($app === 'ReceiveFAX' || $app === 'SendFAX') {
             $icon = 'fa-fax';
-            $title = ($app === 'ReceiveFAX') ? 'Gelen Faks İletimi' : 'Giden Faks İletimi';
-            $detail = "Sonuç: {$disp}";
+            $title = t($app === 'ReceiveFAX' ? 'cdr_reports.leg_fax_in' : 'cdr_reports.leg_fax_out');
+            $detail = sprintf(t('cdr_reports.leg_result'), $disp);
         } elseif ($app === 'Hangup') {
             $icon = 'fa-phone-slash';
-            $title = "Çağrı Kapatıldı (Hangup)";
-            $detail = "Hat sonlandırıldı.";
+            $title = t('cdr_reports.leg_hangup');
+            $detail = t('cdr_reports.leg_hangup_detail');
         } else {
-            $title = !empty($app) ? "İşlem: {$app} ({$dst})" : "Çağrı Adımı";
-            $detail = "Süre: {$dur} sn • Konuşma: {$bill} sn";
+            $title = $app !== '' ? sprintf(t('cdr_reports.leg_app'), $app, (string)($leg['dst'] ?? '')) : t('cdr_reports.leg_step');
+            $detail = sprintf(t('cdr_reports.leg_app_detail'), $dur, $bill);
+        }
+
+        // A leg started on someone else's behalf (blind/attended transfer):
+        // accountcode carries the extension that transferred the call.
+        $by = (string)($leg['accountcode'] ?? '');
+        if ($by !== '' && $by !== ($leg['src'] ?? '') && isset($userMap[$by])) {
+            $detail .= ' ' . sprintf(t('cdr_reports.leg_transferred_by'), "{$by} ({$userMap[$by]})");
         }
 
         return [
@@ -430,12 +502,12 @@ class CdrReportRepository extends BaseRepository
     /**
      * Toplam kayıt sayısı ve özet istatistikler — TÜM eşleşen kayıtlar üzerinden.
      */
-    public static function ozet(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $viewMode = 'grouped'): array
+    public static function ozet(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
         if ($viewMode === 'raw') {
             return static::ozetRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
         }
-        return static::ozetGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
+        return static::ozetGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
     }
 
     /**
@@ -469,65 +541,12 @@ class CdrReportRepository extends BaseRepository
     /**
      * Birleştirilmiş (Grouped by linkedid) gerçek çağrı istatistikleri.
      */
-    public static function ozetGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
+    public static function ozetGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
     {
-        $where = " WHERE 1=1";
-        $params = [];
+        [$sql, $params] = static::groupedCallsSql($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
 
-        if (!$canViewAll) {
-            $where .= " AND (c.src = ? OR c.dst = ? OR c.accountcode = ? OR c.dstchannel LIKE ? OR c.channel LIKE ?)";
-            $params[] = $userExt;
-            $params[] = $userExt;
-            $params[] = $userExt;
-            $params[] = "PJSIP/{$userExt}-%";
-            $params[] = "PJSIP/{$userExt}-%";
-        }
-
-        if ($startTs && $endTs) {
-            $where .= " AND c.calldate >= ? AND c.calldate <= ?";
-            $params[] = $startTs;
-            $params[] = $endTs;
-        }
-
-        if (!empty($agentFilter)) {
-            $where .= " AND (c.dst = ? OR c.src = ? OR c.accountcode = ? OR c.dstchannel LIKE ? OR c.channel LIKE ? OR c.dstchannel LIKE ?)";
-            $params[] = $agentFilter;
-            $params[] = $agentFilter;
-            $params[] = $agentFilter;
-            $params[] = "PJSIP/{$agentFilter}-%";
-            $params[] = "PJSIP/{$agentFilter}-%";
-            $params[] = "Local/{$agentFilter}@%";
-        }
-
-        if (!empty($deviceFilter)) {
-            $where .= " AND (c.dstchannel LIKE ? OR c.channel LIKE ?)";
-            $params[] = "%-{$deviceFilter}%";
-            $params[] = "%-{$deviceFilter}%";
-        }
-
-        if (!empty($searchQuery)) {
-            $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?)";
-            for ($i = 0; $i < 7; $i++) {
-                $params[] = "%$searchQuery%";
-            }
-        }
-
-        $having = "";
-        if (!empty($statusFilter)) {
-            if ($statusFilter === 'ANSWERED') {
-                $having = " HAVING status = 'ANSWERED'";
-            } elseif ($statusFilter === 'NO ANSWER') {
-                $having = " HAVING status = 'NO ANSWER'";
-            } elseif ($statusFilter === 'BUSY') {
-                $having = " HAVING status = 'BUSY'";
-            } elseif ($statusFilter === 'ABANDON') {
-                $having = " HAVING status = 'ABANDON'";
-            } elseif ($statusFilter === 'FAILED') {
-                $having = " HAVING status NOT IN ('ANSWERED', 'NO ANSWER', 'BUSY', 'ABANDON')";
-            }
-        }
-
-        $sql = "SELECT 
+        static::db()->exec('SET SESSION group_concat_max_len = 65535');
+        $stmt = static::db()->prepare("SELECT
             COUNT(*) AS toplam,
             SUM(status = 'ANSWERED') AS cevaplanan,
             SUM(status IN ('NO ANSWER', 'ABANDON')) AS cevapsiz,
@@ -537,38 +556,15 @@ class CdrReportRepository extends BaseRepository
             COALESCE(SUM(ring_sec), 0) AS toplam_calma,
             COALESCE(ROUND(AVG(CASE WHEN status = 'ANSWERED' THEN billsec END)), 0) AS ort_konusma,
             COALESCE(ROUND(AVG(ring_sec)), 0) AS ort_calma,
-            SUM(has_rec) AS kayitli
-        FROM (
-            SELECT 
-                coalesce(nullif(c.linkedid, ''), c.uniqueid) AS linkedid,
-                CASE 
-                    WHEN SUM(c.disposition = 'ANSWERED') > 0 THEN 'ANSWERED'
-                    WHEN SUM(c.disposition = 'BUSY') > 0 THEN 'BUSY'
-                    WHEN MAX(c.lastapp) = 'Queue' THEN 'ABANDON'
-                    ELSE 'NO ANSWER'
-                END AS status,
-                COALESCE(
-                    MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Queue' THEN c.billsec END),
-                    MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.billsec END),
-                    0
-                ) AS billsec,
-                GREATEST(0, TIMESTAMPDIFF(SECOND, MIN(c.calldate), MAX(c.calldate + INTERVAL greatest(c.duration, c.billsec) SECOND)) - COALESCE(
-                    MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Queue' THEN c.billsec END),
-                    MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.billsec END),
-                    0
-                )) AS ring_sec,
-                MAX(c.userfield IS NOT NULL AND c.userfield != '') AS has_rec
-            FROM asteriskcdr c
-            LEFT JOIN callcenter_notes n ON (n.call_id = c.uniqueid OR n.call_id = c.linkedid)"
-            . $where
-            . " GROUP BY coalesce(nullif(c.linkedid, ''), c.uniqueid)"
-            . $having
-        . ") calls";
-
-        $stmt = static::db()->prepare($sql);
+            SUM(recording_path IS NOT NULL) AS kayitli,
+            SUM(direction = '" . CdrCallAnalyzer::INBOUND . "') AS gelen,
+            SUM(direction = '" . CdrCallAnalyzer::OUTBOUND . "') AS giden,
+            SUM(direction = '" . CdrCallAnalyzer::INTERNAL . "') AS dahili,
+            SUM(direction = '" . CdrCallAnalyzer::TRANSIT . "') AS transit
+        FROM ({$sql}) calls");
         $stmt->execute($params);
         $r = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        foreach (['toplam','cevaplanan','cevapsiz','mesgul','basarisiz','toplam_sure','toplam_calma','ort_konusma','ort_calma','kayitli'] as $k) {
+        foreach (['toplam','cevaplanan','cevapsiz','mesgul','basarisiz','toplam_sure','toplam_calma','ort_konusma','ort_calma','kayitli','gelen','giden','dahili','transit'] as $k) {
             $r[$k] = intval($r[$k] ?? 0);
         }
         return $r;
