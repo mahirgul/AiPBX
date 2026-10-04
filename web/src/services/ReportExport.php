@@ -167,7 +167,8 @@ final class ReportExport
     {
         $brand = self::brand();
         $meta = self::meta($doc);
-        $tmpDir = sys_get_temp_dir() . '/aipbx_mpdf';
+        // Per user: a directory created by root (CLI, smoke) must not lock out the web server.
+        $tmpDir = sys_get_temp_dir() . '/aipbx_mpdf_' . (function_exists('posix_geteuid') ? posix_geteuid() : get_current_user());
         if (!is_dir($tmpDir)) {
             @mkdir($tmpDir, 0770, true);
         }
