@@ -119,6 +119,10 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **In-band disconnect supervision** — disconnect-tone detection for analog/legacy trunks
 - **Safe apply** — generated configuration is reloaded atomically; a failed write or Asterisk reload is
   rolled back and the change stays pending
+- **Live dashboard** — active calls and channels, callers waiting in queues, today's answered / missed
+  calls and per-trunk channel usage, refreshed every 5 seconds
+- **Complete Turkish prompt set** in one voice — voicemail, digits, conference, queue and directory
+  prompts, so Turkish calls never switch to English halfway
 - **Call recordings** — converted automatically to mono 16 kbps MP3 (~8× smaller than WAV), played in
   CDR reports, *My Phone* and the apps
 
@@ -133,12 +137,19 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Breaks with reasons**, applied in Asterisk per queue, and break reports
 - **Listen, whisper and barge** — from the wallboard or with `*90`/`*91`/`*92`
 - **Call transfer** that keeps the caller connected through queue Local channels
-- **CDR reports and call journey** — calls grouped by linkedid with a step-by-step timeline,
-  filters, export and recording playback with a waveform player
+- **Queue Report Centre** — service level, answered / lost calls, average wait and talk time per queue
+  and per agent, lost calls with call-back tracking, repeat callers and call outcomes
+- **Call reports and call journey** — calls grouped by linkedid with a step-by-step timeline; caller,
+  inbound and outbound trunk, dialled number and direction (inbound / outbound / internal /
+  trunk to trunk, transferred), recording playback with a waveform player
+- **Branded PDF and Excel export** for every report, as filtered, with all rows
 
 ### 🌐 WebRTC Softphone
 - **Browser phone** built into the portal header — no installation
-- **TURN/STUN (coturn)** multiplexed on port 443 for strict networks; credentials refreshed automatically
+- **TURNS (coturn)** relay for clients behind NAT and strict firewalls — on 5349, or on 443 through the
+  edge multiplexer (`TURNS_PORT=443`); per-user, time-limited credentials refreshed automatically
+- **NAT handled in the generator** — public/private address mapping for ICE and every SIP transport;
+  see [WebRTC, NAT and TURN](docs/webrtc-nat.md)
 - **Opus + DTLS-SRTP** encrypted audio
 
 ### 💬 Messaging & Group Chat
@@ -161,6 +172,11 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   <img src="docs/img/app_login.jpg" width="18%" alt="Setup">
 </p>
 
+### 🤖 AI
+- **Cloud TTS** — turn text into speech with Google (API key or service account), Amazon Polly, Azure AI
+  Speech, ElevenLabs or OpenAI; listen, download the MP3 or save it as an announcement in one click.
+  Credentials are stored encrypted; usage is tracked per character
+
 ### 💼 Microsoft Teams Integration
 - **Direct Routing** over SIP-TLS 5061 with SRTP
 - **User ↔ extension mapping** (Microsoft 365 UPN, E.164)
@@ -178,6 +194,10 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   roles with per-module permissions; security-critical pages are admin-only
 - **Brute-force protection** — math CAPTCHA, account/IP lockout and a fail2ban jail using the real
   client address (PROXY protocol from the 443 edge)
+- **Certificates page** — one certificate for portal, TURNS and SIP-TLS: Let's Encrypt (tested on
+  staging first, renewed automatically), upload PEM or PFX/P12, or self-signed; problems that silently
+  break WebRTC (self-signed, wrong name, missing chain) are flagged
+- **Nightly backups** — database and configuration (`aipbx-backup`, 14 days, optional off-server copy)
 - **Firewall and fail2ban management** from the portal through a single, argument-validated root
   helper (`aipbx-priv`) — the portal never runs arbitrary commands as root
 - **Hardening** — CSRF tokens, security headers, sandboxed uploaded files, Asterisk HTTP on loopback,
@@ -246,7 +266,7 @@ AiPBX/
 
 - Credentials are in `/root/aipbx-credentials.txt` — note them and delete the file.
 - Service secrets live in `/etc/ai-pbx.env`.
-- To switch a self-signed install to a Let's Encrypt certificate later, see [INSTALL.md](INSTALL.md#35-switching-to-a-lets-encrypt-certificate).
+- To switch a self-signed install to a Let's Encrypt or your own certificate, use **Security → Certificates** — see [docs/certificates.md](docs/certificates.md).
 - Ports and updating: [INSTALL.md](INSTALL.md).
 - Set an e-mail relay (fax-to-e-mail, voicemail, invitations): [docs/mail.md](docs/mail.md).
 - Configuring trunks, routes, roles and more: [documentation](docs/README.md).

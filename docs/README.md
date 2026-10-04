@@ -21,7 +21,10 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, multiple PBXes with different number formats |
 | [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
 | [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
-| [Sounds & languages](sounds.md) | Custom sounds, Turkish prompts, voicemail prompts still to be recorded |
+| [Reports](reports.md) | Call reports with trunks and direction, Queue Report Centre, PDF and Excel export |
+| [Sounds & languages](sounds.md) | Custom sounds, the complete Turkish prompt set, regenerating a prompt |
+| [Cloud TTS](cloud-tts.md) | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
+| [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
 
 ## Users and security
 
@@ -29,6 +32,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 |------|----------------|
 | [Users & roles](users-and-roles.md) | Built-in roles, landing pages, permissions, *My Phone* |
 | [Security](security.md) | Firewall, fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| [Certificates](certificates.md) | One certificate for portal, TURNS and SIP-TLS; Let's Encrypt, upload, renewals |
 | [E-mail](mail.md) | Mail relay for fax-to-e-mail, voicemail and password e-mails |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 

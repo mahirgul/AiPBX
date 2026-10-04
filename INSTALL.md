@@ -112,7 +112,7 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 
 | Port | Purpose |
 |------|---------|
-| 80/tcp, 443/tcp | Portal, WebRTC (WSS `/ws`), chat, TURNS multiplexed on 443 |
+| 80/tcp, 443/tcp | Portal, WebRTC (WSS `/ws`), chat; TURNS too with `TURNS_PORT=443` ([WebRTC, NAT and TURN](docs/webrtc-nat.md)) |
 | 5060/udp+tcp, 5061/tcp | SIP / SIP-TLS |
 | 10000-20000/udp | RTP media |
 | 3478/udp+tcp, 5349/udp+tcp | STUN/TURN |
@@ -123,16 +123,12 @@ Do not enable `ufw` on top of this.
 **Recommended:** if only your carrier and local phones use SIP, allow 5060/5061 only from those
 addresses instead of the whole internet — see [docs/security.md](docs/security.md#firewall).
 
-### 3.5 Switching to a Let's Encrypt Certificate
-If you installed with a self-signed certificate and later point the portal's domain
-(`PORTAL_DOMAIN` in `/etc/ai-pbx.env`) to the server:
-
-```bash
-sudo certbot certonly --apache -d pbx.yourdomain.com
-sudo bash /opt/aipbx/install.sh --upgrade   # uses the new certificate everywhere, installs the renewal hook
-```
-
-The renewal hook copies renewed certificates to coturn and Asterisk automatically.
+### 3.5 Certificates
+One certificate serves the portal, TURNS and SIP-TLS. Manage it on **Security → Certificates**: get a
+Let's Encrypt certificate (the domain in `PORTAL_DOMAIN` must point to the server and port 80 must be
+reachable), upload your own (PEM or PFX/P12), or go back to self-signed. Renewals are applied to
+Apache, coturn and Asterisk automatically. The same operations are available as `sudo aipbx-cert …`.
+A self-signed certificate breaks WebRTC TURNS — see [docs/certificates.md](docs/certificates.md).
 
 ### 3.6 E-mail Relay
 Fax-to-e-mail, voicemail notifications and invitations are sent through postfix. Set your relay on

@@ -27,6 +27,13 @@ Find out what the trunk actually sends (next section), then check:
 - that an inbound route exists in exactly that format, or an outbound route pattern matches it in the
   trunk's route group (`asterisk -rx "dialplan show <number>@from-trunk-<trunk>-route"`).
 
+## Browser or app calls have no audio
+
+Audio works on the server's LAN but not from a phone on mobile data, or calls through the relay are
+silent: check the external IP under **PBX Settings**, the certificate (**Security → Certificates** —
+TURNS fails silently with a self-signed one) and `relay-ip` in `/etc/turnserver.conf`. Full checklist:
+[WebRTC, NAT and TURN](webrtc-nat.md#troubleshooting).
+
 ## Capturing SIP
 
 ```bash
