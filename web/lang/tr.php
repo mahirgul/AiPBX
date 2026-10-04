@@ -2462,7 +2462,7 @@ return [
     'ai_tts.not_configured' => 'Ayarlanmadı',
     'ai_tts.optional' => 'isteğe bağlı',
     'ai_tts.keep_secret' => 'değiştirmek için yeni anahtarı yazın',
-    'ai_tts.provider_hint_google' => 'Google Cloud Console → APIs &amp; Services: "Cloud Text-to-Speech API"yi etkinleştirip bir API anahtarı oluşturun. Bir istekte en fazla %s karakter; uzun metinler bölünür.',
+    'ai_tts.provider_hint_google' => 'Google Cloud Console → APIs &amp; Services: "Cloud Text-to-Speech API"yi etkinleştirin; servis hesabı JSON anahtarı (IAM → Service Accounts → Keys → JSON) ya da API anahtarı kullanın. Bir istekte en fazla %s karakter; uzun metinler bölünür.',
     'ai_tts.provider_hint_polly' => 'AWS IAM\'de yalnızca "polly:SynthesizeSpeech" ve "polly:DescribeVoices" izni olan bir kullanıcı için erişim anahtarı oluşturun. Bir istekte en fazla %s karakter.',
     'ai_tts.provider_hint_azure' => 'Azure Portal\'da bir "Speech" kaynağı oluşturun; anahtar ve bölge (ör. westeurope) "Keys and Endpoint" sayfasındadır. Bir istekte en fazla %s karakter.',
     'ai_tts.provider_hint_elevenlabs' => 'ElevenLabs → Profile → API Keys. Sesler hesabınızdaki ses kitaplığından gelir ve çok dillidir. Bir istekte en fazla %s karakter.',
@@ -2508,4 +2508,5 @@ return [
     'ai_tts.msg_provider_saved' => 'Sağlayıcı ayarları kaydedildi.',
     'ai_tts.msg_provider_cleared' => 'Sağlayıcının erişim bilgileri silindi.',
     'ai_tts.msg_deleted' => 'Kayıt silindi.',
+    'ai_tts.json_placeholder' => '…veya JSON içeriğini buraya yapıştırın (boş bırakılırsa kayıtlı anahtar korunur)',
 ];

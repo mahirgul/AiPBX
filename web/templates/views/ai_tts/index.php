@@ -26,7 +26,7 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
     <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('ai_tts.providers_text'); ?></p>
     <div class="u-grid-2" style="gap: 16px;">
     <?php foreach ($providers as $p): ?>
-        <form method="POST" autocomplete="off" class="card u-mb-0" style="padding: 16px;">
+        <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0" style="padding: 16px;">
             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
             <input type="hidden" name="save_provider" value="<?php echo $h($p['id']); ?>">
             <div class="u-flex-between u-mb-10">
@@ -36,7 +36,11 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
             <?php foreach ($p['fields'] as $f): ?>
                 <div class="form-group">
                     <label class="form-label"><?php echo $h($f['label']); ?><?php echo !empty($f['optional']) ? ' <span class="u-muted u-fs-11">(' . t('ai_tts.optional') . ')</span>' : ''; ?></label>
-                    <?php if ($f['secret']): ?>
+                    <?php if (!empty($f['json'])): ?>
+                        <?php if ($f['masked'] !== ''): ?><div class="u-fs-12 u-mb-10"><i class="fas fa-user-shield u-success"></i> <?php echo $h($f['masked']); ?></div><?php endif; ?>
+                        <input type="file" name="service_account_file" accept=".json,application/json" class="form-control" <?php echo $can_edit ? '' : 'disabled'; ?>>
+                        <textarea name="<?php echo $h($f['key']); ?>" class="form-control u-mt-4" rows="2" style="font-family: monospace; font-size: 11px;" placeholder="<?php echo $h(t('ai_tts.json_placeholder')); ?>" <?php echo $can_edit ? '' : 'disabled'; ?>></textarea>
+                    <?php elseif ($f['secret']): ?>
                         <input type="password" name="<?php echo $h($f['key']); ?>" class="form-control" autocomplete="new-password"
                                placeholder="<?php echo $h($f['masked'] !== '' ? $f['masked'] . ' — ' . t('ai_tts.keep_secret') : ''); ?>" <?php echo $can_edit ? '' : 'disabled'; ?>>
                     <?php else: ?>

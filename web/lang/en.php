@@ -2462,7 +2462,7 @@ return [
     'ai_tts.not_configured' => 'Not set up',
     'ai_tts.optional' => 'optional',
     'ai_tts.keep_secret' => 'type a new key to change it',
-    'ai_tts.provider_hint_google' => 'Google Cloud Console → APIs &amp; Services: enable "Cloud Text-to-Speech API" and create an API key. Up to %s characters per request; longer texts are split.',
+    'ai_tts.provider_hint_google' => 'Google Cloud Console → APIs &amp; Services: enable "Cloud Text-to-Speech API"; use a service account JSON key (IAM → Service Accounts → Keys → JSON) or an API key. Up to %s characters per request; longer texts are split.',
     'ai_tts.provider_hint_polly' => 'In AWS IAM, create an access key for a user that only has "polly:SynthesizeSpeech" and "polly:DescribeVoices". Up to %s characters per request.',
     'ai_tts.provider_hint_azure' => 'Create a "Speech" resource in the Azure Portal; key and region (e.g. westeurope) are on its "Keys and Endpoint" page. Up to %s characters per request.',
     'ai_tts.provider_hint_elevenlabs' => 'ElevenLabs → Profile → API Keys. Voices come from your account\'s voice library and are multilingual. Up to %s characters per request.',
@@ -2508,4 +2508,5 @@ return [
     'ai_tts.msg_provider_saved' => 'Provider settings saved.',
     'ai_tts.msg_provider_cleared' => 'The provider\'s access details were deleted.',
     'ai_tts.msg_deleted' => 'Entry deleted.',
+    'ai_tts.json_placeholder' => '…or paste the JSON here (leave empty to keep the stored key)',
 ];
