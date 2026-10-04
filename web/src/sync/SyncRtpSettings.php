@@ -51,11 +51,13 @@ function buildRtpConf(): string
         $extern_ip = trim((string)($stmt ? $stmt->fetchColumn() : ''));
     }
     if ($extern_ip === '') {
-        $extern_ip = portalEnv('EXTERNAL_IP', '198.51.100.1');
+        $extern_ip = portalEnv('EXTERNAL_IP', '');
     }
+    // The address Asterisk's ICE host candidate carries. Not SERVER_ADDR: behind
+    // the 443 nginx multiplexer that is 127.0.0.1 and the mapping never matched.
     $local_ip = trim(getSystemSetting('server_ip', ''));
     if ($local_ip === '') {
-        $local_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
+        $local_ip = rtpPrimaryIp();
     }
     $stun_port = defined('STUN_PORT') && STUN_PORT !== '' ? STUN_PORT : '3478';
 
@@ -97,12 +99,31 @@ function buildRtpConf(): string
         if (getSystemSetting('rtp_stunaddr_enabled', '0') === '1') {
             $conf .= "stunaddr={$local_ip}:{$stun_port}\n";
         }
-        if ($extern_ip !== '') {
-            $conf .= "ice_host_candidates={$local_ip} => {$extern_ip}\n";
-        }
+    }
+
+    // NAT: advertise the public address for the server's own one. This is a
+    // section of its own — written as "ice_host_candidates=" under [general]
+    // Asterisk silently ignored it, so remote WebRTC clients (mobile data,
+    // other networks) only got private addresses and had no audio.
+    // include_local_address keeps the private candidate for LAN clients.
+    if ($local_ip !== '' && filter_var($extern_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && $extern_ip !== $local_ip) {
+        $conf .= "\n[ice_host_candidates]\n";
+        $conf .= "include_local_address=yes\n";
+        $conf .= "{$local_ip} => {$extern_ip}\n";
     }
 
     return $conf;
+}
+
+/** Primary IPv4 of this server: the source address of the default route. */
+function rtpPrimaryIp(): string
+{
+    $out = (string) @shell_exec('ip -4 route get 1.1.1.1 2>/dev/null');
+    if (preg_match('/\bsrc\s+(\d+\.\d+\.\d+\.\d+)/', $out, $m)) {
+        return $m[1];
+    }
+    $first = trim(explode(' ', trim((string) @shell_exec('hostname -I 2>/dev/null')))[0]);
+    return filter_var($first, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $first : '';
 }
 
 function __syncRtpSettingsBody()

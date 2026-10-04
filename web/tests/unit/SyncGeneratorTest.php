@@ -336,8 +336,38 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringNotContainsString('stunaddr=', $conf,
             'stunaddr varsayilan olarak KAPALI olmali — WebRTC cagrilarini bloke ediyor');
 
-        // NAT eslemesini yapan asil satir kalmali; o statik, ag sorgusu yapmaz.
-        $this->assertStringContainsString('ice_host_candidates=', $conf);
+    }
+
+    /**
+     * The NAT mapping must be its own [ice_host_candidates] section: under
+     * [general] Asterisk ignored it and remote WebRTC clients had no audio.
+     */
+    public function testRtpConfMapsThePublicAddressInItsOwnSection(): void
+    {
+        $db = getDB();
+        $db->exec("DELETE FROM sys_settings WHERE setting_key IN ('server_ip', 'pjsip_external_ip')");
+        $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('server_ip', '10.8.0.12'), ('pjsip_external_ip', '203.0.113.7')")->execute();
+        try {
+            $conf = buildRtpConf();
+            $this->assertMatchesRegularExpression('/^\[ice_host_candidates\]\ninclude_local_address=yes\n10\.8\.0\.12 => 203\.0\.113\.7$/m', $conf);
+            $general = substr($conf, 0, (int) strpos($conf, '[ice_host_candidates]'));
+            $this->assertStringNotContainsString('ice_host_candidates', $general, 'Asterisk ignores it under [general]');
+
+            // No public address configured: no mapping at all (it used to map to 198.51.100.1).
+            $db->exec("DELETE FROM sys_settings WHERE setting_key = 'pjsip_external_ip'");
+            $db->exec("DELETE FROM pjsipsettings WHERE keyword = 'externip_val'");
+            if (portalEnv('EXTERNAL_IP', '') === '') {
+                $this->assertStringNotContainsString('[ice_host_candidates]', buildRtpConf());
+            }
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key IN ('server_ip', 'pjsip_external_ip')");
+        }
+    }
+
+    public function testRtpPrimaryIpIsARealAddress(): void
+    {
+        $ip = rtpPrimaryIp();
+        $this->assertTrue($ip === '' || (filter_var($ip, FILTER_VALIDATE_IP) && $ip !== '127.0.0.1'), $ip);
     }
 
     public function testRtpStunaddrAyarlaAcilabilir(): void
