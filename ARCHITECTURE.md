@@ -31,7 +31,7 @@
 │   │     └──► Streamed directly to Apache 2.4 (127.0.0.1:8443)                           │
 │   │                                                                                     │
 │   └── [ ALPN Empty / None ] (WebRTC TURNS media relay behind restrictive firewalls)     │
-│         └──► Streamed directly to coturn TURNS (127.0.0.1:5349)                         │
+│         └──► coturn TURNS via a PROXY-stripping relay (127.0.0.1:15349 ──► 5349)        │
 └───────────────────────────────────┬────────────────────────────────┬────────────────────┘
                                     │                                │
                      [ ALPN Present ]                                [ No ALPN ]
@@ -82,26 +82,33 @@ Nginx is deployed as a transparent L4 TCP stream router on Port 443:
 1. When an incoming TLS connection arrives on port 443, Nginx parses the initial TLS `ClientHello` packet using `ssl_preread on;` **without decrypting or terminating TLS**.
 2. **ALPN Inspection**:
    - **Web Browsers & Mobile HTTPS/WSS Clients** always advertise ALPN protocols (e.g. `http/1.1` or `h2`). Nginx matches this and forwards the raw TLS stream to **Apache 2.4 on `127.0.0.1:8443`**.
-   - **WebRTC TURNS (coturn) Clients** do not send ALPN protocols (`""`). Nginx matches this empty string and routes the connection directly to **coturn on `127.0.0.1:5349`**.
-3. **Zero Encryption Overhead at the Edge**: Because Nginx does not decrypt TLS, there is zero certificate synchronization overhead between Nginx and Apache/coturn. Each backend handles its own TLS handshake natively.
+   - **WebRTC TURNS Clients** (browsers, the apps) send no ALPN (`""`); RFC 7443 TURN clients announce `stun.turn`. Both go to **coturn** through a local relay on `127.0.0.1:15349` that strips the PROXY protocol header coturn cannot parse.
+3. **No Decryption at the Edge**: Nginx never decrypts TLS. Apache and coturn terminate it with the same certificate (`/etc/ssl/aipbx/active.*`, copied to coturn and Asterisk by `aipbx-cert`; see [docs/certificates.md](docs/certificates.md)).
+4. **Real Client Address**: Nginx sends a PROXY protocol header (`proxy_protocol on`); Apache reads it with `RemoteIPProxyProtocol On`, so login throttling, fail2ban and audit logs see the client, not `127.0.0.1`.
 
 ```nginx
+# /etc/nginx/aipbx-stream.conf (written by install.sh)
 stream {
-    log_format stream_debug '$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$turn_backend status=$status';
-    access_log /var/log/nginx/stream.log stream_debug;
-
-    map $ssl_preread_alpn_protocols $turn_backend {
-        default     127.0.0.1:8443;   # Web Portal, WebRTC /ws, Chat /chat/ws (Apache SSL)
-        ""          127.0.0.1:5349;   # coturn TURNS (Firewall bypass)
+    map $ssl_preread_alpn_protocols $aipbx_backend {
+        default      127.0.0.1:8443;    # Web portal, WebRTC /ws, chat /chat/ws (Apache)
+        ""           127.0.0.1:15349;   # TURNS from browsers and the apps (no ALPN)
+        ~stun\.turn  127.0.0.1:15349;   # RFC 7443 TURN clients
     }
 
     server {
         listen 443;
         listen [::]:443;
         ssl_preread on;
-        proxy_pass $turn_backend;
+        proxy_pass $aipbx_backend;
+        proxy_protocol on;
         proxy_timeout 3600s;
         proxy_connect_timeout 5s;
+    }
+
+    server {                            # coturn cannot read the PROXY header
+        listen 127.0.0.1:15349 proxy_protocol;
+        proxy_pass 127.0.0.1:5349;
+        proxy_timeout 3600s;
     }
 }
 ```
@@ -237,7 +244,9 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 ## 7. NAT Traversal & Media Relay (coturn)
 
 - **STUN/TURN**: Provides ICE candidates for WebRTC clients behind symmetric NATs or restrictive cellular carriers.
-- **Ports**: Port 3478 (STUN/TURN) and Port 5349 (TURNS over TLS).
+- **Ports**: Port 3478 (STUN/TURN) and Port 5349 (TURNS over TLS). Clients are only given TURNS: `turns:<domain>:5349`, or `:443` through the edge with `TURNS_PORT=443` in `/etc/ai-pbx.env`.
+- **Relay address**: `relay-ip` is the server's own address. TURNS through the 443 edge arrives from `127.0.0.1`, and without it coturn relayed on loopback, where Asterisk's media never arrived.
+- **NAT mapping**: with an external IP set, `rtp.conf` gets an `[ice_host_candidates]` section (`private => public`, `include_local_address=yes`) and every PJSIP transport `external_media_address` / `external_signaling_address` / `local_net`. `stunaddr` is off: it blocked each WebRTC call for ~6 s.
 - **Dynamic Credentials**: Ephemeral username/password generation based on HMAC-SHA1 tokens tied to active user sessions via `/api/sip_credentials.php`.
 - **Client Keep-Alive & Renewal**: In-browser softphones (`header_phone.js`) automatically renew ephemeral coturn credentials in-place every 30 minutes, preventing media relay timeouts and silent audio during continuous, all-day agent shifts.
 
