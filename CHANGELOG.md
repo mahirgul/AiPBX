@@ -5,6 +5,46 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 2.2.0
+
+Call-center reporting, certificates from the portal, Cloud TTS and a complete
+Turkish prompt set.
+
+**Reports**
+- Call reports show the caller, inbound trunk, outbound trunk and dialed
+  number; trunk-to-trunk transfers and call direction are visible and
+  filterable.
+- New Queue Report Centre (Call Center menu): service level, answered /
+  abandoned calls, average wait and talk time per queue and per agent; call
+  recordings can be played from the queue log.
+- Every report can be exported as a branded PDF or as Excel.
+
+**Security**
+- New Certificates page: Let's Encrypt, upload your own certificate, or
+  self-signed; one certificate serves the portal, TURNS and SIP-TLS and
+  renewals are applied automatically.
+- User roles: the permission matrix follows the sidebar and the checks the
+  pages really make.
+
+**AI**
+- New AI → Cloud TTS page: turn text into speech with Google, Amazon Polly,
+  Azure, ElevenLabs or OpenAI, download the MP3 or save it as an announcement.
+  Google also accepts a service account key. Credentials are stored encrypted.
+
+**Telephony**
+- Turkish prompts regenerated in one voice: every Asterisk prompt
+  (voicemail, digits, letters, conference, queue, directory, …) is now
+  available in Turkish, so calls no longer switch to English halfway. Prompts
+  from another PBX that AiPBX never played are removed; updates replace the
+  shipped prompts.
+- WebRTC: audio works between clients on different networks (NAT mapping,
+  TURN relay address).
+- TURNS keeps working after a Let's Encrypt renewal (full chain), and TURN
+  clients that announce the "stun.turn" ALPN on port 443 reach coturn.
+
+**Portal**
+- Files (PDF, Excel, recordings) download instead of opening inside the page.
+
 ## 2.1.0
 
 Fixes for Ubuntu 26.04 installations — update recommended. On v2.0.0 the
