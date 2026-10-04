@@ -33,6 +33,8 @@ $can_view_admin_group = hasModulePermission('system_users', 'view') || hasModule
 $can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
 $can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view') || hasModulePermission('queue_reports', 'view');
 $can_view_integrations_group = ($role === 'admin') || hasModulePermission('ms_teams', 'view');
+$is_ai_active = in_array($active_page, ['ai_tts.php'], true);
+$can_view_ai_group = hasModulePermission('ai_tts', 'view');
 $can_view_teams_group = $can_view_integrations_group;
 
 // Firewall/fail2ban HER ZAMAN admin-only (auth.php circuit-breaker) — grup

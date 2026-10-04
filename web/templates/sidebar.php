@@ -375,6 +375,26 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             </li>
         <?php endif; ?>
 
+        <!-- 4d. AI (Yapay Zekâ): Cloud TTS -->
+        <?php if (!empty($can_view_ai_group)): ?>
+            <li class="nav-group <?php echo (!empty($is_ai_active) && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-ai">
+                <button class="nav-toggle-btn" onclick="toggleNavGroup('group-ai')" title="<?php echo t('sidebar.group_ai'); ?>">
+                    <span class="toggle-title">
+                        <i class="fas fa-wand-magic-sparkles" style="color: var(--purple);"></i> <span class="nav-text"><?php echo t('sidebar.group_ai'); ?></span>
+                    </span>
+                    <i class="fas fa-chevron-down chevron-icon"></i>
+                </button>
+                <ul class="nav-submenu">
+                    <?php if (hasModulePermission('ai_tts', 'view')): ?>
+                        <li>
+                            <a href="/ai-tts" class="nav-link <?php echo $active_page === 'ai_tts.php' ? 'active' : ''; ?>" title="<?php echo t('sidebar.item_ai_tts'); ?>">
+                                <i class="fas fa-comment-dots"></i> <span class="nav-text"><?php echo t('sidebar.item_ai_tts'); ?></span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </li>
+        <?php endif; ?>
 
         <!-- 5. Faks Sistemi Menüsü -->
         <?php if ($can_view_fax_group): ?>

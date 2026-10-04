@@ -145,6 +145,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 'Yönetim'          => 'fas fa-cog',
                                 'Güvenlik'         => 'fas fa-shield-alt',
                                 'Entegrasyonlar'   => 'fas fa-puzzle-piece',
+                                'Yapay Zekâ'       => 'fas fa-wand-magic-sparkles',
                                 'Faks Sistemi'     => 'fas fa-fax',
                                 'Çağrı Merkezi'    => 'fas fa-headset',
                             ];
@@ -155,6 +156,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 'Yönetim'          => 'var(--warning)',
                                 'Güvenlik'         => 'var(--danger)',
                                 'Entegrasyonlar'   => 'var(--purple)',
+                                'Yapay Zekâ'       => 'var(--purple)',
                                 'Faks Sistemi'     => 'var(--teal)',
                                 'Çağrı Merkezi'    => 'var(--success)',
                             ];

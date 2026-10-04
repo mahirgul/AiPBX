@@ -40,6 +40,14 @@ putenv('ASTERISK_PBX_DIR=' . $tmpConf);
 if (!is_dir($tmpConf . '/etc')) { mkdir($tmpConf . '/etc', 0755, true); }
 putenv('ASTERISK_CONF_DIR=' . $tmpConf . '/etc');
 
+// Sounds, Cloud TTS audio and the settings key stay in the temp dir too.
+foreach (['sounds', 'tts'] as $d) {
+    if (!is_dir("{$tmpConf}/{$d}")) { mkdir("{$tmpConf}/{$d}", 0755, true); }
+}
+putenv('SOUNDS_CUSTOM_DIR=' . $tmpConf . '/sounds');
+putenv('AI_TTS_DIR=' . $tmpConf . '/tts');
+putenv('AIPBX_SETTINGS_KEY=test-settings-key');
+
 // KİLİT 3 — canlı Asterisk'e hiçbir CLI komutu gitmesin.
 putenv('AIPBX_NO_ASTERISK=1');
 

@@ -373,7 +373,11 @@ mkdir -p /var/lib/asterisk/sounds/custom
 mkdir -p /var/lib/asterisk/sounds/tr
 mkdir -p /var/lib/asterisk/moh
 mkdir -p /var/lib/asterisk/moh/custom   # seed.sql's "custom" MOH class
-mkdir -p /var/lib/aipbx/chat_files
+mkdir -p /var/lib/aipbx/chat_files /var/lib/aipbx/tts
+# Key that encrypts cloud credentials stored in the database (AI → Cloud TTS).
+# Created here so it belongs to the web server: one made by root would lock it out.
+[[ -s /var/lib/aipbx/settings.key ]] || head -c 32 /dev/urandom > /var/lib/aipbx/settings.key
+chmod 600 /var/lib/aipbx/settings.key
 mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
