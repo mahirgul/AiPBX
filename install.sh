@@ -968,7 +968,14 @@ if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
 fi
 
 if [[ -d "$INSTALL_DIR/sounds/tr" ]]; then
-    cp -an "$INSTALL_DIR/sounds/tr/"* /var/lib/asterisk/sounds/tr/
+    # The Turkish set is AiPBX's own (sounds/tr/README-tts.txt), so it replaces
+    # older copies; a stale .gsm/.ulaw of the same prompt is dropped too, or
+    # Asterisk could still pick the old recording by format cost.
+    while IFS= read -r f; do
+        base="/var/lib/asterisk/sounds/tr/${f%.wav}"
+        rm -f "$base".{gsm,ulaw,alaw,g722,g729,sln,sln16}
+    done < <(cd "$INSTALL_DIR/sounds/tr" && find . -type f -name '*.wav' -printf '%P\n')
+    cp -a "$INSTALL_DIR/sounds/tr/." /var/lib/asterisk/sounds/tr/
 fi
 
 # Set default language to Turkish in asterisk.conf
