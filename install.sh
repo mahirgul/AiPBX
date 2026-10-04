@@ -446,6 +446,12 @@ if is_upgrade; then
     # The environment file belongs to the installation (admins edit it):
     # only keys added by newer releases are appended.
     env_ensure ODBC_DB_PASS "$ODBC_PASS"
+    # Up to 2.2.0 clients were sent coturn's own port; TURNS goes through the
+    # 443 multiplexer now, which also passes networks that only allow 443.
+    if [[ "$(env_get TURNS_PORT)" == 5349 ]]; then
+        sed -i 's/^TURNS_PORT=5349$/TURNS_PORT=443/' /etc/ai-pbx.env
+        ok "TURNS_PORT 5349 → 443 (TURNS through the 443 multiplexer)"
+    fi
     ok "Environment file kept (missing keys added)"
 else
 cat > /etc/ai-pbx.env << ENVFILE
@@ -494,7 +500,9 @@ MAIL_FROM_NAME=AI PBX Portal
 # --- WebRTC TURN (coturn) ---
 TURN_HOST=${PORTAL_DOMAIN}
 TURN_SECRET=${TURN_SECRET}
-TURNS_PORT=5349
+# Port given to clients for turns:. coturn listens on 5349; nginx on 443 hands
+# TURNS (no ALPN / "stun.turn") to it, so calls work where only 443 is open.
+TURNS_PORT=443
 
 # --- Asterisk -> MariaDB (CDR / queue_log through ODBC) ---
 ODBC_DB_PASS=${ODBC_PASS}

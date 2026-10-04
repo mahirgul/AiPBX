@@ -244,7 +244,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 ## 7. NAT Traversal & Media Relay (coturn)
 
 - **STUN/TURN**: Provides ICE candidates for WebRTC clients behind symmetric NATs or restrictive cellular carriers.
-- **Ports**: Port 3478 (STUN/TURN) and Port 5349 (TURNS over TLS). Clients are only given TURNS: `turns:<domain>:5349`, or `:443` through the edge with `TURNS_PORT=443` in `/etc/ai-pbx.env`.
+- **Ports**: Port 3478 (STUN/TURN) and Port 5349 (TURNS over TLS). Clients are only given TURNS on 443 (`turns:<domain>:443`, `TURNS_PORT` in `/etc/ai-pbx.env`); nginx hands it to coturn on 5349.
 - **Relay address**: `relay-ip` is the server's own address. TURNS through the 443 edge arrives from `127.0.0.1`, and without it coturn relayed on loopback, where Asterisk's media never arrived.
 - **NAT mapping**: with an external IP set, `rtp.conf` gets an `[ice_host_candidates]` section (`private => public`, `include_local_address=yes`) and every PJSIP transport `external_media_address` / `external_signaling_address` / `local_net`. `stunaddr` is off: it blocked each WebRTC call for ~6 s.
 - **Dynamic Credentials**: Ephemeral username/password generation based on HMAC-SHA1 tokens tied to active user sessions via `/api/sip_credentials.php`.

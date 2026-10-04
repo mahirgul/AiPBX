@@ -44,14 +44,15 @@ the LAN (a phone on mobile data) only got private candidates and had no audio.
 
 | Setting | Clients are given | Needs open |
 |---------|-------------------|-----------|
-| `TURNS_PORT=5349` (installer default) | `turns:your-domain:5349?transport=tcp` | 5349/tcp |
-| `TURNS_PORT=443` | `turns:your-domain:443?transport=tcp` | only 443/tcp |
+| `TURNS_PORT=443` (installer default) | `turns:your-domain:443?transport=tcp` | only 443/tcp |
+| `TURNS_PORT=5349` | `turns:your-domain:5349?transport=tcp` | 5349/tcp |
 
-coturn listens on 5349, and the nginx edge also passes TLS connections without ALPN on 443 to it. With
-`TURNS_PORT=443` WebRTC audio works on networks that allow nothing but 443 (hotels, hospitals, guest
-Wi-Fi, strict corporate networks). Change it in `/etc/ai-pbx.env`; the portal reads the file on every
-request, and clients pick the new port up with their next credential refresh or sign-in. Updates keep
-the value.
+coturn listens on 5349; the nginx multiplexer on 443 passes TLS connections without ALPN (browsers,
+the apps) or with `stun.turn` to it. Clients are given 443, so WebRTC audio works on networks that
+allow nothing but 443 (hotels, hospitals, guest Wi-Fi, strict corporate networks). Change it in
+`/etc/ai-pbx.env`; the portal reads the file on every request, and clients pick the new port up with
+their next credential refresh or sign-in. Updates keep the value, except that 5349 — the default
+before 2.2.1 — is switched to 443 once.
 
 coturn relays on the server's own address (`relay-ip` in `/etc/turnserver.conf`, set by the
 installer). TURNS connections that arrive through the 443 edge come from `127.0.0.1`; without
