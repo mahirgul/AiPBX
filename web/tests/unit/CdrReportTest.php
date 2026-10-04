@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../../src/core/BaseRepository.php';
 require_once __DIR__ . '/../../src/repositories/CdrReportRepository.php';
 require_once __DIR__ . '/../../src/services/CdrReportService.php';
+require_once __DIR__ . '/../../src/services/CdrCallAnalyzer.php';
 
 final class CdrReportTest extends TestCase
 {
@@ -100,6 +101,56 @@ final class CdrReportTest extends TestCase
         // Test Raw Search returns all 4 rows
         $rawResults = CdrReportRepository::search(true, '', null, null, '', '', '05051112233', 1, 10, '', 'raw');
         $this->assertCount(4, $rawResults, 'Raw mode should return all 4 individual legs');
+    }
+
+    /**
+     * Direction and trunk filters run in SQL (paging and totals must match);
+     * they have to classify calls the same way CdrCallAnalyzer does.
+     */
+    public function testDirectionAndTrunkFiltersMatchTheAnalyzer(): void
+    {
+        $db = getDB();
+        $now = date('Y-m-d H:i:s');
+        $ins = $db->prepare("INSERT INTO asteriskcdr
+            (calldate, clid, src, dst, did, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid, accountcode)
+            VALUES (?, '', ?, ?, ?, 'ctx', ?, ?, 'Dial', ?, 10, 12, ?, ?, ?, ?)");
+        $call = function (string $name, array $legs) use ($ins, $now) {
+            foreach ($legs as $i => $l) {
+                $ins->execute([$now, $l[0], $l[1], $l[2], $l[3], $l[4], $l[5], $l[6] ?? 'ANSWERED', "test-cdr-group-dir-{$name}", "test-cdr-group-dir-{$name}-{$i}", $l[7] ?? '']);
+            }
+        };
+        // src, dst, did, channel, dstchannel, lastdata, disposition, accountcode
+        $call('transit', [['0599000001', '9611', '9611', 'PJSIP/VOIPX-00003b2c', 'PJSIP/nectipx-00003b2d', 'PJSIP/9611@nectipx,60']]);
+        $call('inbound', [
+            ['0599000002', '9931', '9931', 'PJSIP/nectipx-000018b8', 'PJSIP/9931-sip-000018b9', 'PJSIP/9931-sip/sip:x'],
+            ['0599000002', '8807', '9931', 'PJSIP/nectipx-000018b8', 'PJSIP/nectipx-000018c3', 'PJSIP/8807@nectipx,60', 'ANSWERED', '9931'],
+        ]);
+        $call('outbound', [['9931', '0599000003', '', 'PJSIP/9931-webrtc-00000001', 'PJSIP/VOIPX-00000002', 'PJSIP/0599000003@VOIPX,60']]);
+        $call('internal', [['9931', '9932', '', 'PJSIP/9931-sip-00000003', 'PJSIP/9932-mob-webrtc-00000004', 'PJSIP/9932-mob-webrtc', 'NO ANSWER']]);
+
+        $search = fn(string $dir, string $trunk = '') => array_column(
+            CdrReportRepository::search(true, '', null, null, '', '', 'test-cdr-group-dir-', 1, 50, '', 'grouped', $dir, $trunk),
+            'linkedid'
+        );
+        $this->assertSame(['test-cdr-group-dir-transit'], $search(CdrCallAnalyzer::TRANSIT));
+        $this->assertSame(['test-cdr-group-dir-inbound'], $search(CdrCallAnalyzer::INBOUND));
+        $this->assertSame(['test-cdr-group-dir-outbound'], $search(CdrCallAnalyzer::OUTBOUND));
+        $this->assertSame(['test-cdr-group-dir-internal'], $search(CdrCallAnalyzer::INTERNAL));
+
+        $byTrunk = $search('', 'nectipx');
+        sort($byTrunk);
+        $this->assertSame(['test-cdr-group-dir-inbound', 'test-cdr-group-dir-transit'], $byTrunk, 'in or out on the trunk');
+
+        // The list's flow (PHP) agrees with the SQL direction of every row.
+        foreach (CdrReportRepository::search(true, '', null, null, '', '', 'test-cdr-group-dir-', 1, 50, '', 'grouped') as $row) {
+            $this->assertSame($row['direction'], $row['flow']['direction'], $row['linkedid']);
+        }
+        $inbound = CdrReportRepository::search(true, '', null, null, '', '', 'test-cdr-group-dir-inbound', 1, 50, '', 'grouped')[0];
+        $this->assertSame('9931', $inbound['agent_extension'], 'the extension that answered, not the transfer target');
+        $this->assertTrue($inbound['flow']['transferred']);
+
+        $ozet = CdrReportRepository::ozet(true, '', null, null, '', '', 'test-cdr-group-dir-', '', 'grouped');
+        $this->assertSame([4, 1, 1, 1, 1], [$ozet['toplam'], $ozet['gelen'], $ozet['giden'], $ozet['dahili'], $ozet['transit']]);
     }
 
     public function testDeleteCdrRemovesAllLegsOfLinkedCall(): void

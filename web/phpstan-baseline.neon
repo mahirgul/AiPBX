@@ -289,12 +289,6 @@ parameters:
 			path: src/repositories/CdrReportRepository.php
 
 		-
-			message: '#^Unsafe call to private method CdrReportRepository\:\:getLookupMaps\(\) through static\:\:\.$#'
-			identifier: staticClassAccess.privateMethod
-			count: 2
-			path: src/repositories/CdrReportRepository.php
-
-		-
 			message: '#^Unsafe call to private method CdrReportRepository\:\:kosullar\(\) through static\:\:\.$#'
 			identifier: staticClassAccess.privateMethod
 			count: 2

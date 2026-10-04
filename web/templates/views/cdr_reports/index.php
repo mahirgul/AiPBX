@@ -1,3 +1,18 @@
+<?php
+// Call direction: icon, colour and label (see CdrCallAnalyzer).
+$dir_meta = [
+    CdrCallAnalyzer::INBOUND => ['fa-right-to-bracket', 'var(--success)', t('cdr_reports.dir_inbound')],
+    CdrCallAnalyzer::OUTBOUND => ['fa-right-from-bracket', 'var(--primary)', t('cdr_reports.dir_outbound')],
+    CdrCallAnalyzer::INTERNAL => ['fa-building', 'var(--text-muted)', t('cdr_reports.dir_internal')],
+    CdrCallAnalyzer::TRANSIT => ['fa-shuffle', 'var(--purple)', t('cdr_reports.dir_transit')],
+];
+$grouped_mode = ($view_mode ?? 'grouped') === 'grouped';
+$filter_url = function (array $override) {
+    $q = array_merge($_GET, $override);
+    unset($q['page']);
+    return '/cdr-reports?' . http_build_query(array_filter($q, fn($v) => $v !== '' && $v !== null));
+};
+?>
 <!-- Statistics Overview -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
     <div class="card u-mb-0">
@@ -24,6 +39,22 @@
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_recordings_desc'); ?></div>
     </div>
 </div>
+
+<?php if ($grouped_mode && $stat_total > 0): ?>
+<div class="u-flex-gap" style="flex-wrap: wrap; margin-bottom: 20px;">
+    <?php foreach ($dir_meta as $dk => [$dicon, $dcolor, $dlabel]): ?>
+        <a href="<?php echo htmlspecialchars($filter_url(['direction' => $direction_filter === $dk ? '' : $dk])); ?>"
+           class="card u-mb-0" style="flex: 1; min-width: 160px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; text-decoration: none; <?php echo $direction_filter === $dk ? 'outline: 2px solid ' . $dcolor . ';' : ''; ?>"
+           title="<?php echo htmlspecialchars(t('cdr_reports.dir_filter_tooltip')); ?>">
+            <i class="fas <?php echo $dicon; ?>" style="font-size: 20px; color: <?php echo $dcolor; ?>;"></i>
+            <div>
+                <div style="font-size: 20px; font-weight: 800; color: var(--text-main);"><?php echo (int) $stat_directions[$dk]; ?></div>
+                <div class="u-muted u-fs-12"><?php echo $dlabel; ?></div>
+            </div>
+        </a>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <div class="card">
     <div class="card-header">
@@ -88,6 +119,23 @@
             <option value="sip" <?php echo ($device_filter ?? '') === 'sip' ? 'selected' : ''; ?>><?php echo t('cdr_reports.device_sip'); ?></option>
         </select>
 
+        <?php if ($grouped_mode): ?>
+        <select name="direction" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
+            <option value=""><?php echo t('cdr_reports.all_directions'); ?></option>
+            <?php foreach ($dir_meta as $dk => [, , $dlabel]): ?>
+                <option value="<?php echo $dk; ?>" <?php echo $direction_filter === $dk ? 'selected' : ''; ?>><?php echo $dlabel; ?></option>
+            <?php endforeach; ?>
+        </select>
+        <?php if (!empty($trunks)): ?>
+        <select name="trunk" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
+            <option value=""><?php echo t('cdr_reports.all_trunks'); ?></option>
+            <?php foreach ($trunks as $tn => $tt): ?>
+                <option value="<?php echo htmlspecialchars($tn); ?>" <?php echo $trunk_filter === $tn ? 'selected' : ''; ?>><?php echo htmlspecialchars($tt); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <?php endif; ?>
+        <?php endif; ?>
+
         <select name="view_mode" class="form-control form-control-sm u-fw-600 u-w-auto" onchange="this.form.submit()">
             <option value="grouped" <?php echo ($view_mode ?? 'grouped') === 'grouped' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_grouped'); ?></option>
             <option value="raw" <?php echo ($view_mode ?? 'grouped') === 'raw' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_raw'); ?></option>
@@ -100,7 +148,7 @@
         <input type="hidden" name="boyut" value="<?php echo (int)$sayfa_boyutu; ?>">
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('cdr_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
-        <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || ($view_mode ?? 'grouped') !== 'grouped' || $date_filter !== 'today'): ?>
+        <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || !empty($direction_filter) || !empty($trunk_filter) || ($view_mode ?? 'grouped') !== 'grouped' || $date_filter !== 'today'): ?>
             <a href="/cdr-reports" class="btn btn-secondary btn-sm" title="<?php echo t('cdr_reports.reset_tooltip'); ?>"><i class="fas fa-undo"></i></a>
         <?php endif; ?>
     </form>
@@ -118,10 +166,10 @@
                 <tr>
                     <th class="col-hide-mobile"><?php echo t('cdr_reports.col_id'); ?></th>
                     <th><?php echo t('cdr_reports.col_datetime'); ?></th>
+                    <th><?php echo t('cdr_reports.col_direction'); ?></th>
                     <th><?php echo t('cdr_reports.col_caller'); ?></th>
-                    <th><?php echo t('cdr_reports.col_route'); ?></th>
                     <th><?php echo t('cdr_reports.col_callee'); ?></th>
-                    <th><?php echo t('cdr_reports.col_device'); ?></th>
+                    <th><?php echo t('cdr_reports.col_answered_by'); ?></th>
                     <th><?php echo t('cdr_reports.col_duration'); ?></th>
                     <th><?php echo t('cdr_reports.col_status'); ?></th>
                     <th><?php echo t('cdr_reports.col_note'); ?></th>
@@ -164,7 +212,8 @@
                     ?>
                         <tr>
                             <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">
-                                <?php if (!empty($c['legs']) && count($c['legs']) > 1): ?>
+                                <?php $show_journey = (!empty($c['legs']) && count($c['legs']) > 1) || count($c['flow']['path'] ?? []) > 2; ?>
+                                <?php if ($show_journey): ?>
                                     <button type="button" class="btn btn-outline-primary btn-sm journey-toggle-btn" id="journey-btn-<?php echo $c['id']; ?>" onclick="toggleCallJourney('<?php echo $c['id']; ?>')" style="padding: 2px 7px; font-size: 11px; margin-right: 5px; border-radius: 6px; font-weight: 700; line-height: 1.2;" title="<?php echo t('cdr_reports.journey_title'); ?>">
                                         <i class="fas fa-route"></i> <?php echo count($c['legs']); ?> <i class="fas fa-chevron-down journey-icon" style="font-size: 9px; transition: transform 0.2s;"></i>
                                     </button>
@@ -174,43 +223,61 @@
                             <td style="font-weight: 600; white-space: nowrap;">
                                 <?php echo date('d.m.Y H:i:s', strtotime($c['start_time'])); ?>
                             </td>
-                            <td style="font-weight: 700; color: var(--primary);">
-                                <i class="fas fa-phone-alt" style="font-size: 11px; margin-right: 4px; opacity: 0.7;"></i>
-                                <?php echo htmlspecialchars($c['caller_num']); ?>
-                            </td>
-                            <td>
-                                <span class="sound-badge" style="background: rgba(0,0,0,0.04);">
-                                    <?php echo htmlspecialchars(!empty($c['queue_name']) ? $c['queue_name'] : t('cdr_reports.general_route')); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if (!empty($c['agent_extension'])): ?>
-                                    <strong><?php echo htmlspecialchars($c['agent_extension']); ?></strong>
-                                    <?php if (!empty($c['agent_name'])): ?>
-                                        <small style="color: var(--text-muted); display: block; font-size: 11px;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
+                            <?php
+                                $f = $c['flow'] ?? null;
+                                $dev_icons = ['mobil' => 'fa-mobile-alt', 'webrtc' => 'fa-desktop', 'sip' => 'fa-phone-alt'];
+                                $dev_labels = ['mobil' => t('cdr_reports.device_mobile'), 'webrtc' => t('cdr_reports.device_webrtc'), 'sip' => t('cdr_reports.device_sip')];
+                                $chip = function (string $icon, string $text, string $title) {
+                                    return '<span class="badge" title="' . htmlspecialchars($title) . '" style="background: rgba(100,116,139,0.12); color: var(--text-main); border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-top: 3px;"><i class="fas ' . $icon . '"></i> ' . htmlspecialchars($text) . '</span>';
+                                };
+                            ?>
+                            <td style="white-space: nowrap;">
+                                <?php if ($f): [$dicon, $dcolor, $dlabel] = $dir_meta[$f['direction']]; ?>
+                                    <span style="color: <?php echo $dcolor; ?>; font-weight: 700; font-size: 12px;"><i class="fas <?php echo $dicon; ?>"></i> <?php echo $dlabel; ?></span>
+                                    <?php if ($f['transferred']): ?>
+                                        <div><span class="badge badge-purple u-fs-10" style="margin-top: 3px;"><i class="fas fa-share"></i> <?php echo t('cdr_reports.transferred'); ?></span></div>
                                     <?php endif; ?>
                                 <?php else: ?>
+                                    <span class="u-muted u-fs-12">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div style="font-weight: 700; color: var(--primary);"><?php echo htmlspecialchars($f['caller_number'] ?? $c['caller_num']); ?></div>
+                                <?php if (!empty($f['caller_name'])): ?>
+                                    <small class="u-muted" style="display: block; font-size: 11px;"><?php echo htmlspecialchars($f['caller_name']); ?></small>
+                                <?php endif; ?>
+                                <?php if (!empty($f['in_trunk'])): ?>
+                                    <?php echo $chip('fa-right-to-bracket', $f['in_trunk_title'], t('cdr_reports.in_trunk')); ?>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php $dialed = $f['dialed_number'] ?? ''; ?>
+                                <?php if ($dialed !== ''): ?>
+                                    <div style="font-weight: 700;"><?php echo htmlspecialchars($dialed); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($c['route'] ?? $c['queue_name'] ?? '')): ?>
+                                    <small class="u-muted" style="display: block; font-size: 11px;"><i class="fas fa-signs-post"></i> <?php echo htmlspecialchars($c['route'] ?? $c['queue_name']); ?></small>
+                                <?php endif; ?>
+                                <?php if (!empty($f['out_trunk'])): ?>
+                                    <?php echo $chip('fa-right-from-bracket', $f['out_trunk_title'] . ($f['out_number'] !== '' && $f['out_number'] !== $dialed ? ' → ' . $f['out_number'] : ''), t('cdr_reports.out_trunk')); ?>
+                                <?php endif; ?>
+                                <?php if ($dialed === '' && empty($f['out_trunk']) && empty($c['route'] ?? $c['queue_name'] ?? '')): ?>
                                     <span class="u-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php
-                                    $dev = $c['device_type'] ?? '';
-                                    if ($dev === 'mobil'):
-                                ?>
-                                    <span class="badge" style="background: rgba(13, 202, 240, 0.15); color: #087990; border: 1px solid rgba(13, 202, 240, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fas fa-mobile-alt"></i> <?php echo t('cdr_reports.device_mobile'); ?>
-                                    </span>
-                                <?php elseif ($dev === 'webrtc'): ?>
-                                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fas fa-desktop"></i> <?php echo t('cdr_reports.device_webrtc'); ?>
-                                    </span>
-                                <?php elseif ($dev === 'sip'): ?>
-                                    <span class="badge" style="background: rgba(100, 116, 139, 0.15); color: #475569; border: 1px solid rgba(100, 116, 139, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fas fa-phone-alt"></i> <?php echo t('cdr_reports.device_sip'); ?>
-                                    </span>
+                                <?php if (!empty($c['agent_extension'])): ?>
+                                    <strong><?php echo htmlspecialchars($c['agent_extension']); ?></strong>
+                                    <?php $dev = $c['device_type'] ?? ''; if (isset($dev_icons[$dev])): ?>
+                                        <i class="fas <?php echo $dev_icons[$dev]; ?> u-muted" style="font-size: 11px; margin-left: 4px;" title="<?php echo htmlspecialchars($dev_labels[$dev]); ?>"></i>
+                                    <?php endif; ?>
+                                    <?php if (!empty($c['agent_name'])): ?>
+                                        <small style="color: var(--text-muted); display: block; font-size: 11px;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
+                                    <?php endif; ?>
+                                <?php elseif ($f && $f['direction'] === CdrCallAnalyzer::TRANSIT && $c['status'] === 'ANSWERED'): ?>
+                                    <span class="u-fs-12"><i class="fas fa-right-from-bracket u-muted"></i> <?php echo htmlspecialchars(t('cdr_reports.answered_external')); ?></span>
                                 <?php else: ?>
-                                    <span class="u-muted u-fs-12">-</span>
+                                    <span class="u-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <?php
@@ -286,7 +353,7 @@
                                 <?php endif; ?>
                             </td>
                         </tr>
-                        <?php if (!empty($c['legs']) && count($c['legs']) > 1): ?>
+                        <?php if ($show_journey): ?>
                             <tr id="journey-row-<?php echo $c['id']; ?>" class="cdr-journey-row" style="display: none;">
                                 <td colspan="10" style="padding: 14px 20px; background: rgba(0, 242, 254, 0.02); border-bottom: 2px solid var(--border-color);">
                                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
@@ -307,6 +374,23 @@
                                                 <span><?php echo t('cdr_reports.journey_total'); ?>: <strong class="u-primary"><?php echo sprintf('%02d:%02d', intdiv($dur, 60), $dur % 60); ?></strong></span>
                                             </div>
                                         </div>
+
+                                        <?php if (!empty($c['flow']['path'])): ?>
+                                        <!-- Call path: origin, then everyone who answered -->
+                                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                                            <?php foreach ($c['flow']['path'] as $pi => $node):
+                                                $nicon = $node['kind'] === 'trunk' ? 'fa-tower-broadcast' : ($node['kind'] === 'ext' ? 'fa-user' : 'fa-hashtag');
+                                                $ntext = $node['kind'] === 'trunk'
+                                                    ? $node['label'] . ($node['number'] !== '' ? ': ' . $node['number'] : '')
+                                                    : $node['id'] . ($node['label'] !== '' ? ' ' . $node['label'] : '');
+                                            ?>
+                                                <?php if ($pi > 0): ?><i class="fas fa-arrow-right-long u-muted" style="font-size: 11px;"></i><?php endif; ?>
+                                                <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-input); <?php echo $node['answered'] ? '' : 'opacity: 0.6; border-style: dashed;'; ?>">
+                                                    <i class="fas <?php echo $nicon; ?>" style="color: var(--primary); font-size: 11px;"></i> <?php echo htmlspecialchars($ntext); ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
 
                                         <!-- Vertical Timeline Steps -->
                                         <div style="position: relative; padding-left: 24px; margin-left: 8px; border-left: 2px dashed var(--border-color);">

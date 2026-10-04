@@ -59,6 +59,12 @@ class CdrReportController extends BaseController
         $agent_filter = trim($_GET['agent'] ?? '');
         $device_filter = trim($_GET['device'] ?? '');
         $search_query = trim($_GET['search'] ?? '');
+        $direction_filter = trim($_GET['direction'] ?? '');
+        $trunk_filter = trim($_GET['trunk'] ?? '');
+        $trunks = CdrReportRepository::trunkTitles();
+        if (!isset($trunks[$trunk_filter])) {
+            $trunk_filter = '';
+        }
 
         $sayfa = max(1, intval($_GET['page'] ?? 1));
         $sayfa_boyutu = View::sayfaBoyutu(CdrReportRepository::SAYFA_BOYUTU);
@@ -68,13 +74,13 @@ class CdrReportController extends BaseController
             $view_mode = 'grouped';
         }
 
-        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter, $view_mode);
+        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
         // Ozet TUM eslesen kayitlar uzerinden, veritabaninda hesaplaniyor.
         // Eskiden PHP'de satir satir donuluyordu; sayfalamayla birlikte bu
         // yalnizca goruntulenen sayfayi kapsar ve ozet yanlis olurdu. Ayrica
         // her satir icin file_exists() cagriliyordu.
-        $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode);
+        $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
         $stat_total            = $ozet['toplam'];
         $stat_answered         = $ozet['cevaplanan'];
@@ -106,6 +112,15 @@ class CdrReportController extends BaseController
             'agent_filter' => $agent_filter,
             'device_filter' => $device_filter,
             'search_query' => $search_query,
+            'direction_filter' => $direction_filter,
+            'trunk_filter' => $trunk_filter,
+            'trunks' => $trunks,
+            'stat_directions' => [
+                CdrCallAnalyzer::INBOUND => $ozet['gelen'] ?? 0,
+                CdrCallAnalyzer::OUTBOUND => $ozet['giden'] ?? 0,
+                CdrCallAnalyzer::INTERNAL => $ozet['dahili'] ?? 0,
+                CdrCallAnalyzer::TRANSIT => $ozet['transit'] ?? 0,
+            ],
             'view_mode' => $view_mode,
             'cdrs' => $cdrs,
             'stat_total_ring' => $stat_total_ring,
