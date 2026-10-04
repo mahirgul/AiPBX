@@ -129,7 +129,6 @@ $group_slugs = RoleRepository::groupSlugs();
                         <thead>
                             <tr>
                                 <th><?php echo t('roles.col_module'); ?></th>
-                                <th class="col-hide-mobile"><?php echo t('roles.col_group'); ?></th>
                                 <th class="u-text-center"><?php echo t('roles.col_perm_view'); ?></th>
                                 <th class="u-text-center"><?php echo t('roles.col_perm_access'); ?></th>
                                 <th class="u-text-center"><?php echo t('roles.col_perm_edit'); ?></th>
@@ -145,6 +144,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 'PBX Yönetimi'     => 'fas fa-server',
                                 'Yönetim'          => 'fas fa-cog',
                                 'Güvenlik'         => 'fas fa-shield-alt',
+                                'Entegrasyonlar'   => 'fas fa-puzzle-piece',
                                 'Faks Sistemi'     => 'fas fa-fax',
                                 'Çağrı Merkezi'    => 'fas fa-headset',
                             ];
@@ -154,6 +154,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 'PBX Yönetimi'     => '#8b5cf6',
                                 'Yönetim'          => 'var(--warning)',
                                 'Güvenlik'         => 'var(--danger)',
+                                'Entegrasyonlar'   => 'var(--purple)',
                                 'Faks Sistemi'     => 'var(--teal)',
                                 'Çağrı Merkezi'    => 'var(--success)',
                             ];
@@ -168,14 +169,11 @@ $group_slugs = RoleRepository::groupSlugs();
                                     $color = $group_colors[$group_name] ?? 'var(--primary)';
                             ?>
                                 <tr class="perm-group-header-row" style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
-                                    <td colspan="6" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
+                                    <td colspan="5" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
                                         <div class="u-flex-between">
                                             <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                                                 <i class="<?php echo $icon; ?>" style="color: <?php echo $color; ?>; font-size: 13px;"></i>
                                                 <span><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?></span>
-                                            </span>
-                                            <span style="font-size: 11px; font-weight: 600; color: <?php echo $color; ?>; background: rgba(255, 255, 255, 0.04); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
-                                                <?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?>
                                             </span>
                                         </div>
                                     </td>
@@ -186,21 +184,19 @@ $group_slugs = RoleRepository::groupSlugs();
                                         <strong style="color: var(--text-main);"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
                                         <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
                                     </td>
-                                    <td class="col-hide-mobile">
-                                        <span class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-size: 11px; border: 1px solid var(--border-color); font-weight: 500;"><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $m_info['group'])); ?></span>
-                                    </td>
-                                    <td class="u-text-center">
-                                        <input type="checkbox" name="perms[<?php echo $m_key; ?>][view]" value="1" class="perm-cb perm-view" id="p_<?php echo $m_key; ?>_view">
-                                    </td>
-                                    <td class="u-text-center">
-                                        <input type="checkbox" name="perms[<?php echo $m_key; ?>][access]" value="1" class="perm-cb perm-access" id="p_<?php echo $m_key; ?>_access">
-                                    </td>
-                                    <td class="u-text-center">
-                                        <input type="checkbox" name="perms[<?php echo $m_key; ?>][edit]" value="1" class="perm-cb perm-edit" id="p_<?php echo $m_key; ?>_edit">
-                                    </td>
-                                    <td class="u-text-center">
-                                        <input type="checkbox" name="perms[<?php echo $m_key; ?>][delete]" value="1" class="perm-cb perm-delete" id="p_<?php echo $m_key; ?>_delete">
-                                    </td>
+                                    <?php if (!empty($m_info['admin_only'])): ?>
+                                        <td colspan="4" class="u-text-center u-muted u-fs-12" title="<?php echo htmlspecialchars(t('roles.admin_only_hint')); ?>">
+                                            <i class="fas fa-lock"></i> <?php echo t('roles.admin_only'); ?>
+                                        </td>
+                                    <?php else: foreach (RoleRepository::ALL_ACTIONS as $action): ?>
+                                        <td class="u-text-center">
+                                            <?php if (in_array($action, $m_info['actions'], true)): ?>
+                                                <input type="checkbox" name="perms[<?php echo $m_key; ?>][<?php echo $action; ?>]" value="1" class="perm-cb perm-<?php echo $action; ?>" id="p_<?php echo $m_key; ?>_<?php echo $action; ?>">
+                                            <?php else: ?>
+                                                <span class="u-muted" title="<?php echo htmlspecialchars(t('roles.action_not_used')); ?>">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endforeach; endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -215,5 +211,7 @@ $group_slugs = RoleRepository::groupSlugs();
 
 <script>
     window.ALL_PERMISSIONS = <?php echo json_encode($all_permissions); ?>;
+    // Modules whose edit/delete only admin may have (RoleRepository::modulesDefinition()).
+    window.ADMIN_ONLY_EDIT_MODULES = <?php echo json_encode(array_keys(array_filter($modules_definition, fn($m) => !empty($m['admin_only_edit'])))); ?>;
 </script>
 <script src="<?php echo asset('/assets/js/roles.js'); ?>"></script>
