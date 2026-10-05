@@ -16,7 +16,7 @@ function __syncInboundDialplanBody() {
     $conf .= "; ==========================================================\n\n";
 
     // ------------------------------------------------------------------
-    // Dış Hat Bazlı Gelen Çağrı Karşılama ve DID Normalizasyonu
+    // Per-trunk inbound call handling and DID normalization
     // ------------------------------------------------------------------
     if (!empty($trunks)) {
         foreach ($trunks as $t) {
@@ -28,14 +28,14 @@ function __syncInboundDialplanBody() {
             $route_group = max(1, intval($t['outbound_route_group'] ?? 1));
             $is_kapanma_tonu = (($t['context'] ?? '') === 'from-trunk-kapanma-tonu');
 
-            $conf .= "; --- Trunk Girişi: {$t_name} ({$title}) ---\n";
+            $conf .= "; --- Trunk inbound: {$t_name} ({$title}) ---\n";
             $conf .= "[from-trunk-{$t_name}]\n";
             $conf .= "exten => _.,1,NoOp(Gelen Dis Hat Cagrisi [{$t_name}] - Arayan: \${CALLERID(num)} - Hedef: \${EXTEN})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
 
             if ($is_kapanma_tonu) {
-                // Kapanma tonu algılayıcısı (in-band disconnect supervision)
+                // Hang-up tone detector (in-band disconnect supervision)
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
 
@@ -49,7 +49,7 @@ function __syncInboundDialplanBody() {
             $conf .= " same => n,Set(CDR(did)=\${NORMALIZED_DID})\n";
             $conf .= " same => n,Goto(from-trunk-{$t_name}-route,\${NORMALIZED_DID},1)\n\n";
 
-            // DID olmadan (s) gelen çağrılar için
+            // For calls arriving without a DID (s)
             $conf .= "exten => s,1,NoOp(DID olmadan gelen cagri [{$t_name}] - Arayan: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
@@ -59,25 +59,25 @@ function __syncInboundDialplanBody() {
             $conf .= " same => n,Set(CDR(did)=s)\n";
             $conf .= " same => n,Goto(from-trunk-{$t_name}-route,s,1)\n\n";
 
-            // Yönlendirme bağlamı (Route Context)
+            // Routing context (route context)
             $conf .= "[from-trunk-{$t_name}-route]\n";
-            $conf .= "; 1. Tanimli Gelen Rotalar (DID kurallari)\n";
+            $conf .= "; 1. Defined inbound routes (DID rules)\n";
             $conf .= "include => from-trunk-inbound\n";
 
             if ($allow_outbound) {
-                $conf .= "; 2. Trunk-to-Trunk / Transit: Giden Rotalar (Grup {$route_group})\n";
+                $conf .= "; 2. Trunk-to-trunk / transit: outbound routes (group {$route_group})\n";
                 $conf .= "include => from-internal-outbound-{$route_group}\n";
-                $conf .= "; 3. Dahili Aboneler & Dahili Numaralar\n";
+                $conf .= "; 3. Extensions & internal numbers\n";
                 $conf .= "include => from-internal-pbx-ortak\n";
             }
 
-            $conf .= "; 4. Eslenmeyen rota kapanisi\n";
+            $conf .= "; 4. Closing for unmatched routes\n";
             $conf .= "include => from-trunk-notfound\n\n";
         }
     }
 
     // ------------------------------------------------------------------
-    // Genel Gelen Rotalar (DID Eşleşmeleri)
+    // General inbound routes (DID matches)
     // ------------------------------------------------------------------
     $conf .= "[from-trunk-inbound]\n\n";
 
@@ -93,7 +93,7 @@ function __syncInboundDialplanBody() {
                 $lang = preg_replace('/[^a-zA-Z_]/', '', $d['language']);
                 $conf .= " same => n,Set(CHANNEL(language)={$lang})\n";
             }
-            // Zorunlu çağrı kaydı.
+            // Mandatory call recording.
             if (!empty($d['record_call'])) {
                 $rec = "/var/spool/asterisk/monitor/inbound_"
                      . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$num}.wav";
@@ -109,7 +109,7 @@ function __syncInboundDialplanBody() {
     }
 
     // ------------------------------------------------------------------
-    // Eşleşmeyen çağrılar için kapanış bağlamı
+    // Closing context for unmatched calls
     // ------------------------------------------------------------------
     $conf .= "[from-trunk-notfound]\n";
     $conf .= "exten => _.,1,NoOp(Eslesen gelen rota bulunamadi - DID: \${EXTEN})\n";
@@ -123,9 +123,9 @@ function __syncInboundDialplanBody() {
     $conf .= " same => n,Hangup(1)\n\n";
 
     // ------------------------------------------------------------------
-    // Kapanma tonu algılayıcı sarmalayıcısı (Geriye uyumluluk için)
+    // Hang-up tone detector wrapper (for backward compatibility)
     // ------------------------------------------------------------------
-    $conf .= "; --- Kapanma tonu algilayan gelen rota sarmalayicisi ---\n";
+    $conf .= "; --- Inbound route wrapper with hang-up tone detection ---\n";
     $conf .= "[from-trunk-kapanma-tonu]\n";
     $conf .= "exten => _X.,1,NoOp(Kapanma tonu algilayicisi devrede - DID \${EXTEN})\n";
     $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";

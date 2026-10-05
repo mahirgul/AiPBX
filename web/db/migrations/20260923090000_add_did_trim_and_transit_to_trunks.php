@@ -5,10 +5,10 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * SIP Trunk'lara gelen DID kırpma ve trunk-to-trunk (transit) geçiş ayarları ekler:
- * - did_trim_digits: Gelen DID sondaki hane sayısı (0 = kırpma yok, örn: 4 => 03704187840 -> 7840)
- * - allow_outbound_routing: Trunk-to-trunk / Giden rotalara geçiş izni (transit çağrı)
- * - outbound_route_group: Transit geçişte kullanılacak giden rota grubu (varsayılan: 1)
+ * Adds inbound DID trimming and trunk-to-trunk (transit) settings to SIP trunks:
+ * - did_trim_digits: number of trailing digits kept of the incoming DID (0 = no trimming, e.g. 4 => 03704187840 -> 7840)
+ * - allow_outbound_routing: allows trunk-to-trunk / passing on to outbound routes (transit calls)
+ * - outbound_route_group: outbound route group used for transit (default: 1)
  */
 final class AddDidTrimAndTransitToTrunks extends AbstractMigration
 {

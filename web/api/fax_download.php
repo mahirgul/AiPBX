@@ -12,9 +12,9 @@ if ($fax_id <= 0) {
     die('Invalid Fax ID');
 }
 
-// Sahiplik kontrolü aşağıda zaten var (IDOR yok) ama bu, o modülün rolden
-// tamamen kaldırılmış olması durumunu yakalamıyordu — requireLogin() dışında
-// hiçbir modül-seviyesi RBAC kontrolü yoktu (2026-08-21 denetiminde bulundu).
+// The ownership check below already exists (no IDOR), but it did not catch
+// the case where the module was removed from the role entirely — there was no
+// module-level RBAC check apart from requireLogin() (found in the 2026-08-21 audit).
 $fax_module_key = ($type === 'sent') ? 'fax_sent' : 'fax_inbox';
 requireModulePermission($fax_module_key, 'view');
 
@@ -62,7 +62,7 @@ if ($type === 'sent') {
 $file_path = realpath($fax['pdf_path']);
 $allowed_dir = realpath(FAX_STORAGE_PATH);
 
-// Sonda '/': yalnızca önek karşılaştırması "/var/www/faxes2/..." gibi kardeş dizinleri de kabul ederdi.
+// Trailing '/': a plain prefix comparison would also accept sibling directories such as "/var/www/faxes2/...".
 if (!$file_path || !$allowed_dir || strpos($file_path, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file_path)) {
     http_response_code(404);
     die('Faks dosyası sunucuda bulunamadı veya erişim engellendi');

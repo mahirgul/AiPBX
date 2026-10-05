@@ -1,8 +1,8 @@
 name: Web & Chat CI
 
-# Web portalı (PHP) ve sohbet servisi (Go) için her gönderimde çalışan kontroller.
-# 2026-09-27'ye kadar yalnızca Android/iOS derleniyordu; konferans/çalma grubu
-# kaydını ve push ayarlarını bozan hatalar bu yüzden fark edilmemişti.
+# Checks that run on every push for the web portal (PHP) and the chat service (Go).
+# Until 2026-09-27 only Android/iOS were built; that is why bugs breaking the
+# conference/ring group saves and the push settings went unnoticed.
 
 on:
   push:
@@ -45,12 +45,12 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=20
 
     env:
-      # Testler yalnızca asterisk_test üzerinde koşar (tests/bootstrap.php kilidi).
+      # Tests run only against asterisk_test (the tests/bootstrap.php lock).
       DB_HOST: 127.0.0.1
       DB_NAME: asterisk_test
       DB_USER: aipbx_test
       DB_PASS: ci-test
-      # Hiçbir adım gerçek bir Asterisk'e komut göndermez.
+      # No step sends a command to a real Asterisk.
       AIPBX_NO_ASTERISK: '1'
 
     steps:
@@ -83,15 +83,15 @@ jobs:
             ('fax_user', 'Faks', 'Faks', 1),
             ('cc_manager', 'Kuyruk Yönetici', 'Kuyruk Yönetici', 1),
             ('user', 'Kullanıcı', 'Kullanıcı', 1);"
-          # bin/smoke.php sayfaları user_id=1 oturumuyla render eder (sunucularda
-          # ilk admin); dahili gerektiren sayfalar (Dahilim, sohbet) için dahilisi var.
+          # bin/smoke.php renders pages with a user_id=1 session (the first admin
+          # on servers); it has an extension for the pages that need one (My Phone, chat).
           mysql -h "$DB_HOST" -u root -pci-root "$DB_NAME" -e "INSERT IGNORE INTO sys_users
             (id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active)
             VALUES (1, 'admin', '', 'CI Admin', 'admin@example.com', 'admin', '1000', 'sip', 'ci-not-a-secret', 1);"
 
       - name: Unit tests
-        # mail() gerçek e-posta göndermesin (CI'da MTA yok); davet testleri yalnızca
-        # gönderimin başarılı sayılmasını bekliyor.
+        # mail() must not send real email (no MTA in CI); the invitation tests only
+        # expect the sending to count as successful.
         run: php -d sendmail_path=/bin/true vendor/bin/phpunit --no-coverage
 
       - name: Smoke (every route in tr/en, RBAC, conventions, lint)

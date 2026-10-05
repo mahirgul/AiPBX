@@ -1,6 +1,6 @@
 <?php
 /**
- * Fax Mail Settings (Faks Ayarları) Service
+ * Fax mail settings service
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 
@@ -31,14 +31,15 @@ class FaxMailSettingsService {
             $stmt->execute([$k, $v]);
         }
 
-        // Diğer alanların çoğu (mail ayarları, deneme/bekleme süreleri) gerçekten
-        // Asterisk config'ini etkilemiyor — fax_send.php/script'ler sys_settings'i
-        // her seferinde canlı okuyor. AMA fax_header_info + fax_local_station_id
-        // istisna: SyncDialplan.php bunları statik extensions_general.conf'a gömüyor
-        // (FAXOPT(headerinfo)/FAXOPT(localstationid)) — bu iki alan markPendingSync()
-        // ÇAĞIRMADIĞI için kaydedilen değer hiçbir zaman Asterisk'e yansımıyordu,
-        // "Uygula" listesinde de hiç görünmüyordu (2026-08-31 denetiminde bulundu,
-        // kullanıcının TSID/başlık değişikliği isteğiyle fark edildi).
+        // Most other fields (mail settings, retry/wait times) really do not
+        // affect the Asterisk config — fax_send.php/the scripts read
+        // sys_settings live every time. BUT fax_header_info +
+        // fax_local_station_id are the exception: SyncDialplan.php embeds them
+        // in the static extensions_general.conf (FAXOPT(headerinfo)/
+        // FAXOPT(localstationid)) — since these two fields did NOT CALL
+        // markPendingSync(), the saved value never reached Asterisk and never
+        // showed up in the "Apply" list either (found in the 2026-08-31 audit,
+        // noticed through the user's TSID/header change request).
         markPendingSync('general_dialplan', 'system_setting', 'fax', 'Faks Başlığı / TSID Ayarları', 'update', $_SESSION['user_id'] ?? null);
         writeAuditLog(null, 'fax_mail_settings', 'general', 'Faks Mail Ayarları güncellendi', 'update', $_SESSION['user_id'] ?? null);
 

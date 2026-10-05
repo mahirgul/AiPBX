@@ -15,8 +15,8 @@ type Config struct {
 	SecretKey    string
 	UploadDir    string
 	PortalDomain string
-	// Timezone, portalla aynı TIMEZONE ayarı (ör. Europe/Istanbul) — mesaj
-	// saatleri bu dilimde gösterilir. Veritabanında her zaman UTC saklanır.
+	// Timezone, the same TIMEZONE setting as the portal (e.g. Europe/Istanbul) —
+	// message times are shown in this zone. The database always stores UTC.
 	Timezone string
 }
 

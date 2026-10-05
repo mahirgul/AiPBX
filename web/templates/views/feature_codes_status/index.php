@@ -21,7 +21,7 @@
                 <?php else: ?>
                     <?php foreach ($users as $u): ?>
                         <tr>
-                            <td style="font-weight: 700;"><?php echo htmlspecialchars($u['extension']); ?></td>
+                            <td class="u-fw-700"><?php echo htmlspecialchars($u['extension']); ?></td>
                             <td><?php echo htmlspecialchars($u['full_name']); ?></td>
                             <td>
                                 <?php if (!empty($u['pickup_group'])): ?>
@@ -42,11 +42,11 @@
                                     $hasAny = false;
                                     if (!empty($u['call_forward_number'])) {
                                         $hasAny = true;
-                                        echo '<span class="badge badge-warning" title="' . htmlspecialchars(t('my_phone.cf_always_label')) . '" style="margin-right: 4px;"><i class="fas fa-forward"></i> ' . htmlspecialchars($u['call_forward_number']) . '</span>';
+                                        echo '<span class="badge badge-warning u-mr-4" title="' . htmlspecialchars(t('my_phone.cf_always_label')) . '"><i class="fas fa-forward"></i> ' . htmlspecialchars($u['call_forward_number']) . '</span>';
                                     }
                                     if (!empty($u['cf_busy_number'])) {
                                         $hasAny = true;
-                                        echo '<span class="badge badge-info" title="' . htmlspecialchars(t('my_phone.cf_busy_label')) . '" style="margin-right: 4px;"><i class="fas fa-phone-slash"></i> ' . htmlspecialchars($u['cf_busy_number']) . '</span>';
+                                        echo '<span class="badge badge-info u-mr-4" title="' . htmlspecialchars(t('my_phone.cf_busy_label')) . '"><i class="fas fa-phone-slash"></i> ' . htmlspecialchars($u['cf_busy_number']) . '</span>';
                                     }
                                     if (!empty($u['cf_noanswer_number'])) {
                                         $hasAny = true;

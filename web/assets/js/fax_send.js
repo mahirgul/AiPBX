@@ -1,15 +1,15 @@
 /**
- * Faks Gönder - "PDF Yükle" / "Metin Yaz" Sekme Anahtarlama + WYSIWYG Editör
+ * Fax send - "Upload PDF" / "Write text" tab switching + WYSIWYG editor
  */
 (function () {
     var editorEl = document.getElementById('fax-text-editor');
     var quill = null;
 
     if (editorEl && typeof Quill !== 'undefined') {
-        // Font/boyut sınıf tabanlı (ql-font-x) değil STYLE tabanlı attributor'a
-        // geçiriliyor ki editör.root.innerHTML çıktısı kendi içinde taşınabilir
-        // olsun (Quill'in kendi CSS'ine bağımlı kalmadan, sunucudaki
-        // TextFaxHelper/mPDF doğrudan inline style'ları okuyor).
+        // Font/size switch to a STYLE-based attributor instead of class-based
+        // (ql-font-x) so the editor.root.innerHTML output is self-contained
+        // (without depending on Quill's own CSS; TextFaxHelper/mPDF on the
+        // server read the inline styles directly).
         var Font = Quill.import('attributors/style/font');
         Font.whitelist = ['dejavusans', 'dejavuserif', 'dejavusansmono'];
         Quill.register(Font, true);

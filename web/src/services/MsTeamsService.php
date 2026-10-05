@@ -5,7 +5,7 @@ require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
 class MsTeamsService
 {
     /**
-     * Direct Routing ayarlarını doğrular ve kaydeder.
+     * Validates and saves the Direct Routing settings.
      */
     public static function saveDirectRoutingSettings(array $post): array
     {
@@ -47,7 +47,7 @@ class MsTeamsService
     }
 
     /**
-     * Webhook bildirim ayarlarını doğrular ve kaydeder.
+     * Validates and saves the webhook notification settings.
      */
     public static function saveWebhookSettings(array $post): array
     {
@@ -85,7 +85,7 @@ class MsTeamsService
     }
 
     /**
-     * Microsoft Teams Webhook adresine test bildirimi gönderir.
+     * Sends a test notification to the Microsoft Teams webhook address.
      */
     public static function sendTestWebhook(string $webhookUrl): array
     {
@@ -157,7 +157,7 @@ class MsTeamsService
     }
 
     /**
-     * TLS Sertifikasının dosya varlığını, geçerliliğini ve kalan gün sayısını kontrol eder.
+     * Checks that the TLS certificate file exists, is valid, and how many days are left.
      */
     public static function inspectTlsCert(string $certPath): array
     {
@@ -222,7 +222,7 @@ class MsTeamsService
     }
 
     /**
-     * Microsoft 365 PowerShell yapılandırma scriptini dinamik üretir.
+     * Generates the Microsoft 365 PowerShell configuration script dynamically.
      */
     public static function generatePowerShellScript(array $settings, array $mappings): string
     {

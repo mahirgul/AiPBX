@@ -12,7 +12,7 @@
     <!-- Live Monitor: Queue Waiting Calls & Active Calls -->
     <div class="card" style="padding: 14px 18px; margin-bottom: 0;">
         <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
-            <!-- Bekleyen Çağrılar -->
+            <!-- Waiting calls -->
             <div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--warning); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                     <i class="fas fa-clock"></i> <?php echo t('cc_agent.waiting_calls'); ?> <span id="waiting-count-badge" class="badge badge-warning">0</span>
@@ -38,7 +38,7 @@
                 </div>
             </div>
 
-            <!-- Aktif Görüşmeler -->
+            <!-- Active calls -->
             <div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                     <i class="fas fa-phone-alt"></i> <?php echo t('cc_agent.active_calls'); ?> <span id="active-count-badge" class="badge badge-success">0</span>
@@ -70,7 +70,7 @@
     <!-- Agent CDR History Card -->
     <div class="card" style="padding: 14px 18px; margin-bottom: 0;">
         <div class="card-header" style="margin-bottom: 10px; padding: 0 0 10px 14px; border-bottom: 1px solid var(--border-color);">
-            <div class="card-title" style="font-size: 14px;"><i class="fas fa-history" style="color: var(--secondary);"></i> <?php echo t('cc_agent.recent_calls'); ?></div>
+            <div class="card-title u-fs-14"><i class="fas fa-history" style="color: var(--secondary);"></i> <?php echo t('cc_agent.recent_calls'); ?></div>
             <button class="btn btn-secondary btn-xs" onclick="loadCdrs()" title="<?php echo t('cc_agent.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></button>
         </div>
         <div class="table-responsive">
@@ -87,7 +87,7 @@
                 </thead>
                 <tbody id="agent-cdr-table">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        <td colspan="6" class="u-text-center u-muted u-p-20">
                             <?php echo t('cc_agent.loading_calls'); ?>
                         </td>
                     </tr>
@@ -98,7 +98,7 @@
 
 </div>
 
-<!-- Çağrı Notu Modal -->
+<!-- Call note modal -->
 <div class="modal-overlay" id="callNoteModal">
     <div class="modal-card" style="max-width: 480px;">
         <div class="modal-header">

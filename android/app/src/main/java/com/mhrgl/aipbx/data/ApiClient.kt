@@ -25,7 +25,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val refreshLock = Any()
 
-    // Sertifika doğrulaması PLATFORMA bırakılır — burada hiçbir baypas yok.
+    // Certificate validation is left to the PLATFORM — there is no bypass here.
     private val rawClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)

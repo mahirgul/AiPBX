@@ -15,17 +15,11 @@ class FaxInboxController extends BaseController
         $date_from = trim($_GET['date_from'] ?? '');
         $date_to = trim($_GET['date_to'] ?? '');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['delete_fax'])) {
-            if (!hasModulePermission('fax_inbox', 'delete')) {
-                $error = 'Faks silme yetkiniz bulunmamaktadır.';
-            } else {
-                $res = FaxInboxService::deleteFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_ext, $user_id);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'delete_fax' => fn() => hasModulePermission('fax_inbox', 'delete')
+                ? FaxInboxService::deleteFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_ext, $user_id)
+                : ['success' => false, 'error' => 'Faks silme yetkiniz bulunmamaktadır.'],
+        ]);
 
         $page = max(1, intval($_GET['page'] ?? 1));
         $per_page = View::sayfaBoyutu(50);
@@ -44,6 +38,6 @@ class FaxInboxController extends BaseController
             'total_count' => $result['total_count'],
             'total_pages' => $result['total_pages'],
             'faxes' => $result['faxes'],
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

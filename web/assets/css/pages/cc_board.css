@@ -1,0 +1,24 @@
+/* Page styles of templates/views/cc_board/index.php */
+
+.cc-board-val-compact {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+.cc-board-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+@media (max-width: 992px) {
+    .cc-board-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 576px) {
+    .cc-board-kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

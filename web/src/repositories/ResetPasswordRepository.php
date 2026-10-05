@@ -5,9 +5,9 @@ class ResetPasswordRepository extends BaseRepository
     protected static string $table = 'sys_users';
 
     /**
-     * Süresi geçmemiş tüm aday token'lar çekilip hash_equals() ile zaman-sabit
-     * karşılaştırılıyor — SQL WHERE eşleşmesi (önceki hali) sabit-zamanlı
-     * değildi. Önceden reset_password.php'nin içinde bağımsız bir fonksiyondu.
+     * All unexpired candidate tokens are fetched and compared in constant time
+     * with hash_equals() — the SQL WHERE match (the old version) was not
+     * constant-time. It used to be a standalone function inside reset_password.php.
      */
     public static function lookupResetUser(string $token): ?array
     {

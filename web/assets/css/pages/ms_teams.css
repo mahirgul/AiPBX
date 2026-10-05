@@ -1,0 +1,90 @@
+/* Page styles of templates/views/ms_teams/index.php */
+
+.teams-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--border-color, #e2e8f0);
+    padding: 0 20px;
+    background: var(--bg-card, #ffffff);
+    border-radius: 8px 8px 0 0;
+    overflow-x: auto;
+}
+.teams-tab-btn {
+    padding: 14px 18px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.teams-tab-btn:hover {
+    color: #6264a7;
+}
+.teams-tab-btn.active {
+    color: #6264a7;
+    border-bottom-color: #6264a7;
+}
+.teams-tab-pane {
+    display: none;
+    padding: 24px 20px;
+}
+.teams-tab-pane.active {
+    display: block;
+}
+.teams-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.badge-active {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+.badge-inactive {
+    background: rgba(148, 163, 184, 0.2);
+    color: #64748b;
+}
+.cert-card {
+    background: var(--bg-surface, #f8fafc);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 10px;
+}
+.code-box {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+    border: 1px solid #313244;
+}
+.mapping-table th, .mapping-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+}
+.btn-teams {
+    background: #6264a7;
+    color: #ffffff;
+    border: 1px solid #545794;
+}
+.btn-teams:hover {
+    background: #50528c;
+    color: #ffffff;
+}

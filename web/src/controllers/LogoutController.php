@@ -4,11 +4,11 @@ class LogoutController extends BaseController
 {
     public static function index(): void
     {
-        // session_destroy() tek başına sunucu tarafındaki oturum verisini siliyordu
-        // ama $_SESSION dizisini boşaltmıyordu ve istemci tarafındaki oturum
-        // çerezini açıkça geçersiz kılmıyordu — httponly/secure/samesite bayrakları
-        // sayesinde pratik risk düşüktü ama savunma-derinliği için standart çıkış
-        // deseni uygulanıyor (2026-08-21 denetiminde bulundu).
+        // session_destroy() alone deleted the server-side session data but did
+        // not empty the $_SESSION array and did not explicitly invalidate the
+        // session cookie on the client — thanks to the httponly/secure/samesite
+        // flags the practical risk was low, but the standard logout pattern is
+        // applied for defence in depth (found in the 2026-08-21 audit).
         $ext = $_SESSION['extension'] ?? '';
         if (!empty($ext)) {
             require_once __DIR__ . '/../queue_helper.php';
@@ -20,7 +20,7 @@ class LogoutController extends BaseController
                         QueueHelper::setMembership($ext, $qn, false);
                     }
                 }
-                // Statik temsilci web oturumunu kapatsa da kuyrukta kalır; molası da sürer.
+                // A static agent stays in the queue even after closing the web session; the pause continues too.
                 if (empty(QueueHelper::staticQueuesOf($ext))) {
                     $stmt_pause = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
                     $stmt_pause->execute([$ext]);

@@ -107,7 +107,7 @@ class VoicemailService {
                 throw new \Exception("Sesli mesaj bulunamadı.");
             }
             foreach ($files as $f) {
-                // Önceden hata yutuluyor ve silinemese de "silindi" deniyordu.
+                // The error used to be swallowed and "deleted" was reported even when it could not be deleted.
                 if (!@unlink($f)) {
                     throw new \Exception("Sesli mesaj silinemedi (dosya izni).");
                 }

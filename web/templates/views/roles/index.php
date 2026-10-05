@@ -46,7 +46,7 @@ $group_slugs = RoleRepository::groupSlugs();
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
                             <td class="col-hide-mobile"><code><?php echo htmlspecialchars($r['role_key']); ?></code></td>
                             <td>
-                                <strong style="color: var(--text-main); font-size: 14px;">
+                                <strong class="u-text-main u-fs-14">
                                     <?php echo htmlspecialchars($r['role_name']); ?>
                                 </strong>
                             </td>
@@ -104,13 +104,13 @@ $group_slugs = RoleRepository::groupSlugs();
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 24px;">
+                <div class="form-group u-mb-24">
                     <label class="form-label"><?php echo t('roles.field_description'); ?></label>
                     <input type="text" name="description" id="modal_description" class="form-control" placeholder="<?php echo t('roles.description_placeholder'); ?>">
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-color);">
-                    <h4 style="margin:0; font-size: 14px; font-weight: 700; color: var(--text-main);">
+                    <h4 class="u-m-0 u-fs-14 u-fw-700 u-text-main">
                         <i class="fas fa-list-check u-primary"></i> <?php echo t('roles.matrix_title'); ?>
                     </h4>
                     <div class="u-flex-gap">
@@ -125,7 +125,7 @@ $group_slugs = RoleRepository::groupSlugs();
 
                 <!-- Module Permission Table -->
                 <div class="table-responsive">
-                    <table class="data-table perm-matrix-table" data-no-dt="true" style="font-size: 13px;">
+                    <table class="data-table perm-matrix-table u-fs-13" data-no-dt="true">
                         <thead>
                             <tr>
                                 <th><?php echo t('roles.col_module'); ?></th>
@@ -183,7 +183,7 @@ $group_slugs = RoleRepository::groupSlugs();
                             <?php endif; ?>
                                 <tr class="perm-module-row">
                                     <td style="padding-left: 24px;">
-                                        <strong style="color: var(--text-main);"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
+                                        <strong class="u-text-main"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
                                         <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
                                     </td>
                                     <?php if (!empty($m_info['admin_only'])): ?>

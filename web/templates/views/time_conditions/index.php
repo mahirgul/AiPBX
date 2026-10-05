@@ -10,7 +10,7 @@
     </button>
 </div>
 
-<!-- TAB 1: Zaman Koşulları Listesi -->
+<!-- TAB 1: time condition list -->
 <div class="tc-tab-pane" id="tab-pane-tcs" style="display: block;">
     <div class="card">
         <div class="card-header">
@@ -114,7 +114,7 @@
     </div>
 </div>
 
-<!-- TAB 2: Zaman Grupları / Mesai Şablonları Listesi -->
+<!-- TAB 2: time groups / office-hours templates -->
 <div class="tc-tab-pane" id="tab-pane-tgs" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -240,7 +240,7 @@
 
                 <!-- Fallback General NoMatch Destination -->
                 <div style="background: rgba(239, 68, 68, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 16px;">
-                    <div style="font-weight: 700; color: var(--danger); font-size: 13px; margin-bottom: 8px;">
+                    <div class="u-fw-700 u-danger u-fs-13 u-mb-8">
                         <i class="fas fa-moon"></i> <?php echo t('tc.default_target_box'); ?>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">

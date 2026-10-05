@@ -1,13 +1,7 @@
-<?php /* Düzen: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
-    <style>
-        @media (max-width: 768px) {
-            .mobile-app-download {
-                display: block !important;
-            }
-        }
-    </style>
+<?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/login.css'); ?>">
     <div class="auth-card" style="max-width: 420px;">
-        <div style="text-align: center; margin-bottom: 24px;">
+        <div class="u-text-center u-mb-24">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
                 <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
                     <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
@@ -16,21 +10,17 @@
                 <?php endif; ?>
             </div>
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;"><?php echo htmlspecialchars($brand_sub); ?></p>
+            <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_sub); ?></p>
         </div>
 
-        <?php if ($error): ?>
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; text-align: center;">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
+        <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
         <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('login.field_username'); ?></label>
-                <div style="position: relative;">
+                <div class="u-relative">
                     <i class="fas fa-user" style="position: absolute; left: 16px; top: 15px; color: var(--text-muted);"></i>
                     <input type="text" name="username" class="form-control" style="padding-left: 44px;" required autofocus autocomplete="off">
                 </div>
@@ -38,7 +28,7 @@
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('login.field_password'); ?></label>
-                <div style="position: relative;">
+                <div class="u-relative">
                     <i class="fas fa-lock" style="position: absolute; left: 16px; top: 15px; color: var(--text-muted);"></i>
                     <input type="password" name="password" class="form-control" style="padding-left: 44px;" required>
                 </div>
@@ -48,7 +38,7 @@
             <div class="form-group" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px;">
                 <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span><?php echo t('login.security_check'); ?></span>
-                    <strong style="color: var(--primary); font-size: 16px;"><?php echo $num1; ?> + <?php echo $num2; ?> = ?</strong>
+                    <strong class="u-primary u-fs-16"><?php echo $num1; ?> + <?php echo $num2; ?> = ?</strong>
                 </label>
                 <input type="number" name="captcha_answer" class="form-control" placeholder="<?php echo t('login.captcha_placeholder'); ?>" required autocomplete="off">
             </div>
@@ -60,12 +50,12 @@
 
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;"><?php echo t('login.or_divider', 'VEYA'); ?></span>
+            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider', 'VEYA'); ?></span>
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
         </div>
 
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
-            <i class="fas fa-fingerprint" style="font-size: 16px;"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
+            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
         </button>
 
         <?php if (!empty($googleLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled())): ?>
@@ -102,123 +92,7 @@
     <script src="/assets/js/theme.js"></script>
     <script src="/assets/js/footer_notify.js"></script>
 
-    <script>
-        function base64urlToUint8Array(base64url) {
-            if (!base64url) return new Uint8Array(0);
-            if (base64url instanceof Uint8Array) return base64url;
-            if (base64url instanceof ArrayBuffer) return new Uint8Array(base64url);
-            let str = String(base64url).trim();
-            if (str.startsWith('=?BINARY?B?') && str.endsWith('?=')) {
-                str = str.substring(11, str.length - 2);
-            }
-            let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-            while (base64.length % 4) {
-                base64 += '=';
-            }
-            const raw = window.atob(base64);
-            const bytes = new Uint8Array(raw.length);
-            for (let i = 0; i < raw.length; i++) {
-                bytes[i] = raw.charCodeAt(i);
-            }
-            return bytes;
-        }
-
-        function arrayBufferToBase64(buffer) {
-            if (!buffer) return '';
-            if (typeof buffer === 'string') return buffer;
-            let binary = '';
-            const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
-        }
-
-        async function loginWithPasskey() {
-            if (!window.PublicKeyCredential) {
-                if (window.notify) {
-                    window.notify.warning("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
-                } else {
-                    alert("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
-                }
-                return;
-            }
-
-            const btn = document.getElementById('btnPasskeyLogin');
-            const origHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Doğrulanıyor...';
-
-            try {
-                const optRes = await fetch('/api/passkey.php?action=auth-options');
-                const optData = await optRes.json();
-                if (!optData.success) {
-                    throw new Error(optData.error || 'Passkey seçenekleri alınamadı.');
-                }
-
-                const getArgs = optData.options;
-                getArgs.challenge = base64urlToUint8Array(getArgs.challenge);
-
-                if (getArgs.allowCredentials && Array.isArray(getArgs.allowCredentials) && getArgs.allowCredentials.length > 0) {
-                    getArgs.allowCredentials.forEach(c => {
-                        c.id = base64urlToUint8Array(c.id);
-                    });
-                }
-
-                // IP adresi durumunda rpId W3C standardı gereği alan adı sayılmaz;
-                // tarayıcının hata vermemesi için rpId silinerek origin varsayılan alınır.
-                if (getArgs.rpId && /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(getArgs.rpId)) {
-                    delete getArgs.rpId;
-                }
-
-                const assertion = await navigator.credentials.get({ publicKey: getArgs });
-                if (!assertion) {
-                    throw new Error('Passkey doğrulaması iptal edildi.');
-                }
-
-                const payload = {
-                    action: 'auth-verify',
-                    id: (assertion.rawId ? arrayBufferToBase64(assertion.rawId) : '') || assertion.id,
-                    rawId: assertion.id,
-                    clientDataJSON: arrayBufferToBase64(assertion.response.clientDataJSON),
-                    authenticatorData: arrayBufferToBase64(assertion.response.authenticatorData),
-                    signature: arrayBufferToBase64(assertion.response.signature),
-                };
-
-                const verifyRes = await fetch('/api/passkey.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const verifyData = await verifyRes.json();
-
-                if (verifyData.success) {
-                    try {
-                        if (window.notify) window.notify.success("Passkey doğrulandı! Giriş yapılıyor...");
-                    } catch (e) {
-                        console.warn(e);
-                    }
-                    window.location.href = verifyData.redirect || '/dashboard';
-                } else {
-                    throw new Error(verifyData.error || 'Passkey doğrulanamadı.');
-                }
-            } catch (err) {
-                console.error(err);
-                try {
-                    if (window.notify) {
-                        window.notify.error(err.message || 'Passkey doğrulaması başarısız.');
-                    } else {
-                        alert(err.message || 'Passkey doğrulaması başarısız.');
-                    }
-                } catch (e) {
-                    alert(err.message || 'Passkey doğrulaması başarısız.');
-                }
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = origHtml;
-            }
-        }
-    </script>
+<script src="<?php echo asset('/assets/js/login.js'); ?>"></script>
 
     <?php if ($error): ?>
     <script>

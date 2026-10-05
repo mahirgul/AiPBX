@@ -28,7 +28,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile" style="width: 45px;">#</th>
+                    <th class="col-hide-mobile u-w-45">#</th>
                     <th><?php echo t('ivr.col_ivr'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('ivr.col_audio'); ?></th>
@@ -44,7 +44,7 @@
                 ?>
                     <tr>
                         <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $ivr['id']; ?></td>
-                        <td style="font-weight: 700; color: var(--primary);"><?php echo htmlspecialchars($ivr['title']); ?></td>
+                        <td class="u-fw-700 u-primary"><?php echo htmlspecialchars($ivr['title']); ?></td>
                         <td class="col-hide-mobile">
                             <?php echo !empty($ivr['internal_number'])
                                 ? '<span class="badge badge-info">' . htmlspecialchars($ivr['internal_number']) . '</span>'
@@ -95,7 +95,7 @@
 
 <!-- Create / Edit IVR Modal -->
 <div class="modal-overlay" id="ivrModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="ivrModalTitle"><i class="fas fa-microphone-alt u-primary"></i> <?php echo t('ivr.new_ivr'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closeIvrModal()"><i class="fas fa-times"></i></button>
@@ -169,7 +169,7 @@
                 </div>
 
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
-                    <label class="form-label" style="font-weight: 700; color: var(--primary);"><i class="fas fa-clock"></i> <?php echo t('ivr.timeout_box_title'); ?></label>
+                    <label class="form-label u-fw-700 u-primary"><i class="fas fa-clock"></i> <?php echo t('ivr.timeout_box_title'); ?></label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
                             <select name="timeout_dest_type" id="modal_timeout_dest_type" class="form-control">
@@ -187,7 +187,7 @@
                 </div>
 
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <label class="form-label" style="font-weight: 700; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> <?php echo t('ivr.invalid_box_title'); ?></label>
+                    <label class="form-label u-fw-700 u-danger"><i class="fas fa-exclamation-triangle"></i> <?php echo t('ivr.invalid_box_title'); ?></label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
                             <select name="invalid_dest_type" id="modal_invalid_dest_type" class="form-control">
@@ -233,10 +233,10 @@
         </div>
         <div class="modal-body">
             <?php
-            // Mevcut tuşlama listesi. Her IVR için ayrı, gizli bir blok basılıyor;
-            // openIvrEntriesModal() yalnızca ilgili olanı görünür yapıyor.
-            // Liste SUNUCUDA üretiliyor: destBadge() yeniden kullanılabiliyor ve
-            // JS tarafında HTML kurulmadığı için XSS yüzeyi oluşmuyor.
+            // Current key list. A separate hidden block is printed for every IVR;
+            // openIvrEntriesModal() makes only the relevant one visible.
+            // The list is generated on the SERVER: destBadge() can be reused and
+            // no HTML is built on the JS side, so there is no XSS surface.
             foreach ($ivrs as $ivr_l):
                 $entries_l = $entries_by_ivr[$ivr_l['id']] ?? [];
                 $digits_l  = implode(',', array_column($entries_l, 'digit'));

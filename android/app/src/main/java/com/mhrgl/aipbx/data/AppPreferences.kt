@@ -87,7 +87,7 @@ class AppPreferences(context: Context) {
             putString(KEY_FULL_NAME, u.fullName)
             putString(KEY_EXTENSION, u.extension)
             putString(KEY_SIP_USERNAME, finalSipUser)
-            // T-6: Sunucudan boş parola gelirse mevcut dolu parolayı asla ezme
+            // T-6: never overwrite the existing non-empty password with an empty one from the server
             if (!s.sipPassword.isNullOrEmpty()) {
                 putString(KEY_SIP_PASSWORD, s.sipPassword)
             }
@@ -224,7 +224,7 @@ class AppPreferences(context: Context) {
                     putString(KEY_DOMAIN, s.domain)
                     putString(KEY_WS_URL, s.wsUrl)
                 }
-                // T-5 / M17: Güvenlik gereği parola ve TURN sırları düz metin depoya yazılmaz.
+                // T-5 / M17: for security, passwords and TURN secrets are never written to plain-text storage.
                 remove(KEY_SIP_PASSWORD)
                 remove(KEY_TURN_PASS)
                 remove(KEY_TURN_USER)
@@ -377,7 +377,7 @@ class AppPreferences(context: Context) {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
                 )
 
-                // Tek seferlik migrasyon: Eski duz metin SharedPreferences varsa yeni guvenli alana tasi
+                // One-time migration: move old plain-text SharedPreferences, if any, to the new secure store
                 val oldPrefs = context.getSharedPreferences(OLD_PREFS_NAME, Context.MODE_PRIVATE)
                 val allOld = oldPrefs.all
                 if (allOld.isNotEmpty()) {

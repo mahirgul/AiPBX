@@ -57,11 +57,11 @@ final class RoleMatrixTest extends TestCase
         $byPath = self::routeModules();
         $group = null;
         $order = [];
-        foreach (file(self::ROOT . '/templates/sidebar.php') as $line) {
-            if (preg_match('/id="(group-[a-z]+)"/', $line, $m)) {
-                $group = self::SIDEBAR_GROUPS[$m[1]] ?? null;
+        foreach (file(self::ROOT . '/templates/sidebar_menu.php') as $line) {
+            if (preg_match("/'id' => '([a-z]+)'/", $line, $m)) {
+                $group = self::SIDEBAR_GROUPS['group-' . $m[1]] ?? null;
             }
-            if ($group && preg_match('#href="(/[a-z0-9/-]+)"#', $line, $m) && isset($byPath[$m[1]], $def[$byPath[$m[1]]])) {
+            if ($group && preg_match("#'href' => '(/[a-z0-9/-]+)'#", $line, $m) && isset($byPath[$m[1]], $def[$byPath[$m[1]]])) {
                 $module = $byPath[$m[1]];
                 $this->assertSame($group, $def[$module]['group'], "{$module} is under \"{$group}\" in the sidebar");
                 $order[] = $module;
@@ -72,6 +72,16 @@ final class RoleMatrixTest extends TestCase
         $this->assertSame($order, $matrixOrder, 'matrix rows are in the sidebar order');
         // Groups appear in the sidebar's order too.
         $this->assertSame(array_values(array_unique(array_column($def, 'group'))), array_values(array_unique(array_map(fn($k) => $def[$k]['group'], $order))));
+    }
+
+    public function testEverySidebarLinkIsARoute(): void
+    {
+        $routes = require self::ROOT . '/src/routes.php';
+        preg_match_all("#'href' => '([^']+)'#", (string) file_get_contents(self::ROOT . '/templates/sidebar_menu.php'), $m);
+        $this->assertNotEmpty($m[1]);
+        foreach ($m[1] as $href) {
+            $this->assertArrayHasKey($href, $routes, "sidebar link {$href} has no route");
+        }
     }
 
     public function testActionsMatchWhatTheCodeChecks(): void

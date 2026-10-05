@@ -1,28 +1,28 @@
 <?php
 /**
- * Dahili Hedef Numaraları — merkezi kayıt defteri ve çakışma doğrulaması.
+ * Internal destination numbers — central registry and conflict validation.
  *
- * Bu dosya "hangi varlıklar numara taşıyabilir" ve "bu numara serbest mi"
- * sorularını bilir. Dialplan üretimini BİLMEZ — o src/sync/SyncInternalNumbers.php'de.
- * Bölünmenin sebebi, üreteç tarafının test edilebilir saf bir fonksiyona
- * (buildInternalNumbersConf) indirgenebilmesi.
+ * This file knows "which entities can carry a number" and "is this number
+ * free". It does NOT know about dialplan generation — that lives in
+ * src/sync/SyncInternalNumbers.php. The split exists so the generator side
+ * can be reduced to a testable pure function (buildInternalNumbersConf).
  *
- * YENİ BİR VARLIK TİPİNE NUMARA EKLENECEKSE: yalnızca INTERNAL_NUMBER_SOURCES'a
- * bir satır eklenir. Doğrulama, üretim, panel listesi ve duman testi kuralı
- * hepsi buradan okur.
+ * TO GIVE A NEW ENTITY TYPE A NUMBER: add one row to INTERNAL_NUMBER_SOURCES.
+ * Validation, generation, the panel list and the smoke-test rule all read
+ * from there.
  */
 
 require_once __DIR__ . '/../config.php';
 
 /**
- * dest_type / dest_col: buildDestinationLines($dest_type, $dest_id) çağrısında
- * kullanılacak değerler.
+ * dest_type / dest_col: the values used in the
+ * buildDestinationLines($dest_type, $dest_id) call.
  *
- * DİKKAT — 'hangup' satırındaki dest_col: buildDestinationLines()'ın 'hangup'
- * dalı dest_id'yi `pbx_hangup_actions.action_key` olarak arar
- * ("WHERE ha.action_key = ?"), sayısal id olarak DEĞİL. Buraya 'id' yazılırsa
- * sorgu hiçbir satır bulmaz ve her çağrı sessizce düz Hangup() olur —
- * seçilen "Meşgul Tonu"/"Şebeke Meşgul" davranışı ve anonsu kaybolur.
+ * CAUTION — dest_col of the 'hangup' row: the 'hangup' branch of
+ * buildDestinationLines() looks dest_id up as `pbx_hangup_actions.action_key`
+ * ("WHERE ha.action_key = ?"), NOT as a numeric id. With 'id' here the query
+ * finds no row and every call silently becomes a plain Hangup() — the chosen
+ * "busy tone"/"network busy" behaviour and its announcement are lost.
  */
 const INTERNAL_NUMBER_SOURCES = [
     'ivr' => [
@@ -62,15 +62,15 @@ const INTERNAL_NUMBER_SOURCES = [
     ],
 ];
 
-/** Kullanıcı girdisinden yalnızca rakamları bırakır. */
+/** Keeps only the digits of a user input. */
 function internalNumberSanitize($raw): string
 {
     return preg_replace('/[^0-9]/', '', trim((string) $raw));
 }
 
 /**
- * Aktif ve numarası dolu TÜM varlıkları tek listede döndürür.
- * Sıralama numaraya göre — üretilen conf dosyasının diff'i sabit kalsın diye.
+ * Returns ALL active entities with a number in one list.
+ * Sorted by number — so the diff of the generated conf file stays stable.
  */
 function internalNumberEntries(): array
 {
@@ -100,11 +100,11 @@ function internalNumberEntries(): array
 }
 
 /**
- * Numara birileri tarafından kullanılıyorsa "kim" bilgisini insan okunur
- * biçimde döndürür, boştaysa null.
+ * When the number is used by someone, returns "who" in human-readable form;
+ * null when it is free.
  *
- * $skipSource/$skipId: kaydın KENDİ numarasını çakışma saymamak için
- * (düzenleme sırasında numara değiştirilmeden kaydedilirse hata vermemeli).
+ * $skipSource/$skipId: so the record's OWN number does not count as a
+ * conflict (saving while editing without changing the number must not fail).
  */
 function internalNumberOwner(string $number, ?string $skipSource = null, int $skipId = 0): ?string
 {
@@ -112,7 +112,7 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
     if ($number === '') return null;
     $db = getDB();
 
-    // Kullanıcı düzenlenirken kendi dahilisi çakışma sayılmaz ($skipSource = 'user').
+    // While a user is being edited, their own extension is not a conflict ($skipSource = 'user').
     if ($skipSource === 'user' && $skipId > 0) {
         $u = $db->prepare("SELECT full_name, extension_type FROM sys_users WHERE extension = ? AND id != ? LIMIT 1");
         $u->execute([$number, $skipId]);
@@ -149,12 +149,12 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
 }
 
 /**
- * Numara kaydedilebilir değilse \Exception fırlatır. Boş numara serbesttir
- * (alan isteğe bağlı) ve sessizce geçer.
+ * Throws \Exception when the number cannot be saved. An empty number is
+ * allowed (the field is optional) and passes silently.
  *
- * Uzunluk sınırı: alt sınır 2, çünkü tek haneli bir numara IVR tuş
- * eşleşmeleriyle ve acil servis kısayollarıyla karışır; üst sınır 6, çünkü
- * kolon VARCHAR(10) ve 7+ hane dış numara alanına girer.
+ * Length limits: at least 2, because a single-digit number gets mixed up with
+ * IVR key matches and emergency shortcuts; at most 6, because the column is
+ * VARCHAR(10) and 7+ digits enter outside-number territory.
  */
 function assertInternalNumberAvailable(string $number, string $sourceKey, int $ownerId): void
 {
@@ -173,12 +173,12 @@ function assertInternalNumberAvailable(string $number, string $sourceKey, int $o
 }
 
 /**
- * Asterisk numara desenini ("_[4-9]XXX") PCRE'ye çevirir.
+ * Converts an Asterisk number pattern ("_[4-9]XXX") to PCRE.
  *
- * Yalnızca giden rota desenlerinde gerçekten kullanılan alt küme desteklenir:
- * X Z N nokta ünlem, köşeli parantez aralığı ve düz rakamlar. Desteklenmeyen
- * bir karakterle karşılaşılırsa null döner ve çağıran taraf o deseni ATLAR —
- * yanlış alarm vermek, sessiz kalmaktan daha kötü.
+ * Only the subset really used in outbound route patterns is supported:
+ * X Z N dot bang, bracket ranges and plain digits. On an unsupported
+ * character it returns null and the caller SKIPS that pattern — a false
+ * alarm is worse than staying silent.
  */
 function asteriskPatternToRegex(string $pattern): ?string
 {
@@ -216,10 +216,11 @@ function asteriskPatternToRegex(string $pattern): ?string
 }
 
 /**
- * Numara aktif bir giden rota deseniyle de eşleşiyorsa uyarı metni döndürür.
- * ENGELLEMEZ — Asterisk'in eşleşme sırası zaten dahili hedefi öne alıyor
- * (from-internal-pbx-ortak kendi include'unu outbound'dan önce arar), ama
- * admin'in bu numaranın artık santrale çıkmayacağını bilmesi gerekir.
+ * Returns a warning text when the number also matches an active outbound
+ * route pattern. It does NOT BLOCK — Asterisk's match order already prefers
+ * the internal destination (from-internal-pbx-ortak searches its own include
+ * before outbound), but the admin needs to know this number no longer goes
+ * out through the PBX.
  */
 function internalNumberRouteWarning(string $number): ?string
 {
@@ -244,14 +245,14 @@ function internalNumberRouteWarning(string $number): ?string
 }
 
 /**
- * Numara başka bir kayıt (dahili, özellik kodu, IVR, kuyruk, konferans, çalma
- * grubu…) tarafından kullanılıyorsa anlaşılır bir hata fırlatır.
+ * Throws a clear error when the number is used by another record (extension,
+ * feature code, IVR, queue, conference, ring group…).
  *
- * Konferans ve çalma grubu servisleri bu fonksiyonu çağırıyordu ama fonksiyon
- * hiç tanımlanmamıştı: kayıt "Call to undefined function" ile ölüyordu.
+ * The conference and ring group services called this function but it had
+ * never been defined: saving died with "Call to undefined function".
  *
- * @param string|null $source  kaydın kendi kaynağı ('conference', 'ring_group', 'user'…)
- * @param int         $id      düzenlenen kaydın id'si (kendi numarası çakışma sayılmaz)
+ * @param string|null $source  the record's own source ('conference', 'ring_group', 'user'…)
+ * @param int         $id      id of the edited record (its own number is not a conflict)
  */
 function internalNumberValidate(string $number, ?string $source = null, int $id = 0): void
 {

@@ -10,7 +10,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var isLoggedIn: Bool = false
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String? = nil
-    /// Doluysa giriş ekranı iki adımlı doğrulama kodunu sorar (sunucunun mesajı).
+    /// When set, the login screen asks for the two-step verification code (the server's message).
     @Published public var otpPromptMessage: String? = nil
 
     @Published public var baseUrl: String = UserDefaults.standard.string(forKey: "aipbx_base_url") ?? "https://pbx.example.com"
@@ -36,7 +36,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var conversations: [ChatConversation] = []
     @Published public var features: FeatureSettings? = nil
 
-    /// aipbx://login bağlantısı veya farklı sunucuya ait QR: kullanıcı onayı bekliyor.
+    /// An aipbx://login link or a QR from another server: waiting for the user's confirmation.
     public struct PendingLinkLogin: Identifiable {
         public let id = UUID()
         public let serverUrl: String
@@ -169,7 +169,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
         switch url.host {
         case "login":
-            // Davet e-postası / mobil giriş sayfası: aipbx://login?server=…&token=…
+            // Invitation email / mobile sign-in page: aipbx://login?server=…&token=…
             let server = (param("server") ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let token = param("token") ?? ""
             let lower = server.lowercased()
@@ -177,13 +177,13 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
                 errorMessage = "Giriş bağlantısı eksik veya bozuk."
                 return
             }
-            // Sahte bağlantı uygulamayı başka bir santrale bağlamasın: önce sor.
+            // A fake link must not connect the app to another PBX: ask first.
             pendingLinkLogin = PendingLinkLogin(serverUrl: server, token: token)
 
         case "auth":
-            // Google girişi dönüşü: sunucu artık giriş bilgisini (token + SIP
-            // şifresi) URL'de göndermiyor; tek kullanımlık kod, girişi
-            // başlattığımız sunucuda değiş tokuş edilir.
+            // Returning from Google sign-in: the server no longer sends the
+            // sign-in data (token + SIP password) in the URL; a single-use code
+            // is exchanged on the server where we started the sign-in.
             if param("success") == "1" {
                 guard let code = param("code"), !code.isEmpty else {
                     errorMessage = "Google girişi tamamlanamadı. Lütfen tekrar deneyin."
@@ -202,8 +202,8 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         }
     }
 
-    /// Onaylanan bağlantı girişi. Açık oturum, YENİ giriş başarılı olduktan
-    /// sonra kapatılır (başarısız girişte kullanıcı oturumunu kaybetmez).
+    /// The confirmed link sign-in. The open session is closed only AFTER the
+    /// NEW sign-in succeeds (on a failed sign-in the user keeps their session).
     public func confirmPendingLinkLogin() {
         guard let pending = pendingLinkLogin else { return }
         pendingLinkLogin = nil

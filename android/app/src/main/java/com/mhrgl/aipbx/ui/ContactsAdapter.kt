@@ -44,7 +44,7 @@ class ContactsAdapter(
     }
 
     /**
-     * I-4: Dialer birleşik arama — Arama yazıldığında iki kaynak birden taranır (Kurumsal + Cihaz)
+     * I-4: dialer unified search — typing searches two sources at once (organisation + device)
      */
     fun filterUnified(
         query: String,

@@ -3,11 +3,11 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * IVR menülerine tuşlama bekleme süresi (digit_timeout) alanı ekler.
+ * Adds the key-press wait time (digit_timeout) field to IVR menus.
  *
- * Doğrudan dahili arama (allow_direct_dial) açıkken arayanın tuşladığı
- * rakamlar arasında veya tuşlama sonrasında aktarım yapılmadan önce beklenecek
- * süreyi (TIMEOUT(digit)) belirler. Varsayılan 3 saniyedir.
+ * With direct extension dialing (allow_direct_dial) on, it sets the time
+ * (TIMEOUT(digit)) waited between the digits the caller types, or after
+ * typing before transferring. The default is 3 seconds.
  */
 final class AddDigitTimeoutToPbxIvrs extends AbstractMigration
 {

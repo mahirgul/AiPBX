@@ -23,7 +23,7 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
     </div>
 
 <?php if ($tab === 'providers'): ?>
-    <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('ai_tts.providers_text'); ?></p>
+    <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_tts.providers_text'); ?></p>
     <div class="u-grid-2" style="gap: 16px;">
     <?php foreach ($providers as $p): ?>
         <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0" style="padding: 16px;">
@@ -134,14 +134,14 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
             <?php endif; ?>
             <?php foreach ($history as $r): ?>
                 <tr>
-                    <td style="white-space: nowrap;"><?php echo date('d.m.Y H:i', strtotime($r['created_at'])); ?><div class="u-muted u-fs-11"><?php echo $h($r['created_by_name'] ?? ''); ?></div></td>
+                    <td class="u-nowrap"><?php echo date('d.m.Y H:i', strtotime($r['created_at'])); ?><div class="u-muted u-fs-11"><?php echo $h($r['created_by_name'] ?? ''); ?></div></td>
                     <td><?php echo $h($titles[$r['provider']] ?? $r['provider']); ?></td>
                     <td class="u-fs-12"><?php echo $h($r['voice']); ?><div class="u-muted u-fs-11"><?php echo $h($r['language']); ?></div></td>
                     <td class="u-fs-12" style="max-width: 360px;" title="<?php echo $h($r['text']); ?>"><?php echo $h(mb_strlen($r['text']) > 120 ? mb_substr($r['text'], 0, 120) . '…' : $r['text']); ?></td>
                     <td><?php echo number_format((int) $r['chars'], 0, ',', '.'); ?></td>
                     <td><?php echo $dur($r['duration_ms'] !== null ? (int) $r['duration_ms'] : null); ?></td>
                     <td class="u-fs-12"><?php echo $r['announcement'] ? '<i class="fas fa-check u-success"></i> ' . $h($r['announcement']) : '-'; ?></td>
-                    <td class="u-text-right" style="white-space: nowrap;">
+                    <td class="u-text-right u-nowrap">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="ttsShow(<?php echo (int) $r['id']; ?>, <?php echo $h(json_encode(mb_substr($r['text'], 0, 60))); ?>)" title="<?php echo $h(t('ai_tts.play')); ?>"><i class="fas fa-play"></i></button>
                         <a href="/api/ai_tts.php?action=audio&id=<?php echo (int) $r['id']; ?>&download=1" class="btn btn-secondary btn-sm" data-no-spa="true" download title="MP3"><i class="fas fa-download"></i></a>
                         <?php if ($can_delete): ?>

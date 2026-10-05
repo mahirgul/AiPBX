@@ -4,12 +4,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Asterisk config'ine yazılan her serbest-metin alan bu fonksiyonlardan geçer.
- * Amaç: satır sonu enjekte edip yeni direktif/bölüm açılamadığını kanıtlamak.
+ * Every free-text field written to the Asterisk config goes through these functions.
+ * Goal: prove that no line break can be injected to open a new directive/section.
  *
- * Bu, projenin 1 numaralı zafiyet sınıfı (config injection) — 2026-08-20 ve
- * 2026-08-31 denetimlerinde iki kez ayrı ayrı bulunup kapatıldı. Bu testler
- * o kapağın bir daha açılmamasını garanti eder.
+ * This is the project's number 1 vulnerability class (config injection) —
+ * found and closed twice, separately, in the 2026-08-20 and 2026-08-31
+ * audits. These tests guarantee that the lid never opens again.
  */
 final class SanitizationTest extends TestCase
 {
@@ -52,7 +52,7 @@ final class SanitizationTest extends TestCase
 
     public function testToCleanAsciiTurkceKarakterleriCevirir(): void
     {
-        // Asterisk config'i ASCII bekliyor; Türkçe başlıklar okunabilir kalmalı.
+        // The Asterisk config expects ASCII; Turkish titles must stay readable.
         $this->assertSame('Cagri Merkezi', toCleanAscii('Çağrı Merkezi'));
         $this->assertSame('Genel Mudurluk', toCleanAscii('Genel Müdürlük'));
     }

@@ -2,20 +2,21 @@
 require_once __DIR__ . '/../services/QrLoginService.php';
 
 /**
- * /mobile-login?token=… — davet e-postasındaki "Mobil uygulamaya giriş"
- * bağlantısının açtığı anonim sayfa.
+ * /mobile-login?token=… — the anonymous page opened by the "Sign in to the
+ * mobile app" link in the invitation email.
  *
- * Telefonda: uygulamayı açan buton (Android intent://, uygulama yoksa Play
- * Store; iOS aipbx://). Bilgisayarda: uygulamayla okutulacak QR. Sayfa kodu
- * HARCAMAZ (e-posta güvenlik tarayıcıları bağlantıyı önceden açar); kod
- * yalnızca uygulama /api/mobile/qr_login.php ile giriş yaptığında harcanır.
+ * On a phone: a button that opens the app (Android intent://, the Play Store
+ * if the app is missing; iOS aipbx://). On a computer: a QR to scan with the
+ * app. The page does NOT SPEND the code (email security scanners open the
+ * link beforehand); the code is spent only when the app signs in through
+ * /api/mobile/qr_login.php.
  */
 class MobileLoginController extends BaseController
 {
     public static function index(): void
     {
-        // Token URL'de: başka siteye (Play Store bağlantısı) Referer ile
-        // sızmasın, arama motoru/proxy önbelleğine girmesin.
+        // The token is in the URL: it must not leak to another site (the Play
+        // Store link) via Referer or land in a search engine/proxy cache.
         header('Referrer-Policy: no-referrer');
         header('X-Robots-Tag: noindex, nofollow');
         header('Cache-Control: no-store');

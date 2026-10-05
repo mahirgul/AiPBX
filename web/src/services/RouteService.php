@@ -59,16 +59,16 @@ class RouteService {
             $strip_front = intval($data['strip_front'] ?? 0);
             $strip_back = intval($data['strip_back'] ?? 0);
             $is_internal = isset($data['is_internal']) ? 1 : 0;
-            // Giden rota grubu: bu rotayi hangi kullanici grubu kullanabilir.
-            // 1 varsayilan; gecersiz deger gelirse 1'e dusuluyor ki rota
-            // erisilemez bir gruba dusup sessizce kaybolmasin.
+            // Outbound route group: which user group may use this route.
+            // 1 is the default; an invalid value falls back to 1 so the route
+            // does not land in an unreachable group and silently vanish.
             $route_group = max(1, min(99, intval($data['route_group'] ?? 1)));
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
-            // Dış hatlar: birincil/yedek ayrımı yok — tek tek eklenen, sırasıyla denenen
-            // bir liste. Her satırın kendi Caller ID maskeleme değeri olabilir.
-            // trunk_name yalnızca pbx_trunks'ta gerçekten var olan isimlerle sınırlanır —
-            // hem işlevsel doğruluk hem de dialplan enjeksiyonuna karşı savunma içindir.
+            // Trunks: no primary/backup split — a list added one by one and tried in
+            // order. Every row can have its own caller ID masking value.
+            // trunk_name is limited to names that really exist in pbx_trunks — both
+            // for functional correctness and as a defence against dialplan injection.
             $valid_trunk_names = array_column(getDB()->query("SELECT trunk_name FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC), 'trunk_name');
             $trunk_names = (array)($data['trunk_name'] ?? []);
             $trunk_cids = (array)($data['trunk_cid'] ?? []);

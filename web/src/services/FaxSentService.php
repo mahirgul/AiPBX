@@ -8,12 +8,12 @@ require_once __DIR__ . '/FaxSendService.php';
  */
 class FaxSentService {
     /**
-     * Bir giden faks kaydını (ve varsa fiziksel PDF dosyasını) siler.
-     * Sahiplik kontrolü: admin olmayan bir kullanıcı sadece kendi gönderdiği
-     * faksı silebilir — aynı sayfadaki listeleme sorgusuyla aynı kısıtlama
-     * (aksi halde fax_id tahmin ederek başka kullanıcının faksı silinebilirdi).
-     * Önceden fax_sent.php'nin içine gömülüydü; MVC göçü sırasında
-     * (2026-08-22) buraya taşındı, mantık DEĞİŞTİRİLMEDİ.
+     * Deletes an outgoing fax record (and its physical PDF file, if any).
+     * Ownership check: a non-admin user can only delete a fax they sent
+     * themselves — the same restriction as the list query on the same page
+     * (otherwise another user's fax could be deleted by guessing fax_id).
+     * It used to be embedded in fax_sent.php; moved here during the MVC
+     * migration (2026-08-22), logic UNCHANGED.
      */
     public static function deleteSentFax($faxId, $csrfToken, string $userRole, int $userId): array
     {
@@ -40,11 +40,12 @@ class FaxSentService {
             return ['success' => false, 'error' => 'Bu faks kaydına erişim yetkiniz yok veya kayıt bulunamadı.'];
         }
 
-        // Fiziksel dosyalar SADECE başka bir kayıt aynı yolu kullanmıyorsa silinir:
-        // resendFax() yeni satıra AYNI pdf/tif yolunu kopyalıyor, körü körüne
-        // unlink edilirse diğer kaydın önizleme/indirmesi bozulurdu. Ayrıca .tif
-        // önceden hiç silinmiyordu (fax_retention_days=0 olduğu için cron da
-        // toplamıyor) — kalıcı disk sızıntısıydı (2026-08-31 denetiminde bulundu).
+        // Physical files are deleted ONLY when no other record uses the same
+        // path: resendFax() copies the SAME pdf/tif path into the new row, and
+        // a blind unlink would break the other record's preview/download. The
+        // .tif also used to be never deleted (with fax_retention_days=0 the
+        // cron does not collect it either) — a permanent disk leak (found in
+        // the 2026-08-31 audit).
         foreach (['pdf_path', 'tif_path'] as $path_col) {
             $path = $fax[$path_col] ?? '';
             if ($path === '' || !file_exists($path)) continue;
@@ -66,14 +67,13 @@ class FaxSentService {
     }
 
     /**
-     * Başarısız (FAILED) bir giden faksı, ZATEN üretilmiş TIFF dosyasını
-     * yeniden kullanarak tekrar gönderim kuyruğuna ekler — PDF->TIFF
-     * dönüşümü tekrarlanmaz, sadece yeni bir Asterisk .call dosyası üretilir.
-     * Orijinal başarısız kayıt (hata mesajı dahil) SİLİNMEZ/ÜZERİNE
-     * YAZILMAZ — tarihçe olarak korunsun diye yeni bir fax_sent satırı açılır
-     * (2026-08-31, kullanıcı isteği: "timeout/hata durumunda yeniden gönder").
-     * Sahiplik kontrolü deleteSentFax() ile aynı: admin olmayan kullanıcı
-     * sadece kendi gönderdiği faksı yeniden gönderebilir.
+     * Queues a FAILED outgoing fax again, reusing the ALREADY generated TIFF
+     * file — the PDF->TIFF conversion is not repeated, only a new Asterisk
+     * .call file is generated. The original failed record (including its
+     * error message) is NOT DELETED/OVERWRITTEN — a new fax_sent row is opened
+     * so it stays as history (2026-08-31, user request: "resend on
+     * timeout/error"). Same ownership check as deleteSentFax(): a non-admin
+     * user can only resend a fax they sent themselves.
      */
     public static function resendFax($faxId, $csrfToken, string $userRole, int $userId): array
     {

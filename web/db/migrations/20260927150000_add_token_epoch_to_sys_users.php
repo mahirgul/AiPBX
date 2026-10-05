@@ -3,10 +3,10 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Mobil/sohbet oturum token'larını geri çekebilmek için kullanıcı başına
- * sayaç. İmza 0 iken eski biçimle aynıdır (mevcut token'lar geçerli kalır);
- * şifre sıfırlanınca artar ve o ana kadar verilmiş tüm token'lar geçersizleşir.
- * Hem PHP (api/mobile/auth_helper.php) hem Go sohbet servisi (chat/auth.go) okur.
+ * Per-user counter to be able to revoke mobile/chat session tokens. With 0
+ * the signature is the same as the old form (existing tokens stay valid); it
+ * increments on a password reset and invalidates every token issued until then.
+ * Read by both PHP (api/mobile/auth_helper.php) and the Go chat service (chat/auth.go).
  */
 final class AddTokenEpochToSysUsers extends AbstractMigration
 {

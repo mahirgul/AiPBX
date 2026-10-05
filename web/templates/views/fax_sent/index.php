@@ -45,11 +45,11 @@
                                 <?php echo uiStatusBadge($fax['status'], ['SUCCESS' => 'success', 'FAILED' => 'danger'], 'warning'); ?>
                             </td>
                             <?php
-                                // "error_message boşsa -> Sorunsuz iletildi" varsayımı YANLIŞTI:
-                                // PENDING durumundaki (henüz sonuçlanmamış) bir faksın da
-                                // error_message'ı boş oluyor, ama "sorunsuz iletildi" demek
-                                // yanıltıcı (henüz iletilmedi ki) — kullanıcı canlıda fark etti
-                                // (2026-08-31). Metin artık status'e göre seçiliyor.
+                                // The "empty error_message -> delivered fine" assumption was
+                                // WRONG: a fax still PENDING (not finished yet) also has an
+                                // empty error_message, and saying "delivered fine" is
+                                // misleading (it has not been delivered yet) — the user
+                                // noticed it live (2026-08-31). The text is now chosen by status.
                                 if ($fax['error_message']) {
                                     $detail_text = $fax['error_message'];
                                 } elseif ($fax['status'] === 'SUCCESS') {

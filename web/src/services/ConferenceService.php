@@ -1,6 +1,6 @@
 <?php
 /**
- * Conference Rooms (Konferans Odaları) Service
+ * Conference rooms service
  */
 
 require_once dirname(__DIR__) . '/helpers.php';
@@ -42,7 +42,7 @@ class ConferenceService {
                 throw new \Exception("Oda Dahili Numarası ve Başlık zorunludur!");
             }
 
-            // Çakışma kontrolü
+            // Conflict check
             internalNumberValidate($room_number, 'conference', $id);
 
             $db = getDB();
@@ -66,7 +66,7 @@ class ConferenceService {
             $id = intval($id);
             $db = getDB();
 
-            // Referans kontrolü
+            // Reference check
             $refs = [];
             $dids = $db->prepare("SELECT did_number FROM pbx_dids WHERE dest_type = 'conference' AND dest_id = ?");
             $dids->execute([$id]);

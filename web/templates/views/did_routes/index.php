@@ -142,7 +142,7 @@ $destOptionsCache = [];
                 <div class="form-group" style="margin-top: 12px; background: var(--bg-input); padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
                     <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer;">
                         <input type="checkbox" name="record_call" id="modal_record_call" value="1" style="width: 18px; height: 18px; accent-color: var(--danger);">
-                        <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">
+                        <span class="u-fs-13 u-fw-600 u-text-main">
                             <i class="fas fa-microphone u-danger"></i> <?php echo t('did.field_record_call'); ?>
                         </span>
                     </label>

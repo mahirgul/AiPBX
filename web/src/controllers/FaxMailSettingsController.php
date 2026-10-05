@@ -7,13 +7,9 @@ class FaxMailSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['save_fax_email_settings'])) {
-            $res = FaxMailSettingsService::saveSettings($_POST);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
-        }
+        $notices = static::handlePost([
+            'save_fax_email_settings' => fn() => FaxMailSettingsService::saveSettings($_POST),
+        ]);
 
         $sys_settings = FaxMailSettingsRepository::allSettings();
 
@@ -30,6 +26,6 @@ class FaxMailSettingsController extends BaseController
             'fax_max_retries' => $sys_settings['fax_max_retries'] ?? '3',
             'fax_retry_time' => $sys_settings['fax_retry_time'] ?? '60',
             'fax_wait_time' => $sys_settings['fax_wait_time'] ?? '30',
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

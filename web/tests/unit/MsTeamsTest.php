@@ -74,7 +74,7 @@ final class MsTeamsTest extends TestCase
         $this->assertSame('201', $found['extension']);
         $this->assertSame('ahmet@firma.com', $found['teams_upn']);
 
-        // 3. Güncelleme
+        // 3. Update
         $updateData = [
             'id'                     => $id,
             'extension'              => '201',
@@ -97,14 +97,14 @@ final class MsTeamsTest extends TestCase
 
     public function testUserMappingValidation(): void
     {
-        // Boş dahili
+        // Empty extension
         $res1 = MsTeamsRepository::saveUserMapping([
             'extension' => '',
             'teams_upn' => 'user@firma.com',
         ]);
         $this->assertFalse($res1['success']);
 
-        // Geçersiz e-posta
+        // Invalid email
         $res2 = MsTeamsRepository::saveUserMapping([
             'extension' => '202',
             'teams_upn' => 'gecersiz-eposta',
@@ -114,14 +114,14 @@ final class MsTeamsTest extends TestCase
 
     public function testDirectRoutingServiceValidation(): void
     {
-        // FQDN boşken aktif edilemez
+        // Cannot be enabled while the FQDN is empty
         $res1 = MsTeamsService::saveDirectRoutingSettings([
             'teams_enabled' => '1',
             'teams_domain'  => '',
         ]);
         $this->assertFalse($res1['success']);
 
-        // Geçersiz port
+        // Invalid port
         $res2 = MsTeamsService::saveDirectRoutingSettings([
             'teams_enabled'  => '1',
             'teams_domain'   => 'sbc.firma.com',
@@ -129,7 +129,7 @@ final class MsTeamsTest extends TestCase
         ]);
         $this->assertFalse($res2['success']);
 
-        // Başarılı kayıt
+        // Successful save
         $res3 = MsTeamsService::saveDirectRoutingSettings([
             'teams_enabled'       => '1',
             'teams_domain'        => 'sbc.firma.com',
@@ -149,14 +149,14 @@ final class MsTeamsTest extends TestCase
         ]);
         $this->assertFalse($res1['success']);
 
-        // HTTP yerine HTTPS olmalı
+        // Must be HTTPS instead of HTTP
         $res2 = MsTeamsService::saveWebhookSettings([
             'teams_webhook_enabled' => '1',
             'teams_webhook_url'     => 'http://webhook.insecure.com',
         ]);
         $this->assertFalse($res2['success']);
 
-        // Başarılı kayıt
+        // Successful save
         $res3 = MsTeamsService::saveWebhookSettings([
             'teams_webhook_enabled'     => '1',
             'teams_webhook_url'         => 'https://firma.webhook.office.com/webhookb2/test',

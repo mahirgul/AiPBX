@@ -24,7 +24,7 @@
         </button>
     </div>
 
-    <!-- BÖLÜM 1: PJSIP, NAT & Network Global Ayarları -->
+    <!-- SECTION 1: PJSIP, NAT & network global settings -->
     <div id="tab_pjsip" class="settings-tab-pane active">
     <div class="card">
         <div class="card-header">
@@ -176,7 +176,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM: RTP (Medya) Ayarları -->
+    <!-- SECTION: RTP (media) settings -->
     <div id="tab_rtp" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -225,7 +225,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM: T.38 UDPTL (Faks Medya) Ayarları -->
+    <!-- SECTION: T.38 UDPTL (fax media) settings -->
     <div id="tab_t38" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -279,7 +279,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM: Softphone Zil & Çevirme Tonu -->
+    <!-- SECTION: softphone ring & ringback tone -->
     <div id="tab_ring" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -320,7 +320,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM: Görüntülü Arama -->
+    <!-- SECTION: video calls -->
     <div id="tab_video" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -364,7 +364,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM: Dil Ayarları -->
+    <!-- SECTION: language settings -->
     <div id="tab_lang" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">

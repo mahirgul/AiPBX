@@ -8,10 +8,10 @@ require_once __DIR__ . '/../../src/services/RingGroupService.php';
 require_once __DIR__ . '/../../src/services/UserService.php';
 
 /**
- * Konferans ve çalma grubu kaydı, projede hiç tanımlanmamış
- * internalNumberValidate() fonksiyonunu çağırıyordu: kayıt "Call to undefined
- * function" ile ölüyordu. Ayrıca dahili numaralar kuyruk/konferans/grup
- * numaralarıyla çakışabiliyordu.
+ * The conference and ring group saves called internalNumberValidate(),
+ * which was never defined in the project: saving died with "Call to
+ * undefined function". Extension numbers could also collide with queue/
+ * conference/group numbers.
  */
 final class InternalNumberConflictTest extends TestCase
 {

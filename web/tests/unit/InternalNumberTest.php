@@ -6,11 +6,11 @@ require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
 require_once dirname(__DIR__, 2) . '/src/internal_numbers.php';
 
 /**
- * Dahili hedef numarası kayıt defteri ve çakışma doğrulaması.
+ * Internal destination number registry and conflict validation.
  *
- * En kritik test: assertInternalNumberAvailable() GERÇEK bir dahiliyle
- * çakışmayı yakalıyor mu — yakalamazsa panelden girilen numara sessizce
- * bir kullanıcının dahilisini gölgelemeye çalışır.
+ * The most critical test: does assertInternalNumberAvailable() catch a
+ * collision with a REAL extension — otherwise a number entered in the panel
+ * silently tries to shadow a user's extension.
  */
 final class InternalNumberTest extends TestCase
 {

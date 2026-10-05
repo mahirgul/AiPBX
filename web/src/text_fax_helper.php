@@ -1,34 +1,34 @@
 <?php
 /**
- * Metin Yazarak Faks Gönderme Yardımcısı
- * WYSIWYG editörden (Quill) gelen HTML'i güvenli hale getirip mPDF ile
- * gerçek bir PDF'e çevirir — sonrası (Ghostscript PDF->TIFF, spool, kayıt)
- * FaxSendService'teki mevcut PDF-yükleme hattıyla aynen paylaşılır.
+ * Helper for sending a fax by typing text
+ * Sanitizes the HTML from the WYSIWYG editor (Quill) and turns it into a real
+ * PDF with mPDF — the rest (Ghostscript PDF->TIFF, spool, record) is shared
+ * with the existing PDF-upload pipeline in FaxSendService.
  */
 class TextFaxHelper {
 
     /**
-     * mPDF'in gömülü DejaVu font ailesi (embedded TTF, Türkçe karakter
-     * garantili) — editördeki font seçici de sadece bu üç isimden birini
-     * üretebiliyor (assets/js/fax_send.js). Standart PDF çekirdek fontları
-     * (Arial/Times/Courier) BİLEREK sunulmuyor: bunlar embed edilmez ve
-     * Türkçe (ç,ğ,ı,ö,ş,ü) karakterlerini desteklemez.
+     * mPDF's built-in DejaVu font family (embedded TTF, Turkish characters
+     * guaranteed) — the font picker in the editor can only produce one of
+     * these three names (assets/js/fax_send.js). The standard PDF core fonts
+     * (Arial/Times/Courier) are NOT offered ON PURPOSE: they are not embedded
+     * and do not support Turkish characters (ç,ğ,ı,ö,ş,ü).
      */
     const ALLOWED_FONTS = ['dejavusans', 'dejavuserif', 'dejavusansmono'];
 
-    /** İzin verilen etiketler ve (sadece style özniteliği için) izinli CSS özellikleri. */
+    /** Allowed tags and (for the style attribute only) the allowed CSS properties. */
     const ALLOWED_TAGS = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'ol', 'ul', 'li', 'span'];
     const ALLOWED_STYLE_PROPS = ['font-family', 'font-size', 'text-align', 'font-weight', 'font-style', 'text-decoration'];
 
-    /** Bunlar unwrap edilmez (metni korumak için) — doğrudan İÇERİKLERİYLE BİRLİKTE silinir. */
+    /** These are not unwrapped (to keep the text) — they are deleted WITH THEIR CONTENT. */
     const DROP_ENTIRELY_TAGS = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'svg', 'math', 'img', 'form', 'input', 'button'];
 
     /**
-     * Editörden gelen ham HTML'i (tarayıcıdan geldiği için POST üzerinden
-     * manipüle edilebilir, güvenilmez) whitelist'e göre temizler: izinli
-     * etiket dışındaki her şey (script/img/iframe/on* vb.) tamamen atılır
-     * (metni korumak için içeriği açılıp yerine taşınır), stil sadece
-     * ALLOWED_STYLE_PROPS'taki özellikleri taşıyabilir.
+     * Cleans the raw HTML from the editor (it comes from the browser and can
+     * be tampered with in the POST, untrusted) against a whitelist: everything
+     * outside the allowed tags (script/img/iframe/on* etc.) is dropped
+     * completely (its content is unwrapped into place to keep the text), and a
+     * style may only carry the properties in ALLOWED_STYLE_PROPS.
      */
     public static function sanitizeHtml(string $html): string {
         $html = trim($html);
@@ -66,23 +66,24 @@ class TextFaxHelper {
 
             $tag = strtolower($child->nodeName);
             if (in_array($tag, self::DROP_ENTIRELY_TAGS, true)) {
-                // Tehlikeli/anlamsız etiket: içeriğiyle BİRLİKTE tamamen silinir
-                // (ör. <script>alert(1)</script>'in metnini düz yazı olarak bile
-                // sızdırmamak için — unwrap değil, tam kaldırma).
+                // Dangerous/meaningless tag: deleted completely WITH its content
+                // (so not even the text of <script>alert(1)</script> leaks as
+                // plain text — full removal, not unwrap).
                 $node->removeChild($child);
                 continue;
             }
             if (!in_array($tag, self::ALLOWED_TAGS, true)) {
-                // Bilinmeyen ama zararsız bir etiket (ör. Word'den yapıştırılan
-                // <font>/<a>): kendisi silinir, içindeki metin/alt-etiketler
-                // ebeveyne taşınarak korunur (kullanıcının yazdığı içerik kaybolmaz).
+                // An unknown but harmless tag (e.g. <font>/<a> pasted from
+                // Word): the tag itself is removed, the text/child tags inside
+                // move up to the parent and are kept (the user's content is
+                // not lost).
                 //
-                // ÖNEMLİ (2026-08-31 denetiminde bulunan GÜVENLİK AÇIĞI): alt ağaç
-                // taşınmadan ÖNCE temizlenmeli. Bu döngü ebeveynin çocuk listesinin
-                // MUTASYONDAN ÖNCE alınmış anlık görüntüsü (iterator_to_array)
-                // üzerinde ilerlediği için, yukarı taşınan düğümler bir daha
-                // denetlenmiyordu — tek bir <div> sarmalayıcı <img>/<script>
-                // korumasını tamamen deliyordu (kimliği doğrulanmış SSRF).
+                // IMPORTANT (a SECURITY HOLE found in the 2026-08-31 audit): the
+                // subtree must be cleaned BEFORE it is moved. This loop walks a
+                // snapshot of the parent's child list taken BEFORE THE MUTATION
+                // (iterator_to_array), so the nodes moved up were never checked
+                // again — a single <div> wrapper completely bypassed the
+                // <img>/<script> protection (authenticated SSRF).
                 self::cleanNode($child);
                 while ($child->firstChild) {
                     $node->insertBefore($child->firstChild, $child);
@@ -127,9 +128,9 @@ class TextFaxHelper {
     }
 
     /**
-     * Temizlenmiş HTML'i A4 boyutunda gerçek bir PDF dosyasına yazar.
-     * mPDF'in kendi gömülü DejaVu fontları kullanıldığı için sunucudaki
-     * sistem fontlarından (fc-list) tamamen bağımsızdır.
+     * Writes the sanitized HTML into a real A4 PDF file.
+     * It uses mPDF's own embedded DejaVu fonts, so it is completely
+     * independent of the system fonts on the server (fc-list).
      */
     public static function htmlToPdf(string $safeHtml, string $outputPath): void {
         $tempDir = sys_get_temp_dir() . '/aipbx_mpdf';

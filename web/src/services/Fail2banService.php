@@ -3,29 +3,29 @@ require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/../priv_helper.php';
 
 /**
- * fail2ban Yönetim Servisi
- * `fail2ban-client`'ı root yetkisiyle PrivHelper (aipbx-priv `f2b` alt
- * komutları) üzerinden çalıştırır — doğrudan sudo çağrısı yok. Kalıcılık için
- * jail.local'e DOKUNULMAZ — ayrı bir override dosyası (OVERRIDE_FILE) kullanılır;
- * o da STAGING_FILE üzerinden aipbx-priv ile kuruluyor.
+ * fail2ban management service
+ * Runs `fail2ban-client` as root through PrivHelper (the aipbx-priv `f2b`
+ * subcommands) — no direct sudo call. jail.local is NOT touched for
+ * persistence — a separate override file (OVERRIDE_FILE) is used, which is
+ * also installed by aipbx-priv from STAGING_FILE.
  */
 class Fail2banService {
 
     /**
-     * Bu IP'ler ignoreip listesinden asla kaldırılamaz — localhost her zaman
-     * güvende kalmalı. "127.0.0.1/8" DEĞİL "127.0.0.0/8" — fail2ban-client
-     * girilen değeri ağ adresine normalize edip öyle döndürüyor (canlıda
-     * doğrulandı), UI'da gösterilen/kaldırılabilen değer bu, koruma da buna
-     * göre eşleşmeli.
+     * These IPs can never be removed from the ignoreip list — localhost must
+     * always stay safe. "127.0.0.0/8", NOT "127.0.0.1/8" — fail2ban-client
+     * normalizes the value to the network address and returns it that way
+     * (verified live); that is the value shown/removable in the UI, so the
+     * protection has to match it.
      */
     const PROTECTED_IGNOREIPS = ['127.0.0.0/8', '::1'];
 
     const OVERRIDE_FILE = '/etc/fail2ban/jail.d/zz-ai-pbx.local';
 
     /**
-     * jail.d root'a ait (jail dosyası çalıştırılacak komut tanımlayabildiği
-     * için web kullanıcısı oraya yazamaz). Panel dosyayı buraya hazırlar,
-     * `aipbx-priv f2b install-override` satır satır doğrulayıp kurar.
+     * jail.d belongs to root (a jail file can define a command to run, so the
+     * web user cannot write there). The panel stages the file here and
+     * `aipbx-priv f2b install-override` validates it line by line and installs it.
      */
     const STAGING_FILE = '/var/lib/aipbx/fail2ban-override.local';
 
@@ -45,9 +45,9 @@ class Fail2banService {
     }
 
     /**
-     * Bir jail için canlı durum (banlı IP'ler, sayaçlar) + ayarlar (bantime/
-     * findtime/maxretry) — hepsi fail2ban-client'tan canlı okunuyor (dosya
-     * ayrıştırma yerine), tek doğruluk kaynağı çalışan servis.
+     * Live state of a jail (banned IPs, counters) + its settings (bantime/
+     * findtime/maxretry) — all read live from fail2ban-client (instead of
+     * parsing files); the running service is the single source of truth.
      */
     public static function jailDetail(string $jail): ?array {
         $jails = self::listJails();
@@ -88,16 +88,16 @@ class Fail2banService {
     }
 
     /**
-     * IP ya da CIDR bloğunu doğrular; hata varsa mesajı, geçerliyse null döner.
+     * Validates an IP or CIDR block; returns the message on error, null if valid.
      *
-     * Neden (2026-08-31 denetiminde bulundu): önceki kontrol sadece "/" ÖNCESİNİ
-     * `filter_var()`'a veriyordu, yani CIDR eki hiç doğrulanmıyordu — "0.0.0.0/0"
-     * girilirse TÜM İNTERNET beyaz listeye alınıp fail2ban fiilen devre dışı
-     * kalıyordu. FirewallService tarafında zaten tam-format doğrulaması vardı,
-     * fail2ban tarafı geride kalmıştı.
+     * Why (found in the 2026-08-31 audit): the old check only passed the part
+     * BEFORE "/" to `filter_var()`, so the CIDR suffix was never validated —
+     * entering "0.0.0.0/0" whitelisted THE WHOLE INTERNET and effectively
+     * disabled fail2ban. FirewallService already had full-format validation;
+     * the fail2ban side had fallen behind.
      *
-     * En geniş kabul edilen blok /8 (ör. "10.0.0.0/8" gibi meşru özel ağlar
-     * çalışmaya devam etsin diye); daha genişi kazara devre dışı bırakma riski.
+     * The widest accepted block is /8 (so legitimate private networks such as
+     * "10.0.0.0/8" keep working); anything wider risks disabling it by accident.
      */
     private static function validateIpOrCidr(string $value): ?string {
         $parts = explode('/', $value, 2);
@@ -108,7 +108,7 @@ class Fail2banService {
         if (filter_var($addr, FILTER_VALIDATE_IP, $flag) === false) {
             return 'Geçersiz IP adresi!';
         }
-        if (!isset($parts[1])) return null; // düz IP, ek yok
+        if (!isset($parts[1])) return null; // plain IP, no suffix
 
         if (!preg_match('/^\d{1,3}$/', $parts[1])) {
             return 'Geçersiz CIDR eki! (ör. 192.0.2.0/24)';
@@ -143,9 +143,9 @@ class Fail2banService {
     }
 
     /**
-     * Bir jail'in bantime/findtime/maxretry değerlerini hem canlıya (anında
-     * etkili, fail2ban-client set) hem override dosyasına (fail2ban yeniden
-     * başlarsa kalıcı olsun diye) yazar.
+     * Writes a jail's bantime/findtime/maxretry both live (effective at once,
+     * fail2ban-client set) and to the override file (so it survives a
+     * fail2ban restart).
      */
     public static function updateJailConfig(string $jail, int $bantime, int $findtime, int $maxretry, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
@@ -216,11 +216,11 @@ class Fail2banService {
     }
 
     /**
-     * Değişiklik CANLIYA uygulandı ama kalıcı dosyaya yazılamadı — bu yarı
-     * başarılı durumu asla "başarılı" diye gösterme, admin'in fail2ban yeniden
-     * başladığında değişikliği kaybedeceğini bilmesi gerekiyor. Detaylı sebep
-     * audit log'a da yazılıyor (bkz. projedeki reload/rollback hata deseni:
-     * entity_label sadece adı değil hata metnini de taşır).
+     * The change was applied LIVE but could not be written to the persistent
+     * file — never show this half-success as "success"; the admin must know
+     * the change will be lost when fail2ban restarts. The detailed reason also
+     * goes to the audit log (see the project's reload/rollback error pattern:
+     * entity_label carries the error text, not just the name).
      */
     private static function persistFailure(string $what, string $reason): array {
         writeAuditLog(null, 'fail2ban', 'persist_failed', mb_substr("KALICI KAYIT BAŞARISIZ ({$what}): {$reason}", 0, 255), 'error', $_SESSION['user_id'] ?? null);
@@ -250,27 +250,27 @@ class Fail2banService {
     }
 
     /**
-     * Override dosyasını yazar. Başarılıysa null, başarısızsa SEBEBİ döner —
-     * çağıranlar bunu kullanıcıya göstermek ZORUNDA.
+     * Writes the override file. Returns null on success, the REASON on
+     * failure — callers MUST show it to the user.
      *
-     * Neden dönüş değeri var (2026-08-31 denetiminde bulundu): önceki hâli
-     * `file_put_contents()`'ın sonucunu hiç kontrol etmiyordu ve dosya
-     * root:root 644 kalmıştı (ilk kez root ile koşan bir CLI testi oluşturmuş)
-     * — PHP-FPM 'asterisk' kullanıcısı olarak çalıştığı için yazım SESSİZCE
-     * başarısız oluyordu: jail ayarı/beyaz liste değişikliği canlıya
-     * uygulanıyor ama kalıcı olmuyordu, admin'e ise "başarılı" gösteriliyordu.
-     * fail2ban yeniden başlayınca değişiklik kaybolurdu.
+     * Why there is a return value (found in the 2026-08-31 audit): the old
+     * version never checked the result of `file_put_contents()` and the file
+     * had stayed root:root 644 (created by a CLI test run as root for the
+     * first time) — PHP-FPM runs as the 'asterisk' user, so the write failed
+     * SILENTLY: the jail setting/whitelist change was applied live but was not
+     * persistent, while the admin was shown "success". The change was lost
+     * when fail2ban restarted.
      */
     private static function writeOverrideState(array $state): ?string {
-        // GÜVENLİK KİLİDİ (2026-08-31 denetiminde bulundu): ignoreip listesi boş
-        // gelirse (ör. fail2ban-client okuması bir sebeple başarısız olduysa) bu
-        // dosya `[DEFAULT] ignoreip =` (BOŞ) yazıp jail.local'daki gerçek beyaz
-        // listeyi ezerdi — fail2ban yeniden başlayınca localhost ve admin IP'si
-        // korumasız kalırdı. Boş listeyle ASLA yazma; korumalı IP'ler her
-        // durumda listede olmaya zorlanır.
+        // SAFETY LOCK (found in the 2026-08-31 audit): if the ignoreip list
+        // came in empty (e.g. reading fail2ban-client failed for some reason)
+        // this file would write `[DEFAULT] ignoreip =` (EMPTY) and override the
+        // real whitelist in jail.local — after a fail2ban restart localhost and
+        // the admin IP would be unprotected. NEVER write with an empty list; the
+        // protected IPs are forced into the list in every case.
         $ignoreip = array_values(array_unique(array_merge(self::PROTECTED_IGNOREIPS, array_filter($state['ignoreip']))));
         if (empty($state['ignoreip'])) {
-            // okuma başarısız → mevcut dosyaya dokunma (sessizce bozma)
+            // read failed → leave the existing file alone (do not break it silently)
             return 'mevcut beyaz liste okunamadı, dosya güvenlik gereği hiç değiştirilmedi';
         }
 
@@ -299,7 +299,7 @@ class Fail2banService {
 }
 
 /**
- * fail2ban servisi gerçekten aktif mi (salt-okunur, sudo gerektirmez).
+ * Is the fail2ban service really active (read-only, no sudo needed).
  */
 function fail2ban_is_active(): bool {
     $out = shell_exec('systemctl is-active fail2ban 2>&1');

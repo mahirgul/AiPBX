@@ -61,7 +61,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         binding = ActivityIncomingCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge WindowInsets desteği
+        // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -125,7 +125,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
             android.view.KeyEvent.KEYCODE_VOLUME_DOWN,
             android.view.KeyEvent.KEYCODE_VOLUME_UP,
             android.view.KeyEvent.KEYCODE_POWER -> {
-                // Kullanici ses/guc tusuna bastiginda aramayi reddetmeden sadece calan zili sustur
+                // When the user presses the volume/power key, only silence the ringing without rejecting the call
                 pbxService?.stopRinging()
                 return true
             }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Kalıcı denetim kaydı (audit log) görüntüleme sayfası — 2026-08-24.
+ * Permanent audit record (audit log) viewing page — 2026-08-24.
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 

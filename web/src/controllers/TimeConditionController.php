@@ -9,30 +9,14 @@ class TimeConditionController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_time_condition'])) {
-                $res = PBXHelper::saveTimeCondition($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_time_conditions', $_POST['tc_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_time_condition'])) {
-                $res = PBXHelper::deleteTimeCondition($_POST['tc_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['save_time_group'])) {
-                $res = PBXHelper::saveTimeGroup($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_tg_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_time_groups', $_POST['tg_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_time_group'])) {
-                $res = PBXHelper::deleteTimeGroup($_POST['tg_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_time_condition' => fn() => TimeConditionService::saveTimeCondition($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('pbx_time_conditions', $_POST['tc_id'] ?? 0, static::csrfToken()),
+            'delete_time_condition' => fn() => TimeConditionService::deleteTimeCondition($_POST['tc_id'] ?? 0, static::csrfToken()),
+            'save_time_group' => fn() => TimeConditionService::saveTimeGroup($_POST),
+            'toggle_tg_status' => fn() => PBXHelper::toggleStatus('pbx_time_groups', $_POST['tg_id'] ?? 0, static::csrfToken()),
+            'delete_time_group' => fn() => TimeConditionService::deleteTimeGroup($_POST['tg_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $tcs = TimeConditionRepository::allWithGroupInfo();
         $time_groups = TimeConditionRepository::allTimeGroups();
@@ -47,6 +31,6 @@ class TimeConditionController extends BaseController
             'tg_map' => $tg_map,
             'modules' => $modules,
             'day_names' => $day_names,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

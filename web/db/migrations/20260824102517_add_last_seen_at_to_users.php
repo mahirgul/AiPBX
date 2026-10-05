@@ -5,11 +5,11 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * "Aynı anda başka bir admin de sistemde" uyarısı için (2026-08-24, kullanıcı
- * isteği) — her istekte (en fazla ~20sn'de bir, throttled) güncellenir, bkz.
- * auth.php::_touchLastSeen(). last_activity (SESSION'da, idle-timeout için)
- * ile KARIŞTIRILMASIN — bu DB'de, session'lar arası "kim şu an aktif"
- * sorgusu için.
+ * For the "another admin is in the system right now" warning (2026-08-24,
+ * user request) — updated on requests (at most every ~20 s, throttled), see
+ * auth.php::_touchLastSeen(). Do NOT CONFUSE it with last_activity (in the
+ * SESSION, for the idle timeout) — this one is in the DB, for the
+ * cross-session "who is active right now" query.
  */
 final class AddLastSeenAtToUsers extends AbstractMigration
 {

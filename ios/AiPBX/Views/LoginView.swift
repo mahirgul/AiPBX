@@ -201,7 +201,7 @@ public struct LoginView: View {
                             }
                             .disabled(appState.isLoading || serverUrl.isEmpty)
 
-                            // QR Kod ile Hızlı Giriş Butonu
+                            // Quick sign-in with a QR code button
                             Button(action: { isShowingScanner = true }) {
                                 HStack(spacing: 10) {
                                     Image(systemName: "qrcode.viewfinder")
@@ -291,7 +291,7 @@ public struct LoginView: View {
                 let normalized = server.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 let current = appState.baseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 if normalized.caseInsensitiveCompare(current) != .orderedSame {
-                    // Kayıtlı sunucudan farklı bir santral: önce kullanıcıya sor.
+                    // A PBX different from the saved server: ask the user first.
                     appState.pendingLinkLogin = AppState.PendingLinkLogin(serverUrl: normalized, token: qrToken)
                     return
                 }

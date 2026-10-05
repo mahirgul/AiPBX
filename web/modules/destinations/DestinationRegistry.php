@@ -78,7 +78,7 @@ class DestinationRegistry {
 
     /**
      * Consistent badge color per destination type, shared across all admin screens
-     * (Gelen Rotalar, IVR, Zaman Koşulları) so the same target type always reads the
+     * (inbound routes, IVR, time conditions) so the same target type always reads the
      * same color no matter which page it's shown on.
      */
     public static function badgeClassFor(?string $destType): string {

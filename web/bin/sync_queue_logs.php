@@ -3,19 +3,19 @@
 /**
  * Synchronize Asterisk queue_log (ODBC → asteriskqueue) into the portal's cc_queue_logs table.
  *
- * Kaynak: `asteriskqueue` — Asterisk tarafından CANLI yazılır (extconfig: queue_log => odbc,asterisk,asteriskqueue).
- * Yerel kolonlar: time (datetime string), callid, queuename, agent, event, data1..data5.
- * Hedef: `cc_queue_logs` — portal raporlarının okuduğu tablo: time_id (epoch int), call_id, queue_name, ...
+ * Source: `asteriskqueue` — written LIVE by Asterisk (extconfig: queue_log => odbc,asterisk,asteriskqueue).
+ * Native columns: time (datetime string), callid, queuename, agent, event, data1..data5.
+ * Target: `cc_queue_logs` — the table the portal reports read: time_id (epoch int), call_id, queue_name, ...
  */
 require_once dirname(__DIR__) . '/config.php';
 
 try {
     $db = getDB();
 
-    // Son senkronize edilen epoch (portal tablosundan)
+    // The last synchronized epoch (from the portal table)
     $max_time = intval($db->query("SELECT IFNULL(MAX(time_id), 0) FROM cc_queue_logs")->fetchColumn());
 
-    // Asterisk'in canlı queue_log tablosundan yeni satırlar (60 sn tolerans penceresi)
+    // New rows from Asterisk's live queue_log table (60 s tolerance window)
     $rows = $db->query(
         "SELECT time, callid, queuename, agent, event, data1, data2, data3, data4, data5
          FROM asteriskqueue

@@ -6,23 +6,24 @@ define('CC_DISPATCH_ACTIVE', true);
 require_once dirname(__DIR__, 2) . '/api/cc_actions/cc_lib.php';
 
 /**
- * Transferde ARAYANIN kanalının bulunması.
+ * Finding the CALLER's channel on a transfer.
  *
- * 2026-09-15'te ölçülen hata: transfer aksiyonu TEMSİLCİNİN kanalını
- * Redirect ediyordu. Tek kanallı Redirect o kanalı köprüden çeker; arayan
- * ortada kalır, Queue() uygulamasından düşer ve `h` uzantısında kapanır.
- * Canlı logda temsilci 8915'e giderken aynı saniyede arayan Hangup yedi.
+ * The bug measured on 2026-09-15: the transfer action Redirected the
+ * AGENT's channel. A single-channel Redirect pulls that channel out of the
+ * bridge; the caller is left alone, drops out of Queue() and hangs up in the
+ * `h` extension. In the live log the caller got Hangup in the same second
+ * the agent went to 8915.
  *
- * Doğrusu arayanın kanalını hedefe yönlendirmektir. Zorluk, kuyruk
- * çağrılarında araya Local kanal çiftinin girmesi ve optimize edilip
- * yoldan çekilmemiş olmasıdır:
+ * The right thing is to redirect the caller's channel to the target. The
+ * difficulty is the Local channel pair that queue calls get in between, which
+ * is not optimized away:
  *
- *   köprü A:  PJSIP/3002-webrtc  +  Local/3002@from-internal-pbx;2
- *   köprü B:  Local/3002@from-internal-pbx;1  +  PJSIP/ccisgw   <- arayan
+ *   bridge A:  PJSIP/3002-webrtc  +  Local/3002@from-internal-pbx;2
+ *   bridge B:  Local/3002@from-internal-pbx;1  +  PJSIP/ccisgw   <- caller
  */
 final class TransferChannelTest extends TestCase
 {
-    /** core show channels concise satırı üretir (14 sütun, '!' ayraçlı). */
+    /** Builds a core show channels concise line (14 columns, '!'-separated). */
     private function satir(string $kanal, string $kopru, string $cid = ''): string
     {
         $c = array_fill(0, 14, '');
@@ -33,7 +34,7 @@ final class TransferChannelTest extends TestCase
         return implode('!', $c);
     }
 
-    /** Kuyruk çağrısı: araya Local çifti girmiş, optimize edilmemiş. */
+    /** Queue call: a Local pair sits in between, not optimized away. */
     public function testLocalKanalZinciriBoyuncaArayaniBulur(): void
     {
         $lines = [
@@ -50,7 +51,7 @@ final class TransferChannelTest extends TestCase
         );
     }
 
-    /** Local kanal optimize edilmişse temsilci doğrudan arayana köprülüdür. */
+    /** When the Local channel is optimized away, the agent is bridged straight to the caller. */
     public function testLocalOptimizeEdilmisseDogrudanEsiBulur(): void
     {
         $lines = [
@@ -64,7 +65,7 @@ final class TransferChannelTest extends TestCase
         );
     }
 
-    /** Temsilcinin aktif çağrısı yoksa null dönmeli — yanlış kanal seçilmemeli. */
+    /** With no active call for the agent it must return null — no wrong channel may be picked. */
     public function testAktifCagriYoksaNullDoner(): void
     {
         $lines = [
@@ -86,7 +87,7 @@ final class TransferChannelTest extends TestCase
         $this->assertNull(findCallerChannelForAgent('3002', $lines));
     }
 
-    /** Süre 11. sütundadır; 10. sütun amaflags (hep 3) — önceden her görüşme "00:03" görünüyordu. */
+    /** The duration is column 11; column 10 is amaflags (always 3) — every call used to show "00:03". */
     public function testGorusmeSuresiDogruSutundanOkunur(): void
     {
         $arayan = $this->satir('PJSIP/ccisgw-00000115', 'b1', '05321112233');
@@ -104,7 +105,7 @@ final class TransferChannelTest extends TestCase
         $this->assertSame('02:05', $d['duration_formatted']);
     }
 
-    /** queue show: bekleyen arayanlar üye sayılmaz; Asterisk 22 mola biçimi tanınır. */
+    /** queue show: waiting callers are not members; the Asterisk 22 pause format is recognized. */
     public function testKuyrukCiktisiUyeVeMolaDurumu(): void
     {
         $out = [
@@ -119,7 +120,7 @@ final class TransferChannelTest extends TestCase
         $q = parseAsteriskQueuesOutput($out)['queue_cc'];
 
         $this->assertSame(['3001', '3002', '3003'], array_map('strval', array_keys($q['members'])));
-        // Yalnızca çalan telefon görüşme değildir.
+        // A ringing phone alone is not a call.
         $this->assertFalse($q['members']['3003']['is_busy']);
         $this->assertTrue($q['members']['3003']['is_ringing']);
         $this->assertFalse($q['members']['3002']['is_ringing']);

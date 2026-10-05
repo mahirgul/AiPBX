@@ -21,9 +21,9 @@ class TrunkService {
             if (empty($trunk_name) || empty($ip_address)) {
                 throw new \Exception("Trunk sistem ismi ve IP adresi zorunludur!");
             }
-            // Format doğrulaması: geçersiz bir IP/hostname veya port aralık dışıysa
-            // PJSIP config'e yazılıp reload sırasında sessizce hatalı/işlevsiz bir
-            // trunk oluşturabiliyordu (2026-08-21 denetiminde bulundu).
+            // Format validation: an invalid IP/hostname or an out-of-range port
+            // could be written to the PJSIP config and silently produce a
+            // broken/useless trunk on reload (found in the 2026-08-21 audit).
             $is_valid_ip = filter_var($ip_address, FILTER_VALIDATE_IP) !== false;
             $is_valid_hostname = (bool)preg_match('/^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/', $ip_address);
             if (!$is_valid_ip && !$is_valid_hostname) {
@@ -41,16 +41,16 @@ class TrunkService {
                 throw new \Exception("Port numarası 1-65535 aralığında olmalıdır!");
             }
 
-            // Bağlantı modu: 'ip' (IP tabanlı identify, varsayılan) veya 'register'
-            // (karşı santral bize kaydolur). Bilinmeyen değer 'ip'e düşer.
+            // Connection mode: 'ip' (IP-based identify, default) or 'register'
+            // (the far PBX registers to us). An unknown value falls back to 'ip'.
             $connection_mode = (($data['connection_mode'] ?? 'ip') === 'register') ? 'register' : 'ip';
 
             $auth_username = trim($data['auth_username'] ?? '');
             $auth_password = trim($data['auth_password'] ?? '');
 
-            // Kayıt modunda kimlik bilgisi ZORUNLU: auth= satırı üretilemezse
-            // Asterisk gelen REGISTER'ı PAROLASIZ kabul eder, yani aynı IP'ye
-            // ulaşabilen herkes trunk'ı ele geçirebilir.
+            // Credentials are REQUIRED in register mode: if no auth= line can be
+            // generated, Asterisk accepts the incoming REGISTER WITHOUT A
+            // PASSWORD, so anyone who can reach the same IP could take over the trunk.
             if ($connection_mode === 'register' && ($auth_username === '' || $auth_password === '')) {
                 throw new \Exception(
                     'Kayıt modunda kullanıcı adı ve parola zorunludur — '
@@ -185,10 +185,10 @@ class TrunkService {
             SIPHelper::syncTrunkToSIP($trunk_data);
 
             markPendingSync('trunks', 'trunk', $trunk_name, "Trunk: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            // send_caller_name'i TÜKETEN yer giden rota dialplan'ı
+            // What CONSUMES send_caller_name is the outbound route dialplan
             // (SyncDialplan.php::buildTrunkCallerIdLine -> extensions_outbound.conf),
-            // pjsip_trunks.conf değil — bu domain de işaretlenmezse "Uygula"
-            // sonrası ayar etkisiz kalıyordu (2026-08-31 denetiminde bulundu).
+            // not pjsip_trunks.conf — without marking this domain too, the
+            // setting had no effect after "Apply" (found in the 2026-08-31 audit).
             markPendingSync('outbound_dialplan', 'trunk', $trunk_name, "Trunk CID ayarı: {$title} ({$trunk_name})", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('inbound_dialplan', 'trunk', $trunk_name, "Trunk gelen rota/DID ayarı: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return "SIP Trunk '{$title}' ({$trunk_name}) kaydedildi! Etkili olması için Uygula sayfasından gönderin.";

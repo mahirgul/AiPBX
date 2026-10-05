@@ -3,16 +3,16 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Gelen çağrılarda aranan numara raporda "s" görünüyordu.
+ * The dialed number showed as "s" in the report for incoming calls.
  *
- * Neden: gelen rota dialplan'ı `Goto(app-timecondition-1,s,1)` yapıyor ve
- * CDR'ın `dst` alanı bu Goto hedefiyle ("s") kalıyor. `cdrs` görünümü de
- * `pbx_dids`'e `dst` üzerinden bağlandığı için eşleşme hiç tutmuyor ve
- * "Gelen Rota: s" yazıyordu.
+ * Why: the inbound route dialplan does `Goto(app-timecondition-1,s,1)` and
+ * the CDR's `dst` field keeps that Goto target ("s"). The `cdrs` view joined
+ * `pbx_dids` on `dst` too, so the match never worked and it said "Inbound
+ * route: s".
  *
- * Dialplan zaten `Set(CDR(did)=...)` yazıyordu ama `asteriskcdr` tablosunda
- * `did` sütunu YOKTU — cdr_adaptive_odbc yalnızca var olan sütunları yazar,
- * dolayısıyla DID hiçbir yere kaydedilmiyordu.
+ * The dialplan already wrote `Set(CDR(did)=...)`, but the `asteriskcdr` table
+ * had NO `did` column — cdr_adaptive_odbc only writes existing columns, so the
+ * DID was stored nowhere.
  */
 final class CdrDidColumnAndView extends AbstractMigration
 {
@@ -25,17 +25,17 @@ final class CdrDidColumnAndView extends AbstractMigration
                  ->update();
         }
 
-        // Görünüm, hedefi önce `did`'den okur; yoksa eski davranışa (dst) döner.
+        // The view reads the target from `did` first; otherwise it falls back to the old behaviour (dst).
         $this->execute($this->gorunum('coalesce(nullif(`c`.`did`, \'\'), `c`.`dst`)'));
     }
 
     public function down(): void
     {
-        // Görünümü did'siz haline döndür.
+        // Put the view back to its did-less form.
         $this->execute($this->gorunum('`c`.`dst`'));
     }
 
-    /** Görünüm tanımı; hedef ifadesi tek yerden veriliyor ki up/down ayrışmasın. */
+    /** The view definition; the target expression is given in one place so up/down do not diverge. */
     private function gorunum(string $hedef): string
     {
         return "CREATE OR REPLACE VIEW `cdrs` AS SELECT

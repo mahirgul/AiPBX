@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
- * Asterisk (Santral) Gelişmiş Ayarları Service
+ * Asterisk (PBX) advanced settings service
  */
 class AsteriskSettingsService {
     public static function defaults(): array
@@ -22,43 +22,45 @@ class AsteriskSettingsService {
             'pjsip_internal_dial_timeout' => '30',
             'pjsip_external_dial_timeout' => '60',
 
-            // RTP (medya) ayarları — /etc/asterisk/rtp.conf'a SyncRtpSettings ile
-            // yazılır. rtp_strict: Asterisk, öğrendiği uzak adres/porttan BAŞKA
-            // bir kaynaktan gelen RTP'yi SESSİZCE düşürür; karşı santral medyayı
-            // beklenmedik bir porttan gönderirse "ses yok" şikayeti üretir ve
-            // logda hiç iz bırakmaz. Teşhis için kapatılabilsin diye panele alındı
-            // (2026-09-01). Port aralığı coturn'ünkiyle (13479-14999) ÇAKIŞMAMALI.
+            // RTP (media) settings — written to /etc/asterisk/rtp.conf by
+            // SyncRtpSettings. rtp_strict: Asterisk SILENTLY drops RTP coming
+            // from a source OTHER than the remote address/port it learned; if
+            // the far PBX sends media from an unexpected port this produces a
+            // "no audio" complaint and leaves no trace in the log. Put in the
+            // panel so it can be switched off for diagnosis (2026-09-01). The
+            // port range MUST NOT overlap coturn's (13479-14999).
             'rtp_start'  => '10000',
             'rtp_end'    => '12999',
             'rtp_strict' => 'yes',
 
-            // T.38 UDPTL (faks medya) ayarları — /etc/asterisk/udptl.conf'a SyncUdptlSettings ile yazılır.
+            // T.38 UDPTL (fax media) settings — written to /etc/asterisk/udptl.conf by SyncUdptlSettings.
             'udptl_start'       => '4100',
             'udptl_end'         => '4999',
             'udptl_checksums'   => 'yes',
             'udptl_fec_entries' => '3',
             'udptl_fec_span'    => '3',
 
-            // Marka & Logo Ayarları artık ayrı bir sayfada (src/brand_settings.php)
+            // Brand & logo settings live on a separate page now (src/brand_settings.php)
 
-            // Softphone zil/çevirme tonu (boş = header_phone.js'teki varsayılan dosya)
+            // Softphone ring/ringback tone (empty = the default file in header_phone.js)
             'webrtc_ring_incoming' => '',
             'webrtc_ring_outgoing' => '',
 
-            // Görüntülü arama (WebRTC video). Varsayılan KAPALI: video ses'e göre
-            // kat kat fazla bant genişliği tüketir, kurum ağı hazır olmadan
-            // açılmamalı. Kapalıyken softphone'da "Görüntülü Ara" butonu hiç
-            // görünmez ve gelen video teklifleri sesli olarak karşılanır.
-            // Çözünürlük/fps koda gömülmez, buradan yönetilir (getUserMedia
-            // constraint'i olarak header_phone.js'e aktarılır).
+            // Video calls (WebRTC video). OFF by default: video uses many times
+            // the bandwidth of audio and should not be enabled before the
+            // organisation's network is ready. When off, the softphone never
+            // shows the "Video call" button and incoming video offers are
+            // answered as audio. Resolution/fps are not hard-coded but managed
+            // here (passed to header_phone.js as a getUserMedia constraint).
             'video_calls_enabled'  => '0',
             'video_max_resolution' => '1280x720',
             'video_max_framerate'  => '24',
 
-            // Sistem varsayılan sesli anons dili (Gelen Rota/IVR/Kuyruk kendi dilini
-            // ayarlamazsa buna düşer). /etc/asterisk/asterisk.conf'a syncDefaultLanguage()
-            // ile yazılır — DİKKAT: diğer tüm ayarların aksine sadece TAM Asterisk
-            // yeniden başlatmasıyla devreye girer, "reload" yetmez (bkz. asterisk_sync.php).
+            // System default spoken prompt language (used when the inbound
+            // route/IVR/queue sets no language of its own). Written to
+            // /etc/asterisk/asterisk.conf by syncDefaultLanguage() — CAUTION:
+            // unlike every other setting it takes effect only after a FULL
+            // Asterisk restart, a "reload" is not enough (see asterisk_sync.php).
             'system_default_language' => 'tr',
         ];
     }
@@ -73,11 +75,11 @@ class AsteriskSettingsService {
         }
 
         $db = getDB();
-        // Codec adları doğrudan pjsip endpoint'lerinin `allow=` satırına yazılıyor
-        // (SyncExtensions.php). POST'tan gelen ham değeri config dosyasına
-        // taşımamak için whitelist'ten geçiriliyor — listede olmayan her şey
-        // sessizce düşer, sıra korunur. Video codec'leri (vp8/h264) yalnızca
-        // WebRTC tarafında anlamlı: masaüstü SIP telefonlar video yapmıyor.
+        // Codec names are written straight into the `allow=` line of the pjsip
+        // endpoints (SyncExtensions.php). The raw POST value goes through a
+        // whitelist so it never reaches the config file — anything not on the
+        // list is silently dropped, the order is kept. Video codecs (vp8/h264)
+        // only make sense on the WebRTC side: desk SIP phones do no video.
         $allowed_audio = ['opus', 'alaw', 'ulaw', 'g722', 'g729'];
         $allowed_webrtc = array_merge($allowed_audio, ['vp8', 'h264']);
         $filter_codecs = static function ($posted, array $allowed, string $fallback): string {
@@ -98,10 +100,11 @@ class AsteriskSettingsService {
             'pjsip_local_net' => trim($post['pjsip_local_net'] ?? '192.168.1.0/24'),
             'pjsip_codecs' => $submitted_codecs,
             'pjsip_wired_codecs' => $submitted_wired_codecs,
-            // SIP User-Agent/Server başlığı (pjsip.conf [global] user_agent) — dışarıya
-            // hangi sürüm/ürün bilgisini verdiğimizi admin belirleyebilsin diye
-            // ayarlanabilir yapıldı (2026-08-31, kullanıcı isteği). CR/LF temizleniyor:
-            // ham SIP başlığına gidiyor, satır sonu kabul edilirse başlık enjeksiyonu olur.
+            // SIP User-Agent/Server header (pjsip.conf [global] user_agent) —
+            // made configurable so the admin decides which version/product
+            // information we reveal (2026-08-31, user request). CR/LF is
+            // stripped: it goes into a raw SIP header, accepting line breaks
+            // would allow header injection.
             'pjsip_user_agent' => preg_replace('/[\r\n]+/', ' ', trim($post['pjsip_user_agent'] ?? 'Asterisk PBX')),
             'pjsip_direct_media' => trim($post['pjsip_direct_media'] ?? 'no'),
             'pjsip_rtp_symmetric' => trim($post['pjsip_rtp_symmetric'] ?? 'yes'),
@@ -112,8 +115,8 @@ class AsteriskSettingsService {
             'webrtc_ring_incoming' => preg_replace('/[^a-zA-Z0-9_-]/', '', trim($post['webrtc_ring_incoming'] ?? '')),
             'webrtc_ring_outgoing' => preg_replace('/[^a-zA-Z0-9_-]/', '', trim($post['webrtc_ring_outgoing'] ?? '')),
 
-            // Görüntülü arama. Çözünürlük serbest metin DEĞİL: doğrudan
-            // getUserMedia constraint'ine gidiyor, whitelist dışına çıkılmıyor.
+            // Video calls. The resolution is NOT free text: it goes straight
+            // into the getUserMedia constraint, so it stays within the whitelist.
             'video_calls_enabled' => !empty($post['video_calls_enabled']) ? '1' : '0',
             'video_max_resolution' => in_array($post['video_max_resolution'] ?? '', ['640x360', '960x540', '1280x720', '1920x1080'], true)
                 ? $post['video_max_resolution'] : '1280x720',
@@ -124,20 +127,21 @@ class AsteriskSettingsService {
                 ? $post['system_default_language'] : 'tr',
         ];
 
-        // --- RTP (medya) ayarları -------------------------------------------
+        // --- RTP (media) settings --------------------------------------------
         $rtp_start = max(1024, min(65534, intval($post['rtp_start'] ?? 10000)));
         $rtp_end   = max(1025, min(65535, intval($post['rtp_end'] ?? 12999)));
         if ($rtp_end <= $rtp_start) {
             return ['success' => false, 'error' => 'RTP bitiş portu, başlangıç portundan büyük olmalı!'];
         }
-        // Asterisk her çağrı için aralıktan port çiftleri ayırıyor; çok dar bir
-        // aralık eşzamanlı çağrıları sessizce sınırlar.
+        // Asterisk allocates port pairs from the range for every call; a range
+        // that is too narrow silently limits concurrent calls.
         if (($rtp_end - $rtp_start) < 100) {
             return ['success' => false, 'error' => 'RTP port aralığı en az 100 port olmalı (eşzamanlı çağrı sayısını sınırlar).'];
         }
-        // coturn ile çakışma: ikisi de aynı sunucuda ve aynı portu ikisi birden
-        // bağlayamaz — çakışırsa TURN relay'i ya da RTP sessizce bozulur.
-        // (Bu çakışma 2026-08-20'de gerçekten yaşandı, aralık o yüzden bölünmüştü.)
+        // Overlap with coturn: both run on the same server and two of them
+        // cannot bind the same port — on overlap the TURN relay or RTP breaks
+        // silently. (This overlap really happened on 2026-08-20; that is why
+        // the range was split.)
         $coturn_start = 13479;
         $coturn_end   = 14999;
         if ($rtp_start <= $coturn_end && $rtp_end >= $coturn_start) {
@@ -149,7 +153,7 @@ class AsteriskSettingsService {
         $new_settings['rtp_end']    = (string) $rtp_end;
         $new_settings['rtp_strict'] = (($post['rtp_strict'] ?? 'yes') === 'no') ? 'no' : 'yes';
 
-        // --- T.38 UDPTL (faks medya) ayarları --------------------------------
+        // --- T.38 UDPTL (fax media) settings ----------------------------------
         $udptl_start = max(1024, min(65534, intval($post['udptl_start'] ?? 4100)));
         $udptl_end   = max(1025, min(65535, intval($post['udptl_end'] ?? 4999)));
         if ($udptl_end <= $udptl_start) {
@@ -161,8 +165,8 @@ class AsteriskSettingsService {
         $new_settings['udptl_fec_entries'] = (string) max(0, min(9, intval($post['udptl_fec_entries'] ?? 3)));
         $new_settings['udptl_fec_span']    = (string) max(0, min(9, intval($post['udptl_fec_span'] ?? 3)));
 
-        // Port aralığı DEĞİŞTİYSE reload yetmez, tam restart gerekir — kullanıcıya
-        // bunu söyleyebilmek için önceki değerle karşılaştırılıyor.
+        // If the port range CHANGED, a reload is not enough and a full restart
+        // is needed — compared with the previous value so the user can be told.
         $rtp_range_changed = (getSystemSetting('rtp_start', '10000') !== $new_settings['rtp_start'])
                           || (getSystemSetting('rtp_end', '12999') !== $new_settings['rtp_end']);
 
@@ -171,7 +175,7 @@ class AsteriskSettingsService {
             $stmt->execute([$k, $v]);
         }
 
-        // Transport-level ayarları (port/dış IP/yerel ağlar) pjsipsettings tablosuna yansıt
+        // Mirror the transport-level settings (port/external IP/local networks) into the pjsipsettings table
         $pj_stmt = $db->prepare('INSERT INTO pjsipsettings (keyword, data, seq, type) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE data = VALUES(data)');
         $pj_stmt->execute(['bindport', $new_settings['pjsip_udp_port']]);
         $pj_stmt->execute(['wss_bindport', $new_settings['pjsip_wss_port']]);
@@ -192,13 +196,14 @@ class AsteriskSettingsService {
         $stale = $db->prepare("DELETE FROM pjsipsettings WHERE keyword REGEXP '^(localnet|netmask)_[0-9]+$' AND CAST(SUBSTRING_INDEX(keyword, '_', -1) AS UNSIGNED) >= ?");
         $stale->execute([$net_index]);
 
-        // Bu tek kayıt işlemi birden fazla domain'i BİRDEN etkiliyor (port/IP/ağ
-        // değişikliği transport'ları, kodek/timeout değişikliği dahili+dialplan'ı,
-        // vb.) — her biri kendi domain'inde işaretlenir, Asterisk'e ANINDA
-        // dokunulmaz; admin /pending-sync sayfasından Gönder'e basana kadar bekler
-        // (2026-08-24, ertelenmiş reload sistemi — syncDefaultLanguage() bunun
-        // DIŞINDA tutuldu, çünkü o "reload" değil TAM RESTART gerektiriyor, ayrı
-        // bir onay/aksiyon kategorisi, Dashboard'daki Restart butonuyla ilişkili).
+        // This single save affects SEVERAL domains AT ONCE (port/IP/network
+        // changes the transports, codec/timeout changes the extensions +
+        // dialplan, etc.) — each is marked in its own domain, Asterisk is NOT
+        // touched RIGHT AWAY; it waits until the admin presses Apply on the
+        // /pending-sync page (2026-08-24, deferred reload system —
+        // syncDefaultLanguage() is kept OUTSIDE it because it needs a FULL
+        // RESTART rather than a "reload": a separate confirmation/action
+        // category, tied to the Restart button on the Dashboard).
         $uid = $_SESSION['user_id'] ?? null;
         $label = "Genel Asterisk Ayarları (PJSIP/kodek/zaman aşımı)";
         markPendingSync('transports', 'system_setting', 'general', $label, 'update', $uid);

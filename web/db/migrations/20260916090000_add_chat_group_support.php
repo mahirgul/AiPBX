@@ -3,13 +3,13 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * AI-PBX Chat - Grup Sohbeti Desteği (chat_conversations, chat_participants, chat_messages genişletmesi).
+ * AI-PBX Chat - group chat support (extends chat_conversations, chat_participants, chat_messages).
  */
 final class AddChatGroupSupport extends AbstractMigration
 {
     public function up(): void
     {
-        // 1. chat_conversations tablosuna avatar, açıklama ve soft delete kolonları
+        // 1. avatar, description and soft-delete columns on chat_conversations
         if ($this->hasTable('chat_conversations')) {
             $table = $this->table('chat_conversations');
             if (!$table->hasColumn('avatar_url')) {
@@ -24,7 +24,7 @@ final class AddChatGroupSupport extends AbstractMigration
             $table->update();
         }
 
-        // 2. chat_participants tablosuna rol, ekleyen kişi ve ayrılma tarihi
+        // 2. role, added-by and left-at columns on chat_participants
         if ($this->hasTable('chat_participants')) {
             $table = $this->table('chat_participants');
             if (!$table->hasColumn('role')) {
@@ -39,7 +39,7 @@ final class AddChatGroupSupport extends AbstractMigration
             $table->update();
         }
 
-        // 3. chat_messages tablosuna sistem olayları için kolonlar
+        // 3. columns for system events on chat_messages
         if ($this->hasTable('chat_messages')) {
             $table = $this->table('chat_messages');
             if (!$table->hasColumn('system_event')) {

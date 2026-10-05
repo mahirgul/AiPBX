@@ -7,22 +7,16 @@ class BrandSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['save_brand_settings'])) {
-            $res = BrandSettingsService::saveSettings($_POST);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
-        } elseif (static::isPost() && isset($_POST['reset_brand_settings'])) {
-            $res = BrandSettingsService::resetToDefaults($_POST);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
-        }
+        $notices = static::handlePost([
+            'save_brand_settings' => fn() => BrandSettingsService::saveSettings($_POST),
+            'reset_brand_settings' => fn() => BrandSettingsService::resetToDefaults($_POST),
+        ]);
 
         $defaults = BrandSettingsService::defaults();
         $current_db_settings = BrandSettingsRepository::currentSettings();
         $s = array_merge($defaults, $current_db_settings);
 
-        // site_logo_image/site_favicon_url'deki eski ?v= cache-bust parametresini önizlemede tekrarlamamak için ayıkla
+        // Strip the old ?v= cache-bust parameter from site_logo_image/site_favicon_url so it is not repeated in the preview
         $logo_preview_url = $s['site_logo_image'] ? preg_replace('/\?.*$/', '', $s['site_logo_image']) . '?v=' . time() : BRAND_DEFAULT_LOGO_URL;
         $favicon_preview_url = $s['site_favicon_url'] ? preg_replace('/\?.*$/', '', $s['site_favicon_url']) . '?v=' . time() : '';
 
@@ -31,6 +25,6 @@ class BrandSettingsController extends BaseController
             's' => $s,
             'logo_preview_url' => $logo_preview_url,
             'favicon_preview_url' => $favicon_preview_url,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

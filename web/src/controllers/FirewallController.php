@@ -7,33 +7,16 @@ class FirewallController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['add_port_rule'])) {
-                $res = FirewallService::addPortRule(
-                    $_POST['port'] ?? '',
-                    $_POST['protocol'] ?? 'tcp',
-                    $_POST['source_subnet'] ?? '',
-                    $_POST['csrf_token'] ?? ''
-                );
-            } elseif (isset($_POST['remove_port_rule'])) {
-                $res = FirewallService::removePortRule(
-                    $_POST['port'] ?? '',
-                    $_POST['protocol'] ?? 'tcp',
-                    $_POST['csrf_token'] ?? ''
-                );
-            } elseif (isset($_POST['remove_rich_rule'])) {
-                $res = FirewallService::removeRichRule(
-                    $_POST['rule'] ?? '',
-                    $_POST['csrf_token'] ?? ''
-                );
-            } else {
-                $res = ['success' => false, 'error' => 'Bilinmeyen işlem.'];
-            }
-            if ($res['success']) $message = $res['message'] ?? ''; else $error = $res['error'] ?? '';
-        }
+        $notices = static::handlePost([
+            'add_port_rule' => fn() => FirewallService::addPortRule(
+                $_POST['port'] ?? '',
+                $_POST['protocol'] ?? 'tcp',
+                $_POST['source_subnet'] ?? '',
+                static::csrfToken()
+            ),
+            'remove_port_rule' => fn() => FirewallService::removePortRule($_POST['port'] ?? '', $_POST['protocol'] ?? 'tcp', static::csrfToken()),
+            'remove_rich_rule' => fn() => FirewallService::removeRichRule($_POST['rule'] ?? '', static::csrfToken()),
+        ]);
 
         $status = FirewallService::getStatus();
 
@@ -42,6 +25,6 @@ class FirewallController extends BaseController
             'status' => $status,
             'protected_ports' => FirewallService::PROTECTED_PORTS,
             'csrf_token' => getCSRFToken(),
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

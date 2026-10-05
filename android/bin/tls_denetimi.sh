@@ -1,7 +1,7 @@
 #!/bin/bash
-# TLS baypaslarinin geri gelmesini engelleyen denetim.
-# Google Play 2026-09-05'te "Unsafe Implementation of WebView SSL Error
-# Handler" nedeniyle reddetti; ayni sinifta iki baypas daha vardi.
+# Check that keeps TLS bypasses from coming back.
+# Google Play rejected the app on 2026-09-05 for "Unsafe Implementation of
+# WebView SSL Error Handler"; there were two more bypasses of the same kind.
 set -u
 KOK="$(cd "$(dirname "$0")/.." && pwd)"
 HATA=0

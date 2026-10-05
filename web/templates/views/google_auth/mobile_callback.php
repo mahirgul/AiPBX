@@ -1,4 +1,4 @@
-<?php /* Düzen: templates/layouts/auth_header.php — GoogleAuthController::renderMobileCallback() */ ?>
+<?php /* Layout: templates/layouts/auth_header.php — GoogleAuthController::renderMobileCallback() */ ?>
 <div class="auth-card" style="max-width: 400px; text-align: center; padding: 32px 24px; border-radius: 16px; margin: auto;">
     <div style="font-size: 48px; margin-bottom: 16px; color: <?php echo $success ? 'var(--primary)' : 'var(--danger)'; ?>;">
         <i class="fas <?php echo $success ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
@@ -12,7 +12,7 @@
     </a>
 </div>
 <script>
-    // Otomatik uygulamaya dönmeyi dene
+    // Try to return to the app automatically
     window.location.href = <?php echo json_encode($deep_link); ?>;
     setTimeout(function () {
         var btn = document.getElementById('btnReturn');

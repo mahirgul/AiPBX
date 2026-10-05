@@ -6,8 +6,8 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/services/PushSettingsService.php';
 
 /**
- * Push ayarı değiştiğinde markPendingSync('dialplan') çağrılıyordu: var olmayan
- * domain + eksik argüman → ArgumentCountError, ayar kaydı ölüyordu.
+ * When a push setting changed, markPendingSync('dialplan') was called: a domain
+ * that does not exist + too few arguments → ArgumentCountError, the save died.
  */
 final class PushSettingsSaveTest extends TestCase
 {

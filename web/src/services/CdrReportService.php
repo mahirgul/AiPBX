@@ -8,12 +8,12 @@ require_once __DIR__ . '/../asterisk_sync.php';
 
 class CdrReportService {
     /**
-     * Bir CDR kaydını (ve varsa fiziksel ses dosyasını) siler. Önceden
-     * cdr_reports.php'nin içine gömülüydü; MVC göçü sırasında (2026-08-22)
-     * buraya taşındı, mantık DEĞİŞTİRİLMEDİ — diğer sayfalardaki
-     * PBXHelper::handleAction() akışından farklı olarak, bu sayfa başarısızlıkta
-     * bile normal render'a devam ediyordu (redirect/exit YOK), bu davranış
-     * true/false dönüş değeriyle korunuyor.
+     * Deletes a CDR record (and its physical audio file, if any). It used to
+     * be embedded in cdr_reports.php; moved here during the MVC migration
+     * (2026-08-22), logic UNCHANGED — unlike the PBXHelper::handleAction()
+     * flow on the other pages, this page kept rendering normally even on
+     * failure (NO redirect/exit); that behaviour is kept through the
+     * true/false return value.
      */
     public static function deleteCdr($del_id, $csrf_token, bool $canDeleteCdr): bool
     {

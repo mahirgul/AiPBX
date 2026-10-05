@@ -1,9 +1,9 @@
 <?php
 /**
- * Kontrol Paneli için veri toplama katmanı (DB sorguları + sistem/OS
- * metrikleri). Eski src/dashboard.php'deki tüm "$db->query(...)" ve
- * shell_exec() tabanlı veri toplama mantığı buraya taşındı — Controller
- * artık sadece bu sınıfı çağırıp View'a veri geçiriyor.
+ * Data collection layer for the dashboard (DB queries + system/OS metrics).
+ * All the "$db->query(...)" and shell_exec()-based data collection of the
+ * old src/dashboard.php moved here — the controller now just calls this
+ * class and passes the data to the view.
  */
 require_once __DIR__ . '/../asterisk_helper.php';
 
@@ -16,8 +16,8 @@ class DashboardRepository extends BaseRepository
         $user_count = (int)$db->query('SELECT COUNT(*) FROM sys_users')->fetchColumn();
         $ext_count = (int)$db->query("SELECT COUNT(*) FROM sys_users WHERE extension IS NOT NULL AND extension != ''")->fetchColumn();
 
-        // Dual-Endpoint mimarisinde her dahili -sip/-webrtc iki endpoint'e
-        // sahip; çift saymamak için taban dahili numarasına göre grupla.
+        // In the dual-endpoint architecture every extension has two endpoints,
+        // -sip/-webrtc; group by the base extension number to avoid counting twice.
         $pjsip_statuses = getAsteriskPJSIPStatuses();
         $online_extensions = [];
         foreach ($pjsip_statuses as $ep => $st) {

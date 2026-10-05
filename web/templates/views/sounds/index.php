@@ -8,7 +8,7 @@
     </button>
 </div>
 
-<!-- TAB 1: Ses Anonsları -->
+<!-- TAB 1: Sound announcements -->
 <div class="tab-pane active" id="tab-pane-announcements">
     <div class="card">
         <div class="card-header">
@@ -39,7 +39,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th class="col-hide-mobile" style="width: 45px;">#</th>
+                        <th class="col-hide-mobile u-w-45">#</th>
                         <th><?php echo t('sounds.col_announcement'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('sounds.col_audio_file'); ?></th>
@@ -58,7 +58,7 @@
                             <tr>
                                 <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $anc['id']; ?></td>
                                 <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')">
-                                    <i class="fas fa-volume-up" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($anc['title']); ?>
+                                    <i class="fas fa-volume-up u-primary u-mr-6"></i> <?php echo htmlspecialchars($anc['title']); ?>
                                 </td>
                                 <td class="col-hide-mobile">
                                     <?php echo !empty($anc['internal_number'])
@@ -83,7 +83,7 @@
                                 <td>
                                     <?php echo uiStatusToggleForm($anc['id'], $anc['is_active'] ?? 1, 'anc_id'); ?>
                                 </td>
-                                <td style="text-align: right; white-space: nowrap;">
+                                <td class="u-text-right u-nowrap">
                                     <button class="btn btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')" title="<?php echo t('sounds.listen_tooltip'); ?>">
                                         <i class="fas fa-play"></i>
                                     </button>
@@ -103,7 +103,7 @@
 </div>
 
 <div class="tab-pane" id="tab-pane-moh">
-    <div class="card" style="margin-bottom: 24px;">
+    <div class="card u-mb-24">
         <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_section_title'); ?>
@@ -131,7 +131,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th class="col-hide-mobile" style="width: 45px;">#</th>
+                        <th class="col-hide-mobile u-w-45">#</th>
                         <th><?php echo t('sounds.col_moh_class'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('sounds.col_directory'); ?></th>
                         <th class="col-hide-mobile"><?php echo t('sounds.col_mode'); ?></th>
@@ -144,7 +144,7 @@
                     <?php foreach ($moh_classes as $mc): ?>
                         <tr>
                             <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $mc['id']; ?></td>
-                            <td style="font-weight: 700; color: var(--primary);">
+                            <td class="u-fw-700 u-primary">
                                 <i class="fas fa-compact-disc"></i> <?php echo htmlspecialchars($mc['name']); ?>
                             </td>
                             <td><code><?php echo htmlspecialchars($mc['directory']); ?></code></td>
@@ -157,7 +157,7 @@
                                     echo count($files) . ' ' . t('sounds.track_count_suffix');
                                 ?>
                             </td>
-                            <td style="text-align: right; white-space: nowrap;">
+                            <td class="u-text-right u-nowrap">
                                 <button class="btn btn-secondary btn-sm" onclick="openMohUploadModal('<?php echo htmlspecialchars($mc['name'], ENT_QUOTES); ?>')" title="<?php echo t('sounds.upload_music_tooltip'); ?>">
                                     <i class="fas fa-upload"></i>
                                 </button>
@@ -264,7 +264,7 @@
             </div>
             <button class="btn btn-secondary u-btn-pad" onclick="closeAudioPlayerModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body" style="padding: 20px;">
+        <div class="modal-body u-p-20">
             <!-- Waveform visualizer container -->
             <div style="background: rgba(0, 0, 0, 0.04); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; position: relative;">
                 <div id="waveform" style="width: 100%; min-height: 90px;"></div>
@@ -308,13 +308,13 @@
 </div>
 
 <!--
-    MOH Müzik Yükleme Modalı.
-    Ayrı bir modal olmasının sebebi: SoundService::uploadMOHFile() dosyayı
-    'moh_audio' alanında ve sınıfı 'moh_class' alanında bekliyor; paylaşılan
-    anons modalı ise 'audio_file' + zorunlu ad/başlık alanlarıyla çalışıyor.
-    Önceden MOH satırındaki yükleme butonu var olmayan bir elemana
-    (upload_moh_class_select) yazmaya çalışıp JS hatası veriyor, modal hiç
-    açılmıyordu; upload_moh_file backend'i de bu yüzden ölüydü (2026-09-01).
+    MOH music upload modal.
+    It is a separate modal because SoundService::uploadMOHFile() expects the
+    file in the 'moh_audio' field and the class in 'moh_class'; the shared
+    announcement modal works with 'audio_file' + required name/title fields.
+    The upload button on the MOH row used to write to an element that did not
+    exist (upload_moh_class_select), throwing a JS error, so the modal never
+    opened; the upload_moh_file backend was dead because of it (2026-09-01).
 -->
 <div class="modal-overlay" id="mohUploadModal">
     <div class="modal-card" style="max-width: 480px;">

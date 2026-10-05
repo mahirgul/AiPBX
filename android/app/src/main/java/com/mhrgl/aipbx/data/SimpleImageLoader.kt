@@ -23,10 +23,10 @@ object SimpleImageLoader {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     /**
-     * @param authToken sohbet medyası (/chat/media/…) oturum ister — verilirse
-     *   Authorization: Bearer başlığıyla indirilir, yoksa sunucu 401 döner.
-     * @param fallbackUrl ilk adres indirilemezse denenecek adres (ör. küçük
-     *   resim yoksa orijinal görsel).
+     * @param authToken chat media (/chat/media/…) needs a session — when given it
+     *   is downloaded with an Authorization: Bearer header, otherwise the server returns 401.
+     * @param fallbackUrl address tried when the first one cannot be downloaded
+     *   (e.g. the original image when there is no thumbnail).
      */
     fun load(
         urlStr: String,
@@ -38,7 +38,7 @@ object SimpleImageLoader {
     ) {
         imageView.tag = urlStr
 
-        // Aynı adres farklı çözünürlükte (liste / tam ekran) istenebilir.
+        // The same address may be requested at different resolutions (list / full screen).
         val cacheKey = "$urlStr@$maxDim"
         val cached = memoryCache.get(cacheKey)
         if (cached != null) {

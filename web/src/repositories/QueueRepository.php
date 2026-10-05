@@ -17,13 +17,13 @@ class QueueRepository extends BaseRepository
     }
 
     /**
-     * Kuyruk formundaki "Temsilciler" listesinde görünen roller.
+     * Roles shown in the "Agents" list of the queue form.
      */
     public const AGENT_ROLES = ['cc_agent', 'user'];
 
     /**
-     * Kuyruk formundaki "Temsilciler" listesi: sadece Temsilci (cc_agent) ve Kullanıcı (user) rolleri —
-     * faks hatları, admin ve izleyici hesapları kuyruğa üye yapılamaz.
+     * The "Agents" list of the queue form: only the agent (cc_agent) and user roles —
+     * fax lines, admin and viewer accounts cannot be made queue members.
      */
     public static function queueAgents(): array
     {
@@ -36,12 +36,12 @@ class QueueRepository extends BaseRepository
     }
 
     /**
-     * Kuyruk formundaki "Kuyruk Yöneticileri" listesinde görünen roller.
+     * Roles shown in the "Queue managers" list of the queue form.
      */
     public const MANAGER_ROLES = ['cc_manager', 'admin'];
 
     /**
-     * Kuyruk formundaki "Kuyruk Yöneticileri" listesi: Kuyruk Yönetici ve Admin rolleri.
+     * The "Queue managers" list of the queue form: the queue manager and admin roles.
      */
     public static function queueManagers(): array
     {
@@ -54,12 +54,12 @@ class QueueRepository extends BaseRepository
     }
 
     /**
-     * Rolü listeye uymadığı halde bir kuyruğa ZATEN atanmış kullanıcılar (ör. rol
-     * filtresi gelmeden önce yönetici yapılmış adminler). Formda sadece atandıkları
-     * kuyruk açılınca gösterilirler; gösterilmeselerdi kuyruk kaydedilince sessizce
-     * atamadan düşerlerdi.
+     * Users ALREADY assigned to a queue although their role is not on the list
+     * (e.g. admins made managers before the role filter existed). The form
+     * shows them only when their queue is opened; if they were not shown, they
+     * would silently drop off the assignment when the queue is saved.
      * @param string $jsonColumn 'members_json' | 'supervisors_json'
-     * @param string[] $roles Listenin normal rolleri (ör. AGENT_ROLES | MANAGER_ROLES)
+     * @param string[] $roles the list's normal roles (e.g. AGENT_ROLES | MANAGER_ROLES)
      */
     public static function assignedOutsideRole(string $jsonColumn, array $roles): array
     {

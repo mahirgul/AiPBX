@@ -3,12 +3,12 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Tek kullanımlık mobil giriş kodlarına amaç ekler:
- *  - screen: web "Dahilim" ekranındaki QR (10 dk)
- *  - email:  davet e-postasındaki "mobil uygulamaya giriş" bağlantısı (7 gün)
- *  - google: Google girişinin uygulamaya döndürdüğü kod (2 dk) — önceden
- *            oturum token'ı ve SIP şifresi aipbx://auth URL'sinde taşınıyordu.
- * Mevcut satırlar 'screen' olur; davranış değişmez.
+ * Adds a purpose to the single-use mobile sign-in codes:
+ *  - screen: the QR on the web "My Phone" screen (10 min)
+ *  - email:  the "sign in to the mobile app" link in the invitation email (7 days)
+ *  - google: the code Google sign-in hands back to the app (2 min) — the
+ *            session token and SIP password used to travel in the aipbx://auth URL.
+ * Existing rows become 'screen'; behaviour does not change.
  */
 final class AddPurposeToSysUserQrTokens extends AbstractMigration
 {

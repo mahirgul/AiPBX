@@ -1,16 +1,12 @@
-<?php /* Düzen: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
+<?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
     <div class="auth-card" style="max-width: 460px; text-align: center;">
         <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
             <i class="fas fa-shield-halved u-primary"></i>
         </div>
-        <h2 style="font-size: 20px; font-weight: 800;"><?php echo t('force_reset.heading'); ?></h2>
-        <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;"><?php echo htmlspecialchars($brand_title); ?> — <?php echo htmlspecialchars($brand_sub); ?></p>
+        <h2 class="u-fs-20 u-fw-800"><?php echo t('force_reset.heading'); ?></h2>
+        <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_title); ?> — <?php echo htmlspecialchars($brand_sub); ?></p>
 
-        <?php if ($error): ?>
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); padding: 12px 16px; border-radius: 10px; font-size: 13px; margin: 20px 0; text-align: center;">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
+        <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
         <?php if ($sent): ?>
             <div style="background: rgba(34, 197, 94, 0.15); border: 1px solid var(--success); color: var(--success); padding: 14px 16px; border-radius: 10px; font-size: 13px; margin: 20px 0; text-align: left;">

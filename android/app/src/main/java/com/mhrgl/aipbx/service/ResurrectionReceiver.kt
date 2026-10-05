@@ -22,7 +22,7 @@ class ResurrectionReceiver : BroadcastReceiver() {
 
         Log.d(TAG, "Resurrection receiver triggered: action=${intent.action}")
 
-        // I-2: Kendi kendini teşhis (Watchdog / arka plan uyutulma aralığı denetimi)
+        // I-2: self-diagnosis (watchdog / background sleep interval check)
         val lastTs = prefs.lastResurrectionTimestamp
         val now = System.currentTimeMillis()
         if (lastTs > 0L) {

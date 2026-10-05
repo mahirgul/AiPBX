@@ -5,10 +5,10 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * sys_users tablosuna gelişmiş çağrı yönlendirme alternatifleri eklenmesi:
- * - cf_busy_number (Meşgulken Yönlendir)
- * - cf_noanswer_number (Cevapsızken Yönlendir)
- * - cf_noanswer_timeout (Cevapsız yönlendirme zil süresi)
+ * Adds advanced call forwarding alternatives to the sys_users table:
+ * - cf_busy_number (forward when busy)
+ * - cf_noanswer_number (forward on no answer)
+ * - cf_noanswer_timeout (ring time before forwarding on no answer)
  */
 final class AddCallForwardingOptionsToUsers extends AbstractMigration
 {

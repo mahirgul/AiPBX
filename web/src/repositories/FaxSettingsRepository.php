@@ -14,11 +14,11 @@ class FaxSettingsRepository extends BaseRepository
     }
 
     /**
-     * is_active=1 filtresi eklendi (2026-08-31, FaxSendController'ın admin için
-     * "hangi birim adına gönderiliyor" seçici dropdown'ında da kullanılmaya
-     * başlamasıyla) — pasif bir faks birimi adına yeni gönderim yapılabilir
-     * olmamalı. DID-birim eşleme sayfası (bu metodun asıl tüketicisi) için de
-     * davranış değişmiyor, bugüne kadar tüm kayıtlar zaten aktifti.
+     * The is_active=1 filter was added (2026-08-31, when FaxSendController
+     * started using it in the admin's "send on behalf of which unit" dropdown
+     * too) — sending on behalf of an inactive fax unit must not be possible.
+     * Nothing changes for the DID-unit mapping page (the main consumer of this
+     * method): all records were active anyway so far.
      */
     public static function faxUsersForDropdown(): array
     {

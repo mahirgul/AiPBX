@@ -28,9 +28,9 @@ class IvrRepository extends BaseRepository
     }
 
     /**
-     * dest_type/dest_id çiftini renkli, okunabilir bir badge'e çevirir
-     * ("type [id]" ham gösterimi yerine). Önceden ivrs.php'nin içinde
-     * bağımsız bir fonksiyondu.
+     * Turns a dest_type/dest_id pair into a coloured, readable badge (instead
+     * of the raw "type [id]" form). It used to be a standalone function inside
+     * ivrs.php.
      */
     public static function destBadge(?string $destType, $destId, array &$cache): string
     {

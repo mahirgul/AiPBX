@@ -224,8 +224,8 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
     }
 
     /**
-     * I-4: Sohbet aramasını birleştir — Hem mevcut sohbetler hem tüm kurumsal rehber aranır.
-     * Türkçe karakter duyarlı normalizasyon için SearchUtils kullanılır.
+     * I-4: merge the chat search — both the existing chats and the whole organisation directory are searched.
+     * SearchUtils is used for Turkish-character-aware normalization.
      */
     private fun filterConversations(query: String) {
         val q = query.trim()
@@ -242,7 +242,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
         if (q.isEmpty()) {
             displayList.addAll(baseList)
         } else {
-            // 1. Var olan sohbetlerden eşleşenler
+            // 1. Matches from the existing chats
             val matchedConversations = baseList.filter {
                 SearchUtils.matches(it.targetName, q) ||
                 SearchUtils.matches(it.targetExt, q) ||
@@ -251,7 +251,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             }
             displayList.addAll(matchedConversations)
 
-            // 2. Tüm kurumsal rehberden eşleşenler
+            // 2. Matches from the whole organisation directory
             if (chatFilterMode != ChatFilter.GROUP) {
                 val matchedContacts = allCorporateContacts.filter { contact ->
                     contact.extension != myExt && (
@@ -262,7 +262,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
                 }
 
                 for (contact in matchedContacts) {
-                    // Eğer bu dahili zaten eşleşen aktif sohbetlerde varsa mükerrer ekleme
+                    // Do not add twice if this extension is already in the matching active chats
                     val alreadyInList = matchedConversations.any { it.targetExt == contact.extension }
                     if (!alreadyInList) {
                         val isOnline = contact.status.equals("online", true) ||
@@ -316,7 +316,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
     }
 
     /**
-     * I-4: Aranabilir Yeni Sohbet Seçici — Kurum rehberindeki dahili ve isimler arasında anlık filtreleme.
+     * I-4: searchable new chat picker — instant filtering by extension and name in the organisation directory.
      */
     private fun showNewChatDialog() {
         lifecycleScope.launch {

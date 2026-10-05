@@ -5,11 +5,11 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Dış Hat (SIP Trunk) yapılandırmasına gelişmiş PJSIP ayarları ekler:
- * - Kimlik Doğrulama & Kayıt: auth_username, auth_password, registration_enabled, registration_expiration
- * - Arayan Bilgisi & Başlıklar: from_user, from_domain, outbound_caller_id, send_pai, send_rpid
- * - Sinyalizasyon & Medya: dtmf_mode, context, max_channels, direct_media, timers
- * - Gelişmiş PJSIP Parametreleri: custom_pjsip_params
+ * Adds advanced PJSIP settings to the trunk (SIP trunk) configuration:
+ * - Authentication & registration: auth_username, auth_password, registration_enabled, registration_expiration
+ * - Caller info & headers: from_user, from_domain, outbound_caller_id, send_pai, send_rpid
+ * - Signalling & media: dtmf_mode, context, max_channels, direct_media, timers
+ * - Advanced PJSIP parameters: custom_pjsip_params
  */
 final class AddAdvancedTrunkSettings extends AbstractMigration
 {

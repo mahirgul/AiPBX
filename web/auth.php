@@ -7,13 +7,13 @@ function requireLogin() {
         exit;
     }
 
-    // Uygulama seviyesinde bir idle-timeout kontrolü yoktu — oturum, tarayıcı
-    // kapanana (cookie lifetime=0) ya da PHP'nin güvenilir olmayan olasılıksal
-    // GC'si devreye girene kadar geçerli kalabiliyordu (paylaşımlı/ortak
-    // bilgisayar senaryosunda risk, 2026-08-21 denetiminde bulundu). 60 dakika
-    // hareketsizlikten sonra oturum sonlandırılır; her istek last_activity'yi
-    // yeniler (AJAX polling yapan sayfalar — cc_agent vb. — bu sayede "kullanımda"
-    // kaldığı sürece timeout olmaz, tam istenen davranış).
+    // There was no application-level idle timeout — a session could stay valid
+    // until the browser closed (cookie lifetime=0) or PHP's unreliable,
+    // probabilistic GC kicked in (a risk on shared computers, found in the
+    // 2026-08-21 audit). The session ends after 60 minutes of inactivity;
+    // every request refreshes last_activity (pages doing AJAX polling —
+    // cc_agent etc. — therefore never time out while "in use", exactly the
+    // desired behaviour).
     if (!_isSessionActivityFresh()) {
         $_SESSION = [];
         session_destroy();
@@ -25,12 +25,12 @@ function requireLogin() {
 }
 
 /**
- * requireLogin()'in JSON/fetch() tabanlı api/*.php uç noktaları için eşdeğeri —
- * aynı oturum+idle-timeout kuralını uygular ama HTML sayfasına redirect yerine
- * JSON 401 döner (fetch() bir login sayfasının HTML'ini "başarılı yanıt" sanıp
- * ayrıştırmaya çalışmaz, temiz bir hata görür). api/_bootstrap.php tarafından
- * kullanılır — 2026-08-23 incelemesinde bulunan "her api dosyası kendi auth
- * kontrolünü elle/tutarsız biçimde yazıyor" riskini merkezi bir noktaya toplar.
+ * requireLogin()'s counterpart for the JSON/fetch()-based api/*.php
+ * endpoints — applies the same session + idle-timeout rule but returns JSON
+ * 401 instead of redirecting to an HTML page (fetch() does not try to parse a
+ * login page's HTML as a "successful response", it sees a clean error). Used
+ * by api/_bootstrap.php — gathers into one place the "every api file writes
+ * its own auth check by hand/inconsistently" risk found in the 2026-08-23 review.
  */
 function requireApiLogin() {
     $valid = isset($_SESSION['user_id']) && _isSessionActivityFresh();
@@ -49,11 +49,11 @@ function requireApiLogin() {
 }
 
 /**
- * "Aynı anda başka bir admin de sistemde" uyarısı için (2026-08-24, kullanıcı
- * isteği) — sys_users.last_seen_at'i günceller, ama HER istekte değil: en
- * fazla ~20 saniyede bir (session'daki bir zaman damgasıyla throttled) —
- * yoksa yoğun AJAX polling yapan sayfalarda (cc_agent gibi) gereksiz yere
- * saniyede birkaç UPDATE sorgusu koşardı.
+ * For the "another admin is in the system right now" warning (2026-08-24,
+ * user request) — updates sys_users.last_seen_at, but not on EVERY request:
+ * at most every ~20 seconds (throttled by a timestamp in the session) —
+ * otherwise pages with heavy AJAX polling (like cc_agent) would run several
+ * pointless UPDATE queries per second.
  */
 function _touchLastSeen($user_id) {
     if (empty($user_id)) return;
@@ -66,14 +66,14 @@ function _touchLastSeen($user_id) {
         $stmt = getDB()->prepare("UPDATE sys_users SET last_seen_at = NOW() WHERE id = ?");
         $stmt->execute([$user_id]);
     } catch (\Exception $e) {
-        // Sessizce atla — bu bir "en iyi çaba" özelliği, asıl isteği asla engellemez.
+        // Skip silently — a best-effort feature, it never blocks the actual request.
     }
 }
 
 /**
- * Şu an aktif (son ~2 dakikada bir istek yapmış) BAŞKA admin var mı —
- * sidebar'daki "Aynı anda başka bir admin de sistemde" uyarısı için.
- * $exclude_user_id kendi oturumunu listeden çıkarır.
+ * Is ANOTHER admin active right now (made a request in the last ~2 minutes)
+ * — for the "another admin is in the system right now" warning in the
+ * sidebar. $exclude_user_id removes the caller's own session from the list.
  */
 function getOtherActiveAdmins($exclude_user_id, $window_seconds = 120) {
     try {
@@ -206,31 +206,32 @@ function getRolePermissionsMap($role_key = null) {
 function hasModulePermission($module_key, $action = 'access') {
     $role = $_SESSION['user_role'] ?? '';
 
-    // 'roles', 'system_users', 'firewall' ve 'fail2ban' modülleri SİMETRİK bir circuit-breaker altında:
-    // admin HER ZAMAN erişebilir (roller sayfası kilitlenirse admin kendini geri
-    // kurtaramaz), admin OLMAYAN hiçbir rol ASLA erişemez — sys_role_permissions
-    // tablosunda bu iki modül için ne yazarsa yazsın (roles.php'nin izin matrisi
-    // formu bunları sıradan bir modül gibi sunduğu için yanlışlıkla/"Tümünü Seç"
-    // ile bir role kullanıcı/rol yönetim yetkisi verilip tam yetki yükseltmesine
-    // (kendi rolünü admin yapma) yol açabiliyordu — 2026-08-21 denetiminde bulundu).
-    // 'firewall' ve 'fail2ban' de aynı circuit-breaker'a dahildir (2026-08-31 / 2026-09-01
-    // RbacTest): bu sayfalar gerçek sudo çalıştırır, admin dışındaki hiçbir role ASLA açılamaz.
-    // 'system_update' de: sistemi güncelleyip servisleri yeniden başlatır.
+    // The 'roles', 'system_users', 'firewall' and 'fail2ban' modules are under a SYMMETRIC circuit breaker:
+    // admin can ALWAYS access them (if the roles page got locked the admin could
+    // not recover), and NO non-admin role can EVER access them — whatever
+    // sys_role_permissions says for these modules (the roles.php permission
+    // matrix offered them like any other module, so a role could be given
+    // user/role management by mistake or via "Select all", leading to full
+    // privilege escalation (making one's own role admin) — found in the
+    // 2026-08-21 audit).
+    // 'firewall' and 'fail2ban' are under the same circuit breaker (2026-08-31 / 2026-09-01
+    // RbacTest): these pages run real sudo, they can NEVER open for a non-admin role.
+    // 'system_update' too: it updates the system and restarts services.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
     if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration'], true)) {
         return $role === 'admin';
     }
 
-    // Sadece İzleyici (read_only_admin) kuralı: Kesinlikle hiçbir modülde ayar (edit) veya silme (delete) yapamaz!
-    // Kullanıcı talebi doğrultusunda: "sadece izleyici olarak kalmalı ayar yapamamalı."
+    // Read-only viewer (read_only_admin) rule: can never change settings (edit) or delete (delete) in any module!
+    // Per the user's request: "it must stay a viewer only and not be able to change settings."
     if ($role === 'read_only_admin' && ($action === 'edit' || $action === 'delete')) {
         return false;
     }
 
-    // 'push_settings' modülü:
-    // Google Cloud Servis Hesabı JSON özel anahtarı barındırır.
-    // Düzenleme ('edit') ve silme ('delete') işlemleri SADECE 'admin' rolüne açıktır.
+    // The 'push_settings' module:
+    // holds the Google Cloud service account JSON private key.
+    // Editing ('edit') and deleting ('delete') are open ONLY to the 'admin' role.
     if ($module_key === 'push_settings' && ($action === 'edit' || $action === 'delete')) {
         return $role === 'admin';
     }
@@ -243,10 +244,10 @@ function hasModulePermission($module_key, $action = 'access') {
         return false;
     }
 
-    // Admin fallback: hiç yapılandırılmamış (yeni eklenmiş, henüz roles.php'de
-    // izin satırı oluşmamış) bir modülde admin'i varsayılan olarak ENGELLEMEYELİM
-    // — o zaman yeni bir sayfa eklendiğinde admin'in kendisi dışarıda kalırdı.
-    // Modül için satır varsa (aşağıya düşer) o satırdaki değer geçerli olur.
+    // Admin fallback: do NOT block admin by default on a module that was never
+    // configured (newly added, no permission row in roles.php yet) — otherwise
+    // the admin would be locked out of every newly added page.
+    // If the module has a row (falls through below), that row's value applies.
     if ($role === 'admin' && !isset($map[$module_key])) {
         return true;
     }
@@ -283,8 +284,8 @@ function isPostDeleteRequest(): bool {
 function requireModulePermission($module_key, $action = 'access') {
     requireLogin();
 
-    // NOT: hasModulePermission() admin için de nüanslı mantığı uyguluyor (bkz.
-    // oradaki yorum) — burada ayrı bir koşulsuz admin kısayoluna gerek yok.
+    // NOTE: hasModulePermission() applies the nuanced logic to admin too (see
+    // the comment there) — no separate unconditional admin shortcut needed here.
     $allowed = hasModulePermission($module_key, $action);
 
     // Block POST mutation if user lacks edit or delete permission
@@ -326,11 +327,12 @@ function requireRole($allowed_roles) {
     
     $user_role = $_SESSION['user_role'] ?? '';
 
-    // NOT: Burada eskiden $user_role === 'admin' için koşulsuz bir kısayol vardı.
-    // hasModulePermission() artık admin için de aynı nüanslı mantığı uyguluyor
-    // (roles.php/system_users.php koşulsuz açık kalır — kilitlenme önleyici — diğer
-    // tüm modüllerde admin'in DB'deki izni geçerli, satır yoksa varsayılan izinli),
-    // o yüzden admin de aşağıdaki genel akıştan geçiyor; ayrı bir kısayola gerek yok.
+    // NOTE: there used to be an unconditional shortcut for $user_role === 'admin' here.
+    // hasModulePermission() now applies the same nuanced logic to admin too
+    // (roles.php/system_users.php stay open unconditionally — a lockout
+    // guard — on every other module the admin's DB permission applies, allowed
+    // by default when there is no row), so admin goes through the general
+    // flow below as well; no separate shortcut needed.
 
     $module_key = getModuleKeyForPage();
     if (hasModulePermission($module_key, 'access')) {
@@ -354,12 +356,12 @@ function requireRole($allowed_roles) {
         return;
     }
 
-    // hasModulePermission() yukarıda false döndü — ama bu, rolün bu modülde
-    // roles.php'den AÇIKÇA erişimi kapatılmış mı, yoksa modül bu rol için hiç
-    // yapılandırılmamış mı ayırt etmiyordu. Açıkça kapatılmışsa aşağıdaki sabit
-    // $allowed_roles listesi bunu ASLA ezmemeli — aksi halde roles.php'den bir
-    // rolün erişimini kapatmak, bu sabit listede o rol geçen sayfalarda hiçbir
-    // işe yaramıyordu (tutarsız yetki davranışı).
+    // hasModulePermission() returned false above — but that did not tell apart
+    // whether the role's access to this module was EXPLICITLY closed in
+    // roles.php or the module was simply never configured for this role. If
+    // it was explicitly closed, the fixed $allowed_roles list below must NEVER
+    // override it — otherwise closing a role's access in roles.php did nothing
+    // on pages whose fixed list names that role (inconsistent access behaviour).
     $role_perm_map = getRolePermissionsMap($user_role);
     if (isset($role_perm_map[$module_key])) {
         http_response_code(403);

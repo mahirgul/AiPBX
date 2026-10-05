@@ -1,12 +1,13 @@
 <?php
-// Çağrı notları: get_call_note, get_pending_note, save_call_note (callcenter_notes tablosu)
+// Call notes: get_call_note, get_pending_note, save_call_note (callcenter_notes table)
 //
-// Çağrı devam ederken (henüz bir CDR/call_id oluşmadan) temsilci not girebilsin diye
-// call_id boşken not, temsilcinin kendi dahilisine (agent_extension) bağlı "bekleyen" (call_id IS NULL)
-// bir satır olarak tutulur. Çağrı bitip CDR'a düşünce cdrs.php (my_cdrs) bu bekleyen notu
-// otomatik olarak en son oluşan CDR'ın call_id'sine bağlar (claimPendingNote()).
-// Asterisk kanal uniqueid'i doğrudan kullanılmaz çünkü kuyruk üzerinden gelen çağrılarda
-// temsilcinin kendi kanal uniqueid'i, CDR'a yazılan (arayan tarafa ait) uniqueid ile eşleşmez.
+// So the agent can enter a note while the call is still going on (before a CDR/call_id
+// exists), with an empty call_id the note is kept as a "pending" row (call_id IS NULL)
+// tied to the agent's own extension (agent_extension). When the call ends and reaches the
+// CDR, cdrs.php (my_cdrs) links this pending note to the call_id of the latest CDR
+// automatically (claimPendingNote()). The Asterisk channel uniqueid is not used directly,
+// because for calls coming through a queue the agent's own channel uniqueid does not match
+// the uniqueid written to the CDR (which belongs to the caller side).
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
 if ($action === 'get_call_note') {
@@ -16,9 +17,9 @@ if ($action === 'get_call_note') {
         exit;
     }
 
-    // Sahiplik kontrolü: cdrs.php'deki aynı desen (admin / can_view_all_cdrs
-    // dışında herkes sadece kendi çağrısının notunu görebilir) — aksi halde
-    // call_id tahmin edilerek başka bir temsilcinin müşteri/not verisi okunabilirdi.
+    // Ownership check: the same pattern as in cdrs.php (apart from admin /
+    // can_view_all_cdrs, everyone sees only the notes of their own calls) —
+    // otherwise another agent's customer/note data could be read by guessing call_id.
     $can_view_all = ($user['role'] === 'admin' || !empty($user['can_view_all_cdrs']));
     if ($can_view_all) {
         $stmt = $db->prepare('SELECT id, call_id, customer_name, phone, disposition, notes, created_at FROM callcenter_notes WHERE call_id = ? ORDER BY id DESC LIMIT 1');
@@ -34,9 +35,9 @@ if ($action === 'get_call_note') {
 }
 
 if ($action === 'get_pending_note') {
-    // Aktif çağrı sırasında modal tekrar açıldığında (ör. sayfa yenileme) daha önce
-    // girilmiş bekleyen notu geri getirir. Temsilci kimliği her zaman sunucu tarafından
-    // (oturumdaki $user_ext) belirlenir, client'tan gelen bir dahili numarasına güvenilmez.
+    // When the modal is reopened during an active call (e.g. a page reload), brings back
+    // the pending note entered earlier. The agent identity is always decided by the server
+    // (the session's $user_ext); an extension number from the client is not trusted.
     if ($user_ext === '') {
         echo json_encode(['success' => false, 'error' => 'Dahili bulunamadı']);
         exit;
@@ -58,11 +59,11 @@ if ($action === 'save_call_note') {
     $notes = trim($_POST['notes'] ?? '');
 
     if ($call_id !== '') {
-        // Biten bir çağrıya (CDR listesinden) ait not: call_id ile upsert.
-        // Sahiplik kontrolü: admin/can_view_all_cdrs dışında biri sadece KENDİ
-        // yazdığı notu güncelleyebilir — aksi halde call_id tahmin edilerek başka
-        // bir temsilcinin notunun üzerine yazılabilirdi. Kendi notu yoksa (ör. bu
-        // çağrıyı ilk kez notluyor) normal şekilde yeni bir satır eklenir.
+        // A note for a finished call (from the CDR list): upsert by call_id.
+        // Ownership check: apart from admin/can_view_all_cdrs, a user can only
+        // update a note they WROTE THEMSELVES — otherwise another agent's note
+        // could be overwritten by guessing call_id. Without an own note (e.g.
+        // noting this call for the first time) a new row is added normally.
         $can_edit_all = ($user['role'] === 'admin' || !empty($user['can_view_all_cdrs']));
         if ($can_edit_all) {
             $stmt = $db->prepare('SELECT id FROM callcenter_notes WHERE call_id = ? ORDER BY id DESC LIMIT 1');
@@ -81,7 +82,7 @@ if ($action === 'save_call_note') {
             $stmt->execute([$call_id, ($user_ext !== '' ? $user_ext : null), $customer_name, $phone, $disposition, $notes]);
         }
     } else {
-        // Aktif çağrı: henüz call_id yok, temsilciye bağlı "bekleyen" not olarak sakla
+        // Active call: no call_id yet, keep it as a "pending" note tied to the agent
         if ($user_ext === '') {
             echo json_encode(['success' => false, 'error' => 'Dahili bulunamadı, aktif çağrı notu kaydedilemedi']);
             exit;

@@ -1,0 +1,34 @@
+/* Page styles of templates/views/fax_send/index.php */
+
+.fax-compose-tab-btn {
+    background: none; border: none; border-bottom: 3px solid transparent;
+    padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--text-muted);
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.fax-compose-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+#fax-text-editor { background: #fff; color: #1a1a1a; min-height: 260px; }
+#fax-text-editor .ql-editor { min-height: 260px; font-size: 12px; }
+/* Quill's class-based ql-size sizing is disabled - a style-based attributor
+   is used (assets/js/fax_send.js), so the generated HTML is self-contained
+   (inline style) and does not depend on Quill's own CSS. */
+
+/* Quill's default rule fixing the font picker at 108px was too narrow -
+   the Turkish labels (already shortened to "Sans"/"Serif"/"Daktilo") still
+   overflowed onto the next line (2026-08-31, user finding). The toolbar as a
+   whole was also made wrappable and tighter on mobile. */
+#fax-text-toolbar.ql-toolbar.ql-snow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    padding: 8px 10px;
+}
+#fax-text-toolbar .ql-formats { margin-right: 0; display: flex; align-items: center; gap: 2px; }
+#fax-text-toolbar .ql-picker.ql-font { width: 92px; }
+#fax-text-toolbar .ql-picker.ql-size { width: 60px; }
+#fax-text-toolbar .ql-picker-label { padding-left: 6px; }
+
+@media (max-width: 600px) {
+    #fax-text-toolbar.ql-toolbar.ql-snow { gap: 4px 6px; padding: 6px 8px; }
+    #fax-text-toolbar .ql-picker.ql-font { width: 78px; }
+    #fax-text-toolbar .ql-picker.ql-size { width: 52px; }
+    #fax-text-toolbar .ql-picker { font-size: 12px; }
+    #fax-text-toolbar button { width: 22px; }
+}

@@ -1,4 +1,4 @@
-<?php /* Düzen: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
+<?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
     <style>
         .ml-section { border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
         .ml-section h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px; }
@@ -13,7 +13,7 @@
                 <i class="fas fa-mobile-alt u-primary"></i>
             </div>
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;"><?php echo t('mobile_login.page_title'); ?></p>
+            <p class="u-muted u-fs-13 u-mt-6"><?php echo t('mobile_login.page_title'); ?></p>
         </div>
 
         <?php if (!$info['valid']): ?>
@@ -21,12 +21,12 @@
                 <i class="fas fa-exclamation-circle"></i>
                 <?php echo t('mobile_login.error_' . ($info['reason'] ?? 'invalid')); ?>
             </div>
-            <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 18px;"><?php echo t('mobile_login.error_hint'); ?></p>
+            <p class="u-fs-13 u-muted u-text-center u-mb-18"><?php echo t('mobile_login.error_hint'); ?></p>
             <a href="/login" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
                 <i class="fas fa-sign-in-alt"></i> <?php echo t('mobile_login.web_login'); ?>
             </a>
         <?php else: ?>
-            <p style="font-size: 14px; text-align: center; margin-bottom: 18px;">
+            <p class="u-fs-14 u-text-center u-mb-18">
                 <?php echo t('mobile_login.greeting'); ?>
                 <strong><?php echo htmlspecialchars($info['user']['full_name'] ?: $info['user']['username']); ?></strong>
                 (<?php echo t('mobile_login.extension'); ?> <?php echo htmlspecialchars($info['user']['extension']); ?>)
@@ -64,7 +64,7 @@
                 </div>
             <?php };
 
-            // Telefonda önce "uygulamada aç", bilgisayarda önce QR.
+            // On a phone "open in the app" first, on a computer the QR first.
             if ($platform === 'desktop') {
                 $qrSection();
                 $openSection();

@@ -130,7 +130,7 @@
                     </button>
                 </div>
 
-                <!-- 1. Temel Tanımlamalar -->
+                <!-- 1. Basic definitions -->
                 <div id="queue_tab_basic" class="queue-tab-pane active">
                     <div class="form-group u-mb-10">
                         <label class="form-label u-check-label">
@@ -195,7 +195,7 @@
                     </div>
                 </div>
 
-                <!-- 3. Anons ve MOH Ayarları -->
+                <!-- 3. Announcement and MOH settings -->
                 <div id="queue_tab_announcements" class="queue-tab-pane" style="display: none;">
                     <div class="u-grid-2">
                         <div class="form-group">
@@ -225,7 +225,7 @@
                     </div>
                 </div>
 
-                <!-- 4. Gelişmiş Asterisk Kuyruk Davranışları -->
+                <!-- 4. Advanced Asterisk queue behaviour -->
                 <div id="queue_tab_behavior" class="queue-tab-pane" style="display: none;">
                     <div class="u-grid-2">
                         <div class="form-group">
@@ -287,7 +287,7 @@
                     </div>
                 </div>
 
-                <!-- 5. Zaman Aşımı, Yönlendirme & Ses Kaydı -->
+                <!-- 5. Timeout, routing & call recording -->
                 <div id="queue_tab_timeout" class="queue-tab-pane" style="display: none;">
                     <div class="u-grid-2">
                         <div class="form-group">
@@ -321,14 +321,14 @@
                             <label class="form-label"><?php echo t('queues.field_record_enabled'); ?></label>
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
                                 <input type="checkbox" name="record_enabled" id="modal_record_enabled" value="1" checked class="u-check">
-                                <span style="font-weight: 600; font-size: 13px;"><?php echo t('queues.record_enabled_label'); ?></span>
+                                <span class="u-fw-600 u-fs-13"><?php echo t('queues.record_enabled_label'); ?></span>
                             </label>
                         </div>
                     </div>
                     <input type="hidden" name="record_format" value="wav">
                 </div>
 
-                <!-- 6. Temsilciler & Yöneticiler -->
+                <!-- 6. Agents & managers -->
                 <div id="queue_tab_agents" class="queue-tab-pane" style="display: none;">
                     <div class="form-group">
                         <label class="form-label form-label-help">
@@ -357,7 +357,7 @@
                         </div>
                     </div>
 
-                    <!-- Kuyruk Yöneticileri -->
+                    <!-- Queue managers -->
                     <div class="form-group" style="background: rgba(245, 158, 11, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 14px;">
                         <label class="form-label" style="font-weight: 700; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                             <i class="fas fa-user-shield"></i> <?php echo t('queues.section_supervisors'); ?>

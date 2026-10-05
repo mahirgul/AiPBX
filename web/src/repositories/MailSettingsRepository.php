@@ -23,8 +23,8 @@ class MailSettingsRepository extends BaseRepository
             }
         }
 
-        // Postfix'te de ayar yoksa anahtar hiç oluşmuyordu (ayar sayfası
-        // tanımsız dizi anahtarı okuyordu).
+        // Without the setting in Postfix either, the key was never created
+        // (the settings page read an undefined array key).
         $settings += ['mail_relay_host' => ''];
 
         return $settings;

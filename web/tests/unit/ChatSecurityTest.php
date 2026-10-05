@@ -13,11 +13,11 @@ final class ChatSecurityTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        // CANLI entegrasyon testi: asterisk_test kilidini atlayıp gerçek
-        // veritabanına bağlanır, gerçek kullanıcılar arasında sohbet açar ve
-        // 127.0.0.1:8086'daki çalışan chat servisini dener. Yalnızca açıkça
-        // istenince koşar: AIPBX_LIVE_TESTS=1 vendor/bin/phpunit
-        // (aksi halde testler kendini atlar — CI dahil).
+        // LIVE integration test: bypasses the asterisk_test lock, connects to
+        // the real database, opens a chat between real users and tries the
+        // running chat service on 127.0.0.1:8086. Runs only when explicitly
+        // requested: AIPBX_LIVE_TESTS=1 vendor/bin/phpunit
+        // (otherwise the tests skip themselves — CI included).
         if (getenv('AIPBX_LIVE_TESTS') !== '1') {
             return;
         }
@@ -65,8 +65,8 @@ final class ChatSecurityTest extends TestCase
 
     protected function setUp(): void
     {
-        // testLive* testleri 127.0.0.1:8086'daki çalışan chat servisine ve canlı
-        // veritabanına bağlanır — yalnızca AIPBX_LIVE_TESTS=1 ile koşar.
+        // The testLive* tests connect to the running chat service on
+        // 127.0.0.1:8086 and the live database — they run only with AIPBX_LIVE_TESTS=1.
         if (str_starts_with($this->name(), 'testLive') && getenv('AIPBX_LIVE_TESTS') !== '1') {
             $this->markTestSkipped('Canlı entegrasyon testi (AIPBX_LIVE_TESTS=1 ile çalıştırın).');
         }

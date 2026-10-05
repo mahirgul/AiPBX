@@ -1,5 +1,5 @@
 <?php
-// Arama aksiyonları: originate, hangup, transfer, hold, pickup_call
+// Call actions: originate, hangup, transfer, hold, pickup_call
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
 if ($action === 'originate') {
@@ -9,9 +9,9 @@ if ($action === 'originate') {
         exit;
     }
 
-    // Dual-Endpoint: PJSIP/<ext> adında endpoint yoktur; Local kanal ile dialplan
-    // uzerinden gidilir (from-internal-pbx → PJSIP_DIAL_CONTACTS → tum cihazlar)
-    // Giden rota grubu: Kullanıcı 1'den farklı bir gruba atanmışsa ilgili context kullanılır
+    // Dual endpoint: there is no endpoint named PJSIP/<ext>; the call goes through
+    // the dialplan via a Local channel (from-internal-pbx → PJSIP_DIAL_CONTACTS → all devices)
+    // Outbound route group: if the user is assigned to a group other than 1, that group's context is used
     $outbound_grp = max(1, intval($user['outbound_group'] ?? 1));
     $outbound_context = ($outbound_grp > 1) ? "from-internal-g{$outbound_grp}" : 'cc-internal';
 
@@ -37,11 +37,11 @@ if ($action === 'originate') {
 }
 
 if ($action === 'hangup') {
-    // Asıl kapatma tarayıcıda JsSIP session.terminate() ile zaten yapılır;
-    // bu, WebSocket/sinyalleşme başarısız olursa devreye giren AMI yedeğidir.
+    // The real hangup is already done in the browser with JsSIP session.terminate();
+    // this is the AMI fallback that kicks in if the WebSocket/signalling fails.
     $channels = findAgentChannels($user_ext);
     if (empty($channels)) {
-        // İstemci tarafı sonlandırma zaten başarılı olmuş olabilir; hata sayma.
+        // The client-side termination may already have succeeded; do not count it as an error.
         echo json_encode(['success' => true, 'message' => 'Aktif kanal bulunamadı (muhtemelen zaten kapatıldı)']);
         exit;
     }
@@ -60,16 +60,16 @@ if ($action === 'transfer') {
         echo json_encode(['success' => false, 'error' => 'Geçersiz hedef numara']);
         exit;
     }
-    // Asıl aktarma tarayıcıda JsSIP session.refer() ile zaten yapılır;
-    // bu, sinyalleşme başarısız olursa devreye giren AMI yedeğidir.
+    // The real transfer is already done in the browser with JsSIP session.refer();
+    // this is the AMI fallback that kicks in if signalling fails.
     //
-    // YÖNLENDİRİLECEK KANAL ARAYANINKİDİR, temsilcininki DEĞİL.
-    // Eskiden findAgentChannels() ile bulunan TÜM temsilci kanalları
-    // (PJSIP cihaz bacağı + Local çiftinin iki yarısı) tek tek Redirect
-    // ediliyordu. Tek kanallı Redirect o kanalı köprüden çeker; arayan
-    // ortada kalır, Queue() uygulamasından düşer ve `h` uzantısında
-    // kapanır — 2026-09-15 canlı logunda temsilci 8915'e giderken aynı
-    // saniyede arayan Hangup yedi.
+    // THE CHANNEL TO REDIRECT IS THE CALLER'S, NOT the agent's.
+    // ALL agent channels found by findAgentChannels() (the PJSIP device leg
+    // + both halves of the Local pair) used to be Redirected one by one. A
+    // single-channel Redirect pulls that channel out of the bridge; the
+    // caller is left alone, drops out of Queue() and hangs up in the `h`
+    // extension — in the 2026-09-15 live log the caller got Hangup in the
+    // same second the agent went to 8915.
     $caller_channel = findCallerChannelForAgent($user_ext);
     if (empty($caller_channel)) {
         echo json_encode(['success' => false, 'error' => 'Aktarılacak çağrı bulunamadı']);
@@ -82,18 +82,18 @@ if ($action === 'transfer') {
 }
 
 if ($action === 'hold') {
-    // Gerçek hold tarayıcıda JsSIP session.hold() (re-INVITE, sendonly) ile
-    // sağlanır — bu action sunucu tarafında ek bir işlem yapmaz (kanalı YANLIŞLIKLA
-    // kapatan eski kod kaldırıldı). Sadece istemciye onay döner.
+    // The real hold is done in the browser with JsSIP session.hold() (re-INVITE,
+    // sendonly) — this action does nothing extra on the server (the old code that
+    // closed the channel BY MISTAKE was removed). It only confirms to the client.
     echo json_encode(['success' => true, 'message' => 'Çağrı beklemeye alındı']);
     exit;
 }
 
 if ($action === 'pickup_call') {
-    // Asterisk kanal adları sadece [A-Za-z0-9/_.@;-] karakterlerinden oluşur
-    // (örn. PJSIP/3001-00000012, Local/3001@cc-internal-00000001;1) — bu
-    // whitelist dışındaki her karakter (özellikle \r\n) AMI komut enjeksiyonunu
-    // önlemek için burada süzülür (Action:/Channel: satırlarına ham gömülüyor).
+    // Asterisk channel names consist only of [A-Za-z0-9/_.@;-] characters
+    // (e.g. PJSIP/3001-00000012, Local/3001@cc-internal-00000001;1) — every
+    // character outside this whitelist (especially \r\n) is filtered here to
+    // prevent AMI command injection (it is embedded raw in the Action:/Channel: lines).
     $target_channel = preg_replace('/[^A-Za-z0-9\/_.@;-]/', '', trim($_POST['channel'] ?? ''));
 
     if (empty($target_channel) || empty($user_ext)) {
@@ -101,11 +101,12 @@ if ($action === 'pickup_call') {
         exit;
     }
 
-    // Kuyruk üyeliği kontrolü: sıradan bir cc_agent, ait olmadığı bir kuyruktaki
-    // çağrıyı listede görüp channel adını tahmin/kopyalayarak alamasın diye,
-    // hedef kanalın gerçekten hangi kuyrukta beklediği "queue show" çıktısından
-    // bulunup çağıranın o kuyruğun üyesi olup olmadığı doğrulanır. Admin/cc_manager
-    // (süpervizör rolleri) her kuyruktan çağrı alabildiği için bu kontrolden muaf.
+    // Queue membership check: so a regular cc_agent cannot take a call from a
+    // queue they do not belong to by seeing it in the list and guessing/copying
+    // the channel name, the queue the target channel is really waiting in is
+    // found from the "queue show" output and the caller's membership of that
+    // queue is checked. Admin/cc_manager (supervisor roles) can take calls from
+    // any queue and are exempt from this check.
     if (!in_array($user['role'] ?? '', ['admin', 'cc_manager'], true)) {
         @exec("asterisk -rx " . escapeshellarg("queue show"), $qs_output);
         $found_queue = null;
@@ -116,17 +117,17 @@ if ($action === 'pickup_call') {
                 if (preg_match('/^([a-zA-Z0-9_-]+)\s+has\s+\d+\s+calls/i', trim($qclean), $qm)) {
                     $cur_q = $qm[1];
                 }
-                // Yalnızca bekleyen arayan satırları ("1. PJSIP/trunk-0000002a (wait: …")
-                // ve tam kanal adı — alt dize eşleşmesi …-0000001'i …-00000012'ye de uydururdu.
+                // Only waiting-caller lines ("1. PJSIP/trunk-0000002a (wait: …")
+                // and the full channel name — a substring match would also fit …-0000001 to …-00000012.
                 if ($cur_q !== '' && preg_match('/^\d+\.\s+(\S+)/', trim($qclean), $cm) && $cm[1] === $target_channel) {
                     $found_queue = $cur_q;
                     break;
                 }
             }
         }
-        // Kanal hiçbir kuyrukta beklemiyorsa (başkasının süren görüşmesi,
-        // bir dahili bacağı…) alınamaz — önceden bu durumda kontrol atlanıyor
-        // ve herhangi bir kanal temsilciye yönlendirilebiliyordu.
+        // A channel not waiting in any queue (someone else's ongoing call, an
+        // extension leg…) cannot be taken — the check used to be skipped in
+        // that case and any channel could be redirected to the agent.
         if ($found_queue === null) {
             echo json_encode(['success' => false, 'error' => 'Bu çağrı artık kuyrukta beklemiyor']);
             exit;

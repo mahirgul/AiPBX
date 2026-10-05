@@ -1,12 +1,12 @@
 <?php
 /**
- * Merkezi UI Bileşen Yardımcıları (buton / form / rozet / tablo satırı üreticileri)
+ * Central UI component helpers (button / form / badge / table row builders)
  *
- * 2026-08-31'de config.php'den (483 satır) ayrıldı: config.php ortam değişkenleri,
- * DB bağlantısı, ayar okuma ve oturum/güvenlik yardımcılarını barındırmalı; HTML
- * üreten UI fonksiyonlarının orada işi yoktu. Geriye dönük uyum için config.php
- * bu dosyayı sonunda require ediyor — mevcut ~30 tüketici dosyada değişiklik
- * gerekmiyor.
+ * Split out of config.php (483 lines) on 2026-08-31: config.php should hold
+ * the environment variables, DB connection, settings reads and session/
+ * security helpers; HTML-producing UI functions had no business there. For
+ * backward compatibility config.php requires this file at its end — the ~30
+ * existing consumer files need no change.
  */
 /**
  * UI Component Helpers for Centralized Single-Point UI Management
@@ -144,18 +144,18 @@ function uiTableEmptyRow($colspan = 1, $message = 'Henüz kayıt bulunamadı', $
 }
 
 /**
- * Desteklenen telefon modları:
- * - web: Web softphone (tarayıcı üzerinden WebRTC arama)
- * - mobil: Mobil softphone / Push bildirimli mobil WebRTC
- * - sip: Masaüstü / donanım IP SIP telefonu
- * - video: Görüntülü arama yeteneği (VP8/H.264)
+ * Supported phone modes:
+ * - web: web softphone (WebRTC calls in the browser)
+ * - mobil: mobile softphone / mobile WebRTC with push notifications
+ * - sip: desk / hardware IP SIP phone
+ * - video: video call capability (VP8/H.264)
  */
 const SUPPORTED_PHONE_MODES = ['web', 'mobil', 'sip', 'video'];
 
 /**
- * Ham mod metnini veya eski değerleri diziye dönüştürür.
- * Geriye dönük uyumluluk:
- * - 'both' veya boş/null -> ['web', 'mobil', 'sip', 'video']
+ * Turns the raw mode text or legacy values into an array.
+ * Backward compatibility:
+ * - 'both' or empty/null -> ['web', 'mobil', 'sip', 'video']
  * - 'webrtc_only' -> ['web', 'mobil', 'video']
  * - 'sip_only' -> ['sip']
  * - 'web,mobil,sip,video' -> ['web', 'mobil', 'sip', 'video']
@@ -185,7 +185,7 @@ function parsePhoneModes(?string $raw): array {
 }
 
 /**
- * Mod dizisini veritabanında saklanacak virgülle ayrılmış metne dönüştürür.
+ * Turns the mode array into the comma-separated text stored in the database.
  *
  * @param array $modes
  * @return string

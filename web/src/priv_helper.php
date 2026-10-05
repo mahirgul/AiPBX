@@ -1,19 +1,19 @@
 <?php
 /**
- * Root yetkisi gerektiren işlemler için tek giriş noktası.
+ * Single entry point for operations that need root.
  *
- * Portal hiçbir sistem aracını (systemctl, postconf, firewall-cmd,
- * fail2ban-client) doğrudan sudo ile çağırmaz; hepsi install.sh'in
- * /usr/local/sbin'e kurduğu, argümanları beyaz listeyle doğrulayan
- * `aipbx-priv` üzerinden geçer (kaynak: conf/sbin/aipbx-priv). sudoers
- * www-data'ya yalnızca bu script'i açar.
+ * The portal never calls a system tool (systemctl, postconf, firewall-cmd,
+ * fail2ban-client) through sudo directly; everything goes through
+ * `aipbx-priv`, which install.sh installs into /usr/local/sbin and which
+ * validates its arguments against a whitelist (source: conf/sbin/aipbx-priv).
+ * sudoers opens only this script to www-data.
  */
 
 class PrivHelper {
     const BIN = '/usr/local/sbin/aipbx-priv';
 
     /**
-     * @param string[] $args aipbx-priv alt komutu ve argümanları (ör. ['fw', 'list-all'])
+     * @param string[] $args aipbx-priv subcommand and its arguments (e.g. ['fw', 'list-all'])
      * @return array{success: bool, output: string}
      */
     public static function run(array $args): array {

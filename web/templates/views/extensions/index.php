@@ -31,18 +31,6 @@
         - <strong><?php echo t('extensions.help_remove'); ?></strong>
     </div>
 
-    <?php if (!empty($message)): ?>
-        <div class="alert alert-success u-mb-20">
-            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-danger u-mb-20">
-            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
-
     <div class="table-responsive">
         <table class="data-table">
             <thead>
@@ -65,9 +53,9 @@
                 <?php else: ?>
                     <?php foreach ($extensions as $e): ?>
                         <?php
-                        // Dual-Endpoint: her dahilinin -sip ve -webrtc olmak üzere iki ayrı PJSIP
-                        // durumu var; ikisinden en "canlı" olanı (Görüşmede > Boşta > Erişilemiyor)
-                        // gösterilir (2026-08-19 düzeltmesi — bkz. AsteriskHelper::getPJSIPStatuses()).
+                        // Dual endpoint: every extension has two separate PJSIP states,
+                        // -sip and -webrtc; the most "alive" of the two (In call > Idle >
+                        // Unreachable) is shown (2026-08-19 fix — see AsteriskHelper::getPJSIPStatuses()).
                         $status_priority = ['busy' => 3, 'idle' => 2, 'unknown' => 1, 'down' => 0];
                         $best_status = null;
                         foreach (['-sip', '-webrtc', '-mob-webrtc'] as $suffix) {
@@ -107,7 +95,7 @@
                                     <span class="text-muted" style="font-size: 12px; font-style: italic;"><i class="fas fa-unlock"></i> <?php echo t('extensions.no_auth_required'); ?></span>
                                 <?php else: ?>
                                     <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                        <code data-pw="<?php echo htmlspecialchars($e['sip_password']); ?>" style="letter-spacing: 1px;">••••••</code>
+                                        <code data-pw="<?php echo htmlspecialchars((string) ($e['sip_password'] ?? '')); ?>" style="letter-spacing: 1px;">••••••</code>
                                         <button type="button" class="btn btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo t('extensions.show_hide_password_tooltip'); ?>" style="padding: 2px 6px; font-size: 10px;">
                                             <i class="fas fa-eye"></i>
                                         </button>
@@ -256,18 +244,18 @@
 
                 <div class="card" id="voicemail_settings_group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
                     <div class="u-flex-between u-mb-10">
-                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);"><i class="fas fa-voicemail u-primary"></i> Sesli Posta (Voicemail)</span>
+                        <span class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-voicemail u-primary"></i> Sesli Posta (Voicemail)</span>
                         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
                             <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked class="u-accent">
                             <span>Sesli Posta Kutusu Etkin</span>
                         </label>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div class="form-group" style="margin-bottom: 8px;">
+                        <div class="form-group u-mb-8">
                             <label class="form-label u-fs-11">Sesli Posta PIN (Şifre)</label>
                             <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control u-fs-12" placeholder="Boş ise dahili no">
                         </div>
-                        <div class="form-group" style="margin-bottom: 8px;">
+                        <div class="form-group u-mb-8">
                             <label class="form-label u-fs-11">Sesli Posta E-posta</label>
                             <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="ornek@alanadi.com">
                         </div>

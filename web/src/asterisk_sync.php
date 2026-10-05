@@ -23,27 +23,27 @@ function writePBXConf($filename, $content) {
 }
 
 /**
- * Config yaz + reload et + BAŞARISIZ OLURSA OTOMATİK GERİ AL (rollback).
- * 2026-08-24/25: dünkü "reload başarısızlığı hiç yakalanmıyordu" düzeltmesinin
- * doğal devamı — artık bir reload'un GERÇEKTEN başarısız olduğunu biliyoruz,
- * bu fonksiyon o bilgiyi kullanıp Asterisk'i EN SON ÇALIŞAN sürümde tutuyor.
+ * Write config + reload + AUTOMATIC ROLLBACK ON FAILURE.
+ * 2026-08-24/25: the natural follow-up of the "reload failures were never
+ * caught" fix — now that we know when a reload REALLY fails, this function
+ * uses that to keep Asterisk on the LAST WORKING version.
  *
- * Akış: yeni içerik yazılmadan ÖNCE mevcut dosyanın bir kopyası ".prev" olarak
- * saklanır. $reloadFn() (genelde bir veya daha fazla AsteriskHelper::
- * assertReloadsOk() çağrısı) başarısız olursa (Exception fırlatırsa):
- *   - Önceki bir sürüm VARSA: o sürüm geri yazılır ve AYNI reload TEKRAR
- *     denenir. Bu da başarılı olursa "geri alındı" diye net bir hata
- *     fırlatılır (admin'e "bozuk config reddedildi, eskisi hâlâ çalışıyor"
- *     mesajı gider). Bu da başarısız olursa (çok nadir — Asterisk'in kendisi
- *     başka bir sebeple sorunlu olabilir) "elle müdahale gerekiyor" diye
- *     AYRI bir hata fırlatılır — hiçbir durumda sessizce "başarılı" denmez.
- *   - Önceki bir sürüm YOKSA (bu domain için ilk kayıt): geri dönecek bir şey
- *     yok, yeni (muhtemelen hatalı) dosya olduğu gibi kalır, sadece orijinal
- *     hata fırlatılır.
+ * Flow: BEFORE the new content is written, a copy of the current file is
+ * kept as ".prev". If $reloadFn() (usually one or more AsteriskHelper::
+ * assertReloadsOk() calls) fails (throws):
+ *   - If a previous version EXISTS: it is written back and the SAME reload is
+ *     tried AGAIN. If that succeeds, a clear "rolled back" error is thrown
+ *     (the admin is told "the broken config was rejected, the old one is
+ *     still running"). If that fails too (very rare — Asterisk itself may be
+ *     in trouble for another reason), a SEPARATE "manual intervention
+ *     needed" error is thrown — it never silently says "success".
+ *   - If there is NO previous version (first write for this domain): there
+ *     is nothing to go back to, the new (probably broken) file stays as it
+ *     is and only the original error is thrown.
  *
- * $reloadFn HER ZAMAN çağrılır (yazma başarısız/başarılı fark etmez) — bu
- * fonksiyon dosya yazımını YAPMAZ, sadece $writeFn ile SARAR; syncXxx()
- * fonksiyonları writePBXConf() çağrısını ve reload çağrısını buraya taşır.
+ * $reloadFn is ALWAYS called (whether the write succeeded or not) — this
+ * function does NOT write files itself, it only WRAPS $writeFn; the syncXxx()
+ * functions move their writePBXConf() and reload calls in here.
  */
 function writeConfWithRollback($filename, $content, callable $reloadFn, $context) {
     $file_path = ASTERISK_PBX_DIR . '/' . $filename;
@@ -55,8 +55,8 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
 
     try {
         $reloadFn();
-        // Başarılı — bir sonraki başarısızlıkta geri dönülecek "bilinen iyi"
-        // sürüm olarak bu içeriği sakla (mevcut dosyanın kendisi zaten bu).
+        // Success — keep this content as the "known good" version to go back
+        // to on the next failure (the current file is exactly this already).
         if ($previous_content !== null) {
             @file_put_contents($backup_path, $previous_content);
             @chown($backup_path, 'asterisk');
@@ -78,18 +78,18 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
 }
 
 /**
- * "DB oku → TÜM ilgili .conf dosyasını yeniden üret → yaz → reload" senkron
- * fonksiyonlarının etrafına konsolidasyon-domeni bazlı bir dosya kilidi (flock)
- * ekler. FileHelper::writeFile() tek bir dosyanın YAZIMINI atomik yapıyor ama
- * bu, iki eşzamanlı isteğin AYNI syncAllXxx() fonksiyonunu üst üste bindirmesini
- * (A eski DB anlık görüntüsünü B'den SONRA yazıp B'nin değişikliğini üretilen
- * dosyada geçici olarak kaybetmesini) engellemiyordu — 2026-08-23 mimari
- * incelemesinde bulunan bir race condition. Kilit domeni bazlı (extensions,
- * queues, ivrs, ... ayrı ayrı) — ilgisiz alanlardaki eşzamanlı düzenlemeler
- * birbirini beklemez, sadece AYNI hedef dosyaya yazan çağrılar serileşir.
- * Kilit dosyası açılamazsa (izin/disk sorunu) SESSİZCE kilitsiz devam eder —
- * senkron işlemini asla tamamen engellemez, en kötü ihtimalle eski (kilitsiz)
- * davranışa döner.
+ * Adds a per-consolidation-domain file lock (flock) around the "read DB →
+ * regenerate the WHOLE .conf file → write → reload" sync functions.
+ * FileHelper::writeFile() makes WRITING a single file atomic, but that did
+ * not stop two concurrent requests from overlapping the SAME syncAllXxx()
+ * (A writing its older DB snapshot AFTER B, temporarily losing B's change in
+ * the generated file) — a race condition found in the 2026-08-23
+ * architecture review. The lock is per domain (extensions, queues, ivrs, ...
+ * separately) — concurrent edits in unrelated areas do not wait for each
+ * other, only calls writing the SAME target file are serialized.
+ * If the lock file cannot be opened (permission/disk problem) it SILENTLY
+ * continues without a lock — it never blocks the sync completely, at worst
+ * it falls back to the old (lock-free) behaviour.
  */
 function withSyncLock($lock_name, callable $fn) {
     $lock_dir = sys_get_temp_dir() . '/aipbx_sync_locks';
@@ -111,9 +111,9 @@ function withSyncLock($lock_name, callable $fn) {
 }
 
 /**
- * Ertelenmiş reload sistemi: domain -> gerçek syncXxx() fonksiyon adı eşlemesi.
- * syncEverything()'in çağırdığı 11 domainle birebir aynı liste — bu bilinçli,
- * "hangi domain'ler var" tanımının tek bir yerde durması için.
+ * Deferred reload system: domain -> real syncXxx() function name.
+ * Exactly the same list as the 11 domains syncEverything() calls — on
+ * purpose, so the "which domains exist" definition lives in one place.
  */
 const PENDING_SYNC_DOMAIN_MAP = [
     'extensions'        => 'syncAllExtensions',
@@ -137,19 +137,19 @@ const PENDING_SYNC_DOMAIN_MAP = [
 ];
 
 /**
- * Bir kaydın Asterisk'e YANSITILMASI gerektiğini işaretler — gerçek
- * regen+reload'ı HEMEN çalıştırmaz, /pending-sync sayfasından admin
- * "Gönder"e basana kadar bekletir (2026-08-24, kullanıcı isteği: "admin
- * birden çok değişiklik yapmak isteyebilir, hepsini tek seferde uygulasın").
- * $domain PENDING_SYNC_DOMAIN_MAP'te olmalı. Aynı (domain, entity_type,
- * entity_id) Gönder'den önce tekrar düzenlenirse satır GÜNCELLENİR
- * (tekilleşir) — aynı kayıt için liste şişmez, son hâli gösterilir.
+ * Marks that a record must be PUSHED to Asterisk — it does NOT run the real
+ * regen+reload right away; it waits until the admin presses "Apply" on the
+ * /pending-sync page (2026-08-24, user request: "the admin may want to make
+ * several changes and apply them all at once").
+ * $domain must be in PENDING_SYNC_DOMAIN_MAP. If the same (domain,
+ * entity_type, entity_id) is edited again before Apply, the row is UPDATED
+ * (deduplicated) — the list does not grow for the same record, it shows the
+ * latest state.
  *
- * Kapsam DIŞI (bilerek): telefon feature code'ları (feature_code_action.php,
- * kendi syncEverything() çağrısını KORUYOR — kullanıcı *78 çevirdiğinde
- * anında etkili olmalı, admin onayı beklemez) ve ajan kuyruk giriş/mola
- * (canlı AMI komutları, hiç config dosyası içermiyor, bu sistemin kapsamına
- * hiç girmiyor).
+ * OUT of scope (on purpose): phone feature codes (feature_code_action.php
+ * KEEPS its own syncEverything() call — dialing *78 must take effect at
+ * once, without waiting for admin approval) and agent queue login/pause
+ * (live AMI commands with no config file at all, outside this system).
  */
 function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $action = 'update', $user_id = null) {
     if (!array_key_exists($domain, PENDING_SYNC_DOMAIN_MAP)) {
@@ -163,17 +163,18 @@ function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $acti
     );
     $stmt->execute([$domain, $entity_type, (string)$entity_id, $entity_label, $action, $user_id]);
 
-    // sys_pending_sync SATIRLARI Gönder'den sonra SİLİNİR — kalıcı bir "kim
-    // ne zaman ne yaptı" kaydı ayrı, INSERT-only sys_audit_log'a düşer.
+    // sys_pending_sync ROWS are DELETED after Apply — a permanent "who did
+    // what and when" record goes to the separate, INSERT-only sys_audit_log.
     writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id);
 }
 
 /**
- * Kalıcı denetim kaydı — hiçbir satırı asla silinmez/güncellenmez (2026-08-24).
- * markPendingSync() (bir kayıt değiştiğinde) ve applyPendingSync() (Gönder'e
- * basıldığında, domain başına) tarafından çağrılır. $user_id null olabilir
- * (ör. CLI'dan tetiklenen bir işlem) — username o anki DB anlık görüntüsünden
- * denormalize edilip saklanır, kullanıcı sonradan silinse bile kayıt okunabilir kalır.
+ * Permanent audit record — no row is ever deleted or updated (2026-08-24).
+ * Called by markPendingSync() (when a record changes) and applyPendingSync()
+ * (when Apply is pressed, per domain). $user_id may be null (e.g. an action
+ * started from the CLI) — the username is denormalized from the current DB
+ * snapshot and stored, so the record stays readable even if the user is
+ * deleted later.
  */
 function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id = null) {
     try {
@@ -191,13 +192,13 @@ function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action
         );
         $stmt->execute([$domain, $entity_type, (string)$entity_id, $entity_label, $action, $user_id, $username, $ip]);
     } catch (\Exception $e) {
-        // Denetim kaydı yazılamaması asıl işlemi (ayar kaydetme/uygulama)
-        // ASLA engellememeli — sadece sessizce atlanır.
+        // Failing to write the audit record must NEVER block the actual
+        // operation (saving/applying settings) — it is silently skipped.
     }
 }
 
 /**
- * Sidebar rozeti için hafif bir sayaç.
+ * A lightweight counter for the sidebar badge.
  */
 function getPendingSyncCount() {
     try {
@@ -208,7 +209,7 @@ function getPendingSyncCount() {
 }
 
 /**
- * /pending-sync sayfası için: tüm bekleyen satırlar, domain bazlı gruplanmış.
+ * For the /pending-sync page: all pending rows, grouped by domain.
  */
 function getPendingSyncList() {
     $db = getDB();
@@ -226,13 +227,13 @@ function getPendingSyncList() {
 }
 
 /**
- * "Gönder" butonuna basılınca çalışır: bekleyen HER DOMAIN için gerçek
- * syncXxx() fonksiyonunu bir kez çağırır (o domain'de kaç kayıt değiştiyse
- * değişsin, domain başına TEK regen — syncAllQueues() zaten tüm kuyrukları
- * tek seferde üretiyor, withSyncLock() kilidi burada da geçerli). Başarılı
- * domain'in satırları silinir; bir domain hata verirse o domain'in satırları
- * KALIR (bir sonraki Gönder denemesinde tekrar denenir), diğer domainleri
- * ETKİLEMEZ. Dönüş: ['domain' => ['success' => bool, 'error' => string|null]].
+ * Runs when "Apply" is pressed: calls the real syncXxx() function once for
+ * EVERY pending domain (ONE regen per domain however many records changed
+ * in it — syncAllQueues() already generates all queues in one go, and the
+ * withSyncLock() lock applies here too). A successful domain's rows are
+ * deleted; if a domain fails its rows STAY (retried on the next Apply) and
+ * the other domains are NOT AFFECTED.
+ * Returns: ['domain' => ['success' => bool, 'error' => string|null]].
  */
 function applyPendingSync($user_id = null) {
     $db = getDB();
@@ -253,12 +254,13 @@ function applyPendingSync($user_id = null) {
             writeAuditLog($domain, 'sync_apply', $domain, $domain, 'apply', $user_id);
         } catch (\Throwable $e) {
             $results[$domain] = ['success' => false, 'error' => $e->getMessage()];
-            // 2026-08-25: önceden buraya sadece domain adı ("queues") yazılıyordu —
-            // rollback/reload hatasının GERÇEK metni (writeConfWithRollback()'in
-            // "OTOMATİK GERİ ALINDI"/"ELLE MÜDAHALE GEREKİYOR" mesajları dahil)
-            // sadece o anki HTTP yanıtında görünüyordu, kalıcı kayıtta kaybolurdu.
-            // entity_label varchar(255) — ham Asterisk çıktısı bunu aşabilir,
-            // güvenli şekilde kırpılıyor.
+            // 2026-08-25: only the domain name ("queues") used to be written
+            // here — the REAL text of the rollback/reload error (including
+            // writeConfWithRollback()'s "AUTOMATICALLY ROLLED BACK"/"MANUAL
+            // INTERVENTION NEEDED" messages) only appeared in that HTTP
+            // response and was lost from the permanent record.
+            // entity_label is varchar(255) — raw Asterisk output can exceed
+            // it, so it is trimmed safely.
             $label = "{$domain}: " . mb_substr($e->getMessage(), 0, 230);
             writeAuditLog($domain, 'sync_apply', $domain, $label, 'apply_failed', $user_id);
         }
@@ -268,8 +270,8 @@ function applyPendingSync($user_id = null) {
 
 // Require Domain Sync Modules
 require_once __DIR__ . '/sync/SyncTransports.php';
-// SyncDialplan.php 2026-08-31'de dört ayrı alana bölündü (tek dosyada 516 satırdı).
-// DialplanBuilders ÖNCE gelmeli — diğerleri onun ürettiği satır fonksiyonlarını kullanıyor.
+// SyncDialplan.php was split into four areas on 2026-08-31 (it was 516 lines in one file).
+// DialplanBuilders must come FIRST — the others use the line functions it produces.
 require_once __DIR__ . '/sync/DialplanBuilders.php';
 require_once __DIR__ . '/sync/SyncInboundDialplan.php';
 require_once __DIR__ . '/sync/SyncOutboundDialplan.php';
@@ -290,12 +292,13 @@ require_once __DIR__ . '/sync/SyncVoicemail.php';
 require_once __DIR__ . '/sync/SyncPermissions.php';
 
 /**
- * Sistem varsayılan dilini (/etc/asterisk/asterisk.conf [options] defaultlanguage=)
- * günceller. DİKKAT: bu, diğer tüm sync* fonksiyonlarından FARKLI — "core reload" ile
- * DEĞİL, sadece TAM Asterisk yeniden başlatmasıyla devreye giriyor (asterisk.conf
- * [options] sadece açılışta okunuyor). Bu yüzden değer GERÇEKTEN değiştiyse true,
- * değişmediyse false döner — çağıran taraf (asterisk_settings.php) sadece true
- * dönerse restart tetiklemeli, her kayıtta gereksiz restart atmamalı.
+ * Updates the system default language (/etc/asterisk/asterisk.conf [options]
+ * defaultlanguage=). CAUTION: unlike every other sync* function this does NOT
+ * take effect with "core reload", only with a FULL Asterisk restart
+ * (asterisk.conf [options] is read only at startup). So it returns true only
+ * when the value REALLY changed, false otherwise — the caller
+ * (asterisk_settings.php) must trigger a restart only on true, not on every
+ * save.
  */
 function syncDefaultLanguage($lang) {
     $lang = preg_replace('/[^a-zA-Z_]/', '', $lang) ?: 'en';
@@ -304,13 +307,13 @@ function syncDefaultLanguage($lang) {
     if ($content === false) return false;
 
     if (preg_match('/^defaultlanguage\s*=\s*(.*)$/m', $content, $m) && trim($m[1]) === $lang) {
-        return false; // zaten aynı deger, degisiklik yok
+        return false; // same value already, nothing changed
     }
 
     if (preg_match('/^defaultlanguage\s*=.*$/m', $content)) {
         $content = preg_replace('/^defaultlanguage\s*=.*$/m', "defaultlanguage = {$lang}", $content, 1);
     } else {
-        // [options] bölümünün sonuna ekle (bir sonraki [section] veya dosya sonuna kadar)
+        // Append at the end of the [options] section (up to the next [section] or end of file)
         $content = preg_replace('/(\[options\][^\[]*)/', "$1defaultlanguage = {$lang}\n", $content, 1);
     }
 
@@ -322,10 +325,10 @@ function syncDefaultLanguage($lang) {
  * Full Initial / Bulk System Sync Trigger
  */
 function syncEverything() {
-    // Her syncXxx() fonksiyonu KENDİ ilgili reload'unu (dialplan/pjsip/queue/moh)
-    // zaten çağırıyor — burada aynı reload'ları tekrar tetiklemek gereksizdi
-    // (tek bir syncEverything() çağrısında dialplan reload 5 kez, pjsip reload
-    // 2 kez, moh reload 2 kez tekrarlanıyordu, 2026-08-21 denetiminde bulundu).
+    // Every syncXxx() function already calls ITS OWN reload (dialplan/pjsip/
+    // queue/moh) — triggering the same reloads again here was redundant (one
+    // syncEverything() call reloaded the dialplan 5 times, pjsip 2 times and
+    // moh 2 times; found in the 2026-08-21 audit).
     syncTransports();
     syncPermissions();
     syncAllExtensions();
@@ -339,8 +342,9 @@ function syncEverything() {
     syncInboundDialplan();
     syncOutboundDialplan();
     syncFeatureCodes();
-    // Numara context'i, onu include eden genel dialplan'dan ONCE uretilmeli;
-    // aksi halde ilk kurulumda Asterisk var olmayan bir context'i include eder.
+    // The number context must be generated BEFORE the general dialplan that
+    // includes it; otherwise on a fresh install Asterisk includes a context
+    // that does not exist.
     syncInternalNumbers();
     syncGeneralDialplan();
     syncAsteriskMOH();

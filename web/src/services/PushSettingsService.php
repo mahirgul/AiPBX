@@ -86,10 +86,11 @@ class PushSettingsService
 
         if ($changed) {
             writeAuditLog('general_dialplan', 'sys_settings', 'push_settings', 'Mobil Bildirim Ayarları', 'update', $_SESSION['user_id'] ?? null);
-            // Push ayarları dahililerin arama satırlarını (buildExtensionDialLines)
-            // etkiliyor → genel dialplan yeniden üretilmeli. Önceki çağrı
-            // markPendingSync('dialplan') hem var olmayan bir domain'di hem de
-            // eksik argümanla çağrılıyordu: kayıt ArgumentCountError ile ölüyordu.
+            // The push settings affect the extensions' dial lines
+            // (buildExtensionDialLines) → the general dialplan must be
+            // regenerated. The previous markPendingSync('dialplan') call used a
+            // domain that does not exist and too few arguments: saving died with
+            // ArgumentCountError.
             markPendingSync('general_dialplan', 'sys_settings', 'push_settings', 'Mobil Bildirim Ayarları', 'update', $_SESSION['user_id'] ?? null);
         }
 

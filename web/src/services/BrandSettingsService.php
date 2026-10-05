@@ -1,6 +1,6 @@
 <?php
 /**
- * Brand & Appearance (Marka & Görünüm) Service
+ * Brand & Appearance Service
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 
@@ -14,7 +14,7 @@ class BrandSettingsService {
             'site_title' => 'AiPBX',
             'brand_title' => 'AiPBX',
             'brand_sub' => 'Santral & Çağrı Merkezi',
-            // Boş site_logo_image = AiPBX varsayılan logosu (BRAND_DEFAULT_LOGO_URL).
+            // Empty site_logo_image = the AiPBX default logo (BRAND_DEFAULT_LOGO_URL).
             'site_logo_type' => 'image',
             'site_logo_icon' => 'fa-network-wired',
             'site_logo_image' => '',
@@ -30,9 +30,9 @@ class BrandSettingsService {
     }
 
     /**
-     * Logo/favicon dosyasını doğrulayıp uploadDir() altına kaydeder.
-     * Aynı $baseName ile eski uzantılı dosyaları temizler (birikmiş yetim dosya kalmasın diye).
-     * Yeni dosya yoksa null döner (mevcut ayar korunur).
+     * Validates a logo/favicon file and stores it under uploadDir().
+     * Removes older files with the same $baseName and another extension (so no orphan files pile up).
+     * Returns null when there is no new file (the current setting is kept).
      */
     public static function saveBrandUpload($fileKey, $baseName, array $allowedExt, $maxBytes)
     {
@@ -62,13 +62,13 @@ class BrandSettingsService {
         }
         @chmod($target, 0644);
 
-        // SVG içine gömülü <script>/olay-işleyici (onload= vb.) tarayıcının bu
-        // dosyayı DOĞRUDAN (bir <img> üzerinden değil) açması durumunda çalışabilir
-        // — logo her yerde <img src="..."> ile kullanıldığı için bu yol normal
-        // kullanımda tetiklenmiyor, ama dosyanın URL'sine doğrudan gidilirse (ör.
-        // yeni sekmede açma) risk oluşturuyordu (2026-08-21 denetiminde bulundu).
-        // Basit ama etkili bir temizlik: script bloklarını, on*= olay işleyicilerini
-        // ve javascript: URI'larını kaldır.
+        // A <script>/event handler (onload= etc.) embedded in an SVG can run
+        // when the browser opens the file DIRECTLY (not through an <img>) —
+        // the logo is used everywhere via <img src="...">, so normal use does
+        // not trigger this path, but going to the file's URL directly (e.g.
+        // opening it in a new tab) was a risk (found in the 2026-08-21 audit).
+        // A simple but effective cleanup: remove script blocks, on*= event
+        // handlers and javascript: URIs.
         if ($ext === 'svg') {
             $svg = @file_get_contents($target);
             if ($svg !== false) {
@@ -82,8 +82,8 @@ class BrandSettingsService {
     }
 
     /**
-     * Tüm marka ayarlarını (başlıklar, logo, favicon, renkler) AiPBX varsayılanlarına
-     * döndürür ve yüklenmiş logo/favicon dosyalarını siler.
+     * Resets all brand settings (titles, logo, favicon, colours) to the AiPBX
+     * defaults and deletes the uploaded logo/favicon files.
      * @return array{success:bool, message?:string, error?:string}
      */
     public static function resetToDefaults(array $post): array

@@ -1,17 +1,17 @@
 <?php
 /**
- * Dialplan Üretim Yardımcıları (paylaşılan "builder" fonksiyonları)
+ * Dialplan generation helpers (shared "builder" functions)
  *
- * Gelen/giden/genel dialplan üreticileri ile SyncIVRs/SyncTimeConditions
- * tarafından ORTAK kullanılan satır üretim fonksiyonları. 2026-08-31'de
- * SyncDialplan.php (516 satır) dört ayrı alana bölünürken buraya ayrıldı —
- * bu dosya "nasıl satır üretilir"i bilir, "hangi config dosyası yazılır"ı bilmez.
+ * Line-generating functions SHARED by the inbound/outbound/general dialplan
+ * generators and SyncIVRs/SyncTimeConditions. Split out here on 2026-08-31
+ * when SyncDialplan.php (516 lines) was divided into four areas — this file
+ * knows "how lines are generated", not "which config file is written".
  */
 
 require_once __DIR__ . '/../file_helper.php';
 require_once __DIR__ . '/../asterisk_helper.php';
 /**
- * Kuyruk timeout/başarısızlık sonrası (cc_fallback_action) davranışı
+ * Behaviour after a queue timeout/failure (cc_fallback_action)
  */
 function buildCallCenterFallbackLines($action = 'hangup', $target = '') {
     $target = preg_replace('/[^0-9]/', '', $target ?? '');
@@ -30,19 +30,20 @@ function buildCallCenterFallbackLines($action = 'hangup', $target = '') {
 }
 
 /**
- * Bir giden rota denemesi (trunk girişi) için CALLERID(num) satırı üretir.
- * Trunk'ın kendi Caller ID maskelemesi varsa o öncelikli (ör. trunk operatörünün
- * zorunlu kıldığı numara); yoksa arayan dahilinin kendi dahili/harici CID tercihi
- * kullanılır (PJSIP endpoint set_var: CID_INTERNAL/CID_EXTERNAL, bkz. SyncExtensions.php).
- * İkisi de boşsa mevcut CALLERID(num) değişmeden kalır.
+ * Generates the CALLERID(num) line for one outbound route attempt (trunk entry).
+ * The trunk's own caller ID masking wins if set (e.g. a number the trunk
+ * carrier requires); otherwise the calling extension's own internal/external
+ * CID preference is used (PJSIP endpoint set_var: CID_INTERNAL/CID_EXTERNAL,
+ * see SyncExtensions.php). If both are empty the current CALLERID(num) stays.
  *
- * Görünen ad (CALLERID(name)): pbx_trunks.send_caller_name kapalıysa (Dış Hat
- * Ayarları, 2026-08-31 kullanıcı isteği) bu route/trunk üzerinden giden çağrıda
- * açıkça temizlenir — normalde arayan dahilinin kendi SIP istemcisinden/endpoint
- * kimliğinden miras alınan ad trunk'a kadar gidiyordu, bu satır bunu kesiyor.
- * Açıksa dokunulmuyor (mevcut/eski davranış aynen korunuyor). NOT: faks aramaları
- * (FaxSendService::submitCallFile()) bu ayara HİÇ bakmaz, her zaman isimsizdir —
- * bu fonksiyonun kapsamı dışında, ayrı bir origination yolu.
+ * Display name (CALLERID(name)): when pbx_trunks.send_caller_name is off
+ * (trunk settings, user request 2026-08-31) it is explicitly cleared on calls
+ * leaving through this route/trunk — normally the name inherited from the
+ * calling extension's own SIP client/endpoint identity went all the way to the
+ * trunk; this line cuts that. When on, nothing is touched (the old behaviour
+ * stays). NOTE: fax calls (FaxSendService::submitCallFile()) NEVER look at this
+ * setting and are always nameless — a separate origination path outside the
+ * scope of this function.
  */
 /**
  * Trunk outbound caller ID normalization: keep the last N digits, then prepend.
@@ -85,11 +86,11 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
             $lines .= " same => n,Set(CALLERID(num)=\${IF(\$[\"\${CID_INTERNAL}\" != \"\"]?\${CID_INTERNAL}:\${CALLERID(num)})})\n";
         }
     } else {
-        // Harici arama: kullanıcının sys_users.cid_external (CID_EXTERNAL) bilgisi önceliklidir.
-        // Eğer kullanıcıda harici CID boşsa, trunk'ın CID bilgisi (outbound_caller_id) veya rota override gönderilir.
+        // External call: the user's sys_users.cid_external (CID_EXTERNAL) wins.
+        // If the user has no external CID, the trunk CID (outbound_caller_id) or the route override is sent.
         $fallback_cid = !empty($trunk_cid) ? $trunk_cid : $override;
         if (!empty($fallback_cid)) {
-            // Transit çağrılarda (başka bir trunktan gelen çağrıda) arayanın numarasını koru
+            // On transit calls (a call coming in from another trunk) keep the caller's number
             $lines .= " same => n,ExecIf(\$[\"\${CDR(inbound_trunk)}\" = \"\"]?Set(CALLERID(num)=\${IF(\$[\"\${CID_EXTERNAL}\" != \"\"]?\${CID_EXTERNAL}:{$fallback_cid})}))\n";
         } else {
             $lines .= " same => n,ExecIf(\$[\"\${CID_EXTERNAL}\" != \"\"]?Set(CALLERID(num)=\${CID_EXTERNAL}))\n";
@@ -104,11 +105,12 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
 }
 
 /**
- * Bir dahiliyi çevirmeden (Dial) önce eklenir: DND açıksa Busy, çağrı yönlendirme
- * hedefi varsa oraya Goto — ikisi de "terminal" (Dial bloğu hiç yazılmaz).
- * Yönlendirme hedefi [from-internal-pbx]'e Goto edilir; bu context
- * [from-internal-outbound]'u include ettiği için hedef ister dahili ister
- * dış hat numarası olsun (harici numaralar include zincirinden çözülür) çalışır.
+ * Added before dialing an extension (Dial): Busy when DND is on, Goto to the
+ * forwarding target when there is one — both are "terminal" (no Dial block is
+ * written). The forwarding target is a Goto into [from-internal-pbx]; that
+ * context includes [from-internal-outbound], so it works whether the target
+ * is an extension or an outside number (external numbers resolve through the
+ * include chain).
  */
 function buildDndCfCheckLines($ext, $db) {
     $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number FROM sys_users WHERE extension = ?");
@@ -140,20 +142,20 @@ function buildDndCfCheckLines($ext, $db) {
 }
 
 /**
- * Bir dahiliyi aramak için gerekli tüm dialplan satırlarını üretir:
- * 1. DND (Rahatsız Etmeyin) kontrolü
- * 2. Her Zaman Yönlendir (Koşulsuz - CFU) kontrolü
- * 3. Hop Counter (Yönlendirme döngüsü engelleme)
- * 4. PJSIP kontaklarını paralel arama (SIP, WebRTC, Mobil WebRTC)
- * 5. Dial sonu durum yönlendirmeleri:
- *    - BUSY / CONGESTION -> Meşgulken Yönlendir (CFB)
- *    - NOANSWER -> Cevapsızken Yönlendir (CFNA)
- *    - CHANUNAVAIL / boş kontak -> Ulaşılamadı -> CFNA / CFB
- * 6. Döngü engelleme çıkış etiketi
+ * Generates all dialplan lines needed to call an extension:
+ * 1. DND (do not disturb) check
+ * 2. Always forward (unconditional - CFU) check
+ * 3. Hop counter (prevents forwarding loops)
+ * 4. Parallel dialing of the PJSIP contacts (SIP, WebRTC, mobile WebRTC)
+ * 5. Post-Dial status routing:
+ *    - BUSY / CONGESTION -> forward on busy (CFB)
+ *    - NOANSWER -> forward on no answer (CFNA)
+ *    - CHANUNAVAIL / no contact -> unreachable -> CFNA / CFB
+ * 6. Loop-prevention exit label
  *
- * @param string $ext Dahili numara (örn: 3001)
- * @param PDO $db Veritabanı bağlantısı
- * @param string $labelPrefix Etiket çakışmasını önleyen önek
+ * @param string $ext Extension number (e.g. 3001)
+ * @param PDO $db Database connection
+ * @param string $labelPrefix Prefix that keeps labels from colliding
  * @return array ['terminal' => bool, 'lines' => string[]]
  */
 function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = ''): array
@@ -179,7 +181,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $dialTimeout = ($cfNoAnswer !== '') ? $cfTimeout : $globalTimeout;
     $hasAnyCf = ($cfAlways !== '' || $cfBusy !== '' || $cfNoAnswer !== '');
 
-    // 1. DND aktif ise doğrudan Meşgul
+    // 1. DND on: straight to Busy
     if ($dnd) {
         return [
             'terminal' => true,
@@ -190,7 +192,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         ];
     }
 
-    // 1.1 Koşulsuz Sesli Posta Yönlendirmesi aktif ise doğrudan sesli posta
+    // 1.1 Unconditional voicemail forwarding on: straight to voicemail
     if (!empty($u['voicemail_enabled']) && !empty($u['vm_always'])) {
         return [
             'terminal' => true,
@@ -204,12 +206,12 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     $lines = [];
 
-    // 2. Yönlendirme döngü sayacı (Hop counter)
+    // 2. Forwarding loop counter (hop counter)
     if ($hasAnyCf) {
         $lines[] = " same => n,Set(CF_HOPS=\$[0\${CF_HOPS} + 1])";
     }
 
-    // 3. Her Zaman (Koşulsuz) Yönlendirme
+    // 3. Always (unconditional) forwarding
     if ($cfAlways !== '') {
         $lines[] = " same => n,NoOp(Her Zaman Yonlendirme aktif - {$ext} -> {$cfAlways})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
@@ -222,7 +224,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         ];
     }
 
-    // 4. Cihazları Çevirme (SIP, WebRTC, Mobil WebRTC) - Aktif Telefon Modlarına Göre Filtrelenir
+    // 4. Dial the devices (SIP, WebRTC, mobile WebRTC) - filtered by the active phone modes
     $modes = function_exists('parsePhoneModes')
         ? parsePhoneModes($u['allowed_phone_mode'] ?? null)
         : ['web', 'mobil', 'sip', 'video'];
@@ -249,7 +251,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,Set(C_MOB=)";
     }
 
-    // Mobil Push Bildirim Kancası (Katman 1 - Yalnızca push aktifse, mobil izinliyse ve abonenin mobil cihazı varsa)
+    // Mobile push notification hook (layer 1 - only when push is on, mobile is allowed and the subscriber has a mobile device)
     $pushEnabled = (string)getSystemSetting('push_enabled', '0') === '1';
     $pushProvider = (string)getSystemSetting('push_provider', 'none');
     $hasMobileDevice = false;
@@ -284,14 +286,14 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $lines[] = " same => n,Set(JITTERBUFFER(adaptive)=default)";
     $lines[] = " same => n,Dial(\${DIAL_CONTACTS},{$dialTimeout},tTb(sub-callee-jb^s^1))";
 
-    // 5. Dial Sonu Durum Yönlendirmeleri
+    // 5. Post-Dial status routing
     $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"BUSY\"]?lbl_busy_{$lbl})";
     $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"CONGESTION\"]?lbl_busy_{$lbl})";
     $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"NOANSWER\"]?lbl_noans_{$lbl})";
     $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"CHANUNAVAIL\"]?lbl_unavail_{$lbl})";
     $lines[] = " same => n,Hangup()";
 
-    // 6. Meşgul Durumu
+    // 6. Busy
     $lines[] = " same => n(lbl_busy_{$lbl}),NoOp(Dahili {$ext} Mesgul - DIALSTATUS=\${DIALSTATUS})";
     if ($cfBusy !== '') {
         $lines[] = " same => n,NoOp(Mesgulken Yonlendirme aktif - {$ext} -> {$cfBusy})";
@@ -305,7 +307,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,Hangup(17)";
     }
 
-    // 7. Cevapsız Durumu
+    // 7. No answer
     $lines[] = " same => n(lbl_noans_{$lbl}),NoOp(Dahili {$ext} Cevapsiz - DIALSTATUS=\${DIALSTATUS})";
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Cevapsizken Yonlendirme aktif - {$ext} -> {$cfNoAnswer})";
@@ -319,7 +321,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,Hangup()";
     }
 
-    // 8. Ulaşılamadı / Çevrimdışı Durumu
+    // 8. Unreachable / offline
     $lines[] = " same => n(lbl_unavail_{$lbl}),NoOp(Dahili {$ext} Kayitli Cihaz Yok veya Ulasilamiyor)";
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Ulasilamadi -> Cevapsizken Yonlendirme: {$ext} -> {$cfNoAnswer})";
@@ -337,7 +339,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,Hangup()";
     }
 
-    // 9. Döngü Engelleme Çıkışı
+    // 9. Loop-prevention exit
     if ($hasAnyCf) {
         $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Cagri Yonlendirme Dongusu Engellendi - {$ext})";
         $lines[] = " same => n,Hangup(17)";
@@ -359,8 +361,8 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
 
     switch ($dest_type) {
         case 'queue':
-            // 2026-08-19: Kuyruk timeout/fallback/kayıt ayarları artık global sys_settings değil,
-            // kuyruk bazlı (pbx_queues) — birden fazla kuyruk farklı davranışlara sahip olabilir.
+            // 2026-08-19: queue timeout/fallback/recording settings are per queue (pbx_queues)
+            // now, not global sys_settings — several queues can behave differently.
             $q_row = is_numeric($dest_id)
                 ? $db->prepare("SELECT * FROM pbx_queues WHERE id = ?")
                 : $db->prepare("SELECT * FROM pbx_queues WHERE queue_name = ?");
@@ -370,22 +372,24 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
 
             if (!empty($q['record_enabled'] ?? 1)) {
                 $rec_format = $q['record_format'] ?? 'wav';
-                // Kayıt ZATEN başlamışsa ikincisini başlatma.
+                // Do not start a second recording if one is ALREADY running.
                 //
-                // Gelen rotada "zorunlu kayıt" işaretliyse MixMonitor orada başlıyor;
-                // burada ikinci bir tane başlatmak aynı kanala iki kaydedici bağlar,
-                // iki ayrı dosya üretir ve CDR(userfield) ikincisiyle ezilir — panelde
-                // kayda tıklayınca yalnızca kuyruk parçası dinlenirdi.
-                // MIXMONITOR_FILENAME'i MixMonitor'un kendisi doldurur.
+                // When the inbound route has "mandatory recording" ticked,
+                // MixMonitor starts there; starting another one here attaches
+                // two recorders to the same channel, produces two files and
+                // CDR(userfield) is overwritten by the second — clicking the
+                // recording in the panel played only the queue part.
+                // MixMonitor fills MIXMONITOR_FILENAME itself.
                 $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?kayit_var_{$q_name})";
                 $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
                 $lines[] = " same => n,MixMonitor(\${REC_FILE})";
                 $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
                 $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Kuyruk kaydi: \${MIXMONITOR_FILENAME})";
             }
-            // Kuyruğun kendi dili ayarlanmışsa, buraya kadarki (Gelen Rota/IVR) dil
-            // ayarını ezer — kuyruk bekleme anonsları (announce-holdtime/position)
-            // arayanın kanal diline göre çalar, en spesifik (en sona en yakın) ayar kazanır.
+            // A language set on the queue itself overrides the language set so
+            // far (inbound route/IVR) — queue hold prompts (announce-holdtime/
+            // position) play in the caller's channel language; the most specific
+            // (closest to the end) setting wins.
             if (!empty($q['language'])) {
                 $q_lang = preg_replace('/[^a-zA-Z_]/', '', $q['language']);
                 $lines[] = " same => n,Set(CHANNEL(language)={$q_lang})";
@@ -404,11 +408,12 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             break;
 
         case 'extension':
-            // Aynı context/exten bloğu içinde buildDestinationLines('extension',...)
-            // birden fazla kez (örn. çoklu kural Zaman Koşulu'nda aynı dahili hem
-            // match hem nomatch hedefi olarak) çağrılabilir. Sabit "ext_unavail_{$ext}"
-            // label'ı bu durumda mükerrer üretilip Asterisk dialplan reload'ını
-            // bozar — her çağrı site'ı için benzersiz bir sayaç eklenir.
+            // buildDestinationLines('extension', ...) can be called more than
+            // once inside the same context/exten block (e.g. a multi-rule time
+            // condition with the same extension as both match and nomatch
+            // target). A fixed "ext_unavail_{$ext}" label would then be
+            // generated twice and break the Asterisk dialplan reload — a unique
+            // counter is added per call site.
             static $ext_label_seq = 0;
             $ext_label_seq++;
             $ext = preg_replace('/[^0-9]/', '', $dest_id);
@@ -433,8 +438,8 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             break;
 
         case 'fax':
-            // Goto hedefi DID numarasının kendisi olmalı; [from-trunk-fax] context'i
-            // _X. deseniyle eşleşir (tek haneli sıra numaraları eşleşmezdi).
+            // The Goto target must be the DID number itself; the [from-trunk-fax]
+            // context matches the _X. pattern (single-digit sequence numbers would not).
             $target = !empty($orig_did) ? $orig_did : (!empty($dest_id) ? $dest_id : 'default');
             $lines[] = " same => n,Goto(from-trunk-fax,{$target},1)";
             break;
@@ -470,11 +475,12 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
                 $lines[] = " same => n,Playback({$sound_clean})";
             }
 
-            // Anons bittikten sonraki hedef. `post_dest_type`/`post_dest_id`
-            // panelde kaydediliyordu ama BURADA HIC OKUNMUYORDU: ne secilirse
-            // secilsin cagri kapatiliyordu (2026-09-01 alan denetimi).
+            // Destination after the announcement ends. `post_dest_type`/
+            // `post_dest_id` were saved by the panel but NEVER READ HERE: the
+            // call was hung up whatever was selected (2026-09-01 field audit).
             //
-            // $derinlik, anons -> anons zincirinin sonsuza gitmesini engeller.
+            // $derinlik keeps an announcement -> announcement chain from going
+            // on forever.
             $sonraki_tip = '';
             $sonraki_id  = '';
             if (is_numeric($dest_id)) {

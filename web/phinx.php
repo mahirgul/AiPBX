@@ -1,13 +1,12 @@
 <?php
 /**
- * Phinx (DB migration) yapılandırması.
- * DB kimlik bilgileri /etc/ai-pbx.env'den okunur — burada tekrar
- * yazılmaz/saklanmaz. Uygulamanın çalışan (runtime) kullanıcısından
- * (DB_USER, sadece SELECT/INSERT/UPDATE/DELETE) BİLEREK FARKLI
- * bir kullanıcı (MIGRATOR_DB_USER, CREATE/ALTER/DROP dahil tüm
- * DDL yetkisi) kullanılıyor — çalışan uygulamanın hiçbir zaman şema
- * değiştirme yetkisi olmamalı, bu ayrım kasıtlı bir güvenlik sınırı.
- * Bu dosya web sunucusundan doğrudan erişime kapalıdır (bkz.
+ * Phinx (DB migration) configuration.
+ * DB credentials are read from /etc/ai-pbx.env — not written/stored here
+ * again. A user DELIBERATELY DIFFERENT from the application's runtime user
+ * (DB_USER, only SELECT/INSERT/UPDATE/DELETE) is used (MIGRATOR_DB_USER, all
+ * DDL privileges including CREATE/ALTER/DROP) — the running application must
+ * never be able to change the schema; this split is a deliberate security
+ * boundary. This file is closed to direct access from the web server (see
  * /etc/apache2/conf-available/aipbx-routing.conf — /var/www/html/db Require all denied).
  */
 
@@ -48,9 +47,9 @@ return [
             'port' => 3306,
             'charset' => 'utf8mb4',
         ],
-        // İzole test veritabanı (bin/setup-test-db.sh kullanır).
-        // Bilinçli olarak ORTAM DEĞİŞKENİNDEN okur, /etc/*.env'den değil:
-        // test kimlik bilgilerinin üretim env dosyasında yeri yok.
+        // Isolated test database (used by bin/setup-test-db.sh).
+        // Deliberately read from the ENVIRONMENT, not from /etc/*.env:
+        // test credentials have no place in the production env file.
         'testing' => [
             'adapter' => 'mysql',
             'host' => getenv('DB_HOST') ?: 'localhost',

@@ -1,13 +1,12 @@
 <?php
 /**
- * Ortak Controller yardımcıları: yetki kontrolü, CSRF doğrulama, view render,
- * yönlendirme. Mevcut auth.php'deki requireRole()/requireModulePermission()/
- * verifyCSRFToken() fonksiyonlarını SARMALAR, yeniden yazmaz — o katmana
- * dokunulmuyor (bugün büyük emekle test edilip düzeltilen RBAC/CSRF mantığı
- * orada duruyor).
+ * Shared controller helpers: access checks, CSRF verification, view
+ * rendering, redirects and POST action dispatch. It WRAPS the existing
+ * requireRole()/requireModulePermission()/verifyCSRFToken() functions in
+ * auth.php instead of reimplementing them — the RBAC/CSRF logic stays there.
  *
- * Proje konvansiyonuyla tutarlı kalsın diye (bkz. BaseRepository) static
- * metotlarla kullanılır, örneklenmez.
+ * Used through static methods, never instantiated, to match the rest of the
+ * project (see BaseRepository).
  */
 abstract class BaseController
 {
@@ -33,7 +32,69 @@ abstract class BaseController
 
     protected static function verifyCsrf(): bool
     {
-        return verifyCSRFToken($_POST['csrf_token'] ?? '');
+        return verifyCSRFToken(static::csrfToken());
+    }
+
+    /** CSRF token submitted with the current form (empty when missing). */
+    protected static function csrfToken(): string
+    {
+        return (string) ($_POST['csrf_token'] ?? '');
+    }
+
+    /**
+     * Runs the action whose submit-button name is present in $_POST (checked
+     * in array order) and turns its service result into layout notices.
+     * Non-POST requests and unknown buttons produce no notice.
+     *
+     * @param array<string, callable(): array> $actions POST field => action returning a service result
+     * @return array{message: string, error: string}
+     */
+    protected static function handlePost(array $actions): array
+    {
+        if (static::isPost()) {
+            foreach ($actions as $field => $action) {
+                if (isset($_POST[$field])) {
+                    return static::notices($action());
+                }
+            }
+        }
+        return ['message' => '', 'error' => ''];
+    }
+
+    /**
+     * Maps a service result (['success' => bool, 'message' | 'error' => string])
+     * to the layout's message/error notices.
+     *
+     * @return array{message: string, error: string}
+     */
+    protected static function notices(array $res): array
+    {
+        return !empty($res['success'])
+            ? ['message' => (string) ($res['message'] ?? ''), 'error' => '']
+            : ['message' => '', 'error' => (string) ($res['error'] ?? '')];
+    }
+
+    /** Sends a JSON response and ends the request. */
+    protected static function json(array $payload): never
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * Guard for in-page AJAX actions: answers with a JSON error and ends the
+     * request unless the user has $permission on $moduleKey and sent a valid
+     * CSRF token (form field or X-CSRF-Token header).
+     */
+    protected static function requireAjaxAccess(string $moduleKey, string $permission, string $deniedMessage, string $csrfMessage): void
+    {
+        if (!hasModulePermission($moduleKey, $permission)) {
+            static::json(['success' => false, 'message' => $deniedMessage]);
+        }
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+            static::json(['success' => false, 'message' => $csrfMessage]);
+        }
     }
 
     protected static function render(string $view, array $data = []): void
@@ -42,26 +103,26 @@ abstract class BaseController
     }
 
     /**
-     * Görünümü uygulamanın ortak düzeniyle (head, sidebar, topbar, footer)
-     * birlikte basar. Tüm oturum gerektiren sayfalar bunu kullanır.
+     * Renders a view inside the shared application layout (head, sidebar,
+     * topbar, footer). Every page that needs a session uses this.
      *
-     * Önceden her controller header.php/footer.php'yi kendisi require ediyordu
-     * ve oturum/modül yetkisi kontrolü header.php'nin (şablonun) içindeydi;
-     * düzen bildirimleri de controller'ın yerel $message/$error
-     * değişkenlerinden "sızarak" okunuyordu. Artık kontrol burada, düzen
-     * değişkenleri ise açıkça $page ile geçiyor.
+     * The session and module permission checks live here, and layout
+     * variables are passed explicitly through $page; message/error/warning/
+     * info are shown by the footer as notifications, so views must not
+     * print them again.
      *
      * @param array{title?: string, message?: string, error?: string, warning?: string, info?: string, extra_js?: string} $page
      */
     protected static function renderPage(string $view, array $data = [], array $page = []): void
     {
         require_once dirname(__DIR__, 2) . '/auth.php';
-        // İkinci savunma hattı: controller'ın kendi requireRole/requireModule
-        // kontrolüne ek olarak, sayfanın modül izni (RBAC matrisi).
+        // Second line of defence: on top of the controller's own
+        // requireRole/requireModule check, the page's module permission
+        // (RBAC matrix).
         requireLogin();
         requireModulePermission(getModuleKeyForPage(), 'view');
 
-        // Düzen şablonlarının beklediği adlar.
+        // Names the layout templates expect.
         $page_title = $page['title'] ?? '';
         $message = $page['message'] ?? '';
         $error = $page['error'] ?? '';
@@ -78,11 +139,10 @@ abstract class BaseController
     }
 
     /**
-     * Oturum gerektirmeyen sayfalar (giriş, 2FA, şifre sıfırlama, mobil giriş)
-     * için ortak düzen. Bu sayfalar önceden <head>'i kendi görünümlerinde
-     * baştan yazıyordu.
+     * Shared layout for pages without a session (login, 2FA, password reset,
+     * mobile login).
      *
-     * @param array{title?: string, head?: string} $page head: ek <head> içeriği (ham HTML)
+     * @param array{title?: string, head?: string} $page head: extra raw HTML for <head>
      */
     protected static function renderAuthPage(string $view, array $data = [], array $page = []): void
     {

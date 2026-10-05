@@ -1,8 +1,8 @@
 <?php
 /**
- * Basit View render yardımcısı. Twig gibi ayrı bir template dili GEREKMİYOR —
- * mevcut projenin düz PHP+HTML karışımı deseni devam ediyor, sadece artık
- * Controller'dan fiziksel olarak ayrı bir dosyada duruyor (templates/views/).
+ * Simple view render helper. A separate template language like Twig is NOT
+ * NEEDED — the project's plain PHP+HTML pattern continues, it just lives in a
+ * file physically separate from the controller now (templates/views/).
  */
 class View
 {
@@ -10,10 +10,10 @@ class View
     public const SAYFA_BOYUTLARI = [10, 25, 50, 100];
 
     /**
-     * Istekten gecerli sayfa boyutunu okur.
+     * Reads the valid page size from the request.
      *
-     * Serbest sayi kabul edilmez: ?boyut=100000 ile tum tablonun cekilmesi
-     * engellenir. Listede olmayan bir deger gelirse varsayilana donulur.
+     * Free numbers are not accepted: this prevents fetching the whole table
+     * with ?boyut=100000. A value not on the list falls back to the default.
      */
     public static function sayfaBoyutu(int $varsayilan = 50): int
     {

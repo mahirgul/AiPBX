@@ -1,9 +1,9 @@
 <?php
 /**
- * Oturum gerektirmeyen sayfaların (giriş, 2FA, şifre sıfırlama, mobil giriş…)
- * ortak düzeninin üst yarısı. BaseController::renderAuthPage() dahil eder.
+ * Top half of the shared layout of pages without a session (login, 2FA,
+ * password reset, mobile sign-in…). Included by BaseController::renderAuthPage().
  *
- * Beklenen değişkenler: $auth_title (sayfa başlığı), $auth_head (ek <head> içeriği, ham HTML)
+ * Expected variables: $auth_title (page title), $auth_head (extra <head> content, raw HTML)
  */
 $auth_site_title = getSystemSetting('site_title', 'AI PBX Portalı');
 $auth_favicon = getSystemSetting('site_favicon_url', '');

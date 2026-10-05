@@ -5,8 +5,8 @@
 
 class UserService {
     /**
-     * Admin'e bir kez gösterilecek, okunaklı (karıştırılabilen 0/O, 1/l/I yok)
-     * geçici şifre: xxxx-xxxx-xxxx, ~68 bit.
+     * Readable temporary password shown to the admin once (no confusable
+     * 0/O, 1/l/I): xxxx-xxxx-xxxx, ~68 bits.
      */
     public static function generateReadablePassword(): string {
         $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -53,16 +53,17 @@ class UserService {
                 $allowed_phone_mode = formatPhoneModes(parsePhoneModes($raw));
             }
 
-            // Kullanıcı adı DB'de UNIQUE (hata mesajı ham PDO hatası olurdu);
-            // dahili numara ise HİÇ kontrol edilmiyordu — iki kullanıcıya aynı
-            // dahili verilebiliyordu (aynı PJSIP endpoint'i iki hesap yazıyordu).
+            // The username is UNIQUE in the DB (the error would be a raw PDO
+            // error); the extension number was NOT checked at all — two users
+            // could get the same extension (two accounts wrote the same PJSIP
+            // endpoint).
             if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE username = ? AND id != ?', [$username, $user_id]) > 0) {
                 throw new \Exception("'{$username}' kullanıcı adı zaten kullanılıyor!");
             }
             if ($extension !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE extension = ? AND id != ?', [$extension, $user_id]) > 0) {
                 throw new \Exception("{$extension} numaralı dahili başka bir kullanıcıya atanmış!");
             }
-            // Kuyruk, IVR, konferans, çalma grubu, özellik kodu vb. ile de çakışmasın.
+            // It must not collide with a queue, IVR, conference, ring group, feature code etc. either.
             if ($extension !== '') {
                 require_once dirname(__DIR__) . '/internal_numbers.php';
                 internalNumberValidate($extension, 'user', $user_id);
@@ -78,11 +79,12 @@ class UserService {
                 SIPHelper::deleteSettings($old_extension);
             }
 
-            // roles.php/system_users.php sadece role==='admin' + is_active olan
-            // kullanıcılara açık (auth.php circuit-breaker) — bu düzenleme sistemdeki
-            // SON aktif admin'in rolünü değiştiriyor veya onu pasife alıyorsa, kimse
-            // artık bu iki sayfaya giremez hale gelir (bkz. UserService::deleteUser()
-            // ve PBXHelper::toggleStatus()'taki eşdeğer koruma).
+            // roles.php/system_users.php are open only to users with
+            // role==='admin' + is_active (auth.php circuit breaker) — if this
+            // edit changes the role of the LAST active admin in the system or
+            // deactivates them, nobody can reach these two pages anymore (see
+            // the equivalent protection in UserService::deleteUser() and
+            // PBXHelper::toggleStatus()).
             if ($user_id > 0) {
                 $old_role = DBHelper::fetchColumn('SELECT role FROM sys_users WHERE id = ?', [$user_id]);
                 if ($old_role === 'admin' && ($role !== 'admin' || $is_active == 0)) {
@@ -122,13 +124,13 @@ class UserService {
             } else {
                 if (empty($password)) {
                     if (!empty($email)) {
-                        // Kimseye gösterilmez: kullanıcı web şifresini davet
-                        // e-postasındaki bağlantıyla kendisi belirler; mobil
-                        // girişte şifreye hiç gerek yoktur.
+                        // Shown to nobody: the user sets their web password
+                        // through the link in the invitation email; mobile
+                        // sign-in needs no password at all.
                         $effective_password = bin2hex(random_bytes(16));
                     } else {
-                        // E-posta yok: admin'e bir kez gösterilir, ilk web
-                        // girişinde değiştirilmesi zorunludur.
+                        // No email: shown to the admin once, and must be changed
+                        // at the first web sign-in.
                         $generated_password = self::generateReadablePassword();
                         $effective_password = $generated_password;
                     }
@@ -158,8 +160,8 @@ class UserService {
                 $msg = "Yeni sistem kullanıcısı '{$username}' oluşturuldu!";
                 writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'create', $_SESSION['user_id'] ?? null);
 
-                // E-posta tanımlıysa otomatik aktivasyon ve şifre belirleme maili gönder
-                // (CSV içe aktarmada admin davetleri kapatabilir: skip_invitation).
+                // With an email set, send the automatic activation and password-setup mail
+                // (the admin can turn invitations off on CSV import: skip_invitation).
                 if (!empty($email) && empty($data['skip_invitation'])) {
                     require_once __DIR__ . '/UserInvitationService.php';
                     $inviteRes = UserInvitationService::sendInvitationEmail($user_id, true);
@@ -181,7 +183,7 @@ class UserService {
                 markPendingSync('general_dialplan', 'extension', $extension, "Dahili Dialplan: {$extension}", 'update', $uid);
                 $msg .= " Etkili olması için Uygula sayfasından gönderin.";
             } elseif (!empty($old_extension)) {
-                // Dahili numarası kaldırıldı: eski PJSIP endpoint'inin conf'tan düşmesi için yeniden üret
+                // The extension number was removed: regenerate so the old PJSIP endpoint drops out of the conf
                 markPendingSync('extensions', 'extension', $old_extension, "Dahili: {$old_extension} (kaldırıldı)", 'delete', $uid);
                 markPendingSync('general_dialplan', 'extension', $old_extension, "Dahili Dialplan: {$old_extension} (kaldırıldı)", 'delete', $uid);
                 $msg .= " Etkili olması için Uygula sayfasından gönderin.";
@@ -199,11 +201,12 @@ class UserService {
             $user_id = intval($user_id);
             if ($user_id <= 0) throw new \Exception("Geçersiz kullanıcı ID!");
 
-            // roles.php/system_users.php sadece role==='admin' olan kullanıcılara açık
-            // (auth.php circuit-breaker) — sistemdeki SON aktif admin hesabı silinirse
-            // kimse artık bu iki sayfaya giremez, sistem kalıcı olarak kilitlenir.
-            // Önceden bu kontrol sadece arayüzde (silme butonu username==='admin' için
-            // gizli) yapılıyordu, sunucu tarafında hiç yoktu.
+            // roles.php/system_users.php are open only to users with
+            // role==='admin' (auth.php circuit breaker) — if the LAST active
+            // admin account in the system is deleted, nobody can reach these
+            // two pages anymore and the system is locked for good. This check
+            // used to exist only in the interface (the delete button was
+            // hidden for username==='admin'), not on the server at all.
             $target_role = DBHelper::fetchColumn("SELECT role FROM sys_users WHERE id = ?", [$user_id]);
             if ($target_role === 'admin') {
                 $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);
@@ -237,7 +240,7 @@ class UserService {
                         'static_members_json' => json_encode($st_new),
                         'supervisors_json' => json_encode($s_new)
                     ];
-                    // Statik üye queues_pbx.conf'ta "member =>" satırı; config yeniden üretilmeli.
+                    // A static member is a "member =>" line in queues_pbx.conf; the config must be regenerated.
                     if (count($st_new) !== count($st_list)) {
                         markPendingSync('queues', 'queue', $q['queue_name'], "Kuyruk: {$q['queue_name']} (statik temsilci {$ext} silindi)", 'update', $_SESSION['user_id'] ?? null);
                     }
@@ -283,12 +286,12 @@ class UserService {
             }
             DBHelper::update('sys_users', $up_fields, 'id', $user_id);
             if (!empty($new_password)) {
-                // Yönetici şifreyi sıfırladıysa telefonlardaki oturumlar da düşsün.
+                // When an administrator resets the password, the sessions on the phones drop too.
                 getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
             }
 
-            // Şifrelerin KENDİSİ asla loglanmaz — sadece "hangi şifre türü
-            // değişti" bilgisi (web girişi / SIP / ikisi de).
+            // The passwords THEMSELVES are never logged — only "which kind of
+            // password changed" (web sign-in / SIP / both).
             $changed_kinds = [];
             if (!empty($new_password)) $changed_kinds[] = 'web girişi';
             if (!empty($new_sip_password)) $changed_kinds[] = 'SIP';

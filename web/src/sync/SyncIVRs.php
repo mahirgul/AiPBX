@@ -13,20 +13,21 @@ function syncAllIVRs() {
 }
 
 /**
- * Tek bir IVR menüsünün dialplan bloğunu üretir — saf fonksiyon (DB'ye dokunmaz,
- * test edilebilir olsun diye __syncAllIVRsBody()'den çıkarıldı).
+ * Generates the dialplan block of a single IVR menu — a pure function (no DB,
+ * split out of __syncAllIVRsBody() so it can be tested).
  *
- * max_failures: "i" (geçersiz tuşlama) her tetiklendiğinde kanal bazlı bir
- * sayaç (IVR{id}FAILS) artırılır; sayaç eşiğin altındaysa menü (s,1) baştan
- * çalınır, eşiğe ulaşınca invalid_dest_type/id hedefine düşülür. Zaman aşımı
- * (t) bu sayaca dahil değildir, davranışı değişmedi.
+ * max_failures: every time "i" (invalid key) fires, a per-channel counter
+ * (IVR{id}FAILS) is incremented; below the threshold the menu (s,1) plays
+ * again from the start, at the threshold the call goes to the
+ * invalid_dest_type/id destination. The timeout (t) is not part of this
+ * counter; its behaviour did not change.
  *
- * allow_direct_dial: açıksa, IVR menüsü çalarken aktif bir dahili numarası
- * çevrilirse doğrudan [from-internal-pbx]'teki gerçek çağrı mantığına
- * (DND/CF, dual-endpoint paralel çalma vb.) yönlendirilir — mantık burada
- * TEKRARLANMAZ, sadece Goto ile devredilir. Zaten menüde tanımlı bir tuşla
- * (digit entry) çakışan numaralar atlanır (aynı exten'in iki kez tanımlanması
- * Asterisk reload'da "already in use" uyarısına yol açar).
+ * allow_direct_dial: when on, dialing an active extension number while the
+ * IVR menu plays goes straight to the real call logic in [from-internal-pbx]
+ * (DND/CF, dual-endpoint parallel ringing etc.) — the logic is NOT
+ * DUPLICATED here, it is only handed over with Goto. Numbers that collide
+ * with a key already defined in the menu (digit entry) are skipped (defining
+ * the same exten twice causes an "already in use" warning on Asterisk reload).
  */
 function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numbers = [], $outbound_routes = []) {
     $ivr_id = $ivr['id'];
@@ -62,7 +63,7 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
     }
 
     if (!empty($ivr['allow_direct_dial'])) {
-        $conf .= "; Menu sirasinda dogrudan dahili arama (allow_direct_dial)\n";
+        $conf .= "; Direct extension dialing during the menu (allow_direct_dial)\n";
         $dialable = [];
         if (!empty($active_exts)) {
             foreach ($active_exts as $e) {
@@ -106,7 +107,7 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
     $conf .= "exten => t,1,NoOp(IVR {$ivr_id} Timed Out -> {$ivr['timeout_dest_type']})\n";
     $conf .= buildDestinationLines($ivr['timeout_dest_type'], $ivr['timeout_dest_id']) . "\n\n";
 
-    $conf .= "; Invalid Destination - {$max_failures} basarisiz denemeye kadar menu tekrarlanir\n";
+    $conf .= "; Invalid Destination - {$max_failures} failed attempts repeat the menu\n";
     $conf .= "exten => i,1,NoOp(IVR {$ivr_id} Invalid Digit)\n";
     $conf .= " same => n,Set({$fail_var}=\$[0\${{$fail_var}} + 1])\n";
     $conf .= " same => n,GotoIf(\$[0\${{$fail_var}} < {$max_failures}]?s,1)\n";

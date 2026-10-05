@@ -3,18 +3,17 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Raporda çalma / konuşma / toplam sürelerin ayrı ayrı gösterilebilmesi.
+ * Lets the report show the ring / talk / total durations separately.
  *
- * Veri zaten CDR'da vardı ama görünüm kaybediyordu:
- *   - `answer_time` doğrudan `calldate` olarak veriliyordu, yani cevaplama
- *     anı çağrının başlangıcına eşitleniyor ve çalma süresi sıfırlanıyordu.
- *   - Çalma süresi hiç hesaplanmıyordu.
+ * The data was already in the CDR but the view lost it:
+ *   - `answer_time` was given straight as `calldate`, so the answer moment
+ *     was made equal to the start of the call and the ring time became zero.
+ *   - The ring time was never computed.
  *
- * Doğrusu: toplam = duration, konuşma = billsec, çalma = duration - billsec.
+ * Correct: total = duration, talk = billsec, ring = duration - billsec.
  *
- * `billsec`in `duration`ı aştığı kayıtlar görüldü (14 / 15) — Asterisk'in
- * yuvarlamasından kaynaklanıyor. GREATEST ile negatif çalma süresi üretilmesi
- * engellendi.
+ * Records with `billsec` greater than `duration` were seen (14 / 15) — caused
+ * by Asterisk's rounding. GREATEST prevents a negative ring time.
  */
 final class CdrRingAndTalkDurations extends AbstractMigration
 {

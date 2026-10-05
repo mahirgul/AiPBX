@@ -1,7 +1,7 @@
 <?php
 /**
- * TwoFactorService (2FA / TOTP Authenticator Servisi)
- * RFC 6238 Time-Based One-Time Password ve tek kullanımlık kurtarma kodları yönetimi.
+ * TwoFactorService (2FA / TOTP authenticator service)
+ * Manages RFC 6238 time-based one-time passwords and single-use recovery codes.
  */
 
 use chillerlan\QRCode\QRCode;
@@ -12,7 +12,7 @@ class TwoFactorService
     private const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
     /**
-     * Rastgele Base32 formatında 2FA secret anahtarı üretir (varsayılan 160-bit / 32 karakter).
+     * Generates a random Base32 2FA secret (160-bit / 32 characters by default).
      */
     public static function generateSecret(int $length = 32): string
     {
@@ -25,7 +25,7 @@ class TwoFactorService
     }
 
     /**
-     * Base32 dizesini ikili (binary) veriye dönüştürür.
+     * Converts a Base32 string to binary data.
      */
     public static function base32Decode(string $b32): string
     {
@@ -59,7 +59,7 @@ class TwoFactorService
     }
 
     /**
-     * Belirli bir zaman dilimi için 6 haneli TOTP kodunu hesaplar.
+     * Computes the 6-digit TOTP code for a given time step.
      */
     public static function calculateCode(string $secret, ?int $timestamp = null): string
     {
@@ -78,7 +78,7 @@ class TwoFactorService
     }
 
     /**
-     * Kullanıcının girdiği 6 haneli kodu ± $window (30'ar saniye tolerans) ile doğrular.
+     * Verifies the 6-digit code the user entered with ± $window (30 seconds each) tolerance.
      */
     public static function verifyCode(string $secret, string $code, int $window = 1, ?int $timestamp = null): bool
     {
@@ -100,8 +100,8 @@ class TwoFactorService
     }
 
     /**
-     * 8 adet tek kullanımlık 8 karakterli formatlı (örn. ABCD-EF23) kurtarma kodu üretir.
-     * Karışıklığı önlemek için 0/O ve 1/I karakterleri hariç tutulmuştur.
+     * Generates 8 single-use, formatted 8-character recovery codes (e.g. ABCD-EF23).
+     * 0/O and 1/I are left out to avoid confusion.
      */
     public static function generateRecoveryCodes(int $count = 8): array
     {
@@ -123,7 +123,7 @@ class TwoFactorService
     }
 
     /**
-     * Kurtarma kodlarını DB'de saklanmak üzere hash'ler.
+     * Hashes the recovery codes for storage in the DB.
      */
     public static function hashRecoveryCodes(array $plainCodes): string
     {
@@ -136,7 +136,7 @@ class TwoFactorService
     }
 
     /**
-     * Kullanıcının girdiği kurtarma kodunu doğrular ve eşleşirse tek kullanımlık olarak tüketir (siler).
+     * Verifies a recovery code the user entered and, on a match, consumes (deletes) it as single-use.
      */
     public static function verifyAndConsumeRecoveryCode(int $userId, string $enteredCode): bool
     {
@@ -168,7 +168,7 @@ class TwoFactorService
         }
 
         if ($matchedIndex >= 0) {
-            // Kullanılan kurtarma kodunu listeden çıkar
+            // Remove the used recovery code from the list
             unset($hashedList[$matchedIndex]);
             $updatedList = array_values($hashedList);
 
@@ -192,7 +192,7 @@ class TwoFactorService
     }
 
     /**
-     * Authenticator uygulamaları (Google Auth, MS Auth vb.) için standart otpauth:// URI'sini üretir.
+     * Builds the standard otpauth:// URI for authenticator apps (Google Auth, MS Auth etc.).
      */
     public static function getOtpAuthUri(string $username, string $secret, string $issuer = 'AiPBX'): string
     {
@@ -202,7 +202,7 @@ class TwoFactorService
     }
 
     /**
-     * Tamamen çevrimdışı (offline) yerel SVG QR Kodu Data URI formatında üretir.
+     * Generates a fully offline, local SVG QR code as a data URI.
      */
     public static function getQrCodeDataUri(string $otpAuthUri): string
     {
@@ -219,7 +219,7 @@ class TwoFactorService
     }
 
     /**
-     * Kullanıcı için 2FA kurulumunu onaylar ve aktifleştirir.
+     * Confirms and enables the 2FA setup for a user.
      * @return array{success:bool, error?:string, recovery_codes?:array}
      */
     public static function enableTwoFactor(int $userId, string $secret, string $verifyCode): array
@@ -249,7 +249,7 @@ class TwoFactorService
     }
 
     /**
-     * Kullanıcı için 2FA'yı devre dışı bırakır.
+     * Disables 2FA for a user.
      * @return array{success:bool, error?:string}
      */
     public static function disableTwoFactor(int $userId, string $password = '', bool $isAdminReset = false): array
@@ -284,7 +284,7 @@ class TwoFactorService
     }
 
     /**
-     * Kullanıcı için yeni kurtarma kodları üretir (mevcut şifre doğrulaması gerekir).
+     * Generates new recovery codes for a user (requires the current password).
      * @return array{success:bool, error?:string, recovery_codes?:array}
      */
     public static function regenerateRecoveryCodes(int $userId, string $password): array

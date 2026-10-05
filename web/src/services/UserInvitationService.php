@@ -3,15 +3,15 @@ require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
  * User Invitation & Activation Mail Service
- * Yeni kullanıcı aktivasyonu ve şifre belirleme e-postalarını yönetir.
+ * Handles the new-user activation and password-setup emails.
  */
 class UserInvitationService
 {
     /**
-     * Bireysel kullanıcıya aktivasyon / şifre belirleme e-postası gönderir.
+     * Sends the activation / password-setup email to one user.
      *
-     * @param int $userId sys_users tablosundaki kullanıcı ID'si
-     * @param bool $isNew Yeni oluşturulan kullanıcı mı?
+     * @param int $userId user ID in sys_users
+     * @param bool $isNew is this a newly created user?
      * @return array{success: bool, message?: string, error?: string, token?: string}
      */
     public static function sendInvitationEmail(int $userId, bool $isNew = false): array
@@ -44,22 +44,22 @@ class UserInvitationService
             ];
         }
 
-        // Güvenli 256-bit rastgele token üret (48 saat geçerli)
+        // Generate a secure 256-bit random token (valid for 48 hours)
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', time() + (86400 * 2)); // 48 saat
 
-        // Veritabanına kaydet ve must_reset_password bayrağını etkinleştir
+        // Save it to the database and set the must_reset_password flag
         $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ?, must_reset_password = 1 WHERE id = ?');
         $upd->execute([$token, $expires, $userId]);
 
-        // Bağlantı URL'sini oluştur
+        // Build the link URL
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
         $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
 
-        // Mobil uygulamaya doğrudan giriş bağlantısı (7 gün, tek kullanımlık).
-        // Telefonda uygulamayı açıp giriş yapar, bilgisayarda QR gösterir.
-        // Dahilisi olmayan kullanıcıya mobil giriş yok (SIP hesabı gerekiyor).
+        // Direct sign-in link for the mobile app (7 days, single use).
+        // On a phone it opens the app and signs in; on a computer it shows a QR.
+        // A user without an extension gets no mobile sign-in (it needs a SIP account).
         $mobileUrl = '';
         if (!empty($user['extension'])) {
             require_once __DIR__ . '/QrLoginService.php';
@@ -67,7 +67,7 @@ class UserInvitationService
             $mobileUrl = $mobileRes['url'] ?? '';
         }
 
-        // Posta ve Sistem Ayarları
+        // Mail and system settings
         $fromAddress = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com')));
         $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AI PBX')));
         $brandTitle = getSystemSetting('brand_title', 'AI PBX');
@@ -99,7 +99,7 @@ HTML;
             $mobileText = '';
         }
 
-        // HTML E-posta Gövdesi
+        // HTML email body
         $htmlBody = <<<HTML
 <!DOCTYPE html>
 <html lang="tr">
@@ -165,7 +165,7 @@ HTML;
 </html>
 HTML;
 
-        // Düz Metin Alternatifi
+        // Plain-text alternative
         $textBody = "Merhaba {$displayName},\n\n"
             . "{$brandTitle} hesabınız oluşturuldu / şifre belirleme talebiniz alındı.\n\n"
             . "Hesap Bilgileriniz:\n"
@@ -178,7 +178,7 @@ HTML;
             . $mobileText
             . "İyi çalışmalar,\n{$brandTitle}";
 
-        // E-Posta Başlıkları (MIME Multipart HTML + Plain Text)
+        // Email headers (MIME multipart HTML + plain text)
         $boundary = '=_bnd_' . md5(uniqid((string)time(), true));
         $headers = "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddress}>\r\n"
             . "Reply-To: {$fromAddress}\r\n"
@@ -216,7 +216,7 @@ HTML;
     }
 
     /**
-     * Seçilen birden fazla kullanıcıya toplu aktivasyon / şifre belirleme maili gönderir.
+     * Sends the activation / password-setup mail to several selected users at once.
      *
      * @param array<int|string> $userIds
      * @return array{success: bool, sent_count: int, skipped_count: int, failed_count: int, message: string}

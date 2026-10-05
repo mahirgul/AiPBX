@@ -17,7 +17,7 @@
 </div>
 
 <?php if (empty($jails)): ?>
-    <div class="card"><div style="padding: 20px; color: var(--text-muted);"><?php echo t('fail2ban.no_jails'); ?></div></div>
+    <div class="card"><div class="u-p-20 u-muted"><?php echo t('fail2ban.no_jails'); ?></div></div>
 <?php endif; ?>
 
 <?php foreach ($jails as $j): ?>

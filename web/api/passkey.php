@@ -1,7 +1,7 @@
 <?php
 /**
- * WebAuthn Passkey API Uç Noktası
- * Kayıt ve giriş WebAuthn seremonisi isteklerini yönetir.
+ * WebAuthn passkey API endpoint
+ * Handles the registration and sign-in WebAuthn ceremony requests.
  */
 header('Content-Type: application/json; charset=utf-8');
 
@@ -12,7 +12,7 @@ require_once __DIR__ . '/../src/services/PasskeyService.php';
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-// JSON gövdesini oku (varsa)
+// Read the JSON body (if any)
 $rawInput = file_get_contents('php://input');
 $inputData = json_decode($rawInput, true) ?: $_POST;
 
@@ -22,7 +22,7 @@ if (empty($action) && isset($inputData['action'])) {
 
 switch ($action) {
     // -------------------------------------------------------------
-    // GİRİŞ: Auth seçeneklerini al (Challenge üretir)
+    // SIGN-IN: get the auth options (creates the challenge)
     // -------------------------------------------------------------
     case 'auth-options':
         $username = trim($inputData['username'] ?? $_GET['username'] ?? '');
@@ -36,7 +36,7 @@ switch ($action) {
         exit;
 
     // -------------------------------------------------------------
-    // GİRİŞ: Tarayıcı yanıtını doğrula ve oturum aç
+    // SIGN-IN: verify the browser response and sign in
     // -------------------------------------------------------------
     case 'auth-verify':
         $clientDataJSON = $inputData['clientDataJSON'] ?? '';
@@ -60,7 +60,7 @@ switch ($action) {
         exit;
 
     // -------------------------------------------------------------
-    // KAYIT: Register seçeneklerini al (Giriş yapılmış olmalıdır)
+    // REGISTRATION: get the register options (must be signed in)
     // -------------------------------------------------------------
     case 'register-options':
         if (!isset($_SESSION['user_id'])) {
@@ -86,7 +86,7 @@ switch ($action) {
         exit;
 
     // -------------------------------------------------------------
-    // KAYIT: Tarayıcı passkey oluşturma yanıtını doğrula ve kaydet
+    // REGISTRATION: verify and store the browser's passkey creation response
     // -------------------------------------------------------------
     case 'register-verify':
         if (!isset($_SESSION['user_id'])) {
@@ -115,7 +115,7 @@ switch ($action) {
         exit;
 
     // -------------------------------------------------------------
-    // SİLME: Kayıtlı passkey'i sil
+    // DELETE: delete a registered passkey
     // -------------------------------------------------------------
     case 'delete':
         if (!isset($_SESSION['user_id'])) {

@@ -1,5 +1,5 @@
 /**
- * Feature Code Yönetimi Client Script
+ * Feature code management client script
  */
 function openEditFeatureCodeModal(item) {
     if (!item) return;

@@ -18,15 +18,15 @@ import java.io.FileOutputStream
 import kotlin.math.max
 
 /**
- * Sohbette seçilen içeriği yüklemeye hazır geçici bir dosyaya çevirir.
+ * Turns content picked in the chat into a temporary file ready to upload.
  *
- * Önceden içerik olduğu gibi kopyalanıyor ve her fotoğraf ".jpg", her belge
- * ".bin" adıyla gönderiliyordu:
- *  - sunucu ".bin" uzantısını kabul etmediği için belge gönderimi hep başarısızdı,
- *  - HEIC fotoğraflar (".jpg" adıyla) sunucunun görsel içerik kontrolüne takılıyordu,
- *  - kamera fotoğrafları 5-10 MB olarak, döndürme bilgisi korunmadan gidiyordu.
- * Fotoğraflar artık JPEG'e çevrilip MAX_DIM'e küçültülüyor; belgeler gerçek
- * dosya adı ve uzantısıyla gönderiliyor.
+ * Content used to be copied as is, and every photo was sent as ".jpg",
+ * every document as ".bin":
+ *  - the server does not accept the ".bin" extension, so document uploads always failed,
+ *  - HEIC photos (named ".jpg") failed the server's image content check,
+ *  - camera photos went out at 5-10 MB without keeping the rotation info.
+ * Photos are now converted to JPEG and scaled down to MAX_DIM; documents go
+ * with their real file name and extension.
  */
 object ChatUploadPrep {
 
@@ -35,7 +35,7 @@ object ChatUploadPrep {
     private const val JPEG_QUALITY = 85
 
     data class Prepared(val file: File, val mimeType: String) {
-        /** Yüklemeden sonra geçici dosyayı ve klasörünü siler. */
+        /** Deletes the temporary file and its folder after the upload. */
         fun cleanup() {
             file.delete()
             file.parentFile?.delete()
@@ -43,10 +43,10 @@ object ChatUploadPrep {
     }
 
     /**
-     * Kamera uygulamasının fotoğrafı yazacağı adres. Ad sabit: kamera uygulaması
-     * açıkken Android bizim etkinliğimizi kapatabilir; sabit adres sayesinde
-     * dönüşte kayıtlı duruma ihtiyaç kalmadan dosya bulunur. Her yeni çekim
-     * bir öncekinin (zaten yüklenmiş) dosyasının üzerine yazar.
+     * Where the camera app writes the photo. The name is fixed: Android may
+     * close our activity while the camera app is open; thanks to the fixed
+     * address the file is found on return without needing saved state. Every
+     * new shot overwrites the previous (already uploaded) file.
      */
     fun cameraUri(context: Context): Uri {
         val dir = File(context.cacheDir, "camera").apply { mkdirs() }
@@ -56,7 +56,7 @@ object ChatUploadPrep {
     fun prepare(context: Context, uri: Uri, type: String): Prepared? {
         val cr = context.contentResolver
         val mime = cr.getType(uri)
-        // GIF yeniden kodlanırsa animasyonu kaybolur — olduğu gibi gönderilir.
+        // Re-encoding a GIF loses its animation — it is sent as is.
         if (type == "image" && mime != "image/gif") {
             prepareImage(context, cr, uri)?.let { return it }
         }
@@ -80,7 +80,7 @@ object ChatUploadPrep {
 
     private fun decodeScaled(cr: ContentResolver, uri: Uri): Bitmap? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // ImageDecoder HEIC'i çözer ve EXIF yönünü kendisi uygular.
+            // ImageDecoder decodes HEIC and applies the EXIF orientation itself.
             val source = ImageDecoder.createSource(cr, uri)
             return ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                 val w = info.size.width
@@ -141,7 +141,7 @@ object ChatUploadPrep {
         }
     }
 
-    /** Sunucu dosya türünü uzantıdan belirliyor — gerçek adı ve uzantıyı koru. */
+    /** The server picks the file type from the extension — keep the real name and extension. */
     private fun displayName(cr: ContentResolver, uri: Uri, mime: String?): String {
         var name: String? = null
         cr.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
@@ -155,7 +155,7 @@ object ChatUploadPrep {
         return clean
     }
 
-    /** Aynı adlı iki dosya çakışmasın diye her yükleme kendi klasöründe. */
+    /** Every upload gets its own folder so two files with the same name do not collide. */
     private fun newTempDir(context: Context): File =
         File(context.cacheDir, "chat_upload/${System.nanoTime()}").apply { mkdirs() }
 }

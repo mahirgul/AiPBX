@@ -1,5 +1,5 @@
 /**
- * Dahili Abone (Extension) Yönetim İstemci Betiği
+ * Extension (subscriber) management client script
  */
 
 function showExtensionModal() {
@@ -136,8 +136,8 @@ function openEditExtensionModal(item) {
     showExtensionModal();
 }
 
-// generateSipPassword() artık ortak yardımcı olarak ui_helper.js içindedir
-// (her sayfada yüklenir; system_users.php ve extensions.php birlikte kullanır).
+// generateSipPassword() is now a shared helper in ui_helper.js
+// (loaded on every page; system_users.php and extensions.php both use it).
 
 function toggleSipPasswordField() {
     const el = document.getElementById('modal_sip_password');

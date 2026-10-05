@@ -30,7 +30,7 @@ foreach ($directory as $contact) {
     $sipStatus = $pjsipStatuses["{$cExt}-sip"] ?? 'Unavailable';
     $webrtcStatus = $pjsipStatuses["{$cExt}-webrtc"] ?? 'Unavailable';
 
-    // Durum belirleme: Herhangi biri çevrimiçi ise 'online'
+    // Status: 'online' if any of them is online
     $isOnline = ($sipStatus === 'Not in use' || $sipStatus === 'In use' ||
                  $webrtcStatus === 'Not in use' || $webrtcStatus === 'In use');
     $isBusy = ($sipStatus === 'In use' || $sipStatus === 'Busy' ||

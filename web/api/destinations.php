@@ -3,13 +3,12 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../modules/destinations/DestinationRegistry.php';
 
-// Bu endpoint yalnızca Gelen Rota/IVR/Zaman Koşulu düzenleme sayfalarındaki
-// hedef seçim dropdown'larını doldurmak için kullanılıyor — _bootstrap.php'nin
-// requireApiLogin() çağrısı dışında hiçbir modül-seviyesi RBAC kontrolü yoktu
-// (2026-08-21 denetiminde bulundu). Veri kendi başına düşük hassasiyette (sadece
-// isim/id listeleri, şifre yok) ama tutarlılık için, bu üç modülden en az birine
-// erişimi olmayan bir kullanıcı (ör. sadece cc_agent) artık bu endpoint'i
-// çağıramıyor.
+// This endpoint is only used to fill the destination dropdowns on the inbound
+// route/IVR/time condition edit pages — apart from _bootstrap.php's
+// requireApiLogin() call there was no module-level RBAC check at all (found in
+// the 2026-08-21 audit). The data itself is low-sensitivity (just name/id
+// lists, no passwords), but for consistency a user without access to at least
+// one of these three modules (e.g. a pure cc_agent) can no longer call it.
 if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view') && !hasModulePermission('ring_groups', 'view') && !hasModulePermission('boss_secretary', 'view')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Yetkisiz erişim']);

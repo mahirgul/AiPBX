@@ -33,7 +33,7 @@ $action_label_map = [
 
             <?php foreach ($pending as $domain => $rows): ?>
                 <div class="u-mb-20">
-                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--text-main);">
+                    <div class="u-fw-700 u-fs-14 u-mb-8 u-text-main">
                         <i class="fas fa-folder-open u-primary"></i>
                         <?php echo htmlspecialchars(t('pending_sync.domain_' . $domain, $domain)); ?>
                         <span class="badge badge-secondary"><?php echo count($rows); ?></span>
@@ -54,7 +54,7 @@ $action_label_map = [
                                         <td><?php echo htmlspecialchars($r['entity_label']); ?></td>
                                         <td><?php echo uiStatusBadge($r['action'], $action_badge_map, 'info', $action_label_map[$r['action']] ?? $r['action']); ?></td>
                                         <td class="col-hide-mobile"><?php echo htmlspecialchars($r['changed_by_name'] ?? t('pending_sync.unknown_user')); ?></td>
-                                        <td class="col-hide-mobile" style="white-space: nowrap; color: var(--text-muted); font-size: 12px;"><?php echo htmlspecialchars($r['changed_at']); ?></td>
+                                        <td class="col-hide-mobile u-nowrap u-muted u-fs-12"><?php echo htmlspecialchars($r['changed_at']); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

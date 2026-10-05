@@ -5,10 +5,10 @@
 
 class FeatureCodeService {
     /**
-     * Bu sayfa yalnızca DÜZENLEME destekler (yeni feature code eklenemez —
-     * davranışın kendisi sabittir, sadece kod/başlık/roller değiştirilebilir).
-     * Önceden feature_codes.php'nin içine gömülüydü; MVC göçü sırasında
-     * (2026-08-22) buraya taşındı, mantık DEĞİŞTİRİLMEDİ.
+     * This page supports EDITING only (no new feature codes can be added —
+     * the behaviour itself is fixed, only the code/title/roles can change).
+     * It used to be embedded in feature_codes.php; moved here during the MVC
+     * migration (2026-08-22), logic UNCHANGED.
      */
     public static function saveFeatureCode($data, array $valid_role_keys) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data, $valid_role_keys) {
@@ -20,8 +20,8 @@ class FeatureCodeService {
             $allowed_roles = !empty($roles_in) ? implode(',', $roles_in) : null;
             $is_active = isset($data['is_active']) ? 1 : 0;
 
-            // Normal kodlar '*' ile başlar (ör. *78). Değişken parametreli kodlar (ör. kuyruk
-            // ID'si tuşlanan *81/*80) Asterisk desen söz dizimiyle '_*' ile başlar (ör. _*81.).
+            // Normal codes start with '*' (e.g. *78). Codes with a variable parameter (e.g. *81/*80
+            // with a queue ID dialed) start with '_*' in Asterisk pattern syntax (e.g. _*81.).
             $starts_ok = ($code !== '') && (($code[0] === '*') || (strpos($code, '_*') === 0));
             if (empty($title) || !$starts_ok) {
                 throw new \Exception('Başlık zorunludur ve kod "*" (veya desen kodlarında "_*") ile başlamalıdır!');

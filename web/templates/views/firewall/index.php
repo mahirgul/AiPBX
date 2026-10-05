@@ -37,7 +37,7 @@
                 <?php else: ?>
                     <?php foreach ($status['ports'] as $p): $is_protected = FirewallService::isProtected($p['port']); ?>
                         <tr>
-                            <td style="font-weight: 700;"><?php echo htmlspecialchars($p['port']); ?></td>
+                            <td class="u-fw-700"><?php echo htmlspecialchars($p['port']); ?></td>
                             <td><span class="badge badge-info"><?php echo strtoupper(htmlspecialchars($p['protocol'])); ?></span></td>
                             <td><span class="u-muted u-fs-12"><?php echo t('firewall.scope_general'); ?></span></td>
                             <td class="u-text-right">

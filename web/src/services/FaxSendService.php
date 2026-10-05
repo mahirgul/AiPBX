@@ -4,36 +4,37 @@ require_once __DIR__ . '/../text_fax_helper.php';
 require_once __DIR__ . '/../db_helper.php';
 
 /**
- * Fax Send (Faks Gönder) Service
+ * Fax send service
  */
 class FaxSendService {
     /**
-     * PDF yükleyip TIFF G4'e çevirir, fax_sent'e kaydeder ve Asterisk
-     * SendFAX() için bir .call spool dosyası üretir. Önceden fax_send.php'nin
-     * içine gömülüydü; MVC göçü sırasında (2026-08-22) buraya taşındı,
-     * mantık DEĞİŞTİRİLMEDİ (güvenlik notları dahil).
+     * Uploads a PDF and converts it to TIFF G4, records it in fax_sent and
+     * creates a .call spool file for Asterisk SendFAX(). It used to be
+     * embedded in fax_send.php; moved here during the MVC migration
+     * (2026-08-22), logic UNCHANGED (security notes included).
      *
      * @return array{success:bool, message?:string, error?:string}
      */
     public static function sendFax(array $post, array $files, int $userId, string $userExt): array
     {
         $csrf_token = $post['csrf_token'] ?? '';
-        // Bu iki alan Asterisk çağrı dosyasına (.call) ham gömülüyor (Channel:/SetVar:
-        // satırları) — rakam dışı karakter (özellikle \r\n) kabul edilirse dosyaya
-        // keyfi ek direktif (örn. Application: System) enjekte edilebilir, bu yüzden
-        // sadece rakamlarla sınırlanıyor.
+        // These two fields are embedded raw into the Asterisk call file (.call)
+        // (Channel:/SetVar: lines) — if non-digit characters (especially \r\n)
+        // were accepted, arbitrary extra directives (e.g. Application: System)
+        // could be injected into the file, so they are limited to digits.
         $dest_number = preg_replace('/[^0-9]/', '', trim($post['dest_number'] ?? ''));
-        // "PDF Yükle" / "Metin Yaz" sekmeleri aynı formu paylaşıyor (fax_send/index.php) —
-        // hangi sekmenin aktif olduğu bu alanla geliyor, PDF varsayılan (geriye dönük uyum).
+        // The "Upload PDF" / "Write text" tabs share the same form (fax_send/index.php)
+        // — this field says which tab is active; PDF is the default (backward compatible).
         $compose_mode = (($post['compose_mode'] ?? 'pdf') === 'text') ? 'text' : 'pdf';
 
-        // Gönderen kimliği: sıradan faks kullanıcısı HER ZAMAN kendi dahilisini
-        // kullanır — POST'tan farklı bir değer gelse (form salt-okunur ama bu
-        // sunucu tarafı bir garanti değil) sessizce yok sayılır. Admin ise
-        // panelde bir dropdown'dan (fax_send/index.php) gerçek/aktif bir faks
-        // birimi seçip ONUN adına gönderebilir — ama seçim yine de DB'ye karşı
-        // doğrulanır, POST manipülasyonuyla var olmayan/pasif bir dahili
-        // TSID/başlığa enjekte edilemez (2026-08-31, kullanıcı isteği).
+        // Sender identity: a regular fax user ALWAYS uses their own extension —
+        // a different value in the POST (the field is read-only, but that is
+        // not a server-side guarantee) is silently ignored. An admin can pick
+        // a real/active fax unit from a dropdown in the panel
+        // (fax_send/index.php) and send ON ITS BEHALF — but the choice is still
+        // checked against the DB, so a missing/inactive extension cannot be
+        // injected into the TSID/header by tampering with the POST
+        // (2026-08-31, user request).
         $requested_sender_did = preg_replace('/[^0-9]/', '', trim($post['sender_did'] ?? ''));
         $current_role = $_SESSION['user_role'] ?? 'user';
         if ($current_role === 'admin' && $requested_sender_did !== '') {
@@ -67,8 +68,9 @@ class FaxSendService {
                 return ['success' => false, 'error' => 'Yalnızca PDF formatındaki dosyalar yüklenebilir!'];
             }
         } else {
-            // Editörden gelen HTML tarayıcı kaynaklı (POST ile manipüle edilebilir,
-            // güvenilmez) — TextFaxHelper::sanitizeHtml() ile whitelist'e göre temizlenir.
+            // The editor's HTML comes from the browser (it can be tampered with
+            // in the POST, untrusted) — it is cleaned against a whitelist by
+            // TextFaxHelper::sanitizeHtml().
             $safe_text_html = TextFaxHelper::sanitizeHtml($post['fax_text_content'] ?? '');
             if (trim(strip_tags($safe_text_html)) === '') {
                 return ['success' => false, 'error' => 'Lütfen gönderilecek metni yazın!'];
@@ -149,11 +151,11 @@ class FaxSendService {
     }
 
     /**
-     * Verilen fax_sent kaydı için gerçek Asterisk .call spool dosyasını üretip
-     * gönderir — sendFax() (yeni gönderim) ve FaxSentService::resendFax()
-     * (başarısız bir kaydı aynı TIFF'i yeniden kullanarak tekrar gönderme,
-     * 2026-08-31) tarafından ORTAK kullanılıyor. MaxRetries/başlık/TSID
-     * mantığının iki ayrı yerde birbirinden sapmaması için tek noktada tutuluyor.
+     * Creates and submits the real Asterisk .call spool file for the given
+     * fax_sent record — SHARED by sendFax() (a new send) and
+     * FaxSentService::resendFax() (re-sending a failed record with the same
+     * TIFF, 2026-08-31). Kept in one place so the MaxRetries/header/TSID logic
+     * does not drift apart in two places.
      */
     public static function submitCallFile(int $faxId, string $destNumber, string $senderExt, string $tifPath): void
     {
@@ -162,11 +164,11 @@ class FaxSendService {
         $wait_time = intval(getSystemSetting('fax_wait_time', '30'));
         $trunk_name = AsteriskHelper::getPrimaryTrunkName();
 
-        // Faks başlığında görünecek gönderen adı (dialplan: FAXOPT(headerinfo) buna
-        // ekler) — HER ZAMAN gerçekte gönderen dahilinin (senderExt) sahibi, oturum
-        // açan kişinin kendi adı DEĞİL (admin başka bir faks birimi seçmiş olabilir;
-        // sıradan faks kullanıcısı için senderExt zaten kendi dahilisi, davranış
-        // önceki koddan farksız).
+        // Sender name shown in the fax header (the dialplan's FAXOPT(headerinfo)
+        // appends to it) — ALWAYS the owner of the extension that really sends
+        // (senderExt), NOT the name of the signed-in person (an admin may have
+        // picked another fax unit; for a regular fax user senderExt is their
+        // own extension anyway, same behaviour as the old code).
         $db = getDB();
         $stmt = $db->prepare("SELECT full_name, cid_external FROM sys_users WHERE extension = ?");
         $stmt->execute([$senderExt]);
@@ -175,23 +177,24 @@ class FaxSendService {
         $sender_name = trim(preg_replace('/[\r\n]+/', ' ', $sender_row['full_name'] ?? ''));
         $sender_name_var = $sender_name !== '' ? "{$sender_name} ({$senderExt})" : $senderExt;
 
-        // Çağrı dosyası önceden HİÇ CallerID: belirtmiyordu — dış hatta
-        // "Anonymous" olarak gidiyor ve trunk tarafından engelleniyordu (2026-08-31).
-        // sys_users.cid_external (ör. şehir kodu/önek + dahili) burada
-        // kullanılıyor. Boşsa (cid_external ayarlanmamışsa) dahilinin kendisine
-        // düşülür (hiç CID göndermemekten iyidir).
+        // The call file used to specify NO CallerID: at all — the call went out
+        // as "Anonymous" and was blocked by the trunk (2026-08-31).
+        // sys_users.cid_external (e.g. area code/prefix + extension) is used
+        // here. When it is empty (cid_external not set) we fall back to the
+        // extension itself (better than sending no CID at all).
         $sender_cid = preg_replace('/[^0-9]/', '', trim($sender_row['cid_external'] ?? ''));
         if ($sender_cid === '') $sender_cid = $senderExt;
         $caller_id_line = "<$sender_cid>";
 
-        // Faks aramaları KESİNLİKLE görünen ad göndermez — bu BİLEREK sabit, Dış Hat
-        // Ayarları'ndaki send_caller_name seçeneğine BAKMIYOR (2026-08-31, kullanıcı
-        // netleştirdi: "fax aramaları kesinlikle isim göndermesin, diğer aboneler
-        // arama yaparken bu ayara baksın" — o ayar sadece normal dahili->dış
-        // aramalar için SyncDialplan.php::buildTrunkCallerIdLine()'da uygulanıyor).
-        // Faks gönderimi artık doğrudan sabit PJSIP trunk yerine, sistemin gerçek
-        // numara planı ve Dış Hat Rotaları (pbx_outbound_routes) üzerinden Native
-        // Local kanal (Local/$dest@from-internal-pbx/n) ile çıkış yapar.
+        // Fax calls NEVER send a display name — this is fixed ON PURPOSE and
+        // does NOT look at the send_caller_name option in the trunk settings
+        // (2026-08-31, the user clarified: "fax calls must never send a name,
+        // the other subscribers' calls should follow that setting" — that
+        // setting is applied only to normal extension->outside calls in
+        // SyncDialplan.php::buildTrunkCallerIdLine()).
+        // Faxes no longer go out through a fixed PJSIP trunk but through the
+        // system's real numbering plan and outbound routes (pbx_outbound_routes)
+        // over a native Local channel (Local/$dest@from-internal-pbx/n).
         $dest_dial = preg_replace('/[^0-9+*#]/', '', trim($destNumber));
 
         $call_file_content = "Channel: Local/$dest_dial@from-internal-pbx/n\n" .
@@ -208,9 +211,9 @@ class FaxSendService {
                              "SetVar: FAX_SENDER_NAME=$sender_name_var\n" .
                              "SetVar: FAX_ID=$faxId\n";
 
-        // Geçici dosya spool ile AYNI dosya sisteminde yazılır: rename() ancak
-        // böyle atomiktir — /tmp'den taşımak kopyala+sil'e dönüşür ve Asterisk
-        // yarım dosyayı okuyabilir. 0666 (herkes yazabilir) yerine 0660.
+        // The temp file is written on the SAME file system as the spool: only
+        // then is rename() atomic — moving from /tmp becomes copy+delete and
+        // Asterisk could read a half file. 0660 instead of 0666 (world-writable).
         $tmp_call_file = FAX_OUTGOING_SPOOL . "/.fax_$faxId.call.tmp";
         $asterisk_spool = ASTERISK_CALL_SPOOL . "/fax_$faxId.call";
 
@@ -226,13 +229,14 @@ class FaxSendService {
     }
 
     /**
-     * Verilen numarayı, gerçek dahili aramaların [from-internal-outbound]
-     * dialplan'ında kullandığı AYNI Dış Hat Rotaları (pbx_outbound_routes)
-     * kurallarına göre dönüştürür (prepend/strip_front/strip_back/append) —
-     * SyncDialplan.php::__syncOutboundDialplanBody()'deki $dial_num mantığının
-     * PHP tarafındaki saf-fonksiyon eşleniği (dialplan'ın kendisi DEĞİŞTİRİLMEDİ,
-     * sadece faks çağrı dosyasının Channel: satırı için burada taklit ediliyor).
-     * Hiçbir rota eşleşmezse numara DEĞİŞTİRİLMEDEN döner (güvenli varsayılan).
+     * Transforms the given number by the SAME outbound route
+     * (pbx_outbound_routes) rules real extension calls use in the
+     * [from-internal-outbound] dialplan (prepend/strip_front/strip_back/
+     * append) — the pure-function PHP counterpart of the $dial_num logic in
+     * SyncDialplan.php::__syncOutboundDialplanBody() (the dialplan itself is
+     * NOT changed, it is only mimicked here for the fax call file's Channel:
+     * line). When no route matches, the number is returned UNCHANGED (safe
+     * default).
      */
     public static function resolveOutboundDialNumber(string $rawNumber): string {
         $db = getDB();
@@ -262,16 +266,16 @@ class FaxSendService {
     }
 
     /**
-     * Asterisk dialplan pattern söz dizimini (_X/_Z/_N/./!/[a-b] ve düz rakamlar)
-     * bir regex'e çevirir. Yalnızca rakam/joker karakterlerden oluşan basit
-     * numara kalıplarını (bu projenin pbx_outbound_routes'ta ürettiği türden)
-     * kapsar — SyncDialplan.php zaten match_pattern'i kaydederken
-     * `[^0-9NXZnxz.\[\]_!*#-]` dışındaki karakterleri temizliyor, o yüzden
-     * burada da aynı karakter kümesi varsayılıyor.
+     * Turns Asterisk dialplan pattern syntax (_X/_Z/_N/./!/[a-b] and plain
+     * digits) into a regex. Covers only simple number patterns made of digits/
+     * wildcards (the kind this project writes into pbx_outbound_routes) —
+     * SyncDialplan.php already strips characters outside
+     * `[^0-9NXZnxz.\[\]_!*#-]` when saving match_pattern, so the same
+     * character set is assumed here.
      */
     private static function asteriskPatternToRegex(string $pattern): ?string {
         if ($pattern[0] !== '_') {
-            // Joker içermeyen düz numara: tam eşleşme.
+            // Plain number without wildcards: exact match.
             return '/^' . preg_quote($pattern, '/') . '$/';
         }
 

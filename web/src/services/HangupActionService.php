@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../internal_numbers.php';
 /**
- * Hangup Action (Çağrı Sonlandırma) Service
+ * Hangup action (call ending) service
  */
 
 class HangupActionService {
@@ -34,10 +34,11 @@ class HangupActionService {
                 $stmt->execute([$action_key, $title, $action_type, $announcement_id, $numara_kolonu]);
                 $action_id = $db->lastInsertId();
             }
-            // buildDestinationLines()'ın 'hangup' dalı bu tabloyu Gelen Rota/IVR/Zaman
-            // Koşulu/Kuyruk-yedek üretirken okuyor — bu üç domain BİRDEN etkilendiği
-            // için üçüne de ayrı işaret konur (2026-08-21 denetiminde bulunan bug'ın
-            // aynısı ertelenmiş sistemde tekrarlanmasın diye).
+            // The 'hangup' branch of buildDestinationLines() reads this table
+            // when generating the inbound route/IVR/time condition/queue
+            // fallback — all three domains are affected AT ONCE, so each gets its
+            // own mark (so the bug found in the 2026-08-21 audit does not repeat
+            // in the deferred system).
             $uid = $_SESSION['user_id'] ?? null;
             $action = $is_new ? 'create' : 'update';
             markPendingSync('inbound_dialplan', 'hangup_action', $action_id, "Sonlandırma: {$title}", $action, $uid);

@@ -1,7 +1,7 @@
 /**
  * Dedicated Agent UI Controller Module for /cc-agent
- * NOT: SPA ile tekrar çalıştırıldığında top-level `let` redeclaration SyntaxError
- * verir; bu yüzden `var` kullanılır (tekrar tanımlanabilir).
+ * NOTE: when re-run by the SPA, a top-level `let` throws a redeclaration
+ * SyntaxError; so `var` is used (it can be redeclared).
  */
 var agentTimerInterval = null;
 var agentAutoLoginInterval = null;
@@ -11,9 +11,10 @@ var _loadLiveCallsInFlight = false;
 function loadAgentQueues() {
     const container = document.getElementById('agent-queues-list');
     if (!container) return;
-    // 5sn'lik polling döngüsü önceki isteğin bitip bitmediğini kontrol etmiyordu —
-    // yavaş bir ağda yanıtlar sırayla dönmezse eski veri yeni veriyi ezebiliyordu
-    // (düşük etkili ama gerçek bir race condition, 2026-08-21 denetiminde bulundu).
+    // The 5 s polling loop did not check whether the previous request had
+    // finished — on a slow network responses could come back out of order and
+    // old data could overwrite new data (a low-impact but real race
+    // condition, found in the 2026-08-21 audit).
     if (_loadAgentQueuesInFlight) return;
     _loadAgentQueuesInFlight = true;
 
@@ -29,8 +30,8 @@ function loadAgentQueues() {
             data.queues.forEach(q => {
                 if (!q.assigned) return; // Only show queues assigned to this agent
 
-                // Üyelik (in_queue) ile cihaz durumu (device_offline) ayrı gösterilir.
-                // F5 sonrası WebRTC kaydı kısa süre düşse bile temsilci kuyruğun ÜYESİ kalır.
+                // Membership (in_queue) and device state (device_offline) are shown separately.
+                // Even if the WebRTC registration drops briefly after F5, the agent stays a MEMBER of the queue.
                 const statusTag = !q.in_queue
                     ? '<span class="badge badge-secondary">⭕ Pasif</span>'
                     : (q.is_paused
@@ -39,10 +40,11 @@ function loadAgentQueues() {
                             ? '<span class="badge badge-info">⚪ Cihaz Çevrimdışı</span>'
                             : '<span class="badge badge-success">🟢 Aktif</span>'));
 
-                // queue_name şu an QueueService'te [a-zA-Z0-9_-] ile kısıtlanıyor
-                // (istismar edilemez) ama onclick içindeki JS-string bağlamı için
-                // doğru araç escapeHtml değil escapeJsAttr'dır — savunma derinliği
-                // için burada da tutarlı kullanılıyor (2026-08-21 denetiminde bulundu).
+                // queue_name is currently limited to [a-zA-Z0-9_-] in QueueService
+                // (not exploitable), but for the JS-string context inside onclick
+                // the right tool is escapeJsAttr, not escapeHtml — used
+                // consistently here too for defence in depth (found in the
+                // 2026-08-21 audit).
                 const safeQueueName = escapeJsAttr(q.queue_name);
                 const btnAction = q.is_static
                     ? `<span class="badge badge-info" title="Statik temsilci: kuyruktan çıkılamaz, sadece mola verilebilir"><i class="fas fa-thumbtack"></i> Statik</span>`
@@ -152,8 +154,8 @@ function loadLiveCalls() {
                     let aHtml = '';
                     active.forEach(ac => {
                         const callerNum = ac.caller || ac.caller_num || 'Bilinmeyen';
-                        // Not butonu sadece bu ekranın sahibi olan temsilcinin kendi çağrısında gösterilir
-                        // (aktif çağrılar tablosu sistemdeki tüm görüşmeleri listeler).
+                        // The note button is shown only on the own call of the agent owning this screen
+                        // (the active calls table lists every call in the system).
                         const isMine = window.AGENT_EXT && String(ac.exten || '') === String(window.AGENT_EXT);
                         const noteBtn = isMine
                             ? `<button class="btn btn-secondary btn-xs" onclick="openNoteModal(null, true)" title="Çağrı Notu (görüşme sırasında)"><i class="fas fa-sticky-note"></i></button>`
@@ -240,9 +242,9 @@ function playAudio(url) {
     window.open(url, '_blank');
 }
 
-// --- Çağrı Notu (callcenter_notes) ---
-// isPending=true: çağrı henüz aktif, CDR/call_id yok -> temsilciye bağlı "bekleyen" not
-// olarak sunucu tarafında saklanır, çağrı bitip CDR oluşunca otomatik ilişkilendirilir.
+// --- Call note (callcenter_notes) ---
+// isPending=true: the call is still active, no CDR/call_id yet -> stored on the server as
+// a "pending" note tied to the agent, linked automatically once the call ends and the CDR exists.
 var noteModalPending = false;
 
 function openNoteModal(callId, isPending) {
@@ -309,7 +311,7 @@ function submitCallNote() {
 function initAgentPage() {
     if (!document.getElementById('agent-queues-list')) return;
 
-    // cc_auto_queue_login ayarı açıksa ve temsilci bu oturumda elle çıkış yapmadıysa otomatik giriş yap
+    // Log in automatically if cc_auto_queue_login is on and the agent has not logged out by hand in this session
     if (!sessionStorage.getItem('cc_agent_manual_logout')) {
         UIHelper.ccPost('auto_login', { last_queues: '[]' }).finally(() => {
             loadAgentQueues();
@@ -322,8 +324,8 @@ function initAgentPage() {
         loadCdrs();
     }
 
-    // F5 sonrası WebRTC kaydının yeniden kurulması saniyeler alabilir;
-    // ilk 3 saniyede sık yenileme ile doğru duruma hızlı yakınsa
+    // After F5, re-establishing the WebRTC registration can take seconds;
+    // refresh often in the first 3 seconds to converge on the right state quickly
     setTimeout(function () {
         if (document.getElementById('agent-queues-list')) {
             loadAgentQueues();

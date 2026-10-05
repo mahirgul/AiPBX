@@ -75,9 +75,9 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 		return nil, fmt.Errorf("user not found or inactive: %w", err)
 	}
 
-	// İmzalanan metin PHP'deki mobileTokenPayload() ile aynı: token_epoch 0
-	// iken "id:exp", değilse "id:exp:epoch". Şifre sıfırlanınca epoch artar ve
-	// eski token'lar burada düşer (önbellek en fazla 60 sn gecikir).
+	// The signed text is the same as mobileTokenPayload() in PHP: "id:exp"
+	// while token_epoch is 0, otherwise "id:exp:epoch". The epoch increments on
+	// a password reset and old tokens drop here (the cache lags at most 60 s).
 	payload := userIDStr + ":" + expiresAtStr
 	if user.TokenEpoch > 0 {
 		payload += ":" + strconv.FormatInt(user.TokenEpoch, 10)
@@ -119,8 +119,8 @@ func ExtractToken(r *http.Request) string {
 		}
 	}
 
-	// 2. Query param ?token=... (YALNIZCA WebSocket /ws veya /media/ istekleri için, CH-10)
-	// WebSocket bağlantısında browser doğrudan query param geçtiği için cookie'nin önüne alınır
+	// 2. Query param ?token=... (ONLY for WebSocket /ws or /media/ requests, CH-10)
+	// On a WebSocket connection the browser passes the query param directly, so it comes before the cookie
 	path := r.URL.Path
 	if strings.HasSuffix(path, "/ws") || strings.Contains(path, "/media/") {
 		if qToken := r.URL.Query().Get("token"); qToken != "" {
@@ -133,7 +133,7 @@ func ExtractToken(r *http.Request) string {
 		}
 	}
 
-	// 3. Cookie (if any, özellikle /media/ için <img> etiketlerinde)
+	// 3. Cookie (if any, especially for /media/ in <img> tags)
 	if cookie, err := r.Cookie("chat_token"); err == nil && cookie.Value != "" {
 		val := cookie.Value
 		if strings.Contains(val, "%") {

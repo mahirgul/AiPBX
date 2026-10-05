@@ -1,6 +1,6 @@
 <?php
 /**
- * Microsoft Teams Entegrasyon Ekranı (Direct Routing, Kullanıcı Eşleme, Webhooks, PowerShell)
+ * Microsoft Teams integration screen (Direct Routing, user mapping, webhooks, PowerShell)
  */
 $is_teams_enabled = !empty($settings['teams_enabled']) && $settings['teams_enabled'] !== '0';
 $is_webhook_enabled = !empty($settings['teams_webhook_enabled']) && $settings['teams_webhook_enabled'] !== '0';
@@ -17,108 +17,7 @@ if (!$cert['exists']) {
 }
 ?>
 
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success u-mb-20">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger u-mb-20">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
-<style>
-.teams-tabs {
-    display: flex;
-    gap: 8px;
-    border-bottom: 2px solid var(--border-color, #e2e8f0);
-    padding: 0 20px;
-    background: var(--bg-card, #ffffff);
-    border-radius: 8px 8px 0 0;
-    overflow-x: auto;
-}
-.teams-tab-btn {
-    padding: 14px 18px;
-    border: none;
-    background: transparent;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-muted, #64748b);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-.teams-tab-btn:hover {
-    color: #6264a7;
-}
-.teams-tab-btn.active {
-    color: #6264a7;
-    border-bottom-color: #6264a7;
-}
-.teams-tab-pane {
-    display: none;
-    padding: 24px 20px;
-}
-.teams-tab-pane.active {
-    display: block;
-}
-.teams-header-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-}
-.badge-active {
-    background: rgba(16, 185, 129, 0.15);
-    color: #059669;
-}
-.badge-inactive {
-    background: rgba(148, 163, 184, 0.2);
-    color: #64748b;
-}
-.cert-card {
-    background: var(--bg-surface, #f8fafc);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 10px;
-}
-.code-box {
-    background: #1e1e2e;
-    color: #cdd6f4;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 13px;
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    white-space: pre;
-    line-height: 1.5;
-    border: 1px solid #313244;
-}
-.mapping-table th, .mapping-table td {
-    padding: 12px 14px;
-    vertical-align: middle;
-}
-.btn-teams {
-    background: #6264a7;
-    color: #ffffff;
-    border: 1px solid #545794;
-}
-.btn-teams:hover {
-    background: #50528c;
-    color: #ffffff;
-}
-</style>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/ms_teams.css'); ?>">
 
 <div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -207,23 +106,23 @@ if (!$cert['exists']) {
                 </div>
             </div>
 
-            <!-- Sertifika Durumu ve Yolları -->
+            <!-- Certificate status and paths -->
             <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 18px; margin-bottom: 24px;">
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-lock u-success"></i> <?php echo t('ms_teams.tls_section_title'); ?>
                 </h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600;"><?php echo t('ms_teams.tls_cert_path'); ?></label>
+                        <label class="form-label u-fs-13 u-fw-600"><?php echo t('ms_teams.tls_cert_path'); ?></label>
                         <input type="text" name="teams_tls_cert_path" class="form-control" value="<?php echo htmlspecialchars($settings['teams_tls_cert_path']); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600;"><?php echo t('ms_teams.tls_key_path'); ?></label>
+                        <label class="form-label u-fs-13 u-fw-600"><?php echo t('ms_teams.tls_key_path'); ?></label>
                         <input type="text" name="teams_tls_key_path" class="form-control" value="<?php echo htmlspecialchars($settings['teams_tls_key_path']); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                     </div>
                 </div>
 
-                <!-- Sertifika İnceleme Rozeti -->
+                <!-- Certificate inspection badge -->
                 <div class="cert-card">
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <div>
@@ -231,7 +130,7 @@ if (!$cert['exists']) {
                                 <?php echo htmlspecialchars($cert_badge_text); ?>
                             </span>
                             <?php if (!empty($cert['cn'])): ?>
-                                <strong style="margin-left: 8px; font-size: 13px;">CN: <?php echo htmlspecialchars($cert['cn']); ?></strong>
+                                <strong class="u-ml-8 u-fs-13">CN: <?php echo htmlspecialchars($cert['cn']); ?></strong>
                                 <span class="u-muted u-fs-12">(<?php echo t('ms_teams.cert_issuer'); ?>: <?php echo htmlspecialchars($cert['issuer']); ?>)</span>
                             <?php endif; ?>
                         </div>
@@ -244,12 +143,12 @@ if (!$cert['exists']) {
                 </div>
             </div>
 
-            <!-- Microsoft PSTN Hub Proxy Bilgi Kartı -->
+            <!-- Microsoft PSTN hub proxy info card -->
             <div style="background: rgba(98, 100, 167, 0.05); border: 1px solid rgba(98, 100, 167, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
                 <h5 style="margin: 0 0 10px 0; color: #464775; font-size: 14px; font-weight: 700;">
                     <i class="fas fa-globe"></i> <?php echo t('ms_teams.proxy_title'); ?>
                 </h5>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                <p class="u-fs-12 u-muted u-mb-8">
                     <?php echo t('ms_teams.proxy_desc'); ?>
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px;">
@@ -270,7 +169,7 @@ if (!$cert['exists']) {
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKME 2: Kullanıcı Eşleştirme             -->
+    <!-- TAB 2: User mapping                        -->
     <!-- ========================================== -->
     <div id="tab-users" class="teams-tab-pane <?php echo $active_tab === 'users' ? 'active' : ''; ?>">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
@@ -305,7 +204,7 @@ if (!$cert['exists']) {
                 <tbody>
                     <?php if (empty($mappings)): ?>
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            <td colspan="7" class="u-text-center u-p-30 u-muted">
                                 <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
                                 <?php echo t('ms_teams.empty_mappings'); ?>
                             </td>
@@ -335,7 +234,7 @@ if (!$cert['exists']) {
                                         <span class="badge badge-secondary u-fs-11"><?php echo t('ms_teams.status_inactive'); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td style="color: var(--text-muted); font-size: 13px;">
+                                <td class="u-muted u-fs-13">
                                     <?php echo htmlspecialchars($m['notes'] ?: '-'); ?>
                                 </td>
                                 <?php if ($can_edit || $can_delete): ?>
@@ -374,7 +273,7 @@ if (!$cert['exists']) {
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; color: #464775; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-plug"></i> <?php echo t('ms_teams.webhook_section_title'); ?>
                 </h4>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                <p class="u-fs-13 u-muted u-mb-16">
                     <?php echo t('ms_teams.webhook_section_desc'); ?>
                 </p>
 
@@ -404,7 +303,7 @@ if (!$cert['exists']) {
                 <div id="webhookTestResult" style="display: none; margin-top: 12px;"></div>
             </div>
 
-            <!-- Bildirim Olayları (Event Toggles) -->
+            <!-- Notification events (event toggles) -->
             <div style="background: #ffffff; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                 <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; margin-bottom: 16px;">
                     <i class="fas fa-bell u-primary"></i> <?php echo t('ms_teams.events_title'); ?>
@@ -487,7 +386,7 @@ if (!$cert['exists']) {
         <div class="code-box" id="powerShellCodeBlock"><?php echo htmlspecialchars($powerShellScript); ?></div>
 
         <div style="margin-top: 20px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 18px;">
-            <h5 style="margin-top: 0; font-size: 14px; font-weight: 700;">
+            <h5 class="u-mt-0 u-fs-14 u-fw-700">
                 <i class="fas fa-info-circle u-primary"></i> <?php echo t('ms_teams.ps_steps_title'); ?>
             </h5>
             <ol style="font-size: 13px; line-height: 1.7; margin-bottom: 0; padding-left: 20px;">
@@ -501,7 +400,7 @@ if (!$cert['exists']) {
 </div>
 
 <!-- ========================================== -->
-<!-- KULLANICI EŞLEŞTİRME MODALI (Modal)       -->
+<!-- USER MAPPING MODAL                         -->
 <!-- ========================================== -->
 <div class="modal fade" id="mappingModal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5); position: fixed; inset: 0; z-index: 9999; overflow-y: auto;">
     <div style="max-width: 540px; margin: 60px auto; background: var(--bg-card, #ffffff); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
@@ -516,7 +415,7 @@ if (!$cert['exists']) {
             <input type="hidden" name="id" id="mapId" value="">
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
-            <div class="form-group" style="margin-bottom: 14px;">
+            <div class="form-group u-mb-14">
                 <label class="form-label u-fw-600"><?php echo t('ms_teams.modal_ext_label'); ?> <span class="u-danger">*</span></label>
                 <select name="extension" id="mapExtension" class="form-control" required>
                     <option value=""><?php echo t('ms_teams.modal_select_ext'); ?></option>
@@ -528,19 +427,19 @@ if (!$cert['exists']) {
                 </select>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
+            <div class="form-group u-mb-14">
                 <label class="form-label u-fw-600"><?php echo t('ms_teams.modal_upn_label'); ?> <span class="u-danger">*</span></label>
                 <input type="email" name="teams_upn" id="mapTeamsUpn" class="form-control" placeholder="<?php echo t('ms_teams.modal_upn_placeholder'); ?>" required>
                 <small class="u-muted u-fs-12"><?php echo t('ms_teams.modal_upn_help'); ?></small>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
+            <div class="form-group u-mb-14">
                 <label class="form-label u-fw-600"><?php echo t('ms_teams.modal_phone_label'); ?></label>
                 <input type="text" name="phone_number" id="mapPhoneNumber" class="form-control" placeholder="<?php echo t('ms_teams.modal_phone_placeholder'); ?>">
                 <small class="u-muted u-fs-12"><?php echo t('ms_teams.modal_phone_help'); ?></small>
             </div>
 
-            <div class="form-group" style="margin-bottom: 14px;">
+            <div class="form-group u-mb-14">
                 <label class="form-label u-fw-600"><?php echo t('ms_teams.modal_dr_label'); ?></label>
                 <select name="direct_routing_enabled" id="mapDirectRouting" class="form-control">
                     <option value="1"><?php echo t('ms_teams.modal_dr_enabled'); ?></option>
@@ -548,7 +447,7 @@ if (!$cert['exists']) {
                 </select>
             </div>
 
-            <div class="form-group" style="margin-bottom: 18px;">
+            <div class="form-group u-mb-18">
                 <label class="form-label u-fw-600"><?php echo t('ms_teams.modal_notes_label'); ?></label>
                 <input type="text" name="notes" id="mapNotes" class="form-control" placeholder="<?php echo t('ms_teams.modal_notes_placeholder'); ?>">
             </div>
@@ -581,167 +480,5 @@ window.MS_TEAMS_I18N = {
     conn_error: <?php echo json_encode(t('ms_teams.js_conn_error'), JSON_UNESCAPED_UNICODE); ?>,
     test_failed: <?php echo json_encode(t('ms_teams.js_test_failed'), JSON_UNESCAPED_UNICODE); ?>
 };
-
-function openTeamsTab(tabName) {
-    document.querySelectorAll('.teams-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.teams-tab-pane').forEach(pane => pane.classList.remove('active'));
-
-    const activeBtn = document.querySelector(`.teams-tab-btn[onclick*="${tabName}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const activePane = document.getElementById(`tab-${tabName}`);
-    if (activePane) activePane.classList.add('active');
-
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tabName);
-    window.history.replaceState({}, '', url);
-}
-
-function toggleTeamsHelp() {
-    const box = document.getElementById('teamsHelpBox');
-    if (box) {
-        box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
-    }
-}
-
-function openMappingModal() {
-    document.getElementById('mappingForm').reset();
-    document.getElementById('mapId').value = '';
-    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> ' + window.MS_TEAMS_I18N.modal_new_title;
-    document.getElementById('modalAlert').style.display = 'none';
-    document.getElementById('mappingModal').style.display = 'block';
-}
-
-function editMapping(item) {
-    document.getElementById('mapId').value = item.id || '';
-    document.getElementById('mapExtension').value = item.extension || '';
-    document.getElementById('mapTeamsUpn').value = item.teams_upn || '';
-    document.getElementById('mapPhoneNumber').value = item.phone_number || '';
-    document.getElementById('mapDirectRouting').value = item.direct_routing_enabled ? '1' : '0';
-    document.getElementById('mapNotes').value = item.notes || '';
-    document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> ' + window.MS_TEAMS_I18N.modal_edit_title.replace('%s', item.extension);
-    document.getElementById('modalAlert').style.display = 'none';
-    document.getElementById('mappingModal').style.display = 'block';
-}
-
-function closeMappingModal() {
-    document.getElementById('mappingModal').style.display = 'none';
-}
-
-function submitMappingForm(e) {
-    e.preventDefault();
-    const form = document.getElementById('mappingForm');
-    const formData = new FormData(form);
-    const alertBox = document.getElementById('modalAlert');
-    const btn = document.getElementById('btnSaveMapping');
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + window.MS_TEAMS_I18N.saving;
-
-    fetch('/ms-teams?action=save_mapping', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> ' + window.MS_TEAMS_I18N.btn_save;
-        if (data.success) {
-            window.location.href = '/ms-teams?tab=users';
-        } else {
-            alertBox.className = 'alert alert-danger';
-            alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.conn_error);
-            alertBox.style.display = 'block';
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> ' + window.MS_TEAMS_I18N.btn_save;
-        alertBox.className = 'alert alert-danger';
-        alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
-        alertBox.style.display = 'block';
-    });
-}
-
-function deleteMapping(id, ext) {
-    const confirmMsg = window.MS_TEAMS_I18N.delete_confirm.replace('%s', ext);
-    if (!confirm(confirmMsg)) {
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('csrf_token', window.CSRF_TOKEN || '');
-
-    fetch('/ms-teams?action=delete_mapping', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            const row = document.getElementById('mapping-row-' + id);
-            if (row) row.remove();
-        } else {
-            alert(data.message || window.MS_TEAMS_I18N.delete_failed);
-        }
-    })
-    .catch(err => alert(window.MS_TEAMS_I18N.conn_error + err));
-}
-
-function testTeamsWebhook() {
-    const url = document.getElementById('teamsWebhookUrlInput').value.trim();
-    const resBox = document.getElementById('webhookTestResult');
-    const btn = document.getElementById('btnTestWebhook');
-
-    if (!url) {
-        alert(window.MS_TEAMS_I18N.enter_webhook_url);
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + window.MS_TEAMS_I18N.sending;
-    resBox.style.display = 'none';
-
-    const formData = new FormData();
-    formData.append('webhook_url', url);
-    formData.append('csrf_token', window.CSRF_TOKEN || '');
-
-    fetch('/ms-teams?action=test_webhook', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
-        resBox.style.display = 'block';
-        if (data.success) {
-            resBox.className = 'alert alert-success';
-            resBox.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
-        } else {
-            resBox.className = 'alert alert-danger';
-            resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.test_failed);
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
-        resBox.style.display = 'block';
-        resBox.className = 'alert alert-danger';
-        resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
-    });
-}
-
-function copyPowerShellScript() {
-    const code = document.getElementById('powerShellCodeBlock').innerText;
-    navigator.clipboard.writeText(code).then(() => {
-        alert(window.MS_TEAMS_I18N.copied);
-    }).catch(err => {
-        alert(window.MS_TEAMS_I18N.copy_failed + err);
-    });
-}
 </script>
+<script src="<?php echo asset('/assets/js/ms_teams.js'); ?>"></script>

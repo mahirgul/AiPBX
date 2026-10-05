@@ -3,19 +3,19 @@ require_once __DIR__ . '/UserService.php';
 require_once dirname(__DIR__) . '/internal_numbers.php';
 
 /**
- * CSV ile toplu kullanıcı ekleme.
+ * Bulk user creation from CSV.
  *
- * Akış: parse() → validate() (önizleme, hiçbir şey yazılmaz) → import().
- * import() her satır için UserService::saveUser()'ı çağırır; böylece tek tek
- * ekleme ile AYNI kurallar (rol kontrolü, dahili/PJSIP oluşturma, Asterisk
- * senkron işaretleri, davet e-postası, otomatik şifre) uygulanır.
+ * Flow: parse() → validate() (preview, nothing is written) → import().
+ * import() calls UserService::saveUser() for every row, so the SAME rules as
+ * adding users one by one apply (role check, extension/PJSIP creation,
+ * Asterisk sync marks, invitation email, automatic password).
  */
 class UserImportService
 {
     const MAX_ROWS = 1000;
     const MAX_BYTES = 1048576; // 1 MB
 
-    /** Kabul edilen sütun adları (küçük harf, boşluk/tire → alt çizgi) → alan. */
+    /** Accepted column names (lower case, space/dash → underscore) → field. */
     const HEADER_ALIASES = [
         'username' => 'username', 'kullanici_adi' => 'username', 'kullanıcı_adı' => 'username', 'kullanici' => 'username',
         'full_name' => 'full_name', 'ad_soyad' => 'full_name', 'adsoyad' => 'full_name', 'name' => 'full_name', 'isim' => 'full_name',
@@ -25,7 +25,7 @@ class UserImportService
         'password' => 'password', 'sifre' => 'password', 'şifre' => 'password',
     ];
 
-    /** Örnek şablon (UTF-8 BOM'lu, Excel'de doğru açılsın diye noktalı virgüllü). */
+    /** Sample template (UTF-8 with BOM, semicolon-separated so Excel opens it correctly). */
     public static function templateCsv(): string
     {
         return "\xEF\xBB\xBF" . "kullanici_adi;ad_soyad;eposta;dahili;rol;sifre\r\n"
@@ -35,7 +35,7 @@ class UserImportService
 
     /**
      * @return array{success: bool, rows?: array<int, array>, error?: string}
-     *   rows: [satır_no => ['username'=>..., 'full_name'=>..., ...]]
+     *   rows: [line_no => ['username'=>..., 'full_name'=>..., ...]]
      */
     public static function parse(string $content): array
     {
@@ -45,7 +45,7 @@ class UserImportService
         if (strncmp($content, "\xEF\xBB\xBF", 3) === 0) {
             $content = substr($content, 3);
         }
-        // Excel'in Türkçe "CSV (virgülle ayrılmış)" kaydı Windows-1254 üretir.
+        // Excel's Turkish "CSV (comma delimited)" save produces Windows-1254.
         if (!mb_check_encoding($content, 'UTF-8')) {
             $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1254');
         }
@@ -84,7 +84,7 @@ class UserImportService
         while (($cols = fgetcsv($fh, 0, $delimiter, '"', '')) !== false) {
             $lineNo++;
             if ($cols === [null] || implode('', array_map('trim', $cols)) === '') {
-                continue; // boş satır
+                continue; // empty line
             }
             $row = ['username' => '', 'full_name' => '', 'email' => '', 'extension' => '', 'role' => '', 'password' => ''];
             foreach ($map as $i => $field) {
@@ -105,7 +105,7 @@ class UserImportService
     }
 
     /**
-     * Hiçbir şey yazmadan satırları doğrular.
+     * Validates the rows without writing anything.
      *
      * @return array<int, array{row: array, errors: string[]}>
      */
@@ -170,8 +170,8 @@ class UserImportService
     }
 
     /**
-     * Geçerli satırları ekler. Satırlar birbirinden bağımsızdır: biri hata
-     * verirse diğerleri eklenmeye devam eder.
+     * Inserts the valid rows. Rows are independent of each other: if one
+     * fails, the others keep being added.
      *
      * @return array{created: int, failed: array<int, array{username: string, error: string}>, generated: array<int, array{username: string, full_name: string, extension: string, password: string}>, invited: int}
      */

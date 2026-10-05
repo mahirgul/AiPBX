@@ -6,20 +6,20 @@ use PHPUnit\Framework\TestCase;
 require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
- * Yetki yükseltme DEVRE KESİCİSİ (auth.php::hasModulePermission).
+ * The privilege-escalation CIRCUIT BREAKER (auth.php::hasModulePermission).
  *
- * 'roles' / 'system_users' / 'firewall' / 'fail2ban' modülleri
- * sys_role_permissions tablosunda NE YAZARSA YAZSIN yalnızca admin'e açık
- * olmalı. Gerekçesi gerçek bir açıktan geliyor (2026-08-21): roles.php'nin
- * izin matrisi bu modülleri sıradan bir modül gibi sunuyordu ve
- * read_only_admin rolü DB'de 'roles' için can_access=1 olarak yapılandırılmıştı
- * — yani o rol kendi rolünü admin yapıp tam yetki yükseltmesi sağlayabilirdi.
+ * The 'roles' / 'system_users' / 'firewall' / 'fail2ban' modules must be open
+ * only to admin WHATEVER sys_role_permissions says. The reason is a real hole
+ * (2026-08-21): the roles.php permission matrix offered these modules like any
+ * other and the read_only_admin role was configured in the DB with
+ * can_access=1 for 'roles' — so that role could make its own role admin and
+ * escalate to full privileges.
  *
- * NEDEN BURADA, DUMAN TESTİNDE DEĞİL: canlı veritabanında hiçbir role bu
- * modüller için can_access=1 verilmemiş, dolayısıyla sayfa normal izin
- * yolundan da kapalı — duman testi devre kesiciyi İZOLE EDEMİYOR (bu,
- * bin/smoke.php üzerinde ölçülerek doğrulandı). Burada izin satırlarını
- * kendimiz yazabildiğimiz için gerçek testi yapabiliyoruz.
+ * WHY HERE AND NOT IN THE SMOKE TEST: on the live database no role has
+ * can_access=1 for these modules, so the page is closed through the normal
+ * permission path too — the smoke test CANNOT ISOLATE the circuit breaker
+ * (verified by measuring on bin/smoke.php). Here we can write the permission
+ * rows ourselves, so the real test is possible.
  */
 final class RbacTest extends TestCase
 {
@@ -38,9 +38,9 @@ final class RbacTest extends TestCase
         $db = getDB();
         $db->exec('TRUNCATE TABLE sys_role_permissions');
 
-        // KRİTİK KURULUM: admin OLMAYAN rollere kilitli modüller için DB'de
-        // AÇIKÇA TAM YETKİ ver. Devre kesici çalışıyorsa bu satırlar hiçbir
-        // işe yaramamalı.
+        // CRITICAL SETUP: explicitly give FULL access in the DB to non-admin
+        // roles for the locked modules. If the circuit breaker works, these
+        // rows must have no effect.
         $stmt = $db->prepare(
             'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
              VALUES (?, ?, 1, 1, 1, 1)'
@@ -99,9 +99,9 @@ final class RbacTest extends TestCase
     }
 
     /**
-     * Sadece İzleyici (read_only_admin) kuralı:
-     * DB'de açıkça izin verilse dahi ASLA hiçbir modülde düzenleme ('edit')
-     * veya silme ('delete') yapamaz. Sadece izleyici olarak kalmalıdır.
+     * Read-only viewer (read_only_admin) rule:
+     * it can NEVER edit ('edit') or delete ('delete') in any module, even when
+     * the DB explicitly allows it. It must stay a viewer only.
      */
     public function testReadOnlyAdminHicbirModuldeDuzenlemeVeSilmeYapamaz(): void
     {
@@ -163,11 +163,11 @@ final class RbacTest extends TestCase
         $this->assertTrue(hasModulePermission('trunks', 'edit'));
         $this->assertFalse(hasModulePermission('trunks', 'delete'));
 
-        // can_delete=0 olduğu için uiDeleteForm boş dönmeli
+        // can_delete=0, so uiDeleteForm must return empty
         $html = uiDeleteForm(1, 'trunk_id', 'delete_trunk');
         $this->assertSame('', $html, 'can_delete=0 olan kullaniciya uiDeleteForm silme butonu basmamali!');
 
-        // uiRowActions da silme butonunu içermemeli
+        // uiRowActions must not contain the delete button either
         $actionsHtml = uiRowActions(['id' => 1], 'openEditTrunkModal', 'trunk_id', 'delete_trunk');
         $this->assertStringNotContainsString('delete_trunk', $actionsHtml);
     }

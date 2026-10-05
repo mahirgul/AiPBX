@@ -1,0 +1,93 @@
+/* Page styles of templates/views/my_phone/index.php */
+
+.my-phone-header-card {
+    padding: 12px 18px;
+    border-left: 4px solid var(--primary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.my-phone-badges-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+}
+.my-phone-filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg-input);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.my-phone-filter-buttons {
+    display: inline-flex;
+    gap: 4px;
+    background: var(--bg-card);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.my-phone-settings-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+.my-phone-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .my-phone-header-card {
+        padding: 12px 14px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+    .my-phone-badges-wrapper {
+        width: 100% !important;
+        gap: 6px !important;
+    }
+    .my-phone-badges-wrapper .badge {
+        padding: 4px 7px !important;
+        font-size: 11px !important;
+    }
+    .my-phone-filter-bar {
+        padding: 10px 12px !important;
+        gap: 8px !important;
+    }
+    .my-phone-filter-buttons {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .my-phone-filter-buttons button {
+        flex: 1 1 auto !important;
+        padding: 6px 8px !important;
+        white-space: nowrap !important;
+        font-size: 11.5px !important;
+    }
+    .my-phone-search-wrapper {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    .my-phone-settings-form { display: contents; }
+    #tab-pane-history {
+        padding: 14px 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .my-phone-modes-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

@@ -109,7 +109,7 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
     public func markAsRead(conversationId: Int, lastMessageId: Int64) {
         guard isConnected else { return }
         let payload: [String: Any] = [
-            // Sunucu yalnızca "mark_read" tanır (chat/hub.go); "read" yok sayılıyordu.
+            // The server only knows "mark_read" (chat/hub.go); "read" was ignored.
             "action": "mark_read",
             "conversation_id": conversationId,
             "last_message_id": lastMessageId
@@ -185,9 +185,9 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
             }
 
         case "presence_snapshot":
-            // Bağlanınca sunucu o an çevrimiçi olan dahilileri tek listede
-            // gönderir; işlenmediği için zaten bağlı kişiler, yeniden bağlanana
-            // kadar çevrimdışı görünüyordu (Android'deki hatanın aynısı).
+            // On connect the server sends the extensions online at that moment
+            // in one list; since it was not handled, people already connected
+            // looked offline until they reconnected (the same bug as on Android).
             if let exts = json["extensions"] as? [String] {
                 DispatchQueue.main.async {
                     for ext in exts where !ext.isEmpty {

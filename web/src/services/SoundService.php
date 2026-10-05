@@ -6,11 +6,11 @@ require_once __DIR__ . '/../internal_numbers.php';
 
 class SoundService {
     /**
-     * Yüklenen ses dosyasını (hangi formatta/örnekleme hızında/kanalda olursa
-     * olsun) Asterisk'in beklediği 8kHz, 16-bit, mono PCM WAV'a çevirir.
-     * Öncesinde dönüştürme YAPILMIYORDU — sadece dosya olduğu gibi .wav
-     * uzantısıyla kaydediliyordu, bu yüzden stereo/44.1kHz/µ-law gibi
-     * uyumsuz dosyalar Asterisk'te çalmıyor veya bozuk/yanlış hızda çalıyordu.
+     * Converts the uploaded sound file (whatever its format/sample rate/
+     * channels) to the 8kHz, 16-bit, mono PCM WAV Asterisk expects.
+     * There used to be NO conversion — the file was just saved as is with a
+     * .wav extension, so incompatible files such as stereo/44.1kHz/µ-law did
+     * not play in Asterisk or played broken/at the wrong speed.
      */
     public static function convertToAsteriskWav($srcPath, $destPath) {
         $cmd = 'sox ' . escapeshellarg($srcPath) . ' -t wav -r 8000 -c 1 -b 16 ' . escapeshellarg($destPath) . ' 2>&1';
@@ -49,9 +49,10 @@ class SoundService {
                 $stmt = $db->prepare("INSERT INTO pbx_announcements (title, audio_file, is_active) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE title = VALUES(title), is_active = VALUES(is_active)");
                 $stmt->execute([$title, 'custom/' . $sound_name, $is_active]);
 
-                // buildDestinationLines()'ın 'announcement' dalı ve pbx_hangup_actions
-                // bu tabloyu Gelen Rota/IVR/Zaman Koşulu üretirken okuyor — bir anons
-                // üç domain'i BİRDEN etkileyebildiği için üçüne de ayrı işaret konur.
+                // The 'announcement' branch of buildDestinationLines() and
+                // pbx_hangup_actions read this table when generating the inbound
+                // route/IVR/time condition — one announcement can affect all
+                // three domains AT ONCE, so each gets its own mark.
                 $uid = $_SESSION['user_id'] ?? null;
                 markPendingSync('inbound_dialplan', 'announcement', $sound_name, "Anons: {$title}", 'create', $uid);
                 markPendingSync('ivrs', 'announcement', $sound_name, "Anons: {$title}", 'create', $uid);
@@ -194,9 +195,9 @@ class SoundService {
     }
 
     /**
-     * Bir MOH sınıfına özel bekleme müziği dosyası yükler. Önceden
-     * sounds.php'nin içine gömülüydü (Service katmanı dışında bir istisnaydı);
-     * MVC göçü sırasında (2026-08-22) buraya taşındı, mantık DEĞİŞTİRİLMEDİ.
+     * Uploads a custom hold music file to a MOH class. It used to be
+     * embedded in sounds.php (an exception outside the service layer);
+     * moved here during the MVC migration (2026-08-22), logic UNCHANGED.
      */
     public static function uploadMOHFile($data, $files, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($data, $files) {
@@ -208,9 +209,10 @@ class SoundService {
                 @chown($target_dir, 'asterisk');
             }
 
-            // Not: orijinal sayfada dosya eksikse/hatalıysa sessizce hiçbir şey
-            // yapılmıyordu (mesaj/hata yok) — bu davranış korunuyor (boş string
-            // döner, handleAction() bunu "success, mesajsız" olarak işler).
+            // Note: on the original page nothing happened silently when the
+            // file was missing/broken (no message/error) — that behaviour is
+            // kept (returns an empty string, handleAction() treats it as
+            // "success, no message").
             if (!isset($files['moh_audio']) || $files['moh_audio']['error'] !== UPLOAD_ERR_OK) {
                 return '';
             }

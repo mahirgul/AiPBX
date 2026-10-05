@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Tablo ÜSTÜ sayfalama denetimleri — "Göster: N Kayıt" seçicisi.
+ * Paging controls ABOVE the table — the "Show: N records" selector.
  *
- * Yerleşim, istemci tarafı zenginleştiricinin (assets/js/datatable_enhancer.js)
- * ürettiğiyle aynı: `dt-controls-bar` tablonun üstünde, seçici SAĞDA.
- * Kullanıcı bunu diğer sayfalarda alışkanlık haline getirdiği için sunucu
- * tarafı sayfalamada da aynı yerde durmalı.
+ * Same layout as the client-side enhancer produces
+ * (assets/js/datatable_enhancer.js): `dt-controls-bar` above the table, the
+ * selector on the RIGHT. Users are used to it on the other pages, so it must
+ * sit in the same place with server-side paging too.
  *
- * Arama kutusu burada YOK: bu sayfaların kendi filtre formu var, ikinci bir
- * arama alanı iki farklı filtre gibi görünürdü.
+ * There is NO search box here: these pages have their own filter form; a
+ * second search field would look like two different filters.
  *
- * Beklenen değişken:
- *   $page_size — geçerli sayfa boyutu
+ * Expected variable:
+ *   $page_size — current page size
  */
 
 $page_size = intval($page_size ?? 0);
@@ -20,8 +20,8 @@ if ($page_size <= 0) {
     return;
 }
 
-// Boyut değişince 1. sayfaya dönülür: 5. sayfadayken 100'e çıkılırsa o sayfa
-// var olmayabilir ve liste boş görünürdü.
+// Changing the size goes back to page 1: going up to 100 while on page 5,
+// that page might not exist and the list would look empty.
 $boyut_url = static function (int $b): string {
     $qs = $_GET;
     $qs['boyut'] = $b;

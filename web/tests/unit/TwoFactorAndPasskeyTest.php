@@ -10,7 +10,7 @@ require_once dirname(__DIR__, 2) . '/src/services/LoginService.php';
 final class TwoFactorAndPasskeyTest extends TestCase
 {
     private int $testUserId;
-    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    /** Generated at test time: no password-like constant in the repo (secret scanners). */
     private string $testPassword = '';
 
     protected function setUp(): void
@@ -28,14 +28,14 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $db->exec('DELETE FROM sys_user_passkeys');
         $db->exec("DELETE FROM sys_users WHERE username IN ('test_2fa_user', 'test_normal_user')");
 
-        // Test için 2FA kullanıcısı oluştur
+        // Create a 2FA user for the test
         $this->testPassword = 'T' . bin2hex(random_bytes(8));
         $passHash = password_hash($this->testPassword, PASSWORD_DEFAULT);
         $stmt = $db->prepare('INSERT INTO sys_users (username, password_hash, full_name, email, role, is_active, language_preference) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute(['test_2fa_user', $passHash, 'Test 2FA User', 'test2fa@example.com', 'admin', 1, 'tr']);
         $this->testUserId = (int)$db->lastInsertId();
 
-        // Normal 2FA'sız kullanıcı oluştur
+        // Create a normal user without 2FA
         $stmt->execute(['test_normal_user', $passHash, 'Test Normal User', 'testnormal@example.com', 'admin', 1, 'tr']);
     }
 
@@ -48,11 +48,11 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * RFC 6238 resmi test vektörleri doğrulaması
+     * Checks the official RFC 6238 test vectors
      */
     public function testRfc6238OfficialTestVectors(): void
     {
-        // RFC 6238 Appendix B test vektörü: "12345678901234567890" Base32
+        // RFC 6238 Appendix B test vector: "12345678901234567890" in Base32
         $secret = implode('', ['GEZDGNBV', 'GY3TQOJQ', 'GEZDGNBV', 'GY3TQOJQ']);
 
         $this->assertSame('287082', TwoFactorService::calculateCode($secret, 59));
@@ -63,7 +63,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * Zaman kayması (drift) toleransı doğrulaması
+     * Checks the time drift tolerance
      */
     public function testTotpDriftWindowVerification(): void
     {
@@ -71,28 +71,28 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $now = 1700000000;
         $currentCode = TwoFactorService::calculateCode($secret, $now);
 
-        // Tam zamanında kod geçerli
+        // The code is valid right on time
         $this->assertTrue(TwoFactorService::verifyCode($secret, $currentCode, 1, $now));
 
-        // 30 saniye önceki kod window=1 toleransında geçerli
+        // The code from 30 seconds earlier is valid with window=1
         $pastCode = TwoFactorService::calculateCode($secret, $now - 30);
         $this->assertTrue(TwoFactorService::verifyCode($secret, $pastCode, 1, $now));
 
-        // 30 saniye sonraki kod window=1 toleransında geçerli
+        // The code from 30 seconds later is valid with window=1
         $futureCode = TwoFactorService::calculateCode($secret, $now + 30);
         $this->assertTrue(TwoFactorService::verifyCode($secret, $futureCode, 1, $now));
 
-        // 90 saniye önceki kod window=1 için geçersiz
+        // The code from 90 seconds earlier is invalid for window=1
         $wayPastCode = TwoFactorService::calculateCode($secret, $now - 90);
         $this->assertFalse(TwoFactorService::verifyCode($secret, $wayPastCode, 1, $now));
 
-        // Yanlış format (harf veya 5 hane) geçersiz
+        // Wrong format (letters or 5 digits) is invalid
         $this->assertFalse(TwoFactorService::verifyCode($secret, 'ABCDEF', 1, $now));
         $this->assertFalse(TwoFactorService::verifyCode($secret, '12345', 1, $now));
     }
 
     /**
-     * OtpAuth URI ve yerel QR Code SVG üretimi
+     * OtpAuth URI and local QR code SVG generation
      */
     public function testOtpAuthUriAndQrCodeGeneration(): void
     {
@@ -108,7 +108,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * 2FA Etkinleştirme ve Devre Dışı Bırakma Akışı
+     * 2FA enable and disable flow
      */
     public function testEnableAndDisableTwoFactorFlow(): void
     {
@@ -116,16 +116,16 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $now = time();
         $validCode = TwoFactorService::calculateCode($secret, $now);
 
-        // Hatalı kod ile etkinleştirme başarısız olmalı
+        // Enabling with a wrong code must fail
         $failRes = TwoFactorService::enableTwoFactor($this->testUserId, $secret, '000000');
         $this->assertFalse($failRes['success']);
 
-        // Doğru kod ile etkinleştirme başarılı olmalı ve 8 kurtarma kodu dönmeli
+        // Enabling with the right code must succeed and return 8 recovery codes
         $successRes = TwoFactorService::enableTwoFactor($this->testUserId, $secret, $validCode);
         $this->assertTrue($successRes['success']);
         $this->assertCount(8, $successRes['recovery_codes']);
 
-        // DB'de two_factor_enabled = 1 olmalı
+        // two_factor_enabled must be 1 in the DB
         $db = getDB();
         $stmt = $db->prepare('SELECT two_factor_enabled, two_factor_secret, two_factor_recovery_codes FROM sys_users WHERE id = ?');
         $stmt->execute([$this->testUserId]);
@@ -135,11 +135,11 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $this->assertSame($secret, $userRow['two_factor_secret']);
         $this->assertNotEmpty($userRow['two_factor_recovery_codes']);
 
-        // Yanlış şifre ile kapatma başarısız olmalı
+        // Disabling with a wrong password must fail
         $disFail = TwoFactorService::disableTwoFactor($this->testUserId, 'WrongPassword');
         $this->assertFalse($disFail['success']);
 
-        // Doğru şifre ile kapatma başarılı olmalı
+        // Disabling with the right password must succeed
         $disSuccess = TwoFactorService::disableTwoFactor($this->testUserId, $this->testPassword);
         $this->assertTrue($disSuccess['success']);
 
@@ -150,7 +150,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * Kurtarma kodu tüketimi (tek kullanımlık kuralı)
+     * Recovery code consumption (single-use rule)
      */
     public function testRecoveryCodeConsumption(): void
     {
@@ -162,22 +162,22 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $codes = $res['recovery_codes'];
         $firstCode = $codes[0];
 
-        // Kurtarma kodu başarıyla doğrulanmalı ve tüketilmeli
+        // The recovery code must verify and be consumed
         $consumed = TwoFactorService::verifyAndConsumeRecoveryCode($this->testUserId, $firstCode);
         $this->assertTrue($consumed);
 
-        // Aynı kod tekrar kullanılamamalı (tek kullanımlık)
+        // The same code must not work again (single use)
         $reconsumed = TwoFactorService::verifyAndConsumeRecoveryCode($this->testUserId, $firstCode);
         $this->assertFalse($reconsumed);
 
-        // Kalan kodlardan ikincisi çalışmalı
+        // The second of the remaining codes must work
         $secondCode = $codes[1];
         $consumedSecond = TwoFactorService::verifyAndConsumeRecoveryCode($this->testUserId, $secondCode);
         $this->assertTrue($consumedSecond);
     }
 
     /**
-     * LoginService: 2FA aktif olduğunda /login-2fa'ya yönlendirme testi
+     * LoginService: redirect to /login-2fa when 2FA is enabled
      */
     public function testLoginServiceRedirectsTo2faWhenEnabled(): void
     {
@@ -185,12 +185,12 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $code = TwoFactorService::calculateCode($secret, time());
         TwoFactorService::enableTwoFactor($this->testUserId, $secret, $code);
 
-        // Captcha hazırla
+        // Prepare the captcha
         $_SESSION['captcha_num1'] = 3;
         $_SESSION['captcha_num2'] = 4;
         $csrf = getCSRFToken();
 
-        // 1. 2FA aktif kullanıcı giriş denemesi -> /login-2fa'ya yönlendirilmeli
+        // 1. Sign-in attempt by a user with 2FA -> must be sent to /login-2fa
         $post2fa = [
             'username' => 'test_2fa_user',
             'password' => $this->testPassword,
@@ -203,7 +203,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $this->assertSame('/login-2fa', $res2fa['redirect']);
         $this->assertSame($this->testUserId, $_SESSION['pending_2fa_user_id'] ?? null);
 
-        // 2. Normal kullanıcı giriş denemesi -> Doğrudan rol sayfasına (/dashboard) gitmeli
+        // 2. Sign-in attempt by a normal user -> must go straight to the role page (/dashboard)
         $_SESSION['captcha_num1'] = 2;
         $_SESSION['captcha_num2'] = 5;
         $postNormal = [
@@ -220,20 +220,20 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * PasskeyService: Register & Auth challenge ve seçenek üretimi
+     * PasskeyService: register & auth challenge and option generation
      */
     public function testPasskeyArgsGeneration(): void
     {
         $_SERVER['HTTP_HOST'] = 'localhost';
 
-        // 1. Register seçenekleri
+        // 1. Register options
         $regArgs = PasskeyService::getRegisterArgs($this->testUserId, 'test_2fa_user', 'Test 2FA User');
         $this->assertNotEmpty($regArgs->challenge);
         $this->assertSame('localhost', $regArgs->rp->id);
         $this->assertNotEmpty($_SESSION['webauthn_reg_challenge']);
         $this->assertSame($this->testUserId, $_SESSION['webauthn_reg_user_id']);
 
-        // 2. Login seçenekleri
+        // 2. Login options
         $loginArgs = PasskeyService::getLoginArgs('test_2fa_user');
         $this->assertNotEmpty($loginArgs->challenge);
         $this->assertNotEmpty($_SESSION['webauthn_auth_challenge']);
@@ -256,15 +256,15 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $this->assertSame('Test MacBook TouchID', $keys[0]['device_name']);
         $this->assertSame($fakeCredId, $keys[0]['credential_id']);
 
-        // Başka kullanıcının silme girişimi başarısız olmalı
+        // Deleting by another user must fail
         $delFail = PasskeyService::deletePasskey(99999, $pkId);
         $this->assertFalse($delFail);
 
-        // Sahibi silerse başarılı olmalı
+        // Deleting by the owner must succeed
         $delSuccess = PasskeyService::deletePasskey($this->testUserId, $pkId);
         $this->assertTrue($delSuccess);
 
-        // Tekrar listele -> Boş olmalı
+        // List again -> must be empty
         $keysAfter = PasskeyService::getUserPasskeys($this->testUserId);
         $this->assertCount(0, $keysAfter);
     }

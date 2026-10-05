@@ -49,7 +49,7 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge WindowInsets desteği
+        // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -139,8 +139,8 @@ class LoginActivity : AppCompatActivity() {
                 val serverUrl = json.optString("server").trim().trimEnd('/')
                 val qrToken = json.optString("qr_token")
                 if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
-                    // Kayıtlı sunucudan farklı bir sunucuya bağlanacaksa sor:
-                    // rastgele bir QR uygulamayı başka bir santrale bağlamasın.
+                    // Ask when connecting to a server different from the saved one:
+                    // a random QR must not connect the app to another PBX.
                     if (serverUrl.equals(prefs.serverUrl.trim().trimEnd('/'), ignoreCase = true)) {
                         performQrLogin(serverUrl, qrToken)
                     } else {
@@ -158,8 +158,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     /**
-     * @param replaceSession true ise mevcut oturum, YENİ giriş başarılı olduktan
-     *   sonra kapatılır (başarısız girişte kullanıcı oturumunu kaybetmez).
+     * @param replaceSession when true, the current session is closed only AFTER
+     *   the NEW sign-in succeeds (on a failed sign-in the user keeps their session).
      */
     private fun performQrLogin(serverUrl: String, qrToken: String, replaceSession: Boolean = false) {
         binding.progressBar.visibility = View.VISIBLE
@@ -193,11 +193,11 @@ class LoginActivity : AppCompatActivity() {
     private fun handleAuthDeepLink(intent: Intent?) {
         val uri = intent?.data ?: return
         if (uri.scheme != "aipbx") return
-        // Aynı bağlantı (ör. ekran döndürme sonrası) ikinci kez işlenmesin.
+        // The same link (e.g. after a screen rotation) must not be handled twice.
         intent.data = null
 
         when (uri.host) {
-            // Davet e-postası / mobil giriş sayfası: aipbx://login?server=…&token=…
+            // Invitation email / mobile sign-in page: aipbx://login?server=…&token=…
             "login" -> {
                 val serverUrl = uri.getQueryParameter("server")?.trim()?.trimEnd('/') ?: ""
                 val token = uri.getQueryParameter("token")?.trim() ?: ""
@@ -208,9 +208,9 @@ class LoginActivity : AppCompatActivity() {
                 }
                 confirmServerThen(serverUrl) { replace -> performQrLogin(serverUrl, token, replace) }
             }
-            // Google girişi dönüşü: aipbx://auth?success=1&code=…
-            // Sunucu artık giriş bilgisini (token + SIP şifresi) URL'de göndermiyor;
-            // tek kullanımlık kod, girişi BAŞLATTIĞIMIZ sunucuda değiş tokuş edilir.
+            // Returning from Google sign-in: aipbx://auth?success=1&code=…
+            // The server no longer sends the sign-in data (token + SIP password) in the URL;
+            // a single-use code is exchanged on the server where we STARTED the sign-in.
             "auth" -> {
                 if (uri.getQueryParameter("success") == "1") {
                     val code = uri.getQueryParameter("code")
@@ -228,9 +228,9 @@ class LoginActivity : AppCompatActivity() {
     }
 
     /**
-     * Bağlantı/QR ile başka bir sunucuya giriş öncesi onay. Sahte bir bağlantı
-     * uygulamayı saldırganın santraline bağlayamasın diye sunucu adı gösterilir.
-     * Oturum açıksa kullanıcıya kapatılacağı söylenir.
+     * Confirmation before signing in to another server through a link/QR. The
+     * server name is shown so a fake link cannot connect the app to an
+     * attacker's PBX. If a session is open, the user is told it will be closed.
      */
     private fun confirmServerThen(serverUrl: String, onConfirmed: (replaceSession: Boolean) -> Unit) {
         val host = Uri.parse(serverUrl).host ?: serverUrl
@@ -248,7 +248,7 @@ class LoginActivity : AppCompatActivity() {
             .setCancelable(false)
             .setPositiveButton("Giriş Yap") { _, _ -> onConfirmed(loggedIn) }
             .setNegativeButton("İptal") { _, _ ->
-                // Oturum açıkken bağlantıyla gelindiyse giriş ekranında kalmasın.
+                // When we came through a link while signed in, do not stay on the login screen.
                 if (loggedIn) {
                     startActivity(Intent(this, DialerActivity::class.java))
                     finish()
@@ -257,7 +257,7 @@ class LoginActivity : AppCompatActivity() {
             .show()
     }
 
-    /** DialerActivity'deki "Çıkış Yap" ile aynı adımlar (sıra önemli: önce auth silinir ki servis kendini diriltmesin). */
+    /** The same steps as "Log out" in DialerActivity (order matters: auth is deleted first so the service does not revive itself). */
     private fun signOutCurrentSession() {
         prefs.clearAuth()
         ChatWebSocketManager.instance.disconnect()
@@ -303,7 +303,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    /** İki adımlı doğrulama açık hesaplar: doğrulama uygulamasındaki 6 haneli kodu sorar. */
+    /** Accounts with two-step verification: asks for the 6-digit code from the authenticator app. */
     private fun askOtp(user: String, pass: String, message: String) {
         val input = android.widget.EditText(this).apply {
             inputType = android.text.InputType.TYPE_CLASS_NUMBER

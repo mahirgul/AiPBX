@@ -5,7 +5,7 @@ class CdrReportRepository extends BaseRepository
 {
     protected static string $table = 'cdrs';
 
-    /** Sayfa basina kayit. */
+    /** Records per page. */
     public const SAYFA_BOYUTU = 50;
 
     public static function agentsForFilter(): array
@@ -14,7 +14,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Kullanıcı ve DID haritalarını belleğe alır (hızlı O(1) arama için).
+     * Loads the user and DID maps into memory (for fast O(1) lookups).
      */
     protected static function getLookupMaps(): array
     {
@@ -48,7 +48,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Filtre koşullarını ve parametrelerini üretir (Ham mod için).
+     * Builds the filter conditions and parameters (for raw mode).
      */
     private static function kosullar(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
     {
@@ -87,7 +87,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Arama metodunu görünüm moduna göre dallandırır.
+     * Branches the search method by view mode.
      */
     public static function search(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
@@ -289,8 +289,8 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Birleştirilmiş (Grouped by linkedid) Çağrı Listesi.
-     * 1 Müşteri Araması = 1 Satır.
+     * Grouped call list (by linkedid).
+     * 1 customer call = 1 row.
      */
     public static function searchGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
     {
@@ -355,8 +355,8 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Verilen linkedid listesine ait tüm alt bacakları çeker ve insan dostu
-     * açıklamalarla zenginleştirir.
+     * Fetches all sub-legs of the given linkedid list and enriches them with
+     * human-friendly descriptions.
      */
     public static function fetchLegsForLinkedIds(array $linkedIds): array
     {
@@ -500,7 +500,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Toplam kayıt sayısı ve özet istatistikler — TÜM eşleşen kayıtlar üzerinden.
+     * Total record count and summary statistics — over ALL matching records.
      */
     public static function ozet(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
@@ -511,7 +511,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Ham (un-grouped) özet istatistikleri.
+     * Raw (ungrouped) summary statistics.
      */
     public static function ozetRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
     {
@@ -539,7 +539,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Birleştirilmiş (Grouped by linkedid) gerçek çağrı istatistikleri.
+     * Real call statistics, grouped by linkedid.
      */
     public static function ozetGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
     {

@@ -6,16 +6,16 @@ require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
 require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 /**
- * Sync üreteçlerinin fixture verisinden ürettiği .conf içeriğini doğrular.
+ * Checks the .conf content the sync generators produce from fixture data.
  *
- * Sistemin EN RİSKLİ katmanı: DB'den Asterisk config'i üretip diske yazıyor.
- * Buradaki bir regresyon doğrudan telefon trafiğini etkiler.
+ * The RISKIEST layer of the system: it generates Asterisk config from the DB
+ * and writes it to disk. A regression here hits phone traffic directly.
  *
- * GÜVENLİK: bootstrap.php iki kilit kuruyor —
- *  - ASTERISK_PBX_DIR geçici dizine yönlendirildi (canlı /etc/asterisk'e yazım yok)
- *  - AIPBX_NO_ASTERISK=1 (canlı Asterisk'e reload komutu gitmiyor)
- * Aşağıdaki ilk iki test bu kilitlerin gerçekten kurulu olduğunu doğruluyor;
- * kurulu değillerse diğer testler üretime dokunurdu.
+ * SAFETY: bootstrap.php sets two locks —
+ *  - ASTERISK_PBX_DIR points to a temp directory (no writes to the live /etc/asterisk)
+ *  - AIPBX_NO_ASTERISK=1 (no reload command reaches the live Asterisk)
+ * The first two tests below check that these locks are really in place;
+ * without them the other tests would touch production.
  */
 final class SyncGeneratorTest extends TestCase
 {
@@ -31,7 +31,7 @@ final class SyncGeneratorTest extends TestCase
         return (string) file_get_contents($p);
     }
 
-    // --- Önce emniyet kilitleri --------------------------------------------
+    // --- Safety locks first -------------------------------------------------
 
     public function testCanliConfigDizinineYAZILMIYOR(): void
     {
@@ -56,7 +56,7 @@ final class SyncGeneratorTest extends TestCase
             'execCLI gercekten canli Asterisk\'e komut gonderiyor!');
     }
 
-    // --- Üretilen içerik ---------------------------------------------------
+    // --- Generated content ---------------------------------------------------
 
     public function testTrunkConfBeklenenDirektifleriIcerir(): void
     {
@@ -79,9 +79,9 @@ final class SyncGeneratorTest extends TestCase
         syncAllTrunks();
         $conf = $this->trunkConf();
 
-        // SyncTrunks, T.38 kapalıyken satırları hiç basmıyor ("t38_udptl=no"
-        // yazmıyor) — Asterisk'te varsayılan zaten kapalı olduğu için doğru
-        // davranış. Önemli olan "yes" sızmaması.
+        // SyncTrunks prints no lines at all while T.38 is off (it does not
+        // write "t38_udptl=no") — correct, since it is off by default in
+        // Asterisk. What matters is that no "yes" leaks in.
         $this->assertStringNotContainsString('t38_udptl=yes', $conf,
             'T.38 kapali oldugu halde config\'e acik yaziliyor');
         $this->assertStringNotContainsString('t38_udptl_ec', $conf);
@@ -106,9 +106,10 @@ final class SyncGeneratorTest extends TestCase
         syncAllTrunks();
         $conf = $this->trunkConf();
 
-        // Asıl güvenlik özelliği: yeni bir PJSIP BÖLÜMÜ açılamaması. Metnin
-        // bir yorum satırı içinde düz metin olarak geçmesi zararsız — satır
-        // sonları silindiği için "[hacked]" tek satırlık yoruma sıkışıyor.
+        // The real security property: no new PJSIP SECTION can be opened. The
+        // text appearing as plain text inside a comment line is harmless —
+        // line breaks are removed, so "[hacked]" is squeezed into a one-line
+        // comment.
         $this->assertDoesNotMatchRegularExpression('/^\[hacked\]/m', $conf,
             'baslik alanindan yeni bir config BOLUMU acilabiliyor!');
         $this->assertDoesNotMatchRegularExpression('/^type=endpoint\s*$/m',
@@ -180,9 +181,9 @@ final class SyncGeneratorTest extends TestCase
             $this->assertStringContainsString('[7002-sip-identify]', $conf);
             $this->assertStringContainsString('type=identify', $conf);
             $this->assertStringContainsString('endpoint=7002-sip', $conf);
-            // Host kismi santralin kendi adresleriyle sinirli olmali (bulgu2.md B2-3).
-            // Eski desen (<?sip:7002[@:]) hostu hic denetlemiyordu; From basligi
-            // yabanci bir hosttan gelse bile bu endpoint'le esleşiyordu.
+            // The host part must be limited to the PBX's own addresses (bulgu2.md B2-3).
+            // The old pattern (<?sip:7002[@:]) never checked the host; a From header
+            // from a foreign host still matched this endpoint.
             $this->assertStringContainsString('match_header=From: /<?sip:7002@(', $conf);
             $this->assertStringNotContainsString('match_header=From: /<?sip:7002[@:]/', $conf);
         } finally {
@@ -197,10 +198,11 @@ final class SyncGeneratorTest extends TestCase
             $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
             $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES ('testext3', '', 'Test User 3', '7003', '', 0, 'sip', 1, 'user')")->execute();
 
-            // Bos liste zorlanamiyor (otomatik kaynaklar her zaman localhost uretir),
-            // bu yuzden en azindan listenin gercekten dolduruldugu ve regex'e
-            // girdigi dogrulanir — bos kalirsa uretec eski desene duser ve
-            // yukaridaki test kirmizi olur, yani iki test birbirini tamamliyor.
+            // An empty list cannot be forced (the automatic sources always yield
+            // localhost), so at least we check the list is really filled and
+            // reaches the regex — if it stayed empty the generator would fall
+            // back to the old pattern and the test above would turn red, so the
+            // two tests complement each other.
             $hosts = pjsipIdentifyHosts();
             $this->assertNotEmpty($hosts, 'host listesi bos kalirsa daraltma hic uygulanmaz');
             $this->assertContains('localhost', $hosts);
@@ -236,7 +238,7 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
-    // --- Dahili hedef numaraları ------------------------------------------
+    // --- Internal destination numbers ---------------------------------------
 
     private function internalConf(): string
     {
@@ -329,10 +331,10 @@ final class SyncGeneratorTest extends TestCase
         getDB()->exec("DELETE FROM sys_settings WHERE setting_key = 'rtp_stunaddr_enabled'");
         $conf = buildRtpConf();
 
-        // stunaddr acikken Asterisk her RTP oturumunda 3x3 sn STUN zaman
-        // asimi yasiyor ve WebRTC cagrilari ~6 sn bloke oluyordu (olculdu
-        // 2026-09-05, log: stun.c "Attempt 3 ... timed out" 09:16:46,
-        // dialplan ayni saniyede basliyor).
+        // With stunaddr on, Asterisk hit a 3x3 s STUN timeout on every RTP
+        // session and WebRTC calls were blocked for ~6 s (measured
+        // 2026-09-05, log: stun.c "Attempt 3 ... timed out" 09:16:46, the
+        // dialplan starts in the same second).
         $this->assertStringNotContainsString('stunaddr=', $conf,
             'stunaddr varsayilan olarak KAPALI olmali — WebRTC cagrilarini bloke ediyor');
 
@@ -383,7 +385,7 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
-    // --- Mobil Push Bildirim Kancası Testleri (Katman 1) ------------------
+    // --- Mobile push notification hook tests (layer 1) ----------------------
 
     public function testPushKapaliysaDialplanPushSatirlariIcermez(): void
     {
@@ -465,7 +467,7 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
 
-        // D-1: Dial(...) içinde 'r' seçeneği olmamalı (erken medyayı bastırmaması için)
+        // D-1: Dial(...) must not have the 'r' option (so early media is not suppressed)
         $this->assertMatchesRegularExpression('/Dial\(PJSIP\/[^,\)]+,\d+,Tb\(sub-callee-jb\^s\^1\)\)/', $conf,
             'giden cagri dialplaninda Dial PJSIP secenegi T olmali');
         $this->assertDoesNotMatchRegularExpression('/Dial\([^,\)]+,\d+,[^\)]*r[^\)]*\)/', $conf,
@@ -477,7 +479,7 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
 
-        // D-2: Dial sonrasında argümansız Hangup yerine sub-outbound-status yönlendirmesi olmalı
+        // D-2: after Dial there must be a sub-outbound-status jump instead of a bare Hangup
         $this->assertStringContainsString('sub-outbound-status', $conf,
             'giden cagri dialplaninda sub-outbound-status baglami bulunmali (D-2)');
         $this->assertStringContainsString('exten => BUSY,1,NoOp(Outbound Status: BUSY', $conf,
@@ -503,13 +505,13 @@ final class SyncGeneratorTest extends TestCase
         syncInboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
 
-        // Trunk inbound context var mi
+        // Does the trunk inbound context exist
         $this->assertStringContainsString('[from-trunk-' . Fixtures::TRUNK_NAME . ']', $conf);
-        // DID kırpma formülü doğru mu
+        // Is the DID trimming formula right
         $this->assertStringContainsString('same => n,Set(NORMALIZED_DID=${IF($[${LEN(${EXTEN})} >= 4]?${EXTEN:-4}:${EXTEN})})', $conf);
         $this->assertStringContainsString('same => n,Goto(from-trunk-' . Fixtures::TRUNK_NAME . '-route,${NORMALIZED_DID},1)', $conf);
 
-        // Route bağlamında transit outbound rotası ve dahili aboneler include edilmiş mi
+        // Are the transit outbound route and the internal subscribers included in the route context
         $this->assertStringContainsString('[from-trunk-' . Fixtures::TRUNK_NAME . '-route]', $conf);
         $this->assertStringContainsString('include => from-trunk-inbound', $conf);
         $this->assertStringContainsString('include => from-internal-outbound-1', $conf);
@@ -526,7 +528,7 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
 
-        // Transit gelen çağrıda arayan numarasını korumak ve dahili CID_EXTERNAL önceliğini doğrulamak için ExecIf koşulu
+        // ExecIf condition that keeps the caller number on transit inbound calls and checks the internal CID_EXTERNAL priority
         $this->assertStringContainsString('ExecIf($["${CDR(inbound_trunk)}" = ""]?Set(CALLERID(num)=${IF($["${CID_EXTERNAL}" != ""]?${CID_EXTERNAL}:08501234567)}))', $conf,
             'Trunk-to-Trunk transit cagrilarinda gelen cep numarasi trunk varsayilan CID ile ezilmemeli');
     }

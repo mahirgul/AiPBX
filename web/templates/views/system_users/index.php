@@ -3,7 +3,7 @@
     <div style="padding: 16px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;">
         <i class="fas fa-key" style="font-size: 22px; color: var(--warning);"></i>
         <div style="flex: 1; min-width: 220px;">
-            <div style="font-weight: 700; margin-bottom: 4px;"><?php echo t('system_users.generated_password_title'); ?> — <?php echo htmlspecialchars($generated_for); ?></div>
+            <div class="u-fw-700 u-mb-4"><?php echo t('system_users.generated_password_title'); ?> — <?php echo htmlspecialchars($generated_for); ?></div>
             <div style="font-size: 12.5px; color: var(--text-muted);"><?php echo t('system_users.generated_password_hint'); ?></div>
         </div>
         <code style="font-size: 18px; font-weight: 700; letter-spacing: 1px; padding: 8px 14px; border-radius: 8px; background: var(--bg-main); user-select: all;"><?php echo htmlspecialchars($generated_password); ?></code>
@@ -86,7 +86,7 @@
         <?php endif; ?>
         <?php if ($import_result['generated']): ?>
             <div style="border: 2px solid var(--warning); border-radius: 10px; padding: 12px 14px;">
-                <div style="font-weight: 700; margin-bottom: 4px;"><i class="fas fa-key u-warning"></i> <?php echo t('system_users.import_generated_title'); ?></div>
+                <div class="u-fw-700 u-mb-4"><i class="fas fa-key u-warning"></i> <?php echo t('system_users.import_generated_title'); ?></div>
                 <div class="u-muted u-mb-10"><?php echo t('system_users.generated_password_hint'); ?></div>
                 <table class="table u-mb-10">
                     <thead><tr><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th><th><?php echo t('system_users.field_password'); ?></th></tr></thead>
@@ -205,7 +205,7 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <?php if ($u['can_listen_recordings']): ?>
-                                    <span class="badge badge-success" style="margin-right: 4px;"><i class="fas fa-headphones"></i> <?php echo t('system_users.perm_recordings'); ?></span>
+                                    <span class="badge badge-success u-mr-4"><i class="fas fa-headphones"></i> <?php echo t('system_users.perm_recordings'); ?></span>
                                 <?php endif; ?>
                                 <?php if ($u['can_view_all_cdrs']): ?>
                                     <span class="badge badge-warning"><i class="fas fa-list-alt"></i> <?php echo t('system_users.perm_all_cdr'); ?></span>
@@ -351,7 +351,7 @@
                 </div>
 
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px;">
-                    <label class="form-label form-label-help" style="font-weight: 700;">
+                    <label class="form-label form-label-help u-fw-700">
                         <span><?php echo t('system_users.field_phone_mode'); ?></span>
                         <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('system_users.phone_mode_help'); ?></span></span>
                     </label>
@@ -376,7 +376,7 @@
                 </div>
 
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px;">
-                    <label class="form-label" style="font-weight: 700;"><?php echo t('system_users.extra_perms'); ?></label>
+                    <label class="form-label u-fw-700"><?php echo t('system_users.extra_perms'); ?></label>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: center; margin-top: 6px;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
                             <input type="checkbox" name="can_listen_recordings" id="modal_listen_recordings" value="1"> <?php echo t('system_users.perm_listen_label'); ?>
@@ -505,7 +505,7 @@
 
 <!-- CSV Import Modal -->
 <div class="modal-overlay" id="userImportModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-file-csv u-primary"></i> <?php echo t('system_users.import_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closeUserImportModal()"><i class="fas fa-times"></i></button>
@@ -514,8 +514,8 @@
             <form method="POST" enctype="multipart/form-data" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="csv_preview" value="1">
-                <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;"><?php echo t('system_users.import_help'); ?></p>
-                <p style="font-size: 13px;"><a href="/system-users?download=user_import_template"><i class="fas fa-download"></i> <?php echo t('system_users.import_template'); ?></a></p>
+                <p class="u-fs-13 u-muted u-mt-0"><?php echo t('system_users.import_help'); ?></p>
+                <p class="u-fs-13"><a href="/system-users?download=user_import_template"><i class="fas fa-download"></i> <?php echo t('system_users.import_template'); ?></a></p>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('system_users.import_file'); ?></label>
                     <input type="file" name="csv_file" accept=".csv,text/csv" class="form-control" required>

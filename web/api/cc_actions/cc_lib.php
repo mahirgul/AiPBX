@@ -1,5 +1,5 @@
 <?php
-// Çağrı merkezi API aksiyonları için ortak yardımcılar (dispatcher tarafından yüklenir)
+// Shared helpers for the call-center API actions (loaded by the dispatcher)
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
 function parseAsteriskQueuesOutput($raw_output) {
@@ -24,21 +24,22 @@ function parseAsteriskQueuesOutput($raw_output) {
 
         if (!$current_queue) continue;
 
-        // Bekleyen arayan satırları ("1. PJSIP/trunk-0000002a (wait: …") üye
-        // değildir — önceden üye sayılıp panoda "giriş yapan/müsait temsilci"
-        // sayısını şişiriyordu.
+        // Waiting-caller lines ("1. PJSIP/trunk-0000002a (wait: …") are not
+        // members — they used to be counted as members and inflated the
+        // "logged-in/available agent" count on the board.
         if (preg_match('/^\d+\.\s/', $trimmed)) continue;
 
         if (preg_match('/(?:PJSIP|Local)\/([0-9a-zA-Z_-]+)/i', $trimmed, $mm)) {
             $ext = $mm[1];
             $is_paused = (bool) preg_match('/\(paused\b/i', $trimmed);
             $is_unavailable = (stripos($trimmed, '(Unavailable)') !== false || stripos($trimmed, '(Invalid)') !== false);
-            // Yalnızca çalan telefon görüşme sayılmaz (ayrı: is_ringing).
+            // A ringing phone alone does not count as a call (separate: is_ringing).
             $is_busy = (bool) preg_match('/\((In use|Busy|Ring\+Inuse|On Hold)\)/i', $trimmed);
             $is_ringing = !$is_busy && stripos($trimmed, '(Ringing)') !== false;
 
-            // ÜYELİK ≠ CİHAZ DURUMU: kuyruk üyeleri listesinde satır varsa temsilci
-            // kuyruğun ÜYESİDİR; cihazı (WebRTC/SIP kaydı) çevrimdışı olsa bile.
+            // MEMBERSHIP ≠ DEVICE STATE: a line in the queue member list means
+            // the agent IS a member of the queue, even when the device (WebRTC/
+            // SIP registration) is offline.
             $queues[$current_queue]['members'][$ext] = [
                 'extension' => $ext,
                 'in_queue' => true,
@@ -55,13 +56,14 @@ function parseAsteriskQueuesOutput($raw_output) {
 }
 
 /**
- * Dual-Endpoint mimaride bir dahilinin GERÇEK aktif kanal adlarını bulur.
- * "PJSIP/<ext>" diye bir kanal YOKTUR — gerçek adlar PJSIP/<ext>-sip-XXXXXXXX,
- * PJSIP/<ext>-webrtc-XXXXXXXX veya Local/<ext>@... şeklindedir.
- * Not: AMI CoreShowChannels action'ı manager kullanıcısının
- * kısıtlı yetki sınıfında (read=originate,call) YOK ("Permission denied"
- * döner) — yetkiyi genişletmek yerine CLI (OS kullanıcısı üzerinden,
- * Asterisk sürümünden bağımsız stabil ilk alan: kanal adı) kullanılır.
+ * Finds the REAL active channel names of an extension in the dual-endpoint
+ * architecture. There is NO "PJSIP/<ext>" channel — the real names look like
+ * PJSIP/<ext>-sip-XXXXXXXX, PJSIP/<ext>-webrtc-XXXXXXXX or Local/<ext>@....
+ * Note: the AMI CoreShowChannels action is NOT in the manager user's
+ * restricted privilege class (read=originate,call) (it returns "Permission
+ * denied") — instead of widening the privileges, the CLI is used (through the
+ * OS user; the first field, the channel name, is stable across Asterisk
+ * versions).
  */
 function findAgentChannels($ext) {
     $ext = preg_replace('/[^0-9]/', '', $ext);
@@ -80,24 +82,25 @@ function findAgentChannels($ext) {
 }
 
 /**
- * Transfer için ARAYANIN kanalını bulur.
+ * Finds the CALLER's channel for a transfer.
  *
- * 2026-09-15'te ölçülen hata: transfer, TEMSİLCİNİN kanalını Redirect
- * ediyordu. Tek kanallı Redirect o kanalı köprüden çeker; arayan ortada
- * kalır, Queue() uygulamasından düşer ve `h` uzantısında kapanır. Canlı
- * logda temsilci 8915'e giderken aynı saniyede arayan Hangup yedi.
+ * The bug measured on 2026-09-15: the transfer Redirected the AGENT's
+ * channel. A single-channel Redirect pulls that channel out of the bridge;
+ * the caller is left alone, drops out of Queue() and hangs up in the `h`
+ * extension. In the live log the caller got Hangup in the same second the
+ * agent went to 8915.
  *
- * Zorluk: kuyruk çağrılarında araya Local kanal çifti girer ve (MixMonitor
- * + Queue 'tT' yüzünden) optimize edilip yoldan çekilmez:
+ * The difficulty: queue calls get a Local channel pair in between, which is
+ * not optimized away (because of MixMonitor + Queue 'tT'):
  *
- *   köprü A:  PJSIP/3002-webrtc  +  Local/3002@from-internal-pbx;2
- *   köprü B:  Local/3002@from-internal-pbx;1  +  PJSIP/ccisgw   <- arayan
+ *   bridge A:  PJSIP/3002-webrtc  +  Local/3002@from-internal-pbx;2
+ *   bridge B:  Local/3002@from-internal-pbx;1  +  PJSIP/ccisgw   <- caller
  *
- * Bu yüzden köprü zinciri Local çifti aşılarak yürünür.
+ * So the bridge chain is walked across the Local pair.
  *
- * @param string     $ext   temsilcinin dahilisi
- * @param array|null $lines "core show channels concise" satırları (test için)
- * @return string|null arayanın kanal adı, bulunamazsa null
+ * @param string     $ext   the agent's extension
+ * @param array|null $lines "core show channels concise" lines (for tests)
+ * @return string|null the caller's channel name, null if not found
  */
 function findCallerChannelForAgent($ext, $lines = null) {
     $ext = preg_replace('/[^0-9]/', '', $ext);
@@ -108,8 +111,8 @@ function findCallerChannelForAgent($ext, $lines = null) {
         @exec("asterisk -rx " . escapeshellarg("core show channels concise"), $lines);
     }
 
-    // "core show channels concise" 14 sütunludur ve '!' ile ayrılır
-    // (bkz. Asterisk main/cli.c CONCISE_FORMAT_STRING): [12] köprü kimliği.
+    // "core show channels concise" has 14 columns separated by '!'
+    // (see Asterisk main/cli.c CONCISE_FORMAT_STRING): [12] is the bridge id.
     $kopru = [];
     $koprudekiler = [];
     foreach ($lines as $l) {
@@ -137,13 +140,13 @@ function findCallerChannelForAgent($ext, $lines = null) {
         $es = $koprudekiEs($kanal);
         if ($es === null) continue;
 
-        // Local çifti araya girmişse diğer yarısının köprüsüne geç.
+        // If a Local pair sits in between, move on to the other half's bridge.
         if (preg_match('#^(Local/.*);2$#', $es, $m)) {
             $es = $koprudekiEs($m[1] . ';1');
             if ($es === null) continue;
         }
 
-        // Temsilcinin kendi bacakları arayan olamaz.
+        // The agent's own legs cannot be the caller.
         if (preg_match($kendiDeseni, $es)) continue;
 
         return $es;
@@ -153,8 +156,8 @@ function findCallerChannelForAgent($ext, $lines = null) {
 }
 
 /**
- * Görüşmede olan temsilcinin bağlı olduğu karşı tarafın (müşteri) numarasını
- * ve aktif görüşme süresini bulur.
+ * Finds the number of the party (customer) the agent in a call is connected
+ * to, and the active call duration.
  */
 function findAgentCallDetails($ext, $lines = null): array
 {
@@ -174,8 +177,8 @@ function findAgentCallDetails($ext, $lines = null): array
         if (count($c) < 14 || $c[0] === '') continue;
         $chanData[$c[0]] = [
             'callerid' => trim($c[7] ?? ''),
-            // 10 = amaflags (hep 3), 11 = süre — önceden 10 okunuyor, her
-            // görüşme "00:03" görünüyordu (canlı çıktıyla doğrulandı).
+            // 10 = amaflags (always 3), 11 = duration — 10 used to be read, so
+            // every call showed "00:03" (verified with live output).
             'duration' => intval($c[11] ?? 0),
         ];
     }
@@ -189,7 +192,7 @@ function findAgentCallDetails($ext, $lines = null): array
     $callerNum = $info['callerid'] ?? '';
     $duration = $info['duration'] ?? 0;
 
-    // Eğer concise çıktısında callerid boş ise, doğrudan Asterisk kanalından sorgula
+    // If callerid is empty in the concise output, ask the Asterisk channel directly
     if ($callerNum === '') {
         @exec("asterisk -rx " . escapeshellarg("channel get {$callerChan} CALLERID(num)"), $cidOut);
         foreach ($cidOut ?: [] as $co) {
@@ -213,9 +216,10 @@ function findAgentCallDetails($ext, $lines = null): array
 }
 
 /**
- * cc_pause_logs üzerinde ajan başına ATOMİK işlem garantisi.
- * Aynı ajan için eşzamanlı iki istek (iki sekme/cihaz, çift tıklama) UPDATE+INSERT
- * çiftini yarışa sokabilir (TOCTOU) — MySQL adlandırılmış kilidiyle serileştirilir.
+ * Guarantees ATOMIC per-agent operations on cc_pause_logs.
+ * Two concurrent requests for the same agent (two tabs/devices, a double
+ * click) can race on the UPDATE+INSERT pair (TOCTOU) — serialized with a
+ * MySQL named lock.
  */
 function withAgentPauseLock($db, $ext, callable $fn) {
     $lock_name = 'cc_pause_' . preg_replace('/[^0-9]/', '', $ext);
@@ -229,7 +233,7 @@ function withAgentPauseLock($db, $ext, callable $fn) {
 }
 
 function sendAMICommand($cmd) {
-    // AMI kimlik bilgileri /etc/ai-pbx.env üzerinden config.php sabitlerinden gelir
+    // AMI credentials come from the config.php constants via /etc/ai-pbx.env
     $fp = @fsockopen(AMI_HOST, AMI_PORT, $errno, $errstr, 3);
     if (!$fp) return false;
 
@@ -271,9 +275,9 @@ function sendAMICommand($cmd) {
             }
         }
         if (trim($line) === '') {
-            // Tekli-response action (Originate/Hangup/Redirect vb.): ilk boş
-            // satırda dur. Çoklu-event action (CoreShowChannels vb.): "...Complete"
-            // event'i görülene kadar okumaya devam et.
+            // Single-response actions (Originate/Hangup/Redirect etc.): stop at
+            // the first empty line. Multi-event actions (CoreShowChannels etc.):
+            // keep reading until the "...Complete" event is seen.
             if (!$saw_event && strpos($response, 'Response:') !== false) {
                 break;
             }

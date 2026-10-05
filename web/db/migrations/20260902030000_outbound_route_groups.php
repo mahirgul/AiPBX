@@ -3,14 +3,14 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Giden rota grupları.
+ * Outbound route groups.
  *
- * Amaç: hangi kullanıcının hangi giden rotaları kullanacağını gruplayarak
- * ayırmak. Örnek: faks kullanıcıları grup 2'deki rotaları, diğerleri grup
- * 1'dekileri kullansın.
+ * Goal: separate which user uses which outbound routes by grouping them.
+ * Example: fax users use the routes in group 2, everybody else those in
+ * group 1.
  *
- * Varsayılan her iki tarafta da 1 — yani göç sonrası davranış AYNEN korunur;
- * kimse grup atamadıkça hiçbir çağrı yolu değişmez.
+ * The default is 1 on both sides — so after the migration the behaviour stays
+ * EXACTLY the same; no call path changes until someone assigns a group.
  */
 final class OutboundRouteGroups extends AbstractMigration
 {

@@ -8,18 +8,18 @@ require_once dirname(__DIR__, 2) . '/src/sip_helper.php';
 require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 /**
- * `sip` anahtar-değer tablosunun sözleşmesi.
+ * The contract of the `sip` key-value table.
  *
- * Trunk ayarlarının bir kısmı bu gölge tabloda yaşıyor ve SyncTrunks onu
- * pbx_trunks'tan ÖNCE okuyor. Dolayısıyla bir alan panelden BOŞALTILDIĞINDA
- * buradaki eski satırın da silinmesi ŞART — yoksa eski değer kalıcı olarak
- * kazanır ve alan bir daha temizlenemez.
+ * Part of the trunk settings lives in this shadow table and SyncTrunks reads
+ * it BEFORE pbx_trunks. So when a field is CLEARED in the panel, the old row
+ * here MUST be deleted too — otherwise the old value wins forever and the
+ * field can never be cleared again.
  *
- * Gerçek olay (2026-09-01): CCIS ağ geçidi trunk'ına match_hosts=127.0.0.1
- * yazıldı. Bu, PJSIP'in IP tabanlı endpoint eşleştirmesi yüzünden localhost'tan
- * gelen TÜM SIP trafiğini (WebRTC kayıtları dahil) o trunk'a atadı ve WebRTC
- * kaydı 404 almaya başladı. Alan panelden temizlendi ama `sip` tablosundaki
- * satır kaldığı için değişiklik HİÇ ETKİ ETMEDİ.
+ * Real incident (2026-09-01): match_hosts=127.0.0.1 was written to the CCIS
+ * gateway trunk. Because of PJSIP's IP-based endpoint matching this assigned
+ * ALL SIP traffic from localhost (WebRTC registrations included) to that trunk
+ * and WebRTC registration started getting 404. The field was cleared in the
+ * panel, but the row stayed in the `sip` table, so the change had NO EFFECT.
  */
 final class SipShadowTableTest extends TestCase
 {
@@ -33,7 +33,7 @@ final class SipShadowTableTest extends TestCase
         getDB()->exec("DELETE FROM sip WHERE id = '" . self::TRUNK . "'");
     }
 
-    /** Trunk satırını temsil eden minimal dizi. */
+    /** Minimal array representing a trunk row. */
     private function trunk(array $ustyaz = []): array
     {
         return array_merge([
@@ -62,11 +62,11 @@ final class SipShadowTableTest extends TestCase
 
     public function testBOSALTILAN_ALAN_GERCEKTEN_SILINIYOR(): void
     {
-        // Önce doldur
+        // Fill first
         SIPHelper::syncTrunkToSIP($this->trunk(['match_hosts' => '127.0.0.1']));
         $this->assertSame('127.0.0.1', $this->sipDegeri('match_hosts'), 'on kosul: deger yazilmali');
 
-        // Sonra panelden boşaltılmış gibi kaydet
+        // Then save as if cleared in the panel
         SIPHelper::syncTrunkToSIP($this->trunk(['match_hosts' => '']));
 
         $this->assertNull(
@@ -99,7 +99,7 @@ final class SipShadowTableTest extends TestCase
 
     public function testDoluAlanlarSilinmiyor(): void
     {
-        // Aynı anda hem dolu hem boş alanlar varken, sadece boşlar silinmeli.
+        // With filled and empty fields at the same time, only the empty ones must be deleted.
         SIPHelper::syncTrunkToSIP($this->trunk([
             'match_hosts' => '10.2.2.2',
             'from_user'   => 'abc',

@@ -20,9 +20,9 @@ class IVRService {
             if ($language !== '' && !in_array($language, getAvailableLanguages(), true)) {
                 $language = '';
             }
-            // 1-10 aralığına sıkıştırılıyor: 0/negatif menüyü hiç tekrarlatmaz
-            // (ilk yanlış tuşta düşer), aşırı büyük değer ise arayanı sonsuza
-            // yakın döngüde tutabilir.
+            // Clamped to 1-10: 0/negative never repeats the menu (it drops on
+            // the first wrong key), while a huge value could keep the caller
+            // in a near-endless loop.
             $max_failures = max(1, min(10, intval($data['max_failures'] ?? 3)));
             $allow_direct_dial = isset($data['allow_direct_dial']) ? intval($data['allow_direct_dial']) : 0;
             $digit_timeout = max(1, min(10, intval($data['digit_timeout'] ?? 3)));
@@ -67,14 +67,14 @@ class IVRService {
     }
 
     /**
-     * Bir IVR, ona işaret eden aktif bir Gelen Rota/başka bir IVR seçeneği veya
-     * zaman aşımı/geçersiz-giriş hedefi/Zaman Koşulu varken silinemez — bkz.
-     * QueueService::deleteQueue()'daki aynı kontrol ve gerekçe (dest_type/dest_id
-     * polimorfik alanı FK olamıyor, 2026-08-23 incelemesi). Bu IVR'ın KENDİ
-     * pbx_ivr_entries/timeout/invalid self-loop'ları (örn. "geçersiz giriş →
-     * aynı menüyü tekrarla") hariç tutulur — onlar ivr_id FK'sinin ON DELETE
-     * CASCADE'i ile zaten otomatik silinir, bu kontrolün engellemesi gereken
-     * bir şey değil.
+     * An IVR cannot be deleted while an active inbound route/another IVR
+     * option or a timeout/invalid-input destination/time condition points to
+     * it — see the same check and reasoning in QueueService::deleteQueue()
+     * (the polymorphic dest_type/dest_id field cannot be an FK, 2026-08-23
+     * review). This IVR's OWN pbx_ivr_entries/timeout/invalid self-loops
+     * (e.g. "invalid input → repeat the same menu") are excluded — they are
+     * deleted automatically by the ivr_id FK's ON DELETE CASCADE anyway, so
+     * this check must not block them.
      */
     public static function deleteIVR($ivr_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($ivr_id) {

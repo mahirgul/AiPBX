@@ -197,7 +197,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
             </div>
         <?php endif; ?>
         <details style="margin-top: 16px;">
-            <summary class="u-fs-12 u-muted" style="cursor: pointer;"><?php echo t('queue_reports.as_table'); ?></summary>
+            <summary class="u-fs-12 u-muted u-pointer"><?php echo t('queue_reports.as_table'); ?></summary>
             <div class="table-responsive" style="margin-top: 8px;">
                 <table class="data-table" data-no-dt="true">
                     <thead><tr><th><?php echo t('queue_reports.col_hour'); ?></th><th><?php echo t('queue_reports.col_offered'); ?></th><th><?php echo t('queue_reports.answered'); ?></th><th><?php echo t('queue_reports.lost'); ?></th></tr></thead>
@@ -303,7 +303,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                 <?php endif; ?>
                 <?php foreach (array_slice($list, 0, 500) as $l): ?>
                     <tr>
-                        <td style="white-space: nowrap;"><?php echo date('d.m.Y H:i:s', $l['enter_ts']); ?></td>
+                        <td class="u-nowrap"><?php echo date('d.m.Y H:i:s', $l['enter_ts']); ?></td>
                         <td class="u-strong"><?php echo $h($l['caller'] ?: '-'); ?></td>
                         <td><?php echo $h($queues[$l['queue_name']] ?? $l['queue_name']); ?></td>
                         <td><?php echo $dur($l['wait']); ?><?php echo $l['wait'] < QueueStats::SHORT_ABANDON ? ' <span class="badge badge-secondary u-fs-10">' . t('queue_reports.short') . '</span>' : ''; ?></td>

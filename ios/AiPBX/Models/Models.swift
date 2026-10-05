@@ -47,7 +47,7 @@ public struct LoginResponse: Codable {
     public let user: UserProfile?
     public let sip: SipCredentials?
     public let pushConfig: PushConfig?
-    /// Hesapta iki adımlı doğrulama açık: şifreyle birlikte 6 haneli kod gerekli.
+    /// Two-step verification is on for the account: a 6-digit code is needed with the password.
     public let otpRequired: Bool?
 
     enum CodingKeys: String, CodingKey {

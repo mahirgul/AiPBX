@@ -257,9 +257,9 @@
     font-weight: 500;
 }
 
-/* Sunucu tarafi sayfalamada bilgi + "Goster" secicisi yan yana durur
-   (templates/pagination.php). Istemci tarafi zenginlestiricide secici tablonun
-   ustunde oldugu icin bu grup orada kullanilmaz. */
+/* With server-side paging, the info text and the "Show" selector sit side by
+   side (templates/pagination.php). The client-side enhancer puts the selector
+   above the table, so this group is not used there. */
 .dt-pagination-left {
     display: flex;
     align-items: center;
@@ -267,8 +267,8 @@
     flex-wrap: wrap;
 }
 
-/* Sayfa dugmeleri sunucu tarafinda <a> olarak uretiliyor; :disabled
-   yalnizca <button> icin gecerli oldugundan ayni gorunum aria ile veriliyor. */
+/* Page buttons are rendered server-side as <a>; :disabled only applies to
+   <button>, so the same look is given through aria. */
 .dt-page-btn[aria-disabled="true"] {
     opacity: 0.4;
     cursor: not-allowed;
@@ -422,9 +422,9 @@
     border: none;
     text-decoration: none;
     transition: all 0.2s ease;
-    /* Tarayıcılar <button>'a body'den color miras bırakmaz (UA varsayılanı
-       kullanır, genelde siyah) — renk vermeyen düz .btn'ler (ör. sidebar
-       tema butonu) temadan bağımsız hep siyah/karanlık görünüyordu. */
+    /* Browsers do not let <button> inherit color from body (they use the UA
+       default, usually black) — plain .btn elements without a colour (e.g. the
+       sidebar theme button) always looked black/dark regardless of the theme. */
     color: inherit;
 }
 
@@ -543,10 +543,10 @@
 
 /* Footer Toast Notifications */
 .footer-toast-container {
-    /* .app-footer-bar (position:fixed, 40px) içine ekleniyor (bkz.
-       footer_notify.js) — "position:absolute; bottom:4px" onun İÇİNDE,
-       footer metniyle üst üste biniyordu. Artık footer'ın TAMAMEN
-       ÜSTÜNDE, kendi sabit konumunda. */
+    /* Appended inside .app-footer-bar (position:fixed, 40px) (see
+       footer_notify.js) — "position:absolute; bottom:4px" put it INSIDE that
+       bar, overlapping the footer text. Now it sits COMPLETELY ABOVE the
+       footer, in its own fixed position. */
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
@@ -568,8 +568,8 @@
     font-weight: 600;
     padding: 5px 10px 5px 16px;
     border-radius: 20px;
-    /* --bg-card gece modunda %85 opak (yarı saydam) — bildirim tam opak
-       olsun diye --bg-sidebar kullanılıyor (her iki temada da tam opak). */
+    /* --bg-card is 85% opaque (semi-transparent) in dark mode — --bg-sidebar
+       is used so the notification is fully opaque (in both themes). */
     background: var(--bg-sidebar);
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
     color: var(--text-main);
@@ -1283,9 +1283,9 @@ body.auth-body {
     .sidebar {
         position: fixed;
         left: -270px;
-        /* .app-footer-bar da 1050: DOM'da ondan önce geldiği için aynı
-           z-index'te altında kalıp kullanıcı rozetini kesiyordu. Açık
-           menü her zaman üstte olmalı. */
+        /* .app-footer-bar is 1050 too: coming before it in the DOM, it stayed
+           underneath at the same z-index and cut off the user badge. An open
+           menu must always be on top. */
         z-index: 1060;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -1318,9 +1318,9 @@ body.auth-body {
         gap: 6px;
     }
 
-    /* .content-area'nın mobil kenar boşluğu geçersiz kılması style.css'e
-       taşındı (bu dosya components.css'ten önce yüklendiği için buradaki
-       kural hiç etkili olmuyordu — bkz. style.css). */
+    /* The mobile margin override of .content-area moved to style.css (this
+       file loads before components.css, so the rule here never took effect
+       — see style.css). */
 
     .card {
         padding: 16px;
@@ -1339,19 +1339,19 @@ body.auth-body {
         border-radius: 12px;
     }
 
-    /* Üst bar: telefon/CID/mola kontrolleri dar ekrana sığmıyordu (numara
-       yazma kutusu kırpılıyordu) — sabit 70px yükseklik yerine ikinci
-       satıra sarsın: ☰/durum/mod ilk satırda, numara girişi kendi tam
-       genişlik satırında. */
+    /* Top bar: the phone/CID/pause controls did not fit a narrow screen (the
+       number input was clipped) — instead of a fixed 70px height it wraps to
+       a second line: ☰/status/mode on the first line, the number input on its
+       own full-width line. */
     .top-bar {
         height: auto;
         min-height: 56px;
         padding: 8px 10px;
     }
 
-    /* Hepsi tek satırda kalsın: ☰ / durum rozeti / mod anahtarı sabit
-       boyutunu korur, numara giriş kutusu kalan alanı doldurup küçülür
-       (ikinci satıra sarmak yerine). */
+    /* Keep everything on one line: ☰ / status badge / mode switch keep their
+       fixed size and the number input fills the remaining space and shrinks
+       (instead of wrapping to a second line). */
     .top-bar-left {
         flex-wrap: nowrap;
         column-gap: 6px;
@@ -1411,11 +1411,11 @@ body.auth-body {
         justify-content: center;
     }
 
-    /* Onlarca form sayfasında satır-içi (inline) "display:grid;
-       grid-template-columns: 1fr 1fr[ 1fr]" kullanılıyor — masaüstünde
-       yan yana kolonlar güzel görünüyor ama mobilde alanları sıkıştırıp
-       etrafında boş/dar bir görünüm bırakıyordu. Inline style en yüksek
-       özgüllüğe sahip olduğundan sadece !important ile geçersiz kılınabilir. */
+    /* Dozens of form pages use inline "display:grid;
+       grid-template-columns: 1fr 1fr[ 1fr]" — side-by-side columns look good
+       on desktop, but on mobile they squeezed the fields and left a narrow,
+       empty-looking layout. Inline styles have the highest specificity, so
+       they can only be overridden with !important. */
     [style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
     }
@@ -1449,7 +1449,7 @@ body.auth-body {
     .d-mobile-inline-flex { display: inline-flex !important; }
     .d-mobile-flex { display: flex !important; }
 
-    /* Mobilde Modalların Ekrana Tam ve Rahat Sığması */
+    /* Make modals fit the screen fully and comfortably on mobile */
     .modal-overlay {
         padding: 10px !important;
     }
@@ -1475,7 +1475,7 @@ body.auth-body {
         flex: 1 1 auto !important;
     }
 
-    /* Mobilde Yatay Tablo Kaydırma Pürüzsüzlüğü */
+    /* Smooth horizontal table scrolling on mobile */
     .table-responsive {
         -webkit-overflow-scrolling: touch;
         border-radius: 8px;
@@ -1483,13 +1483,13 @@ body.auth-body {
 }
 
 
-/* Devre dışı butonlar kullanılabilir gibi görünmesin (tıklanamadığı belli olsun). */
+/* Disabled buttons must not look usable (make it obvious they cannot be clicked). */
 .btn:disabled, .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 
-/* Yardımcı sınıflar — şablonlardaki tekrarlanan satır içi stillerin karşılığı.
-   :not(#u):not(#u) özgüllüğü (2,1,0) her sınıf/ID kuralını geçer ama JS ile
-   verilen satır içi stil (el.style.display = ...) yine bunları ezer —
-   yani eski satır içi stilin davranışı korunur. !important kullanılmaz. */
+/* Utility classes — the counterparts of inline styles repeated in the templates.
+   The :not(#u):not(#u) specificity (2,1,0) beats every class/ID rule, but an
+   inline style set by JS (el.style.display = ...) still overrides them —
+   so the behaviour of the old inline style is kept. No !important. */
 .u-hint:not(#u):not(#u) { color: var(--text-muted); display: block; margin-top: 4px; }
 .u-grid-2:not(#u):not(#u) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .u-check-label:not(#u):not(#u) { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
@@ -1525,6 +1525,37 @@ body.auth-body {
 .u-p-24:not(#u):not(#u) { padding: 24px; }
 .u-flex-1:not(#u):not(#u) { flex: 1; }
 .u-inline:not(#u):not(#u) { display: inline; }
+.u-fs-13:not(#u):not(#u) { font-size: 13px; }
+.u-fs-14:not(#u):not(#u) { font-size: 14px; }
+.u-fs-16:not(#u):not(#u) { font-size: 16px; }
+.u-fs-20:not(#u):not(#u) { font-size: 20px; }
+.u-fs-26:not(#u):not(#u) { font-size: 26px; }
+.u-fs-28:not(#u):not(#u) { font-size: 28px; }
+.u-fw-700:not(#u):not(#u) { font-weight: 700; }
+.u-fw-800:not(#u):not(#u) { font-weight: 800; }
+.u-maxw-220:not(#u):not(#u) { max-width: 220px; }
+.u-maxw-520:not(#u):not(#u) { max-width: 520px; }
+.u-mb-14:not(#u):not(#u) { margin-bottom: 14px; }
+.u-mb-16:not(#u):not(#u) { margin-bottom: 16px; }
+.u-mb-18:not(#u):not(#u) { margin-bottom: 18px; }
+.u-mb-24:not(#u):not(#u) { margin-bottom: 24px; }
+.u-mb-4:not(#u):not(#u) { margin-bottom: 4px; }
+.u-mb-8:not(#u):not(#u) { margin-bottom: 8px; }
+.u-ml-8:not(#u):not(#u) { margin-left: 8px; }
+.u-mr-4:not(#u):not(#u) { margin-right: 4px; }
+.u-mr-6:not(#u):not(#u) { margin-right: 6px; }
+.u-mt-0:not(#u):not(#u) { margin-top: 0; }
+.u-mt-2:not(#u):not(#u) { margin-top: 2px; }
+.u-mt-6:not(#u):not(#u) { margin-top: 6px; }
+.u-nowrap:not(#u):not(#u) { white-space: nowrap; }
+.u-p-20:not(#u):not(#u) { padding: 20px; }
+.u-p-30:not(#u):not(#u) { padding: 30px; }
+.u-pointer:not(#u):not(#u) { cursor: pointer; }
+.u-relative:not(#u):not(#u) { position: relative; }
+.u-text-main:not(#u):not(#u) { color: var(--text-main); }
+.u-uppercase:not(#u):not(#u) { text-transform: uppercase; }
+.u-w-100p:not(#u):not(#u) { width: 100%; }
+.u-w-45:not(#u):not(#u) { width: 45px; }
 
 /* Drag-and-drop row ordering (UIHelper.enableRowReorder) */
 .row-drag-handle { width: 28px; cursor: grab; color: var(--text-muted); text-align: center; }
@@ -1540,3 +1571,15 @@ tr.row-dragging { opacity: 0.45; }
 .dash-trunk-bar { height: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
 .dash-trunk-bar > span { display: block; height: 100%; background: var(--primary); transition: width 0.4s; }
 .dash-trunk-count { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+/* Inline error box on sign-in style pages (templates/auth_error.php). */
+.auth-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+}

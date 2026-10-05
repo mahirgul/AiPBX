@@ -1,8 +1,8 @@
 <?php
 
 /**
- * /cc-supervisor: /cc-board ile aynı ekran, global görme izni 'queue_monitor'
- * modül anahtarından okunur (bkz. CcBoardController::renderBoard()).
+ * /cc-supervisor: the same screen as /cc-board; the global view permission is
+ * read from the 'queue_monitor' module key (see CcBoardController::renderBoard()).
  */
 class CcSupervisorController extends CcBoardController
 {

@@ -1,7 +1,7 @@
 <?php
-// Panelde kaydedilen ama uretilen konfigurasyona HIC yansimayan alanlari bulur.
-// record_call bu siniftan bir hataydi: DB'de duruyordu, SyncInboundDialplan
-// onu hic okumuyordu; panelde isaretli gorunup ses dosyasi hic olusmuyordu.
+// Finds fields saved in the panel that NEVER reach the generated configuration.
+// record_call was a bug of this kind: it sat in the DB, SyncInboundDialplan never
+// read it; it looked ticked in the panel but no audio file was ever created.
 require_once __DIR__ . '/../config.php';
 $db = getDB();
 
@@ -11,8 +11,8 @@ $tablolar = array_filter($tablolar, fn($t) => str_starts_with($t, 'pbx_'));
 
 // Sync + dialplan uretici kodun tamami
 $kod = '';
-// TUM kod tabani taranir: alan panelde okunuyor ama sync'e girmiyorsa da,
-// hic kullanilmiyorsa da bulunur.
+// The WHOLE code base is scanned: a field read in the panel but never reaching
+// sync is found, and so is a field never used at all.
 $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/..'));
 foreach ($it as $f) {
     if ($f->isFile() && preg_match('/\.(php|js)$/', $f->getFilename())) {
@@ -21,11 +21,11 @@ foreach ($it as $f) {
         $kod .= file_get_contents($yol);
     }
 }
-// Sync kodunu AYRICA topla: alan bir yerde okunup sync'e girmiyorsa bu ayri bir hata.
+// Collect the sync code SEPARATELY: a field read somewhere but never reaching sync is a separate bug.
 $syncKod = '';
 foreach (array_merge(glob(__DIR__ . '/../src/sync/*.php'), glob(__DIR__ . '/../src/*_helper.php')) as $f) { $syncKod .= file_get_contents($f); }
 
-// Bu alanlar konfigurasyona yazilmaz, dogal olarak referanssizdir.
+// These fields are not written to the configuration, so naturally they have no references.
 $yoksay = ['id','created_at','updated_at','is_active','title','description','name',
            'sort_order','deleted_at','notes','user_id','last_login','password_hash'];
 
@@ -36,7 +36,7 @@ foreach ($tablolar as $t) {
     foreach ($sutunlar as $s) {
         $ad = $s['Field'];
         if (in_array($ad, $yoksay, true)) continue;
-        // Alan adi kodda herhangi bir yerde geciyor mu?
+        // Does the field name appear anywhere in the code?
         if (strpos($kod, "'$ad'") === false && strpos($kod, "\"$ad\"") === false
             && strpos($kod, "[$ad]") === false && strpos($kod, "\$d['$ad']") === false) {
             $bulgular['HIC KULLANILMIYOR'][$t][] = $ad;

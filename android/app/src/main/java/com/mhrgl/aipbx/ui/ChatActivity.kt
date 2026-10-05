@@ -93,13 +93,13 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         if (uri != null) handlePickedUri(uri, "image")
     }
 
-    // Kamera: çekilen fotoğraf galeridekiyle aynı hazırlama/yükleme akışından geçer.
+    // Camera: a shot photo goes through the same prepare/upload flow as one from the gallery.
     private val takeChatPhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) handlePickedUri(ChatUploadPrep.cameraUri(this), "image")
     }
 
-    // Manifest CAMERA izni tanımladığı için Android, kamera uygulamasını açmadan
-    // önce bu iznin verilmiş olmasını şart koşuyor.
+    // Since the manifest declares the CAMERA permission, Android requires it
+    // to be granted before the camera app can be opened.
     private val chatCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
         else Toast.makeText(this, "Fotoğraf çekmek için kamera izni gerekli.", Toast.LENGTH_LONG).show()
@@ -288,9 +288,9 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             tvAvatar.text = targetName.take(1).uppercase()
             tvAvatar.backgroundTintList = null
 
-            // Başlık yalnızca presence OLAYLARIYLA güncelleniyordu; karşı taraf
-            // zaten bağlıysa (olay çoktan geçmiş) hep "Çevrimdışı" kalıyordu.
-            // Başlangıç durumu soketin bildiği anlık listeden alınır.
+            // The title was updated only by presence EVENTS; if the other side
+            // was already connected (the event long gone) it always stayed
+            // "Offline". The initial state comes from the snapshot the socket knows.
             applyTargetPresence(ChatWebSocketManager.instance.isOnline(targetExt))
 
             btnCall.setOnClickListener {
@@ -821,8 +821,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         if (!isGroup && extension == targetExt) {
             runOnUiThread { applyTargetPresence(isOnline) }
         } else if (isGroup) {
-            // Anlık görüntü her dahili için ayrı olay üretiyor — yalnızca bu
-            // grubun üyesiyse (ya da üyeler henüz bilinmiyorsa) detayları yenile.
+            // The snapshot produces a separate event for every extension — refresh
+            // the details only if it is a member of this group (or the members are not known yet).
             val members = currentGroupDetails?.participants
             if (members == null || members.any { it.extension == extension }) {
                 loadGroupDetails()

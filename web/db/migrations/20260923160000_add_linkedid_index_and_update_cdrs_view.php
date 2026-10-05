@@ -3,7 +3,7 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * asteriskcdr tablosuna linkedid indeksi eklenmesi ve cdrs gorunumunun linkedid ile zenginlestirilmesi.
+ * Adds a linkedid index to the asteriskcdr table and enriches the cdrs view with linkedid.
  */
 final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
 {

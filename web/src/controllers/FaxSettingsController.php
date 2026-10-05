@@ -8,21 +8,11 @@ class FaxSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_did'])) {
-                $res = FaxSettingsService::saveDidMapping($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('sys_did_mappings', $_POST['did_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_did'])) {
-                $res = FaxSettingsService::deleteDidMapping($_POST['did_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_did' => fn() => FaxSettingsService::saveDidMapping($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('sys_did_mappings', $_POST['did_id'] ?? 0, static::csrfToken()),
+            'delete_did' => fn() => FaxSettingsService::deleteDidMapping($_POST['did_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $mappings = FaxSettingsRepository::allMappingsWithUser();
         $fax_users = FaxSettingsRepository::faxUsersForDropdown();
@@ -31,6 +21,6 @@ class FaxSettingsController extends BaseController
         static::renderPage('fax_settings/index', [
             'mappings' => $mappings,
             'fax_users' => $fax_users,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

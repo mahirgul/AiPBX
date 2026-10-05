@@ -5,7 +5,7 @@ class MsTeamsRepository extends BaseRepository
     protected static string $table = 'teams_user_mappings';
 
     /**
-     * Varsayılan MS Teams ayarlarını ve veritabanındaki mevcut değerleri döner.
+     * Returns the default MS Teams settings and the current values in the database.
      */
     public static function currentSettings(): array
     {
@@ -34,7 +34,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Ayarları sys_settings tablosuna kaydeder.
+     * Saves the settings to the sys_settings table.
      */
     public static function saveSettings(array $settings): bool
     {
@@ -71,7 +71,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Tüm kullanıcı & dahili eşleştirmelerini kullanıcı bilgileriyle listeler.
+     * Lists all user & extension mappings with the user details.
      */
     public static function allUserMappings(): array
     {
@@ -85,7 +85,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Tekil eşleştirme kaydı döner.
+     * Returns a single mapping record.
      */
     public static function findUserMapping(int $id): ?array
     {
@@ -96,7 +96,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Yeni eşleştirme ekler veya mevcut olanı günceller.
+     * Adds a new mapping or updates the existing one.
      */
     public static function saveUserMapping(array $data): array
     {
@@ -158,7 +158,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Eşleştirmeyi siler.
+     * Deletes a mapping.
      */
     public static function deleteUserMapping(int $id): bool
     {
@@ -167,7 +167,7 @@ class MsTeamsRepository extends BaseRepository
     }
 
     /**
-     * Sistemde tanımlı tüm aktif dahili aboneleri döner.
+     * Returns all active extension subscribers defined in the system.
      */
     public static function availableExtensions(): array
     {

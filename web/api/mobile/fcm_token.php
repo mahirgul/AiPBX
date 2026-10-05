@@ -1,16 +1,7 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 require_once __DIR__ . '/auth_helper.php';
+mobileApiStart('GET, POST, DELETE, OPTIONS');
+
 require_once __DIR__ . '/../../src/core/BaseRepository.php';
 
 $user = requireMobileAuth();
@@ -20,8 +11,7 @@ $extension = trim($user['extension'] ?? '');
 $db = getDB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input_raw = file_get_contents('php://input');
-    $json = json_decode($input_raw, true) ?: [];
+    $json = mobileInput();
 
     $fcmTokenRaw = trim($json['fcm_token'] ?? $_POST['fcm_token'] ?? '');
     $deviceId = trim($json['device_id'] ?? $_POST['device_id'] ?? '');
@@ -29,20 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $platform = trim($json['platform'] ?? $_POST['platform'] ?? 'android');
     $appVersion = trim($json['app_version'] ?? $_POST['app_version'] ?? '');
 
-    // Sahte/test tokenları veya boş değerleri null olarak değerlendir
+    // Treat fake/test tokens or empty values as null
     $fcmToken = ($fcmTokenRaw === '' || str_starts_with($fcmTokenRaw, 'device_') || str_starts_with($fcmTokenRaw, 'test_')) ? null : $fcmTokenRaw;
     $pushType = ($fcmToken !== null) ? 'fcm' : 'none';
 
     if ($deviceId === '' && $fcmToken === null) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'device_id veya fcm_token parametresi zorunludur.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        mobileError('device_id veya fcm_token parametresi zorunludur.', 400);
     }
 
-    // Var olan kaydı bul: Önce device_id'ye göre, yoksa fcm_token'a göre
+    // Find the existing record: by device_id first, otherwise by fcm_token
     $existing = null;
     if ($deviceId !== '') {
         $stmt = $db->prepare("SELECT id, fcm_token FROM sys_mobile_devices WHERE user_id = ? AND device_id = ? LIMIT 1");
@@ -51,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$existing && $fcmToken !== null) {
-        // Ayni FCM tokeni BASKA bir kullanicida kayitliysa o satir DEVRALINMAZ.
+        // If the same FCM token is registered to ANOTHER user, that row is NOT TAKEN OVER.
         $stmt = $db->prepare("SELECT id, user_id FROM sys_mobile_devices WHERE fcm_token = ? LIMIT 1");
         $stmt->execute([$fcmToken]);
         $yabanci = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -71,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($existing) {
-        // Eger yeni token null ise ve eskiden kayitli token varsa, eski tokeni koru
+        // If the new token is null and a token was registered before, keep the old token
         $tokenToSave = ($fcmToken !== null) ? $fcmToken : ($existing['fcm_token'] ?: null);
         $typeToSave = ($tokenToSave !== null) ? 'fcm' : 'none';
 
@@ -103,19 +88,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $db->lastInsertId();
     }
 
-    echo json_encode([
+    mobileJson([
         'success' => true,
         'message' => 'Cihaz ve bildirim bilgisi başarıyla kaydedildi.',
         'device_id' => $deviceId,
         'push_type' => $pushType,
         'id' => (int)$id
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    $input_raw = file_get_contents('php://input');
-    $json = json_decode($input_raw, true) ?: [];
+    $json = mobileInput();
 
     $fcmToken = trim($json['fcm_token'] ?? $_GET['fcm_token'] ?? '');
     $deviceId = trim($json['device_id'] ?? $_GET['device_id'] ?? '');
@@ -131,14 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $stmt->execute([$userId]);
     }
 
-    echo json_encode([
+    mobileJson([
         'success' => true,
         'message' => 'Cihaz kaydı pasife alındı.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
-// GET - Kullanıcıya ait aktif cihazları listele
+// GET - list the user's active devices
 $stmt = $db->prepare("SELECT id, extension, device_id, device_name, platform, app_version, is_active, created_at, updated_at 
                       FROM sys_mobile_devices 
                       WHERE user_id = ? AND is_active = 1 
@@ -146,8 +128,8 @@ $stmt = $db->prepare("SELECT id, extension, device_id, device_name, platform, ap
 $stmt->execute([$userId]);
 $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo json_encode([
+mobileJson([
     'success' => true,
     'total' => count($devices),
     'devices' => $devices
-], JSON_UNESCAPED_UNICODE);
+]);

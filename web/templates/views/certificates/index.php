@@ -41,7 +41,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <?php if (!empty($a['issues'])): ?>
             <ul style="margin: 0 0 16px 18px; padding: 0;">
                 <?php foreach ($a['issues'] as $issue): ?>
-                    <li class="u-fs-12" style="margin-bottom: 4px;"><?php echo sprintf(t('certificates.issue_' . $issue), $h($domain)); ?></li>
+                    <li class="u-fs-12 u-mb-4"><?php echo sprintf(t('certificates.issue_' . $issue), $h($domain)); ?></li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
@@ -98,7 +98,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <?php elseif (!$st['certbot']): ?>
             <div class="u-danger"><?php echo t('certificates.le_no_certbot'); ?></div>
         <?php elseif ($is_le): ?>
-            <p class="u-fs-12" style="margin-top: 0;"><?php echo t('certificates.le_active_text'); ?></p>
+            <p class="u-fs-12 u-mt-0"><?php echo t('certificates.le_active_text'); ?></p>
             <div class="u-flex-gap" style="flex-wrap: wrap;">
                 <form method="POST" class="u-inline cert-form">
                     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
@@ -112,7 +112,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 </form>
             </div>
         <?php else: ?>
-            <p class="u-fs-12" style="margin-top: 0;"><?php echo sprintf(t('certificates.le_requirements'), $h($domain)); ?></p>
+            <p class="u-fs-12 u-mt-0"><?php echo sprintf(t('certificates.le_requirements'), $h($domain)); ?></p>
             <form method="POST" class="cert-form" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
                 <div class="form-group" style="max-width: 420px;">
@@ -135,7 +135,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     <form method="POST" enctype="multipart/form-data" class="cert-form" autocomplete="off" style="padding: 16px 20px;" data-confirm="<?php echo $h(t('certificates.confirm_switch')); ?>">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="action" value="upload">
-        <p class="u-fs-12" style="margin-top: 0;"><?php echo t('certificates.upload_text'); ?></p>
+        <p class="u-fs-12 u-mt-0"><?php echo t('certificates.upload_text'); ?></p>
         <div class="u-grid-2">
             <div>
                 <div class="u-strong u-mb-10"><?php echo t('certificates.upload_pem'); ?></div>
@@ -179,31 +179,11 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     <form method="POST" class="cert-form" style="padding: 16px 20px;" data-confirm="<?php echo $h(t('certificates.confirm_selfsigned')); ?>">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="action" value="selfsigned">
-        <p class="u-fs-12" style="margin-top: 0;"><?php echo t('certificates.selfsigned_text'); ?></p>
+        <p class="u-fs-12 u-mt-0"><?php echo t('certificates.selfsigned_text'); ?></p>
         <button type="submit" class="btn btn-warning"><i class="fas fa-rotate-left"></i> <?php echo t('certificates.btn_selfsigned'); ?></button>
     </form>
 </div>
 <?php endif; ?>
 
-<script>
-// Operations take up to a minute (Let's Encrypt validation, service reloads):
-// confirm where needed, then lock the page so nothing is submitted twice.
-(function () {
-    let submitter = null;
-    document.addEventListener('click', e => { const b = e.target.closest('button[type=submit]'); if (b) submitter = b; });
-    document.querySelectorAll('form.cert-form').forEach(form => {
-        form.addEventListener('submit', e => {
-            const msg = (submitter && submitter.form === form && submitter.dataset.confirm) || form.dataset.confirm;
-            if (msg && !confirm(msg)) { e.preventDefault(); return; }
-            if (submitter && submitter.name) {
-                // Disabled buttons are not submitted: carry the clicked action over.
-                const h = document.createElement('input');
-                h.type = 'hidden'; h.name = submitter.name; h.value = submitter.value;
-                form.appendChild(h);
-            }
-            document.querySelectorAll('form.cert-form button').forEach(b => b.disabled = true);
-            if (submitter) submitter.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + <?php echo json_encode(t('certificates.working')); ?>;
-        });
-    });
-})();
-</script>
+<script>window.CERTIFICATES_WORKING = <?php echo json_encode(t('certificates.working')); ?>;</script>
+<script src="<?php echo asset('/assets/js/certificates.js'); ?>"></script>

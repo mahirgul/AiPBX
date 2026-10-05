@@ -16,26 +16,26 @@ $filter_url = function (array $override) {
 <!-- Statistics Overview -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_total'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--text-main);"><?php echo $stat_total; ?></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('cdr_reports.stat_total'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-text-main"><?php echo $stat_total; ?></div>
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_total_desc'); ?></div>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_answered'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--success);"><?php echo $stat_answered; ?> <span style="font-size: 14px; color: var(--text-muted); font-weight: 600;">(%<?php echo $answer_rate; ?>)</span></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('cdr_reports.stat_answered'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-success"><?php echo $stat_answered; ?> <span class="u-fs-14 u-muted u-fw-600">(%<?php echo $answer_rate; ?>)</span></div>
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_answered_desc'); ?></div>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_talk_time'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--primary);"><?php echo round($stat_total_billsec / 60, 1); ?> <span style="font-size: 14px; color: var(--text-muted); font-weight: 600;">dk</span></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('cdr_reports.stat_talk_time'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-primary"><?php echo round($stat_total_billsec / 60, 1); ?> <span class="u-fs-14 u-muted u-fw-600">dk</span></div>
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_talk_time_desc'); ?></div>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('cdr_reports.stat_recordings'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--warning);"><?php echo $stat_recordings_count; ?></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('cdr_reports.stat_recordings'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-warning"><?php echo $stat_recordings_count; ?></div>
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_recordings_desc'); ?></div>
     </div>
 </div>
@@ -48,7 +48,7 @@ $filter_url = function (array $override) {
            title="<?php echo htmlspecialchars(t('cdr_reports.dir_filter_tooltip')); ?>">
             <i class="fas <?php echo $dicon; ?>" style="font-size: 20px; color: <?php echo $dcolor; ?>;"></i>
             <div>
-                <div style="font-size: 20px; font-weight: 800; color: var(--text-main);"><?php echo (int) $stat_directions[$dk]; ?></div>
+                <div class="u-fs-20 u-fw-800 u-text-main"><?php echo (int) $stat_directions[$dk]; ?></div>
                 <div class="u-muted u-fs-12"><?php echo $dlabel; ?></div>
             </div>
         </a>
@@ -142,7 +142,7 @@ $filter_url = function (array $override) {
             <option value="raw" <?php echo ($view_mode ?? 'grouped') === 'raw' ? 'selected' : ''; ?>><?php echo t('cdr_reports.mode_raw'); ?></option>
         </select>
 
-        <div style="position: relative; max-width: 220px;">
+        <div class="u-relative u-maxw-220">
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('cdr_reports.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
@@ -157,8 +157,8 @@ $filter_url = function (array $override) {
     <!-- CDR Records Data Table -->
     <div class="table-responsive">
         <?php
-            // "Goster: N Kayit" secicisi tablonun USTUNDE, sagda — sistemdeki
-            // diger tablolarla ayni yerde (dt-controls-bar).
+            // The "Show: N records" selector sits ABOVE the table, on the right —
+            // in the same place as the other tables in the system (dt-controls-bar).
             $page_size = $sayfa_boyutu;
             require dirname(__DIR__, 2) . '/pagination_controls.php';
         ?>
@@ -212,7 +212,7 @@ $filter_url = function (array $override) {
                         }
                     ?>
                         <tr>
-                            <td class="col-hide-mobile" style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">
+                            <td class="col-hide-mobile u-muted u-fs-12 u-nowrap">
                                 <?php $show_journey = (!empty($c['legs']) && count($c['legs']) > 1) || count($c['flow']['path'] ?? []) > 2; ?>
                                 <?php if ($show_journey): ?>
                                     <button type="button" class="btn btn-outline-primary btn-sm journey-toggle-btn" id="journey-btn-<?php echo $c['id']; ?>" onclick="toggleCallJourney('<?php echo $c['id']; ?>')" style="padding: 2px 7px; font-size: 11px; margin-right: 5px; border-radius: 6px; font-weight: 700; line-height: 1.2;" title="<?php echo t('cdr_reports.journey_title'); ?>">
@@ -221,7 +221,7 @@ $filter_url = function (array $override) {
                                 <?php endif; ?>
                                 #<?php echo $c['id']; ?>
                             </td>
-                            <td style="font-weight: 600; white-space: nowrap;">
+                            <td class="u-fw-600 u-nowrap">
                                 <?php echo date('d.m.Y H:i:s', strtotime($c['start_time'])); ?>
                             </td>
                             <?php
@@ -232,7 +232,7 @@ $filter_url = function (array $override) {
                                     return '<span class="badge" title="' . htmlspecialchars($title) . '" style="background: rgba(100,116,139,0.12); color: var(--text-main); border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-top: 3px;"><i class="fas ' . $icon . '"></i> ' . htmlspecialchars($text) . '</span>';
                                 };
                             ?>
-                            <td style="white-space: nowrap;">
+                            <td class="u-nowrap">
                                 <?php if ($f): [$dicon, $dcolor, $dlabel] = $dir_meta[$f['direction']]; ?>
                                     <span style="color: <?php echo $dcolor; ?>; font-weight: 700; font-size: 12px;"><i class="fas <?php echo $dicon; ?>"></i> <?php echo $dlabel; ?></span>
                                     <?php if ($f['transferred']): ?>
@@ -243,7 +243,7 @@ $filter_url = function (array $override) {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div style="font-weight: 700; color: var(--primary);"><?php echo htmlspecialchars($f['caller_number'] ?? $c['caller_num']); ?></div>
+                                <div class="u-fw-700 u-primary"><?php echo htmlspecialchars($f['caller_number'] ?? $c['caller_num']); ?></div>
                                 <?php if (!empty($f['caller_name'])): ?>
                                     <small class="u-muted" style="display: block; font-size: 11px;"><?php echo htmlspecialchars($f['caller_name']); ?></small>
                                 <?php endif; ?>
@@ -254,7 +254,7 @@ $filter_url = function (array $override) {
                             <td>
                                 <?php $dialed = $f['dialed_number'] ?? ''; ?>
                                 <?php if ($dialed !== ''): ?>
-                                    <div style="font-weight: 700;"><?php echo htmlspecialchars($dialed); ?></div>
+                                    <div class="u-fw-700"><?php echo htmlspecialchars($dialed); ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($c['route'] ?? $c['queue_name'] ?? '')): ?>
                                     <small class="u-muted" style="display: block; font-size: 11px;"><i class="fas fa-signs-post"></i> <?php echo htmlspecialchars($c['route'] ?? $c['queue_name']); ?></small>
@@ -282,8 +282,8 @@ $filter_url = function (array $override) {
                                 <?php endif; ?>
                             </td>
                             <?php
-                                // Calma = toplam - konusma. Gorunum bunu ring_sec olarak
-                                // veriyor; eski kayitlarda alan yoksa burada hesaplanir.
+                                // Ring = total - talk. The view provides it as ring_sec;
+                                // for old records without the field it is computed here.
                                 $ring = isset($c['ring_sec'])
                                     ? intval($c['ring_sec'])
                                     : max(0, intval($c['duration']) - intval($c['billsec']));
@@ -294,9 +294,9 @@ $filter_url = function (array $override) {
                             <td>
                                 <?php if ($c['status'] === 'ANSWERED'): ?>
                                     <div style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--success);">
-                                        <i class="fas fa-phone-volume" style="font-size: 11px; margin-right: 4px;"></i><?php echo $sure_bicim($bill); ?>
+                                        <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $sure_bicim($bill); ?>
                                     </div>
-                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap;">
+                                    <div class="u-fs-11 u-muted u-mt-2 u-nowrap">
                                         <?php echo t('cdr_reports.col_ring'); ?>: <?php echo $sure_bicim($ring); ?> • <?php echo t('cdr_reports.stat_total'); ?>: <?php echo $sure_bicim($dur); ?>
                                     </div>
                                 <?php elseif (in_array($c['status'], ['NO ANSWER', 'NOANSWER', 'CANCEL', 'ABANDON'])): ?>
@@ -312,13 +312,13 @@ $filter_url = function (array $override) {
                                     <?php echo htmlspecialchars($status_label); ?>
                                 </span>
                             </td>
-                            <td style="max-width: 220px;">
+                            <td class="u-maxw-220">
                                 <?php if (!empty($c['note_disposition']) || !empty($c['note_text']) || !empty($c['note_customer_name'])): ?>
                                     <?php if (!empty($c['note_disposition'])): ?>
                                         <span class="badge badge-info u-fs-10"><?php echo htmlspecialchars($c['note_disposition']); ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($c['note_customer_name'])): ?>
-                                        <div style="font-size: 12px; font-weight: 600; color: var(--text-main); margin-top: 2px;"><?php echo htmlspecialchars($c['note_customer_name']); ?></div>
+                                        <div class="u-fs-12 u-fw-600 u-text-main u-mt-2"><?php echo htmlspecialchars($c['note_customer_name']); ?></div>
                                     <?php endif; ?>
                                     <?php if (!empty($c['note_text'])): ?>
                                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: normal; overflow-wrap: anywhere;" title="<?php echo htmlspecialchars($c['note_text']); ?>">
@@ -329,7 +329,7 @@ $filter_url = function (array $override) {
                                     <span class="u-muted u-fs-12">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="text-align: right; white-space: nowrap;">
+                            <td class="u-text-right u-nowrap">
                                 <?php if ($has_rec && $can_listen_row): ?>
                                     <button class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars(addslashes($c['caller_num']), ENT_QUOTES); ?>', '<?php echo date('d.m.Y H:i', strtotime($c['start_time'])); ?>')" title="<?php echo t('cdr_reports.listen_tooltip'); ?>">
                                         <i class="fas fa-play"></i>
@@ -368,7 +368,7 @@ $filter_url = function (array $override) {
                                                 <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($c['linkedid'] ?? $c['call_id']); ?></code>
                                             </div>
                                             <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
-                                                <span><?php echo t('cdr_reports.journey_wait'); ?>: <strong style="color: var(--text-main);"><?php echo sprintf('%02d:%02d', intdiv($ring, 60), $ring % 60); ?></strong></span>
+                                                <span><?php echo t('cdr_reports.journey_wait'); ?>: <strong class="u-text-main"><?php echo sprintf('%02d:%02d', intdiv($ring, 60), $ring % 60); ?></strong></span>
                                                 <span>•</span>
                                                 <span><?php echo t('cdr_reports.journey_talk'); ?>: <strong class="u-success"><?php echo sprintf('%02d:%02d', intdiv($bill, 60), $bill % 60); ?></strong></span>
                                                 <span>•</span>
@@ -385,7 +385,7 @@ $filter_url = function (array $override) {
                                                     ? $node['label'] . ($node['number'] !== '' ? ': ' . $node['number'] : '')
                                                     : $node['id'] . ($node['label'] !== '' ? ' ' . $node['label'] : '');
                                             ?>
-                                                <?php if ($pi > 0): ?><i class="fas fa-arrow-right-long u-muted" style="font-size: 11px;"></i><?php endif; ?>
+                                                <?php if ($pi > 0): ?><i class="fas fa-arrow-right-long u-muted u-fs-11"></i><?php endif; ?>
                                                 <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-input); <?php echo $node['answered'] ? '' : 'opacity: 0.6; border-style: dashed;'; ?>">
                                                     <i class="fas <?php echo $nicon; ?>" style="color: var(--primary); font-size: 11px;"></i> <?php echo htmlspecialchars($ntext); ?>
                                                 </span>
@@ -405,7 +405,7 @@ $filter_url = function (array $override) {
                                                     $nodeColor = 'var(--danger)';
                                                 }
                                             ?>
-                                                <div style="position: relative; margin-bottom: 10px;">
+                                                <div class="u-relative u-mb-10">
                                                     <!-- Node Dot -->
                                                     <div style="position: absolute; left: -31px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg-card); border: 2px solid <?php echo $nodeColor; ?>; display: flex; align-items: center; justify-content: center;">
                                                         <div style="width: 6px; height: 6px; border-radius: 50%; background: <?php echo $nodeColor; ?>;"></div>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Login (Giriş) Service
+ * Login service
  */
 class LoginService {
     /**
@@ -9,7 +9,7 @@ class LoginService {
     public static function attemptLogin(array $post, string $clientIp): array
     {
         $username = trim($post['username'] ?? '');
-        $password = trim($post['password'] ?? '');
+        $password = (string) ($post['password'] ?? '');
         $user_captcha = intval($post['captcha_answer'] ?? 0);
         $csrf_token = $post['csrf_token'] ?? '';
 
@@ -33,21 +33,16 @@ class LoginService {
             return ['error' => 'Lütfen tüm alanları doldurun!'];
         }
 
-        $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret FROM sys_users WHERE username = ? OR extension = ? ORDER BY (username = ?) DESC, id ASC LIMIT 1');
-        // Birinin kullanıcı adı başkasının dahilisine eşitse kullanıcı adı öncelikli
-        // (mobil girişte zaten böyleydi).
-        $stmt->execute([$username, $username, $username]);
-        $user = $stmt->fetch();
+        $user = findLoginUser($username, 'id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret');
 
         $is_authenticated = false;
-        if ($user && $user['is_active'] == 1 && password_verify($password, $user['password_hash'])) {
+        if ($user && $user['is_active'] == 1 && verifyLoginPassword($password, (string) $user['password_hash'])) {
             $is_authenticated = true;
         }
 
         if ($is_authenticated && !empty($user['must_reset_password'])) {
-            // Şifresi zorunlu sıfırlamaya işaretli hesap: normal oturum açılmaz,
-            // yalnızca sıfırlama akışına girebilecek geçici bir işaret bırakılır.
+            // Account flagged for a mandatory password reset: no normal session
+            // is opened, only a temporary mark that allows entering the reset flow.
             session_regenerate_id(true);
             $_SESSION['pending_reset_user_id'] = $user['id'];
             logLoginAttempt($clientIp, $username, 'SUCCESS');
@@ -56,7 +51,7 @@ class LoginService {
         }
 
         if ($is_authenticated) {
-            // İki Faktörlü Doğrulama (2FA) kontrolü
+            // Two-factor authentication (2FA) check
             if (!empty($user['two_factor_enabled'])) {
                 session_regenerate_id(true);
                 $_SESSION['pending_2fa_user_id'] = $user['id'];

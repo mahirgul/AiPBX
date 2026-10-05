@@ -1,15 +1,15 @@
 <?php
 
 /**
- * Testler için bilinen minimal veri kümesi.
+ * A known minimal data set for the tests.
  *
- * Her test sınıfı setUp()'ta Fixtures::load() çağırarak temiz ve ÖNGÖRÜLEBİLİR
- * bir durumdan başlar.
+ * Every test class calls Fixtures::load() in setUp() to start from a clean,
+ * PREDICTABLE state.
  *
- * SADECE asterisk_test üzerinde çalışır — tests/bootstrap.php'deki emniyet
- * kilidi bunu garanti eder (DB_NAME farklıysa testler hiç başlamaz). Yine de
- * savunma amaçlı burada ikinci bir kontrol var: yanlışlıkla üretimde
- * çalıştırılırsa TRUNCATE gerçek veriyi silerdi.
+ * Works ONLY on asterisk_test — the safety lock in tests/bootstrap.php
+ * guarantees that (tests do not start at all with another DB_NAME). Still,
+ * there is a second, defensive check here: run in production by mistake,
+ * TRUNCATE would delete real data.
  */
 final class Fixtures
 {
@@ -18,14 +18,14 @@ final class Fixtures
     public const DID_NUMBER = '9990001';
 
     /**
-     * Fixture'ların dokunduğu tablolar — load() bunları boşaltır.
+     * Tables the fixtures touch — load() empties them.
      *
-     * `sip` LİSTEDE OLMAK ZORUNDA: trunk ayarlarının bir kısmı bu anahtar-değer
-     * tablosunda yaşıyor ve SyncTrunks.php onu pbx_trunks'tan ÖNCE okuyor
-     * (satır 49: sip_map['t38_udptl'] varsa o kazanıyor). Temizlenmezse bir
-     * testin yazdığı değer sonraki testi kirletir — 2026-09-01'de tam olarak
-     * bu oldu: t38_support=0 yapılan test, önceki testten kalan
-     * sip.t38_udptl='yes' yüzünden hâlâ t38_udptl=yes görüyordu.
+     * `sip` MUST BE ON THE LIST: part of the trunk settings lives in this
+     * key-value table and SyncTrunks.php reads it BEFORE pbx_trunks (line 49:
+     * sip_map['t38_udptl'] wins if present). Without clearing it, a value one
+     * test writes pollutes the next — exactly that happened on 2026-09-01: the
+     * test that set t38_support=0 still saw t38_udptl=yes because of the
+     * sip.t38_udptl='yes' left by the previous test.
      */
     private const TABLOLAR = [
         'pbx_dids',
@@ -74,8 +74,8 @@ final class Fixtures
             'INSERT INTO pbx_dids (did_number, title, dest_type, dest_id) VALUES (?, ?, ?, ?)'
         )->execute([self::DID_NUMBER, 'Test DID', 'queue', $queueId]);
 
-        // Dahili hedef numarası olan iki varlık — SyncInternalNumbers ve
-        // InternalNumberTest testleri bu ikisine dayanır.
+        // Two entities with an internal destination number — the
+        // SyncInternalNumbers and InternalNumberTest tests rely on them.
         $db->prepare('UPDATE pbx_ivrs SET internal_number = ? WHERE title = ?')
            ->execute(['1010', 'Test IVR']);
         $db->prepare(
@@ -91,8 +91,8 @@ final class Fixtures
     }
 
     /**
-     * Üretim veritabanında ASLA çalışmasın — TRUNCATE geri dönüşü olmayan bir
-     * işlem. bootstrap.php zaten engelliyor, bu ikinci savunma hattı.
+     * Must NEVER run on the production database — TRUNCATE cannot be undone.
+     * bootstrap.php already prevents it; this is the second line of defence.
      */
     private static function uretimKontrolu(): void
     {
