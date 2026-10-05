@@ -174,7 +174,7 @@ Trunks, routes, roles, recordings, sounds and troubleshooting: [documentation](d
 | Daily backups / log | `/var/backups/aipbx-daily/` · `/var/log/aipbx/backup.log` |
 | Fax archive | `/var/www/faxes/` |
 | Call recordings (converted to MP3 every 5 min) | `/var/spool/asterisk/monitor/` |
-| Uploaded / Turkish sounds | `/var/lib/asterisk/sounds/custom/` · `/var/lib/asterisk/sounds/tr/` |
+| Uploaded / Turkish sounds | `/var/lib/asterisk/sounds/custom/` · `/var/lib/asterisk/sounds/tr/` (from the `asterisk-core-sounds-tr-*.tar.xz` packages) |
 | Apache sandbox override | `/etc/systemd/system/apache2.service.d/override.conf` |
 | Portal fail2ban overrides | `/etc/fail2ban/jail.d/zz-ai-pbx.local` |
 | Maintenance cron jobs | `/etc/cron.d/aipbx` |

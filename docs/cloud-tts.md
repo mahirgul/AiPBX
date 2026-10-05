@@ -40,5 +40,6 @@ the audit log.
 
 ## Turkish system prompts
 
-AiPBX's complete Turkish prompt set was generated with this feature (Google `tr-TR-Wavenet-C`). To
-change or add a prompt, see [Sounds & languages](sounds.md#turkish-prompts).
+AiPBX's complete Turkish prompt set was generated with the Google provider configured here (voice
+`tr-TR-Wavenet-C`, 16 kHz masters) and ships as the `asterisk-core-sounds-tr` packages. To change or
+add a prompt, see [Sounds & languages](sounds.md#turkish-prompts).

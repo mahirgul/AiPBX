@@ -22,12 +22,12 @@ A lightweight, framework-free MVC layered over Asterisk's "database is the sourc
 
 ```
 index.php                 Front controller / router (clean URLs, whitelist mapping)
-src/controllers/          46 controllers — auth check, POST handling, orchestration
-src/repositories/         32 repositories — read queries (extends BaseRepository)
-src/services/             34 services — write/business logic (validation, RBAC, sync triggers)
+src/controllers/          53 controllers — auth check, handlePost() button dispatch, orchestration
+src/repositories/         33 repositories — read queries (extends BaseRepository)
+src/services/             45 services — write/business logic (validation, RBAC, sync triggers)
 src/sync/                 19 sync generators — DB -> Asterisk .conf files (PJSIP, dialplan, ...)
 src/ui_helpers.php        Reusable HTML component renderers (modals, forms, badges)
-templates/views/          48 pure-PHP view templates
+templates/views/          51 pure-PHP view templates (page JS/CSS in assets/js, assets/css/pages)
 lang/                     Translation tables (tr.php / en.php) + t() helper in config.php
 db/migrations/            Phinx — versioned, reversible schema changes
 api/                      JSON endpoints consumed by browser JS (WebAuthn, call control, WebRTC creds, ...)

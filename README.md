@@ -121,8 +121,10 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   rolled back and the change stays pending
 - **Live dashboard** — active calls and channels, callers waiting in queues, today's answered / missed
   calls and per-trunk channel usage, refreshed every 5 seconds
-- **Complete Turkish prompt set** in one voice — voicemail, digits, conference, queue and directory
-  prompts, so Turkish calls never switch to English halfway
+- **Complete Turkish prompt set** in one voice — every Asterisk core prompt plus voicemail, digits,
+  conference, queue and directory prompts, so Turkish calls never switch to English halfway. Shipped
+  as `asterisk-core-sounds-tr` packages in six formats (wav, ulaw, alaw, gsm and HD g722/sln16), so
+  Asterisk plays the file matching the call's codec — and any Asterisk server can use them
 - **Call recordings** — converted automatically to mono 16 kbps MP3 (~8× smaller than WAV), played in
   CDR reports, *My Phone* and the apps
 
@@ -223,9 +225,9 @@ Internet ──443──▶ nginx (stream, ALPN, PROXY protocol)
 AiPBX/
 ├── web/                    # PHP MVC portal
 │   ├── src/
-│   │   ├── controllers/    # 50 page controllers
-│   │   ├── services/       # 39 services (business logic)
-│   │   ├── repositories/   # 32 repositories
+│   │   ├── controllers/    # 53 page controllers
+│   │   ├── services/       # 45 services (business logic)
+│   │   ├── repositories/   # 33 repositories
 │   │   └── sync/           # 19 Asterisk configuration generators
 │   ├── templates/          # layouts + 51 views
 │   ├── api/                # JSON endpoints (call control, mobile, chat token, WebAuthn…)
@@ -236,7 +238,8 @@ AiPBX/
 ├── android/                # Kotlin app
 ├── ios/                    # SwiftUI app
 ├── asterisk-config/        # Asterisk base configuration
-├── sounds/                 # Turkish system prompts
+├── sounds/                 # bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
+├── asterisk-core-sounds-tr-*.tar.xz  # Turkish prompts, one package per format (+ SHA256SUMS)
 ├── docs/                   # administrator documentation
 ├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
 ├── db/seed.sql             # initial roles, permissions, settings

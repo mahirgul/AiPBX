@@ -55,16 +55,33 @@ templates/views/<page>/index.php — pure-PHP view, no logic beyond looping/form
 
 `BaseController`, `BaseRepository`, and `View` (`src/core/`) are a few hundred lines total — no ORM, no template compiler. Controllers never talk to Asterisk or even to raw SQL directly; they call a Service (writes) or a Repository (reads).
 
+### Controller pattern
+
+Every page controller follows the same shape: check access, let `handlePost()` run the Service
+method of the submitted button, render the page with the result as layout notices.
+
+```php
+$notices = static::handlePost([
+    'save_trunk'    => fn() => TrunkService::saveTrunk($_POST),
+    'delete_trunk'  => fn() => TrunkService::deleteTrunk($_POST['trunk_id'] ?? 0, static::csrfToken()),
+]);
+static::renderPage('trunks/index', $data, ['title' => t('trunks.title')] + $notices);
+```
+
+Services return `['success' => bool, 'message' | 'error' => string]`; the layout footer shows the
+notice as a toast, so views never print it. In-page AJAX actions use `requireAjaxAccess()` +
+`json()`.
+
 Static-class, no-namespace conventions are used throughout (`TrunkService::saveTrunk(...)`, `ExtensionRepository::getAll(...)`) to keep the codebase cohesive, direct, and free of unnecessary boilerplate.
 
 ## The PHP layers, precisely
 
 | Layer | Lives in | Responsibility | Never does |
 |---|---|---|---|
-| **Controller** | `src/controllers/` | `requireRole()`, read `$_POST`, call one Service method, pass data to a View | Contain SQL or business rules |
+| **Controller** | `src/controllers/` | `requireRole()`, map form buttons to Service calls with `handlePost()`, pass data to a View | Contain SQL or business rules |
 | **Service** | `src/services/` | Validate input, enforce RBAC edge cases, write to DB, call the matching `src/sync/*` generator | Render HTML |
 | **Repository** | `src/repositories/` | Read-only queries, `extends BaseRepository` | Mutate data |
-| **View** | `templates/views/` | Loop over data, escape output, call `t()` for every string | Query the database |
+| **View** | `templates/views/` | Loop over data, escape output, call `t()` for every string; page JS/CSS in `assets/js/<page>.js` and `assets/css/pages/` | Query the database, print notices |
 | **UI Helpers** | `src/ui_helpers.php` | Reusable UI component renderers (modals, forms, status badges) | Execute business logic |
 
 ## Asterisk integration & Sync layer
@@ -126,16 +143,16 @@ This is a completely separate axis from Asterisk's voice-prompt language (`pbx_d
 index.php                 Front controller / router
 config.php                Bootstrap: env loading, DB connection, t(), constants
 auth.php                  Session, RBAC, CSRF primitives
-header.php / footer.php   Shared page chrome (included by every Controller)
-templates/                sidebar.php, topbar.php + templates/views/<page>/index.php
+templates/layouts/        app_header/app_footer (shared page chrome, notices) + auth_* for sign-in pages
+templates/                sidebar.php (+ sidebar_menu.php, the menu as data), topbar.php + templates/views/<page>/index.php
 src/core/                 BaseController, BaseRepository, View — the core foundation
-src/controllers/          35 Controllers (one per page/route)
-src/repositories/         28 Repositories (read queries)
-src/services/             24 Services (write/business logic)
+src/controllers/          53 Controllers (one per page/route)
+src/repositories/         33 Repositories (read queries)
+src/services/             45 Services (write/business logic)
 src/sync/                 12 Sync generators (DB -> Asterisk .conf generators)
 src/ui_helpers.php        Reusable HTML UI components
-src/helpers.php           PBXHelper facade
-lang/                     tr.php, en.php (1,323 translation keys each)
+src/helpers.php           PBXHelper::handleAction() (CSRF + exception safety) and toggleStatus()
+lang/                     tr.php, en.php (~2,370 translation keys each)
 db/migrations/            Phinx migrations (versioned schema history)
 api/                      JSON/file endpoints called by browser JS
 assets/                   CSS/JS, all vendored locally (no CDN dependencies)
