@@ -273,6 +273,7 @@ apt-get install -y \
   asterisk-modules \
   mariadb-server \
   mariadb-client \
+  xz-utils \
   nginx \
   libnginx-mod-stream \
   apache2 \
@@ -983,15 +984,27 @@ if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
     cp -an "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
 fi
 
-if [[ -d "$INSTALL_DIR/sounds/tr" ]]; then
-    # The Turkish set is AiPBX's own (sounds/tr/README-tts.txt), so it replaces
-    # older copies; a stale .gsm/.ulaw of the same prompt is dropped too, or
-    # Asterisk could still pick the old recording by format cost.
+# Turkish prompts: the asterisk-core-sounds-tr-<format>-<version>.tar.xz
+# packages at the repo root (built by scripts/build_tr_sounds.sh; texts in
+# sounds/core-sounds-tr.txt), one per format like Asterisk's own sound
+# packages. It is AiPBX's own set, so it replaces older copies. Formats the
+# packages do not ship (e.g. a stale .g729 or .sln of the same prompt) are
+# removed first, or Asterisk could still pick the old recording by format cost.
+TR_SOUNDS_SUMS="$(ls "$INSTALL_DIR"/asterisk-core-sounds-tr-*.SHA256SUMS 2>/dev/null | sort -V | tail -1)"
+if [[ -n "$TR_SOUNDS_SUMS" ]]; then
+    (cd "$INSTALL_DIR" && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")") \
+        || error "Turkish sound packages: checksum mismatch ($TR_SOUNDS_SUMS)"
+    mapfile -t TR_SOUNDS_PKGS < <(awk '{print $2}' "$TR_SOUNDS_SUMS")
     while IFS= read -r f; do
         base="/var/lib/asterisk/sounds/tr/${f%.wav}"
-        rm -f "$base".{gsm,ulaw,alaw,g722,g729,sln,sln16}
-    done < <(cd "$INSTALL_DIR/sounds/tr" && find . -type f -name '*.wav' -printf '%P\n')
-    cp -a "$INSTALL_DIR/sounds/tr/." /var/lib/asterisk/sounds/tr/
+        rm -f "$base".{g729,sln,sln32,sln48,siren7,siren14,wav16}
+    done < <(tar -tJf "$INSTALL_DIR/${TR_SOUNDS_PKGS[0]}" | sed -n 's|^\./||; /\.[a-z0-9]*$/{ s/\.[a-z0-9]*$/.wav/; p }' | grep -v '^core-sounds\|^LICENSE\|^CHANGES')
+    for pkg in "${TR_SOUNDS_PKGS[@]}"; do
+        tar -xJf "$INSTALL_DIR/$pkg" --no-same-owner -C /var/lib/asterisk/sounds/tr
+    done
+    ok "Turkish prompts installed (${#TR_SOUNDS_PKGS[@]} formats, $(basename "$TR_SOUNDS_SUMS" .SHA256SUMS))"
+else
+    warn "Turkish sound packages (asterisk-core-sounds-tr-*.tar.xz) not found — Turkish prompts skipped"
 fi
 
 # Set default language to Turkish in asterisk.conf

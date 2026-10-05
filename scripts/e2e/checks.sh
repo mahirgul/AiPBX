@@ -147,14 +147,15 @@ check "Asterisk plays a Turkish prompt" bash -c "grep 'E2E tr=' /var/log/asteris
 rm -f "$E2E_DP"; asterisk -rx "dialplan reload" >/dev/null
 
 # --- Turkish prompts and Cloud TTS ---------------------------------------------
-# Every prompt listed in README-tts.txt is installed once, in the shipped WAV
-# (an older .gsm of the same name would win on format cost).
+# Every prompt listed in sounds/core-sounds-tr.txt is installed from the
+# package in exactly the shipped formats (a leftover .g729/.sln of the same
+# name would win on format cost).
 tr_bad=""
 while IFS='|' read -r name _; do
-    n=$(compgen -G "/var/lib/asterisk/sounds/tr/$name.*" | wc -l)
-    [[ "$n" -eq 1 && -f "/var/lib/asterisk/sounds/tr/$name.wav" ]] || tr_bad+=" $name($n)"
-done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/tr/README-tts.txt")
-if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (one WAV each)"; else fail "Turkish prompts installed (one WAV each)" "${tr_bad:0:200}"; fi
+    got=$(cd /var/lib/asterisk/sounds/tr && compgen -G "$name.*" | sed 's/.*\.//' | sort | tr '\n' ' ')
+    [[ "$got" == "alaw g722 gsm sln16 ulaw wav " ]] || tr_bad+=" $name($got)"
+done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/core-sounds-tr.txt")
+if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (all six formats)"; else fail "Turkish prompts installed (all six formats)" "${tr_bad:0:200}"; fi
 check "clients are given TURNS on 443" grep -q "^TURNS_PORT=443$" /etc/ai-pbx.env
 check "Asterisk finds a Turkish prompt" bash -c 'asterisk -rx "core show file formats" >/dev/null && test -r /usr/share/asterisk/sounds/tr/vm-intro.wav'
 tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts?tab=providers")"
