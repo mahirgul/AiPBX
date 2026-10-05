@@ -26,6 +26,7 @@ AI PBX is organized as a unified monorepo:
 | `chat/` | High-Concurrency Chat Engine | Go (Gorilla WebSocket) |
 | `android/` | Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
 | `docs/` | Images used by the README and docs (the aipbx.bid website is maintained separately) | PNG, JPG |
+| `sounds/`, `asterisk-core-sounds-tr-*.tar.xz` | Bundled sounds, Turkish prompt texts and packages | `scripts/build_tr_sounds.sh` |
 | `install.sh` | Turnkey Auto-Installer | Bash (Ubuntu 26.04 LTS) |
 
 ---
@@ -108,7 +109,16 @@ Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/
 
 *Example:* `feat(android): add dark mode toggle in dialer settings`
 
-### 3. Security First 🔒
+### 3. Code Conventions
+- **English** for code comments, CLI output, commit messages and documentation (the portal UI stays
+  bilingual through `web/lang/tr.php` and `en.php`).
+- **Controllers** handle form buttons with `BaseController::handlePost()` and pass the result to the
+  layout as notices — views do not print `$message` / `$error` themselves.
+- **Page scripts and styles** live in `web/assets/js/<page>.js` and `web/assets/css/pages/<page>.css`;
+  PHP values reach them through a small data block (`window.X = {...}`), not PHP inside the script.
+- **Sidebar** entries are data in `web/templates/sidebar_menu.php`.
+
+### 4. Security First 🔒
 - **Zero Static Passwords**: Never hardcode credentials or tokens anywhere in the codebase.
 - **Least Privilege**: Ensure database queries in the web portal respect DML-only permissions (`aipbx_portal`).
 - **Input Validation**: Sanitize and validate all user inputs (CSRF, XSS, SQL injection protection).

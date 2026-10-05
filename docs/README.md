@@ -22,7 +22,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
 | [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
 | [Reports](reports.md) | Call reports with trunks and direction, Queue Report Centre, PDF and Excel export |
-| [Sounds & languages](sounds.md) | Custom sounds, the complete Turkish prompt set, regenerating a prompt |
+| [Sounds & languages](sounds.md) | Custom sounds, the Turkish prompt packages (six formats), regenerating a prompt |
 | [Cloud TTS](cloud-tts.md) | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
 | [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
 
