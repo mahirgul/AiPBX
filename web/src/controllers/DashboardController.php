@@ -1,8 +1,8 @@
 <?php
 /**
- * Kontrol Paneli Controller'ı — eski src/dashboard.php'nin MVC karşılığı.
- * Sayfa mantığı (yetki kontrolü + POST işleme) burada, veri toplama
- * DashboardRepository'de, HTML çıktısı templates/views/dashboard/index.php'de.
+ * Dashboard controller — the MVC counterpart of the old src/dashboard.php.
+ * The page logic (access check + POST handling) is here, data collection in
+ * DashboardRepository, the HTML output in templates/views/dashboard/index.php.
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/../priv_helper.php';
@@ -45,16 +45,16 @@ class DashboardController extends BaseController
         $uid = $_SESSION['user_id'] ?? null;
 
         if ($action === 'reload_asterisk') {
-            // 2026-08-24: `asterisk -rx` her zaman exit code 0 döner (canlı
-            // doğrulandı) — execCLI() çıktı metnini looksLikeCliFailure() ile
-            // kontrol ediyor. sudo gerekmiyor: web kullanıcısı asterisk
-            // grubunda, kontrol soketine doğrudan erişiyor.
+            // 2026-08-24: `asterisk -rx` always exits with code 0 (verified
+            // live) — execCLI() checks the output text with
+            // looksLikeCliFailure(). No sudo needed: the web user is in the
+            // asterisk group and reaches the control socket directly.
             $res = AsteriskHelper::execCLI('core reload');
             $output = trim($res['output']);
             $failed = !$res['success'];
-            // 2026-08-25: başarısızlıkta ham Asterisk çıktısı da audit kaydına
-            // yazılıyor (önceden sadece "core reload" yazıp asıl hata metnini
-            // kalıcı kayıttan dışarıda bırakıyordu).
+            // 2026-08-25: on failure the raw Asterisk output is written to the
+            // audit record too (it used to write only "core reload" and left
+            // the actual error text out of the permanent record).
             $label = t('dashboard.service_asterisk_name') . ' (core reload)' . ($failed ? ': ' . mb_substr($output, 0, 200) : '');
             writeAuditLog(null, 'system_service', 'asterisk', $label, $failed ? 'reload_failed' : 'reload', $uid);
             if ($failed) {
@@ -71,9 +71,9 @@ class DashboardController extends BaseController
                 'postfix' => t('dashboard.service_postfix_name'),
             ];
             if (isset($allowed_services[$service])) {
-                // systemctl, asterisk -rx'in aksine GERÇEK bir exit code
-                // döndürüyor (canlı doğrulandı: başarısız bir restart
-                // sıfırdan farklı bir kod veriyor) — burada $ret güvenilir.
+                // Unlike asterisk -rx, systemctl returns a REAL exit code
+                // (verified live: a failed restart gives a non-zero code) —
+                // $ret is reliable here.
                 $res = PrivHelper::run(['service', 'restart', $service]);
                 $output = $res['output'];
                 $failed = !$res['success'];

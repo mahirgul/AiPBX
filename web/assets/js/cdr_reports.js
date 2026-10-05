@@ -149,12 +149,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 document.addEventListener('spa:pageLoaded', function() {
     const modalEl = document.getElementById('cdrAudioModal');
-    // Bu dinleyici document'a bağlı olduğu için cdr_reports.php'den başka bir
-    // sayfaya SPA ile geçildikten SONRA da tetiklenmeye devam ediyor. Modal
-    // artık DOM'da yoksa bu sayfada değiliz demektir — hâlâ çalıyor olabilecek
-    // wavesurferCdr örneği durdurulup temizleniyor, aksi halde ses arka planda
-    // çalmaya devam edip kullanıcının durduracak hiçbir arayüzü kalmıyordu
-    // (2026-08-21 denetiminde bulundu).
+    // This listener is bound to document, so it keeps firing AFTER the SPA
+    // has moved from cdr_reports.php to another page. If the modal is no
+    // longer in the DOM we are not on this page — a wavesurferCdr instance
+    // that may still be playing is stopped and cleaned up; otherwise the audio
+    // kept playing in the background with no interface left to stop it
+    // (found in the 2026-08-21 audit).
     if (!modalEl) {
         if (window.wavesurferCdr) {
             try { window.wavesurferCdr.destroy(); } catch (e) {}

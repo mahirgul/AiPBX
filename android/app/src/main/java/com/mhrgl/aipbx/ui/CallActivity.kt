@@ -107,7 +107,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         setContentView(binding.root)
         prefs = AppPreferences.getInstance(this)
 
-        // Edge-to-edge WindowInsets desteği
+        // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -276,13 +276,13 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                     audioManager.isSpeakerphoneOn = true
                 } else {
                     val available = audioManager.availableCommunicationDevices
-                    // Açık Öncelik Sırası (N1):
-                    // 1. Bluetooth kulaklıklar
+                    // Explicit priority order (N1):
+                    // 1. Bluetooth headsets
                     val targetDevice = available.firstOrNull {
                         it.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
                         it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
                     } ?:
-                    // 2. Kablolu kulaklıklar
+                    // 2. Wired headsets
                     available.firstOrNull {
                         it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
                         it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
@@ -336,8 +336,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
             audioManager.isSpeakerphoneOn = speakerOn
         }
 
-        // Proximity sensor kontrolü: Yalnızca dahili ahizedeyken ekran kararsın.
-        // Hoparlörde veya Bluetooth/kablolu kulaklıktayken ekran açık kalmalı.
+        // Proximity sensor check: the screen goes dark only on the earpiece.
+        // On the speaker or a Bluetooth/wired headset the screen must stay on.
         val isUsingBuiltinEarpiece = !speakerOn && if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             audioManager.communicationDevice?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
         } else {
@@ -346,7 +346,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         }
 
         if (isUsingBuiltinEarpiece) {
-            // Güvenlik zaman aşımı: bir hata yolunda release() kaçırılsa bile kilit sonsuza dek kalmasın.
+            // Safety timeout: even if release() is missed on an error path, the lock must not stay forever.
             proximityWakeLock?.let { if (!it.isHeld) it.acquire(4 * 60 * 60 * 1000L) }
         } else {
             proximityWakeLock?.let { if (it.isHeld) it.release() }

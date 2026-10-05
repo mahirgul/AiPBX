@@ -11,7 +11,7 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-TX] $*" | tee -a "$LOGFILE"
 }
 
-# Ortam fallback'leri — kodda statik değer yok (kural: AGENTS.md)
+# Environment fallbacks — no static values in code (rule: AGENTS.md)
 if [ -r /etc/ai-pbx.env ]; then
     . /etc/ai-pbx.env
 fi
@@ -37,10 +37,10 @@ if [ "$STATUS" != "SUCCESS" ]; then
     ST="FAILED"
 fi
 
-# Ters bölü de atılır: MariaDB'de \' kaçış sayılır, '' ikilemesini bozardı.
+# Backslashes are dropped too: MariaDB treats \' as an escape, which would break the '' doubling.
 ESCAPED_ERR=$(printf '%s' "$ERROR_MSG" | tr -d '\r\n\\' | sed "s/'/''/g")
 
-# Parola komut satırında değil ortamda: -p<parola> `ps` çıktısında herkese görünüyordu.
+# The password goes in the environment, not on the command line: -p<password> was visible to everyone in `ps`.
 export MYSQL_PWD="${DB_PASS}"
 MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
 MYSQL_QUERY="$MYSQL_EXEC -N -s"

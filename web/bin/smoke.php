@@ -1,26 +1,26 @@
 <?php
 /**
- * AI PBX Duman Testi — tek komutla "hiçbir şey patlamıyor mu?" kontrolü.
+ * AI PBX smoke test — a one-command "does nothing blow up?" check.
  *
- * Kullanım: php bin/smoke.php [--only=routes|rbac|conventions|lint]
- * Çıkış kodu: 0 = temiz, 1 = en az bir hata.
+ * Usage: php bin/smoke.php [--only=routes|rbac|conventions|lint]
+ * Exit code: 0 = clean, 1 = at least one failure.
  *
- * GÜVENLİK: Bu araç SADECE okur/render eder. Hiçbir POST, servis yazımı,
- * config üretimi veya Asterisk reload'u tetiklemez.
+ * SAFETY: this tool ONLY reads/renders. It never triggers a POST, a service
+ * write, config generation or an Asterisk reload.
  *
- * NOT: root olarak çalıştırılır. bin/ dizini root'a ait ve 755 OLMALI:
- * Asterisk özellik kodu/faks betiklerini asterisk kullanıcısıyla, /usr/local/bin
- * bağlantıları üzerinden çalıştırıyor. 2026-09-27'ye kadar elle 750 yapılmıştı
- * ve *60/*72 özellik kodları sessizce çalışmıyordu.
+ * NOTE: run as root. The bin/ directory belongs to root and MUST be 755:
+ * Asterisk runs the feature-code/fax scripts as the asterisk user through
+ * the /usr/local/bin links. Until 2026-09-27 it had been set to 750 by hand
+ * and the *60/*72 feature codes silently did nothing.
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
 
-// Repo kökü (sunucuda /var/www/html bu dizine bağlı; CI'da checkout dizini).
+// Repo root (/var/www/html points here on the server; the checkout directory in CI).
 define('SMOKE_ROOT', dirname(__DIR__));
 
 $only = null;
-// --route=<yol>: tek bir rotayı tarar. Hata ayıklama için ve kusur-enjeksiyon
-// doğrulamalarında canlı sayfanın bozuk kaldığı pencereyi kısaltmak için var.
+// --route=<path>: scans a single route. For debugging, and to shorten the
+// window in which the live page stays broken during fault-injection checks.
 $onlyRoute = null;
 foreach (array_slice($argv, 1) as $a) {
     if (strpos($a, '--only=') === 0)  { $only = substr($a, 7); }
@@ -43,7 +43,7 @@ function group_done(string $group, int $n): void
 }
 
 /**
- * Tek bir rotayı alt-süreçte render edip çözümlenmiş sonucu döner.
+ * Renders a single route in a subprocess and returns the decoded result.
  */
 function render_route(string $path, string $lang, string $role): ?array
 {
@@ -69,18 +69,18 @@ function check_routes(?string $onlyRoute = null): void
         $ROUTES = isset($ROUTES[$onlyRoute]) ? [$onlyRoute => $ROUTES[$onlyRoute]] : [];
     }
 
-    // Saf yönlendirme yapan rotalar render edilemez (header+exit), kapsam dışı.
+    // Routes that only redirect cannot be rendered (header+exit); out of scope.
     $SKIP = ['/', '/index.php', '/logout'];
 
-    // Ön koşulu olmadan MEŞRU şekilde yönlendiren rotalar: sayfa üretmemeleri
-    // doğru davranış, sadece "fatal/PHP hatası yok" kontrol edilir.
-    // /force-reset → $_SESSION['pending_reset_user_id'] yoksa /login'e gider.
-    // /login-2fa   → $_SESSION['pending_2fa_user_id'] yoksa /login'e gider.
+    // Routes that LEGITIMATELY redirect without their precondition: producing
+    // no page is correct, only "no fatal/PHP error" is checked.
+    // /force-reset → goes to /login without $_SESSION['pending_reset_user_id'].
+    // /login-2fa   → goes to /login without $_SESSION['pending_2fa_user_id'].
     $REDIRECT_OK = ['/force-reset', '/login-2fa', '/auth/google', '/auth/google/callback'];
 
-    // Tam sayfa için alt sınır. /reset-password token'sız hâlde ~1700 bayt
-    // meşru bir form basıyor; eşik bunun altında ama gerçekten boş/yarım
-    // render'ı hâlâ yakalayacak şekilde seçildi.
+    // Lower bound for a full page. /reset-password without a token prints a
+    // legitimate ~1700-byte form; the threshold sits below that but still
+    // catches a really empty/half render.
     $MIN_BYTES = 1000;
 
     $n = 0;
@@ -104,20 +104,21 @@ function check_routes(?string $onlyRoute = null): void
 
             $html = $d['output'] ?? '';
 
-            // PHP uyarıları çıktıdan değil, alt-sürecin set_error_handler'ından
-            // gelir — uygulama display_errors=Off ile çalıştığı için HTML'de
-            // asla görünmezler (bkz. _smoke_render.php'deki açıklama).
+            // PHP warnings come from the subprocess's set_error_handler, not
+            // from the output — the app runs with display_errors=Off, so they
+            // never show up in the HTML (see the note in _smoke_render.php).
             foreach (($d['php_errors'] ?? []) as $e) {
                 fail('rota', "$path [$lang]", 'PHP hatasi: ' . $e);
             }
 
-            // HAYALET ID: JS'in getElementById ile aradığı ama sayfada BULUNMAYAN
-            // eleman. null'a .value yazılınca JS o satırda durur; butonun geri
-            // kalanı (modalı açmak vb.) hiç çalışmaz ve konsolu açmayan kimse
-            // sebebini göremez — SESSİZ bir bozukluk. 2026-09-01'de /sounds'ta
-            // gerçekten yaşandı: MOH müzik yükleme butonu olmayan bir elemana
-            // yazıyordu, modal hiç açılmıyordu ve upload_moh_file backend'i
-            // bu yüzden tamamen ölüydü. Sadece bir dilde bakmak yeterli.
+            // GHOST ID: an element the JS looks up with getElementById that is
+            // NOT on the page. Writing .value to null stops the JS on that
+            // line; the rest of the button (opening the modal etc.) never runs
+            // and nobody without the console open can see why — a SILENT
+            // breakage. It really happened on /sounds on 2026-09-01: the MOH
+            // upload button wrote to a missing element, the modal never opened
+            // and the upload_moh_file backend was completely dead because of
+            // it. Checking one language is enough.
             if ($lang === 'tr') {
                 preg_match_all('/\bid=["\']([^"\']+)["\']/', $html, $mv);
                 $mevcut = array_flip($mv[1]);
@@ -130,7 +131,7 @@ function check_routes(?string $onlyRoute = null): void
             }
 
             if (in_array($path, $REDIRECT_OK, true)) {
-                continue; // yönlendirmesi meşru — boyut/kapanış kontrolü yapılmaz
+                continue; // redirect is legitimate — no size/closing-tag check
             }
             if (($d['bytes'] ?? 0) < $MIN_BYTES) {
                 fail('rota', "$path [$lang]", 'cikti sasirtici sekilde kisa: ' . ($d['bytes'] ?? 0) . ' bayt');
@@ -147,43 +148,45 @@ if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
 
 // ------------------------------------------------------------------ RBAC
 /**
- * Admin'e özel rotalar düşük yetkili bir rolle ENGELLENMELİ.
+ * Admin-only routes MUST be blocked for a low-privilege role.
  *
- * Her rota İKİ kez render edilir: admin ile (render EDEBİLMELİ) ve fax_user
- * ile (EDEMEMELİ). Admin tarafı bir "kanarya": o da render edemiyorsa test
- * boşuna geçiyor demektir ve bu ayrıca raporlanır. Kanarya olmadan bu kontrol
- * yanlış sebeple yeşil kalabilirdi (2026-09-01'de fark edildi).
+ * Every route is rendered TWICE: as admin (MUST render) and as fax_user
+ * (MUST NOT). The admin side is a canary: if it cannot render either, the
+ * test passes for nothing, and that is reported separately. Without the
+ * canary this check could stay green for the wrong reason (noticed on
+ * 2026-09-01).
  *
- * KAPSAM NOTU: bu kontrol "düşük yetkili rol admin sayfasını göremiyor"
- * garantisi verir; auth.php'deki yetki-yükseltme DEVRE KESİCİSİNİ tek başına
- * izole edemez, çünkü canlı DB'de zaten hiçbir role bu modüller için
- * can_access=1 verilmemiş (doğrulandı) — yani sayfa normal izin yolundan da
- * kapalı. Devre kesicinin kendisi, izin satırlarının kontrol edilebildiği
- * izole test veritabanıyla ayrıca test edilir (bkz. tests/unit/RbacTest.php).
+ * SCOPE NOTE: this check guarantees "a low-privilege role cannot see the
+ * admin page"; on its own it cannot isolate the privilege-escalation CIRCUIT
+ * BREAKER in auth.php, because on the live DB no role has can_access=1 for
+ * these modules anyway (verified) — so the page is closed through the normal
+ * permission path too. The circuit breaker itself is tested separately with
+ * the isolated test database, where permission rows can be controlled (see
+ * tests/unit/RbacTest.php).
  */
 function check_rbac(): void
 {
     $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings'];
     $n = 0;
 
-    // Ayrım saf boyutla yapılır. Canlıda ölçüldü (2026-09-01): engellenen istek
-    // standart ret sayfasını basıyor → 746 bayt; izinli render 50–207 KB.
-    // Metinde "yetki"/"permission" aramak İŞE YARAMAZ: /roles ve /system-users
-    // zaten izin matrisi sayfaları, içerikleri doğal olarak bu kelimeleri
-    // taşıyor ve yanlış alarm veriyorlardı.
-    // Eşiklerin ayırt etme gücü canlıda ölçülerek doğrulandı: izinli/engelli
-    // farkı ~67 kat, aradaki boşluk çok geniş.
+    // Told apart purely by size. Measured live (2026-09-01): a blocked request
+    // prints the standard denial page → 746 bytes; an allowed render is
+    // 50–207 KB. Searching the text for "yetki"/"permission" DOES NOT WORK:
+    // /roles and /system-users are permission-matrix pages, their content
+    // naturally contains those words and raised false alarms.
+    // The separating power of the thresholds was verified live: allowed vs.
+    // blocked differ ~67×, the gap is very wide.
     //
-    // YAN BULGU (2026-09-01): Controller'daki static::requireRole('admin')
-    // kaldırılsa BİLE sayfa açılmıyor — ikinci bir uygulama katmanı 403
-    // basıyor (savunma derinliği). Yani bu kontrolün "kırmızıya dönebildiğini"
-    // üretimde göstermek iki katmanı birden bozmayı gerektirirdi; bu yapılmadı.
+    // SIDE FINDING (2026-09-01): EVEN with static::requireRole('admin')
+    // removed from the controller the page does not open — a second layer
+    // prints 403 (defence in depth). Showing in production that this check
+    // "can turn red" would need breaking both layers at once; not done.
     $IZINLI_MIN    = 10000;
     $ENGELLI_MAKS  = 5000;
 
     foreach ($ADMIN_ONLY as $path) {
-        // Kanarya: admin bu sayfayı görebilmeli. Göremiyorsa aşağıdaki asıl
-        // kontrol anlamsız şekilde yeşil kalırdı.
+        // Canary: admin must be able to see this page. Otherwise the real
+        // check below would stay green for no reason.
         $asAdmin = render_route($path, 'tr', 'admin');
         $n++;
         $adminBytes = $asAdmin['bytes'] ?? 0;
@@ -193,7 +196,7 @@ function check_rbac(): void
             continue;
         }
 
-        // Asıl kontrol: düşük yetkili rol görememeli.
+        // The real check: the low-privilege role must not see it.
         $asLow = render_route($path, 'tr', 'fax_user');
         $n++;
         $lowBytes = $asLow['bytes'] ?? 0;
@@ -267,14 +270,14 @@ function check_exports(): void
 }
 if ($only === null || $only === 'exports') { check_exports(); }
 
-// ----------------------------------------------------------- KONVANSİYON
+// ----------------------------------------------------------- CONVENTIONS
 /**
- * Dosyanın YORUMSUZ hâlini döner (string literal'ler korunur).
+ * Returns the file WITHOUT comments (string literals are kept).
  *
- * Neden: düz grep, yorum içindeki masum bir cümleyi kural ihlali sanıyordu —
- * TimeConditionService'teki "syncAllTimeConditions() zaten hepsini..." açıklaması
- * yanlış alarm vermişti (2026-09-01). Konvansiyon kuralları KODU denetlemeli,
- * yorumu değil.
+ * Why: a plain grep took an innocent sentence inside a comment for a rule
+ * violation — the "syncAllTimeConditions() already does all of..." note in
+ * TimeConditionService raised a false alarm (2026-09-01). Convention rules
+ * must check the CODE, not the comments.
  */
 function php_code_without_comments(string $file): string
 {
@@ -291,18 +294,18 @@ function php_code_without_comments(string $file): string
 }
 
 /**
- * Grep tabanlı mimari kural kontrolleri. Her kural, bu projede GERÇEKTEN
- * yaşanmış bir hataya karşılık geliyor — hiçbiri teorik değil.
- * Tüm kurallar YORUMSUZ kaynak üzerinde çalışır.
+ * Grep-based architecture rule checks. Every rule matches a bug that REALLY
+ * happened in this project — none of them is theoretical.
+ * All rules run on the comment-free source.
  */
 function check_conventions(): void
 {
     $n = 0;
     $rel = function (string $p): string { return str_replace(SMOKE_ROOT . '/', '', $p); };
 
-    // 1) Servis katmanı doğrudan sync çağırmamalı — ertelenmiş reload ("Uygula")
-    //    sistemi baypas edilmiş olur. Olay: PBXHelper::toggleStatus() rollout'tan
-    //    atlanmıştı ve anında reload yapmaya devam ediyordu (2026-08-24).
+    // 1) The service layer must not call sync directly — that bypasses the
+    //    deferred reload ("Apply") system. Incident: PBXHelper::toggleStatus()
+    //    had been skipped in the rollout and kept reloading instantly (2026-08-24).
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/services/*.php') as $f) {
         $src = php_code_without_comments($f);
@@ -312,9 +315,9 @@ function check_conventions(): void
         }
     }
 
-    // 2) Repo dışına yazan kod FileHelper kullanmalı: atomik yazım + sahiplik
-    //    tuzağı. Olay: Fail2banService düz file_put_contents ile SESSİZCE
-    //    yazamıyordu, kullanıcıya "başarılı" gösteriliyordu (2026-08-31).
+    // 2) Code that writes outside the repo must use FileHelper: atomic write +
+    //    the ownership trap. Incident: Fail2banService SILENTLY failed to write
+    //    with a plain file_put_contents while the user saw "success" (2026-08-31).
     $n++;
     foreach (array_merge(glob(SMOKE_ROOT . '/src/services/*.php'),
                          glob(SMOKE_ROOT . '/src/sync/*.php')) as $f) {
@@ -325,9 +328,9 @@ function check_conventions(): void
         }
     }
 
-    // 3) Üretilen dosya başlıklarında eski kurumsal marka kalmamalı.
-    //    Olay: de-branding üreteçleri atlamıştı; dosyaların canlı hâli elle
-    //    düzeltilmiş ama ilk senkronda eski isme geri dönecekti (2026-09-01).
+    // 3) Generated file headers must not carry the old corporate brand.
+    //    Incident: the de-branding had skipped the generators; the live files
+    //    were fixed by hand but would revert on the first sync (2026-09-01).
     $n++;
     foreach (array_merge(glob(SMOKE_ROOT . '/src/sync/*.php'),
                          glob(SMOKE_ROOT . '/src/services/*.php')) as $f) {
@@ -337,10 +340,10 @@ function check_conventions(): void
         }
     }
 
-    // 4) Her controller bir yetki kontrolü çağırmalı.
-    //    İSTİSNA: kimlik doğrulama akışının kendisi oturum GEREKTİRMEZ —
-    //    giriş, çıkış ve şifre sıfırlama sayfaları doğaları gereği anonim
-    //    erişilebilir olmalı, onlarda yetki kontrolü aramak yanlış olur.
+    // 4) Every controller must call an access check.
+    //    EXCEPTION: the authentication flow itself needs NO session — the
+    //    login, logout and password reset pages are anonymous by nature, so
+    //    looking for an access check there would be wrong.
     $ANONIM_CONTROLLER = [
         'LoginController.php',
         'TwoFactorLoginController.php',
@@ -359,8 +362,8 @@ function check_conventions(): void
         }
     }
 
-    // 5) api/cc_actions altındaki her aksiyon dosyası dispatcher guard'ı taşımalı,
-    //    yoksa doğrudan çağrılabilir.
+    // 5) Every action file under api/cc_actions must carry the dispatcher
+    //    guard, otherwise it can be called directly.
     $n++;
     foreach (glob(SMOKE_ROOT . '/api/cc_actions/*.php') as $f) {
         if (strpos(file_get_contents($f), 'CC_DISPATCH_ACTIVE') === false) {
@@ -368,9 +371,10 @@ function check_conventions(): void
         }
     }
 
-    // 6) INTERNAL_NUMBER_SOURCES manifesti ile şema uyumlu olmalı.
-    //    Manifest'e satır eklenip migration unutulursa internalNumberEntries()
-    //    üretimde "Unknown column" ile patlar — beş sayfa birden açılmaz.
+    // 6) The INTERNAL_NUMBER_SOURCES manifest must match the schema.
+    //    If a row is added to the manifest and the migration is forgotten,
+    //    internalNumberEntries() fails in production with "Unknown column" —
+    //    five pages stop opening at once.
     $n++;
     require_once SMOKE_ROOT . '/src/internal_numbers.php';
     $sdb = getDB();
@@ -389,11 +393,12 @@ function check_conventions(): void
         }
     }
 
-    // 7) api/ altindaki dosyalar dirname(__DIR__, 2) . '/sync/...' yazamaz.
-    //    /var/www/html/sync/ diye bir dizin YOK (gercek yol src/sync/); bu hatali
-    //    require_once yakalanabilir bir Error firlatir ve catch bloklari onu
-    //    sessizce yutar. api/mobile/features.php'de tam olarak bu oldu ve mobil
-    //    DND/yonlendirme ayari aylarca dialplan'a hic yansimadi (2026-09-05).
+    // 7) Files under api/ must not write dirname(__DIR__, 2) . '/sync/...'.
+    //    There is NO /var/www/html/sync/ directory (the real path is src/sync/);
+    //    that broken require_once throws a catchable Error and the catch blocks
+    //    swallow it silently. Exactly this happened in api/mobile/features.php
+    //    and the mobile DND/forwarding setting never reached the dialplan for
+    //    months (2026-09-05).
     $n++;
     foreach (glob(SMOKE_ROOT . '/api/*/*.php') as $f) {
         $src = php_code_without_comments($f);
@@ -411,15 +416,15 @@ if ($only === null || $only === 'conventions') { check_conventions(); }
 
 // ------------------------------------------------------------------ LINT
 /**
- * Sözdizimi ve dil bütünlüğü kontrolleri.
+ * Syntax and language-file integrity checks.
  */
 function check_lint(): void
 {
     $n = 0;
 
-    // 1) PHP sözdizimi — vendor hariç tüm dosyalar.
-    //    Dosya başına ayrı süreç gerekiyor (php -l tek dosya alır); 196 dosya
-    //    seri koşulduğunda 8.2 sn, xargs -P8 ile 4.0 sn (ölçüldü 2026-09-01).
+    // 1) PHP syntax — every file except vendor.
+    //    One process per file is needed (php -l takes a single file); 196
+    //    files take 8.2 s serially, 4.0 s with xargs -P8 (measured 2026-09-01).
     $n++;
     $listFile = tempnam(sys_get_temp_dir(), 'smokelint');
     $files = [];
@@ -434,10 +439,10 @@ function check_lint(): void
     }
     file_put_contents($listFile, implode("\n", $files) . "\n");
 
-    // `php -l` parse hatasında 255 döner ve xargs 255'i görünce KALAN DOSYALARI
-    // TARAMADAN durur ("exited with status 255; aborting") — tek bir bozuk dosya
-    // diğer tüm hataları maskelerdi (2026-09-01'de hook testinde görüldü).
-    // sh -c ... || true ile her çağrının çıkış kodu sıfırlanıyor.
+    // `php -l` returns 255 on a parse error and xargs, on seeing 255, stops
+    // WITHOUT SCANNING THE REMAINING FILES ("exited with status 255; aborting")
+    // — one broken file would mask every other error (seen in a hook test on
+    // 2026-09-01). sh -c ... || true resets each call's exit code.
     $o = [];
     exec('xargs -P8 -n1 sh -c \'php -l "$0" 2>&1 || true\' < '
         . escapeshellarg($listFile) . ' 2>&1', $o);
@@ -447,7 +452,7 @@ function check_lint(): void
         fail('lint', 'php -l', trim($line));
     }
 
-    // 2) Dil anahtarı simetrisi — mevcut script yeniden kullanılıyor.
+    // 2) Language key symmetry — reuses the existing script.
     $n++;
     $o2 = [];
     exec('php ' . escapeshellarg(SMOKE_ROOT . '/bin/lint_lang.php') . ' 2>&1', $o2, $ret2);
@@ -455,16 +460,16 @@ function check_lint(): void
         fail('lint', 'lint_lang.php', trim(implode(' | ', array_slice($o2, -6))));
     }
 
-    // 3) JS sözdizimi (vendor/min hariç).
+    // 3) JS syntax (vendor/min excluded).
     //
-    //    `node --check` gerçek bir ayrıştırıcıdır. Önceden burada yalnızca
-    //    süslü parantez sayımı vardı; o, sözdizimi hatasının çoğunu KAÇIRIR
-    //    (dengeli parantezle de bozuk JS yazılabilir). 2026-09-15'te
-    //    header_phone.js'e yapılan bir düzenleme bu yüzden ayrıştırıcıdan
-    //    geçmeden commit edildi — node kurulu değildi.
+    //    `node --check` is a real parser. This used to be only a brace count,
+    //    which MISSES most syntax errors (broken JS can have balanced
+    //    braces). Because of that, an edit to header_phone.js on 2026-09-15
+    //    was committed without going through a parser — node was not
+    //    installed.
     //
-    //    node yoksa eski kaba sayım yedek olarak korunur: kontrol hiç
-    //    çalışmamasındansa zayıf çalışsın.
+    //    Without node the old rough count is kept as a fallback: a weak check
+    //    is better than none.
     $n++;
     exec('command -v node 2>/dev/null', $nodeOut, $nodeRet);
     $hasNode = ($nodeRet === 0 && !empty($nodeOut));

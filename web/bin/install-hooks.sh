@@ -1,10 +1,10 @@
 #!/bin/bash
-# AI PBX — git hook kurulumu.
+# AI PBX — git hook installation.
 #
-# Kullanım: bash bin/install-hooks.sh
+# Usage: bash bin/install-hooks.sh
 #
-# Git hook'ları depoda versiyonlanmaz (.git/hooks git'e girmez), bu yüzden
-# her klonda/sunucuda bir kez çalıştırılması gerekir.
+# Git hooks are not versioned in the repo (.git/hooks is not part of git),
+# so this has to run once on every clone/server.
 set -e
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,8 +17,8 @@ fi
 
 cat > "$HOOK" <<'HOOKEOF'
 #!/bin/bash
-# AI PBX duman testi — bin/install-hooks.sh tarafından kuruldu.
-# Atlamak için: git commit --no-verify   (alışkanlık hâline getirme!)
+# AI PBX smoke test — installed by bin/install-hooks.sh.
+# To skip: git commit --no-verify   (do not make it a habit!)
 REPO="$(git rev-parse --show-toplevel)"
 
 echo "Duman testi çalışıyor..."
@@ -29,8 +29,8 @@ if ! php "$REPO/bin/smoke.php"; then
     exit 1
 fi
 
-# Birim testleri KOŞULLU: test veritabanı kurulmamış bir klonda hook commit'i
-# engellemesin (bin/setup-test-db.sh henüz çalıştırılmamış olabilir).
+# Unit tests are CONDITIONAL: the hook must not block commits on a clone
+# without the test database (bin/setup-test-db.sh may not have run yet).
 if [ -x "$REPO/vendor/bin/phpunit" ] && [ -f "$REPO/tests/.env.test" ]; then
     echo "Birim testleri çalışıyor..."
     if ! php "$REPO/vendor/bin/phpunit"; then

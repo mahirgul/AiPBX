@@ -3,7 +3,7 @@ require_once __DIR__ . '/../db_helper.php';
 require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
- * Fax Settings (Faks Birimleri / DID Eşleme) Service
+ * Fax settings (fax units / DID mapping) service
  */
 class FaxSettingsService {
     public static function saveDidMapping(array $data): array

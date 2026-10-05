@@ -5,11 +5,11 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Dış Hat (SIP Trunk) yapılandırmasındaki tüm kalan sabit ayarları dinamikleştirir:
- * - Ağ & Proxy: outbound_proxy, match_hosts
+ * Makes all remaining fixed settings in the trunk (SIP trunk) configuration dynamic:
+ * - Network & proxy: outbound_proxy, match_hosts
  * - T.38 UDPTL: t38_udptl_ec, t38_udptl_nat
- * - NAT & Sinyalizasyon: rtp_symmetric, rewrite_contact, force_rport
- * - Kayıt & AOR: registration_retry_interval, max_contacts
+ * - NAT & signalling: rtp_symmetric, rewrite_contact, force_rport
+ * - Registration & AOR: registration_retry_interval, max_contacts
  */
 final class AddRemainingTrunkAndFaxSettings extends AbstractMigration
 {

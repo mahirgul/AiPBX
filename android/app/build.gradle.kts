@@ -21,9 +21,9 @@ android {
     }
 
     lint {
-        // Google Play 2026-09-05'te "Unsafe Implementation of WebView SSL
-        // Error Handler" nedeniyle reddetti. Bu kurallar artik derlemeyi
-        // DURDURUR — ayni hata bir daha yayina kadar gidemez.
+        // Google Play rejected the app on 2026-09-05 for "Unsafe Implementation
+        // of WebView SSL Error Handler". These rules now STOP the build — the
+        // same bug can never reach a release again.
         error += listOf(
             "WebViewClientOnReceivedSslError",
             "TrustAllX509TrustManager",

@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Var olan kaydı bul: Önce device_id'ye göre, yoksa fcm_token'a göre
+    // Find the existing record: by device_id first, otherwise by fcm_token
     $existing = null;
     if ($deviceId !== '') {
         $stmt = $db->prepare("SELECT id FROM sys_mobile_devices WHERE user_id = ? AND device_id = ? LIMIT 1");
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     exit;
 }
 
-// GET - Kullanıcıya ait aktif cihazları listele
+// GET - list the user's active devices
 $stmt = $db->prepare("SELECT id, extension, device_id, device_name, platform, app_version, is_active, created_at, updated_at 
                       FROM sys_mobile_devices 
                       WHERE user_id = ? AND is_active = 1 

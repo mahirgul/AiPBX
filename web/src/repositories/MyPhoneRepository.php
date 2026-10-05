@@ -76,11 +76,11 @@ class MyPhoneRepository extends BaseRepository
             return [];
         }
 
-        // ONCELIK ACIK: ayni deger bir kullanicinin extension'i, baskasinin
-        // cid_internal'i olabilir. ORDER BY olmadan LIMIT 1 hangi satirin
-        // donecegini garanti etmiyordu ve tum CDR sorgusu bu satirdan
-        // turetiliyor — yanlis satir, BASKASININ cagri gecmisi demek
-        // (2026-09-05 denetimi, bulgu2.md B2-2). Gercek dahili her zaman kazanir.
+        // EXPLICIT PRIORITY: the same value can be one user's extension and
+        // another user's cid_internal. Without ORDER BY, LIMIT 1 did not
+        // guarantee which row came back, and the whole CDR query is derived
+        // from this row — the wrong row means SOMEBODY ELSE's call history
+        // (2026-09-05 audit, bulgu2.md B2-2). The real extension always wins.
         $userStmt = static::db()->prepare(
             "SELECT extension, cid_internal FROM sys_users
               WHERE extension = ? OR cid_internal = ?

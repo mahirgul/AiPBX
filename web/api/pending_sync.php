@@ -1,6 +1,6 @@
 <?php
 /**
- * Pending Sync API Endpoint — Header'dan veya JS'ten doğrudan Asterisk'e uygulama
+ * Pending Sync API endpoint — apply to Asterisk directly from the header or JS
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/asterisk_sync.php';

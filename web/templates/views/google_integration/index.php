@@ -6,18 +6,6 @@ $client_secret = $settings['client_secret'] ?? '';
 $redirect_uri = $settings['redirect_uri'] ?? '';
 ?>
 
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success u-mb-20">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger u-mb-20">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -42,7 +30,7 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
         </p>
     </div>
 
-    <form method="POST" action="/google-integration" autocomplete="off" style="padding: 20px;">
+    <form method="POST" action="/google-integration" autocomplete="off" class="u-p-20">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
         <input type="hidden" name="action" value="save_settings">
 
@@ -61,8 +49,8 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 18px;">
-            <label class="form-label" style="font-size: 13px; font-weight: 700;">
+        <div class="form-group u-mb-18">
+            <label class="form-label u-fs-13 u-fw-700">
                 <i class="fas fa-id-badge u-primary"></i> Google Client ID
             </label>
             <input type="text" name="google_client_id" class="form-control" value="<?php echo htmlspecialchars($client_id); ?>" placeholder="Örn: 1234567890-abcdefg123456.apps.googleusercontent.com" style="height: 40px; font-family: monospace; font-size: 13px;">
@@ -71,11 +59,11 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             </small>
         </div>
 
-        <div class="form-group" style="margin-bottom: 18px;">
-            <label class="form-label" style="font-size: 13px; font-weight: 700;">
+        <div class="form-group u-mb-18">
+            <label class="form-label u-fs-13 u-fw-700">
                 <i class="fas fa-key u-primary"></i> Google Client Secret
             </label>
-            <div style="position: relative;">
+            <div class="u-relative">
                 <input type="password" id="googleClientSecretInput" name="google_client_secret" class="form-control" value="<?php echo htmlspecialchars($client_secret); ?>" placeholder="Örn: GOCSPX-xxxxxx..." style="height: 40px; font-family: monospace; font-size: 13px; padding-right: 40px;">
                 <button type="button" onclick="toggleSecretVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;" title="Göster/Gizle">
                     <i class="fas fa-eye" id="secretEyeIcon"></i>
@@ -86,13 +74,13 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             </small>
         </div>
 
-        <div class="form-group" style="margin-bottom: 24px;">
-            <label class="form-label" style="font-size: 13px; font-weight: 700;">
+        <div class="form-group u-mb-24">
+            <label class="form-label u-fs-13 u-fw-700">
                 <i class="fas fa-link u-primary"></i> <?php echo t('google_integration.redirect_uri_label', 'Yetkili Yönlendirme Adresi (Redirect URI)'); ?>
             </label>
             <div class="u-flex-gap">
                 <input type="text" id="redirectUriInput" readonly class="form-control" value="<?php echo htmlspecialchars($redirect_uri); ?>" style="height: 40px; font-family: monospace; font-size: 13px; background: var(--bg-hover, rgba(0,0,0,0.03)); user-select: all;">
-                <button type="button" class="btn btn-secondary" onclick="copyRedirectUri()" style="white-space: nowrap;">
+                <button type="button" class="btn btn-secondary u-nowrap" onclick="copyRedirectUri()">
                     <i class="fas fa-copy"></i> <span id="copyBtnText"><?php echo t('common.copy', 'Kopyala'); ?></span>
                 </button>
             </div>
@@ -109,7 +97,7 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
     </form>
 </div>
 
-<!-- Kurulum Adımları & Bilgi Kartı -->
+<!-- Setup steps & info card -->
 <div class="card" style="margin-top: 20px;">
     <div class="card-header">
         <div class="card-title">
@@ -146,30 +134,5 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
     </div>
 </div>
 
-<script>
-function toggleSecretVisibility() {
-    var inp = document.getElementById('googleClientSecretInput');
-    var icon = document.getElementById('secretEyeIcon');
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        icon.className = 'fas fa-eye-slash';
-    } else {
-        inp.type = 'password';
-        icon.className = 'fas fa-eye';
-    }
-}
-
-function copyRedirectUri() {
-    var copyText = document.getElementById('redirectUriInput');
-    copyText.select();
-    copyText.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(copyText.value).then(function() {
-        var btnText = document.getElementById('copyBtnText');
-        var orig = btnText.innerText;
-        btnText.innerText = <?php echo json_encode(t('google_integration.copied', 'Kopyalandı!')); ?>;
-        setTimeout(function() {
-            btnText.innerText = orig;
-        }, 2000);
-    });
-}
-</script>
+<script>window.GOOGLE_INTEGRATION_COPIED = <?php echo json_encode(t('google_integration.copied', 'Kopyalandı!')); ?>;</script>
+<script src="<?php echo asset('/assets/js/google_integration.js'); ?>"></script>

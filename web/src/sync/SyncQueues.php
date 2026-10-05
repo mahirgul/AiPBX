@@ -50,10 +50,11 @@ function __syncAllQueuesBody() {
             $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
         }
 
-        // Statik temsilciler: config'ten yüklenen üye Asterisk tarafından "dynamic"
-        // değildir, "queue remove member" ile çıkarılamaz, sadece pause edilebilir.
-        // Arayüz/interface/state_interface dinamik girişle (QueueHelper::setMembership)
-        // birebir aynı tutulur — yoksa aynı temsilci iki ayrı üye olarak görünürdü.
+        // Static agents: a member loaded from the config is not "dynamic" for
+        // Asterisk, cannot be removed with "queue remove member", only paused.
+        // The interface/state_interface are kept exactly the same as the dynamic
+        // entry (QueueHelper::setMembership) — otherwise the same agent would
+        // show up as two separate members.
         foreach (QueueHelper::staticMembersOf($q) as $s_ext) {
             $s_ext = preg_replace('/[^0-9]/', '', $s_ext);
             if ($s_ext === '') continue;
@@ -82,12 +83,13 @@ function __syncAllQueuesBody() {
 }
 
 /**
- * Dinamikken statiğe çevrilen temsilcinin eski kaydı astdb'deki
- * Queue/PersistentMembers/<kuyruk> değerinde kalıyor (Asterisk bu değeri sadece
- * dinamik üye eklenip çıkarıldığında yeniden yazar). Temizlenmezse Asterisk
- * yeniden başladığında config'te artık olmayan (statikten çıkarılmış) temsilci
- * dinamik üye olarak kuyruğa geri gelirdi. Değer "|" ile ayrılmış
- * "interface;penalty;paused;..." kayıtlarından oluşur (app_queue dump_queue_members).
+ * The old entry of an agent switched from dynamic to static stays in the
+ * Queue/PersistentMembers/<queue> value in astdb (Asterisk rewrites that value
+ * only when a dynamic member is added or removed). Without cleaning it, on an
+ * Asterisk restart the agent no longer in the config (removed from static)
+ * would come back to the queue as a dynamic member. The value consists of
+ * "|"-separated "interface;penalty;paused;..." entries (app_queue
+ * dump_queue_members).
  */
 function purgeStaticFromPersistentMembers($q_name, array $static_exts) {
     if (empty($static_exts)) return;

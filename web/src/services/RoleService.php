@@ -21,12 +21,13 @@ class RoleService {
         $role_name = trim($data['role_name'] ?? '');
         $description = trim($data['description'] ?? '');
 
-        // Mevcut bir rol düzenleniyorsa (role_id > 0), izin matrisini kaydederken
-        // POST'tan gelen role_key'e DEĞİL, o role_id'nin DB'deki GERÇEK role_key'ine
-        // güvenilir — aksi halde role_id bir role ait iken role_key alanına (form
-        // dışı bir istekle) başka bir rolün anahtarı yazılırsa, o FARKLI rolün tüm
-        // izin matrisi üzerine sessizce yazılabiliyordu (2026-08-21 denetiminde
-        // bulundu — veri bütünlüğü açığı).
+        // When an existing role is edited (role_id > 0), the permission matrix
+        // is saved against the REAL role_key of that role_id in the DB, NOT the
+        // role_key from the POST — otherwise, with role_id belonging to one
+        // role, writing another role's key into the role_key field (with a
+        // request outside the form) could silently overwrite that OTHER role's
+        // whole permission matrix (found in the 2026-08-21 audit — a data
+        // integrity hole).
         $error = null;
         if ($role_id > 0) {
             $actual_role_key = $db->prepare("SELECT role_key FROM sys_roles WHERE id = ?");
@@ -82,9 +83,9 @@ class RoleService {
                 $stmt->execute([$role_key, $mod_key, $can_view, $can_access, $can_edit, $can_delete]);
             }
 
-            // Bu, Asterisk config'ini hiç etkilemiyor (RBAC her istekte DB'den
-            // anlık okunuyor) — markPendingSync() DEĞİL, doğrudan writeAuditLog()
-            // (domain=NULL, PENDING_SYNC_DOMAIN_MAP'e ait bir domain değil).
+            // This does not affect the Asterisk config at all (RBAC is read
+            // from the DB on every request) — so writeAuditLog() directly, NOT
+            // markPendingSync() (domain=NULL, not a PENDING_SYNC_DOMAIN_MAP domain).
             writeAuditLog(null, 'role', $role_key, "Rol: {$role_name} (izin matrisi güncellendi)", $role_id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
 
             notify("Kullanıcı Rolü '$role_name' ve modül izin matrisi başarıyla kaydedildi!", "success");

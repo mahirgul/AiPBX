@@ -9,7 +9,7 @@ use PBX\Destinations\DestinationRegistry;
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?>
-            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($groups); ?></span>
+            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($groups); ?></span>
         </div>
         <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
@@ -33,18 +33,6 @@ use PBX\Destinations\DestinationRegistry;
             <li><strong><?php echo t('boss_secretary.help_strategy', 'Çalma Stratejisi:'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc', 'Hepsi Birlikte (Aynı anda çalar, ilk açan bağlanır) veya Sırayla (Belirlenen sırayla teker teker çalar).'); ?></li>
         </ul>
     </div>
-
-    <?php if (!empty($message)): ?>
-        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
 
     <div class="table-responsive">
         <table class="data-table">
@@ -72,7 +60,7 @@ use PBX\Destinations\DestinationRegistry;
                             <td><span class="badge badge-primary">Grup <?php echo (int)$g['group_number']; ?></span></td>
                             <td class="u-strong"><?php echo htmlspecialchars($g['group_name']); ?></td>
                             <td>
-                                <span class="badge badge-warning" style="font-size: 13px;">
+                                <span class="badge badge-warning u-fs-13">
                                     <i class="fas fa-crown"></i> <?php echo htmlspecialchars($g['boss_extension']); ?>
                                 </span>
                                 <?php if (!empty($g['boss_name'])): ?>
@@ -130,7 +118,7 @@ use PBX\Destinations\DestinationRegistry;
     </div>
 </div>
 
-<!-- Modal: Şef Grubu Ekle / Düzenle -->
+<!-- Modal: add / edit boss group -->
 <div class="modal-overlay" id="bsModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
@@ -235,77 +223,5 @@ use PBX\Destinations\DestinationRegistry;
     </div>
 </div>
 
-<script>
-let currentBsDestId = '';
-
-function loadBsDestOptions(callback) {
-    const type = document.getElementById('modal_bs_dest_type').value;
-    const destSelect = document.getElementById('modal_bs_dest_id');
-    destSelect.innerHTML = '<option value="">Yükleniyor...</option>';
-
-    fetch('/api/destinations.php?module=' + encodeURIComponent(type))
-        .then(r => r.json())
-        .then(data => {
-            destSelect.innerHTML = '';
-            if (data.success && data.options && data.options.length > 0) {
-                data.options.forEach(opt => {
-                    const el = document.createElement('option');
-                    el.value = opt.id;
-                    el.textContent = opt.name;
-                    if (String(opt.id) === String(currentBsDestId)) el.selected = true;
-                    destSelect.appendChild(el);
-                });
-            } else {
-                destSelect.innerHTML = '<option value="">(Hedef bulunamadı)</option>';
-            }
-            if (callback) callback();
-        })
-        .catch(() => {
-            destSelect.innerHTML = '<option value="">(Hata)</option>';
-        });
-}
-
-function openCreateBsModal() {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Şef - Sekreter Grubu';
-    document.getElementById('modal_bs_id').value = '0';
-    document.getElementById('modal_bs_group_number').value = '<?php echo count($groups) + 1; ?>';
-    document.getElementById('modal_bs_group_name').value = '';
-    document.getElementById('modal_bs_boss').value = '';
-    document.querySelectorAll('.bs-secretary-chk').forEach(c => c.checked = false);
-    document.getElementById('modal_bs_strategy').value = 'ringall';
-    document.getElementById('modal_bs_timeout').value = '20';
-    document.getElementById('modal_bs_whitelist').value = '';
-    document.getElementById('modal_bs_active').checked = true;
-    document.getElementById('modal_bs_dest_type').value = 'hangup';
-    currentBsDestId = 'busy';
-    loadBsDestOptions();
-    UIHelper.openOverlayModal('bsModal');
-}
-
-function openEditBsModal(g) {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Grup Düzenle: ' + escapeHtml(g.group_name || '');
-    document.getElementById('modal_bs_id').value = g.id || '0';
-    document.getElementById('modal_bs_group_number').value = g.group_number || 1;
-    document.getElementById('modal_bs_group_name').value = g.group_name || '';
-    document.getElementById('modal_bs_boss').value = g.boss_extension || '';
-    
-    let secs = [];
-    try {
-        secs = JSON.parse(g.secretaries_json || '[]');
-    } catch(e) {}
-    document.querySelectorAll('.bs-secretary-chk').forEach(c => {
-        c.checked = secs.includes(String(c.value));
-    });
-
-    document.getElementById('modal_bs_strategy').value = g.ring_strategy || 'ringall';
-    document.getElementById('modal_bs_timeout').value = g.ring_timeout || 20;
-    document.getElementById('modal_bs_whitelist').value = g.whitelist_extensions || '';
-    document.getElementById('modal_bs_active').checked = (g.is_active == 1);
-
-    document.getElementById('modal_bs_dest_type').value = g.fallback_dest_type || 'hangup';
-    currentBsDestId = g.fallback_dest_id || 'busy';
-    loadBsDestOptions();
-
-    UIHelper.openOverlayModal('bsModal');
-}
-</script>
+<script>window.BOSS_SECRETARY_NEXT_NUMBER = <?php echo count($groups) + 1; ?>;</script>
+<script src="<?php echo asset('/assets/js/boss_secretary.js'); ?>"></script>

@@ -70,10 +70,10 @@ class QueueHelper {
         $leavewhenempty = ($q['leavewhenempty'] ?? 'no') === 'yes' ? 'yes' : 'no';
         $maxlen = intval($q['maxlen'] ?? 0);
 
-        // monitor-type per-queue directive kasıtlı olarak burada yok: Asterisk 22
-        // bunu sadece queues.conf [general] bölümünde kabul ediyor (bkz.
-        // SyncQueues.php'deki global "monitor-type = MixMonitor" satırı),
-        // per-queue section'da yazılırsa "Unknown keyword" uyarısı veriyor.
+        // The per-queue monitor-type directive is missing here on purpose:
+        // Asterisk 22 accepts it only in the queues.conf [general] section (see
+        // the global "monitor-type = MixMonitor" line in SyncQueues.php);
+        // written in a per-queue section it gives an "Unknown keyword" warning.
         $defaults = [
             'strategy' => $strategy,
             'timeout' => (string)$timeout,
@@ -85,11 +85,11 @@ class QueueHelper {
             'announce-holdtime' => $announce_holdtime,
             'announce-position' => 'yes',
             'periodic-announce-frequency' => '45',
-            // Asterisk'in varsayılan "queue-periodic-announce" dosyası Türkçe
-            // ses paketinde yok (sadece en/es/fr/pr/pt_BR'de var) — bulunamayınca
-            // Asterisk sessizce İngilizce'ye düşüyor. Zaten Türkçesi mevcut olan
-            // youarenext+thankyou anonsları listeye verilince periyodik olarak
-            // bunlar sırayla tekrarlanıyor (2026-08-31, kullanıcı isteği).
+            // Asterisk's default "queue-periodic-announce" file is missing from
+            // the Turkish sound pack (only en/es/fr/pr/pt_BR have it) — when it
+            // is not found Asterisk silently falls back to English. Listing the
+            // youarenext+thankyou prompts, which exist in Turkish, makes them
+            // repeat in turn periodically (2026-08-31, user request).
             'periodic-announce' => 'queue-youarenext,queue-thankyou',
             'monitor-format' => 'wav',
             'joinempty' => $joinempty,
@@ -104,8 +104,9 @@ class QueueHelper {
     }
 
     /**
-     * Bir dahilinin bir kuyruğa DB'de ($members_json) atanmış olup olmadığını kontrol eder.
-     * Canlı Asterisk üyeliğinden bağımsız — "bu kişi bu kuyrukta çalışabilir mi" sorusu.
+     * Checks whether an extension is assigned to a queue in the DB ($members_json).
+     * Independent of the live Asterisk membership — the question is "may this
+     * person work in this queue".
      */
     public static function isAssignedMember($ext, $queue_name) {
         $db = getDB();
@@ -118,10 +119,11 @@ class QueueHelper {
     }
 
     /**
-     * Statik temsilci: queues_pbx.conf'a "member =>" satırı olarak yazılır, Asterisk
-     * açıldığı anda kuyruktadır ve CLI/panel/feature code ile kuyruktan ÇIKARILAMAZ —
-     * sadece mola (pause) verebilir. Dinamik temsilci ise kuyruğa kendisi girip çıkar.
-     * static_members_json her zaman members_json'ın alt kümesidir (bkz. QueueService).
+     * Static agent: written to queues_pbx.conf as a "member =>" line, is in
+     * the queue as soon as Asterisk starts and CANNOT be removed from the
+     * queue by CLI/panel/feature code — it can only pause. A dynamic agent
+     * logs in and out of the queue itself.
+     * static_members_json is always a subset of members_json (see QueueService).
      */
     public static function staticMembersOf(array $q_row) {
         $members = array_map('strval', json_decode($q_row['members_json'] ?? '[]', true) ?: []);
@@ -139,7 +141,7 @@ class QueueHelper {
     }
 
     /**
-     * Dahilinin statik temsilci olduğu aktif kuyruk adları.
+     * Names of the active queues the extension is a static agent of.
      */
     public static function staticQueuesOf($ext) {
         $db = getDB();
@@ -153,18 +155,20 @@ class QueueHelper {
     }
 
     /**
-     * Bir dahiliyi canlı olarak bir kuyruğa ekler/çıkarır (asterisk -rx "queue add/remove
-     * member ..."). Hem web panelindeki "Kuyruğa Gir/Çık" butonu (api/cc_actions/queues.php)
-     * hem telefon feature code'ları (*81/*80, bkz. feature_code_action.php) bu tek yeri kullanır.
+     * Adds/removes an extension to/from a queue live (asterisk -rx "queue
+     * add/remove member ..."). Both the "Join/Leave queue" button in the web
+     * panel (api/cc_actions/queues.php) and the phone feature codes (*81/*80,
+     * see feature_code_action.php) use this single place.
      */
     public static function setMembership($ext, $queue_name, $join) {
         $ext = preg_replace('/[^0-9]/', '', (string)$ext);
         $queue_name = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$queue_name);
         if ($ext === '' || $queue_name === '') return false;
 
-        // Statik temsilci kuyruktan çıkarılamaz (Asterisk zaten "Not dynamic" diye
-        // reddeder); config'ten gelen üyeliğe dokunulmaz, false döner.
-        // Girişte ise sadece moladan çıkarılır (girişle birlikte mola kaydı da kapanıyor).
+        // A static agent cannot be removed from the queue (Asterisk refuses
+        // with "Not dynamic" anyway); membership from the config is left
+        // alone and false is returned. On login it is only unpaused (the pause
+        // record is closed together with the login).
         if (self::isStaticMember($ext, $queue_name)) {
             if (!$join) return false;
             @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
@@ -182,13 +186,13 @@ class QueueHelper {
     }
 
     /**
-     * Temsilciyi kuyruklarda mola durumuna alır (queue pause member).
-     * Hem web panelindeki "Mola" butonu hem telefon feature code'u (*22<mola_id>)
-     * bu ortak fonksiyonu kullanır.
+     * Pauses the agent in the queues (queue pause member).
+     * Both the "Pause" button in the web panel and the phone feature code
+     * (*22<pause_id>) use this shared function.
      *
-     * @param string|int $ext Dahili numara
-     * @param string $reason Mola nedeni (örn: "Yemek Molası")
-     * @param string|null $queue_name Belirli bir kuyruk adı veya null (tüm atanmış kuyruklar)
+     * @param string|int $ext Extension number
+     * @param string $reason Pause reason (e.g. "Lunch break")
+     * @param string|null $queue_name A specific queue name or null (all assigned queues)
      * @return bool
      */
     public static function pauseMember($ext, $reason = 'Mola', $queue_name = null) {
@@ -199,7 +203,7 @@ class QueueHelper {
         self::pauseInAsterisk($ext, $reason_cli, $queue_name);
 
         $db = getDB();
-        // Temsilcinin adını sys_users'tan al
+        // Get the agent's name from sys_users
         $stmt_user = $db->prepare("SELECT full_name FROM sys_users WHERE extension = ?");
         $stmt_user->execute([$ext]);
         $agent_name = $stmt_user->fetchColumn() ?: "Temsilci $ext";
@@ -215,13 +219,14 @@ class QueueHelper {
     }
 
     /**
-     * Molayı yalnızca Asterisk tarafına uygular (cc_pause_logs'a dokunmaz).
+     * Applies the pause on the Asterisk side only (does not touch cc_pause_logs).
      *
-     * Asterisk sözdizimi: queue pause member <üye> [queue <kuyruk> [reason <gerekçe>]]
-     * — gerekçe YALNIZCA kuyrukla birlikte verilebilir. "…member X reason Y"
-     * biçimi "Usage" ile reddedilir (ajan ekranındaki Mola butonu bu yüzden
-     * Asterisk'te hiç mola vermiyordu). Önce gerekçesiz genel mola, sonra
-     * üyesi olunan her kuyrukta gerekçeli mola.
+     * Asterisk syntax: queue pause member <member> [queue <queue> [reason <reason>]]
+     * — a reason can ONLY be given together with a queue. The
+     * "…member X reason Y" form is rejected with "Usage" (which is why the
+     * Pause button on the agent screen never paused in Asterisk at all).
+     * First a general pause without a reason, then a pause with the reason in
+     * every queue the agent is a member of.
      */
     public static function pauseInAsterisk(string $ext, string $reason, ?string $queue_name = null): void {
         $ext = preg_replace('/[^0-9]/', '', $ext);
@@ -250,10 +255,10 @@ class QueueHelper {
     }
 
     /**
-     * Temsilciyi moladan çıkarır (queue unpause member).
+     * Unpauses the agent (queue unpause member).
      *
-     * @param string|int $ext Dahili numara
-     * @param string|null $queue_name Belirli bir kuyruk adı veya null (tüm kuyruklar)
+     * @param string|int $ext Extension number
+     * @param string|null $queue_name A specific queue name or null (all queues)
      * @return bool
      */
     public static function unpauseMember($ext, $queue_name = null) {
@@ -270,7 +275,7 @@ class QueueHelper {
             @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$ext"));
         }
 
-        // cc_pause_logs kaydını kapat
+        // Close the cc_pause_logs record
         $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt_close->execute([$ext]);
 

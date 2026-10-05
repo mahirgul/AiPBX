@@ -12,8 +12,8 @@ class CcAgentController extends BaseController
 
         $page = ['title' => t('cc_agent.title')];
 
-        // Erişim yalnızca gerçek cc_agent rolüne VEYA en az bir aktif kuyruğa
-        // temsilci olarak açıkça atanmış kullanıcıya izin verir.
+        // Access is allowed only to the real cc_agent role OR to a user
+        // explicitly assigned as agent to at least one active queue.
         if ($user['role'] !== 'cc_agent' && !$is_queue_agent) {
             static::renderPage('cc_agent/restricted', [], $page);
             return;

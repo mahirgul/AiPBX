@@ -10,40 +10,19 @@ class GoogleIntegrationController extends BaseController
         requireLogin();
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
+        $notices = static::handlePost([
+            'action' => fn() => match (true) {
+                !static::verifyCsrf() => ['success' => false, 'error' => t('common.invalid_csrf')],
+                ($_POST['action'] ?? '') === 'save_settings' => GoogleAuthService::saveSettings($_POST),
+                default => ['success' => true],
+            },
+        ]);
 
-        if (static::isPost()) {
-            $csrf = $_POST['csrf_token'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                $error = t('common.invalid_csrf', 'Geçersiz güvenlik kodu (CSRF)! Lütfen sayfayı yenileyin.');
-            } else {
-                $action = $_POST['action'] ?? '';
-                if ($action === 'save_settings') {
-                    $res = GoogleAuthService::saveSettings($_POST);
-                    if ($res['success']) {
-                        $message = $res['message'];
-                    } else {
-                        $error = $res['error'];
-                    }
-                }
-            }
-        }
-
-        $googleSettings = [
-            'enabled' => GoogleAuthService::isEnabled(),
-            'raw_enabled' => (function_exists('getSystemSetting') ? getSystemSetting('google_oauth_enabled', '0') : '0') === '1',
-            'client_id' => GoogleAuthService::getClientId(),
-            'client_secret' => GoogleAuthService::getClientSecret(),
-            'redirect_uri' => GoogleAuthService::getRedirectUri(),
-        ];
 
         $page_title = t('google_integration.title', 'Google ile Giriş Entegrasyonu');
         static::renderPage('google_integration/index', [
-            'settings' => $googleSettings,
-            'message' => $message,
-            'error' => $error,
+            'settings' => GoogleAuthService::settingsForPage(),
             'csrf_token' => getCSRFToken(),
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

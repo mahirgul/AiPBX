@@ -7,12 +7,12 @@ require_once __DIR__ . '/../asterisk_sync.php';
  */
 class FaxInboxService {
     /**
-     * Bir gelen faks kaydını (ve varsa fiziksel PDF/TIFF dosyalarını) siler.
-     * Sahiplik kontrolü: admin olmayan bir kullanıcı sadece kendi biriminin
-     * (did_extension) faksını silebilir — aynı sayfadaki listeleme sorgusuyla
-     * aynı kısıtlama (aksi halde fax_id tahmin ederek başka birimin faksı
-     * silinebilirdi). Önceden fax_inbox.php'nin içine gömülüydü; MVC göçü
-     * sırasında (2026-08-22) buraya taşındı, mantık DEĞİŞTİRİLMEDİ.
+     * Deletes an incoming fax record (and its physical PDF/TIFF files, if any).
+     * Ownership check: a non-admin user can only delete faxes of their own
+     * unit (did_extension) — the same restriction as the list query on the
+     * same page (otherwise another unit's fax could be deleted by guessing
+     * fax_id). It used to be embedded in fax_inbox.php; moved here during the
+     * MVC migration (2026-08-22), logic UNCHANGED.
      */
     public static function deleteFax($faxId, $csrfToken, string $userRole, string $userExt, int $userId = 0): array
     {

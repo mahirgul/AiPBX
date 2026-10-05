@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==========================================================
 # Stale Outgoing FAX PENDING Sweeper
-# Asterisk call-file mekanizmasinda hedef HIC cevap vermezse
-# (tum MaxRetries denemeleri tukenirse) dialplan'a hic girilmez,
-# process_outgoing_fax_result.sh tetiklenmez ve fax_sent.status
-# sonsuza kadar PENDING kalir. Bu script bu tur kayitlari bulup
-# FAILED olarak kapatir ki fax_retention_days temizligi bunlari
-# sessizce silmesin ve kullaniciya gercek durum gorunsun.
+# With Asterisk's call-file mechanism, if the target NEVER answers
+# (all MaxRetries attempts are used up) the dialplan is never entered,
+# process_outgoing_fax_result.sh is not triggered and fax_sent.status
+# stays PENDING forever. This script finds such records and closes them
+# as FAILED, so the fax_retention_days cleanup does not delete them
+# silently and the user sees the real state.
 # ==========================================================
 
 LOGFILE="/var/log/fax_cleanup.log"

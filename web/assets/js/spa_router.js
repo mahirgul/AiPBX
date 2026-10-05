@@ -13,12 +13,13 @@
 
     let progressBar = null;
 
-    // Hızlı ardışık navigasyonlarda (kullanıcı bir linke tıklayıp yanıt gelmeden
-    // hemen başka bir linke/forma tıklarsa) iki fetch paralel çalışabiliyordu —
-    // hangisi önce dönerse ekrana o basılıyordu, URL adres çubuğunda doğru olsa
-    // bile ekranda yanlış (daha eski) sayfa kalabiliyordu (2026-08-21 denetiminde
-    // bulundu). Her navigasyon/form-gönderimi kendi sıra numarasını alır, yanıt
-    // gelince hâlâ "en güncel istek" mi diye kontrol edilir; değilse sessizce atlanır.
+    // On rapid successive navigations (the user clicks a link and, before the
+    // response arrives, clicks another link/form) two fetches could run in
+    // parallel — whichever came back first was painted, so the screen could
+    // keep the wrong (older) page even with the right URL in the address bar
+    // (found in the 2026-08-21 audit). Every navigation/form submission gets
+    // its own sequence number; when the response arrives it is checked to
+    // still be the "latest request", otherwise it is silently dropped.
     let requestSeq = 0;
 
     if (document.readyState === 'loading') {
@@ -142,12 +143,12 @@
                 body: formData
             })
             .then(res => {
-                // Sunucu bir hata sayfası (403/419/500 vb.) ya da boş gövde
-                // döndürürse, önceden bu sessizce .content-area'nın yerine
-                // geçiyordu — kullanıcı "kaydedildi" sanabiliyor ya da içerik
-                // boşalıyordu, hiçbir uyarı çıkmıyordu (2026-08-21 denetiminde
-                // bulundu). loadSPAPage() ile aynı desen: HTTP hatasında sert
-                // (tam sayfa) yönlendirmeye düş.
+                // When the server returned an error page (403/419/500 etc.) or
+                // an empty body, it used to silently replace .content-area —
+                // the user could believe "saved" or the content went blank,
+                // with no warning at all (found in the 2026-08-21 audit). Same
+                // pattern as loadSPAPage(): on an HTTP error fall back to a hard
+                // (full page) navigation.
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 if (!isHtmlResponse(res)) {
                     return downloadResponse(res, actionUrl).then(() => null);
@@ -157,14 +158,14 @@
             })
             .then(data => {
                 if (data === null) return; // a file was downloaded
-                if (mySeq !== requestSeq) return; // daha yeni bir navigasyon zaten başladı
+                if (mySeq !== requestSeq) return; // a newer navigation has already started
                 renderSPAPage(data.html, data.url, true);
             })
             .catch(err => {
                 console.error('SPA Form Handling Error:', err);
                 if (mySeq !== requestSeq) return;
                 completeProgress();
-                window.location.href = actionUrl; // Sadece HTTP hatasında sert yönlendirme
+                window.location.href = actionUrl; // hard navigation only on an HTTP error
             });
         });
 
@@ -223,7 +224,7 @@
         })
         .then(html => {
             if (html === null) return; // a file was downloaded, the page stays as it is
-            if (mySeq !== requestSeq) return; // daha yeni bir navigasyon zaten başladı
+            if (mySeq !== requestSeq) return; // a newer navigation has already started
             renderSPAPage(html, url, pushHistory);
         })
         .catch(err => {
@@ -263,14 +264,14 @@
         }
 
         // Atomic DOM Swap
-        // NOT: Eskiden innerHTML yazımı + sidebar güncelleme + script enjeksiyonu
-        // hepsi AYNI requestAnimationFrame callback'inde yapılıyordu — büyük
-        // sayfalarda bu 400ms+ süren, tarayıcının "Violation: 'requestAnimationFrame'
-        // handler took Xms" uyarısı verdiği bir ana thread bloklanmasına yol
-        // açıyordu (kısa bir "takılma" hissi). Şimdi: bu frame'de sadece görünümü
-        // etkileyen (innerHTML, scroll, progress bar) işler yapılıyor, tarayıcı
-        // bunu boyadıktan SONRA (bir sonraki tick'te) daha az acil olan işler
-        // (sidebar aktif link, script enjeksiyonu) çalışıyor.
+        // NOTE: writing innerHTML + updating the sidebar + injecting scripts
+        // all used to happen in the SAME requestAnimationFrame callback — on
+        // big pages this blocked the main thread for 400ms+, with the browser
+        // warning "Violation: 'requestAnimationFrame' handler took Xms" (a
+        // short "stutter"). Now only the visual work (innerHTML, scroll,
+        // progress bar) happens in this frame; the less urgent work (sidebar
+        // active link, script injection) runs AFTER the browser has painted it
+        // (on the next tick).
         requestAnimationFrame(() => {
             contentArea.innerHTML = newContent.innerHTML;
 
@@ -285,11 +286,12 @@
                 updateActiveSidebarNav(url);
                 updatePendingSyncBadge(pageData);
 
-                // executePageScripts() enjekte ettiği <script src> etiketleri
-                // tarayıcıda ASENKRON yükleniyor — spa:pageLoaded'ı hemen burada
-                // ateşlersek sayfa scripti (ör. agent_ui.js) henüz yüklenip kendi
-                // dinleyicisini kaydetmeden olay kaçırılıyordu (sayfa "Yükleniyor..."
-                // durumunda takılı kalıyordu). Artık yükleme/hata sonucunu bekliyoruz.
+                // The <script src> tags injected by executePageScripts() load
+                // ASYNCHRONOUSLY in the browser — firing spa:pageLoaded right
+                // here missed the event before the page script (e.g.
+                // agent_ui.js) had loaded and registered its listener (the page
+                // stayed stuck on "Loading..."). Now we wait for the load/error
+                // results.
                 executePageScripts(contentArea).then(() => {
                     document.dispatchEvent(new CustomEvent('spa:pageLoaded', { detail: { url: url } }));
                 });
@@ -331,13 +333,13 @@
         });
     }
 
-    // Sidebar'daki "Uygula" rozeti .content-area DIŞINDA olduğu için normal SPA
-    // içerik değişimiyle asla yenilenmiyordu (2026-08-31, kullanıcı bulgusu) —
-    // header.php'nin SPA yanıtına gömdüğü data-pending-sync-count'u okuyup
-    // rozeti burada güncelliyoruz. Element her zaman DOM'da duruyor (bkz.
-    // sidebar.php - #pending-sync-badge), sadece display:none/flex ile
-    // gösterilip gizleniyor; bu yüzden burada tam markup'ı yeniden üretmeye
-    // gerek yok, sadece sayıyı ve görünürlüğü değiştirmek yeterli.
+    // The "Apply" badge in the sidebar sits OUTSIDE .content-area, so a normal
+    // SPA content swap never refreshed it (2026-08-31, user finding) — we read
+    // the data-pending-sync-count that header.php embeds in the SPA response
+    // and update the badge here. The element always stays in the DOM (see
+    // sidebar.php - #pending-sync-badge) and is only shown/hidden with
+    // display:none/flex; so there is no need to rebuild the markup here, just
+    // change the count and the visibility.
     function updatePendingSyncBadge(pageData) {
         if (!pageData) return;
         const countAttr = pageData.getAttribute('data-pending-sync-count');
@@ -345,7 +347,7 @@
 
         const count = parseInt(countAttr, 10) || 0;
 
-        // 1. Sidebar rozet güncellemesi
+        // 1. Sidebar badge update
         const badge = document.getElementById('pending-sync-badge');
         if (badge) {
             const countSpan = document.getElementById('pending-sync-count');
@@ -353,7 +355,7 @@
             badge.style.display = count > 0 ? 'flex' : 'none';
         }
 
-        // 2. Header (Topbar) Uygula butonu ve açılır menü güncellemesi
+        // 2. Header (topbar) Apply button and dropdown update
         const headerContainer = document.getElementById('header-pending-sync-container');
         if (headerContainer) {
             const headerCount = document.getElementById('header-pending-sync-count');
@@ -396,9 +398,9 @@
                 });
                 newScript.setAttribute('data-page-script', 'true');
 
-                // src'li script'ler tarayıcıda ASENKRON yükleniyor — yükleme/
-                // hata sonucunu bekleyecek bir promise ekleniyor (bkz. çağıran
-                // yerdeki not).
+                // Scripts with src load ASYNCHRONOUSLY in the browser — a
+                // promise is added to wait for the load/error result (see the
+                // note at the caller).
                 loadPromises.push(new Promise((resolve) => {
                     newScript.addEventListener('load', resolve);
                     newScript.addEventListener('error', resolve);
@@ -414,7 +416,7 @@
                 newScript.setAttribute('data-page-script', 'true');
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
                 try {
-                    document.body.appendChild(newScript); // inline script: appendChild senkron çalıştırır
+                    document.body.appendChild(newScript); // inline script: appendChild runs it synchronously
                 } catch (scriptErr) {
                     console.error('[SPA Router] Inline script execution error:', scriptErr);
                 }

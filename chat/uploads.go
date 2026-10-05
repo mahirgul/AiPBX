@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-// Yüklenen dosya adları "<unix>_<rastgele>_<imza>" biçimindedir; imza
-// yükleyenin dahilisine bağlıdır. Mesaja/grup resmine yalnızca göndericinin
-// KENDİ yüklediği dosya iliştirilebilir. Önceden attachment_url istemciden
-// olduğu gibi alınıyordu: başka bir sohbetin dosya adını bilen biri onu kendi
-// sohbetine "iliştirip" /chat/media üzerinden indirebiliyordu (gruptan
-// çıkarılan üye de erişimini böyle sürdürebilirdi).
+// Uploaded file names look like "<unix>_<random>_<signature>"; the signature
+// is tied to the uploader's extension. Only a file the sender uploaded
+// THEMSELVES can be attached to a message/group picture. attachment_url used
+// to be taken from the client as is: someone who knew another chat's file name
+// could "attach" it to their own chat and download it through /chat/media (a
+// member removed from a group could keep their access that way too).
 
 func uploadSignature(secret, ext, base string) string {
 	mac := hmac.New(sha256.New, []byte(secret))
@@ -21,12 +21,12 @@ func uploadSignature(secret, ext, base string) string {
 	return hex.EncodeToString(mac.Sum(nil))[:16]
 }
 
-// signedUploadBase yükleme için imzalı dosya adı gövdesini döndürür.
+// signedUploadBase returns the signed file name stem for an upload.
 func signedUploadBase(secret, ext, base string) string {
 	return base + "_" + uploadSignature(secret, ext, base)
 }
 
-// attachmentOwnedBy, URL'deki dosyanın bu dahili tarafından yüklendiğini doğrular.
+// attachmentOwnedBy checks that the file in the URL was uploaded by this extension.
 func attachmentOwnedBy(secret, url, ext string) bool {
 	name := path.Base(url)
 	name = strings.TrimSuffix(name, path.Ext(name))
@@ -39,7 +39,7 @@ func attachmentOwnedBy(secret, url, ext string) bool {
 	return hmac.Equal([]byte(sig), []byte(uploadSignature(secret, ext, base)))
 }
 
-// validMediaURL: yalnızca kendi sunucumuzun medya yolları (XSS/izleme pikseli önleme).
+// validMediaURL: only our own server's media paths (prevents XSS/tracking pixels).
 func validMediaURL(u string) bool {
 	for _, p := range []string{"/chat/media/images/", "/chat/media/docs/", "/chat/media/thumbs/", "/chat/media/avatars/",
 		"/media/images/", "/media/docs/", "/media/thumbs/", "/media/avatars/"} {

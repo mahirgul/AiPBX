@@ -6,10 +6,10 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/services/UserService.php';
 
 /**
- * Yeni kullanıcıda şifre boş bırakıldığında:
- *  - e-posta yoksa okunaklı bir şifre üretilip BİR KEZ döndürülür ve ilk web
- *    girişinde değiştirme zorunlu olur,
- *  - admin şifre girerse hiçbir şey üretilmez.
+ * When the password is left empty for a new user:
+ *  - without an email a readable password is generated and returned ONCE,
+ *    and changing it at the first web sign-in is mandatory,
+ *  - if the admin enters a password, nothing is generated.
  */
 final class UserPasswordGenerationTest extends TestCase
 {
@@ -68,7 +68,7 @@ final class UserPasswordGenerationTest extends TestCase
         $u = $row->fetch(PDO::FETCH_ASSOC);
         $this->assertTrue(password_verify($res['generated_password'], $u['password_hash']));
         $this->assertSame(1, (int) $u['must_reset_password']);
-        // Şifre mesaj metnine (6 sn'lik bildirim, audit) sızmamalı.
+        // The password must not leak into the message text (6 s notification, audit).
         $this->assertStringNotContainsString($res['generated_password'], $res['message']);
     }
 

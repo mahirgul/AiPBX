@@ -3,12 +3,12 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * SIP aboneleri için Auth Digest (kimlik doğrulama) seçeneği.
+ * Auth digest (authentication) option for SIP subscribers.
  *
- * Varsayılan: 1 (Etkin - Digest Auth uygulanır).
- * 0 olduğunda santral bu abonenin SIP isteklerinde (REGISTER/INVITE)
- * HTTP/SIP Digest kimlik doğrulaması aramaz, istek From başlığındaki
- * dahili numarasıyla doğrudan eşleştirilir.
+ * Default: 1 (on - digest auth applies).
+ * With 0 the PBX does not ask for HTTP/SIP digest authentication on this
+ * subscriber's SIP requests (REGISTER/INVITE); the request is matched
+ * directly by the extension number in the From header.
  */
 final class AddSipAuthDigestToUsers extends AbstractMigration
 {

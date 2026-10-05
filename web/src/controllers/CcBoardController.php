@@ -9,16 +9,16 @@ class CcBoardController extends BaseController
     }
 
     /**
-     * /cc-board ve /cc-supervisor aynı ekranı açar; yalnızca global görme
-     * izninin modül anahtarı farklıdır (cc_board / queue_monitor). Önceden
-     * iki controller'da birebir kopyalanmıştı.
+     * /cc-board and /cc-supervisor open the same screen; only the module key
+     * of the global view permission differs (cc_board / queue_monitor). It
+     * used to be copied verbatim in two controllers.
      */
     protected static function renderBoard(string $globalViewPermission): void
     {
         $user = getCurrentUser();
         $user_ext = (string)($user['extension'] ?? '');
 
-        // Global izin YOKSA, kullanıcının süpervizör olarak atandığı kuyruklar üzerinden bakılır.
+        // WITHOUT the global permission, look at the queues the user is assigned to as supervisor.
         $has_global_queue_view = (
             !empty($user['can_view_queue_monitor']) ||
             hasModulePermission($globalViewPermission, 'view')
@@ -39,7 +39,7 @@ class CcBoardController extends BaseController
 
         static::renderPage('cc_board/index', [
             'my_queues' => $my_queues,
-            // api/cc.php spy_call ile aynı kural
+            // The same rule as api/cc.php spy_call
             'can_spy' => in_array($user['role'] ?? '', ['admin', 'cc_manager'], true),
         ], $page);
     }

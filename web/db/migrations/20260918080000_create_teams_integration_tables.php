@@ -21,7 +21,7 @@ final class CreateTeamsIntegrationTables extends AbstractMigration
                   ->create();
         }
 
-        // 2. sys_settings için varsayılan Teams anahtarları
+        // 2. default Teams keys for sys_settings
         if ($this->hasTable('sys_settings')) {
             $defaultSettings = [
                 'teams_enabled'              => '0',
@@ -48,7 +48,7 @@ final class CreateTeamsIntegrationTables extends AbstractMigration
             }
         }
 
-        // 3. sys_role_permissions için ms_teams modülü yetkilendirmesi
+        // 3. ms_teams module permissions for sys_role_permissions
         if ($this->hasTable('sys_role_permissions')) {
             $this->execute("
                 INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)

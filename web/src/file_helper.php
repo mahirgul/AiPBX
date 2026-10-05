@@ -17,13 +17,13 @@ class FileHelper {
             @chmod($dir, 0775);
         }
 
-        // Doğrudan hedef dosyaya file_put_contents() yazmak atomik DEĞİL — iki
-        // eşzamanlı istek (iki PHP-FPM worker) aynı master .conf dosyasına
-        // (ör. pjsip_endpoints.conf) yazarsa ve hemen ardından Asterisk reload
-        // tetiklenirse, Asterisk yarım/karışık içerikli bir dosya okuyabilir
-        // (2026-08-21 denetiminde bulundu). Aynı dizine geçici bir dosyaya yazıp
-        // rename() ile taşımak POSIX'te atomiktir — okuyan taraf ya eski ya da
-        // yeni TAM dosyayı görür, asla yarısını görmez.
+        // Writing the target file directly with file_put_contents() is NOT
+        // atomic — if two concurrent requests (two PHP-FPM workers) write the
+        // same master .conf file (e.g. pjsip_endpoints.conf) and an Asterisk
+        // reload is triggered right after, Asterisk can read a half/mixed file
+        // (found in the 2026-08-21 audit). Writing to a temp file in the same
+        // directory and moving it with rename() is atomic on POSIX — the reader
+        // sees either the old or the new COMPLETE file, never half of it.
         $tmp_path = $filepath . '.tmp' . getmypid() . '_' . uniqid();
         $res = file_put_contents($tmp_path, $content);
         if ($res === false) {

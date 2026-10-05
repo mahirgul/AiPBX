@@ -33,7 +33,7 @@
                     <?php foreach ($codes as $fc): ?>
                         <tr>
                             <td class="u-strong"><?php echo htmlspecialchars($fc['title']); ?></td>
-                            <td><code style="font-size: 14px; font-weight: 700; color: var(--primary);"><?php
+                            <td><code class="u-fs-14 u-fw-700 u-primary"><?php
                                 $clean_c = rtrim(ltrim($fc['code'], '_'), '.X');
                                 $suffix = '';
                                 if (strpos($fc['code'], '_') === 0) {
@@ -66,7 +66,7 @@
 
 <!-- Edit Feature Code Modal -->
 <div class="modal-overlay" id="featureCodeModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="featureCodeModalTitle"><i class="fas fa-edit u-primary"></i> <?php echo t('fc.modal_edit_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closeFeatureCodeModal()" title="<?php echo t('fc.close_tooltip'); ?>"><i class="fas fa-times"></i></button>

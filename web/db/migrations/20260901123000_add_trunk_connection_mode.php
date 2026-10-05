@@ -5,16 +5,17 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Dış Hat (SIP Trunk) bağlantı modu.
+ * Trunk (SIP trunk) connection mode.
  *
- * 'ip'       : Karşı santral sabit IP'de; kimlik IP ile doğrulanır (type=identify)
- *              ve AOR'da STATİK contact tutulur. Bugüne kadarki tek davranış.
- * 'register' : Karşı santral BİZE register olur. AOR'daki statik contact kaldırılır
- *              (adres kayıttan öğrenilir), endpoint'e GELEN kimlik doğrulama
- *              (auth=) eklenir.
+ * 'ip'       : the far PBX has a fixed IP; identity is checked by IP (type=identify)
+ *              and a STATIC contact is kept on the AOR. The only behaviour so far.
+ * 'register' : the far PBX registers TO US. The static contact on the AOR is removed
+ *              (the address is learned from the registration) and INBOUND
+ *              authentication (auth=) is added to the endpoint.
  *
- * Varsayılan bilinçli olarak 'ip': mevcut trunk'ların davranışı migration ile
- * DEĞİŞMEZ, mod ancak panelden açıkça seçilince devreye girer (canlı santral).
+ * The default is deliberately 'ip': the behaviour of existing trunks does NOT
+ * CHANGE with the migration; the mode only takes effect when explicitly
+ * chosen in the panel (live PBX).
  */
 final class AddTrunkConnectionMode extends AbstractMigration
 {

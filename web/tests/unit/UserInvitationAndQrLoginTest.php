@@ -12,14 +12,14 @@ final class UserInvitationAndQrLoginTest extends TestCase
     private PDO $db;
     private int $testUserId = 0;
     private string $testExtension = '9876';
-    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    /** Generated at test time: no password-like constant in the repo (secret scanners). */
     private string $testSipSecret = '';
 
     protected function setUp(): void
     {
         $this->db = getDB();
 
-        // Temiz bir test kullanıcısı oluştur
+        // Create a clean test user
         $stmt = $this->db->prepare("DELETE FROM sys_users WHERE username = 'inv_test_user' OR extension = ?");
         $stmt->execute([$this->testExtension]);
 
@@ -62,7 +62,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
     public function testSendInvitationEmailFailsWithoutValidEmail(): void
     {
-        // E-postası olmayan kullanıcı yap
+        // Make a user without an email
         $this->db->prepare("UPDATE sys_users SET email = '' WHERE id = ?")->execute([$this->testUserId]);
 
         $res = UserInvitationService::sendInvitationEmail($this->testUserId, false);
@@ -80,7 +80,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
     public function testQrLoginGenerateAndAuthenticateFlow(): void
     {
-        // 1. QR kod ve eşleştirme verisi üret
+        // 1. Generate the QR code and pairing data
         $qrRes = QrLoginService::generateQr($this->testUserId, 600);
         $this->assertTrue($qrRes['success']);
         $this->assertNotEmpty($qrRes['qr_token']);
@@ -91,12 +91,12 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
         $token = $qrRes['qr_token'];
 
-        // 2. Durum henüz kullanılmadı olmalı
+        // 2. The state must be "not used yet"
         $statusBefore = QrLoginService::checkStatus($token);
         $this->assertFalse($statusBefore['used']);
         $this->assertFalse($statusBefore['expired']);
 
-        // 3. Mobil uygulama QR kodu tarayıp giriş isteği gönderir
+        // 3. The mobile app scans the QR code and sends a sign-in request
         $authRes = QrLoginService::authenticateMobile($token, 'Test-Android-Device', '127.0.0.1');
         $this->assertTrue($authRes['success']);
         $this->assertArrayHasKey('response', $authRes);
@@ -110,12 +110,12 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $this->assertSame($this->testExtension . '-mob-webrtc', $loginData['sip']['sip_username']);
         $this->assertSame($this->testSipSecret, $loginData['sip']['sip_password']);
 
-        // 4. Durum kontrolü: Artık kullanılmış olmalı
+        // 4. State check: it must be used now
         $statusAfter = QrLoginService::checkStatus($token);
         $this->assertTrue($statusAfter['used']);
         $this->assertSame('Test-Android-Device', $statusAfter['device_name']);
 
-        // 5. TEK KULLANIMLIK KONTROLÜ: Aynı token ile 2. kez giriş denenirse REDDEDİLMELİ
+        // 5. SINGLE-USE CHECK: a 2nd sign-in with the same token must be REJECTED
         $secondAttempt = QrLoginService::authenticateMobile($token, 'Hacker-Device', '192.168.1.50');
         $this->assertFalse($secondAttempt['success']);
         $this->assertStringContainsString('daha önce kullanılmış', $secondAttempt['error']);
@@ -123,11 +123,11 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
     public function testQrLoginRejectsExpiredToken(): void
     {
-        // 1 saniye TTL ile üret
+        // Generate with a 1 second TTL
         $qrRes = QrLoginService::generateQr($this->testUserId, 1);
         $token = $qrRes['qr_token'];
 
-        // Token'ın süresini geçmişe al
+        // Move the token's expiry into the past
         $pastDate = date('Y-m-d H:i:s', time() - 60);
         $this->db->prepare("UPDATE sys_user_qr_tokens SET expires_at = ? WHERE token = ?")->execute([$pastDate, $token]);
 
@@ -143,21 +143,21 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $this->assertStringContainsString('/mobile-login?token=', $link['url']);
         $token = substr($link['url'], strpos($link['url'], 'token=') + 6);
 
-        // E-posta tarayıcıları sayfayı birkaç kez açabilir: kod harcanmamalı.
+        // Email scanners may open the page several times: the code must not be spent.
         for ($i = 0; $i < 3; $i++) {
             $info = QrLoginService::inspectToken($token);
             $this->assertTrue($info['valid']);
         }
         $this->assertSame($this->testExtension, $info['user']['extension']);
 
-        // 7 gün geçerli
+        // Valid for 7 days
         $exp = $this->db->prepare('SELECT purpose, expires_at FROM sys_user_qr_tokens WHERE token = ?');
         $exp->execute([$token]);
         $row = $exp->fetch(PDO::FETCH_ASSOC);
         $this->assertSame('email', $row['purpose']);
         $this->assertGreaterThan(time() + 6 * 86400, strtotime($row['expires_at']));
 
-        // Uygulama girişi kodu harcar; sonra sayfa "kullanılmış" der.
+        // The app sign-in spends the code; afterwards the page says "used".
         $auth = QrLoginService::authenticateMobile($token, 'Test-Android', '127.0.0.1');
         $this->assertTrue($auth['success']);
         $this->assertSame('used', QrLoginService::inspectToken($token)['reason']);
@@ -178,7 +178,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
     {
         $code = QrLoginService::createGoogleCode($this->testUserId);
         $this->assertTrue($code['success']);
-        // Yalnızca uygulamanın API ile değiş tokuşu içindir, sayfada gösterilmez.
+        // Only for the app's API exchange, not shown on the page.
         $this->assertFalse(QrLoginService::inspectToken($code['token'])['valid']);
         $auth = QrLoginService::authenticateMobile($code['token'], 'Test-Android', '127.0.0.1');
         $this->assertTrue($auth['success']);

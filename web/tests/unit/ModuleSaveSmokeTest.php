@@ -3,13 +3,13 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Her modülün "Kaydet" akışı gerçek veritabanına karşı bir kez çalışır.
+ * Every module's "Save" flow runs once against the real database.
  *
- * Konferans / çalma grubu / push ayarı / dahili kaydı daha önce sessizce
- * bozulmuştu (NOT NULL sütuna null, var olmayan metot, eksik argüman) ve
- * sayfa açılışını kontrol eden smoke testi bunları göremiyordu. Burada her
- * servis formun gönderdiği tipik veriyle çağrılır; başarı beklenir, sonra
- * oluşan satırlar silinir.
+ * The conference / ring group / push setting / extension saves had broken
+ * silently before (null into a NOT NULL column, a missing method, a missing
+ * argument) and the smoke test, which checks page loads, could not see them.
+ * Here every service is called with the typical data its form sends; success
+ * is expected, then the created rows are deleted.
  */
 final class ModuleSaveSmokeTest extends TestCase
 {

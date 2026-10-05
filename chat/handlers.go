@@ -154,7 +154,7 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// CH-1: Yetkilendirme kontrolü (IDOR önleme)
+	// CH-1: authorization check (prevents IDOR)
 	isPart, err := IsParticipant(convID, user.Extension)
 	if err != nil || !isPart {
 		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
@@ -220,14 +220,14 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// CH-2: Yetkilendirme kontrolü (IDOR önleme)
+	// CH-2: authorization check (prevents IDOR)
 	isPart, err := IsParticipant(convID, user.Extension)
 	if err != nil || !isPart {
 		writeJSONError(w, http.StatusForbidden, "Bu sohbete mesaj gönderme yetkiniz yok.")
 		return
 	}
 
-	// CH-4: attachment_url yalnızca kendi medya yollarımız ve göndericinin kendi yüklemesi
+	// CH-4: attachment_url may only be one of our own media paths and the sender's own upload
 	if in.AttachmentURL != "" {
 		if !validMediaURL(in.AttachmentURL) {
 			writeJSONError(w, http.StatusBadRequest, "Geçersiz attachment_url formatı.")
@@ -257,7 +257,7 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 
 	participants, _ := GetParticipants(convID)
 
-	// WS ile canlı ilet
+	// Deliver live over WS
 	saved.IsMe = true
 	saved.Status = "sent"
 	senderPayload, _ := json.Marshal(map[string]interface{}{
@@ -341,7 +341,7 @@ func (s *Server) HandleMarkRead(w http.ResponseWriter, r *http.Request, user *Us
 		return
 	}
 
-	// CH-1: Katılımcı doğrulaması
+	// CH-1: participant check
 	isPart, err := IsParticipant(body.ConversationID, user.Extension)
 	if err != nil || !isPart {
 		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
@@ -408,13 +408,13 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	ext := strings.ToLower(filepath.Ext(origName))
 	fileSize := handler.Size
 
-	// CH-5: Uzantı beyaz liste denetimi
+	// CH-5: extension whitelist check
 	if !allowedUploadExts[ext] {
 		writeJSONError(w, http.StatusBadRequest, "Desteklenmeyen dosya uzantısı.")
 		return
 	}
 
-	// CH-8: İçerik MIME tespiti (ilk 512 bayt)
+	// CH-8: content MIME detection (first 512 bytes)
 	buf := make([]byte, 512)
 	n, _ := file.Read(buf)
 	if n == 0 {
@@ -463,7 +463,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 			publicURL = "/chat/media/images/" + savedFileName
 		}
 
-		// Hedef dizini doğrula
+		// Validate the target directory
 		targetDir := filepath.Join(s.cfg.UploadDir, subDir)
 		_ = os.MkdirAll(targetDir, 0755)
 		dstPath := filepath.Join(targetDir, savedFileName)
@@ -480,7 +480,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 		}
 		dst.Close()
 
-		// Thumbnail oluştur (max 300x300)
+		// Create a thumbnail (max 300x300)
 		thumbDir := filepath.Join(s.cfg.UploadDir, "thumbs")
 		_ = os.MkdirAll(thumbDir, 0755)
 		thumbFileName := uniqueBase + "_thumb" + ext
@@ -554,16 +554,17 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		return
 	}
 
-	// CH-3 & T-10: Yetkilendirme kontrolü (Fail-closed & thumbnail desteği)
+	// CH-3 & T-10: authorization check (fail-closed & thumbnail support)
 	filename := filepath.Base(cleanPath)
 	lookupName := filename
 	if strings.Contains(lookupName, "_thumb.") {
 		lookupName = strings.Replace(lookupName, "_thumb.", ".", 1)
 	}
 
-	// Dosyayı içeren sohbetlerden birinin (mesaj eki ya da grup resmi) aktif
-	// katılımcısı olmak gerekir. Tam ad eşleşmesi: LIKE '%ad%' + LIMIT 1 ilk
-	// bulduğu sohbete bakıyordu ve '_' joker karakterdi.
+	// The caller must be an active participant of one of the chats that
+	// contain the file (a message attachment or a group picture). Exact name
+	// match: LIKE '%name%' + LIMIT 1 looked at the first chat it found and '_'
+	// was a wildcard.
 	ok, err := CanAccessAttachment(lookupName, user.Extension)
 	if err != nil || !ok {
 		http.Error(w, "Forbidden: Bu medyaya erişim yetkiniz yok", http.StatusForbidden)
@@ -655,7 +656,7 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// Katılımcılara bildirim
+	// Notify the participants
 	participants, _ := GetParticipants(conv.ID)
 	createdPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "group_created",
@@ -670,7 +671,7 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 		s.hub.SendToExtension(ext, createdPayload)
 		s.hub.SendToExtension(ext, sysMsgPayload)
 
-		// Eklenen üyelere FCM bildirim ("gruba eklendiniz")
+		// FCM notification to the added members ("you were added to the group")
 		if ext != user.Extension {
 			pushTitle := conv.Title
 			pushBody := fmt.Sprintf("%s sizi \"%s\" grubuna ekledi", user.FullName, conv.Title)
@@ -697,7 +698,7 @@ func (s *Server) HandleGetGroupDetails(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
-	// CH-G1: Katılımcı kontrolü
+	// CH-G1: participant check
 	isPart, err := IsParticipant(convID, user.Extension)
 	if err != nil || !isPart {
 		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
@@ -744,15 +745,15 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// CH-G1: Admin kontrolü
+	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Grup bilgilerini güncellemek için yönetici olmalısınız.")
 		return
 	}
 
-	// Grup resmi değiştiriliyorsa yeni dosya göndericinin kendi yüklemesi olmalı
-	// (mevcut resmi aynen geri göndermek serbest).
+	// When the group picture changes, the new file must be the sender's own upload
+	// (sending the current picture back unchanged is allowed).
 	if body.AvatarURL != "" {
 		cur, _ := GetConversationByID(body.ConversationID)
 		if cur == nil || cur.AvatarURL != body.AvatarURL {
@@ -813,7 +814,7 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
-	// CH-G1: Admin kontrolü
+	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Grup üyesi eklemek için yönetici olmalısınız.")
@@ -847,7 +848,7 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 		s.hub.SendToExtension(ext, sysMsgPayload)
 	}
 
-	// Eklenen kullanıcılara "gruba eklendiniz" bildirimi
+	// "You were added to the group" notification to the added users
 	title := ""
 	if conv != nil {
 		title = conv.Title
@@ -883,7 +884,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	// CH-G1: Admin kontrolü
+	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Gruptan üye çıkarmak için yönetici olmalısınız.")
@@ -896,7 +897,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	// Olayı çıkarılan üyeye de bildir (sohbeti listeden düşürsün)
+	// Notify the removed member too (so the chat drops off their list)
 	removedPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "group_member_removed",
 		"data": map[string]interface{}{
@@ -907,7 +908,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 	})
 	s.hub.SendToExtension(body.Extension, removedPayload)
 
-	// Kalan katılımcılara bildir
+	// Notify the remaining participants
 	participants, _ := GetParticipants(body.ConversationID)
 	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
@@ -941,7 +942,7 @@ func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// CH-G1: Admin kontrolü
+	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Grup yetkilerini değiştirmek için yönetici olmalısınız.")
@@ -988,7 +989,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 		return
 	}
 
-	// CH-G1: Katılımcı kontrolü
+	// CH-G1: participant check
 	isPart, err := IsParticipant(body.ConversationID, user.Extension)
 	if err != nil || !isPart {
 		writeJSONError(w, http.StatusForbidden, "Bu grubun aktif bir üyesi değilsiniz.")
@@ -1001,7 +1002,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 		return
 	}
 
-	// Ayrılan kullanıcıya bildir
+	// Notify the user who left
 	leftPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "group_member_removed",
 		"data": map[string]interface{}{
@@ -1012,7 +1013,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 	})
 	s.hub.SendToExtension(user.Extension, leftPayload)
 
-	// Kalan katılımcılara bildir
+	// Notify the remaining participants
 	participants, _ := GetParticipants(body.ConversationID)
 	var sysMsgPayload []byte
 	if sysMsg != nil {
@@ -1049,14 +1050,14 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
-	// CH-G1: Admin kontrolü
+	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
 		writeJSONError(w, http.StatusForbidden, "Grubu silmek için yönetici olmalısınız.")
 		return
 	}
 
-	// Katılımcıları silmeden önce al
+	// Get the participants before deleting them
 	participants, _ := GetParticipants(body.ConversationID)
 
 	err = DeleteGroup(body.ConversationID, user.Extension)
@@ -1084,10 +1085,11 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 // GET /api/internal/presence (Internal only)
 func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) {
 	remoteIP := r.RemoteAddr
-	// Apache ters vekili de 127.0.0.1'den bağlanır: yalnızca adrese bakmak bu
-	// uç noktayı /chat/api/internal/presence üzerinden oturumsuz herkese
-	// açıyordu (çevrimiçi dahili listesi). Vekilden gelen istek
-	// X-Forwarded-For taşır; PHP (api/mobile/contacts.php) doğrudan bağlanır.
+	// The Apache reverse proxy connects from 127.0.0.1 too: looking only at
+	// the address opened this endpoint to anyone without a session through
+	// /chat/api/internal/presence (the list of online extensions). A request
+	// via the proxy carries X-Forwarded-For; PHP (api/mobile/contacts.php)
+	// connects directly.
 	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
 		(!strings.HasPrefix(remoteIP, "127.0.0.1:") && !strings.HasPrefix(remoteIP, "[::1]:")) {
 		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")

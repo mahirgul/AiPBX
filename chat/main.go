@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	_ "time/tzdata" // TIMEZONE, sistemde tzdata paketi olmasa da çözülebilsin
+	_ "time/tzdata" // so TIMEZONE resolves even without the tzdata package on the system
 )
 
 func main() {

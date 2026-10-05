@@ -5,11 +5,11 @@ class SystemUserRepository extends BaseRepository
     protected static string $table = 'sys_users';
 
     /**
-     * password_hash ve reset_token bilerek DIŞARIDA bırakılıyor — hiçbiri client
-     * tarafında (JS/PHP) kullanılmıyor, oysa uiEditButton() tüm satırı sayfa
-     * kaynağına (onclick attribute'una) gömüyor; bcrypt hash'i ve aktif şifre
-     * sıfırlama token'ını her sayfa yüklemesinde TÜM kullanıcılar için ifşa
-     * etmenin hiçbir gerekçesi yok (2026-08-21 denetiminde bulundu).
+     * password_hash and reset_token are left OUT on purpose — neither is used
+     * on the client side (JS/PHP), yet uiEditButton() embeds the whole row in
+     * the page source (the onclick attribute); there is no reason to expose
+     * the bcrypt hash and the active password reset token for ALL users on
+     * every page load (found in the 2026-08-21 audit).
      */
     public static function allWithRoleName(): array
     {

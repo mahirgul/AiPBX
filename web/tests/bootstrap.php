@@ -1,17 +1,17 @@
 <?php
 /**
- * PHPUnit bootstrap — uygulamayı İZOLE test ortamına yönlendirir.
+ * PHPUnit bootstrap — points the application at an ISOLATED test environment.
  *
- * portalEnv() önce getenv()'e baktığı için (config.php), aşağıdaki putenv()
- * çağrıları tüm uygulamayı test veritabanına ve geçici config dizinine
- * yönlendirir — üretim kodunda tek satır değişiklik gerekmeden.
+ * portalEnv() looks at getenv() first (config.php), so the putenv() calls
+ * below redirect the whole application to the test database and a temporary
+ * config directory — without a single line of change in production code.
  *
- * ÜÇ EMNİYET KİLİDİ:
- *  1. DB_NAME 'asterisk_test' değilse testler hiç başlamaz.
- *  2. ASTERISK_PBX_DIR geçici dizine yönlendirilir → canlı /etc/asterisk'e
- *     hiçbir şey yazılmaz.
- *  3. AIPBX_NO_ASTERISK=1 → AsteriskHelper::execCLI() canlı Asterisk'e komut
- *     göndermez (reload dahil).
+ * THREE SAFETY LOCKS:
+ *  1. Tests do not start at all unless DB_NAME is 'asterisk_test'.
+ *  2. ASTERISK_PBX_DIR points to a temp directory → nothing is written to
+ *     the live /etc/asterisk.
+ *  3. AIPBX_NO_ASTERISK=1 → AsteriskHelper::execCLI() sends no command to
+ *     the live Asterisk (reloads included).
  */
 
 $envFile = __DIR__ . '/.env.test';
@@ -25,14 +25,14 @@ foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line)
     putenv($line);
 }
 
-// KİLİT 1 — üretim veritabanına karşı test koşmayı kesinlikle engelle.
+// LOCK 1 — never run tests against the production database.
 if (getenv('DB_NAME') !== 'asterisk_test') {
     fwrite(STDERR, "GÜVENLİK: testler yalnızca 'asterisk_test' üzerinde koşabilir, "
         . "şu an DB_NAME='" . getenv('DB_NAME') . "'. İptal edildi.\n");
     exit(1);
 }
 
-// KİLİT 2 — üretilen Asterisk config'leri geçici dizine.
+// LOCK 2 — generated Asterisk configs go to a temp directory.
 $tmpConf = sys_get_temp_dir() . '/aipbx-test-conf';
 if (!is_dir($tmpConf)) { mkdir($tmpConf, 0755, true); }
 putenv('ASTERISK_PBX_DIR=' . $tmpConf);
@@ -48,7 +48,7 @@ putenv('SOUNDS_CUSTOM_DIR=' . $tmpConf . '/sounds');
 putenv('AI_TTS_DIR=' . $tmpConf . '/tts');
 putenv('AIPBX_SETTINGS_KEY=test-settings-key');
 
-// KİLİT 3 — canlı Asterisk'e hiçbir CLI komutu gitmesin.
+// LOCK 3 — no CLI command may reach the live Asterisk.
 putenv('AIPBX_NO_ASTERISK=1');
 
 require __DIR__ . '/../vendor/autoload.php';

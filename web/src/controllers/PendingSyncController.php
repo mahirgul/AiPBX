@@ -1,9 +1,9 @@
 <?php
 /**
- * "Uygula" sayfası — ertelenmiş Asterisk reload sistemi (2026-08-24).
- * Admin panelinde kaydedilen PBX değişiklikleri artık kaydedildiği anda
- * Asterisk'e yansıtılmıyor; bu sayfa bekleyen değişiklikleri listeler ve
- * "Gönder" ile gerçek regen+reload'ı (applyPendingSync()) tetikler.
+ * The "Apply" page — deferred Asterisk reload system (2026-08-24).
+ * PBX changes saved in the admin panel no longer reach Asterisk the moment
+ * they are saved; this page lists the pending changes and "Apply" triggers
+ * the real regen+reload (applyPendingSync()).
  */
 require_once __DIR__ . '/../helpers.php';
 
@@ -27,11 +27,11 @@ class PendingSyncController extends BaseController
                     static::notifySuccess(sprintf(t('pending_sync.msg_applied'), $ok_count));
                 }
                 if ($fail_count > 0) {
-                    // 2026-08-24: artık admin'e sadece "kaç domain başarısız oldu"
-                    // değil, Asterisk'in GERÇEK hata çıktısı da gösteriliyor
-                    // (AsteriskHelper::assertReloadsOk() Exception mesajına ham
-                    // çıktıyı gömüyor) — önceden bu bilgi hiçbir yerde
-                    // yakalanmıyordu, admin her zaman "başarılı" görürdü.
+                    // 2026-08-24: the admin now sees not just "how many domains
+                    // failed" but Asterisk's REAL error output too
+                    // (AsteriskHelper::assertReloadsOk() embeds the raw output in
+                    // the Exception message) — this information used to be
+                    // captured nowhere, and the admin always saw "success".
                     $fail_details = [];
                     foreach ($applied_results as $domain => $r) {
                         if (!$r['success']) {

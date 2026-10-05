@@ -30,10 +30,10 @@
         let rows = Array.from(tbody.children).filter(row => {
             if (row.tagName !== 'TR') return false;
             if (row.classList.contains('empty-row') || row.classList.contains('dt-no-match-row')) return false;
-            // uiTableEmptyRow() (config.php) her boş listede bu class'ı üretiyor —
-            // isim burada yanlış yazılmıştı (".table-empty-container"), hiç
-            // eşleşmiyordu; boş tablolarda tek "kayıt yok" satırı gerçek veri
-            // gibi işlenip gereksiz arama/sayfalama çubuğu gösteriliyordu.
+            // uiTableEmptyRow() (config.php) produces this class on every empty
+            // list — the name was misspelled here (".table-empty-container") and
+            // never matched; on empty tables the single "no records" row was
+            // treated as real data and a needless search/paging bar was shown.
             if (row.querySelector('.empty-table-box')) return false;
             return true;
         });

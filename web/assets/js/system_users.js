@@ -184,7 +184,7 @@ function confirmBulkSendMail() {
 }
 
 
-// CSV ile toplu kullanıcı ekleme modalı
+// Bulk user import from CSV modal
 function openUserImportModal() {
     const modal = document.getElementById('userImportModal');
     if (modal) {

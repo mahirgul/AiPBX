@@ -1,7 +1,7 @@
 <?php
 /**
  * Header Phone Settings Modal (Microphone/Speaker Device Selection, Ring Volume)
- * Header'daki telefon durum rozetine tıklanınca açılır (bkz. topbar.php).
+ * Opens when the phone status badge in the header is clicked (see topbar.php).
  */
 ?>
 <div class="modal-overlay" id="phoneSettingsModal">

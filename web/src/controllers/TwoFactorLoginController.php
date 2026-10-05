@@ -5,7 +5,7 @@ class TwoFactorLoginController extends BaseController
 {
     public static function index(): void
     {
-        // 2FA bekleyen kullanıcı ID'si oturumda yoksa login'e dön
+        // Back to login if the session has no user waiting for 2FA
         if (empty($_SESSION['pending_2fa_user_id'])) {
             static::redirect('/login');
             return;
@@ -36,9 +36,9 @@ class TwoFactorLoginController extends BaseController
             }
 
             $csrf = $_POST['csrf_token'] ?? '';
-            // Kaba kuvvet: hatalı 2FA denemeleri loglanıyordu ama kilit
-            // kontrol edilmiyordu — şifreyi bilen biri 6 haneli kodu sınırsız
-            // deneyebiliyordu. Web girişiyle aynı IP/kullanıcı kilidi.
+            // Brute force: failed 2FA attempts were logged but the lockout was
+            // not checked — someone knowing the password could try the 6-digit
+            // code without limit. The same IP/user lockout as the web login.
             if (checkBruteForceLockout($clientIp, $user['username'])) {
                 unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);
                 notify(t('login.too_many_attempts', 'Çok fazla hatalı deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.'), 'danger');
@@ -76,7 +76,7 @@ class TwoFactorLoginController extends BaseController
 
                 if ($isValid) {
                     unset($_SESSION['pending_2fa_failures']);
-                    // Oturum kimliğini yenile
+                    // Regenerate the session ID
                     session_regenerate_id(true);
 
                     $_SESSION['user_id'] = $user['id'];
@@ -104,8 +104,8 @@ class TwoFactorLoginController extends BaseController
                     if (function_exists('logLoginAttempt')) {
                         logLoginAttempt($clientIp, $user['username'], 'FAILED');
                     }
-                    // Aynı bekleyen oturumda 5 hatalı koddan sonra baştan
-                    // şifreyle girmek gerekir (o adım da kilide tabi).
+                    // After 5 wrong codes in the same pending session the user
+                    // has to start over with the password (that step is subject to the lockout too).
                     $_SESSION['pending_2fa_failures'] = ($_SESSION['pending_2fa_failures'] ?? 0) + 1;
                     if ($_SESSION['pending_2fa_failures'] >= 5) {
                         unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);

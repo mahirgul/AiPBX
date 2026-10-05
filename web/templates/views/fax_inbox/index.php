@@ -4,7 +4,7 @@
             <i class="fas fa-inbox u-primary"></i> <?php echo t('fax_inbox.header_title'); ?>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 13px; color: var(--text-muted);">
+            <div class="u-fs-13 u-muted">
                 <?php echo t('fax_inbox.total_prefix'); ?> <?php echo $total_count; ?> <?php echo t('fax_inbox.total_suffix'); ?> <?php if ($total_pages > 1): ?>(<?php echo sprintf(t('fax_inbox.page_of'), $page, $total_pages); ?>)<?php endif; ?>
             </div>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('faxInboxHelpBox')" title="Modül Rehberi">
@@ -21,7 +21,7 @@
 
     <!-- Filter Bar -->
     <form method="GET" autocomplete="off" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; margin-bottom: 24px; align-items: center;">
-        <div style="position: relative;">
+        <div class="u-relative">
             <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" style="padding-left: 32px;" placeholder="<?php echo t('fax_inbox.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search); ?>">
         </div>

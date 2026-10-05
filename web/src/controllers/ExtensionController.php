@@ -9,24 +9,12 @@ class ExtensionController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_extension'])) {
-                $res = PBXHelper::saveExtension($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('sys_users', $_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['remove_extension'])) {
-                $res = PBXHelper::removeExtension($_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['sync_all_extensions'])) {
-                $res = PBXHelper::syncAllExtensions($_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_extension' => fn() => ExtensionService::saveExtension($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('sys_users', $_POST['user_id'] ?? 0, static::csrfToken()),
+            'remove_extension' => fn() => ExtensionService::removeExtension($_POST['user_id'] ?? 0, static::csrfToken()),
+            'sync_all_extensions' => fn() => ExtensionService::syncAll(static::csrfToken()),
+        ]);
 
         $extensions = ExtensionRepository::allWithExtension();
         $pjsip_statuses = ExtensionRepository::livePjsipStatuses();
@@ -39,8 +27,6 @@ class ExtensionController extends BaseController
             'pjsip_statuses' => $pjsip_statuses,
             'permission_groups' => $permission_groups,
             'boss_secretary_groups' => $boss_secretary_groups,
-            'message' => $message,
-            'error' => $error,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

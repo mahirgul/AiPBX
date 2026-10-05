@@ -1,16 +1,7 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 require_once __DIR__ . '/auth_helper.php';
+mobileApiStart('GET, OPTIONS');
+
 require_once __DIR__ . '/../../src/core/BaseRepository.php';
 require_once __DIR__ . '/../../src/repositories/MyPhoneRepository.php';
 require_once __DIR__ . '/../../src/asterisk_helper.php';
@@ -20,7 +11,7 @@ $user = requireMobileAuth();
 $directory = MyPhoneRepository::getInternalDirectory();
 $pjsipStatuses = AsteriskHelper::getPJSIPStatuses();
 
-// Sohbet servisi (aipbx-chat) online kullanıcı listesini al
+// Get the online user list from the chat service (aipbx-chat)
 $chatOnline = [];
 try {
     $ctx = stream_context_create([
@@ -78,8 +69,8 @@ foreach ($directory as $contact) {
     ];
 }
 
-echo json_encode([
+mobileJson([
     'success' => true,
     'total' => count($contacts),
     'contacts' => $contacts
-], JSON_UNESCAPED_UNICODE);
+]);

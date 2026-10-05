@@ -1,5 +1,5 @@
 <?php
-// Çağrı Merkezi Panosu (wallboard) istatistik aksiyonu: get_board_stats
+// Call-center board (wallboard) statistics action: get_board_stats
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
 if ($action === 'get_board_stats') {
@@ -18,7 +18,7 @@ if ($action === 'get_board_stats') {
             $since = date('Y-m-d 00:00:00');
     }
 
-    // SLA eşiği (saniye) — panelden ayarlanabilir, tanımsızsa 20sn
+    // SLA threshold (seconds) — configurable in the panel, 20 s when undefined
     $sla_threshold = (int) getSystemSetting('cc_sla_threshold_seconds', 20);
     if ($sla_threshold <= 0) $sla_threshold = 20;
 
@@ -29,12 +29,12 @@ if ($action === 'get_board_stats') {
         $params[] = $queue_filter;
     }
 
-    // Toplam çağrı (kuyruğa giren) — bkz. Asterisk queue_log: ENTERQUEUE
+    // Total calls (entered a queue) — see Asterisk queue_log: ENTERQUEUE
     $stmt = $db->prepare("SELECT COUNT(*) FROM cc_queue_logs WHERE event = 'ENTERQUEUE' AND created_at >= ?$where_queue");
     $stmt->execute($params);
     $total_calls = (int)$stmt->fetchColumn();
 
-    // Cevaplanan çağrılar: CONNECT event'i, data1 = bekleme süresi (saniye)
+    // Answered calls: the CONNECT event, data1 = wait time (seconds)
     $stmt = $db->prepare(
         "SELECT COUNT(*), AVG(CAST(data1 AS UNSIGNED)), " .
         "SUM(CASE WHEN CAST(data1 AS UNSIGNED) <= ? THEN 1 ELSE 0 END), MAX(CAST(data1 AS UNSIGNED)) " .
@@ -47,21 +47,21 @@ if ($action === 'get_board_stats') {
     $sla_answered = (int)$sla_answered;
     $max_wait_connect = (int)$max_wait_connect;
 
-    // Terk edilen çağrılar: ABANDON event'i, data3 = terk edilene kadar geçen bekleme süresi
-    // (data1/data2 kuyruk pozisyonu — gerçek üretim verisiyle doğrulandı, bkz. commit notu)
+    // Abandoned calls: the ABANDON event, data3 = wait time until abandoned
+    // (data1/data2 are queue positions — verified with real production data, see the commit note)
     $stmt = $db->prepare("SELECT COUNT(*), MAX(CAST(data3 AS UNSIGNED)) FROM cc_queue_logs WHERE event = 'ABANDON' AND created_at >= ?$where_queue");
     $stmt->execute($params);
     [$abandoned_calls, $max_wait_abandon] = $stmt->fetch(PDO::FETCH_NUM);
     $abandoned_calls = (int)$abandoned_calls;
     $max_wait_abandon = (int)$max_wait_abandon;
 
-    // Cevapsız (temsilcinin telefonu çaldı ama açılmadı): RINGNOANSWER — aynı çağrı
-    // aynı/farklı temsilciye tekrar tekrar çalabildiği için call_id bazında DISTINCT sayılır.
+    // Missed (the agent's phone rang but was not picked up): RINGNOANSWER — the same call
+    // can ring the same/another agent again and again, so it is counted DISTINCT per call_id.
     $stmt = $db->prepare("SELECT COUNT(DISTINCT call_id) FROM cc_queue_logs WHERE event = 'RINGNOANSWER' AND created_at >= ?$where_queue");
     $stmt->execute($params);
     $missed_calls = (int)$stmt->fetchColumn();
 
-    // Ortalama görüşme süresi: COMPLETEAGENT/COMPLETECALLER data2 = konuşma süresi (saniye)
+    // Average talk time: COMPLETEAGENT/COMPLETECALLER data2 = talk time (seconds)
     $stmt = $db->prepare("SELECT AVG(CAST(data2 AS UNSIGNED)) FROM cc_queue_logs WHERE event IN ('COMPLETEAGENT','COMPLETECALLER') AND created_at >= ?$where_queue");
     $stmt->execute($params);
     $avg_talk_raw = $stmt->fetchColumn();
@@ -73,7 +73,7 @@ if ($action === 'get_board_stats') {
     $missed_rate = $total_calls > 0 ? round(($missed_calls / $total_calls) * 100) : 0;
     $abandon_rate = $total_calls > 0 ? round(($abandoned_calls / $total_calls) * 100) : 0;
 
-    // --- Canlı durum (şu anki kuyruk/temsilci durumu, tarih aralığından bağımsız) ---
+    // --- Live state (current queue/agent state, independent of the date range) ---
     @exec("asterisk -rx " . escapeshellarg("queue show"), $raw_q_output);
     $parsed = parseAsteriskQueuesOutput($raw_q_output);
 
@@ -90,14 +90,15 @@ if ($action === 'get_board_stats') {
         $agents_total += count($members);
         $qmembers = $parsed[$q['queue_name']]['members'] ?? [];
         foreach ($qmembers as $m) {
-            // "queue show" kuyruğa EKLENMİŞ (dynamic member) her uzantıyı listeler —
-            // cihazı tamamen çevrimdışı (Unavailable) olsa, hatta saatler önce eklenip
-            // hiç çıkış yapılmamış olsa bile. "Giriş Yapan Temsilci" panoda kullanıcının
-            // beklediği anlam gerçekten ULAŞILABİLİR temsilci sayısı, o yüzden
-            // is_unavailable burada da (available sayımındaki gibi) dışlanıyor.
+            // "queue show" lists every extension ADDED to the queue (dynamic
+            // member) — even when its device is completely offline
+            // (Unavailable), even if it was added hours ago and never logged
+            // out. On the board "Logged-in agents" means what the user expects:
+            // the number of really REACHABLE agents, so is_unavailable is
+            // excluded here too (as in the available count).
             if (!empty($m['in_queue']) && empty($m['is_unavailable'])) {
                 $logged_in++;
-                // Telefonu çalan temsilci müsait değil (çağrı ona gidiyor).
+                // An agent whose phone is ringing is not available (the call is going to them).
                 if (empty($m['is_paused']) && empty($m['is_busy']) && empty($m['is_ringing'])) $available++;
                 if (!empty($m['is_busy'])) $active_calls_live++;
             }

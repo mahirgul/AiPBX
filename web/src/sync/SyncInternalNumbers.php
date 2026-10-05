@@ -1,19 +1,20 @@
 <?php
 /**
- * Dahili Hedef Numaraları Dialplan Üreteci
+ * Internal destination numbers dialplan generator
  * (/etc/asterisk/pbx/extensions_internalnumbers.conf)
  *
- * IVR / kuyruk / zaman koşulu / anons / çağrı sonlandırma tanımlarına panelden
- * verilen isteğe bağlı numaraları tek bir context'e yazar. Numaranın hedefe
- * nasıl çevrileceğini BU DOSYA BİLMEZ — buildDestinationLines() zaten gelen
- * rota ve IVR tuşları için aynı işi yapıyor, burada aynen o çağrılıyor.
- * Böylece "kuyruğa girerken kayıt başlat", "kuyruk dili", "fallback" gibi
- * davranışlar tek yerde tanımlı kalıyor.
+ * Writes the optional numbers given in the panel to IVR / queue / time
+ * condition / announcement / call-ending definitions into one context. THIS
+ * FILE DOES NOT KNOW how a number is turned into its destination —
+ * buildDestinationLines() already does that for inbound routes and IVR keys
+ * and is simply called here. So behaviours such as "start recording when
+ * entering the queue", "queue language" and "fallback" stay defined in one
+ * place.
  *
- * Context [from-internal-pbx-ortak] tarafından include ediliyor
- * (bkz. SyncGeneralDialplan.php). Asterisk bir context'in KENDİ
- * extension'larını include'lardan önce aradığı için gerçek bir dahili
- * numarası her zaman bu listeyi gölgeler — istenen davranış budur.
+ * The context is included by [from-internal-pbx-ortak] (see
+ * SyncGeneralDialplan.php). Asterisk searches a context's OWN extensions
+ * before its includes, so a real extension number always shadows this list —
+ * which is the intended behaviour.
  */
 
 require_once __DIR__ . '/DialplanBuilders.php';
@@ -25,10 +26,11 @@ function syncInternalNumbers()
 }
 
 /**
- * Bu hedef dahiliden arandığında kanalın cevaplanması gerekiyor mu?
+ * Must the channel be answered when this destination is called from an
+ * extension?
  *
- * Yalnızca gerçekten bir ses dosyası çalınacaksa true döner. Ayrıntılı
- * gerekçe buildInternalNumbersConf()'un başlığındaki yorumda.
+ * Returns true only when a sound file is really going to be played. The
+ * detailed reasoning is in the comment at the top of buildInternalNumbersConf().
  */
 function internalNumberNeedsAnswer(string $destType, string $destId): bool
 {
@@ -52,33 +54,34 @@ function internalNumberNeedsAnswer(string $destType, string $destId): bool
 }
 
 /**
- * Saf üreteç — DB'ye dokunmaz, diske yazmaz, test edilebilir.
+ * Pure generator — touches no DB, writes no disk, testable.
  *
- * Aynı numara iki farklı varlıkta tanımlıysa (uygulama katmanı bunu
- * engelliyor ama veri elle bozulmuş olabilir) İLK tanım kazanır ve ikincisi
- * atlanır: aynı exten'i iki kez yazmak Asterisk reload'ında
- * "extension already in use" uyarısı üretir ve dosyanın tamamını riske atar.
+ * If the same number is defined on two different entities (the application
+ * layer prevents it, but the data may have been broken by hand) the FIRST
+ * definition wins and the second is skipped: writing the same exten twice
+ * produces an "extension already in use" warning on Asterisk reload and puts
+ * the whole file at risk.
  *
- * Answer() YALNIZCA gerçekten ses dosyası çalacak hedeflere eklenir
- * (bkz. internalNumberNeedsAnswer). Gerekçe üç yönlü:
- *  - Anons: dahiliden arandığında kanal cevaplanmamış durumda Playback'e
- *    girer; erken medya her uçta çalmaz. Answer()+Wait(1) FreePBX'in
- *    app-announcement deseninin aynısı.
- *  - Çağrı sonlandırma: anonsu OLMAYAN bir tanımda Answer() ZARARLI olurdu —
- *    cevaplanmamış kanalda Busy() temiz bir SIP 486 gönderir ve telefon
- *    "meşgul" gösterir; cevaplanmış kanalda ise 10 saniye bant içi ton çalar.
- *    Bu yüzden yalnızca announcement_id dolu tanımlarda cevaplanır.
- *  - Kuyruk ve IVR: hiç eklenmez. Queue() öncesi cevaplama, arayan kuyrukta
- *    beklerken vazgeçse bile çağrıyı CDR'da "cevaplandı" yapar ve çağrı
- *    merkezi raporlarını bozar; IVR bloğu zaten kendi Answer()'ını çağırıyor
- *    (bkz. SyncIVRs.php buildIVRDialplanBlock).
+ * Answer() is added ONLY to destinations that really play a sound file
+ * (see internalNumberNeedsAnswer). The reasoning is three-fold:
+ *  - Announcement: called from an extension, the channel enters Playback
+ *    unanswered; early media does not play on every endpoint. Answer()+Wait(1)
+ *    is the same as FreePBX's app-announcement pattern.
+ *  - Call ending: on a definition WITHOUT an announcement Answer() would be
+ *    HARMFUL — on an unanswered channel Busy() sends a clean SIP 486 and the
+ *    phone shows "busy"; on an answered channel it plays an in-band tone for
+ *    10 seconds. So only definitions with an announcement_id are answered.
+ *  - Queue and IVR: never added. Answering before Queue() marks the call
+ *    "answered" in the CDR even if the caller gives up while waiting, and
+ *    breaks the call-center reports; the IVR block already calls its own
+ *    Answer() (see SyncIVRs.php buildIVRDialplanBlock).
  *
- * @param array $entries internalNumberEntries() çıktısı
+ * @param array $entries output of internalNumberEntries()
  */
 function buildInternalNumbersConf(array $entries): string
 {
-    $conf  = "; Dahili Hedef Numaralari (Auto-generated by AI PBX)\n";
-    $conf .= "; Kaynak: pbx_*.internal_number kolonlari - bkz. src/internal_numbers.php\n\n";
+    $conf  = "; Internal destination numbers (Auto-generated by AI PBX)\n";
+    $conf .= "; Source: the pbx_*.internal_number columns - see src/internal_numbers.php\n\n";
     $conf .= "[internal-numbers-pbx]\n";
 
     if (empty($entries)) {

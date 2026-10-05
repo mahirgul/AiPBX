@@ -8,24 +8,12 @@ class DialPermissionController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_group'])) {
-                $res = DialPermissionService::saveGroup($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_group'])) {
-                $res = DialPermissionService::deleteGroup($_POST['group_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['save_rule'])) {
-                $res = DialPermissionService::saveRule($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_rule'])) {
-                $res = DialPermissionService::deleteRule($_POST['rule_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_group' => fn() => DialPermissionService::saveGroup($_POST),
+            'delete_group' => fn() => DialPermissionService::deleteGroup($_POST['group_id'] ?? 0, static::csrfToken()),
+            'save_rule' => fn() => DialPermissionService::saveRule($_POST),
+            'delete_rule' => fn() => DialPermissionService::deleteRule($_POST['rule_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $groups = DialPermissionService::getGroups();
         $selected_group_id = intval($_GET['group_id'] ?? ($groups[0]['id'] ?? 1));
@@ -36,8 +24,6 @@ class DialPermissionController extends BaseController
             'groups' => $groups,
             'selected_group_id' => $selected_group_id,
             'rules' => $rules,
-            'message' => $message,
-            'error' => $error,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

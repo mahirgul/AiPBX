@@ -1,10 +1,10 @@
 #!/bin/bash
-# AI PBX — izole test veritabanı kurulumu.
+# AI PBX — isolated test database setup.
 #
-# Kullanım: bash bin/setup-test-db.sh
+# Usage: bash bin/setup-test-db.sh
 #
-# Şema Phinx migration'larından üretilir; ÜRETİM VERİSİ KOPYALANMAZ.
-# Testler yalnızca bu veritabanında çalışır (tests/bootstrap.php emniyet kilidi).
+# The schema is built from the Phinx migrations; NO PRODUCTION DATA IS COPIED.
+# Tests run only against this database (the tests/bootstrap.php safety lock).
 set -e
 
 DB="asterisk_test"

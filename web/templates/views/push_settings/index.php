@@ -2,46 +2,7 @@
 $has_service_account = !empty($settings['push_fcm_service_account']);
 ?>
 
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success u-mb-20">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger u-mb-20">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
-<style>
-.push-settings-form {
-    padding: 20px;
-}
-.push-test-body {
-    padding: 20px;
-}
-@media (max-width: 768px) {
-    .push-settings-form {
-        padding: 12px 14px !important;
-    }
-    .push-test-body {
-        padding: 12px 14px !important;
-    }
-    #fcmConfigSection {
-        padding: 12px 14px !important;
-    }
-    .push-save-actions {
-        justify-content: stretch !important;
-    }
-    .push-save-actions button {
-        width: 100% !important;
-        justify-content: center !important;
-        padding: 12px !important;
-        font-size: 14px !important;
-    }
-}
-</style>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/push_settings.css'); ?>">
 
 <!-- Push Settings Single-Line Fixed Tabs -->
 <div class="settings-tabs u-mb-20">
@@ -55,7 +16,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
     <?php endif; ?>
 </div>
 
-<!-- TAB 1: Yapılandırma -->
+<!-- TAB 1: configuration -->
 <div id="tab_config" class="settings-tab-pane active">
 <div class="card">
     <div class="card-header">
@@ -121,7 +82,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 16px;">
+            <div class="form-group u-mb-16">
                 <label class="form-label u-flex-between">
                     <span>Google Servis Hesabı JSON İçeriği (Service Account) <span class="u-danger">*</span></span>
                     <?php if ($has_service_account): ?>
@@ -183,7 +144,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
         </div>
     </div>
     <div class="push-test-body">
-        <p style="margin-top: 0; color: var(--text-muted); font-size: 13px;">
+        <p class="u-mt-0 u-muted u-fs-13">
             Kayıtlı bir mobil cihaza doğrudan FCM uyanma sinyali göndererek yapılandırmanın sağlıklı çalıştığını test edebilirsiniz.
         </p>
 
@@ -219,62 +180,4 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
 </div>
 <?php endif; ?>
 
-<script>
-function toggleModuleHelp(boxId) {
-    var box = document.getElementById(boxId);
-    if (box) {
-        box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
-    }
-}
-
-function togglePushFields() {
-    var provider = document.getElementById('pushProviderSelect').value;
-    var fcmSection = document.getElementById('fcmConfigSection');
-    if (fcmSection) {
-        fcmSection.style.display = (provider === 'fcm') ? 'block' : 'none';
-    }
-}
-
-function sendTestPush() {
-    var select = document.getElementById('testTargetSelect');
-    var target = select.value;
-    var resultBox = document.getElementById('testResultBox');
-    var btn = document.getElementById('btnTestPush');
-
-    if (!target) {
-        alert('Lütfen test bildirimi gönderilecek bir dahili/cihaz seçin.');
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
-    resultBox.style.display = 'none';
-
-    var formData = new FormData();
-    formData.append('csrf_token', '<?php echo getCSRFToken(); ?>');
-    formData.append('target', target);
-    formData.append('type', 'extension');
-
-    fetch('/push-settings?action=test_push', {
-        method: 'POST',
-        body: formData
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Bildirimi Gönder';
-        resultBox.style.display = 'block';
-        if (data.success) {
-            resultBox.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + (data.message || 'Başarılı') + '</div>';
-        } else {
-            resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'Gönderim başarısız') + '</div>';
-        }
-    })
-    .catch(function(err) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Bildirimi Gönder';
-        resultBox.style.display = 'block';
-        resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> İstek başarısız: ' + err + '</div>';
-    });
-}
-</script>
+<script src="<?php echo asset('/assets/js/push_settings.js'); ?>"></script>

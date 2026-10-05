@@ -11,18 +11,10 @@ class RingGroupController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_ring_group'])) {
-                $res = RingGroupService::saveRingGroup($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_ring_group'])) {
-                $res = RingGroupService::deleteRingGroup($_POST['ring_group_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_ring_group' => fn() => RingGroupService::saveRingGroup($_POST),
+            'delete_ring_group' => fn() => RingGroupService::deleteRingGroup($_POST['ring_group_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $ring_groups = RingGroupService::getRingGroups();
         $modules = DestinationRegistry::getModuleList();
@@ -31,8 +23,6 @@ class RingGroupController extends BaseController
         static::renderPage('ring_groups/index', [
             'ring_groups' => $ring_groups,
             'modules' => $modules,
-            'message' => $message,
-            'error' => $error,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

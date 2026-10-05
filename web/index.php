@@ -1,15 +1,15 @@
 <?php
 /**
- * Front Controller (Router) — AI PBX Portalı
- * Temiz URL'leri (whitelist) hedef dosyalara eşler; eski URL'leri kalıcı yönlendirir.
- * httpd mod_rewrite, dosya/dizin olmayan tüm istekleri buraya düşürür.
+ * Front controller (router) — AI PBX portal
+ * Maps clean URLs (whitelist) to their targets; permanently redirects old URLs.
+ * httpd mod_rewrite sends every request that is not a file/directory here.
  *
- * 2026-08-22: $ROUTES değerleri artık iki biçimi de destekliyor —
- *  - string  (eski/mevcut sayfalar): doğrudan dosya yolu, require edilir.
- *  - array   (MVC'ye taşınmış sayfalar): ['controller' => X::class, 'action' => 'y', 'module' => 'eski_dosya_adi.php']
- *    'module' anahtarı, auth.php'deki getModuleKeyForPage() eşlemesinin
- *    (basename($_SERVER['PHP_SELF']) üzerinden çalışır) MVC göçünden sonra
- *    da DEĞİŞMEDEN çalışmasını sağlıyor — RBAC eşlemesine hiç dokunulmuyor.
+ * 2026-08-22: $ROUTES values support both forms —
+ *  - string  (old/existing pages): a direct file path, required.
+ *  - array   (pages moved to MVC): ['controller' => X::class, 'action' => 'y', 'module' => 'old_file_name.php']
+ *    The 'module' key keeps the getModuleKeyForPage() mapping in auth.php
+ *    (which works from basename($_SERVER['PHP_SELF'])) working UNCHANGED
+ *    after the MVC migration — the RBAC mapping is not touched at all.
  */
 require_once __DIR__ . '/auth.php';
 if (is_file(__DIR__ . '/vendor/autoload.php')) {
@@ -21,11 +21,11 @@ if ($path === '') {
     $path = '/';
 }
 
-// 0. Dil değiştirme — tüm sayfalarda ortak, tek bir modüle bağlı olmayan
-//    çapraz-kesit bir işlem olduğu için ayrı bir mini-route (header.php'deki
-//    dil seçiciden çağrılır). CSRF gerektirmez (düşük riskli bir tercih
-//    değişikliği), ama 'lang' whitelist'e karşı, 'redirect' ise açık
-//    yönlendirme (open redirect) riskine karşı sıkı doğrulanıyor.
+// 0. Language switch — a cross-cutting action shared by all pages and tied
+//    to no single module, hence a separate mini-route (called from the
+//    language picker in header.php). It needs no CSRF (a low-risk preference
+//    change), but 'lang' is checked against a whitelist and 'redirect' is
+//    strictly validated against open redirects.
 if ($path === '/set-language') {
     $lang = $_GET['lang'] ?? '';
     if (!isset(UI_LANGUAGES[$lang])) {
@@ -44,7 +44,7 @@ if ($path === '/set-language') {
     exit;
 }
 
-// 1. Eski URL'ler → kalıcı yönlendirme (exact-match whitelist)
+// 1. Old URLs → permanent redirect (exact-match whitelist)
 $LEGACY = [
     '/admin'                   => '/',
     '/admin/index.php'         => '/',
@@ -85,8 +85,8 @@ if (isset($LEGACY[$path])) {
     exit;
 }
 
-// 2. Temiz URL'ler (exact-match whitelist) — tablo src/routes.php'de,
-//    çünkü bin/smoke.php de aynı tabloyu okuyor (tek doğruluk kaynağı).
+// 2. Clean URLs (exact-match whitelist) — the table lives in src/routes.php,
+//    because bin/smoke.php reads the same table (single source of truth).
 $ROUTES = require __DIR__ . '/src/routes.php';
 
 if (!isset($ROUTES[$path])) {
@@ -99,7 +99,7 @@ if (!isset($ROUTES[$path])) {
     exit;
 }
 
-// 3. Rol yönlendirmesi (ana sayfa)
+// 3. Role redirect (home page)
 if ($ROUTES[$path] === 'role') {
     if (!isset($_SESSION['user_id'])) {
         header('Location: /login');
@@ -109,18 +109,18 @@ if ($ROUTES[$path] === 'role') {
     exit;
 }
 
-// 4. Hedef (RBAC + aktif sekme kontrolleri basename üzerinden çalışsın diye
-//    PHP_SELF, hedef dosya yoluna/modül adına eşitlenir — tüketiciler:
-//    auth.php, header.php)
+// 4. Target (PHP_SELF is set to the target file path/module name so the RBAC
+//    and active-tab checks work from basename — consumers: auth.php,
+//    header.php)
 $target = $ROUTES[$path];
 
 if (is_array($target)) {
-    // MVC'ye taşınmış sayfa: Controller::action() static çağrısı
+    // Page moved to MVC: static Controller::action() call
     $_SERVER['PHP_SELF'] = '/' . $target['module'];
     [$controllerClass, $action] = [$target['controller'], $target['action']];
     $controllerClass::$action();
 } else {
-    // Eski/henüz taşınmamış sayfa: doğrudan dosya require
+    // Old/not yet migrated page: require the file directly
     $_SERVER['PHP_SELF'] = '/' . $target;
     require __DIR__ . '/' . $target;
 }

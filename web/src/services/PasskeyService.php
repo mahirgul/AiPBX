@@ -1,7 +1,7 @@
 <?php
 /**
- * PasskeyService (FIDO2 / WebAuthn Servisi)
- * Şifresiz veya biyometrik güvenlik anahtarları (Touch ID, Face ID, Windows Hello, YubiKey) yönetimi.
+ * PasskeyService (FIDO2 / WebAuthn service)
+ * Manages passwordless or biometric security keys (Touch ID, Face ID, Windows Hello, YubiKey).
  */
 
 if (is_file(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
@@ -14,7 +14,7 @@ use lbuchs\WebAuthn\WebAuthnException;
 class PasskeyService
 {
     /**
-     * Geçerli alan adını (RP ID) döner (port numarası temizlenir).
+     * Returns the current domain (RP ID), without the port number.
      */
     public static function getRpId(): string
     {
@@ -29,7 +29,7 @@ class PasskeyService
     }
 
     /**
-     * WebAuthn sunucu nesnesini hazırlar.
+     * Prepares the WebAuthn server object.
      */
     public static function getWebAuthn(): WebAuthn
     {
@@ -41,14 +41,14 @@ class PasskeyService
     }
 
     /**
-     * Yeni bir passkey kaydı için tarayıcıya iletilecek challenge ve parametreleri üretir.
+     * Creates the challenge and parameters sent to the browser for a new passkey registration.
      * @return stdClass
      */
     public static function getRegisterArgs(int $userId, string $username, string $displayName): stdClass
     {
         $webAuthn = self::getWebAuthn();
 
-        // Mevcut kayıtlı passkey'leri hariç tut (aynı cihazı tekrar kaydetmeyi önle)
+        // Exclude the passkeys already registered (prevents registering the same device again)
         $existingKeys = self::getUserPasskeys($userId);
         $excludeIds = [];
         foreach ($existingKeys as $key) {
@@ -62,14 +62,14 @@ class PasskeyService
             (string)$userId,
             $username,
             $displayName,
-            60,      // 60 saniye zaman aşımı
-            true,    // Resident key (keşfedilebilir / username'siz giriş için)
-            'required',  // Biyometrik / PIN zorunlu: passkey şifresiz tek başına giriş sağlıyor
+            60,      // 60 second timeout
+            true,    // Resident key (discoverable / username-less sign-in)
+            'required',  // Biometric / PIN required: a passkey alone signs in without a password
             null,    // platform or cross-platform
             $excludeIds
         );
 
-        // Challenge'ı oturumda sakla
+        // Keep the challenge in the session
         $_SESSION['webauthn_reg_challenge'] = $webAuthn->getChallenge()->getBinaryString();
         $_SESSION['webauthn_reg_user_id'] = $userId;
 
@@ -77,7 +77,7 @@ class PasskeyService
     }
 
     /**
-     * Tarayıcıdan gelen passkey kayıt yanıtını doğrular ve veritabanına kaydeder.
+     * Verifies the passkey registration response from the browser and stores it in the database.
      * @return array{success:bool, error?:string, id?:int}
      */
     public static function processRegister(
@@ -97,7 +97,7 @@ class PasskeyService
         $challenge = $_SESSION['webauthn_reg_challenge'];
 
         try {
-            // Tarayıcıdan base64 gelen verileri binary/raw formata dönüştür
+            // Convert the base64 data from the browser to binary/raw form
             $rawClientDataJSON = base64_decode($clientDataJSON, true);
             if ($rawClientDataJSON === false || !str_starts_with(trim($rawClientDataJSON), '{')) {
                 $rawClientDataJSON = $clientDataJSON;
@@ -115,7 +115,7 @@ class PasskeyService
                 $challenge,
                 true,  // requireUserVerification — parmak izi/PIN olmadan kaydedilemez
                 true,  // requireUserPresent
-                false, // failIfRootMismatch (kendi imzalı/yerel anahtarlar için esnek)
+                false, // failIfRootMismatch (lenient for self-signed/local keys)
                 false  // requireCtsProfileMatch
             );
 
@@ -152,7 +152,7 @@ class PasskeyService
     }
 
     /**
-     * Passkey ile giriş için tarayıcıya iletilecek sorgu parametrelerini üretir.
+     * Creates the request parameters sent to the browser for a passkey sign-in.
      * @return stdClass
      */
     public static function getLoginArgs(?string $username = null): stdClass
@@ -176,7 +176,7 @@ class PasskeyService
             }
         }
 
-        // $allowedCredentials boşsa resident-key modunda çalışır (cihaz kayıtlı hesapları listeler)
+        // With empty $allowedCredentials it works in resident-key mode (the device lists the registered accounts)
         $getArgs = $webAuthn->getGetArgs(
             $allowedCredentials,
             60,          // 60 sn timeout
@@ -189,7 +189,7 @@ class PasskeyService
     }
 
     /**
-     * Tarayıcıdan gelen passkey giriş yanıtını doğrular ve oturum açar.
+     * Verifies the passkey sign-in response from the browser and signs the user in.
      * @return array{success:bool, error?:string, redirect?:string}
      */
     public static function processLogin(
@@ -203,12 +203,12 @@ class PasskeyService
             return ['success' => false, 'error' => 'Doğrulama oturumu zaman aşımına uğradı. Lütfen sayfayı yenileyin.'];
         }
 
-        // Challenge tek kullanımlık: başarısız denemede de düşer (önceden
-        // yalnızca başarıda siliniyordu, aynı challenge'la tekrar denenebiliyordu).
+        // The challenge is single-use: it is dropped on a failed attempt too
+        // (it used to be deleted only on success, so the same challenge could be retried).
         $challenge = $_SESSION['webauthn_auth_challenge'];
         unset($_SESSION['webauthn_auth_challenge']);
 
-        // Hem standart base64 hem de URL-safe base64 varyantlarını oluştur
+        // Build both the standard base64 and the URL-safe base64 variants
         $stdBase64 = strtr($credentialIdBase64, '-_', '+/');
         $pad = strlen($stdBase64) % 4;
         if ($pad > 0) {
@@ -237,7 +237,7 @@ class PasskeyService
         }
 
         try {
-            // Tarayıcıdan base64 gelen verileri binary/raw formata dönüştür
+            // Convert the base64 data from the browser to binary/raw form
             $rawClientDataJSON = base64_decode($clientDataJSON, true);
             if ($rawClientDataJSON === false || !str_starts_with(trim($rawClientDataJSON), '{')) {
                 $rawClientDataJSON = $clientDataJSON;
@@ -245,8 +245,8 @@ class PasskeyService
             $rawAuthenticatorData = base64_decode($authenticatorData, true) ?: $authenticatorData;
             $rawSignature = base64_decode($signature, true) ?: $signature;
 
-            // Platform anahtarları (Android, Apple, Windows Hello) signCount = 0 döner.
-            // Cihaz signCount = 0 gönderiyorsa counter karşılaştırması yapılmaz (null iletilir).
+            // Platform keys (Android, Apple, Windows Hello) return signCount = 0.
+            // When the device sends signCount = 0, the counter is not compared (null is passed).
             $prevCounter = (int)$passkey['counter'];
             try {
                 $authObj = new \lbuchs\WebAuthn\Attestation\AuthenticatorData($rawAuthenticatorData);
@@ -265,21 +265,21 @@ class PasskeyService
                 $passkey['public_key'],
                 $challenge,
                 $prevCounter,
-                // Passkey şifre ve 2FA yerine geçiyor: yalnızca anahtara sahip olmak
-                // yetmemeli (çalınan bir güvenlik anahtarı tek başına giriş yapmasın).
+                // A passkey replaces the password and 2FA: merely having the key
+                // must not be enough (a stolen security key alone must not sign in).
                 true,  // requireUserVerification
                 true   // requireUserPresent
             );
 
-            // Counter güncelle: Yalnızca donanım anahtarları (YubiKey vb.) artıran sayaç dönerse sakla,
-            // 0 dönen platform anahtarlarında 0 olarak koru (yapay artırma yapma).
+            // Update the counter: store it only when a hardware key (YubiKey etc.) returns an increasing counter;
+            // keep 0 for platform keys that return 0 (no artificial increment).
             $signCount = $webAuthn->getSignatureCounter();
             $newCounter = ($signCount !== null && $signCount > 0) ? $signCount : 0;
 
             $upd = $db->prepare('UPDATE sys_user_passkeys SET counter = ?, last_used_at = NOW() WHERE id = ?');
             $upd->execute([$newCounter, $passkey['passkey_id']]);
 
-            // Giriş başarılı: Session oluştur
+            // Sign-in succeeded: create the session
             session_regenerate_id(true);
 
             $_SESSION['user_id'] = $passkey['user_id'];
@@ -296,7 +296,7 @@ class PasskeyService
             unset($_SESSION['webauthn_auth_challenge']);
             unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
-            // Başarılı giriş günlüğe kaydet
+            // Log the successful sign-in
             if (function_exists('logLoginAttempt')) {
                 logLoginAttempt($clientIp, $passkey['username'], 'SUCCESS');
             }
@@ -316,7 +316,7 @@ class PasskeyService
     }
 
     /**
-     * Kullanıcıya ait kayıtlı passkey listesini döner.
+     * Returns the user's registered passkeys.
      */
     public static function getUserPasskeys(int $userId): array
     {
@@ -327,7 +327,7 @@ class PasskeyService
     }
 
     /**
-     * Bir passkey kaydını siler.
+     * Deletes a passkey.
      */
     public static function deletePasskey(int $userId, int $passkeyId): bool
     {

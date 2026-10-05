@@ -2,12 +2,12 @@
 /**
  * Feature Code (Star Code) Dialplan Sync Module (/etc/asterisk/pbx/extensions_featurecodes.conf)
  *
- * Kodlar `pbx_feature_codes` tablosundan okunur (admin panelden düzenlenebilir).
- * DND/Çağrı Yönlendirme durumu astdb yerine doğrudan sys_users'ta tutulur;
- * bu yüzden telefon üzerinden kod tuşlandığında dialplan sadece bir arka plan
- * betiğini tetikler (feature_code_action.php), o da DB'yi günceller ve
- * syncEverything() ile dialplan'ı yeniden üretip reload eder — sistemin
- * genelindeki "DB -> config üret -> reload" deseniyle birebir aynı.
+ * The codes are read from the `pbx_feature_codes` table (editable in the
+ * admin panel). The DND/call forwarding state is kept directly in sys_users
+ * instead of astdb; so when a code is dialed on the phone, the dialplan only
+ * triggers a background script (feature_code_action.php), which updates the
+ * DB and regenerates + reloads the dialplan with syncEverything() — exactly
+ * the system-wide "DB -> generate config -> reload" pattern.
  */
 
 function syncFeatureCodes() {
@@ -36,8 +36,8 @@ function __syncFeatureCodesBody() {
             $prefix_len = strlen($base_code);
             $action = ($key === 'queue_login') ? 'queue_login' : 'queue_logout';
 
-            // 1. Doğrudan kod tuşlandığında (*81 / *80): Temsilcinin atanmış olduğu tüm kuyruklara giriş/çıkış
-            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - tum kuyruklar)\n";
+            // 1. Code dialed alone (*81 / *80): log in/out of all queues the agent is assigned to
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - all queues)\n";
             $conf .= "exten => {$base_code},1,NoOp(Feature Code {$key} (all queues) by \${CALLERID(num)})\n";
             if ($gated) {
                 $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
@@ -64,8 +64,8 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n\n";
             }
 
-            // 2. Belirli kuyruk no/id tuşlandığında (*81<kuyruk> / *80<kuyruk>): Belirli kuyruğa giriş/çıkış
-            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - belirli kuyruk)\n";
+            // 2. A specific queue no/id dialed (*81<queue> / *80<queue>): log in/out of that queue
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - specific queue)\n";
             $conf .= "exten => {$pattern_code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
             if ($gated) {
                 $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
@@ -105,8 +105,8 @@ function __syncFeatureCodesBody() {
             $pattern_code = '_' . $base_code . '.';
             $prefix_len = strlen($base_code);
 
-            // 1. Doğrudan kod tuşlandığında (*22): Varsayılan mola türü (1. mola)
-            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - varsayilan)\n";
+            // 1. Code dialed alone (*22): the default pause type (pause 1)
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - default)\n";
             $conf .= "exten => {$base_code},1,NoOp(Feature Code {$key} (default) by \${CALLERID(num)})\n";
             if ($gated) {
                 $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
@@ -125,8 +125,8 @@ function __syncFeatureCodesBody() {
             $conf .= " same => n,Wait(1)\n";
             $conf .= " same => n,Hangup()\n\n";
 
-            // 2. Mola ID ile tuşlandığında (*22<mola_id>, ör: *221, *222):
-            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - mola id ile)\n";
+            // 2. Dialed with a pause ID (*22<pause_id>, e.g. *221, *222):
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - with pause id)\n";
             $conf .= "exten => {$pattern_code},1,NoOp(Feature Code {$key} by \${CALLERID(num)})\n";
             if ($gated) {
                 $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
@@ -254,7 +254,7 @@ function __syncFeatureCodesBody() {
                 break;
 
             default:
-                // Bilinmeyen/gelecekteki feature_key: güvenli varsayılan (sadece kapat)
+                // Unknown/future feature_key: safe default (just hang up)
                 $conf .= " same => n,Hangup()\n";
                 break;
         }

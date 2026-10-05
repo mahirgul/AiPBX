@@ -1,20 +1,20 @@
 <?php
 /**
- * Temiz URL → hedef eşlemesi (whitelist).
+ * Clean URL → target map (whitelist).
  *
- * 2026-09-01: index.php'den buraya taşındı. Sebep: bu tablo hem front
- * controller'ın hem de duman testinin (bin/smoke.php) tek doğruluk kaynağı
- * olmalı — test kendi rota listesini tutarsa yeni sayfa eklendiğinde sessizce
- * kapsam dışı kalır. index.php dispatch de yaptığı için dışarıdan require
- * edilemiyordu.
+ * 2026-09-01: moved here from index.php. Reason: this table must be the
+ * single source of truth for both the front controller and the smoke test
+ * (bin/smoke.php) — if the test kept its own route list, a new page would
+ * silently fall out of coverage. index.php also dispatches, so it could not
+ * be required from outside.
  *
- * Değer biçimleri:
- *  - 'role' → rol bazlı ana sayfa yönlendirmesi (index.php'de ele alınır)
- *  - array  → ['controller' => X::class, 'action' => 'y', 'module' => 'eski_dosya.php']
+ * Value forms:
+ *  - 'role' → role-based home page redirect (handled in index.php)
+ *  - array  → ['controller' => X::class, 'action' => 'y', 'module' => 'old_file.php']
  *
- * NOT: 'module' anahtarı auth.php::getModuleKeyForPage()'in
- * basename($_SERVER['PHP_SELF']) eşlemesini korumak için var — RBAC'a
- * dokunmadan MVC göçünü mümkün kılan anahtar.
+ * NOTE: the 'module' key exists to keep auth.php::getModuleKeyForPage()'s
+ * basename($_SERVER['PHP_SELF']) mapping — the key that made the MVC
+ * migration possible without touching RBAC.
  */
 return [
     '/'                => 'role',

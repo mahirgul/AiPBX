@@ -1,32 +1,31 @@
 /**
  * Persistent Header WebRTC Softphone Engine (Powered by JsSIP)
  * Enables Direct WebRTC Calling over WSS (WebSocket) for all users/admins
- * AI PBX — Santral, Faks & Çağrı Merkezi Portalı
+ * AI PBX — PBX, fax & call center portal
  */
 
-// Sadece TURNS (TLS/TCP, 5349) kullanılıyor — düz STUN/TURN (UDP/plain TCP)
-// ağ kenar cihazında protokol imzasından filtrelendiği için kaldırıldı
-// (bkz. api/sip_credentials.php). Ekstra aday denemesi gecikmeye yol açtığından
-// tek, çalıştığı doğrulanmış yol bırakıldı.
+// Only TURNS (TLS/TCP, 5349) is used — plain STUN/TURN (UDP/plain TCP) was
+// removed because the network edge filters it by protocol signature
+// (see api/sip_credentials.php). Extra candidate attempts added delay, so the
+// single path verified to work was kept.
 var HEADER_PHONE_ICE_SERVERS = [];
 
-// TURN kimligi 1 SAAT gecerlidir (bkz. api/sip_credentials.php:
-// username = (time()+3600) + ":" + dahili). Eskiden yalnizca sayfa
-// yuklenirken bir kez alinip bir daha tazelenmiyordu. Bir cagri merkezi
-// sekmesi saatlerce acik kaldigi icin kimlik oluyor ve coturn TURN
-// kimligini reddediyor:
+// The TURN credential is valid for 1 HOUR (see api/sip_credentials.php:
+// username = (time()+3600) + ":" + extension). It used to be fetched only
+// once on page load and never refreshed. A call-center tab stays open for
+// hours, so the credential expired and coturn rejected it:
 //
 //   check_stun_auth: Cannot find credentials of user <1789423958:19000>
 //   ... error 401: Unauthorized
-//   peer usage: rp=0, rb=0, sp=0, sb=0      <- roleden SIFIR paket
+//   peer usage: rp=0, rb=0, sp=0, sb=0      <- ZERO packets from the relay
 //
-// Sonuc: medya rolesi hic kurulmuyor, cagri bastan sona sessiz kaliyor ve
-// Asterisk rtp_timeout ile kanali kapatiyor. 2026-09-15 olcumu: 19000'in
-// kimligi 40 dakika, 3002'ninki 17 dakika gecmisti.
+// Result: the media relay was never set up, the call stayed silent from
+// start to end and Asterisk closed the channel with rtp_timeout. Measured on
+// 2026-09-15: 19000's credential had expired 40 minutes before, 3002's 17.
 //
-// Kimlik artik periyodik tazeleniyor. Dizi YERINDE guncellenir: pcConfig
-// her cagrida bu diziyi okudugu icin (headerPhoneMakeCall ve gelen cagri
-// cevaplama) cagri anina ek istek/gecikme eklemeye gerek yoktur.
+// The credential is now refreshed periodically. The array is updated IN
+// PLACE: pcConfig reads it on every call (headerPhoneMakeCall and answering
+// an incoming call), so no extra request/delay is needed at call time.
 var HEADER_PHONE_TURN_INDEX = -1;
 var HEADER_PHONE_TURN_TIMER = null;
 const HEADER_PHONE_TURN_REFRESH_MS = 30 * 60 * 1000; // 30 dk < 1 saatlik omur
@@ -71,11 +70,11 @@ var headerCallInProgress = false;
 var _headerCallRinging = false;
 var selectedAutocompleteIndex = -1;
 
-// Zil/çevirme tonu admin panelde (Santral Ayarları) seçilebilir; seçilmemişse
-// varsayılan dosyalar kullanılır (bkz. header.php).
+// The ring/ringback tone can be chosen in the admin panel (PBX Settings);
+// otherwise the default files are used (see header.php).
 var ringerAudio = new Audio(window.WEBRTC_RING_INCOMING_URL || "/assets/sounds/ringtone.mp3");
 ringerAudio.loop = true;
-// Giden aramada "çalıyor" durumu için gelen çağrı zilinden ayrı bir ton.
+// A tone for the "ringing" state of outgoing calls, separate from the incoming ring.
 var ringbackAudio = new Audio(window.WEBRTC_RING_OUTGOING_URL || "/assets/sounds/ring1.mp3");
 ringbackAudio.loop = true;
 var activeCallNotification = null;
@@ -144,18 +143,18 @@ function updateHeaderPhoneModeUI() {
 
 function handleHeaderBreakChange(reason) {
     if (!reason || reason === "") {
-        // End break (Çalışıyor)
+        // End break (working)
         UIHelper.ccPost('unpause')
         .then(data => {
             if (data.success) {
                 if (window.notify) window.notify.success("Moladan dönüldü, aktif durumdasınız");
-                // Temsilci ekranı açıksa hemen yenile (checkAgentStatus diye bir fonksiyon yoktu).
+                // Refresh the agent screen at once if it is open (there was no checkAgentStatus function).
                 if (typeof loadAgentQueues === "function") loadAgentQueues();
             } else {
                 if (window.notify) window.notify.error(data.error || "Moladan dönülemedi");
             }
-            // Sunucudaki gerçek durumu yansıt: başarılı da olsa başarısız da
-            // olsa, dropdown önceden seçilmiş yanlış bir değerde asılı kalmasın.
+            // Reflect the real state on the server: success or failure, the
+            // dropdown must not stay stuck on a wrongly pre-selected value.
             syncHeaderBreakStatus();
         })
         .catch(() => {
@@ -168,7 +167,7 @@ function handleHeaderBreakChange(reason) {
         .then(data => {
             if (data.success) {
                 if (window.notify) window.notify.warning("Mola başlatıldı: " + reason);
-                // Temsilci ekranı açıksa hemen yenile (checkAgentStatus diye bir fonksiyon yoktu).
+                // Refresh the agent screen at once if it is open (there was no checkAgentStatus function).
                 if (typeof loadAgentQueues === "function") loadAgentQueues();
             } else {
                 if (window.notify) window.notify.error(data.error || "Mola başlatılamadı");
@@ -184,9 +183,10 @@ function handleHeaderBreakChange(reason) {
 
 var _syncHeaderBreakStatusInFlight = false;
 function syncHeaderBreakStatus() {
-    // 15sn'lik polling döngüsü önceki isteğin bitip bitmediğini kontrol etmiyordu
-    // — yavaş bir ağda yanıtlar sırayla dönmezse eski veri yeni veriyi ezebiliyordu
-    // (düşük etkili ama gerçek bir race condition, 2026-08-21 denetiminde bulundu).
+    // The 15 s polling loop did not check whether the previous request had
+    // finished — on a slow network responses could come back out of order and
+    // old data could overwrite new data (a low-impact but real race
+    // condition, found in the 2026-08-21 audit).
     if (_syncHeaderBreakStatusInFlight) return;
     _syncHeaderBreakStatusInFlight = true;
 
@@ -283,9 +283,9 @@ function initHeaderWebRTCPhone() {
             return;
         }
         if (data.turn && data.turn.urls) {
-            // Dış ağdan / symmetric NAT arkasından arayanlar için TURN rölesi
-            // (STUN tek başına yetmiyor). Kimlik zaman-sınırlıdır (1 saat),
-            // bu yüzden sayfa açık kaldığı sürece periyodik tazelenir.
+            // TURN relay for callers from outside / behind symmetric NAT
+            // (STUN alone is not enough). The credential is time-limited
+            // (1 hour), so it is refreshed periodically while the page is open.
             applyHeaderPhoneTurn(data.turn);
             startHeaderPhoneTurnRefresh();
         }
@@ -296,17 +296,17 @@ function initHeaderWebRTCPhone() {
     });
 }
 
-// Bir RTCPeerConnection için uzak/yerel medya olay dinleyicilerini bağlar.
-// Hem giden aramalarda (headerPhoneMakeCall -> eventHandlers.peerconnection)
-// hem gelen aramalarda (newRTCSession -> session.on("peerconnection")) aynı
-// fonksiyon kullanılır — bkz. initHeaderJsSIPPhone'daki not.
+// Wires the remote/local media event listeners of an RTCPeerConnection.
+// The same function is used for outgoing calls (headerPhoneMakeCall ->
+// eventHandlers.peerconnection) and incoming calls (newRTCSession ->
+// session.on("peerconnection")) — see the note in initHeaderJsSIPPhone.
 function attachPeerConnectionHandlers(pc) {
     pc.ontrack = (event) => {
         const audioEl = document.getElementById("globalRemoteAudio");
         if (!audioEl) return;
-        // event.streams[0] bazı SDP/negotiation durumlarında boş gelebilir;
-        // bu durumda track'ten elle bir MediaStream kurulur (tarayıcı sesi
-        // yine de çalabilsin diye).
+        // event.streams[0] can be empty in some SDP/negotiation cases; then a
+        // MediaStream is built from the track by hand (so the browser can
+        // still play the audio).
         const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
         audioEl.srcObject = stream;
         audioEl.play().catch((err) => console.warn("Uzak ses oynatma başarısız:", err));
@@ -455,10 +455,11 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                         window.notify.info("Gelen çağrı sonlandı (iptal edildi veya başka cihazdan cevaplandı).");
                     }
                 } else {
-                    // Giden WebRTC araması başarısız oldu (ör. bağlantı/kayıt o an
-                    // kararsızdı, ICE/DTLS kurulamadı) — önceden burada hiçbir
-                    // bildirim yoktu, kullanıcı "aradım ama hiçbir şey olmadı"
-                    // diye şikayet ediyordu çünkü arayüz sessizce sıfırlanıyordu.
+                    // The outgoing WebRTC call failed (e.g. the connection/
+                    // registration was unstable right then, ICE/DTLS could not
+                    // be set up) — there used to be no notice here at all and
+                    // users complained "I called but nothing happened" because
+                    // the interface reset silently.
                     const cause = (e && e.cause) ? e.cause : "";
                     if (window.notify) {
                         window.notify.error("Arama başlatılamadı" + (cause ? " (" + cause + ")" : "") + ". Tekrar deneyin.");
@@ -517,7 +518,7 @@ function headerPhoneAnswerCall() {
         updateHeaderPhoneStatus("GÖRÜŞÜLÜYOR (WebRTC)", "var(--success)");
         hideIncomingCallBanner();
 
-        // Temsilci başka bir sayfadaysa, çağrı kopmadan müşteri ve not ekranına (cc-agent) SPA ile geç
+        // If the agent is on another page, switch to the customer & notes screen (cc-agent) via SPA without dropping the call
         if (window.IS_CC_AGENT && !window.location.pathname.startsWith('/cc-agent')) {
             if (typeof window.loadSPAPage === 'function') {
                 window.loadSPAPage('/cc-agent', true);
@@ -563,13 +564,13 @@ function headerPhoneHangup() {
         headerJsSipSession = null;
     }
 
-    // Parallel Server-Side AMI Hangup — "SIP Masaüstü Telefon" (AMI Originate)
-    // modunda bu, çağrının kapandığını santrale bildiren TEK sinyaldir (JsSIP
-    // session hiç oluşmaz). Önceden bu istek sessizce yutuluyordu (ccPost() HTTP
-    // 200 + {success:false} durumunda hiç reddetmiyor, sadece ağ hatasında
-    // reddediyor) — arayüz her durumda "kapandı" gösterip UI'yı sıfırlıyordu,
-    // ama santral tarafında kanal hâlâ açık/köprülenmiş kalabiliyordu. Artık
-    // hem {success:false} hem ağ hatası durumunda kullanıcı uyarılıyor.
+    // Parallel Server-Side AMI Hangup — in "SIP desk phone" (AMI Originate)
+    // mode this is the ONLY signal telling the PBX the call ended (no JsSIP
+    // session exists). This request used to be swallowed silently (ccPost()
+    // never rejects on HTTP 200 + {success:false}, only on network errors) —
+    // the interface showed "ended" and reset the UI in every case, while on
+    // the PBX the channel could stay open/bridged. Now the user is warned on
+    // both {success:false} and network errors.
     UIHelper.ccPost('hangup').then(res => {
         if (!res || !res.success) {
             if (window.notify) window.notify.warning("Çağrı santral tarafında tam olarak sonlandırılamamış olabilir, lütfen kontrol edin.");
@@ -624,11 +625,11 @@ function headerPhoneMakeCall() {
             const options = {
                 mediaConstraints: { audio: getPreferredMicConstraint(), video: false },
                 pcConfig: { iceServers: HEADER_PHONE_ICE_SERVERS },
-                // Giden aramalarda JsSIP, session.on("peerconnection", ...) ile
-                // dinlenmeye fırsat kalmadan RTCPeerConnection'ı call() içinde
-                // senkron olarak oluşturup 'peerconnection' olayını hemen ateşler
-                // — bu yüzden dinleyici burada, call() tetiklenmeden önce
-                // eventHandlers ile bağlanıyor (bkz. attachPeerConnectionHandlers).
+                // For outgoing calls JsSIP creates the RTCPeerConnection
+                // synchronously inside call() and fires 'peerconnection' at
+                // once, before session.on("peerconnection", ...) could be
+                // attached — so the listener is wired here through
+                // eventHandlers before call() runs (see attachPeerConnectionHandlers).
                 eventHandlers: {
                     peerconnection: (e) => attachPeerConnectionHandlers(e.peerconnection)
                 }
@@ -742,11 +743,11 @@ function headerPhoneTransfer(target) {
 }
 
 // =========================================================================
-// 5. TELEFON AYARLARI (MİKROFON/HOPARLÖR SEÇİMİ, ZİL SESİ DÜZEYİ)
+// 5. PHONE SETTINGS (MICROPHONE/SPEAKER CHOICE, RING VOLUME)
 // =========================================================================
-// Tercihler tarayıcı bazlı (localStorage) saklanır — sunucuya gönderilmez.
-// Header'daki telefon durum rozetine tıklanınca açılan modal (bkz.
-// templates/phone_settings_modal.php) üzerinden yönetilir.
+// Preferences are stored per browser (localStorage) — never sent to the
+// server. Managed through the modal that opens when the phone status badge
+// in the header is clicked (see templates/phone_settings_modal.php).
 
 function getPreferredMicConstraint() {
     const savedId = localStorage.getItem("phone_mic_device_id");
@@ -1015,7 +1016,7 @@ function hideIncomingCallBanner() {
 
 function syncAgentAutoLogin() {
     if (window.IS_CC_AGENT) {
-        // Temsilci bu oturumda elle çıkış yaptıysa otomatik girişi zorlama
+        // Do not force an automatic login if the agent logged out by hand in this session
         if (sessionStorage.getItem('cc_agent_manual_logout') === '1') {
             return;
         }
@@ -1269,7 +1270,7 @@ document.addEventListener("click", function _unlockAudioAndNotify() {
     document.removeEventListener("click", _unlockAudioAndNotify);
 }, { once: true });
 
-// WebRTC Bağlantı ve Kayıt İzleme (Arka plandaki sekmelerde WebSocket düşerse otomatik toparlar)
+// WebRTC connection & registration watch (recovers automatically if the WebSocket drops in a background tab)
 setInterval(() => {
     if (headerJsSipUA) {
         if (!headerJsSipUA.isConnected()) {

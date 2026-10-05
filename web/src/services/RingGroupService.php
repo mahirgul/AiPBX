@@ -1,6 +1,6 @@
 <?php
 /**
- * Ring Groups (Çalma Grupları) Service
+ * Ring groups service
  */
 
 require_once dirname(__DIR__) . '/helpers.php';
@@ -43,7 +43,7 @@ class RingGroupService {
                 throw new \Exception("Çalacak en az bir dahili veya harici numara girmelisiniz!");
             }
 
-            // Çakışma kontrolü (dahililer, özellik kodları, IVR, kuyruk vb. ile)
+            // Conflict check (with extensions, feature codes, IVRs, queues etc.)
             internalNumberValidate($group_number, 'ring_group', $id);
 
             $db = getDB();
@@ -67,7 +67,7 @@ class RingGroupService {
             $id = intval($id);
             $db = getDB();
 
-            // Referans kontrolü (DID, IVR vb.)
+            // Reference check (DID, IVR etc.)
             $refs = [];
             $dids = $db->prepare("SELECT did_number FROM pbx_dids WHERE dest_type = 'ring_group' AND dest_id = ?");
             $dids->execute([$id]);

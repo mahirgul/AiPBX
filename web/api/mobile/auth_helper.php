@@ -1,8 +1,46 @@
 <?php
 /**
- * Mobile API Authentication Helper & Bearer Token Validator
+ * Shared entry point of the mobile JSON API: response helpers and the
+ * Bearer token issue/validation used by the Android and iOS apps.
  */
 require_once __DIR__ . '/../../config.php';
+
+/**
+ * Common JSON/CORS headers; answers the CORS preflight (OPTIONS) and ends it.
+ */
+function mobileApiStart(string $methods = 'GET, POST, OPTIONS'): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Methods: ' . $methods);
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
+}
+
+/** Sends a JSON response with the given HTTP status and ends the request. */
+function mobileJson(array $payload, int $status = 200): never
+{
+    http_response_code($status);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/** Shorthand for an error response: {"success": false, "error": ...}. */
+function mobileError(string $error, int $status, array $extra = []): never
+{
+    mobileJson(['success' => false] + $extra + ['error' => $error], $status);
+}
+
+/** JSON request body as an array (empty when the body is not JSON). */
+function mobileInput(): array
+{
+    $json = json_decode((string) file_get_contents('php://input'), true);
+    return is_array($json) ? $json : [];
+}
 
 function getMobileTokenSecret(): string
 {
@@ -16,8 +54,8 @@ function getMobileTokenSecret(): string
 }
 
 /**
- * İmzalanan metin. token_epoch 0 iken eski biçim ("id:exp") — böylece sütun
- * eklenmeden önce verilmiş token'lar geçerli kalır. chat/auth.go aynısını yapar.
+ * The signed text. With token_epoch 0 the old form ("id:exp") — so tokens
+ * issued before the column was added stay valid. chat/auth.go does the same.
  */
 function mobileTokenPayload(int $userId, int $expiresAt, int $epoch): string
 {
@@ -89,7 +127,7 @@ function validateMobileToken(?string $token): ?array
         return null;
     }
 
-    // DB user check - T-6: sip_password eklendi ki refresh.php parolayı boş döndürmesin
+    // DB user check - T-6: sip_password added so refresh.php does not return an empty password
     $db = getDB();
     $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, is_active, token_epoch FROM sys_users WHERE id = ?');
     $stmt->execute([(int)$userId]);
@@ -99,7 +137,7 @@ function validateMobileToken(?string $token): ?array
         return null;
     }
 
-    // HMAC verification (token_epoch dahil — şifre sıfırlanınca eski token'lar düşer)
+    // HMAC verification (token_epoch included — old tokens drop when the password is reset)
     $payload = mobileTokenPayload((int)$userId, (int)$expiresAt, (int)$user['token_epoch']);
     $expected_sig = hash_hmac('sha256', $payload, getMobileTokenSecret());
 
@@ -119,20 +157,15 @@ function requireMobileAuth(): array
     $user = validateMobileToken($token);
 
     if (!$user) {
-        http_response_code(401);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => false,
-            'error' => 'Yetkisiz erişim! Geçersiz veya süresi dolmuş oturum tokenı.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        mobileError('Yetkisiz erişim! Geçersiz veya süresi dolmuş oturum tokenı.', 401);
     }
 
     return $user;
 }
 
 /**
- * Mobil istemciler için standart oturum yanıt paketini (token, SIP, TURN, push) oluşturur.
+ * Builds the standard session response package (token, SIP, TURN, push) for mobile clients.
  */
 function buildMobileLoginResponse(array $user): array
 {

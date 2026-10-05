@@ -9,27 +9,13 @@ class IvrController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_ivr'])) {
-                $res = PBXHelper::saveIVR($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_ivrs', $_POST['ivr_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['save_ivr_entry'])) {
-                $res = PBXHelper::saveIVREntry($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_ivr_entry'])) {
-                $res = PBXHelper::deleteIVREntry($_POST['entry_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_ivr'])) {
-                $res = PBXHelper::deleteIVR($_POST['ivr_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_ivr' => fn() => IVRService::saveIVR($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('pbx_ivrs', $_POST['ivr_id'] ?? 0, static::csrfToken()),
+            'save_ivr_entry' => fn() => IVRService::saveIVREntry($_POST),
+            'delete_ivr_entry' => fn() => IVRService::deleteIVREntry($_POST['entry_id'] ?? 0, static::csrfToken()),
+            'delete_ivr' => fn() => IVRService::deleteIVR($_POST['ivr_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $ivrs = IvrRepository::allOrderedByTitle();
         $entries_by_ivr = IvrRepository::entriesByIvr();
@@ -42,6 +28,6 @@ class IvrController extends BaseController
             'entries_by_ivr' => $entries_by_ivr,
             'modules' => $modules,
             'announcements' => $announcements,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

@@ -6,7 +6,7 @@ public enum ApiError: LocalizedError {
     case decodingError(Error)
     case networkError(Error)
     case custom(String)
-    /// Şifre doğru ama iki adımlı doğrulama kodu gerekli (ya da kod hatalı).
+    /// The password is right but the two-step verification code is needed (or the code is wrong).
     case otpRequired(String)
 
     public var errorDescription: String? {
@@ -85,9 +85,9 @@ public final class ApiClient {
             throw ApiError.custom("Sunucu yanıtı alınamadı")
         }
 
-        // Sunucunun hata metni (kilit, pasif hesap, 2FA) kullanıcıya olduğu gibi
-        // gösterilir — önceden do/catch kendi fırlattığı hatayı yakalayıp
-        // "Veri işleme hatası"na çeviriyordu.
+        // The server's error text (lockout, inactive account, 2FA) is shown to
+        // the user as is — the do/catch used to catch its own thrown error and
+        // turn it into "Data processing error".
         let res: LoginResponse
         do {
             res = try JSONDecoder().decode(LoginResponse.self, from: data)
@@ -184,7 +184,7 @@ public final class ApiClient {
 
     // MARK: - Call History
 
-    // Sunucudaki uç nokta call_history.php (Android ile aynı); history.php yoktu (404).
+    // The endpoint on the server is call_history.php (same as Android); there was no history.php (404).
     public func getCallHistory(baseUrl: String, token: String, filter: String = "all", limit: Int = 100, offset: Int = 0) async throws -> CallHistoryResponse {
         let base = cleanUrl(baseUrl)
         guard let url = URL(string: "\(base)/api/mobile/call_history.php?filter=\(filter)&limit=\(limit)&offset=\(offset)") else {
@@ -332,8 +332,8 @@ public final class ApiClient {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
-        // Sunucu (chat/handlers.go) "target_extension" bekliyor; eski adresler ve
-        // "target_ext" alanı 404/400 döndürüyordu.
+        // The server (chat/handlers.go) expects "target_extension"; the old
+        // addresses and the "target_ext" field returned 404/400.
         let body = ["target_extension": targetExt]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Ring Groups (Çalma Grupları) View
+ * Ring groups view
  */
 use PBX\Destinations\DestinationRegistry;
 ?>
@@ -9,7 +9,7 @@ use PBX\Destinations\DestinationRegistry;
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?>
-            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($ring_groups); ?></span>
+            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($ring_groups); ?></span>
         </div>
         <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
@@ -33,18 +33,6 @@ use PBX\Destinations\DestinationRegistry;
             <li><strong><?php echo t('ring_groups.help_internal_ext', 'Sanal Dahili Numarası:'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc', 'Her çalma grubunun kendi dahili erişim numarası olabilir (ör: 7000). IVR, zaman koşulu ve dahililerden doğrudan bu numara aranabilir.'); ?></li>
         </ul>
     </div>
-
-    <?php if (!empty($message)): ?>
-        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
 
     <div class="table-responsive">
         <table class="data-table">
@@ -70,7 +58,7 @@ use PBX\Destinations\DestinationRegistry;
                         $num_array = array_filter($num_array);
                         ?>
                         <tr>
-                            <td><span class="badge badge-info" style="font-size: 13px;"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($rg['group_number']); ?></span></td>
+                            <td><span class="badge badge-info u-fs-13"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($rg['group_number']); ?></span></td>
                             <td class="u-strong"><?php echo htmlspecialchars($rg['name']); ?></td>
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
@@ -132,7 +120,7 @@ use PBX\Destinations\DestinationRegistry;
     </div>
 </div>
 
-<!-- Modal: Çalma Grubu Ekle / Düzenle -->
+<!-- Modal: add / edit ring group -->
 <div class="modal-overlay" id="rgModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
@@ -229,69 +217,4 @@ use PBX\Destinations\DestinationRegistry;
     </div>
 </div>
 
-<script>
-let currentRgDestId = '';
-
-function loadRgDestOptions(callback) {
-    const type = document.getElementById('modal_rg_dest_type').value;
-    const destSelect = document.getElementById('modal_rg_dest_id');
-    destSelect.innerHTML = '<option value="">Yükleniyor...</option>';
-
-    fetch('/api/destinations.php?module=' + encodeURIComponent(type))
-        .then(r => r.json())
-        .then(data => {
-            destSelect.innerHTML = '';
-            if (data.success && data.options && data.options.length > 0) {
-                data.options.forEach(opt => {
-                    const el = document.createElement('option');
-                    el.value = opt.id;
-                    el.textContent = opt.name;
-                    if (String(opt.id) === String(currentRgDestId)) el.selected = true;
-                    destSelect.appendChild(el);
-                });
-            } else {
-                destSelect.innerHTML = '<option value="">(Hedef bulunamadı)</option>';
-            }
-            if (callback) callback();
-        })
-        .catch(() => {
-            destSelect.innerHTML = '<option value="">(Hata)</option>';
-        });
-}
-
-function openCreateRgModal() {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Çalma Grubu';
-    document.getElementById('modal_rg_id').value = '0';
-    document.getElementById('modal_rg_number').value = '';
-    document.getElementById('modal_rg_name').value = '';
-    document.getElementById('modal_rg_numbers').value = '';
-    document.getElementById('modal_rg_strategy').value = 'ringall';
-    document.getElementById('modal_rg_timeout').value = '30';
-    document.getElementById('modal_rg_cid_prefix').value = '';
-    document.getElementById('modal_rg_record').checked = true;
-    document.getElementById('modal_rg_active').checked = true;
-
-    document.getElementById('modal_rg_dest_type').value = 'hangup';
-    currentRgDestId = 'busy';
-    loadRgDestOptions();
-    UIHelper.openOverlayModal('rgModal');
-}
-
-function openEditRgModal(rg) {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Çalma Grubu Düzenle: ' + escapeHtml(rg.name || '');
-    document.getElementById('modal_rg_id').value = rg.id || '0';
-    document.getElementById('modal_rg_number').value = rg.group_number || '';
-    document.getElementById('modal_rg_name').value = rg.name || '';
-    document.getElementById('modal_rg_numbers').value = rg.numbers_list || '';
-    document.getElementById('modal_rg_strategy').value = rg.ring_strategy || 'ringall';
-    document.getElementById('modal_rg_timeout').value = rg.ring_timeout || 30;
-    document.getElementById('modal_rg_cid_prefix').value = rg.cid_prefix || '';
-    document.getElementById('modal_rg_record').checked = (rg.record_call == 1);
-    document.getElementById('modal_rg_active').checked = (rg.is_active == 1);
-
-    document.getElementById('modal_rg_dest_type').value = rg.fallback_dest_type || 'hangup';
-    currentRgDestId = rg.fallback_dest_id || 'busy';
-    loadRgDestOptions();
-    UIHelper.openOverlayModal('rgModal');
-}
-</script>
+<script src="<?php echo asset('/assets/js/ring_groups.js'); ?>"></script>

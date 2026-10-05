@@ -78,8 +78,8 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * modulesDefinition()'daki Türkçe grup adlarını çeviri anahtarı için bir
-     * slug'a eşler (View'de t('roles.group_' . slug, $groupTr) çağrısında kullanılır).
+     * Maps the Turkish group names in modulesDefinition() to a slug for the
+     * translation key (used in the view's t('roles.group_' . slug, $groupTr) call).
      */
     public static function groupSlugs(): array
     {

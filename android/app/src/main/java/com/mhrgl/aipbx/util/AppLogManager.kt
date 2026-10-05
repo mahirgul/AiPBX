@@ -29,7 +29,7 @@ object AppLogManager {
     private const val TAG = "AppLogManager"
 
     /**
-     * Cihaz ve sistem bilgilerini toplayıp güncel Logcat çıktısıyla birleştirir.
+     * Collects device and system info and joins it with the current Logcat output.
      */
     suspend fun collectLogs(context: Context): String = withContext(Dispatchers.IO) {
         val sb = StringBuilder()
@@ -61,7 +61,7 @@ object AppLogManager {
         sb.append("--- LOGCAT ÇIKTISI (Son Olaylar) ---\n")
 
         try {
-            // Logcat'ten son 1500 satırı çek
+            // Get the last 1500 lines from Logcat
             val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time", "-t", "1500"))
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             var line: String?
@@ -79,7 +79,7 @@ object AppLogManager {
     }
 
     /**
-     * Aktif ağ türünü belirler (Wi-Fi, Mobil, vs.)
+     * Determines the active network type (Wi-Fi, mobile, etc.)
      */
     private fun getActiveNetworkType(context: Context): String {
         return try {
@@ -99,7 +99,7 @@ object AppLogManager {
     }
 
     /**
-     * Logları bir metin dosyasına kaydeder (Cache/Logs klasörüne).
+     * Saves the logs to a text file (in the Cache/Logs folder).
      */
     suspend fun saveLogsToFile(context: Context): File = withContext(Dispatchers.IO) {
         val logContent = collectLogs(context)
@@ -113,8 +113,8 @@ object AppLogManager {
     }
 
     /**
-     * Log dosyasını doğrudan cihazın "İndirilenler" (Downloads) klasörüne kaydeder.
-     * Kullanıcıya indirme linki gibi yerel dosya erişimi sağlar.
+     * Saves the log file directly to the device's Downloads folder.
+     * Gives the user local file access like a download link.
      */
     suspend fun exportLogsToDownloads(context: Context): Uri? = withContext(Dispatchers.IO) {
         val logContent = collectLogs(context)
@@ -153,7 +153,7 @@ object AppLogManager {
     }
 
     /**
-     * Log dosyasını FileProvider üzerinden dışa aktarma / paylaşma (Share Sheet) açar.
+     * Opens export / sharing (share sheet) of the log file through FileProvider.
      */
     fun shareLogs(context: Context, logFile: File) {
         try {

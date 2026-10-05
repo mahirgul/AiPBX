@@ -1,7 +1,7 @@
 <?php
 /**
- * PBX Master Facade Suite
- * Delegates business logic to domain-specific services in src/services/
+ * Loads the domain services (src/services/) and holds the two helpers they
+ * share: handleAction() (CSRF check + exception safety) and toggleStatus().
  */
 
 require_once __DIR__ . '/db_helper.php';
@@ -39,70 +39,18 @@ class PBXHelper {
         }
     }
 
-    // User Service Proxies
-    public static function saveUser($data) { return UserService::saveUser($data); }
-    public static function deleteUser($id, $csrf) { return UserService::deleteUser($id, $csrf); }
-    public static function resetUserPassword($data) { return UserService::resetPassword($data); }
-
-    // Trunk Service Proxies
-    public static function saveTrunk($data) { return TrunkService::saveTrunk($data); }
-    public static function deleteTrunk($id, $csrf) { return TrunkService::deleteTrunk($id, $csrf); }
-
-    // Queue Service Proxies
-    public static function saveQueue($data) { return QueueService::saveQueue($data); }
-    public static function deleteQueue($id, $csrf) { return QueueService::deleteQueue($id, $csrf); }
-
-    // IVR Service Proxies
-    public static function saveIVR($data) { return IVRService::saveIVR($data); }
-    public static function deleteIVR($id, $csrf) { return IVRService::deleteIVR($id, $csrf); }
-    public static function saveIVREntry($data) { return IVRService::saveIVREntry($data); }
-    public static function deleteIVREntry($id, $csrf) { return IVRService::deleteIVREntry($id, $csrf); }
-
-    // Time Condition Service Proxies
-    public static function saveTimeCondition($data) { return TimeConditionService::saveTimeCondition($data); }
-    public static function deleteTimeCondition($id, $csrf) { return TimeConditionService::deleteTimeCondition($id, $csrf); }
-
-    // Route Service Proxies
-    public static function saveDIDRoute($data) { return RouteService::saveDIDRoute($data); }
-    public static function deleteDIDRoute($id, $csrf) { return RouteService::deleteDIDRoute($id, $csrf); }
-    public static function saveOutboundRoute($data) { return RouteService::saveOutboundRoute($data); }
-    public static function deleteOutboundRoute($id, $csrf) { return RouteService::deleteOutboundRoute($id, $csrf); }
-
-    // Sound Service Proxies
-    public static function uploadAnnouncement($data, $files) { return SoundService::uploadAnnouncement($data, $files); }
-    public static function saveAnnouncement($data, $files = []) { return SoundService::saveAnnouncement($data, $files); }
-    public static function deleteAnnouncement($id, $csrf) { return SoundService::deleteAnnouncement($id, $csrf); }
-    public static function saveMOHClass($data) { return SoundService::saveMOHClass($data); }
-    public static function deleteMOHClass($id, $csrf) { return SoundService::deleteMOHClass($id, $csrf); }
-    public static function uploadMOHFile($data, $files, $csrf) { return SoundService::uploadMOHFile($data, $files, $csrf); }
-    public static function saveTimeGroup($data) { return TimeConditionService::saveTimeGroup($data); }
-    public static function deleteTimeGroup($id, $csrf) { return TimeConditionService::deleteTimeGroup($id, $csrf); }
-
-    // Extension Service Proxies
-    public static function saveExtension($data) { return ExtensionService::saveExtension($data); }
-    public static function removeExtension($id, $csrf) { return ExtensionService::removeExtension($id, $csrf); }
-    public static function syncAllExtensions($csrf) { return ExtensionService::syncAll($csrf); }
-
-    // Feature Code Service Proxies
-    public static function saveFeatureCode($data, array $validRoleKeys) { return FeatureCodeService::saveFeatureCode($data, $validRoleKeys); }
-    public static function toggleFeatureCodeStatus($id, $csrf) { return FeatureCodeService::toggleStatus($id, $csrf); }
-
-    // Hangup Action Service Proxies
-    public static function saveHangupAction($data) { return HangupActionService::saveHangupAction($data); }
-    public static function deleteHangupAction($id, $csrf) { return HangupActionService::deleteHangupAction($id, $csrf); }
-
     /**
      * Unified Toggle Active/Passive Status
      */
     public static function toggleStatus($table, $id, $csrf_token) {
         return self::handleAction($csrf_token, function() use ($table, $id) {
-            // domain: PENDING_SYNC_DOMAIN_MAP anahtarı (2026-08-24'e kadar bu
-            // fonksiyon syncXxx()'i DOĞRUDAN/ANINDA çağırıyordu — 11 Service
-            // dosyasının ertelenmiş-reload sistemine taşındığı rollout'ta
-            // (2026-08-24) bu genel-amaçlı helper's src/helpers.php'de yaşadığı
-            // için gözden kaçmıştı, kullanıcının audit-log genişletme isteği
-            // sırasında bulunup aynı sisteme taşındı. label_col: entity_label
-            // için okunacak kolon.
+            // domain: the PENDING_SYNC_DOMAIN_MAP key (until 2026-08-24 this
+            // function called syncXxx() DIRECTLY/AT ONCE — in the rollout that
+            // moved 11 service files to the deferred reload system
+            // (2026-08-24) it was missed because this general-purpose helper
+            // lives in src/helpers.php; it was found during the user's
+            // audit-log extension request and moved to the same system.
+            // label_col: the column read for entity_label.
             $allowed_tables = [
                 'sys_users' => ['domain' => 'extensions', 'label_col' => 'full_name', 'entity_type' => 'extension'],
                 'pbx_trunks' => ['domain' => 'trunks', 'label_col' => 'title', 'entity_type' => 'trunk'],
@@ -127,10 +75,11 @@ class PBXHelper {
             $current = $row['is_active'];
             $new_status = ($current == 1) ? 0 : 1;
 
-            // sys_users + pasife alma: son aktif admin hesabı pasife alınırsa,
-            // roles.php/system_users.php (auth.php'nin admin-only circuit-breaker'ı
-            // yüzünden) kimseye açılmaz hale gelir — deleteUser()'daki aynı korumanın
-            // eşdeğeri burada da uygulanıyor (bkz. UserService::deleteUser()).
+            // sys_users + deactivation: if the last active admin account is
+            // deactivated, roles.php/system_users.php open for nobody (because
+            // of auth.php's admin-only circuit breaker) — the equivalent of the
+            // same protection in deleteUser() applies here too (see
+            // UserService::deleteUser()).
             if ($table === 'sys_users' && $new_status === 0) {
                 $target_role = DBHelper::fetchColumn("SELECT role FROM sys_users WHERE id = ?", [$id]);
                 if ($target_role === 'admin') {
@@ -144,9 +93,10 @@ class PBXHelper {
             DBHelper::update($table, ['is_active' => $new_status], 'id', $id);
 
             $status_text = ($new_status == 1) ? 'Aktif' : 'Pasif';
-            // sys_users özel durumu: dahilisi olmayan bir kullanıcının (ör. saf
-            // ofis personeli) aktif/pasif durumu PJSIP config'ini hiç etkilemiyor
-            // — gereksiz yere "extensions" domain'ini kirletmeyelim.
+            // sys_users special case: the active/passive state of a user
+            // without an extension (e.g. plain office staff) does not affect
+            // the PJSIP config at all — do not dirty the "extensions" domain
+            // for nothing.
             if ($table !== 'sys_users' || !empty($row['extension'])) {
                 markPendingSync($meta['domain'], $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
                 // Pasife alinan bir hedefin numarasi da dialplan'dan dusmeli

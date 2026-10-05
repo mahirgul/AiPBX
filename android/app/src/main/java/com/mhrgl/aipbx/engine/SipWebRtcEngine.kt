@@ -69,12 +69,12 @@ class SipWebRtcEngine(private val context: Context) {
                 databaseEnabled = true
                 mediaPlaybackRequiresUserGesture = false
                 cacheMode = WebSettings.LOAD_NO_CACHE
-                // Dosya-URL izinleri KAPALI (2026-09-05).
-                // İçerik file:// ile değil, WebViewAssetLoader üzerinden
-                // https://appassets.androidplatform.net/... sanal adresinden
-                // geliyor; bu izinlerin hiçbirine ihtiyaç yok.
-                // allowUniversalAccessFromFileURLs ayrıca Google Play'in
-                // taradığı bir maddedir.
+                // File URL permissions are OFF (2026-09-05).
+                // The content does not come over file:// but from the virtual
+                // address https://appassets.androidplatform.net/... through
+                // WebViewAssetLoader; none of these permissions are needed.
+                // allowUniversalAccessFromFileURLs is also an item Google Play
+                // scans for.
                 allowFileAccess = false
                 allowContentAccess = false
                 allowFileAccessFromFileURLs = false
@@ -97,18 +97,18 @@ class SipWebRtcEngine(private val context: Context) {
                     triggerEngineReady()
                 }
 
-                // SSL hatasında yükleme İPTAL EDİLİR — asla izin verilmez (proceed edilmez).
+                // On an SSL error the load is CANCELLED — never allowed (never proceeded).
                 //
-                // Eski kod handler->proceed çağırıyordu ve Google Play bunu
-                // "Unsafe Implementation of WebView SSL Error Handler" olarak
-                // reddetti (2026-09-05). Zaten hiçbir işe yaramıyordu: WebView'in
-                // yüklediği tek adres https://appassets.androidplatform.net/... ve
-                // onu WebViewAssetLoader yakalayıp APK assets'inden veriyor, yani
-                // gerçek bir TLS el sıkışması olmuyor. WSS ve TURNS de bu geri
-                // çağrıyı tetiklemez.
+                // The old code called handler->proceed and Google Play rejected
+                // it as "Unsafe Implementation of WebView SSL Error Handler"
+                // (2026-09-05). It was useless anyway: the only address the
+                // WebView loads is https://appassets.androidplatform.net/...,
+                // which WebViewAssetLoader intercepts and serves from the APK
+                // assets, so no real TLS handshake happens. WSS and TURNS do not
+                // trigger this callback either.
                 //
-                // Buraya bir hata düşüyorsa gerçekten yanlış bir şey vardır ve
-                // görünür olmalıdır; log satırı teşhis için bilerek bırakıldı.
+                // If an error lands here, something is really wrong and it must
+                // be visible; the log line is kept on purpose for diagnosis.
                 override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
                     Log.e(TAG, "WebView SSL hatasi (${error?.primaryError}) - yukleme iptal edildi: ${error?.url}")
                     handler?.cancel()

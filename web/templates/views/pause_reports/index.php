@@ -1,33 +1,33 @@
 <!-- Statistics Overview Cards -->
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_total_breaks'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--primary);">
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_total_breaks'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-primary">
             <?php echo $total_breaks; ?>
         </div>
         <?php if ($active_breaks > 0): ?>
-            <div style="font-size: 12px; color: var(--warning); margin-top: 4px; font-weight: 600;">
+            <div class="u-fs-12 u-warning u-mt-4 u-fw-600">
                 <i class="fas fa-running"></i> <?php echo sprintf(t('pause_reports.stat_active_now'), $active_breaks); ?>
             </div>
         <?php endif; ?>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_total_duration'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--warning);">
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_total_duration'); ?></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-warning">
             <?php echo PauseReportRepository::formatSeconds($total_sec); ?>
         </div>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_avg_duration'); ?></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_avg_duration'); ?></div>
         <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--info);">
             <?php echo PauseReportRepository::formatSeconds($avg_sec); ?>
         </div>
     </div>
 
     <div class="card u-mb-0">
-        <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;"><?php echo t('pause_reports.stat_top_reason'); ?></div>
+        <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_top_reason'); ?></div>
         <div style="font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--success); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <?php echo htmlspecialchars($top_reason); ?>
         </div>
@@ -115,7 +115,7 @@
             <tbody>
                 <?php if (empty($logs)): ?>
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                        <td colspan="8" class="u-text-center u-p-30 u-muted">
                             <i class="fas fa-coffee" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
                             <?php echo t('pause_reports.empty'); ?>
                         </td>
@@ -126,20 +126,20 @@
                     ?>
                         <tr>
                             <td>#<?php echo $l['id']; ?></td>
-                            <td style="font-weight: 700;"><?php echo htmlspecialchars($l['agent_name'] ?: '-'); ?></td>
+                            <td class="u-fw-700"><?php echo htmlspecialchars($l['agent_name'] ?: '-'); ?></td>
                             <td>
                                 <span class="badge badge-info"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($l['agent_extension']); ?></span>
                             </td>
                             <td>
-                                <span class="badge badge-warning" style="font-size: 13px;">
+                                <span class="badge badge-warning u-fs-13">
                                     <i class="fas fa-coffee"></i> <?php echo htmlspecialchars($l['pause_reason']); ?>
                                 </span>
                             </td>
                             <td><?php echo date('d.m.Y H:i:s', strtotime($l['start_time'])); ?></td>
                             <td>
-                                <?php echo $l['end_time'] ? date('d.m.Y H:i:s', strtotime($l['end_time'])) : '<span style="color: var(--warning); font-weight:700;">' . t('pause_reports.ongoing') . '</span>'; ?>
+                                <?php echo $l['end_time'] ? date('d.m.Y H:i:s', strtotime($l['end_time'])) : '<span class="u-warning u-fw-700">' . t('pause_reports.ongoing') . '</span>'; ?>
                             </td>
-                            <td style="font-weight: 700;">
+                            <td class="u-fw-700">
                                 <?php echo PauseReportRepository::formatSeconds($l['duration_sec']); ?>
                             </td>
                             <td>

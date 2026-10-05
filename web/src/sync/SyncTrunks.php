@@ -77,30 +77,32 @@ function __syncAllTrunksBody() {
         $send_pai = (!empty($sip_map['send_pai']) && $sip_map['send_pai'] === 'yes') || !empty($t['send_pai']);
         $send_rpid = (!empty($sip_map['send_rpid']) && $sip_map['send_rpid'] === 'yes') || !empty($t['send_rpid']);
 
-        // Bağlantı modu (2026-09-01):
-        //   'ip'       → karşı santral sabit IP'de, AOR'da STATİK contact tutulur
-        //   'register' → karşı santral BİZE kaydolur; statik contact KALDIRILIR
-        //                (adres kayıttan öğrenilir) ve endpoint'e GELEN kimlik
-        //                doğrulama (auth=) eklenir.
-        // DİKKAT: 'register' modunda karşı taraf kaydolana kadar AOR'da hiçbir
-        // contact olmaz — yani biz o trunk'ı ARAYAMAYIZ. Geçiş, karşı taraftaki
-        // kayıt ayarıyla eşzamanlı yapılmalı.
+        // Connection mode (2026-09-01):
+        //   'ip'       → the far PBX has a fixed IP; a STATIC contact is kept on the AOR
+        //   'register' → the far PBX registers TO US; the static contact is REMOVED
+        //                (the address is learned from the registration) and INBOUND
+        //                authentication (auth=) is added to the endpoint.
+        // CAUTION: in 'register' mode the AOR has no contact until the far end
+        // registers — so we CANNOT CALL that trunk. Switch over together with the
+        // registration setting on the far end.
         $conn_mode = (($t['connection_mode'] ?? 'ip') === 'register') ? 'register' : 'ip';
-        // Kimlik bilgisi yoksa kayıt modunu UYGULAMA: auth= satırı üretilemeyeceği
-        // için kayıt PAROLASIZ kabul edilirdi (aynı IP'den herkes kaydolabilir).
-        // Servis katmanı da bunu engelliyor, bu son savunma hattı.
+        // Do NOT APPLY register mode without credentials: no auth= line could be
+        // generated, so the registration would be accepted WITHOUT A PASSWORD
+        // (anyone from the same IP could register). The service layer blocks it
+        // too; this is the last line of defence.
         if ($conn_mode === 'register' && !$has_auth) {
             $conn_mode = 'ip';
         }
 
-        // AOR ADI, karşı tarafın KAYDOLDUĞU KULLANICI ADIYLA birebir aynı olmak
-        // ZORUNDA. Asterisk'in registrar'ı, endpoint'in aors= listesindeki adları
-        // kaydolan isimle karşılaştırıyor; eşleşme yoksa REGISTER'a 404 Not Found
-        // dönüyor ve logda "AOR '' not found for endpoint 'x'" yazıyor.
-        // 2026-09-01'de canlıda tam olarak bu yaşandı: aors=<trunk adı> iken NEC 'nec2'
-        // olarak kaydoluyordu. (Aynı tuzak daha önce dahili SIP hesaplarında da
-        // görülmüştü — orada da endpoint SECTION adı aranıyor, numara değil.)
-        // IP modunda böyle bir kısıt yok; AOR adı trunk adı olarak kalır.
+        // The AOR NAME MUST be exactly the USERNAME the far end REGISTERS with.
+        // Asterisk's registrar compares the names in the endpoint's aors= list
+        // with the registering name; without a match REGISTER gets 404 Not Found
+        // and the log says "AOR '' not found for endpoint 'x'".
+        // Exactly this happened live on 2026-09-01: with aors=<trunk name> the NEC
+        // registered as 'nec2'. (The same trap showed up earlier with the
+        // internal SIP accounts — there too the endpoint SECTION name is looked
+        // up, not the number.) IP mode has no such constraint; the AOR name stays
+        // the trunk name.
         $aor_name = $t_name;
         if ($conn_mode === 'register') {
             $kayit_adi = preg_replace('/[^a-zA-Z0-9_-]/', '', $auth_user);
@@ -133,8 +135,8 @@ function __syncAllTrunksBody() {
             $conf .= "outbound_proxy={$outbound_proxy}\n";
         }
         if ($conn_mode === 'register') {
-            // GELEN kimlik doğrulama: karşı tarafın REGISTER'ı (ve INVITE'ları)
-            // bu bilgiyle doğrulanır. outbound_auth'un AKSİ yön.
+            // INBOUND authentication: the far end's REGISTER (and INVITEs) are
+            // authenticated with these details. The OPPOSITE direction of outbound_auth.
             $conf .= "auth={$t_name}-auth\n";
         }
         if ($has_auth) {
@@ -215,10 +217,11 @@ function __syncAllTrunksBody() {
         $conf .= "[{$aor_name}]\n";
         $conf .= "type=aor\n";
         if ($conn_mode === 'register') {
-            // Statik contact YOK: adres karşı tarafın kaydından öğrenilir.
-            // remove_existing şart — karşı santral yeniden başlayıp yeni bir
-            // contact'la kaydolduğunda, süresi dolmamış ESKİ kayıt max_contacts
-            // sınırını doldurup yeni kaydı reddettirirdi (trunk sessizce ölür).
+            // NO static contact: the address is learned from the far end's
+            // registration. remove_existing is required — when the far PBX
+            // restarts and registers with a new contact, the OLD, unexpired
+            // registration would fill the max_contacts limit and get the new one
+            // rejected (the trunk dies silently).
             $conf .= "remove_existing=yes\n";
         } else {
             $conf .= "contact=sip:{$ip}:{$port}\n";

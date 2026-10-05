@@ -181,8 +181,8 @@ def make_screenshot_2():
     draw_text_center(pdraw, "02:45", center_sx, ay + 285, f_dur, (56, 189, 248, 255))
 
     # Controls Grid
-    # Row 1: Sessiz, Tuşlar, Hoparlör
-    # Row 2: Beklet (Hold), Aktar (Transfer)
+    # Row 1: mute (Sessiz), keypad (Tuşlar), speaker (Hoparlör)
+    # Row 2: hold (Beklet), transfer (Aktar)
     btn_r = 44
     row1_y = ay + 420
     draw_call_action(pdraw, center_sx - 240, row1_y, btn_r, "🎙️", "Sessiz", False)

@@ -28,14 +28,14 @@ data class LoginResponse(
     @SerializedName("user") val user: UserProfile?,
     @SerializedName("sip") val sip: SipCredentials?,
     @SerializedName("push_config") val pushConfig: PushConfig? = null,
-    /** Hesapta iki adımlı doğrulama açık: şifreyle birlikte 6 haneli kod gerekli. */
+    /** Two-step verification is on for the account: a 6-digit code is needed with the password. */
     @SerializedName("otp_required") val otpRequired: Boolean = false
 )
 
-/** Sunucu şifreyi kabul etti ama iki adımlı doğrulama kodu istiyor (ya da kod hatalı). */
+/** The server accepted the password but asks for the two-step verification code (or the code is wrong). */
 class OtpRequiredException(message: String) : Exception(message)
 
-/** Sunucu oturumu kesin olarak reddetti (401/403: süresi doldu, şifre değişti, hesap pasif). */
+/** The server rejected the session for good (401/403: expired, password changed, account inactive). */
 class SessionExpiredException(message: String) : Exception(message)
 
 data class UserProfile(

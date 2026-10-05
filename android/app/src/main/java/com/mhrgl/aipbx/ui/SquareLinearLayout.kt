@@ -5,10 +5,10 @@ import android.util.AttributeSet
 import android.widget.LinearLayout
 
 /**
- * En ve boy ölçüsünü her zaman 1:1 kare yapan LinearLayout.
- * TableLayout veya diğer üst kaplar genişliği ya da yüksekliği esnetmeye
- * çalışsa bile View ölçüsünü her zaman kare tutar.
- * Bu sayede oval drawable arka planı %100 kusursuz bir daire olarak çizilir.
+ * A LinearLayout whose width and height are always 1:1 square.
+ * Even when a TableLayout or other parent tries to stretch the width or
+ * height, the view always stays square.
+ * That way an oval drawable background is drawn as a perfect circle.
  */
 class SquareLinearLayout @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyle: Int = 0

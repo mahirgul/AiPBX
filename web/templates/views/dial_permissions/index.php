@@ -44,22 +44,10 @@ if (!$selected_group && !empty($groups)) {
     </div>
 </div>
 
-<?php if (!empty($message)): ?>
-    <div class="alert alert-success u-mb-20">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($error)): ?>
-    <div class="alert alert-danger u-mb-20">
-        <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-
 <div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
-    <!-- Sol Kolon: Yetki Grupları Listesi -->
+    <!-- Left column: permission group list -->
     <div class="card" style="padding: 16px;">
-        <div class="card-header" style="margin-bottom: 14px;">
+        <div class="card-header u-mb-14">
             <div class="card-title">
                 <i class="fas fa-layer-group u-primary"></i> <?php echo t('dial_permissions.groups_list', 'Yetki Grupları'); ?>
             </div>
@@ -74,7 +62,7 @@ if (!$selected_group && !empty($groups)) {
                 ?>
                 <div style="padding: 12px 14px; border-radius: 10px; border: 1px solid <?php echo $isSelected ? 'var(--primary)' : 'var(--border-color)'; ?>; background: <?php echo $isSelected ? 'rgba(var(--primary-rgb, 2, 132, 199), 0.08)' : 'var(--bg-card)'; ?>; cursor: pointer; transition: all 0.2s;" onclick="location.href='/dial-permissions?group_id=<?php echo $g['id']; ?>'">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+                        <span class="u-fw-700 u-fs-14 u-text-main">
                             <?php echo htmlspecialchars($g['group_name']); ?>
                             <?php if ($isDefault): ?>
                                 <span class="badge badge-info u-fs-10"><?php echo t('dial_permissions.default_badge', 'Varsayılan'); ?></span>
@@ -87,7 +75,7 @@ if (!$selected_group && !empty($groups)) {
                         <?php endif; ?>
                     </div>
                     <?php if (!empty($g['description'])): ?>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;"><?php echo htmlspecialchars($g['description']); ?></div>
+                        <div class="u-fs-12 u-muted u-mb-8"><?php echo htmlspecialchars($g['description']); ?></div>
                     <?php endif; ?>
                     <div class="u-flex-between u-muted u-fs-11">
                         <span><i class="fas fa-list-ol"></i> <?php echo (int)$g['rules_count']; ?> kural</span>
@@ -115,9 +103,9 @@ if (!$selected_group && !empty($groups)) {
         </div>
     </div>
 
-    <!-- Sağ Kolon: Seçili Grubun Kuralları -->
-    <div class="card" style="padding: 20px;">
-        <div class="card-header" style="margin-bottom: 16px;">
+    <!-- Right column: rules of the selected group -->
+    <div class="card u-p-20">
+        <div class="card-header u-mb-16">
             <div>
                 <div class="card-title">
                     <i class="fas fa-sliders-h u-primary"></i> 
@@ -138,9 +126,9 @@ if (!$selected_group && !empty($groups)) {
         </div>
 
         <?php if (hasModulePermission('dial_permissions', 'edit') && $selected_group): ?>
-            <!-- Hızlı Kural Ekleme Butonları -->
+            <!-- Quick rule buttons -->
             <div style="background: var(--bg-input); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px;">
-                <span style="font-weight: 600; color: var(--text-main);"><i class="fas fa-bolt text-warning"></i> <?php echo t('dial_permissions.quick_rules', 'Hızlı Kurallar:'); ?></span>
+                <span class="u-fw-600 u-text-main"><i class="fas fa-bolt text-warning"></i> <?php echo t('dial_permissions.quick_rules', 'Hızlı Kurallar:'); ?></span>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0', 'prefix', 'deny', 'Şehirlerarası/GSM/Yurtdışı Engelle')" style="padding: 2px 8px; font-size: 11px;">
                     <i class="fas fa-ban text-danger"></i> 0 ile Başlayanlar (Dış Hat)
                 </button>
@@ -222,7 +210,7 @@ if (!$selected_group && !empty($groups)) {
     </div>
 </div>
 
-<!-- Modal: Yetki Grubu Ekle / Düzenle -->
+<!-- Modal: add / edit permission group -->
 <div class="modal-overlay" id="groupModal">
     <div class="modal-card" style="max-width: 500px;">
         <div class="modal-header">
@@ -266,9 +254,9 @@ if (!$selected_group && !empty($groups)) {
     </div>
 </div>
 
-<!-- Modal: Kural Ekle / Düzenle -->
+<!-- Modal: add / edit rule -->
 <div class="modal-overlay" id="ruleModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="ruleModalTitle"><i class="fas fa-filter u-primary"></i> Yetki Kuralı</h3>
             <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('ruleModal')"><i class="fas fa-times"></i></button>
@@ -321,59 +309,4 @@ if (!$selected_group && !empty($groups)) {
     </div>
 </div>
 
-<script>
-function openCreateGroupModal() {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Grubu Ekle';
-    document.getElementById('modal_group_id').value = '0';
-    document.getElementById('modal_group_name').value = '';
-    document.getElementById('modal_group_desc').value = '';
-    document.getElementById('modal_default_action').value = 'allow';
-    document.getElementById('modal_group_active').checked = true;
-    UIHelper.openOverlayModal('groupModal');
-}
-
-function openEditGroupModal(g) {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Yetki Grubu Düzenle: ' + escapeHtml(g.group_name || '');
-    document.getElementById('modal_group_id').value = g.id || '0';
-    document.getElementById('modal_group_name').value = g.group_name || '';
-    document.getElementById('modal_group_desc').value = g.description || '';
-    document.getElementById('modal_default_action').value = g.default_action || 'allow';
-    document.getElementById('modal_group_active').checked = (g.is_active == 1);
-    UIHelper.openOverlayModal('groupModal');
-}
-
-function openCreateRuleModal(groupId) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Kuralı Ekle';
-    document.getElementById('modal_rule_id').value = '0';
-    document.getElementById('modal_rule_group_id').value = groupId;
-    document.getElementById('modal_rule_pattern').value = '';
-    document.getElementById('modal_rule_pattern_type').value = 'prefix';
-    document.getElementById('modal_rule_action').value = 'deny';
-    document.getElementById('modal_rule_priority').value = '10';
-    document.getElementById('modal_rule_desc').value = '';
-    UIHelper.openOverlayModal('ruleModal');
-}
-
-function openEditRuleModal(r) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Kural Düzenle: ' + escapeHtml(r.pattern || '');
-    document.getElementById('modal_rule_id').value = r.id || '0';
-    document.getElementById('modal_rule_group_id').value = r.group_id;
-    document.getElementById('modal_rule_pattern').value = r.pattern || '';
-    document.getElementById('modal_rule_pattern_type').value = r.pattern_type || 'prefix';
-    document.getElementById('modal_rule_action').value = r.action || 'deny';
-    document.getElementById('modal_rule_priority').value = r.priority || '10';
-    document.getElementById('modal_rule_desc').value = r.description || '';
-    UIHelper.openOverlayModal('ruleModal');
-}
-
-function quickAddRule(groupId, pattern, type, action, desc) {
-    document.getElementById('modal_rule_id').value = '0';
-    document.getElementById('modal_rule_group_id').value = groupId;
-    document.getElementById('modal_rule_pattern').value = pattern;
-    document.getElementById('modal_rule_pattern_type').value = type;
-    document.getElementById('modal_rule_action').value = action;
-    document.getElementById('modal_rule_priority').value = '10';
-    document.getElementById('modal_rule_desc').value = desc;
-    document.getElementById('ruleForm').submit();
-}
-</script>
+<script src="<?php echo asset('/assets/js/dial_permissions.js'); ?>"></script>

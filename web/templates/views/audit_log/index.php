@@ -57,7 +57,7 @@
             <?php endforeach; ?>
         </select>
 
-        <div style="position: relative; max-width: 220px;">
+        <div class="u-relative u-maxw-220">
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('audit_log.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
@@ -80,7 +80,7 @@
             <tbody>
                 <?php if (empty($logs)): ?>
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                        <td colspan="6" class="u-text-center u-muted u-p-30">
                             <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
                             <?php echo t('audit_log.empty'); ?>
                         </td>
@@ -102,7 +102,7 @@
                     ?>
                     <?php foreach ($logs as $log): ?>
                         <tr>
-                            <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($log['created_at']); ?></td>
+                            <td class="u-nowrap u-fs-12 u-muted"><?php echo htmlspecialchars($log['created_at']); ?></td>
                             <td><?php echo htmlspecialchars($log['username'] ?? t('pending_sync.unknown_user')); ?></td>
                             <td>
                                 <?php if (!empty($log['domain'])): ?>
@@ -142,7 +142,7 @@
             <option value="FAILED" <?php echo $login_status_filter === 'FAILED' ? 'selected' : ''; ?>><?php echo t('audit_log.login_failed'); ?></option>
         </select>
 
-        <div style="position: relative; max-width: 220px;">
+        <div class="u-relative u-maxw-220">
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="login_search" class="form-control form-control-sm" placeholder="<?php echo t('audit_log.login_search_placeholder'); ?>" value="<?php echo htmlspecialchars($login_search_query); ?>" style="padding-left: 28px;">
         </div>
@@ -164,7 +164,7 @@
             <tbody>
                 <?php if (empty($login_attempts)): ?>
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                        <td colspan="5" class="u-text-center u-muted u-p-30">
                             <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
                             <?php echo t('audit_log.empty'); ?>
                         </td>
@@ -173,7 +173,7 @@
                     <?php $loginBadgeMap = ['SUCCESS' => 'success', 'FAILED' => 'danger']; ?>
                     <?php foreach ($login_attempts as $la): ?>
                         <tr>
-                            <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($la['created_at']); ?></td>
+                            <td class="u-nowrap u-fs-12 u-muted"><?php echo htmlspecialchars($la['created_at']); ?></td>
                             <td><?php echo htmlspecialchars($la['username']); ?></td>
                             <td><?php echo uiStatusBadge($la['status'], $loginBadgeMap, 'info', $la['status'] === 'SUCCESS' ? t('audit_log.login_success') : t('audit_log.login_failed')); ?></td>
                             <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($la['ip_address']); ?></td>

@@ -7,35 +7,12 @@ class MailSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_mail_settings'])) {
-                $res = MailSettingsService::saveSettings($_POST);
-                if ($res['success']) {
-                    static::notifySuccess($res['message']);
-                    $message = $res['message'];
-                } else {
-                    static::notifyError($res['error']);
-                    $error = $res['error'];
-                }
-            } elseif (isset($_POST['send_test_email'])) {
-                if (!static::verifyCsrf()) {
-                    static::notifyError('Geçersiz CSRF güvenlik doğrulama kodu!');
-                } else {
-                    $test_recipient = trim($_POST['test_recipient'] ?? '');
-                    $res = MailSettingsService::sendTestEmail($test_recipient);
-                    if ($res['success']) {
-                        static::notifySuccess($res['message']);
-                        $message = $res['message'];
-                    } else {
-                        static::notifyError($res['error']);
-                        $error = $res['error'];
-                    }
-                }
-            }
-        }
+        $notices = static::handlePost([
+            'save_mail_settings' => fn() => MailSettingsService::saveSettings($_POST),
+            'send_test_email' => fn() => static::verifyCsrf()
+                ? MailSettingsService::sendTestEmail(trim($_POST['test_recipient'] ?? ''))
+                : ['success' => false, 'error' => t('common.invalid_csrf')],
+        ]);
 
         $sys_settings = MailSettingsRepository::allSettings();
         $postfix_status = MailSettingsRepository::getPostfixStatus();
@@ -44,6 +21,6 @@ class MailSettingsController extends BaseController
         static::renderPage('mail_settings/index', [
             'settings' => $sys_settings,
             'postfix' => $postfix_status,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

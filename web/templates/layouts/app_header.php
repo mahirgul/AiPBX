@@ -1,10 +1,10 @@
 <?php
 /**
- * Uygulama sayfalarının ortak düzeninin üst yarısı (head + sidebar + topbar).
- * YALNIZCA BaseController::renderPage() tarafından dahil edilir; oturum ve
- * modül yetkisi kontrolü orada yapılır — bu şablon güvenlik kararı vermez.
+ * Top half of the shared layout of the application pages (head + sidebar + topbar).
+ * Included ONLY by BaseController::renderPage(); the session and module
+ * permission checks happen there — this template makes no security decision.
  *
- * Beklenen değişkenler (renderPage tanımlar): $page_title
+ * Expected variables (set by renderPage): $page_title
  */
 $db = getDB();
 
@@ -14,33 +14,7 @@ $theme = $_SESSION['theme'] ?? 'light';
 $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
-$is_dashboard_active = in_array($active_page, ['dashboard.php', 'index.php', 'my_phone.php', 'chat.php', 'cdr_reports.php', 'reports.php']);
-$is_trunk_active = in_array($active_page, ['trunks.php', 'did_routes.php', 'outbound_routes.php', 'dial_permissions.php']) || str_contains($request_uri, '/dial-permissions');
-$is_pbx_active = in_array($active_page, ['time_conditions.php', 'ivrs.php', 'extensions.php', 'queues.php', 'sounds.php', 'end_call.php', 'ring_groups.php', 'conferences.php', 'boss_secretary.php']) || str_contains($request_uri, '/ring-groups') || str_contains($request_uri, '/conferences') || str_contains($request_uri, '/boss-secretary');
-$is_admin_active = in_array($active_page, ['system_users.php', 'roles.php', 'asterisk_settings.php', 'brand_settings.php', 'fax_mail_settings.php', 'fax_settings.php', 'pending_sync.php', 'audit_log.php', 'push_settings.php', 'mail_settings.php', 'system_update.php']);
-$is_fax_active = in_array($active_page, ['fax_inbox.php', 'fax_send.php', 'fax_sent.php']);
-$is_cc_active = in_array($active_page, ['cc_agent.php', 'cc_supervisor.php', 'cc_board.php', 'queue_logs.php', 'pause_reports.php', 'queue_reports.php']);
-$is_security_active = in_array($active_page, ['firewall.php', 'fail2ban.php', 'certificates.php']);
-$is_teams_active = in_array($active_page, ['ms_teams.php']);
-$is_google_active = in_array($active_page, ['google_integration.php']) || str_contains($request_uri, '/google-integration');
-$is_integrations_active = $is_teams_active || $is_google_active;
-
-// Module Visibility Checks via RBAC
-$can_view_dashboard_group = hasModulePermission('dashboard', 'view') || hasModulePermission('my_phone', 'view') || hasModulePermission('chat', 'view') || hasModulePermission('cdr_reports', 'view') || hasModulePermission('cc_reports', 'view');
-$can_view_trunks_group = hasModulePermission('trunks', 'view') || hasModulePermission('did_routes', 'view') || hasModulePermission('outbound_routes', 'view') || hasModulePermission('dial_permissions', 'view');
-$can_view_pbx_group = hasModulePermission('time_conditions', 'view') || hasModulePermission('ivrs', 'view') || hasModulePermission('extensions', 'view') || hasModulePermission('queues', 'view') || hasModulePermission('sounds', 'view') || hasModulePermission('end_call', 'view') || hasModulePermission('ring_groups', 'view') || hasModulePermission('conferences', 'view') || hasModulePermission('boss_secretary', 'view');
-$can_view_admin_group = hasModulePermission('system_users', 'view') || hasModulePermission('roles', 'view') || hasModulePermission('asterisk_settings', 'view') || hasModulePermission('brand_settings', 'view') || hasModulePermission('pending_sync', 'view') || hasModulePermission('push_settings', 'view') || hasModulePermission('fax_mail_settings', 'view') || hasModulePermission('fax_settings', 'view') || hasModulePermission('audit_log', 'view') || hasModulePermission('mail_settings', 'view');
-$can_view_fax_group = hasModulePermission('fax_inbox', 'view') || hasModulePermission('fax_send', 'view') || hasModulePermission('fax_sent', 'view');
-$can_view_cc_group = hasModulePermission('cc_agent', 'view') || hasModulePermission('cc_board', 'view') || hasModulePermission('cc_reports', 'view') || hasModulePermission('pause_reports', 'view') || hasModulePermission('queue_logs', 'view') || hasModulePermission('queue_reports', 'view');
-$can_view_integrations_group = ($role === 'admin') || hasModulePermission('ms_teams', 'view');
-$is_ai_active = in_array($active_page, ['ai_tts.php'], true);
-$can_view_ai_group = hasModulePermission('ai_tts', 'view');
-$can_view_teams_group = $can_view_integrations_group;
-
-// Firewall/fail2ban HER ZAMAN admin-only (auth.php circuit-breaker) — grup
-// görünürlüğü de doğrudan role kontrolüyle, roles.php'nin izin matrisinden
-// bağımsız (roles/system_users ile aynı desen).
-$can_view_security_group = ($role === 'admin');
+// Sidebar groups, their visibility and open state: templates/sidebar_menu.php.
 
 // Fetch Dynamic Branding Settings
 $site_title = getSystemSetting('site_title', 'AiPBX');
@@ -54,15 +28,15 @@ $site_favicon_url = getSystemSetting('site_favicon_url', '');
 // SPA Single-Page App AJAX Buffer Interceptor
 $is_spa_request = !empty($_SERVER['HTTP_X_SPA_REQUEST']) || (isset($_GET['spa']) && $_GET['spa'] === '1');
 if ($is_spa_request) {
-    // SPA yanıtında sidebar hiç basılmıyor (sadece .content-area) — sidebar'daki
-    // "Uygula" rozeti bu yüzden normal SPA navigasyonlarında/form gönderimlerinde
-    // hiç yenilenmiyordu (2026-08-31, kullanıcı bulgusu: Uygula'ya basınca rozet
-    // sayfa yenilenene kadar eski sayıyla kalıyordu). Güncel bekleyen-değişiklik
-    // sayısı burada data attribute olarak taşınıyor, spa_router.js her SPA
-    // navigasyonu/form gönderimi sonrası bunu okuyup sidebar rozetini JS ile
-    // günceller — sidebar.php'nin kendisi bu istekte hiç çalışmadığı için
-    // gerekli fonksiyon burada ayrıca require ediliyor (aynı sidebar.php'deki
-    // savunmacı desen).
+    // The SPA response never prints the sidebar (only .content-area) — so the
+    // "Apply" badge in the sidebar was never refreshed on normal SPA
+    // navigations/form submissions (2026-08-31, user finding: after pressing
+    // Apply the badge kept the old count until the page was reloaded). The
+    // current pending-change count travels here as a data attribute;
+    // spa_router.js reads it after every SPA navigation/form submission and
+    // updates the sidebar badge with JS — sidebar.php itself does not run on
+    // this request, so the needed function is required here separately (the
+    // same defensive pattern as in sidebar.php).
     require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
     $pending_sync_count_for_spa = hasModulePermission('pending_sync', 'view') ? getPendingSyncCount() : 0;
     ob_start();
@@ -90,7 +64,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
     <title><?php echo isset($page_title) ? htmlspecialchars($page_title) . ' - ' : ''; ?><?php echo htmlspecialchars($site_title); ?></title>
     <link rel="shortcut icon" href="<?php echo !empty($site_favicon_url) ? htmlspecialchars($site_favicon_url) : '/favicon.ico'; ?>">
 
-    <!-- PWA: yüklenebilir uygulama desteği -->
+    <!-- PWA: installable app support -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="<?php echo htmlspecialchars(getSystemSetting('brand_color_primary', '#0284c7')); ?>">
     <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
@@ -114,13 +88,13 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         window.CSRF_TOKEN = "<?php echo getCSRFToken(); ?>";
         window.CURRENT_USER_EXT = "<?php echo htmlspecialchars($user['extension'] ?? ''); ?>";
         window.IS_CC_AGENT = <?php echo $is_cc_agent ? 'true' : 'false'; ?>;
-        // WebSocket yolu sys_settings'ten gelir (kodda statik değer yok)
+        // The WebSocket path comes from sys_settings (no static value in code)
         window.PORTAL_WS_PATH = "<?php echo htmlspecialchars(getSystemSetting('pjsip_ws_path', '/ws')); ?>";
-        // SIP parolası sayfa kaynağına gömülmez; /api/sip_credentials.php üzerinden lazım olduğunda alınır
+        // The SIP password is not embedded in the page source; it is fetched from /api/sip_credentials.php when needed
         window.ALLOWED_PHONE_MODE = "<?php echo htmlspecialchars($user['allowed_phone_mode'] ?? 'both'); ?>";
         window.USER_PHONE_MODES = <?php echo json_encode(parsePhoneModes($user['allowed_phone_mode'] ?? 'both')); ?>;
         window.SYSTEM_EXTENSIONS = <?php echo json_encode($db->query("SELECT extension, full_name FROM sys_users WHERE extension IS NOT NULL AND extension != '' ORDER BY full_name ASC")->fetchAll(PDO::FETCH_ASSOC)); ?>;
-        // Softphone zil/çevirme tonu — admin panelde seçilmemişse header_phone.js kendi varsayılanını kullanır
+        // Softphone ring/ringback tone — if none is chosen in the admin panel, header_phone.js uses its own default
         <?php $ring_in = getSystemSetting('webrtc_ring_incoming', ''); $ring_out = getSystemSetting('webrtc_ring_outgoing', ''); ?>
         window.WEBRTC_RING_INCOMING_URL = "<?php echo $ring_in !== '' ? '/api/sound_play.php?file=' . urlencode($ring_in) : ''; ?>";
         window.WEBRTC_RING_OUTGOING_URL = "<?php echo $ring_out !== '' ? '/api/sound_play.php?file=' . urlencode($ring_out) : ''; ?>";

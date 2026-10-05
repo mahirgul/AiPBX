@@ -6,7 +6,7 @@ final class CreateTwoFactorAndPasskeyTables extends AbstractMigration
 {
     public function up(): void
     {
-        // 1. sys_users tablosuna 2FA alanlarını ekle
+        // 1. Add the 2FA fields to the sys_users table
         if ($this->hasTable('sys_users')) {
             $table = $this->table('sys_users');
             if (!$table->hasColumn('two_factor_enabled')) {
@@ -24,7 +24,7 @@ final class CreateTwoFactorAndPasskeyTables extends AbstractMigration
             $table->save();
         }
 
-        // 2. sys_user_passkeys (WebAuthn / FIDO2) tablosunu oluştur
+        // 2. Create the sys_user_passkeys (WebAuthn / FIDO2) table
         if (!$this->hasTable('sys_user_passkeys')) {
             $passkeys = $this->table('sys_user_passkeys', [
                 'id' => true,

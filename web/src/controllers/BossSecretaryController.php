@@ -11,18 +11,10 @@ class BossSecretaryController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_group'])) {
-                $res = BossSecretaryService::saveGroup($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_group'])) {
-                $res = BossSecretaryService::deleteGroup($_POST['group_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_group' => fn() => BossSecretaryService::saveGroup($_POST),
+            'delete_group' => fn() => BossSecretaryService::deleteGroup($_POST['group_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $groups = BossSecretaryService::getGroups();
         $extensions = BossSecretaryService::getAvailableExtensions();
@@ -33,8 +25,6 @@ class BossSecretaryController extends BaseController
             'groups' => $groups,
             'extensions' => $extensions,
             'modules' => $modules,
-            'message' => $message,
-            'error' => $error,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

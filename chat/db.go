@@ -19,7 +19,7 @@ type User struct {
 	FullName  string `json:"full_name"`
 	Role      string `json:"role"`
 	IsActive  bool   `json:"is_active"`
-	// Token geri çekme sayacı (sys_users.token_epoch); yalnızca imza doğrulamada kullanılır.
+	// Token revocation counter (sys_users.token_epoch); used only in signature verification.
 	TokenEpoch int64 `json:"-"`
 }
 
@@ -79,12 +79,12 @@ type Contact struct {
 	UnreadCount int    `json:"unread_count"`
 }
 
-// Zaman damgaları DB'ye NOW() ile, yani MariaDB'nin sistem saat diliminde
-// yazılıyor; chat servisi DB ile aynı makinede çalıştığı için loc=Local ile
-// doğru okunuyor (UTC sistemde UTC, Europe/Istanbul sistemde yerel saat —
-// mevcut verinin dönüştürülmesi gerekmez). İstemcilere giden metin portalın
-// TIMEZONE diliminde üretilir: önceden sistem UTC iken sohbet saatleri
-// portaldan 3 saat geri görünüyordu.
+// Timestamps are written to the DB with NOW(), i.e. in MariaDB's system
+// timezone; the chat service runs on the same machine as the DB, so loc=Local
+// reads them correctly (UTC on a UTC system, local time on a Europe/Istanbul
+// system — existing data needs no conversion). The text sent to the clients
+// is produced in the portal's TIMEZONE: with a UTC system the chat times used
+// to show 3 hours behind the portal.
 const timeLayout = "2006-01-02 15:04:05"
 
 var displayLoc = time.Local
@@ -578,9 +578,9 @@ func IsParticipant(convID int, ext string) (bool, error) {
 	return true, nil
 }
 
-// CanAccessAttachment: dosya adı (thumbnail'ın asıl adı) bu dahilinin aktif
-// katılımcısı olduğu bir sohbette mesaj eki ya da grup resmi olarak geçiyor mu?
-// attachment_url/avatar_url "/chat/media/<alt dizin>/<ad>" biçimindedir.
+// CanAccessAttachment: does the file name (the thumbnail's original name) appear
+// as a message attachment or group picture in a chat this extension is an active
+// participant of? attachment_url/avatar_url look like "/chat/media/<subdir>/<name>".
 func CanAccessAttachment(filename, ext string) (bool, error) {
 	if filename == "" || ext == "" || db == nil {
 		return false, nil
@@ -660,12 +660,12 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		}
 	}
 
-	// CH-G3: En fazla 256 üye
+	// CH-G3: at most 256 members
 	if len(memberMap) > 256 {
 		return nil, nil, fmt.Errorf("Grup üye sayısı en fazla 256 olabilir")
 	}
 
-	// CH-G2: sys_users doğrulaması
+	// CH-G2: sys_users validation
 	for m := range memberMap {
 		u, err := GetUserByExt(m)
 		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
@@ -692,7 +692,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 	}
 	convID := int(convID64)
 
-	// Oluşturan admin rolüyle eklenir
+	// The creator is added with the admin role
 	_, err = tx.Exec(`
 		INSERT INTO chat_participants (conversation_id, extension, role, joined_at)
 		VALUES (?, ?, 'admin', NOW())
@@ -701,7 +701,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		return nil, nil, err
 	}
 
-	// Diğer üyeler eklenir
+	// The other members are added
 	for _, m := range cleanMembers {
 		_, err = tx.Exec(`
 			INSERT INTO chat_participants (conversation_id, extension, role, added_by, joined_at)
@@ -712,7 +712,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		}
 	}
 
-	// Sistem mesajı kaydet
+	// Save a system message
 	creatorName := creatorExt
 	if u, _ := GetUserByExt(creatorExt); u != nil {
 		creatorName = u.FullName
@@ -738,7 +738,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		return nil, nil, err
 	}
 
-	// Oluşturan sistem mesajını okundu işaretler
+	// The creator marks the system message as read
 	_, _ = tx.Exec(`
 		UPDATE chat_participants
 		SET last_read_message_id = ?
@@ -993,7 +993,7 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 		return nil, nil
 	}
 
-	// Son admin ayrılırsa en eski üyeyi admin yap
+	// If the last admin leaves, make the oldest member admin
 	var adminCount int
 	_ = db.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL", convID).Scan(&adminCount)
 	if adminCount == 0 {

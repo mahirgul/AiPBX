@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// GET Metodu - Mevcut Durumu Döndür
+// GET method - return the current state
 $details = MyPhoneRepository::getUserExtensionDetails($userId);
 
 echo json_encode([

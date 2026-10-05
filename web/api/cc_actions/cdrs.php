@@ -1,18 +1,18 @@
 <?php
-// Temsilcinin çağrı geçmişi: my_cdrs
+// The agent's call history: my_cdrs
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
 if ($action === 'my_cdrs') {
     $can_listen = ($user['role'] === 'admin' || !empty($user['can_listen_recordings']));
     $can_view_all = ($user['role'] === 'admin' || !empty($user['can_view_all_cdrs']));
 
-    // Aktif çağrı sırasında girilen "bekleyen" notu (agent_extension bazlı, call_id IS NULL)
-    // bu temsilcinin en son biten çağrısına (CDR'ına) bağla. Son 2 saat içinde girilmiş
-    // bekleyen not aranır; daha eskisi (unutulmuş taslak) otomatik bağlanmaz.
+    // Link the "pending" note entered during the active call (by agent_extension, call_id IS NULL)
+    // to this agent's most recently finished call (its CDR). A pending note entered in the last
+    // 2 hours is looked for; anything older (a forgotten draft) is not linked automatically.
     if (!empty($user_ext)) {
-        // agent_extension artık kuyruk-yönlendirmesiz aramalarda ARANAN tarafı da
-        // gösterebiliyor (bkz. cdrs view güncellemesi) — bu ajanın kendi başlattığı
-        // çağrılar caller_num'da görünür, o yüzden ikisi de kontrol ediliyor.
+        // agent_extension can now also show the CALLED side on calls not
+        // routed through a queue (see the cdrs view update) — calls this agent
+        // started show up in caller_num, so both are checked.
         $stmt_last_cdr = $db->prepare('SELECT call_id FROM cdrs WHERE (agent_extension = ? OR caller_num = ?) AND call_id IS NOT NULL ORDER BY start_time DESC LIMIT 1');
         $stmt_last_cdr->execute([$user_ext, $user_ext]);
         $last_call_id = $stmt_last_cdr->fetchColumn();
@@ -23,8 +23,8 @@ if ($action === 'my_cdrs') {
         }
     }
 
-    // Tümünü görme yetkisi (admin / can_view_all_cdrs) önceden hesaplanıp hiç
-    // kullanılmıyordu; dahilisi olmayan herkes ise TÜM kayıtları görüyordu.
+    // The see-everything permission (admin / can_view_all_cdrs) used to be
+    // computed and never used; and everyone without an extension saw ALL records.
     if ($can_view_all) {
         $stmt = $db->prepare('SELECT id, call_id, start_time, caller_num, agent_extension, agent_name, duration, billsec, status, recording_path FROM cdrs ORDER BY start_time DESC LIMIT 30');
         $stmt->execute();

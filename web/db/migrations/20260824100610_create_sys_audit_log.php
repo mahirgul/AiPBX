@@ -5,15 +5,15 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Kalıcı denetim kaydı (audit log) — 2026-08-24, kullanıcı isteği.
- * `sys_pending_sync`'ten (bekleyen listesi, Gönder'den sonra SATIRLARI SİLİNİR)
- * FARKLI: bu tablo INSERT-ONLY, hiçbir satır asla silinmez — "kim ne zaman
- * neyi değiştirdi" kalıcı olarak burada durur. markPendingSync() her
- * çağrıldığında (bir PBX ayarı kaydedilip/silindiğinde) buraya da bir satır
- * düşer; applyPendingSync() da (kim Gönder'e bastı, hangi domain, başarılı mı)
- * ayrıca loglar. username DENORMALIZE edilmiş (users.full_name'in o anki
- * anlık görüntüsü) — kullanıcı daha sonra silinse/adı değişse bile geçmiş
- * kayıt "o an kim yaptıysa" onu göstermeye devam eder.
+ * Permanent audit record (audit log) — 2026-08-24, user request.
+ * DIFFERENT from `sys_pending_sync` (the pending list, whose ROWS ARE DELETED
+ * after Apply): this table is INSERT-ONLY, no row is ever deleted — "who
+ * changed what and when" stays here permanently. Every time markPendingSync()
+ * is called (a PBX setting saved/deleted) a row lands here too;
+ * applyPendingSync() logs separately as well (who pressed Apply, which
+ * domain, successful or not). username is DENORMALIZED (a snapshot of
+ * users.full_name at that moment) — even if the user is deleted/renamed
+ * later, the history keeps showing "whoever did it at that moment".
  */
 final class CreateSysAuditLog extends AbstractMigration
 {

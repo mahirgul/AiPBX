@@ -1,6 +1,6 @@
 <?php
 /**
- * Kişisel Telefonum & Çağrı Yönetimi View
+ * My phone & call management view
  */
 
 $ext = $ext ?? '';
@@ -36,101 +36,9 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 }
 ?>
 
-<style>
-.my-phone-header-card {
-    padding: 12px 18px;
-    border-left: 4px solid var(--primary);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-.my-phone-badges-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    font-size: 11.5px;
-}
-.my-phone-filter-bar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: center;
-    background: var(--bg-input);
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-}
-.my-phone-filter-buttons {
-    display: inline-flex;
-    gap: 4px;
-    background: var(--bg-card);
-    padding: 3px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-.my-phone-settings-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    align-items: start;
-}
-.my-phone-modes-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-}
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/my_phone.css'); ?>">
 
-@media (max-width: 768px) {
-    .my-phone-header-card {
-        padding: 12px 14px !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 10px !important;
-    }
-    .my-phone-badges-wrapper {
-        width: 100% !important;
-        gap: 6px !important;
-    }
-    .my-phone-badges-wrapper .badge {
-        padding: 4px 7px !important;
-        font-size: 11px !important;
-    }
-    .my-phone-filter-bar {
-        padding: 10px 12px !important;
-        gap: 8px !important;
-    }
-    .my-phone-filter-buttons {
-        width: 100% !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    .my-phone-filter-buttons button {
-        flex: 1 1 auto !important;
-        padding: 6px 8px !important;
-        white-space: nowrap !important;
-        font-size: 11.5px !important;
-    }
-    .my-phone-search-wrapper {
-        min-width: 100% !important;
-        max-width: 100% !important;
-    }
-    .my-phone-settings-form { display: contents; }
-    #tab-pane-history {
-        padding: 14px 12px !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .my-phone-modes-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
-
-<!-- 1. Üst Dahili & Durum Çubuğu -->
+<!-- 1. Top extension & status bar -->
     <div class="card mb-3 my-phone-header-card">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
@@ -138,7 +46,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
             <div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-main);">
+                    <h2 class="u-fs-16 u-fw-700 u-m-0 u-text-main">
                         <?php echo htmlspecialchars($details['full_name'] ?? ''); ?>
                     </h2>
                     <?php if ($ext !== ''): ?>
@@ -181,7 +89,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <i class="fas fa-minus-circle"></i> DND Aktif
                 </span>
             <?php endif; ?>
-            <!-- Çağrı Yönlendirme Rozeti -->
+            <!-- Call forwarding badge -->
             <?php if ($cfNum !== ''): ?>
                 <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); padding: 5px 10px; font-size: 11.5px; border-radius: 8px;">
                     <i class="fas fa-share"></i> <?php echo htmlspecialchars($cfNum); ?>
@@ -201,7 +109,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </p>
         </div>
     <?php else: ?>
-        <!-- 3. Sekmeli Gezinme Butonları -->
+        <!-- 3. Tab navigation buttons -->
         <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
             <button type="button" class="btn btn-sm <?php echo $currentTab === 'history' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-history" onclick="switchMyPhoneTab('history')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
                 <i class="fas fa-history"></i> <?php echo t('my_phone.tab_history'); ?>
@@ -224,7 +132,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             <?php endif; ?>
         </div>
 
-        <!-- TAB 1: ÇAĞRI GEÇMİŞİM (Geniş & Modern Data-Table) -->
+        <!-- TAB 1: MY CALL HISTORY (wide & modern data table) -->
         <div id="tab-pane-history" class="card" style="display: <?php echo $currentTab === 'history' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
             <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
                 <div class="card-title u-flex-center u-title">
@@ -238,12 +146,12 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
-            <!-- Filtreleme & Arama Çubuğu (CDR Raporları ile Birebir Uyumlu) -->
+            <!-- Filter & search bar (same as the CDR reports) -->
             <form method="GET" action="/my-phone" id="myPhoneFilterForm" class="my-phone-filter-bar">
                 <input type="hidden" name="tab" value="history">
                 <input type="hidden" name="filter" id="myPhoneFilterInput" value="<?php echo htmlspecialchars($filter); ?>">
 
-                <!-- Yön Filtre Butonları -->
+                <!-- Direction filter buttons -->
                 <div class="my-phone-filter-buttons">
                     <button type="button" onclick="setMyPhoneFilter('all')" class="btn btn-xs <?php echo $filter === 'all' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px;">
                         <?php echo t('my_phone.filter_all'); ?>
@@ -276,12 +184,12 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 <?php endif; ?>
             </form>
 
-            <!-- CDR Görünümlü Zengin Data Table -->
+            <!-- Rich data table in the CDR style -->
             <div class="table-responsive">
                 <table class="data-table" data-no-dt="true">
                     <thead>
                         <tr>
-                            <th class="col-hide-mobile" style="width: 45px;">#</th>
+                            <th class="col-hide-mobile u-w-45">#</th>
                             <th><?php echo t('my_phone.col_date'); ?></th>
                             <th><?php echo t('my_phone.col_direction'); ?></th>
                             <th><?php echo t('my_phone.col_party'); ?></th>
@@ -296,7 +204,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             <tr>
                                 <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 48px 24px;">
                                     <i class="fas fa-history" style="font-size: 40px; opacity: 0.35; margin-bottom: 12px; display: block;"></i>
-                                    <div style="font-weight: 600; font-size: 14px; color: var(--text-main); margin-bottom: 4px;">Çağrı kaydı bulunamadı</div>
+                                    <div class="u-fw-600 u-fs-14 u-text-main u-mb-4">Çağrı kaydı bulunamadı</div>
                                     <small class="u-fs-12">Seçilen kriterlere uygun çağrı geçmişi bulunmuyor.</small>
                                 </td>
                             </tr>
@@ -334,11 +242,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $c['id']; ?></td>
                                     
                                     <!-- Tarih & Saat -->
-                                    <td style="font-weight: 600; white-space: nowrap;">
+                                    <td class="u-fw-600 u-nowrap">
                                         <?php echo date('d.m.Y H:i:s', strtotime($c['calldate'])); ?>
                                     </td>
 
-                                    <!-- Yön Rozeti -->
+                                    <!-- Direction badge -->
                                     <td>
                                         <?php if ($dir === 'in'): ?>
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
@@ -355,14 +263,14 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <?php endif; ?>
                                     </td>
 
-                                    <!-- Karşı Taraf -->
+                                    <!-- Other party -->
                                     <td>
                                         <div style="font-weight: 700; color: var(--primary); font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
                                             <i class="fas fa-phone-alt" style="font-size: 11px; opacity: 0.7;"></i>
                                             <span><?php echo $party; ?></span>
                                         </div>
                                         <?php if (!empty($partyName) && $partyName !== $party): ?>
-                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                            <div class="u-fs-11 u-muted u-mt-2">
                                                 <i class="fas fa-user" style="font-size: 10px; margin-right: 3px;"></i><?php echo $partyName; ?>
                                             </div>
                                         <?php endif; ?>
@@ -387,13 +295,13 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <?php endif; ?>
                                     </td>
 
-                                    <!-- Süre -->
+                                    <!-- Duration -->
                                     <td>
                                         <?php if ($disp === 'ANSWERED'): ?>
                                             <div style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--success);">
-                                                <i class="fas fa-phone-volume" style="font-size: 11px; margin-right: 4px;"></i><?php echo $sureBicim($bill); ?>
+                                                <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $sureBicim($bill); ?>
                                             </div>
-                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap;">
+                                            <div class="u-fs-11 u-muted u-mt-2 u-nowrap">
                                                 Çalma: <?php echo $sureBicim($ring); ?> • Toplam: <?php echo $sureBicim($dur); ?>
                                             </div>
                                         <?php elseif (in_array($disp, ['NO ANSWER', 'NOANSWER', 'CANCEL', 'BUSY'])): ?>
@@ -413,7 +321,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     </td>
 
                                     <!-- Aksiyonlar -->
-                                    <td class="text-right" style="white-space: nowrap;">
+                                    <td class="text-right u-nowrap">
                                         <div style="display: inline-flex; align-items: center; gap: 6px;">
                                             <?php if ($hasRec): ?>
                                                 <button type="button" class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars(addslashes($party), ENT_QUOTES); ?>', '<?php echo date('d.m.Y H:i', strtotime($c['calldate'])); ?>')" title="Ses Kaydını Dinle" style="padding: 4px 8px;">
@@ -443,7 +351,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 <input type="hidden" name="action" value="save_settings">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
-            <!-- Kart: Rahatsız Etmeyin -->
+            <!-- Card: do not disturb -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-minus-circle u-danger"></i> <?php echo t('my_phone.dnd_label'); ?>
@@ -463,7 +371,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <?php endif; ?>
             </div>
 
-            <!-- Kart: Telefon Modları -->
+            <!-- Card: phone modes -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?></span>
@@ -474,7 +382,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         </small>
 
                         <div class="my-phone-modes-grid">
-                            <!-- Web (Tarayıcı) -->
+                            <!-- Web (browser) -->
                             <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
                                 <input type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary);">
                                 <div style="display: flex; flex-direction: column;">
@@ -496,7 +404,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 </div>
                             </label>
 
-                            <!-- SIP (Masaüstü) -->
+                            <!-- SIP (desk phone) -->
                             <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
                                 <input type="checkbox" name="phone_modes[]" value="sip" <?php echo in_array('sip', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--secondary);">
                                 <div style="display: flex; flex-direction: column;">
@@ -507,7 +415,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 </div>
                             </label>
 
-                            <!-- Görüntü (Video) -->
+                            <!-- Video -->
                             <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
                                 <input type="checkbox" name="phone_modes[]" value="video" <?php echo in_array('video', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: #8b5cf6;">
                                 <div style="display: flex; flex-direction: column;">
@@ -530,9 +438,9 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <?php endif; ?>
             </div>
 
-            <!-- Kart: Yönlendirme -->
+            <!-- Card: forwarding -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
-                    <!-- Çağrı Yönlendirme Seçenekleri (Her Zaman, Meşgulken, Cevapsızken) -->
+                    <!-- Call forwarding options (always, when busy, on no answer) -->
                     <div class="u-mb-20">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
                             <div style="font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
@@ -547,10 +455,10 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </span>
                         </div>
 
-                        <!-- 1. Her Zaman Yönlendir (Koşulsuz) -->
-                        <div class="form-group" style="margin-bottom: 14px;">
+                        <!-- 1. Always forward (unconditional) -->
+                        <div class="form-group u-mb-14">
                             <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                                <span><i class="fas fa-forward" style="color: var(--warning); margin-right: 4px;"></i> <?php echo t('my_phone.cf_always_label'); ?></span>
+                                <span><i class="fas fa-forward u-warning u-mr-4"></i> <?php echo t('my_phone.cf_always_label'); ?></span>
                                 <?php if (!empty($cfNum)): ?>
                                     <span class="badge badge-warning" style="font-size: 9.5px; padding: 2px 6px;"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
                                 <?php endif; ?>
@@ -561,10 +469,10 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </small>
                         </div>
 
-                        <!-- 2. Meşgulken Yönlendir -->
-                        <div class="form-group" style="margin-bottom: 14px;">
+                        <!-- 2. Forward when busy -->
+                        <div class="form-group u-mb-14">
                             <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                                <span><i class="fas fa-phone-slash" style="color: var(--danger); margin-right: 4px;"></i> <?php echo t('my_phone.cf_busy_label'); ?></span>
+                                <span><i class="fas fa-phone-slash u-danger u-mr-4"></i> <?php echo t('my_phone.cf_busy_label'); ?></span>
                                 <?php if (!empty($cfBusyNum)): ?>
                                     <span class="badge badge-info" style="font-size: 9.5px; padding: 2px 6px;"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
                                 <?php endif; ?>
@@ -575,7 +483,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </small>
                         </div>
 
-                        <!-- 3. Cevapsızken Yönlendir -->
+                        <!-- 3. Forward on no answer -->
                         <div class="form-group u-mb-0">
                             <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                                 <span><i class="fas fa-phone-volume" style="color: var(--info); margin-right: 4px;"></i> <?php echo t('my_phone.cf_noanswer_label'); ?></span>
@@ -628,11 +536,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                             <div class="form-group u-mb-0">
-                                <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Sesli Posta PIN (Şifre)</label>
+                                <label class="form-label u-fs-11 u-mb-4">Sesli Posta PIN (Şifre)</label>
                                 <input type="password" name="voicemail_pin" value="<?php echo htmlspecialchars($vmPin); ?>" class="form-control form-control-sm u-fs-12" placeholder="Varsayılan: dahili no">
                             </div>
                             <div class="form-group u-mb-0">
-                                <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Bildirim E-postası</label>
+                                <label class="form-label u-fs-11 u-mb-4">Bildirim E-postası</label>
                                 <input type="email" name="voicemail_email" value="<?php echo htmlspecialchars($vmEmail); ?>" class="form-control form-control-sm u-fs-12" placeholder="ornek@alanadi.com">
                             </div>
                         </div>
@@ -672,17 +580,17 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
         </div>
 
-        <!-- TAB 2: TELEFON & CİHAZ AYARLARI (Geniş 3 Kolonlu Izgara Düzeni) -->
+        <!-- TAB 2: PHONE & DEVICE SETTINGS (wide 3-column grid) -->
         <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
             
-            <!-- Kart 2: WebRTC Aygıt & Zil Sesi Ayarları -->
+            <!-- Card 2: WebRTC device & ring tone settings -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-headphones u-primary"></i> <?php echo t('my_phone.device_settings'); ?>
                 </h3>
 
                 <!-- Mikrofon -->
-                <div class="form-group" style="margin-bottom: 16px;">
+                <div class="form-group u-mb-16">
                     <label class="form-label u-fw-600 u-fs-12">
                         <i class="fas fa-microphone"></i> <?php echo t('phone_settings.field_mic'); ?>
                     </label>
@@ -691,8 +599,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     </select>
                 </div>
 
-                <!-- Hoparlör -->
-                <div class="form-group" style="margin-bottom: 16px;">
+                <!-- Speaker -->
+                <div class="form-group u-mb-16">
                     <label class="form-label u-fw-600 u-fs-12">
                         <i class="fas fa-volume-up"></i> <?php echo t('phone_settings.field_speaker'); ?>
                     </label>
@@ -716,7 +624,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
-            <!-- Kart 3: Masaüstü IP Telefonu Kayıt Bilgileri (Credentials) -->
+            <!-- Card 3: desk IP phone registration details (credentials) -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-key u-primary"></i> <?php echo t('my_phone.sip_credentials_title'); ?>
@@ -765,14 +673,14 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     </div>
                 </h3>
 
-                <!-- QR Kod Hızlı Mobil Giriş Tanıtım Kutusu -->
+                <!-- QR code quick mobile sign-in intro box -->
                 <div style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06)); border: 1px dashed rgba(37,99,235,0.28); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(37,99,235,0.12); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 18px;">
                             <i class="fas fa-qrcode"></i>
                         </div>
                         <div>
-                            <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">Hızlı Mobil Giriş (Barkod / QR Kod)</div>
+                            <div class="u-fw-700 u-fs-13 u-text-main">Hızlı Mobil Giriş (Barkod / QR Kod)</div>
                             <div style="font-size: 11.5px; color: var(--text-muted);">Android ve iOS uygulamanızın giriş ekranından bu QR kodu okutarak şifresiz, tek dokunuşla giriş yapın.</div>
                         </div>
                     </div>
@@ -792,8 +700,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         <?php foreach ($mobileDevices as $md): ?>
                             <div style="font-size: 12.5px; background: var(--bg-input); padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
                                 <div class="u-flex-between">
-                                    <strong style="font-size: 13px; color: var(--text-main);">
-                                        <i class="fas fa-mobile-alt" style="margin-right: 6px; color: var(--primary);"></i>
+                                    <strong class="u-fs-13 u-text-main">
+                                        <i class="fas fa-mobile-alt u-mr-6 u-primary"></i>
                                         <?php echo htmlspecialchars($md['device_name'] ?: 'Android Cihaz'); ?>
                                     </strong>
                                     <span class="badge badge-success" style="font-size: 10px; padding: 3px 8px;">
@@ -817,7 +725,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         </div>
 
         <?php if (!$isFaxUser): ?>
-        <!-- TAB 3: SESLİ POSTA KUTUM (Voicemail Messages) -->
+        <!-- TAB 3: MY VOICEMAIL (voicemail messages) -->
         <div id="tab-pane-voicemail" class="card" style="display: <?php echo $currentTab === 'voicemail' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
             <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
                 <div class="card-title u-flex-center u-title">
@@ -830,7 +738,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
-            <!-- Bilgilendirme Kartı -->
+            <!-- Info card -->
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-info-circle text-primary" style="font-size: 18px;"></i>
@@ -903,7 +811,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
     <?php endif; ?>
 </div>
 
-<!-- Modal: QR Kod ile Hızlı Mobil Giriş -->
+<!-- Modal: quick mobile sign-in with a QR code -->
 <div class="modal-overlay" id="qrLoginModal" style="display: none;">
     <div class="modal-card" style="max-width: 440px; text-align: center;">
         <div class="modal-header">
@@ -934,7 +842,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
 
             <div id="qrSuccessAlert" style="display: none; margin-top: 16px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px; color: #059669; font-weight: 600; font-size: 13px;">
-                <i class="fas fa-check-circle" style="margin-right: 6px;"></i> Giriş Başarılı! Eşleşen Cihaz: <span id="qrPairedDevice"></span>
+                <i class="fas fa-check-circle u-mr-6"></i> Giriş Başarılı! Eşleşen Cihaz: <span id="qrPairedDevice"></span>
             </div>
 
             <div id="qrCountdownContainer" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -945,14 +853,14 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
 
             <div style="margin-top: 20px; font-size: 11.5px; color: var(--text-muted); background: var(--bg-input); padding: 12px 14px; border-radius: 8px; text-align: left; line-height: 1.5; border: 1px solid var(--border-color);">
-                <i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 4px;"></i>
+                <i class="fas fa-shield-alt u-primary u-mr-4"></i>
                 <strong>Uçtan Uca Güvenli:</strong> Bu kod tek kullanımlıktır ve şifrenizi barındırmaz. Telefonunuz eşleştikten sonra uygulama güncellemelerinde bile oturumunuz korunur.
             </div>
         </div>
     </div>
 </div>
 
-<!-- WaveSurfer Ses Oynatıcı Modal (CDR Raporları ile Ortak Bileşen) -->
+<!-- WaveSurfer audio player modal (component shared with the CDR reports) -->
 <div class="modal-overlay" id="cdrAudioModal">
     <div class="modal-card" style="max-width: 620px;">
         <div class="modal-header">
@@ -967,8 +875,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
             <button class="btn btn-secondary u-btn-pad" onclick="closeCdrAudioModal()" title="Kapat"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body" style="padding: 20px;">
-            <!-- Dalga Formu Görselleştirici -->
+        <div class="modal-body u-p-20">
+            <!-- Waveform visualizer -->
             <div style="background: rgba(0, 0, 0, 0.04); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; position: relative;">
                 <div id="cdrWaveform" style="width: 100%; min-height: 90px;"></div>
                 <div id="cdrWaveformLoading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.85); border-radius: 12px; font-size: 13px; color: var(--primary); gap: 8px; font-weight: 600; z-index: 5;">
@@ -976,7 +884,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
-            <!-- Kontrol Butonları -->
+            <!-- Control buttons -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                 <div class="u-flex-center">
                     <button class="btn btn-primary" id="cdrWavePlayBtn" onclick="toggleCdrWavePlay()" style="min-width: 44px;" title="Oynat / Duraklat">
@@ -993,7 +901,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     </a>
                 </div>
 
-                <!-- Süre Göstergesi -->
+                <!-- Duration display -->
                 <div style="font-family: monospace; font-size: 14px; font-weight: 700; color: var(--primary); background: rgba(0, 242, 254, 0.1); padding: 6px 14px; border-radius: 8px;">
                     <span id="cdrCurrentTime">00:00</span> / <span id="cdrTotalDuration">00:00</span>
                 </div>
@@ -1012,267 +920,4 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 <script src="/assets/js/wavesurfer.min.js"></script>
 <script src="<?php echo asset('/assets/js/cdr_reports.js'); ?>"></script>
 
-<script>
-/**
- * Kişisel Telefonum Sayfası JS İşlevleri
- */
-function switchMyPhoneTab(tabName) {
-    const panes = { history: "block", calls: "grid", settings: "grid", voicemail: "block" };
-    if (!panes[tabName]) tabName = "history";
-    Object.keys(panes).forEach(function (name) {
-        const pane = document.getElementById("tab-pane-" + name);
-        const btn = document.getElementById("btn-tab-" + name);
-        if (pane) pane.style.display = (name === tabName) ? panes[name] : "none";
-        if (btn) {
-            btn.classList.toggle("btn-primary", name === tabName);
-            btn.classList.toggle("btn-secondary", name !== tabName);
-        }
-    });
-
-    const urlParams = new URLSearchParams(window.location.search);
-    if (tabName === "history") urlParams.delete("tab"); else urlParams.set("tab", tabName);
-    const queryStr = urlParams.toString();
-    history.replaceState(null, "", "/my-phone" + (queryStr ? "?" + queryStr : ""));
-    try { localStorage.setItem("my_phone_active_tab", tabName); } catch (e) {}
-
-    if (tabName === "settings" && typeof loadMyPhoneAudioDevices === "function") {
-        loadMyPhoneAudioDevices();
-    }
-}
-
-function deleteVoicemailMessage(msgId) {
-    if (!confirm('Bu sesli mesajı silmek istediğinizden emin misiniz?')) return;
-    const form = new FormData();
-    form.append('csrf_token', window.CSRF_TOKEN);
-    form.append('action', 'delete');
-    form.append('ext', window.CURRENT_USER_EXT);
-    form.append('msg_id', msgId);
-
-    fetch('/api/voicemail.php', { method: 'POST', body: form })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.error || 'Silinemedi');
-            }
-        })
-        .catch(() => alert('Bağlantı hatası'));
-}
-
-function setMyPhoneFilter(filterVal) {
-    const input = document.getElementById("myPhoneFilterInput");
-    const form = document.getElementById("myPhoneFilterForm");
-    if (input && form) {
-        input.value = filterVal;
-        form.submit();
-    }
-}
-
-function callTargetNumber(number) {
-    if (!number) return;
-    const input = document.getElementById("header-quick-dial-input");
-    if (input) {
-        input.value = number;
-    }
-    if (typeof headerPhoneMakeCall === "function") {
-        headerPhoneMakeCall();
-    } else {
-        alert("WebRTC Softphone başlatılamadı.");
-    }
-}
-
-function toggleSipPassVisibility() {
-    const passInput = document.getElementById("my_phone_sip_pass_val");
-    const eye = document.getElementById("my_phone_pass_eye");
-    if (!passInput) return;
-    if (passInput.type === "password") {
-        passInput.type = "text";
-        if (eye) eye.className = "fas fa-eye-slash";
-    } else {
-        passInput.type = "password";
-        if (eye) eye.className = "fas fa-eye";
-    }
-}
-
-function copySipPassword() {
-    const passInput = document.getElementById("my_phone_sip_pass_val");
-    if (!passInput || !passInput.value) return;
-    navigator.clipboard.writeText(passInput.value).then(function() {
-        if (window.showFooterToast) {
-            showFooterToast("SIP parolası panoya kopyalandı!", "success");
-        }
-    });
-}
-
-function updateVolSlider(val) {
-    const lbl = document.getElementById("my-phone-vol-label");
-    if (lbl) lbl.textContent = val + "%";
-    if (typeof savePhoneRingVolume === "function") {
-        savePhoneRingVolume(val);
-    }
-}
-
-function loadMyPhoneAudioDevices() {
-    if (typeof populatePhoneDeviceSelects === "function") {
-        populatePhoneDeviceSelects();
-    }
-}
-
-/**
- * QR Code Quick Mobile Login Functions
- */
-let _qrToken = null;
-let _qrTimer = null;
-let _qrPollInterval = null;
-let _qrSecondsLeft = 600;
-
-function openQrLoginModal() {
-    const modal = document.getElementById("qrLoginModal");
-    if (!modal) return;
-    modal.style.display = "flex";
-    modal.classList.add("active");
-    generateNewQrCode();
-}
-
-function closeQrLoginModal() {
-    const modal = document.getElementById("qrLoginModal");
-    if (modal) {
-        modal.style.display = "none";
-        modal.classList.remove("active");
-    }
-    if (_qrTimer) clearInterval(_qrTimer);
-    if (_qrPollInterval) clearInterval(_qrPollInterval);
-}
-
-function generateNewQrCode() {
-    const spinner = document.getElementById("qrLoadingSpinner");
-    const svgWrapper = document.getElementById("qrSvgWrapper");
-    const successAlert = document.getElementById("qrSuccessAlert");
-
-    if (spinner) {
-        spinner.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i> QR Kod üretiliyor...';
-        spinner.style.display = "block";
-    }
-    if (svgWrapper) {
-        svgWrapper.style.display = "none";
-        svgWrapper.style.opacity = "1";
-        svgWrapper.innerHTML = "";
-    }
-    if (successAlert) successAlert.style.display = "none";
-    if (_qrTimer) clearInterval(_qrTimer);
-    if (_qrPollInterval) clearInterval(_qrPollInterval);
-
-    const csrf = window.CSRF_TOKEN || "<?php echo getCSRFToken(); ?>";
-    fetch("/api/qr_code.php?action=generate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-CSRF-Token": csrf
-        },
-        body: "csrf_token=" + encodeURIComponent(csrf)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && data.qr_data_uri) {
-            _qrToken = data.qr_token;
-            if (spinner) spinner.style.display = "none";
-            if (svgWrapper) {
-                svgWrapper.innerHTML = '<img src="' + data.qr_data_uri + '" alt="QR Kodu" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
-                svgWrapper.style.display = "block";
-            }
-            _qrSecondsLeft = data.expires_in || 600;
-            startQrCountdown();
-            startQrPolling();
-        } else {
-            if (spinner) spinner.innerHTML = '<span class="u-danger">' + (data.error || "QR kod üretilemedi") + '</span>';
-        }
-    })
-    .catch(err => {
-        if (spinner) spinner.innerHTML = '<span class="u-danger">Bağlantı hatası: ' + err.message + '</span>';
-    });
-}
-
-function startQrCountdown() {
-    const el = document.getElementById("qrCountdown");
-    if (_qrTimer) clearInterval(_qrTimer);
-
-    function update() {
-        if (_qrSecondsLeft <= 0) {
-            clearInterval(_qrTimer);
-            if (el) el.textContent = "Süresi doldu";
-            const svgWrapper = document.getElementById("qrSvgWrapper");
-            if (svgWrapper) svgWrapper.style.opacity = "0.25";
-            return;
-        }
-        const m = Math.floor(_qrSecondsLeft / 60);
-        const s = _qrSecondsLeft % 60;
-        if (el) el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-        _qrSecondsLeft--;
-    }
-    update();
-    _qrTimer = setInterval(update, 1000);
-}
-
-function startQrPolling() {
-    if (_qrPollInterval) clearInterval(_qrPollInterval);
-    _qrPollInterval = setInterval(() => {
-        if (!_qrToken) return;
-        fetch("/api/qr_code.php?action=status&token=" + encodeURIComponent(_qrToken))
-        .then(r => r.json())
-        .then(res => {
-            if (res.success && res.data && res.data.used) {
-                clearInterval(_qrPollInterval);
-                clearInterval(_qrTimer);
-                const alertEl = document.getElementById("qrSuccessAlert");
-                const devEl = document.getElementById("qrPairedDevice");
-                if (devEl) devEl.textContent = res.data.device_name || "Mobil Cihaz";
-                if (alertEl) alertEl.style.display = "block";
-                const svgWrapper = document.getElementById("qrSvgWrapper");
-                if (svgWrapper) svgWrapper.style.opacity = "0.35";
-                if (window.showFooterToast) {
-                    showFooterToast("Mobil cihaz başarıyla eşleştirildi!", "success");
-                }
-            }
-        })
-        .catch(() => {});
-    }, 2500);
-}
-
-function initMyPhone() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get("tab");
-    let savedTab = null;
-    try { savedTab = localStorage.getItem("my_phone_active_tab"); } catch (e) {}
-    const startTab = tabParam || savedTab;
-    if (startTab === "settings" || startTab === "calls") {
-        switchMyPhoneTab(startTab);
-    }
-    if (startTab !== "settings") {
-        loadMyPhoneAudioDevices();
-    }
-
-    // WebRTC durumunu softphone ile senkronize et
-    function syncMyPhoneWebrtc() {
-        const txt = document.getElementById("my-phone-webrtc-text");
-        if (!txt) return;
-        if (typeof headerSipRegistered !== "undefined" && headerSipRegistered) {
-            txt.textContent = "Çevrimiçi";
-            txt.style.color = "var(--success)";
-        }
-    }
-    syncMyPhoneWebrtc();
-    if (!window._myPhoneSyncInterval) {
-        window._myPhoneSyncInterval = setInterval(syncMyPhoneWebrtc, 1000);
-    }
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMyPhone);
-} else {
-    initMyPhone();
-}
-if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
-    navigator.mediaDevices.addEventListener("devicechange", loadMyPhoneAudioDevices);
-}
-</script>
+<script src="<?php echo asset('/assets/js/my_phone.js'); ?>"></script>

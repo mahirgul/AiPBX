@@ -4,12 +4,12 @@
  */
 
 function syncTimeCondition($tc_id) {
-    // Diğer domainlerden farklı olarak her zaman koşulu KENDİ dosyasına
-    // yazıyor (extensions_timecondition_<id>.conf) — bu yüzden kilit ID
-    // bazlı: farklı zaman koşullarının eşzamanlı düzenlenmesi birbirini
-    // beklemez, sadece AYNI ID'ye yapılan eşzamanlı çağrılar serileşir.
-    // (syncAllTimeConditions() bu fonksiyonu döngüyle çağırır — kilidi
-    // burada değil ID bazlı tutmak, kendi kendine deadlock oluşturmaz.)
+    // Unlike the other domains, every time condition writes ITS OWN file
+    // (extensions_timecondition_<id>.conf) — so the lock is per ID:
+    // concurrent edits of different time conditions do not wait for each
+    // other, only concurrent calls for the SAME ID are serialized.
+    // (syncAllTimeConditions() calls this function in a loop — keeping the
+    // lock per ID here, not around the loop, avoids a self-deadlock.)
     return withSyncLock('timecondition_' . intval($tc_id), function() use ($tc_id) {
         return __syncTimeConditionBody($tc_id);
     });
@@ -32,10 +32,11 @@ function __syncTimeConditionBody($tc_id) {
 
     $title = toCleanAscii($tc['title']);
 
-    // Kural listesi: [{time_group_id, match_dest_type, match_dest_id}, ...]
-    // TimeConditionService::saveTimeCondition() ile aynı şemayı kullanır.
-    // Sırayla değerlendirilir, zamanı tutan İLK kural kazanır. rules_json
-    // boşsa (eski/tek kurallı kayıt) düz kolonlar tek kural olarak kullanılır.
+    // Rule list: [{time_group_id, match_dest_type, match_dest_id}, ...]
+    // Same schema as TimeConditionService::saveTimeCondition().
+    // Evaluated in order; the FIRST rule whose time matches wins. If
+    // rules_json is empty (an old/single-rule record) the plain columns are
+    // used as one rule.
     $rule_defs = [];
     if (!empty($tc['rules_json'])) {
         $decoded = json_decode($tc['rules_json'], true);
@@ -81,12 +82,12 @@ function __syncTimeConditionBody($tc_id) {
             $days_str = implode('&', $ast_days);
         }
 
-        // Tatil gunleri. `holidays_json` panelde kaydediliyordu ama dialplan'a
-        // HIC yazilmiyordu: kullanici tatil girse de o gun normal mesai gibi
-        // yonlendiriliyordu (2026-09-01 alan denetiminde bulundu).
+        // Holidays. `holidays_json` was saved by the panel but NEVER written
+        // to the dialplan: even with a holiday entered, that day was routed
+        // like a normal working day (found in the 2026-09-01 field audit).
         foreach ((array)json_decode($tg['holidays_json'] ?? '[]', true) as $h) {
             $h = trim((string)$h);
-            // Yalnizca YYYY-AA-GG kabul edilir; baska bir sey dialplan'a girmez.
+            // Only YYYY-MM-DD is accepted; nothing else reaches the dialplan.
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $h)) $tatiller[$h] = true;
         }
 
@@ -102,11 +103,11 @@ function __syncTimeConditionBody($tc_id) {
     $conf .= "[app-timecondition-{$tc_id}]\n";
     $conf .= "exten => s,1,NoOp(Evaluating Native Time Condition ID {$tc_id}: {$title})\n";
 
-    // Tatil kontrolu mesai kurallarindan ONCE gelir: tatil gunu hangi gune
-    // denk gelirse gelsin kapali sayilir.
+    // The holiday check comes BEFORE the working-hours rules: a holiday is
+    // closed whatever weekday it falls on.
     //
-    // GotoIfTime'in YIL alani yok, bu yuzden tam tarih karsilastiriliyor —
-    // aksi halde "2026-01-01" her yil tekrar ederdi.
+    // GotoIfTime has no YEAR field, so the full date is compared —
+    // otherwise "2026-01-01" would repeat every year.
     if (!empty($tatiller)) {
         $conf .= " same => n,Set(BUGUN=\${STRFTIME(\${EPOCH},,%Y-%m-%d)})\n";
         foreach (array_keys($tatiller) as $h) {

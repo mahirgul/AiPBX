@@ -19,7 +19,7 @@
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
         <input type="hidden" name="save_fax_email_settings" value="1">
 
-        <!-- Yatay Sekmeler (Sabit Tek Satır) -->
+        <!-- Horizontal tabs (fixed single row) -->
         <div class="settings-tabs u-mb-20">
             <button type="button" class="settings-tab-btn active" data-tab="email" onclick="switchSettingsTab('email', this)">
                 <i class="fas fa-envelope"></i> <?php echo t('fax_mail_settings.tab_email', 'E-Posta'); ?>
@@ -85,7 +85,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: Cihaz & İletim -->
+        <!-- TAB 2: device & transmission -->
         <div class="settings-tab-pane" id="tab_device" style="display: none;">
             <div class="u-grid-2">
                 <div class="form-group">

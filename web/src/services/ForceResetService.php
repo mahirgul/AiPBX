@@ -1,6 +1,6 @@
 <?php
 /**
- * Force Password Reset (Zorunlu Şifre Sıfırlama - Mail Gönderimi) Service
+ * Force password reset (sends the mail) service
  */
 class ForceResetService {
     /**
@@ -20,7 +20,7 @@ class ForceResetService {
 
         $db = getDB();
 
-        // Yakın zamanda gönderilmiş, hâlâ geçerli bir token varsa yeniden gönderme (spam engeli)
+        // Do not resend while a recently sent, still valid token exists (spam guard)
         $existing = $db->prepare('SELECT reset_token_expires FROM sys_users WHERE id = ? AND reset_token_expires > NOW()');
         $existing->execute([$user_id]);
         $stillValid = $existing->fetchColumn();

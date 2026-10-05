@@ -7,13 +7,9 @@ class AsteriskSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['save_asterisk_settings'])) {
-            $res = AsteriskSettingsService::saveSettings($_POST);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
-        }
+        $notices = static::handlePost([
+            'save_asterisk_settings' => fn() => AsteriskSettingsService::saveSettings($_POST),
+        ]);
 
         $defaults = AsteriskSettingsService::defaults();
         $current_db_settings = AsteriskSettingsRepository::currentSettings();
@@ -30,6 +26,6 @@ class AsteriskSettingsController extends BaseController
             'ring_sound_options' => $ring_sound_options,
             'active_codecs' => $active_codecs,
             'active_wired_codecs' => $active_wired_codecs,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

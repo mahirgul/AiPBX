@@ -41,7 +41,7 @@
                     <?php foreach ($mappings as $m): ?>
                         <tr>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $m['id']; ?></td>
-                            <td class="u-strong"><i class="fas fa-building" style="color: var(--primary); margin-right: 6px;"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
+                            <td class="u-strong"><i class="fas fa-building u-primary u-mr-6"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
                             <td><?php echo !empty($m['did_extension']) ? '<span class="badge badge-info">' . htmlspecialchars($m['did_extension']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
                             <td class="col-hide-mobile"><?php echo !empty($m['assigned_user_id']) ? '<span class="badge badge-warning"><i class="fas fa-fax"></i> ' . htmlspecialchars($m['fax_user_extension'] . ' - ' . $m['fax_user_name']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
                             <td><?php echo htmlspecialchars($m['notification_email'] ?: '-'); ?></td>

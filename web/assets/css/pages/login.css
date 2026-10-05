@@ -1,0 +1,7 @@
+/* Page styles of templates/views/login/index.php */
+
+@media (max-width: 768px) {
+    .mobile-app-download {
+        display: block !important;
+    }
+}

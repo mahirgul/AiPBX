@@ -18,9 +18,9 @@ import android.widget.TextView
 import com.mhrgl.aipbx.data.SimpleImageLoader
 
 /**
- * Sohbet fotoğrafını uygulama içinde tam ekran gösterir. Önceden fotoğraf
- * harici tarayıcıda (token URL'de) açılıyordu. Yakınlaştırma: iki parmak,
- * çift dokunuş; büyütülmemişken tek dokunuş veya geri tuşu kapatır.
+ * Shows a chat photo full screen inside the app. The photo used to open in an
+ * external browser (with the token in the URL). Zoom: two fingers, double
+ * tap; when not zoomed, a single tap or the back button closes it.
  */
 object ImageViewerDialog {
 
@@ -110,7 +110,7 @@ object ImageViewerDialog {
             resetZoom()
         }
 
-        /** Görseli ekrana sığdırıp ortalar, yakınlaştırmayı sıfırlar. */
+        /** Fits the image to the screen, centres it and resets the zoom. */
         fun resetZoom() {
             val d = drawable ?: return
             if (width == 0 || height == 0) return
@@ -122,7 +122,7 @@ object ImageViewerDialog {
             apply()
         }
 
-        /** Sürüklerken görselin kenarları ekranın içine kaçmasın. */
+        /** While dragging, the image edges must not slip inside the screen. */
         private fun apply() {
             val d = drawable ?: return
             drawMatrix.set(baseMatrix)

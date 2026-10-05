@@ -163,10 +163,10 @@ func TestIsParticipantWithDB(t *testing.T) {
 	}
 }
 
-// TestValidateBearerTokenRejectsForgedTokens: imza/süre/biçim kontrolleri
-// veritabanına gitmeden önce yapılır, bu yüzden test DB ve canlı sır
-// gerektirmez. (Önceki test canlı sistemin sırrı ve 2026-10-06'da süresi
-// dolacak gömülü bir token ile gerçek DB'ye bağlanıyordu.)
+// TestValidateBearerTokenRejectsForgedTokens: the signature/expiry/format
+// checks happen before the database is touched, so the test needs neither a DB
+// nor the live secret. (The previous test connected to the real DB with the
+// live system's secret and an embedded token that would expire on 2026-10-06.)
 func TestValidateBearerTokenRejectsForgedTokens(t *testing.T) {
 	const secret = "test-secret-not-used-anywhere"
 	sign := func(payload, key string) string {
@@ -211,7 +211,7 @@ func TestGroupSecurityCH_G(t *testing.T) {
 		t.Fatal("IsGroupAdmin(..., '') should return false")
 	}
 
-	// CH-G3: En fazla 256 üye sınırı
+	// CH-G3: at most 256 members
 	var excessiveMembers []string
 	for i := 0; i < 300; i++ {
 		excessiveMembers = append(excessiveMembers, fmt.Sprintf("ext%d", i))
@@ -310,7 +310,7 @@ func TestGroupSecurityCH_G(t *testing.T) {
 		t.Fatalf("CH-G1 violation: Expected 403 Forbidden for non-admin HandleRemoveGroupMember, got %d", rr.Code)
 	}
 
-	// 4. CH-G6: Gruptan çıkarılan üye (left_at) sonrasında katılımcı sayılmaz
+	// 4. CH-G6: a member removed from the group (left_at) no longer counts as a participant
 	adminUser := &User{Extension: creatorExt, FullName: "Creator"}
 	reqBody = fmt.Sprintf(`{"conversation_id":%d,"extension":"%s"}`, conv.ID, memberExt)
 	req, _ = http.NewRequest("POST", "/api/conversations/group/members/remove", strings.NewReader(reqBody))

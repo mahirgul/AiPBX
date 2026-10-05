@@ -16,7 +16,7 @@ interface PBXDestinationInterface {
     public function getName(): string;
 
     /**
-     * Get array of selectable items for this module: [['id' => '1', 'name' => 'Mesai Kontrolü']]
+     * Get array of selectable items for this module: [['id' => '1', 'name' => 'Office hours check']]
      */
     public function getOptions(): array;
 

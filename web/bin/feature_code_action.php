@@ -1,13 +1,14 @@
 #!/usr/bin/env php
 <?php
 /**
- * Star code (DND/Çağrı Yönlendirme/Kuyruk Giriş-Çıkış) sonrası dialplan tarafından
- * tetiklenir (bkz. src/sync/SyncFeatureCodes.php). DND/CF sys_users'ı günceller ve
- * dialplan'a gömülü olduğu için syncEverything() ile yeniden üretilip reload edilir;
- * kuyruk giriş/çıkış ise SADECE canlı Asterisk durumu (queue add/remove member) olduğu
- * için dialplan'a dokunmaz, syncEverything() GEREKMEZ (gereksiz tam reload'dan kaçınılır).
+ * Triggered by the dialplan after a star code (DND/call forwarding/queue
+ * login-logout) (see src/sync/SyncFeatureCodes.php). DND/CF update sys_users
+ * and, being embedded in the dialplan, are regenerated and reloaded with
+ * syncEverything(); queue login/logout is ONLY live Asterisk state (queue
+ * add/remove member), so it does not touch the dialplan and syncEverything()
+ * is NOT NEEDED (avoids a needless full reload).
  *
- * Kullanım: feature_code_action.php <dnd_toggle|cf_set|cf_cancel|queue_login|queue_logout> <dahili> [hedef|kuyruk_id]
+ * Usage: feature_code_action.php <dnd_toggle|cf_set|cf_cancel|queue_login|queue_logout> <extension> [target|queue_id]
  */
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/asterisk_sync.php';
@@ -53,7 +54,7 @@ switch ($action) {
         $join = ($action === 'queue_login');
 
         if ($target === '' || $target === 'all' || $target === '0') {
-            // Hedef belirtilmediğinde (*81 / *80): Dahilinin atanmış olduğu TÜM aktif kuyruklara giriş/çıkış yap
+            // No target given (*81 / *80): log in/out of ALL active queues the extension is assigned to
             $stmt = $db->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
             $assigned_queues = [];
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $q_row) {
@@ -70,7 +71,7 @@ switch ($action) {
                 QueueHelper::setMembership($ext, $q_name, $join);
             }
         } else {
-            // Belirli bir kuyruk ID'si, dahili numarası veya kuyruk adı tuşlandı (*81<no> / *80<no>)
+            // A specific queue ID, extension number or queue name was dialed (*81<no> / *80<no>)
             $target_clean = preg_replace('/[^0-9a-zA-Z_-]/', '', $target);
             $stmt = $db->prepare("SELECT queue_name, members_json FROM pbx_queues WHERE (id = ? OR internal_number = ? OR queue_name = ?) AND is_active = 1");
             $stmt->execute([$target_clean, $target_clean, $target_clean]);
@@ -91,8 +92,8 @@ switch ($action) {
             QueueHelper::setMembership($ext, $queue_name, $join);
         }
 
-        // Kuyruğa giriş veya çıkış yapıldığında aktif mola kaydı varsa kapat.
-        // Çıkışta statik kuyruklarda hâlâ üye olduğundan (belki molada) kayıt açık kalır.
+        // On queue login or logout, close the active pause record if there is one.
+        // On logout the record stays open in static queues, since the agent is still a member there (maybe paused).
         if (!$join && !empty(QueueHelper::staticQueuesOf($ext))) break;
         $stmt_close_pause = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt_close_pause->execute([$ext]);
@@ -102,12 +103,12 @@ switch ($action) {
         $needs_dialplan_sync = false;
         $reason_id = trim($argv[3] ?? '');
 
-        // Sistemdeki tanımlı mola nedenlerini al
+        // Get the pause reasons defined in the system
         $stmt_reasons = $db->query("SELECT setting_value FROM sys_settings WHERE setting_key = 'cc_break_reasons'");
         $reasons_raw = $stmt_reasons ? ($stmt_reasons->fetchColumn() ?: '') : '';
         $reasons_list = array_values(array_filter(array_map('trim', explode(',', $reasons_raw))));
 
-        // Mola ID'sini (1, 2, 3...) ada eşle
+        // Map the pause ID (1, 2, 3...) to its name
         $reason_name = 'Mola';
         if (is_numeric($reason_id) && intval($reason_id) >= 1 && intval($reason_id) <= count($reasons_list)) {
             $reason_name = $reasons_list[intval($reason_id) - 1];

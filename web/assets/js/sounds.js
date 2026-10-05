@@ -2,9 +2,9 @@
  * Sound Prompts & Music on Hold (MOH) Sub-Module Manager JS
  * Features: WaveSurfer 7 Modal Visualizer & Audio Player
  */
-// NOT: SPA ile tekrar çalıştırıldığında top-level `let` redeclaration
-// SyntaxError verir (bkz. cc_supervisor.php/agent_ui.js'teki aynı not) —
-// `var` kullanılır.
+// NOTE: when re-run by the SPA, a top-level `let` throws a redeclaration
+// SyntaxError (see the same note in cc_supervisor.php/agent_ui.js) —
+// `var` is used.
 var wavesurfer = null;
 var currentPlayingFile = null;
 
@@ -88,13 +88,13 @@ function closeUploadSoundModal() {
 }
 
 /**
- * MOH sınıfına müzik yükleme modalı.
+ * Modal for uploading music to a MOH class.
  *
- * Önceki hâlde MOH satırındaki buton, sayfada HİÇ BULUNMAYAN bir elemana
- * (upload_moh_class_select) yazmaya çalışıyordu; getElementById null döndüğü
- * için JS o satırda duruyor ve modal hiç açılmıyordu. Sessiz bir hataydı —
- * konsolu açmayan kimse sebebini göremezdi. Dolayısıyla upload_moh_file
- * backend'i de hiç çağrılmıyordu (2026-09-01).
+ * Before, the button on the MOH row tried to write to an element that was
+ * NOT ON THE PAGE AT ALL (upload_moh_class_select); getElementById returned
+ * null, the JS stopped on that line and the modal never opened. A silent bug
+ * — nobody without the console open could see why. So the upload_moh_file
+ * backend was never called either (2026-09-01).
  */
 function openMohUploadModal(className) {
     const sel = document.getElementById('upload_moh_class_select');
@@ -297,13 +297,13 @@ document.addEventListener('DOMContentLoaded', function() {
     switchSoundTab(savedTab);
 });
 document.addEventListener('spa:pageLoaded', function() {
-    // Bu dinleyici document'a bağlı olduğu için sounds.php'den başka bir
-    // sayfaya SPA ile geçildikten SONRA da (o sayfanın kendi spa:pageLoaded
-    // olayında) tetiklenmeye devam ediyor. sounds.php'ye özgü bir eleman
-    // (mohModal) artık DOM'da yoksa artık bu sayfada değiliz demektir — hâlâ
-    // çalıyor olabilecek wavesurfer örneği durdurulup temizleniyor, aksi
-    // halde ses arka planda çalmaya devam edip kullanıcının durduracak hiçbir
-    // arayüzü kalmıyordu (2026-08-21 denetiminde bulundu).
+    // This listener is bound to document, so it keeps firing (on the other
+    // page's own spa:pageLoaded event) AFTER the SPA has moved from sounds.php
+    // to another page. If an element specific to sounds.php (mohModal) is no
+    // longer in the DOM, we are no longer on this page — a wavesurfer instance
+    // that may still be playing is stopped and cleaned up; otherwise the audio
+    // kept playing in the background with no interface left to stop it (found
+    // in the 2026-08-21 audit).
     if (!document.getElementById('mohModal')) {
         if (wavesurfer) {
             try { wavesurfer.destroy(); } catch (e) {}

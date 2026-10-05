@@ -91,18 +91,19 @@ function openIvrEntriesModal(ivrId, title) {
     document.getElementById('entries_ivr_id').value = ivrId;
     document.getElementById('entries_title_label').innerText = title;
 
-    // Mevcut tuşlama listesi: her IVR için sunucuda basılmış gizli bloklardan
-    // yalnızca ilgili olanı göster. Modal önceden SADECE ekleme formuydu; hangi
-    // tuşun dolu olduğu görünmüyor ve bir eşlemeyi silmenin hiçbir yolu yoktu
-    // (delete_ivr_entry backend'i yazılmış ama arayüzde hiç çağrılmıyordu).
+    // Current key list: of the hidden blocks printed on the server for every
+    // IVR, show only the relevant one. The modal used to be ONLY an add form;
+    // you could not see which keys were taken and there was no way to delete a
+    // mapping (the delete_ivr_entry backend was written but never called from
+    // the interface).
     document.querySelectorAll('.ivr-entries-list').forEach(function (el) {
         el.style.display = 'none';
     });
     const list = document.getElementById('entries_list_' + ivrId);
     if (list) { list.style.display = 'block'; }
 
-    // Dolu bir tuş seçilirse üzerine yazılacağını önceden söyle — kayıt
-    // INSERT ... ON DUPLICATE KEY UPDATE ile sessizce eziyordu.
+    // Warn up front that a taken key will be overwritten — the save silently
+    // overwrote it with INSERT ... ON DUPLICATE KEY UPDATE.
     const digitSel = document.querySelector('#ivrEntriesModal select[name="digit"]');
     const warn = document.getElementById('entry_overwrite_warning');
     if (digitSel && warn) {

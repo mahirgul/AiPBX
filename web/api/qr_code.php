@@ -1,8 +1,8 @@
 <?php
 /**
  * Web QR Code Generator & Status Check API
- * Dahilim ekranında oturumu açık olan kullanıcının mobil eşleştirme QR kodunu üretir
- * ve mobil uygulama okuduğunda durumu kontrol eder.
+ * Generates the mobile pairing QR code of the user signed in on the My Phone
+ * screen and checks the state once the mobile app has read it.
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/QrLoginService.php';

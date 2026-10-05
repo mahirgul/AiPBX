@@ -1,26 +1,26 @@
 <?php
 
 /**
- * Sunucu tarafı sayfalama — sistem genelindeki DataTable görünümüyle aynı dil.
+ * Server-side paging — the same look as the DataTable view used across the system.
  *
- * Neden ayrı: assets/js/datatable_enhancer.js tüm tabloları istemci tarafında
- * sayfalıyor, ama bunun için TÜM satırların tarayıcıya yüklenmiş olması
- * gerekiyor. Çağrı raporları ve faks kutusu binlerce satıra çıktığı için o yol
- * sayfayı yavaşlatıyordu; bu iki tablo `data-no-dt="true"` ile devre dışı ve
- * sayfalamayı sunucu yapıyor.
+ * Why separate: assets/js/datatable_enhancer.js pages every table on the
+ * client side, but that needs ALL rows loaded into the browser. The call
+ * reports and the fax inbox grow to thousands of rows, so that path slowed the
+ * page down; these two tables opt out with `data-no-dt="true"` and the server
+ * does the paging.
  *
- * Görsel olarak fark edilmemeli: aynı sınıflar (dt-pagination-bar, dt-info,
- * dt-pagination-nav, dt-page-btn) ve aynı görsel dil
- * ifadesi kullanılıyor.
+ * It should not be noticeable visually: the same classes (dt-pagination-bar,
+ * dt-info, dt-pagination-nav, dt-page-btn) and the same visual language are
+ * used.
  *
- * Beklenen değişkenler:
- *   $page        — bulunulan sayfa (1'den başlar)
- *   $total_pages — toplam sayfa sayısı
- * İsteğe bağlı:
- *   $total_rows  — toplam kayıt (bilgi satırı için)
- *   $page_size   — sayfa boyutu (bilgi satırındaki aralığı hesaplar)
+ * Expected variables:
+ *   $page        — current page (starts at 1)
+ *   $total_pages — total number of pages
+ * Optional:
+ *   $total_rows  — total records (for the info line)
+ *   $page_size   — page size (computes the range in the info line)
  *
- * "Göster: N Kayıt" seçicisi tablonun ÜSTÜNDE ayrı durur:
+ * The "Show: N records" selector sits separately ABOVE the table:
  * templates/pagination_controls.php
  */
 
@@ -29,7 +29,7 @@ $total_pages = max(1, intval($total_pages ?? 1));
 $page_size = intval($page_size ?? 0);
 $total_rows = intval($total_rows ?? 0);
 
-// Kayıt yoksa veya tek sayfa ve kayıt sayısı belirsizse gizle
+// Hide when there are no records, or a single page with an unknown record count
 if ($total_rows <= 0 && $total_pages <= 1) {
     return;
 }

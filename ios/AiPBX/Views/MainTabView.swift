@@ -12,7 +12,7 @@ public struct MainTabView: View {
 
     public var body: some View {
         TabView(selection: $selectedTab) {
-            // Tab 1: Tuşlar
+            // Tab 1: keypad
             DialerTabView()
                 .tabItem {
                     Image(systemName: "circle.grid.3x3.fill")
@@ -20,7 +20,7 @@ public struct MainTabView: View {
                 }
                 .tag(0)
 
-            // Tab 2: Geçmiş
+            // Tab 2: history
             CallHistoryTabView()
                 .tabItem {
                     Image(systemName: "clock.fill")

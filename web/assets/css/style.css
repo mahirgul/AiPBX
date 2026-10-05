@@ -132,18 +132,17 @@
     flex-grow: 1;
 }
 
-/* Bu dosya components.css'ten SONRA yüklendiği için oradaki mobil
-   @media kuralı burada ezilip hiç etkisi olmuyordu (aynı özgüllük,
-   sonraki dosya kazanır) — mobil geçersiz kılma artık burada, aynı
-   yerde tanımlanıyor. */
+/* This file loads AFTER components.css, so the mobile @media rule there was
+   overridden here and never took effect (same specificity, the later file
+   wins) — the mobile override is now defined here, in one place. */
 @media (max-width: 900px) {
     .content-area {
         padding: 12px 0 80px 0;
     }
 
-    /* iOS Safari, font-size 16px altındaki input/select/textarea'ya
-       dokunulunca sayfayı otomatik yakınlaştırır — .form-control 14px
-       olduğu için her formda bu oluyordu. */
+    /* iOS Safari zooms the page automatically when an input/select/textarea
+       below font-size 16px is tapped — .form-control is 14px, so it happened
+       on every form. */
     .form-control {
         font-size: 16px;
     }
@@ -168,9 +167,9 @@
     gap: 6px;
 }
 
-/* .btn-xs hiç tanımlı değildi — kullanıldığı yerlerde (ör. temsilci
-   ekranı kuyruk çipleri) temel .btn boyutuna (10px 20px) düşüp
-   gereğinden büyük görünüyordu. */
+/* .btn-xs was never defined — where it was used (e.g. the queue chips on
+   the agent screen) it fell back to the base .btn size (10px 20px) and
+   looked bigger than needed. */
 .btn-xs {
     padding: 3px 8px;
     font-size: 11px;
@@ -186,9 +185,9 @@
     border-radius: 10px;
 }
 
-/* .form-control varsayılanı (12px 16px dolgu) modal/tam form alanları için
-   tasarlanmış — araç çubuğu filtre dropdown'ları (ör. kuyruk/tarih seçimi)
-   yanındaki .btn-sm butonlarla yan yana konunca orantısız büyük kalıyordu. */
+/* The .form-control default (12px 16px padding) is meant for modal/full form
+   fields — toolbar filter dropdowns (e.g. queue/date selection) next to
+   .btn-sm buttons stayed disproportionately large. */
 .form-control-sm {
     padding: 6px 10px;
     font-size: 12px;
@@ -198,10 +197,10 @@
 /* Badges & Modals are centrally managed in components.css */
 
 /* Modals and Footer Toasts are centrally managed in components.css */
-/* .footer-center-toast.toast-success / .toast-danger / .toast-error tanımları
-   buradan kaldırıldı — components.css'teki tam opak versiyonlarını (bilinçli
-   olarak --bg-sidebar kullanıyor, bkz. oradaki yorum) style.css sonradan
-   yüklendiği için saydam bir rgba(...,0.15) ile sessizce eziyordu. */
+/* The .footer-center-toast.toast-success / .toast-danger / .toast-error
+   definitions were removed from here — style.css loads later and silently
+   overrode the fully opaque versions in components.css (which deliberately use
+   --bg-sidebar, see the comment there) with a transparent rgba(...,0.15). */
 
 .app-footer-bar {
     position: fixed;
@@ -223,8 +222,8 @@
     transition: left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Masaüstünde footer, sol menünün altına uzamaz — içerik alanının
-   genişliğiyle sınırlı kalır (menü daraltılınca tam ekran olur). */
+/* On desktop the footer does not extend under the left menu — it stays as
+   wide as the content area (full screen when the menu is collapsed). */
 @media (min-width: 901px) {
     .app-footer-bar {
         left: 260px;

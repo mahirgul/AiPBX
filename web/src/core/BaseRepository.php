@@ -1,14 +1,14 @@
 <?php
 /**
- * Ortak CRUD/listeleme sorgularını tek yerde toplayan temel Repository sınıfı.
- * Amaç: her sayfada tekrar eden "$db->query(\"SELECT * FROM ...\")" bloklarını
- * ortadan kaldırmak. Bir modülün Repository'si sadece kendine özgü sorguları
- * yazar (bkz. templates/views ve src/controllers örnekleri), geri kalan her
- * şeyi buradan miras alır.
+ * Base repository class that gathers the common CRUD/list queries in one place.
+ * Goal: get rid of the "$db->query(\"SELECT * FROM ...\")" blocks repeated on
+ * every page. A module's repository writes only its own specific queries
+ * (see the templates/views and src/controllers examples) and inherits
+ * everything else from here.
  *
- * Proje genelindeki mevcut static-method/global-class konvansiyonuyla tutarlı
- * kalsın diye (UserService, QueueHelper, DBHelper vb. hep static) bu sınıf da
- * static metotlarla, örneklenmeden (instantiate edilmeden) kullanılır:
+ * To stay consistent with the existing static-method/global-class convention
+ * across the project (UserService, QueueHelper, DBHelper etc. are all static),
+ * this class is used through static methods too, without instantiation:
  *
  *   class QueueRepository extends BaseRepository {
  *       protected static string $table = 'pbx_queues';
@@ -44,8 +44,8 @@ abstract class BaseRepository
     }
 
     /**
-     * @param string $where Parametreli WHERE koşulu (ör. "role = ? AND is_active = ?")
-     * @param array $params Koşuldaki "?" yer tutucularına karşılık gelen değerler
+     * @param string $where Parameterized WHERE condition (e.g. "role = ? AND is_active = ?")
+     * @param array $params Values for the "?" placeholders in the condition
      */
     public static function findWhere(string $where, array $params = [], string $orderBy = ''): array
     {

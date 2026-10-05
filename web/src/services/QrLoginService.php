@@ -8,25 +8,25 @@ use chillerlan\QRCode\Output\QRMarkupSVG;
 
 /**
  * Mobile QR Code Quick Login Service
- * Web "Dahilim" ekranında tek kullanımlık, süreli QR kod üretir ve mobil uygulamaların
- * bu kodu tarayarak anında oturum açmasını sağlar.
+ * Issues a one-time, time-limited QR code on the web "My Phone" screen and
+ * lets the mobile apps sign in instantly by scanning it.
  */
 class QrLoginService
 {
-    /** Kodun amacı → geçerlilik süresi (saniye). */
+    /** Purpose of the code → lifetime (seconds). */
     const TTL = [
-        'screen' => 600,        // web "Dahilim" ekranındaki QR
-        'email'  => 7 * 86400,  // davet e-postasındaki mobil giriş bağlantısı
-        'google' => 120,        // Google girişi → uygulamaya dönen kod
+        'screen' => 600,        // QR on the web "My Phone" screen
+        'email'  => 7 * 86400,  // mobile sign-in link in the invitation email
+        'google' => 120,        // Google sign-in → code handed back to the app
     ];
 
     const ANDROID_PACKAGE = 'com.mhrgl.AiPBX';
 
     /**
-     * Oturum açmış kullanıcı için yeni bir mobil QR eşleştirme kodu ve QR görseli üretir.
+     * Issues a new mobile QR pairing code and QR image for the signed-in user.
      *
-     * @param int $userId sys_users tablosundaki kullanıcı ID'si
-     * @param int $ttlSeconds QR kod geçerlilik süresi (varsayılan 600 saniye = 10 dakika)
+     * @param int $userId user ID in sys_users
+     * @param int $ttlSeconds QR code lifetime (default 600 seconds = 10 minutes)
      * @return array{success: bool, qr_token?: string, qr_data_uri?: string, expires_at?: string, expires_in?: int, server_url?: string, error?: string}
      */
     public static function generateQr(int $userId, int $ttlSeconds = 600): array
@@ -50,11 +50,11 @@ class QrLoginService
     }
 
     /**
-     * Davet e-postası için 7 gün geçerli, tek kullanımlık mobil giriş bağlantısı.
-     * Bağlantı yalnızca /mobile-login sayfasını açar; kod, uygulama giriş
-     * yaptığında harcanır — e-posta güvenlik tarayıcıları (Outlook Safe Links
-     * vb.) bağlantıyı önceden açsa bile kod bozulmaz. Aynı kullanıcı için
-     * önceki kullanılmamış e-posta kodları iptal edilir (yalnızca son davet geçerli).
+     * One-time mobile sign-in link valid for 7 days, for the invitation email.
+     * The link only opens the /mobile-login page; the code is spent when the
+     * app signs in — so it survives email security scanners (Outlook Safe
+     * Links etc.) opening the link beforehand. Earlier unused email codes of
+     * the same user are cancelled (only the latest invitation is valid).
      *
      * @return array{success: bool, url?: string, expires_at?: string, error?: string}
      */
@@ -72,9 +72,10 @@ class QrLoginService
     }
 
     /**
-     * Google girişi sonrası uygulamaya aipbx://auth ile dönülecek kısa ömürlü kod.
-     * Uygulama bunu /api/mobile/qr_login.php ile giriş bilgisine çevirir; oturum
-     * token'ı ve SIP şifresi artık URL'de taşınmaz.
+     * Short-lived code handed back to the app through aipbx://auth after a
+     * Google sign-in. The app exchanges it for sign-in data via
+     * /api/mobile/qr_login.php; the session token and SIP password no longer
+     * travel in the URL.
      */
     public static function createGoogleCode(int $userId): array
     {
@@ -82,7 +83,7 @@ class QrLoginService
     }
 
     /**
-     * /mobile-login sayfası için SALT-OKUNUR kontrol — kodu harcamaz.
+     * READ-ONLY check for the /mobile-login page — does not spend the code.
      *
      * @return array{valid: bool, reason?: string, user?: array, server_url?: string, token?: string, payload?: array}
      */
@@ -121,15 +122,15 @@ class QrLoginService
         ];
     }
 
-    /** Uygulamayı açan bağlantı (iOS ve genel). */
+    /** Link that opens the app (iOS and generic). */
     public static function appLink(string $serverUrl, string $token): string
     {
         return 'aipbx://login?server=' . rawurlencode($serverUrl) . '&token=' . rawurlencode($token);
     }
 
     /**
-     * Android için intent:// bağlantısı: uygulama yüklü değilse Chrome doğrudan
-     * Play Store sayfasına düşer (browser_fallback_url).
+     * intent:// link for Android: if the app is not installed, Chrome goes
+     * straight to the Play Store page (browser_fallback_url).
      */
     public static function androidIntentLink(string $serverUrl, string $token): string
     {
@@ -139,16 +140,16 @@ class QrLoginService
             . ';S.browser_fallback_url=' . rawurlencode($fallback) . ';end';
     }
 
-    /** QR içeriğini SVG data URI olarak çizer (uygulamanın okuduğu JSON). */
+    /** Draws the QR content as an SVG data URI (the JSON the app reads). */
     public static function renderQr(array $payload): string
     {
         if (!class_exists(QRCode::class)) {
             return '';
         }
         $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        // php-qrcode v6 API: eski QRCode::OUTPUT_MARKUP_SVG / ECC_M sabitleri
-        // kaldırıldı — önceki kod her seferinde hata verip seçeneksiz yedek
-        // yola düşüyordu.
+        // php-qrcode v6 API: the old QRCode::OUTPUT_MARKUP_SVG / ECC_M
+        // constants were removed — the previous code failed every time and
+        // fell back to the option-less path.
         $options = new QROptions([
             'outputInterface' => QRMarkupSVG::class,
             'outputBase64' => true,
@@ -181,13 +182,13 @@ class QrLoginService
             return ['success' => false, 'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmuyor. Mobil giriş için dahili zorunludur.'];
         }
 
-        // Eski kullanılmamış token'ları temizle
+        // Clean up old unused tokens
         $db->prepare('DELETE FROM sys_user_qr_tokens WHERE user_id = ? AND (used_at IS NOT NULL OR expires_at < NOW())')->execute([$userId]);
         if ($revokePrevious) {
             $db->prepare('DELETE FROM sys_user_qr_tokens WHERE user_id = ? AND purpose = ? AND used_at IS NULL')->execute([$userId, $purpose]);
         }
 
-        // Güvenli 256-bit rastgele token
+        // Secure 256-bit random token
         $token = bin2hex(random_bytes(32));
         $expTimestamp = time() + $ttlSeconds;
         $expiresAt = date('Y-m-d H:i:s', $expTimestamp);
@@ -206,7 +207,7 @@ class QrLoginService
         return $scheme . '://' . $host;
     }
 
-    /** Uygulamanın QR'dan okuduğu JSON yükü (Android/iOS handleScannedQr). */
+    /** JSON payload the app reads from the QR (Android/iOS handleScannedQr). */
     private static function payload(string $serverUrl, string $token, array $user, int $expTs): array
     {
         return [
@@ -222,7 +223,7 @@ class QrLoginService
     }
 
     /**
-     * QR kodun taranıp taranmadığını kontrol eder (Web tarafında durum yoklaması için).
+     * Checks whether the QR code has been scanned (for status polling on the web side).
      */
     public static function checkStatus(string $token): array
     {
@@ -251,12 +252,12 @@ class QrLoginService
     }
 
     /**
-     * Mobil uygulamanın QR kodu tarayarak oturum açmasını sağlar.
-     * Başarılı olursa login.php ile birebir aynı LoginResponse formatında yanıt döner.
+     * Lets the mobile app sign in by scanning the QR code.
+     * On success it answers in exactly the same LoginResponse format as login.php.
      *
-     * @param string $qrToken QR koddan okunan tek kullanımlık token
-     * @param string $deviceName Mobil cihaz adı (örn: "Samsung SM-S918B" veya "iPhone 15 Pro")
-     * @param string $clientIp İstemci IP adresi
+     * @param string $qrToken one-time token read from the QR code
+     * @param string $deviceName mobile device name (e.g. "Samsung SM-S918B" or "iPhone 15 Pro")
+     * @param string $clientIp client IP address
      * @return array{success: bool, response?: array, error?: string, code?: int}
      */
     public static function authenticateMobile(string $qrToken, string $deviceName, string $clientIp): array
@@ -297,11 +298,11 @@ class QrLoginService
             return ['success' => false, 'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.', 'code' => 400];
         }
 
-        // Token'ı kullanıldı olarak işaretle
+        // Mark the token as used
         $upd = $db->prepare('UPDATE sys_user_qr_tokens SET used_at = NOW(), device_name = ?, ip_address = ? WHERE id = ?');
         $upd->execute([$deviceName, $clientIp, $record['token_id']]);
 
-        // Giriş denemesini logla
+        // Log the sign-in attempt
         if (function_exists('logLoginAttempt')) {
             logLoginAttempt($clientIp, $record['username'], 'SUCCESS');
         }

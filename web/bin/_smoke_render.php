@@ -1,17 +1,18 @@
 <?php
 /**
- * Duman testi alt-süreci — TEK bir rotayı render edip sonucu JSON olarak yazar.
- * bin/smoke.php tarafından her rota/dil kombinasyonu için ayrı süreçte çağrılır.
+ * Smoke test subprocess — renders ONE route and writes the result as JSON.
+ * Called by bin/smoke.php in a separate process for every route/language
+ * combination.
  *
- * Neden ayrı süreç: yönlendiren controller'lar header()+exit çağırıyor; exit
- * tek süreçte koşan bir runner'ı öldürürdü. Fatal error'lar da böylece izole
- * olur. Sonuç register_shutdown_function ile yazıldığı için exit ve fatal
- * durumunda da rapor üretilir.
+ * Why a separate process: redirecting controllers call header()+exit; exit
+ * would kill a runner working in a single process. Fatal errors are isolated
+ * that way too. The result is written by register_shutdown_function, so a
+ * report is produced on exit and on fatal errors as well.
  *
- * GÜVENLİK: sadece render eder. POST, servis yazımı, config üretimi veya
- * Asterisk reload'u tetiklemez.
+ * SAFETY: only renders. It never triggers a POST, a service write, config
+ * generation or an Asterisk reload.
  *
- * Kullanım: php bin/_smoke_render.php <path> <lang> <role> <outfile>
+ * Usage: php bin/_smoke_render.php <path> <lang> <role> <outfile>
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
 
@@ -25,7 +26,7 @@ if ($path === '' || $outfile === '') {
     exit(2);
 }
 
-// Repo kökü (sunucuda /var/www/html bu dizine bağlı; CI'da checkout dizini).
+// Repo root (/var/www/html points here on the server; the checkout directory in CI).
 $SMOKE_ROOT = dirname(__DIR__);
 chdir($SMOKE_ROOT);
 $ROUTES = require $SMOKE_ROOT . '/src/routes.php';
@@ -43,21 +44,21 @@ if ($query !== '') {
     parse_str($query, $_GET);
 }
 
-// index.php'nin dispatch ortamını birebir taklit et.
+// Mimic index.php's dispatch environment exactly.
 $_SERVER['REQUEST_URI']    = $path . ($query !== '' ? '?' . $query : '');
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['SCRIPT_NAME']    = '/index.php';
-// RBAC ve aktif-sekme mantığı basename($_SERVER['PHP_SELF']) üzerinden çalışıyor.
+// RBAC and the active-tab logic work from basename($_SERVER['PHP_SELF']).
 $_SERVER['PHP_SELF']       = '/' . $route['module'];
 
 /**
- * PHP uyarılarını ÇIKTIDAN DEĞİL, programatik olarak yakala.
+ * Catch PHP warnings programmatically, NOT FROM THE OUTPUT.
  *
- * Neden: bu uygulama bilinçli olarak display_errors=Off ile çalışıyor
- * (bkz. config.php'deki fatal sayfa mekanizması), dolayısıyla Warning/Notice
- * asla HTML'e basılmıyor — üretilen çıktıyı grep'lemek prensip olarak
- * çalışmaz (2026-09-01'de kasıtlı kusur enjeksiyonu yakalanmayınca bulundu).
- * Handler false döndürüyor ki PHP'nin normal akışı bozulmasın.
+ * Why: this app deliberately runs with display_errors=Off (see the fatal
+ * page mechanism in config.php), so Warnings/Notices never reach the HTML —
+ * grepping the generated output cannot work in principle (found on
+ * 2026-09-01 when a deliberate fault injection was not caught).
+ * The handler returns false so PHP's normal flow is not disturbed.
  */
 $GLOBALS['SMOKE_PHP_ERRORS'] = [];
 error_reporting(E_ALL);
@@ -97,20 +98,21 @@ register_shutdown_function(function () use ($path, $lang, $role, $outfile) {
         'bytes'  => strlen($html),
         'closed'     => stripos($html, '</html>') !== false,
         'php_errors' => array_values(array_unique($GLOBALS['SMOKE_PHP_ERRORS'] ?? [])),
-        // mb_strcut, substr'ın AKSİNE çok baytlı bir UTF-8 karakteri ortadan
-        // bölmez. Düz substr kullanılırken sayfa 200 KB'ı aşınca kesme noktası
-        // bir Türkçe karakterin ortasına denk geliyor, json_encode geçersiz
-        // UTF-8 yüzünden false dönüyor ve dosyaya BOŞ string yazılıyordu —
-        // orkestratör de bunu "alt-surec sonuc uretmedi" diye raporluyordu.
-        // /system-users 208 KB'a ulaşınca gerçekten yaşandı (2026-09-01).
+        // Unlike substr, mb_strcut does not split a multibyte UTF-8 character
+        // in the middle. With plain substr, once a page passed 200 KB the cut
+        // landed in the middle of a Turkish character, json_encode returned
+        // false because of invalid UTF-8 and an EMPTY string was written to
+        // the file — the orchestrator reported it as "the subprocess produced
+        // no result". It really happened when /system-users reached 208 KB
+        // (2026-09-01).
         'output'     => mb_strcut($html, 0, 200000, 'UTF-8'),
     ];
 
     $json = json_encode($sonuc);
     if ($json === false) {
-        // SESSİZ BAŞARISIZLIK OLMASIN: kodlama hâlâ bozuksa çıktıyı at ama
-        // sonucun kendisini mutlaka yaz, yoksa hata "sonuc uretmedi" gibi
-        // görünür ve asıl sebep gizlenir.
+        // NO SILENT FAILURE: if the encoding is still broken, drop the output
+        // but always write the result itself, otherwise the error looks like
+        // "produced no result" and the real cause is hidden.
         $sonuc['output'] = '';
         $sonuc['error']  = trim($sonuc['error'] . ' [cikti JSON\'a kodlanamadi: ' . json_last_error_msg() . ']');
         $json = json_encode($sonuc);
@@ -124,7 +126,7 @@ if (is_file($SMOKE_ROOT . '/vendor/autoload.php')) {
 }
 if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
-// Anonim rotalar (giriş / şifre sıfırlama) oturumsuz render edilir.
+// Anonymous routes (login / password reset) are rendered without a session.
 $ANON = ['/login', '/force-reset', '/reset-password'];
 if (!in_array($path, $ANON, true)) {
     $_SESSION['user_id']       = 1;

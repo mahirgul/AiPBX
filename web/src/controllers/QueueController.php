@@ -7,21 +7,11 @@ class QueueController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_queue'])) {
-                $res = PBXHelper::saveQueue($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_queues', $_POST['queue_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_queue'])) {
-                $res = PBXHelper::deleteQueue($_POST['queue_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_queue' => fn() => QueueService::saveQueue($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('pbx_queues', $_POST['queue_id'] ?? 0, static::csrfToken()),
+            'delete_queue' => fn() => QueueService::deleteQueue($_POST['queue_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $queues = QueueRepository::allOrderedById();
         $all_agents = QueueRepository::extensionAgents();
@@ -40,6 +30,6 @@ class QueueController extends BaseController
             'legacy_agents' => $legacy_agents,
             'legacy_managers' => $legacy_managers,
             'moh_classes' => $moh_classes,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

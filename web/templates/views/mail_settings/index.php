@@ -29,7 +29,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_mail_settings" value="1">
 
-    <!-- BÖLÜM 1: Mail Relay & SMTP Sunucusu -->
+    <!-- SECTION 1: mail relay & SMTP server -->
     <div id="tab_smtp" class="settings-tab-pane active">
     <div class="card">
         <div class="card-header">
@@ -95,7 +95,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div class="form-group" style="margin-top: 16px;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" name="mail_sync_postfix" value="1" <?php echo $sync_postfix ? 'checked' : ''; ?>>
-                <span style="font-weight: 600; color: var(--text-main);"><?php echo t('mail_settings.sync_postfix_label', 'Sistem Postfix MTA relayhost ayarlarını otomatik senkronize et'); ?></span>
+                <span class="u-fw-600 u-text-main"><?php echo t('mail_settings.sync_postfix_label', 'Sistem Postfix MTA relayhost ayarlarını otomatik senkronize et'); ?></span>
             </label>
             <small style="color: var(--text-muted); display: block; margin-left: 24px; margin-top: 2px;">
                 <?php echo t('mail_settings.sync_postfix_help', 'İşaretlendiğinde arka planda çalışan Postfix MTA servisine relayhost yazılır ve servis otomatik reload edilir.'); ?>
@@ -110,7 +110,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     </div>
     </div>
 
-    <!-- BÖLÜM 2: Gönderici Kimlik Bilgileri (From) -->
+    <!-- SECTION 2: sender identity (From) -->
     <div id="tab_sender" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -154,7 +154,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     </div>
 </form>
 
-<!-- BÖLÜM 3: Canlı Durum ve Test E-Postası Gönderimi -->
+<!-- SECTION 3: live status and test email -->
 <div id="tab_test" class="settings-tab-pane" style="display: none;">
 <div class="card">
     <div class="card-header">
@@ -164,7 +164,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-        <!-- Durum Özeti -->
+        <!-- Status summary -->
         <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
             <div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <span><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.mta_status', 'Postfix MTA Durumu'); ?></span>
@@ -181,9 +181,9 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
         </div>
 
-        <!-- Test E-Postası Gönderim Formu -->
+        <!-- Test email form -->
         <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
-            <div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+            <div class="u-fs-13 u-fw-700 u-text-main u-mb-8">
                 <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.test_title', 'Test E-Postası Gönder'); ?>
             </div>
             <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 12px 0;">

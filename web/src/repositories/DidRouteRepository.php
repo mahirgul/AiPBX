@@ -22,10 +22,9 @@ class DidRouteRepository extends BaseRepository
     }
 
     /**
-     * Fax rotaları dest_id'yi dialplan seviyesinde yok sayar (yönlendirme DID
-     * numarasının kendisine göre yapılır, bkz. SyncDialplan.php
-     * buildDestinationLines('fax')); bir fax DID'i için asıl anlamlı "detay"
-     * birim eşlemesidir.
+     * Fax routes ignore dest_id at the dialplan level (routing is done by the
+     * DID number itself, see SyncDialplan.php buildDestinationLines('fax'));
+     * for a fax DID the meaningful "detail" is the unit mapping.
      */
     public static function resolveDestLabel(string $destType, $destId, string $didNumber, array &$cache, array $didDeptMap): ?string
     {

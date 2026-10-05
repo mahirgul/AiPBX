@@ -75,7 +75,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     private var isNetworkAvailable = true
     private var currentReconnectDelayMs = INITIAL_RECONNECT_DELAY_MS
 
-    // Native Doze/Sleep Watchdog: Her 2 dakikada bir SIP kaydini tazeler (M1, M2, M14)
+    // Native Doze/Sleep watchdog: refreshes the SIP registration every 2 minutes (M1, M2, M14)
     private val watchdogHandler = Handler(Looper.getMainLooper())
     private val watchdogRunnable = object : Runnable {
         override fun run() {
@@ -126,7 +126,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
     private fun checkAndRefreshToken() {
         val now = System.currentTimeMillis()
-        // Her 24 saatte bir token ve TURN oturumunu tazele (M5)
+        // Refresh the token and the TURN session every 24 hours (M5)
         if (now - prefs.lastTokenRefreshTime > 24 * 3600 * 1000L && prefs.isLoggedIn) {
             val sUrl = prefs.serverUrl
             val tok = prefs.token
@@ -267,7 +267,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                     }
                     startActivity(callIntent)
                 } else {
-                    // Mikrofon izni yoksa doğrudan cevaplama yerine izin istemesi için IncomingCallActivity'yi öne getir
+                    // Without the microphone permission, bring IncomingCallActivity to the front to ask for it instead of answering directly
                     val incomingIntent = Intent(this, com.mhrgl.aipbx.ui.IncomingCallActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         putExtra(com.mhrgl.aipbx.ui.IncomingCallActivity.EXTRA_CALLER_NAME, engine.activeCallerName)
@@ -306,8 +306,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         val domain = prefs.domain
         val displayName = prefs.fullName ?: ext
 
-        // T-5 / Keystore kurtarma sonrası: SIP parolası henüz şifreli depoda yoksa,
-        // oturum jetonuyla sunucudan taze SIP kimliklerini çekip kaydet
+        // T-5 / after a keystore recovery: if the SIP password is not in the encrypted store yet,
+        // fetch fresh SIP credentials from the server with the session token and save them
         if (sipPass.isNullOrEmpty() || wsUrl.isNullOrEmpty() || domain.isNullOrEmpty()) {
             Log.i(TAG, "SIP credentials missing from encrypted storage. Fetching fresh credentials via session token (T-5)...")
             val sUrl = prefs.serverUrl
@@ -361,7 +361,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 Log.d(TAG, "Connection status DISCONNECTED, scheduling auto-reconnect in ${currentReconnectDelayMs}ms (M14/M28)...")
                 reconnectHandler.removeCallbacks(reconnectRunnable)
                 reconnectHandler.postDelayed(reconnectRunnable, currentReconnectDelayMs)
-                // Üstel geri çekilme (3 sn -> 6 -> 12 -> 24 -> 48 -> 60 sn tavan)
+                // Exponential backoff (3 s -> 6 -> 12 -> 24 -> 48 -> 60 s ceiling)
                 currentReconnectDelayMs = (currentReconnectDelayMs * 2).coerceAtMost(MAX_RECONNECT_DELAY_MS)
             } else {
                 Log.d(TAG, "Connection status DISCONNECTED, network is unavailable. Waiting for network available event (M28).")
@@ -423,13 +423,13 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val ringerMode = audioManager.ringerMode
 
-            // 1. Sessiz Mod: Telefon sessizdeyken ses de titreşim de olmamalı
+            // 1. Silent mode: with the phone on silent there must be neither sound nor vibration
             if (ringerMode == AudioManager.RINGER_MODE_SILENT) {
                 Log.d(TAG, "Ringer mode is SILENT; skipping ringtone and vibration")
                 return
             }
 
-            // 2. Titreşim kontrolü: Titreşim modunda kesinlikle titremeli, Normal modda sistem ayarına göre
+            // 2. Vibration check: always vibrate in vibrate mode, follow the system setting in normal mode
             val shouldVibrate = when (ringerMode) {
                 AudioManager.RINGER_MODE_VIBRATE -> true
                 AudioManager.RINGER_MODE_NORMAL -> {
@@ -458,9 +458,9 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 }
             }
 
-            // 3. Zil Sesi kontrolü: Yalnızca NORMAL modda çalar
+            // 3. Ring tone check: rings only in NORMAL mode
             if (ringerMode == AudioManager.RINGER_MODE_NORMAL && ringtone == null && mediaPlayer == null) {
-                // Öncelik: Kullanıcının telefon ayarlarında seçtiği kendi sistem zil sesi
+                // Priority: the system ring tone the user picked in the phone settings
                 val ringtoneUri = try {
                     RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_RINGTONE)
                         ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
@@ -753,11 +753,11 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
     override fun onNewMessage(message: ChatMessage) {
         val myExt = prefs.extension ?: ""
-        // Kendi gönderdiğimiz mesajlar için bildirim basma
+        // Do not post a notification for messages we sent ourselves
         if (message.senderExt.isNotEmpty() && message.senderExt == myExt) {
             return
         }
-        // Kullanıcı şu an o sohbet ekranında ise bildirim basma (ekranda canlı görüyor)
+        // Do not post a notification while the user is on that chat screen (they see it live)
         if (ChatActivity.activeConversationId == message.conversationId) {
             return
         }
@@ -810,9 +810,9 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     }
 
     /**
-     * Sunucu oturumu geri çekti (şifre sıfırlandı, hesap pasif, 30 gün yenilenmedi).
-     * Önceden yenileme her seferinde başarısız olup loglanıyor, uygulama "girişli"
-     * görünürken sohbet/API çalışmıyordu. Oturum kapatılır ve kullanıcıya bildirilir.
+     * The server revoked the session (password reset, account inactive, not renewed for 30 days).
+     * The refresh used to fail and be logged every time, and while the app looked "signed in"
+     * the chat/API did not work. The session is closed and the user is told.
      */
     private fun handleSessionExpired(reason: String?) {
         if (!prefs.isLoggedIn) return
@@ -847,7 +847,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         super.onTaskRemoved(rootIntent)
         Log.w(TAG, "onTaskRemoved: App removed from recent tasks. Scheduling quick resurrection alarm...")
         if (prefs.isLoggedIn) {
-            // Kullanici uygulamayi son kullanilanlardan kaydirdiysa, 3 sn icinde servisi dirilt
+            // If the user swiped the app away from recents, revive the service within 3 s
             ResurrectionReceiver.schedule(this, 3000L)
         }
     }
@@ -887,8 +887,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             private set
 
         const val WATCHDOG_INTERVAL_MS = 120_000L // 2 dakika (M1, M2 Keepalive & Recovery)
-        const val INITIAL_RECONNECT_DELAY_MS = 3000L // Üstel geri çekilme başlangıç gecikmesi (M28)
-        const val MAX_RECONNECT_DELAY_MS = 60_000L // Üstel geri çekilme tavanı (1 dakika) (M28)
+        const val INITIAL_RECONNECT_DELAY_MS = 3000L // exponential backoff initial delay (M28)
+        const val MAX_RECONNECT_DELAY_MS = 60_000L // exponential backoff ceiling (1 minute) (M28)
 
         const val CHANNEL_ID_SERVICE = "ai_pbx_service_channel"
         const val CHANNEL_ID_CALLS = "ai_pbx_calls_channel"

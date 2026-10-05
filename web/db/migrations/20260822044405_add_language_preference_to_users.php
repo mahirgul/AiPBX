@@ -5,11 +5,12 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Web arayüzü dil tercihi (i18n) için sys_users.language_preference.
- * DİKKAT: Bu, bugün sabah tamamlanan Asterisk SESLİ anons dili özelliğinden
- * (pbx_dids/pbx_ivrs/pbx_queues.language) TAMAMEN AYRI bir sistemdir — o,
- * telefon görüşmesindeki sesli anonsların dilini kontrol ediyor; bu,
- * kullanıcının web panelinde gördüğü METİNLERİN dilini kontrol ediyor.
+ * sys_users.language_preference for the web interface language preference (i18n).
+ * CAUTION: this is a system COMPLETELY SEPARATE from the Asterisk SPOKEN
+ * prompt language feature finished this morning
+ * (pbx_dids/pbx_ivrs/pbx_queues.language) — that one controls the language of
+ * the spoken prompts in a phone call; this one the language of the TEXTS the
+ * user sees in the web panel.
  */
 final class AddLanguagePreferenceToUsers extends AbstractMigration
 {

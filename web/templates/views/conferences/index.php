@@ -1,6 +1,6 @@
 <?php
 /**
- * Conference Rooms (Konferans Odaları) View
+ * Conference rooms view
  */
 ?>
 
@@ -8,7 +8,7 @@
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?>
-            <span class="badge badge-secondary" style="font-size: 11px; margin-left: 8px;"><?php echo count($conferences); ?></span>
+            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($conferences); ?></span>
         </div>
         <div class="u-flex-center">
             <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
@@ -33,18 +33,6 @@
         </ul>
     </div>
 
-    <?php if (!empty($message)): ?>
-        <div class="alert alert-success" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-danger" style="margin: 15px 20px 0 20px;">
-            <i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
-
     <div class="table-responsive">
         <table class="data-table">
             <thead>
@@ -65,7 +53,7 @@
                 <?php else: ?>
                     <?php foreach ($conferences as $cf): ?>
                         <tr>
-                            <td><span class="badge badge-info" style="font-size: 13px;"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span></td>
+                            <td><span class="badge badge-info u-fs-13"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span></td>
                             <td class="u-strong"><?php echo htmlspecialchars($cf['title']); ?></td>
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
@@ -135,7 +123,7 @@
     </div>
 </div>
 
-<!-- Modal: Canlı Katılımcılar -->
+<!-- Modal: live participants -->
 <div class="modal-overlay" id="liveMembersModal">
     <div class="modal-card" style="max-width: 640px;">
         <div class="modal-header">
@@ -144,7 +132,7 @@
         </div>
         <div class="modal-body">
             <div id="liveMembersBody" style="min-height: 120px;">
-                <div class="text-center text-muted" style="padding: 30px;">
+                <div class="text-center text-muted u-p-30">
                     <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Katılımcılar yükleniyor...
                 </div>
             </div>
@@ -158,7 +146,7 @@
     </div>
 </div>
 
-<!-- Modal: Konferans Odası Ekle / Düzenle -->
+<!-- Modal: add / edit conference room -->
 <div class="modal-overlay" id="confModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
@@ -208,7 +196,7 @@
                 </div>
 
                 <div style="background: var(--bg-input); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px; color: var(--text-main);">Gelişmiş Seçenekler</div>
+                    <div class="u-fw-600 u-fs-13 u-mb-10 u-text-main">Gelişmiş Seçenekler</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
                         <label class="u-check-label-6">
                             <input type="checkbox" name="wait_marked" id="modal_conf_wait_marked" value="1" class="u-accent">
@@ -250,118 +238,4 @@
     </div>
 </div>
 
-<script>
-let currentActiveRoomNumber = '';
-
-function openCreateConfModal() {
-    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Konferans Odası';
-    document.getElementById('modal_conf_id').value = '0';
-    document.getElementById('modal_conf_number').value = '';
-    document.getElementById('modal_conf_title').value = '';
-    document.getElementById('modal_conf_user_pin').value = '';
-    document.getElementById('modal_conf_admin_pin').value = '';
-    document.getElementById('modal_conf_max_members').value = '50';
-    document.getElementById('modal_conf_moh').value = 'default';
-    document.getElementById('modal_conf_wait_marked').checked = false;
-    document.getElementById('modal_conf_end_marked').checked = false;
-    document.getElementById('modal_conf_record').checked = false;
-    document.getElementById('modal_conf_mute_on_join').checked = false;
-    document.getElementById('modal_conf_announce_join').checked = true;
-    document.getElementById('modal_conf_announce_count').checked = true;
-    document.getElementById('modal_conf_active').checked = true;
-    UIHelper.openOverlayModal('confModal');
-}
-
-function openEditConfModal(cf) {
-    document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Oda Düzenle: ' + escapeHtml(cf.title || '');
-    document.getElementById('modal_conf_id').value = cf.id || '0';
-    document.getElementById('modal_conf_number').value = cf.room_number || '';
-    document.getElementById('modal_conf_title').value = cf.title || '';
-    document.getElementById('modal_conf_user_pin').value = cf.user_pin || '';
-    document.getElementById('modal_conf_admin_pin').value = cf.admin_pin || '';
-    document.getElementById('modal_conf_max_members').value = cf.max_members || 50;
-    document.getElementById('modal_conf_moh').value = cf.music_on_hold || 'default';
-    document.getElementById('modal_conf_wait_marked').checked = (cf.wait_marked == 1);
-    document.getElementById('modal_conf_end_marked').checked = (cf.end_marked == 1);
-    document.getElementById('modal_conf_record').checked = (cf.record_conference == 1);
-    document.getElementById('modal_conf_mute_on_join').checked = (cf.mute_on_join == 1);
-    document.getElementById('modal_conf_announce_join').checked = (cf.announce_join_leave == 1);
-    document.getElementById('modal_conf_announce_count').checked = (cf.announce_user_count == 1);
-    document.getElementById('modal_conf_active').checked = (cf.is_active == 1);
-    UIHelper.openOverlayModal('confModal');
-}
-
-function showLiveMembers(roomNumber, roomTitle) {
-    currentActiveRoomNumber = roomNumber;
-    document.getElementById('liveMembersTitle').innerHTML = '<i class="fas fa-users-viewfinder u-primary"></i> Oda ' + escapeHtml(roomNumber) + ' - ' + escapeHtml(roomTitle);
-    UIHelper.openOverlayModal('liveMembersModal');
-    refreshLiveMembers();
-}
-
-function refreshLiveMembers() {
-    if (!currentActiveRoomNumber) return;
-    const body = document.getElementById('liveMembersBody');
-    body.innerHTML = '<div class="text-center text-muted" style="padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Katılımcılar sorgulanıyor...</div>';
-
-    fetch('/api/conferences.php?action=members&room=' + encodeURIComponent(currentActiveRoomNumber))
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success || !data.members || data.members.length === 0) {
-                body.innerHTML = '<div class="text-center text-muted" style="padding: 30px;"><i class="fas fa-coffee fa-2x" style="opacity: 0.5;"></i><br><br>Şu anda odada aktif katılımcı bulunmuyor.</div>';
-                return;
-            }
-
-            let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-            data.members.forEach(m => {
-                html += '<div style="padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">';
-                html += '<div>';
-                html += '<span style="font-weight: 700; color: var(--text-main); font-size: 13px;">' + escapeHtml(m.callerid || m.channel) + '</span>';
-                if (m.is_admin) html += ' <span class="badge badge-warning u-fs-10"><i class="fas fa-crown"></i> Yönetici</span>';
-                if (m.is_muted) html += ' <span class="badge badge-danger u-fs-10"><i class="fas fa-microphone-slash"></i> Sessizde</span>';
-                html += '<div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">' + escapeHtml(m.channel) + '</div>';
-                html += '</div>';
-                
-                html += '<div style="display: inline-flex; gap: 6px;">';
-                if (m.is_muted) {
-                    html += '<button type="button" class="btn btn-secondary btn-sm" onclick="toggleMuteMember(\'' + m.channel + '\', false)" title="Sesi Aç"><i class="fas fa-microphone"></i> Sesi Aç</button>';
-                } else {
-                    html += '<button type="button" class="btn btn-warning btn-sm" onclick="toggleMuteMember(\'' + m.channel + '\', true)" title="Sessize Al"><i class="fas fa-microphone-slash"></i> Sessize Al</button>';
-                }
-                html += '<button type="button" class="btn btn-danger btn-sm" onclick="kickMember(\'' + m.channel + '\')" title="Odadan At"><i class="fas fa-user-times"></i> At</button>';
-                html += '</div>';
-                html += '</div>';
-            });
-            html += '</div>';
-            body.innerHTML = html;
-        })
-        .catch(() => {
-            body.innerHTML = '<div class="alert alert-danger">Katılımcı bilgisi alınamadı.</div>';
-        });
-}
-
-function kickMember(channel) {
-    if (!confirm('Bu katılımcıyı odadan çıkarmak istediğinizden emin misiniz?')) return;
-    const form = new FormData();
-    form.append('csrf_token', window.CSRF_TOKEN);
-    form.append('kick_member', '1');
-    form.append('room_number', currentActiveRoomNumber);
-    form.append('channel', channel);
-
-    fetch('/conferences', { method: 'POST', body: form })
-        .then(() => refreshLiveMembers())
-        .catch(() => refreshLiveMembers());
-}
-
-function toggleMuteMember(channel, mute) {
-    const form = new FormData();
-    form.append('csrf_token', window.CSRF_TOKEN);
-    form.append('mute_member', '1');
-    form.append('room_number', currentActiveRoomNumber);
-    form.append('channel', channel);
-    form.append('mute_action', mute ? 'mute' : 'unmute');
-
-    fetch('/conferences', { method: 'POST', body: form })
-        .then(() => refreshLiveMembers())
-        .catch(() => refreshLiveMembers());
-}
-</script>
+<script src="<?php echo asset('/assets/js/conferences.js'); ?>"></script>

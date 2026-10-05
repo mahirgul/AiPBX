@@ -53,14 +53,14 @@ class SIPHelper {
     }
 
     /**
-     * Belirli anahtarları siler (tümünü değil).
+     * Deletes specific keys (not all of them).
      *
-     * Neden gerekli: setSettings() yalnızca VERİLEN anahtarları yazıyor, artık
-     * gönderilmeyenleri silmiyor. Bu yüzden panelden boşaltılan bir alanın eski
-     * değeri `sip` tablosunda kalıyor ve SyncTrunks orayı pbx_trunks'tan ÖNCE
-     * okuduğu için alan bir daha ASLA temizlenemiyordu — "set edilir ama geri
-     * alınamaz" (2026-09-01'de match_hosts'ta yaşandı: WebRTC'yi kıran
-     * match=127.0.0.1 panelden kaldırılamadı).
+     * Why: setSettings() writes only the GIVEN keys and does not delete the
+     * ones no longer sent. So the old value of a field cleared in the panel
+     * stayed in the `sip` table, and since SyncTrunks reads it BEFORE
+     * pbx_trunks, the field could NEVER be cleared again — "can be set but
+     * not undone" (happened with match_hosts on 2026-09-01: the
+     * match=127.0.0.1 that broke WebRTC could not be removed from the panel).
      */
     public static function deleteKeys($id, array $keys) {
         if (empty($keys)) return true;
@@ -211,12 +211,12 @@ class SIPHelper {
             $defaults['registration_retry_interval'] = (string)(intval($t['registration_retry_interval'] ?? 60) ?: 60);
         }
 
-        // Panelden BOŞALTILAN opsiyonel alanların bayat satırlarını temizle.
-        // Bu liste, yukarıda `if (!empty($t[...]))` ile KOŞULLU yazılan her
-        // anahtarı içerir; koşul sağlanmadığında anahtar $defaults'a hiç girmez
-        // ve eski satır silinmezse sonsuza kadar pbx_trunks'ı gölgeler.
-        // YENİ bir koşullu alan eklenirse BURAYA DA eklenmeli — aksi halde o
-        // alan da "set edilir ama geri alınamaz" hale gelir.
+        // Clean up the stale rows of optional fields CLEARED in the panel.
+        // This list holds every key written CONDITIONALLY above with
+        // `if (!empty($t[...]))`; when the condition fails the key never enters
+        // $defaults, and if the old row is not deleted it shadows pbx_trunks
+        // forever. When a NEW conditional field is added it must be added HERE
+        // TOO — otherwise that field also becomes "can be set but not undone".
         $kosullu_alanlar = [
             'match_hosts', 'outbound_proxy',
             't38_udptl_maxdatagram', 'fax_detect', 'fax_detect_timeout',

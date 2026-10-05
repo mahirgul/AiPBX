@@ -1,6 +1,6 @@
 <div style="display: flex; flex-direction: column; gap: 20px;" id="cc-board-root">
 
-    <!-- Üst Bar: Kuyruk/Tarih Filtresi & Tam Ekran -->
+    <!-- Top bar: queue/date filter & full screen -->
     <div class="card page-header-card u-mb-0">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -8,7 +8,7 @@
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div>
-                    <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-main);"><?php echo t('sidebar.item_cc_board_unified'); ?></h2>
+                    <h2 class="u-fs-16 u-fw-700 u-m-0 u-text-main"><?php echo t('sidebar.item_cc_board_unified'); ?></h2>
                     <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;"><?php echo t('cc_board.subtitle'); ?></p>
                 </div>
             </div>
@@ -45,9 +45,9 @@
         </div>
     </div>
 
-    <!-- 1. BÖLÜM: Kompakt Canlı Pano ve KPI Metrikleri -->
+    <!-- SECTION 1: compact live board and KPI metrics -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;" class="cc-board-kpi-grid">
-        <!-- 1. Bekleyen Çağrı -->
+        <!-- 1. Waiting calls -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--danger); display: flex; flex-direction: column; justify-content: space-between;">
             <div class="u-flex-between">
                 <span class="cc-board-label u-danger"><?php echo t('cc_board.waiting_call'); ?></span>
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <!-- 2. Cevaplanan / Toplam Çağrı -->
+        <!-- 2. Answered / total calls -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--secondary); display: flex; flex-direction: column; justify-content: space-between;">
             <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.answered_call'); ?> / <?php echo t('cc_board.total_call'); ?></span>
@@ -67,12 +67,12 @@
             </div>
             <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
                 <span class="cc-board-val-compact" style="color: var(--secondary);" id="board-answered-calls">0</span>
-                <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">/ <span id="board-total-calls">0</span></span>
+                <span class="u-fs-13 u-muted u-fw-700">/ <span id="board-total-calls">0</span></span>
                 <span class="badge badge-success" style="font-size: 11px; padding: 2px 6px; margin-left: auto;">%<span id="board-answered-rate">0</span></span>
             </div>
         </div>
 
-        <!-- 3. Kaçan Çağrılar (Cevapsız & Terk) -->
+        <!-- 3. Lost calls (missed & abandoned) -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--warning); display: flex; flex-direction: column; justify-content: space-between;">
             <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.missed_call'); ?> / <?php echo t('cc_board.abandoned_call'); ?></span>
@@ -80,14 +80,14 @@
             </div>
             <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
                 <span class="cc-board-val-compact u-danger" id="board-missed-calls">0</span>
-                <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">/</span>
+                <span class="u-fs-13 u-muted u-fw-700">/</span>
                 <span class="cc-board-val-compact u-warning" id="board-abandoned-calls">0</span>
                 <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Terk: %<span id="board-abandon-rate">0</span></span>
                 <span id="board-missed-rate" style="display: none;">0</span>
             </div>
         </div>
 
-        <!-- 4. Süreler (Ortalama Bekleme / Konuşma) -->
+        <!-- 4. Durations (average wait / talk) -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
             <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.avg_wait'); ?> / <?php echo t('cc_board.avg_talk'); ?></span>
@@ -95,7 +95,7 @@
             </div>
             <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px;">
                 <span class="cc-board-val-compact" style="font-family: monospace; color: var(--text-main);" id="board-avg-wait">00:00</span>
-                <span style="font-size: 13px; color: var(--text-muted);">/</span>
+                <span class="u-fs-13 u-muted">/</span>
                 <span style="font-size: 15px; font-weight: 700; font-family: monospace; color: var(--text-main);" id="board-avg-talk">00:00</span>
             </div>
         </div>
@@ -120,12 +120,13 @@
             </div>
         </div>
     </div>
-    <!-- 2. BÖLÜM: Canlı Operasyon Tabloları (Bekleyen Çağrılar & Temsilci İzleme) -->
-    <!-- Panel başına en az 640px sığmıyorsa alt alta: ekran genişliğine (992px) değil
-         gerçek içerik alanına göre. Önceden 1fr/1.1fr sütunlar tablo içeriğinden dar
-         olamadığı için sağ panel ekrandan taşıyordu. -->
+    <!-- SECTION 2: live operation tables (waiting calls & agent monitoring) -->
+    <!-- Stacked when at least 640px per panel does not fit: based on the real
+         content area, not the screen width (992px). The old 1fr/1.1fr columns
+         could not get narrower than the table content, so the right panel
+         overflowed the screen. -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 640px), 1fr)); gap: 16px;" class="cc-board-ops-grid">
-        <!-- Sol Panel: Canlı Bekleyen Çağrılar (Interactive Pickup) -->
+        <!-- Left panel: live waiting calls (interactive pickup) -->
         <div class="card" style="display: flex; flex-direction: column; min-width: 0;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
@@ -147,7 +148,7 @@
                     <tbody id="sup-waiting-calls-tbody">
                         <tr>
                             <td colspan="4" class="text-center text-muted u-p-24">
-                                <i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> <?php echo t('cc_supervisor.no_waiting_calls'); ?>
+                                <i class="fas fa-check-circle u-success u-mr-6"></i> <?php echo t('cc_supervisor.no_waiting_calls'); ?>
                             </td>
                         </tr>
                     </tbody>
@@ -155,7 +156,7 @@
             </div>
         </div>
 
-        <!-- Sağ Panel: Canlı Temsilci Durumları & Mola Takibi -->
+        <!-- Right panel: live agent states & pause tracking -->
         <div class="card" style="display: flex; flex-direction: column; min-width: 0;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 14px 16px;">
                 <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
@@ -188,322 +189,10 @@
     </div>
 </div>
 
-<style>
-.cc-board-val-compact {
-    font-size: 1.7rem;
-    font-weight: 800;
-    line-height: 1.1;
-}
-.cc-board-label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-@media (max-width: 992px) {
-    .cc-board-kpi-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-}
-@media (max-width: 576px) {
-    .cc-board-kpi-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/cc_board.css'); ?>">
 
 <script>
-// Dinle / Fısılda / Dahil Ol (api/cc.php spy_call yalnızca admin/cc_manager'a izin verir).
-// Önceden bu butonlar hiç kullanılmayan cc_supervisor şablonundaydı; panoda yoktu.
-const CAN_SPY = <?php echo json_encode($can_spy); ?>;
-var boardUnifiedTimer = null;
-var boardUnifiedClockTimer = null;
-
-function formatBoardSeconds(secs) {
-    secs = Math.max(0, parseInt(secs, 10) || 0);
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
-}
-
-function loadAllBoardData() {
-    const qFilterEl = document.getElementById('board-queue-filter');
-    const rFilterEl = document.getElementById('board-range-filter');
-    if (!qFilterEl || !rFilterEl) return;
-
-    const queueFilter = qFilterEl.value;
-    const rangeFilter = rFilterEl.value;
-    const icon = document.getElementById('board-refresh-icon');
-    if (icon) icon.classList.add('fa-spin');
-
-    // 1. Pano KPI İstatistikleri
-    const p1 = UIHelper.ccGet('get_board_stats', '&queue=' + encodeURIComponent(queueFilter) + '&range=' + encodeURIComponent(rangeFilter))
-        .then(data => {
-            if (!data || !data.success) return;
-
-            const waitEl = document.getElementById('board-waiting-calls');
-            if (waitEl) {
-                waitEl.innerText = data.waiting_calls;
-                waitEl.style.color = (parseInt(data.waiting_calls, 10) > 0) ? 'var(--danger)' : 'var(--text-main)';
-            }
-            const avgWaitEl = document.getElementById('board-avg-wait');
-            if (avgWaitEl) avgWaitEl.innerText = formatBoardSeconds(data.avg_wait);
-            const avgTalkEl = document.getElementById('board-avg-talk');
-            if (avgTalkEl) avgTalkEl.innerText = formatBoardSeconds(data.avg_talk);
-            const maxWaitEl = document.getElementById('board-max-wait');
-            if (maxWaitEl) maxWaitEl.innerText = formatBoardSeconds(data.max_wait);
-
-            const missedEl = document.getElementById('board-missed-calls');
-            if (missedEl) missedEl.innerText = data.missed_calls;
-            const abanEl = document.getElementById('board-abandoned-calls');
-            if (abanEl) abanEl.innerText = data.abandoned_calls;
-            const ansEl = document.getElementById('board-answered-calls');
-            if (ansEl) ansEl.innerText = data.answered_calls;
-            const totEl = document.getElementById('board-total-calls');
-            if (totEl) totEl.innerText = data.total_calls;
-
-            const agLogEl = document.getElementById('board-agents-logged-in');
-            if (agLogEl) agLogEl.innerText = data.agents_logged_in;
-            const agTotEl = document.getElementById('board-agents-total');
-            if (agTotEl) agTotEl.innerText = data.agents_total;
-            const agAvailEl = document.getElementById('board-agents-available');
-            if (agAvailEl) agAvailEl.innerText = data.agents_available;
-            const actCallEl = document.getElementById('board-active-calls');
-            if (actCallEl) actCallEl.innerText = data.active_calls;
-
-            const slaPctEl = document.getElementById('board-sla-pct');
-            if (slaPctEl) slaPctEl.innerText = data.sla_pct;
-            const slaThreshEl = document.getElementById('board-sla-threshold');
-            if (slaThreshEl) slaThreshEl.innerText = data.sla_threshold;
-
-            const ansRateEl = document.getElementById('board-answered-rate');
-            if (ansRateEl) ansRateEl.innerText = data.answered_rate;
-            const misRateEl = document.getElementById('board-missed-rate');
-            if (misRateEl) misRateEl.innerText = data.missed_rate;
-            const abRateEl = document.getElementById('board-abandon-rate');
-            if (abRateEl) abRateEl.innerText = data.abandon_rate;
-        })
-        .catch(() => {});
-
-    // 2. Canlı Bekleyen Çağrılar
-    const p2 = fetch('/api/cc.php?action=get_live_calls')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.success) {
-                renderWaitingCalls(data.calls || [], queueFilter);
-            }
-        })
-        .catch(() => {});
-
-    // 3. Canlı Temsilci Durumları
-    const p3 = fetch('/api/cc.php?action=get_supervisor_agents')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.success) {
-                renderAgentsStatus(data.agents || [], queueFilter);
-            }
-        })
-        .catch(() => {});
-
-    Promise.allSettled([p1, p2, p3]).finally(() => {
-        if (icon) icon.classList.remove('fa-spin');
-    });
-}
-
-function renderWaitingCalls(calls, queueFilter) {
-    const tbody = document.getElementById('sup-waiting-calls-tbody');
-    const badge = document.getElementById('waiting-badge');
-    if (!tbody) return;
-
-    let filtered = calls;
-    if (queueFilter && queueFilter !== 'ALL') {
-        filtered = calls.filter(c => c.queue === queueFilter);
-    }
-
-    if (badge) badge.innerText = filtered.length + ' Çağrı Bekliyor';
-
-    if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Kuyruklarda bekleyen çağrı bulunmuyor.</td></tr>';
-        return;
-    }
-
-    let html = '';
-    filtered.forEach(c => {
-        html += `
-            <tr>
-                <td style="font-weight: 700; color: var(--text-main); font-size: 13px;">
-                    <i class="fas fa-phone-alt" style="color: var(--danger); margin-right: 6px;"></i> ${escapeHtml(c.caller)}
-                </td>
-                <td><span class="badge badge-info">${escapeHtml(c.queue_title || c.queue)}</span></td>
-                <td style="font-weight: 700; color: var(--warning); font-family: monospace;">${escapeHtml(c.wait_time)} sn</td>
-                <td class="text-right">
-                    <button class="btn btn-success btn-sm" onclick="pickupCall('${escapeHtml(c.channel)}')" style="font-weight: 600; padding: 4px 8px; font-size: 12px;">
-                        <i class="fas fa-hand-holding-medical"></i> Çağrıyı Al
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-    tbody.innerHTML = html;
-}
-
-function renderAgentsStatus(agents, queueFilter) {
-    const tbody = document.getElementById('sup-agents-tbody');
-    const countBadge = document.getElementById('agents-count-badge');
-    if (!tbody) return;
-
-    let filtered = agents;
-    if (queueFilter && queueFilter !== 'ALL') {
-        filtered = agents.filter(a => (a.queues || []).includes(queueFilter));
-    }
-
-    if (countBadge) countBadge.innerText = filtered.length + ' Temsilci';
-
-    if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="' + (CAN_SPY ? 5 : 4) + '" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
-        return;
-    }
-
-    let html = '';
-    filtered.forEach(a => {
-        let statusBadge = '<span class="badge badge-secondary">Çevrimdışı</span>';
-        let detail = '-';
-
-        if (a.is_in_call) {
-            statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone"></i> Görüşmede</span>';
-            const partner = a.connected_number || a.call_partner;
-            const dur = a.duration_formatted ? ` <span class="badge badge-secondary" style="font-family: monospace; font-size: 10px; margin-left: 4px;">${escapeHtml(a.duration_formatted)}</span>` : '';
-            detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : 'Görüşmede';
-        } else if (a.is_ringing) {
-            // Telefon çalıyor: görüşme henüz başlamadı, dinleme butonları yok.
-            statusBadge = '<span class="badge badge-info"><i class="fas fa-bell"></i> Çalıyor</span>';
-            detail = '<span style="color: var(--info, #0ea5e9); font-weight: 600;">Çağrı çalıyor</span>';
-        } else if (a.is_paused) {
-            statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> Molada</span>';
-            detail = `<span class="u-warning u-fw-600">${escapeHtml(a.pause_reason || 'Mola')}</span>`;
-            if (a.pause_duration) detail += ` (${escapeHtml(a.pause_duration)})`;
-        } else if (a.is_logged_in) {
-            statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> Boşta</span>';
-            detail = '<span style="color: var(--success); font-weight: 500;">Çağrı Bekliyor</span>';
-        }
-
-        let actions = '';
-        if (CAN_SPY && a.is_in_call) {
-            const ext = escapeHtml(a.extension);
-            actions = `
-                <div style="display: inline-flex; gap: 4px;">
-                    <button class="btn btn-outline-info btn-sm" onclick="spyCall('${ext}', 'spy')" title="Gizli dinle (yalnızca siz duyarsınız)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-headphones"></i> Dinle</button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="spyCall('${ext}', 'whisper')" title="Fısılda (yalnızca temsilci duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-comment-dots"></i> Fısılda</button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="spyCall('${ext}', 'barge')" title="Dahil ol (iki taraf da duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-users"></i> Dahil Ol</button>
-                </div>`;
-        }
-
-        html += `
-            <tr>
-                <td style="font-weight: 700; font-family: monospace; color: var(--text-main); font-size: 13px;">${escapeHtml(a.extension)}</td>
-                <td class="u-fw-600">${escapeHtml(a.full_name || a.extension)}</td>
-                <td style="white-space: nowrap;">${statusBadge}</td>
-                <td class="u-fs-12">${detail}</td>
-                ${CAN_SPY ? `<td class="text-right" style="white-space: nowrap;">${actions}</td>` : ''}
-            </tr>
-        `;
-    });
-    tbody.innerHTML = html;
-}
-
-function spyCall(targetExt, mode) {
-    const modeNames = { spy: 'Gizli Dinleme', whisper: 'Fısıldama', barge: 'Araya Girme' };
-    if (!confirm(`${targetExt} numaralı temsilcinin görüşmesine ${modeNames[mode] || 'Dinleme'} modunda bağlanılsın mı?\nTelefonunuz çaldırılacak.`)) return;
-
-    fetch('/api/cc.php?action=spy_call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN || '') + '&target_ext=' + encodeURIComponent(targetExt) + '&mode=' + encodeURIComponent(mode)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (window.showFooterToast) window.showFooterToast(data.success ? data.message : (data.error || 'İşlem başlatılamadı'), data.success ? 'success' : 'error');
-    })
-    .catch(e => { if (window.showFooterToast) window.showFooterToast('İstek gönderilemedi: ' + e, 'error'); });
-}
-
-function pickupCall(channel) {
-    if (!confirm('Bu çağrıyı kendi telefonunuza çekmek/almak istediğinize emin misiniz?')) return;
-
-    fetch('/api/cc.php?action=pickup_call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN || '') + '&channel=' + encodeURIComponent(channel)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            if (window.showFooterToast) window.showFooterToast(data.message, 'success');
-            loadAllBoardData();
-        } else {
-            if (window.showFooterToast) window.showFooterToast(data.error || 'Çağrı alınamadı', 'error');
-        }
-    });
-}
-
-function updateBoardClock() {
-    const now = new Date();
-    const clockEl = document.getElementById('board-clock');
-    const dayEl = document.getElementById('board-day');
-    if (clockEl) {
-        const hh = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        clockEl.innerText = hh + ':' + mm;
-    }
-    if (dayEl) {
-        const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-        dayEl.innerText = days[now.getDay()];
-    }
-}
-
-function toggleBoardFullscreen() {
-    const icon = document.getElementById('board-fullscreen-icon');
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => {
-            if (icon) icon.className = 'fas fa-compress';
-        }).catch(() => {});
-    } else {
-        document.exitFullscreen().then(() => {
-            if (icon) icon.className = 'fas fa-expand';
-        }).catch(() => {});
-    }
-}
-
-function initUnifiedBoardPage() {
-    if (!document.getElementById('cc-board-root')) return;
-
-    loadAllBoardData();
-    updateBoardClock();
-
-    if (boardUnifiedTimer) clearInterval(boardUnifiedTimer);
-    boardUnifiedTimer = setInterval(() => {
-        if (document.getElementById('cc-board-root')) {
-            loadAllBoardData();
-        } else {
-            clearInterval(boardUnifiedTimer);
-        }
-    }, 5000);
-
-    if (boardUnifiedClockTimer) clearInterval(boardUnifiedClockTimer);
-    boardUnifiedClockTimer = setInterval(() => {
-        if (document.getElementById('cc-board-root')) {
-            updateBoardClock();
-        } else {
-            clearInterval(boardUnifiedClockTimer);
-        }
-    }, 15000);
-}
-
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initUnifiedBoardPage();
-} else {
-    document.addEventListener('DOMContentLoaded', initUnifiedBoardPage);
-}
-document.addEventListener('spa:pageLoaded', initUnifiedBoardPage);
+// Listen / whisper / barge (api/cc.php spy_call allows only admin/cc_manager).
+window.CC_BOARD_CAN_SPY = <?php echo json_encode($can_spy); ?>;
 </script>
+<script src="<?php echo asset('/assets/js/cc_board.js'); ?>"></script>

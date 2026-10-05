@@ -124,7 +124,7 @@ def create_feature_graphic(output_path="playstore_feature_graphic_1024x500.png")
     draw_final.rounded_rectangle(pill_shape, radius=14, fill=(14, 165, 233, 40), outline=(56, 189, 248, 180), width=1)
     draw_final.text((pill_x + 18, pill_y + 5), "MOBILE", font=font_badge, fill=(56, 189, 248, 255))
 
-    # Subtitle: "Kurumsal Akıllı Santral & İletişim"
+    # Subtitle (Turkish UI text): "Kurumsal Akıllı Santral & İletişim"
     sub_y = text_y + 88
     draw_final.text((text_x, sub_y), "Kurumsal Akıllı Santral & Softphone", font=font_sub, fill=(56, 189, 248, 255))
 

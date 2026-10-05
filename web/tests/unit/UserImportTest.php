@@ -10,7 +10,7 @@ final class UserImportTest extends TestCase
     private PDO $db;
     private const PREFIX = 'csvtest_';
 
-    /** Test anında üretilir: repoda parola benzeri sabit durmasın (secret tarayıcıları). */
+    /** Generated at test time: no password-like constant in the repo (secret scanners). */
     private static function tempSecret(): string
     {
         return 'T' . bin2hex(random_bytes(8));
@@ -44,7 +44,7 @@ final class UserImportTest extends TestCase
         $this->assertSame('csvtest_a', $first['username']);
         $this->assertSame('Çağrı Öztürk', $first['full_name']);
         $this->assertSame('7101', $first['extension']);
-        $this->assertSame('', $res['rows'][4]['email']); // satır 3 boş, atlandı
+        $this->assertSame('', $res['rows'][4]['email']); // line 3 is empty, skipped
     }
 
     public function testParseConvertsWindows1254CommaCsv(): void
@@ -71,8 +71,8 @@ final class UserImportTest extends TestCase
         $v = UserImportService::validate($rows, 'cc_agent');
 
         $this->assertSame([], $v[2]['errors']);
-        $this->assertSame('cc_agent', $v[2]['row']['role']); // varsayılan rol uygulandı
-        $this->assertCount(3, $v[3]['errors']); // kullanıcı adı + e-posta + dahili tekrarı
+        $this->assertSame('cc_agent', $v[2]['row']['role']); // the default role was applied
+        $this->assertCount(3, $v[3]['errors']); // duplicate username + email + extension
         $this->assertGreaterThanOrEqual(5, count($v[4]['errors']));
     }
 
@@ -99,7 +99,7 @@ final class UserImportTest extends TestCase
         $this->assertSame(3, $res['created']);
         $this->assertSame([], $res['failed']);
         $this->assertSame(0, $res['invited']);
-        // Yalnızca e-postasız ve şifresiz kullanıcıya şifre üretilir.
+        // A password is generated only for a user without an email and password.
         $this->assertSame([3], array_keys($res['generated']));
 
         $st = $this->db->prepare('SELECT password_hash, must_reset_password FROM sys_users WHERE username = ?');
@@ -108,7 +108,7 @@ final class UserImportTest extends TestCase
         $this->assertTrue(password_verify($res['generated'][3]['password'], $f['password_hash']));
         $this->assertSame(1, (int) $f['must_reset_password']);
 
-        // Davet kapalıyken e-postalı kullanıcıya şifre belirleme bağlantısı üretilmemeli.
+        // With invitations off, no password-setup link must be generated for a user with an email.
         $st->execute(['csvtest_e']);
         $this->assertSame(0, (int) $st->fetch(PDO::FETCH_ASSOC)['must_reset_password']);
     }

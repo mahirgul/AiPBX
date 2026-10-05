@@ -3,35 +3,36 @@ require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/../priv_helper.php';
 
 /**
- * Firewall (firewalld) Yönetim Servisi
- * `firewall-cmd`'yi root yetkisiyle PrivHelper (aipbx-priv `fw` alt
- * komutları) üzerinden çalıştırır — doğrudan sudo çağrısı yok.
+ * Firewall (firewalld) management service
+ * Runs `firewall-cmd` as root through PrivHelper (the aipbx-priv `fw`
+ * subcommands) — no direct sudo call.
  */
 class FirewallService {
 
     /**
-     * Bu portlar HİÇBİR ZAMAN kaldırılamaz — SSH (22), web paneli (80/443),
-     * SIP sinyalleşme (5060) kapanırsa admin kendi erişimini/PBX'i kilitleyebilir.
-     * Protokolden bağımsız (hem tcp hem udp) korunuyor.
+     * These ports can NEVER be removed — closing SSH (22), the web panel
+     * (80/443) or SIP signalling (5060) could lock the admin out of their own
+     * access/the PBX. Protected regardless of protocol (both tcp and udp).
      */
     const PROTECTED_PORTS = ['22', '80', '443', '5060'];
 
     /**
-     * Ayrıca korunan aralıklar: RTP ses portları — kapatılırsa tüm çağrılarda
-     * ses kesilir (2026-08-31 denetiminde eklendi).
+     * Additionally protected ranges: the RTP audio ports — closing them cuts
+     * the audio on every call (added in the 2026-08-31 audit).
      */
     const PROTECTED_RANGES = [[10000, 20000]];
 
     /**
-     * PROTECTED_PORTS'un servis-adı karşılığı — bir rich-rule portu numarayla
-     * değil firewalld servis adıyla da açabiliyor (`service name="ssh"`).
+     * Service-name equivalents of PROTECTED_PORTS — a rich rule can open a
+     * port by firewalld service name too (`service name="ssh"`), not only by
+     * number.
      */
     const PROTECTED_SERVICES = ['ssh', 'http', 'https', 'sip', 'sips'];
 
     /**
-     * Verilen port ya da aralık ("22" veya "20-30") korumalı bir portu/aralığı
-     * kapsıyor mu? Önceden sadece tam eşleşme kontrol ediliyordu; "20-30/tcp"
-     * gibi bir aralık kuralı SSH'ı kapsadığı halde kaldırılabiliyordu.
+     * Does the given port or range ("22" or "20-30") cover a protected port/
+     * range? Only exact matches used to be checked; a range rule such as
+     * "20-30/tcp" could be removed although it covered SSH.
      */
     private static function coversProtectedPort(string $port): bool {
         $parts = explode('-', $port, 2);
@@ -43,14 +44,14 @@ class FirewallService {
             if ((int) $p >= $from && (int) $p <= $to) return true;
         }
         foreach (self::PROTECTED_RANGES as [$rf, $rt]) {
-            if ($from <= $rt && $to >= $rf) return true; // aralıklar kesişiyor
+            if ($from <= $rt && $to >= $rf) return true; // ranges overlap
         }
         return false;
     }
 
     /**
-     * Verilen port numarasının, aralığının veya rich-rule kuralının
-     * korumalı olup olmadığını döner (UI'da kilit rozeti göstermek için).
+     * Returns whether the given port number, range or rich rule is protected
+     * (to show a lock badge in the UI).
      */
     public static function isProtected(string $portOrRule): bool {
         if (preg_match('/port="([0-9\-]+)"/', $portOrRule, $m)) {
@@ -63,8 +64,9 @@ class FirewallService {
     }
 
     /**
-     * Aynı `fw` işlemini önce canlıya (reload olmadan anında etkili), sonra
-     * --permanent ile uygular — ikisi de gerekiyor (biri anlık, biri kalıcılık için).
+     * Applies the same `fw` operation first live (effective at once without a
+     * reload), then with --permanent — both are needed (one for now, one for
+     * persistence).
      */
     private static function runLiveAndPermanent(array $args): array {
         $r1 = PrivHelper::run(array_merge(['fw'], $args));
@@ -76,17 +78,16 @@ class FirewallService {
     }
 
     /**
-     * Mevcut zone durumunu (aktif portlar + rich rule'lar) yapılandırılmış
-     * bir diziye çevirir. `firewall-cmd --list-all`'ın metin çıktısını
-     * (resmi/stabil bir API değil ama firewalld sürümleri arasında bu format
-     * uzun süredir değişmiyor) satır satır ayrıştırıyor.
+     * Turns the current zone state (active ports + rich rules) into a
+     * structured array. Parses the text output of `firewall-cmd --list-all`
+     * line by line (not an official/stable API, but the format has not changed
+     * across firewalld versions for a long time).
      */
     public static function getStatus(): array {
-        // NOT: okuma komutları da root yetkisiyle çalışmak ZORUNDA —
-        // firewall-cmd root olmayan kullanıcıda "Authorization failed"
-        // döndürüyor; web kullanıcısıyla doğrudan çağrı BOŞ liste üretir
-        // (2026-08-31 denetiminde bulundu; CLI testleri root ile koştuğu için
-        // gözden kaçmıştı).
+        // NOTE: read commands MUST run as root too — firewall-cmd returns
+        // "Authorization failed" for a non-root user; a direct call as the
+        // web user yields an EMPTY list (found in the 2026-08-31 audit; it was
+        // missed because the CLI tests run as root).
         $zone_out = PrivHelper::run(['fw', 'get-default-zone'])['output'];
         $zone = trim($zone_out) ?: 'public';
 
@@ -119,11 +120,12 @@ class FirewallService {
     }
 
     /**
-     * Yeni bir port kuralı ekler. $sourceSubnet doluysa (ör. "192.0.2.0/24")
-     * SADECE o kaynaktan gelen trafiği açan bir rich-rule üretir (daha güvenli,
-     * kampüs-dışına kapalı); boşsa herkese açık genel bir --add-port kuralı.
-     * Önce canlıya (reload olmadan anında etkili), sonra --permanent ile
-     * uygulanır — ikisi de gerekiyor (biri anlık, biri kalıcılık için).
+     * Adds a new port rule. With $sourceSubnet set (e.g. "192.0.2.0/24") it
+     * generates a rich rule that opens traffic ONLY from that source (safer,
+     * closed outside the campus); without it, a general --add-port rule open
+     * to everyone. Applied first live (effective at once without a reload),
+     * then with --permanent — both are needed (one for now, one for
+     * persistence).
      */
     public static function addPortRule(string $port, string $protocol, string $sourceSubnet, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
@@ -136,10 +138,10 @@ class FirewallService {
         if ($port === '' || !preg_match('/^[0-9]+(-[0-9]+)?$/', $port)) {
             return ['success' => false, 'error' => 'Geçersiz port numarası!'];
         }
-        // Tam formatı doğrula: önceden sadece "/" öncesi IP kontrol ediliyordu,
-        // CIDR eki ve tırnak gibi karakterler serbest kalıyordu — ör.
-        // `1.2.3.4/32" accept` doğrulamayı geçip rich-rule söz dizimini
-        // bozabiliyordu (2026-08-31 denetiminde bulundu).
+        // Validate the full format: only the IP before "/" used to be checked,
+        // the CIDR suffix and characters such as quotes were free — e.g.
+        // `1.2.3.4/32" accept` passed validation and could break the rich-rule
+        // syntax (found in the 2026-08-31 audit).
         if ($sourceSubnet !== '' && !preg_match('#^\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?$#', $sourceSubnet)) {
             return ['success' => false, 'error' => 'Geçersiz kaynak IP/subnet formatı! (ör. 192.0.2.0/24)'];
         }
@@ -147,8 +149,8 @@ class FirewallService {
             return ['success' => false, 'error' => 'Geçersiz kaynak IP adresi!'];
         }
 
-        // Kaynak kısıtlı kural bir rich-rule olarak aipbx-priv tarafında
-        // üretiliyor: `rule family="ipv4" source address="…" port port="…"
+        // The source-restricted rule is generated as a rich rule by aipbx-priv:
+        // `rule family="ipv4" source address="…" port port="…"
         // protocol="…" accept`.
         $res = $sourceSubnet !== ''
             ? self::runLiveAndPermanent(['add-source-rule', $sourceSubnet, $port, $protocol])
@@ -162,8 +164,8 @@ class FirewallService {
     }
 
     /**
-     * Genel (rich-rule olmayan) bir --port girişini kaldırır. Korumalı
-     * portlar (PROTECTED_PORTS) asla kaldırılamaz.
+     * Removes a general (non-rich-rule) --port entry. Protected ports
+     * (PROTECTED_PORTS) can never be removed.
      */
     public static function removePortRule(string $port, string $protocol, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
@@ -186,8 +188,8 @@ class FirewallService {
     }
 
     /**
-     * Bir rich-rule'u (tam metin eşleşmesiyle) kaldırır. Korumalı bir portu
-     * (22/80/443/5060) kapsayan rich-rule'lar da BİLEREK engellenir.
+     * Removes a rich rule (by exact text match). Rich rules covering a
+     * protected port (22/80/443/5060) are blocked ON PURPOSE as well.
      */
     public static function removeRichRule(string $rule, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
@@ -197,17 +199,17 @@ class FirewallService {
         if ($rule === '') {
             return ['success' => false, 'error' => 'Geçersiz kural.'];
         }
-        // Rich-rule içindeki port değeri aralık da olabilir ("10000-20000") —
-        // coversProtectedPort() ile aralık kesişimi de kontrol ediliyor
-        // (2026-08-31 denetimi: önceden sadece tam eşleşme bakılıyordu, RTP
-        // aralığını kaldıran kural engellenmiyordu).
+        // The port value inside a rich rule can be a range too ("10000-20000")
+        // — coversProtectedPort() also checks range overlap (2026-08-31 audit:
+        // only exact matches used to be checked, so a rule removing the RTP
+        // range was not blocked).
         if (preg_match('/port="([0-9\-]+)"/', $rule, $m) && self::coversProtectedPort($m[1])) {
             return ['success' => false, 'error' => "Bu kural kritik bir portu (SSH/Web/SIP/RTP) kapsıyor — kaldırılamaz!"];
         }
-        // Bir rich-rule portu SERVİS ADIYLA da belirtebilir
-        // (`service name="ssh"`) — bu durumda yukarıdaki port kontrolü hiç
-        // eşleşmez ve kritik bir erişim kuralı kaldırılabilirdi. Şu an canlıda
-        // bu biçimde bir kural yok, ileriye dönük savunma (2026-08-31).
+        // A rich rule can also name the port BY SERVICE NAME
+        // (`service name="ssh"`) — then the port check above never matches and
+        // a critical access rule could be removed. No such rule exists live
+        // right now; forward-looking defence (2026-08-31).
         if (preg_match('/service name="([a-zA-Z0-9_-]+)"/', $rule, $m)
             && in_array(strtolower($m[1]), self::PROTECTED_SERVICES, true)) {
             return ['success' => false, 'error' => "Bu kural kritik bir servisi ({$m[1]}) kapsıyor — kaldırılamaz!"];
@@ -224,7 +226,7 @@ class FirewallService {
 }
 
 /**
- * firewalld servisi gerçekten aktif mi (salt-okunur, sudo gerektirmez).
+ * Is the firewalld service really active (read-only, no sudo needed).
  */
 function firewalld_is_active(): bool {
     $out = shell_exec('systemctl is-active firewalld 2>&1');

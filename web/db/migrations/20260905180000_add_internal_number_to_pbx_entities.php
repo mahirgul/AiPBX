@@ -2,13 +2,14 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Dahili hedef numarası alanı: IVR, kuyruk, zaman koşulu, anons ve çağrı
- * sonlandırma tanımları isteğe bağlı olarak bir dahili numara taşıyabilir.
- * Doldurulmuşsa src/sync/SyncInternalNumbers.php bunu dialplan'a yazar.
+ * Internal destination number field: IVR, queue, time condition,
+ * announcement and call-ending definitions can optionally carry an internal
+ * number. When filled, src/sync/SyncInternalNumbers.php writes it to the
+ * dialplan.
  *
- * NULL kalabilir (alan zorunlu değil). UNIQUE index NULL'ları saymaz
- * (MySQL/MariaDB davranışı) — yani "numarasız" kayıt sayısı sınırsız,
- * ama aynı tabloda aynı numara iki kez kullanılamaz.
+ * It can stay NULL (the field is optional). A UNIQUE index does not count
+ * NULLs (MySQL/MariaDB behaviour) — so the number of "numberless" records is
+ * unlimited, but the same number cannot be used twice in the same table.
  */
 final class AddInternalNumberToPbxEntities extends AbstractMigration
 {

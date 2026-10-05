@@ -1,7 +1,7 @@
 <?php
 /**
- * GoogleAuthService (Google OAuth 2.0 & OpenID Connect Kimlik Doğrulama Servisi)
- * Kullanıcıların Google hesaplarıyla Web portalına ve Mobil uygulamalara şifresiz giriş yapmasını sağlar.
+ * GoogleAuthService (Google OAuth 2.0 & OpenID Connect authentication service)
+ * Lets users sign in to the web portal and the mobile apps with their Google account, without a password.
  */
 
 class GoogleAuthService
@@ -12,7 +12,7 @@ class GoogleAuthService
     private const TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
 
     /**
-     * Google ile giriş özelliğinin aktif olup olmadığını kontrol eder.
+     * Checks whether Google sign-in is enabled.
      */
     public static function isEnabled(): bool
     {
@@ -37,7 +37,7 @@ class GoogleAuthService
     }
 
     /**
-     * Web yönlendirme geri çağırma (Redirect URI) adresini üretir.
+     * Builds the web redirect callback (redirect URI) address.
      */
     public static function getRedirectUri(): string
     {
@@ -55,7 +55,23 @@ class GoogleAuthService
     }
 
     /**
-     * OAuth state parametresi üretir ve oturuma kaydeder.
+     * Settings shown on the admin forms (Google Integration and Security pages).
+     *
+     * @return array{enabled: bool, raw_enabled: bool, client_id: string, client_secret: string, redirect_uri: string}
+     */
+    public static function settingsForPage(): array
+    {
+        return [
+            'enabled' => self::isEnabled(),
+            'raw_enabled' => (function_exists('getSystemSetting') ? getSystemSetting('google_oauth_enabled', '0') : '0') === '1',
+            'client_id' => self::getClientId(),
+            'client_secret' => self::getClientSecret(),
+            'redirect_uri' => self::getRedirectUri(),
+        ];
+    }
+
+    /**
+     * Creates the OAuth state parameter and stores it in the session.
      */
     public static function generateState(bool $isMobile = false): string
     {
@@ -75,7 +91,7 @@ class GoogleAuthService
     }
 
     /**
-     * Google OAuth yetkilendirme yönlendirme URL'sini üretir.
+     * Builds the Google OAuth authorization redirect URL.
      */
     public static function getAuthUrl(bool $isMobile = false): string
     {
@@ -95,7 +111,7 @@ class GoogleAuthService
     }
 
     /**
-     * Gelen OAuth state parametresini doğrular.
+     * Validates the incoming OAuth state parameter.
      * @return array{valid:bool, mobile:bool}
      */
     public static function verifyState(?string $state): array
@@ -160,7 +176,7 @@ class GoogleAuthService
     }
 
     /**
-     * Access token ile Google kullanıcı profilini çeker.
+     * Fetches the Google user profile with the access token.
      */
     public static function getUserInfo(string $accessToken): ?array
     {
@@ -189,7 +205,7 @@ class GoogleAuthService
         return $data;
     }
 
-    /** Google'ın e-postayı doğruladığı bilgisi (OIDC email_verified). */
+    /** Whether Google verified the email (OIDC email_verified). */
     private static function isEmailVerified(array $data): bool
     {
         $v = $data['email_verified'] ?? ($data['verified_email'] ?? false);
@@ -197,7 +213,7 @@ class GoogleAuthService
     }
 
     /**
-     * Mobil uygulamalardan (Android / iOS) gelen Google id_token'ı doğrular.
+     * Verifies the Google id_token sent by the mobile apps (Android / iOS).
      */
     public static function verifyIdToken(string $idToken): ?array
     {
@@ -225,14 +241,14 @@ class GoogleAuthService
             return null;
         }
 
-        // E-posta Google tarafından doğrulanmış mı?
+        // Has Google verified the email?
         if (!self::isEmailVerified($data)) {
             return null;
         }
 
-        // Token BU sunucunun Google istemcisi için verilmiş olmalı (aud). Önceden
-        // bakılmıyordu: başka herhangi bir uygulama için alınmış bir Google
-        // token'ı da o e-postanın AiPBX hesabına giriş sağlıyordu.
+        // The token must have been issued for THIS server's Google client
+        // (aud). It used to be unchecked: a Google token obtained for any
+        // other app also signed in to that email's AiPBX account.
         $clientId = self::getClientId();
         if ($clientId === '' || !hash_equals($clientId, (string)($data['aud'] ?? ''))) {
             return null;
@@ -242,7 +258,7 @@ class GoogleAuthService
     }
 
     /**
-     * Veritabanında e-posta adresi ile eşleşen aktif kullanıcıyı bulur.
+     * Finds the active user matching the email address in the database.
      */
     public static function findUserByEmail(string $email): ?array
     {
@@ -267,7 +283,7 @@ class GoogleAuthService
     }
 
     /**
-     * Web oturumu başlatır (şifre doğrulanmış gibi oturum değişkenlerini doldurur).
+     * Starts a web session (fills the session variables as if the password had been verified).
      */
     public static function loginUser(array $user, string $clientIp = '127.0.0.1'): string
     {
@@ -302,7 +318,7 @@ class GoogleAuthService
     }
 
     /**
-     * Google ayarlarını günceller.
+     * Updates the Google settings.
      */
     public static function saveSettings(array $post): array
     {

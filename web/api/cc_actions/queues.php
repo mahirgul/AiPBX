@@ -1,5 +1,5 @@
 <?php
-// Kuyruk izleme aksiyonları: get_queues, toggle_queue, get_supervisor_agents, get_live_calls
+// Queue monitoring actions: get_queues, toggle_queue, get_supervisor_agents, get_live_calls
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 require_once __DIR__ . '/../../src/queue_helper.php';
 
@@ -66,12 +66,12 @@ if ($action === 'get_supervisor_agents') {
             if (!preg_match('/^\s*\d+\.\s/', $line) && preg_match('/(?:PJSIP|Local)\/([0-9]+)/i', $line, $matches)) {
                 $ext_found = $matches[1];
 
-                // Asterisk 22: "(paused was 12 secs ago)" / "(paused:Yemek was 12 secs ago)"
-                // — düz "(paused)" hiç eşleşmiyordu, moladaki ajan HAZIR görünüyordu.
+                // Asterisk 22: "(paused was 12 secs ago)" / "(paused:Lunch was 12 secs ago)"
+                // — a plain "(paused)" never matched, so a paused agent looked READY.
                 $is_paused = (bool) preg_match('/\(paused\b/i', $line);
                 $is_unavailable = (stripos($line, '(Unavailable)') !== false || stripos($line, '(Invalid)') !== false);
-                // "Ringing" = telefon çalıyor, henüz görüşme YOK (dinlenecek bir şey yok).
-                // "Ring+Inuse" = görüşmedeyken ikinci çağrı çalıyor → görüşmede.
+                // "Ringing" = the phone is ringing, NO call yet (nothing to listen to).
+                // "Ring+Inuse" = a second call rings during a call → in a call.
                 $is_busy = (bool) preg_match('/\((In use|Busy|Ring\+Inuse|On Hold)\)/i', $line);
                 $is_ringing = !$is_busy && stripos($line, '(Ringing)') !== false;
                 $is_idle = (stripos($line, '(Not in use)') !== false);
@@ -145,9 +145,9 @@ if ($action === 'get_supervisor_agents') {
                 'in_queue' => $st_info['in_queue'],
                 'is_paused' => (bool)$st_info['is_paused'],
 
-                // cc_board (templates/views/cc_board/index.php) BU alanlari okur:
-                // is_in_call -> "Görüşmede", is_paused -> "Molada",
-                // is_logged_in -> "Boşta", hicbiri yoksa "Çevrimdışı".
+                // cc_board (templates/views/cc_board/index.php) reads THESE fields:
+                // is_in_call -> "In a call", is_paused -> "Paused",
+                // is_logged_in -> "Idle", none of them -> "Offline".
                 'is_logged_in' => (bool)$st_info['in_queue'],
                 'is_in_call' => ($st_info['status_key'] === 'BUSY'),
                 'is_ringing' => ($st_info['status_key'] === 'RINGING'),
@@ -192,19 +192,19 @@ if ($action === 'spy_call') {
         'Action' => 'Originate',
         'Channel' => "Local/{$supervisor_ext}@from-internal-pbx-ortak/n",
         'Application' => 'ChanSpy',
-        // Sondaki '-': ChanSpy önek eşleştirir; "PJSIP/3001" 30011'in
-        // kanalını da yakalardı. 3001-00000012 ve 3001-webrtc-… eşleşir.
+        // The trailing '-': ChanSpy matches by prefix; "PJSIP/3001" would also
+        // catch 30011's channel. 3001-00000012 and 3001-webrtc-… match.
         'Data' => "PJSIP/{$target_ext}-,{$spy_flags}",
         'CallerID' => "SPY: {$target_ext} <*90>",
-        // Priority YOK: Exten/Context olmadan verilen Priority, Asterisk'te
-        // "Extension does not exist" hatasına yol açıyordu (dinleme hiç başlamıyordu).
+        // NO Priority: a Priority given without Exten/Context caused an
+        // "Extension does not exist" error in Asterisk (listening never started).
         'Async' => 'true'
     ];
 
-    // AsteriskHelper::queryAMI() diye bir metot hiç yoktu: dinleme/fısıldama/
-    // araya girme her denemede "Call to undefined method" ile ölüyordu.
-    // Diğer çağrı merkezi işlemleri gibi cc_lib.php'deki sendAMICommand().
-    // (Değerler yukarıda rakama indirgenmiş / sabit listeden seçilmiş.)
+    // There never was an AsteriskHelper::queryAMI() method: listen/whisper/
+    // barge died with "Call to undefined method" on every attempt.
+    // Like the other call-center actions it uses sendAMICommand() in cc_lib.php.
+    // (The values above are reduced to digits / picked from a fixed list.)
     $cmd = '';
     foreach ($ami_action as $k => $v) {
         $cmd .= "{$k}: {$v}\r\n";
@@ -283,8 +283,8 @@ if ($action === 'get_live_calls') {
                 $wait_time = trim($cm[2]);
 
                 // Try to extract caller ID and uniqueid from channels output
-                // NOT: "core show channels concise" alanları ':' değil '!' ile ayrılır
-                // (bkz. Asterisk main/cli.c CONCISE_FORMAT_STRING).
+                // NOTE: "core show channels concise" fields are separated by '!', not ':'
+                // (see Asterisk main/cli.c CONCISE_FORMAT_STRING).
                 $caller_num = 'Bilinmeyen';
                 $call_id = '';
                 if (is_array($chan_output)) {
@@ -313,8 +313,8 @@ if ($action === 'get_live_calls') {
     }
 
     // Parse Active Channels
-    // NOT: "core show channels concise" alanları ':' değil '!' ile ayrılır
-    // (bkz. Asterisk main/cli.c CONCISE_FORMAT_STRING). Alan sırası:
+    // NOTE: "core show channels concise" fields are separated by '!', not ':'
+    // (see Asterisk main/cli.c CONCISE_FORMAT_STRING). Field order:
     // 0 Channel,1 Context,2 Exten,3 Priority,4 State,5 Application,6 Data,
     // 7 CallerIDnum,8 Accountcode,9 PeerAccount,10 Amaflags,11 Duration,12 BridgeID,13 Uniqueid
     if (is_array($chan_output)) {

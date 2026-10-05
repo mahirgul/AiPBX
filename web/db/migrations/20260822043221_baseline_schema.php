@@ -5,25 +5,25 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Baseline şema — 2026-08-22 itibarıyla canlı üretim veritabanının tam
- * yapısal (data içermeyen) görüntüsü. Bu migration'dan İTİBAREN tüm şema
- * değişiklikleri yeni, ayrı migration dosyaları olarak yazılır — elle
- * ALTER TABLE çalıştırılmaz.
+ * Baseline schema — the full structural (data-free) image of the live
+ * production database as of 2026-08-22. FROM this migration ON, every schema
+ * change is written as a new, separate migration file — no ALTER TABLE by
+ * hand.
  *
- * Kapsam: uygulamanın kendi tabloları (sys_*, pbx_*, cc_*, fax_*,
- * callcenter_notes, sip, queues_details, pjsipsettings) + Asterisk'in
- * realtime CDR tablosu `asteriskcdr` (SADECE `cdrs` view'ı fresh bir
- * ortamda oluşturulabilsin diye dahil edildi — gerçek kurulumda bu tabloyu
- * Asterisk kendi yönetir, buradan ALTER edilmemeli) + `cdrs` view'ı.
+ * Scope: the application's own tables (sys_*, pbx_*, cc_*, fax_*,
+ * callcenter_notes, sip, queues_details, pjsipsettings) + Asterisk's realtime
+ * CDR table `asteriskcdr` (included ONLY so the `cdrs` view can be created in
+ * a fresh environment — on a real install Asterisk manages this table itself
+ * and it must not be ALTERed from here) + the `cdrs` view.
  *
- * KAPSAM DIŞI (bilinçli olarak): asteriskcel, asteriskqueue — bunlar da
- * tamamen Asterisk'in kendi yönettiği operasyonel tablolar, uygulamanın
- * veri modeline dahil değil.
+ * OUT OF SCOPE (on purpose): asteriskcel, asteriskqueue — also purely
+ * operational tables managed by Asterisk itself, not part of the
+ * application's data model.
  *
- * Doğrulama: bu SQL, canlı prod şemasına karşı bir scratch DB'de
- * (aipbx_baseline_test) yüklenip mysqldump çıktısı satır satır
- * karşılaştırılarak (AUTO_INCREMENT sayaçları ve view DEFINER hariç)
- * BİREBİR eşleştiği teyit edildi (2026-08-22).
+ * Verification: this SQL was loaded into a scratch DB (aipbx_baseline_test)
+ * and its mysqldump output compared line by line with the live prod schema;
+ * it matched EXACTLY (except AUTO_INCREMENT counters and the view DEFINER)
+ * (2026-08-22).
  */
 final class BaselineSchema extends AbstractMigration
 {
@@ -58,9 +58,9 @@ final class BaselineSchema extends AbstractMigration
     }
 
     /**
-     * baseline_schema.sql dosyasını tek tek çalıştırılabilir ifadelere böler.
-     * Basit bir ";" split'i yeterli çünkü dosyada string literal içinde ";"
-     * geçen bir ifade yok (view tanımı dahil kontrol edildi).
+     * Splits baseline_schema.sql into individually executable statements.
+     * A simple ";" split is enough because no statement in the file has a ";"
+     * inside a string literal (checked, including the view definition).
      */
     private function splitSqlStatements(string $sql): array
     {

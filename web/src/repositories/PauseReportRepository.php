@@ -41,8 +41,8 @@ class PauseReportRepository extends BaseRepository
     }
 
     /**
-     * Saniyeyi "1s 20dk 5sn" / "20dk 5sn" biçiminde okunabilir metne çevirir.
-     * Önceden pause_reports.php'nin içinde bağımsız bir fonksiyondu.
+     * Turns seconds into readable text like "1h 20m 5s" / "20m 5s".
+     * It used to be a standalone function inside pause_reports.php.
      */
     public static function formatSeconds(int $sec): string
     {

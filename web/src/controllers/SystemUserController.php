@@ -18,7 +18,7 @@ class SystemUserController extends BaseController
         $import_preview = null;
         $import_result = null;
 
-        // CSV şablonu indirme (yalnızca admin — requireRole yukarıda)
+        // CSV template download (admin only — requireRole above)
         if (($_GET['download'] ?? '') === 'user_import_template') {
             header('Content-Type: text/csv; charset=UTF-8');
             header('Content-Disposition: attachment; filename="kullanici_sablonu.csv"');
@@ -28,19 +28,21 @@ class SystemUserController extends BaseController
         $modules_definition = RoleRepository::modulesDefinition();
 
         if (static::isPost()) {
-            if (isset($_POST['save_system_user'])) {
-                $res = PBXHelper::saveUser($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-                // Otomatik üretilen şifre: yalnızca bu yanıtta, kapatılana kadar
-                // duran bir kutuda gösterilir (6 sn'lik bildirimde kaybolurdu).
+            // Every form on this page posts a CSRF token; check it once here.
+            // The services re-check it themselves.
+            if (!static::verifyCsrf()) {
+                $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+            } elseif (isset($_POST['save_system_user'])) {
+                $res = UserService::saveUser($_POST);
+                ['message' => $message, 'error' => $error] = static::notices($res);
+                // A generated password is shown only in this response, in a
+                // box that stays until closed (a 6 s toast would lose it).
                 $generated_password = $res['generated_password'] ?? '';
                 $generated_for = trim($_POST['username'] ?? '');
             } elseif (isset($_POST['csv_preview'])) {
-                // 1. adım: dosyayı doğrula, HİÇBİR ŞEY yazma; geçerli satırları
-                // onay adımına kadar oturumda tut.
-                if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-                    $error = 'Geçersiz CSRF güvenlik kodu!';
-                } elseif (empty($_FILES['csv_file']['tmp_name']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
+                // Step 1: validate the file and write NOTHING; keep the valid
+                // rows in the session until the confirmation step.
+                if (empty($_FILES['csv_file']['tmp_name']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
                     $error = 'Lütfen bir CSV dosyası seçin.';
                 } else {
                     $parsed = UserImportService::parse((string) file_get_contents($_FILES['csv_file']['tmp_name']));
@@ -69,82 +71,54 @@ class SystemUserController extends BaseController
                     }
                 }
             } elseif (isset($_POST['csv_import'])) {
-                // 2. adım: onaylanan önizlemedeki geçerli satırları ekle.
+                // Step 2: insert the valid rows of the confirmed preview.
                 $pending = $_SESSION['user_import'] ?? null;
                 unset($_SESSION['user_import']);
-                if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-                    $error = 'Geçersiz CSRF güvenlik kodu!';
-                } elseif (!$pending || !hash_equals($pending['key'], (string) ($_POST['import_key'] ?? ''))) {
+                if (!$pending || !hash_equals($pending['key'], (string) ($_POST['import_key'] ?? ''))) {
                     $error = 'İçe aktarma oturumu bulunamadı veya süresi doldu; dosyayı yeniden yükleyin.';
                 } else {
-                    $import_result = UserImportService::import($pending['rows'], (bool) $pending['send_invitations'], (string) $_POST['csrf_token']);
+                    $import_result = UserImportService::import($pending['rows'], (bool) $pending['send_invitations'], static::csrfToken());
                 }
             } elseif (isset($_POST['send_activation_mail'])) {
-                $csrf = $_POST['csrf_token'] ?? '';
-                if (!verifyCSRFToken($csrf)) {
-                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $res = UserInvitationService::sendInvitationEmail((int) ($_POST['user_id'] ?? 0), false);
+                if ($res['success']) {
+                    $message = $res['message'] ?? 'Aktivasyon ve şifre belirleme maili başarıyla gönderildi.';
                 } else {
-                    $targetUserId = (int)($_POST['user_id'] ?? 0);
-                    $res = UserInvitationService::sendInvitationEmail($targetUserId, false);
-                    if ($res['success']) {
-                        $message = $res['message'] ?? 'Aktivasyon ve şifre belirleme maili başarıyla gönderildi.';
-                    } else {
-                        $error = $res['error'] ?? 'E-posta gönderilemedi.';
-                    }
+                    $error = $res['error'] ?? 'E-posta gönderilemedi.';
                 }
             } elseif (isset($_POST['bulk_send_activation_mail'])) {
-                $csrf = $_POST['csrf_token'] ?? '';
-                if (!verifyCSRFToken($csrf)) {
-                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $rawSelected = $_POST['selected_users'] ?? [];
+                $selectedIds = is_array($rawSelected) ? $rawSelected : explode(',', (string) $rawSelected);
+                $res = UserInvitationService::sendBulkInvitations($selectedIds);
+                if ($res['success']) {
+                    $message = $res['message'];
                 } else {
-                    $rawSelected = $_POST['selected_users'] ?? [];
-                    $selectedIds = is_array($rawSelected) ? $rawSelected : explode(',', (string)$rawSelected);
-                    $res = UserInvitationService::sendBulkInvitations($selectedIds);
-                    if ($res['success']) {
-                        $message = $res['message'];
-                    } else {
-                        $error = $res['message'] ?: ($res['error'] ?? 'Toplu e-posta gönderimi başarısız oldu.');
-                    }
+                    $error = $res['message'] ?: ($res['error'] ?? 'Toplu e-posta gönderimi başarısız oldu.');
                 }
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('sys_users', $_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['reset_password'])) {
-                $res = PBXHelper::resetUserPassword($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
             } elseif (isset($_POST['reset_2fa'])) {
-                $targetUserId = (int)($_POST['user_id'] ?? 0);
-                $csrf = $_POST['csrf_token'] ?? '';
-                if (!verifyCSRFToken($csrf)) {
-                    $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $res = TwoFactorService::disableTwoFactor((int) ($_POST['user_id'] ?? 0), '', true);
+                if ($res['success']) {
+                    $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
                 } else {
-                    $res = TwoFactorService::disableTwoFactor($targetUserId, '', true);
-                    if ($res['success']) {
-                        $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
-                    } else {
-                        $error = $res['error'] ?? 'İşlem başarısız.';
-                    }
+                    $error = $res['error'] ?? 'İşlem başarısız.';
                 }
-            } elseif (isset($_POST['delete_user'])) {
-                $res = PBXHelper::deleteUser($_POST['user_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
             } elseif (isset($_POST['save_system_role'])) {
-                // 2026-08-24: bu, /roles'un tam izin-matrisli formuyla AYNI
-                // RoleService::saveRole()'u kullanıyor (önceden ayrı, izin
-                // matrisi hiç yazmayan bir UserService::saveRole() kopyası
-                // vardı — kullanıcı doğrulama turunda bulunan mükerrer kod
-                // olarak işaretleyip birleştirilmesini istedi). /roles'un
-                // aksine BURADA sayfada kalınır (RoleService'in 'redirect'
-                // dönüşü TAKİP EDİLMEZ) — bu formun amacı zaten sayfadan
-                // ayrılmadan hızlı bir rol taslağı oluşturmak; admin izin
-                // matrisini ayrıca /roles'tan yapılandırabilir. Başarı mesajı
-                // RoleService::saveRole()'un KENDİ notify() çağrısından gelir
-                // (burada ayrıca $message set edilirse iki bildirim üst üste
-                // biner).
+                // Uses the same RoleService::saveRole() as the full permission
+                // matrix form on /roles, but stays on this page (its 'redirect'
+                // result is NOT followed): this form is a quick role draft and
+                // the matrix can be set on /roles later. The success message
+                // comes from saveRole()'s own notify() call, so $message is
+                // not set here (it would show two notifications).
                 $res = RoleService::saveRole($_POST, $modules_definition);
                 if (!isset($res['redirect'])) {
                     $error = $res['error'] ?? '';
                 }
+            } else {
+                ['message' => $message, 'error' => $error] = static::handlePost([
+                    'toggle_status' => fn() => PBXHelper::toggleStatus('sys_users', $_POST['user_id'] ?? 0, static::csrfToken()),
+                    'reset_password' => fn() => UserService::resetPassword($_POST),
+                    'delete_user' => fn() => UserService::deleteUser($_POST['user_id'] ?? 0, static::csrfToken()),
+                ]);
             }
         }
 

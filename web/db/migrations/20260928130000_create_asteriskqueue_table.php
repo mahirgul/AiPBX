@@ -3,13 +3,13 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Asterisk queue_log'un yazıldığı tablo (extconfig.conf: queue_log => odbc,asterisk,asteriskqueue).
+ * The table Asterisk's queue_log is written to (extconfig.conf: queue_log => odbc,asterisk,asteriskqueue).
  *
- * Hiçbir migration bu tabloyu oluşturmuyordu: mevcut sunucularda eskiden elle
- * açılmıştı, temiz kurulumda ise install.sh ODBC yetkisini verirken "tablo yok"
- * hatasıyla duruyordu (2026-09-28, kapsayıcıda temiz kurulum testi). Sütunlar
- * Asterisk'in realtime queue_log alanları + bin/sync_queue_logs.php'nin
- * kullandığı id/created_at.
+ * No migration created this table: on existing servers it had been created by
+ * hand long ago, while on a clean install install.sh stopped with a "table
+ * does not exist" error when granting the ODBC rights (2026-09-28, clean
+ * install test in a container). The columns are Asterisk's realtime queue_log
+ * fields + the id/created_at used by bin/sync_queue_logs.php.
  */
 final class CreateAsteriskqueueTable extends AbstractMigration
 {
@@ -45,6 +45,6 @@ final class CreateAsteriskqueueTable extends AbstractMigration
 
     public function down(): void
     {
-        // Mevcut kurulumlarda tablo bu migration'dan önce de vardı: silinmez.
+        // On existing installs the table existed before this migration: it is not dropped.
     }
 }

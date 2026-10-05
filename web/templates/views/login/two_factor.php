@@ -1,20 +1,16 @@
-<?php /* Düzen: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
+<?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
     <div class="auth-card" style="max-width: 420px;">
-        <div style="text-align: center; margin-bottom: 24px;">
+        <div class="u-text-center u-mb-24">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px; background: rgba(2, 132, 199, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <i class="fas fa-shield-alt" style="color: var(--primary); font-size: 26px;"></i>
+                <i class="fas fa-shield-alt u-primary u-fs-26"></i>
             </div>
-            <h2 style="font-size: 20px; font-weight: 800;"><?php echo t('login_2fa.title', 'İki Faktörlü Doğrulama'); ?></h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">
+            <h2 class="u-fs-20 u-fw-800"><?php echo t('login_2fa.title', 'İki Faktörlü Doğrulama'); ?></h2>
+            <p class="u-muted u-fs-13 u-mt-6">
                 <?php echo t('login_2fa.account_label', 'Hesap:'); ?> <strong><?php echo htmlspecialchars($user['full_name'] ?: $user['username']); ?></strong>
             </p>
         </div>
 
-        <?php if ($error): ?>
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; text-align: center;">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
+        <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
         <form method="POST" action="/login-2fa" id="twoFactorForm">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
@@ -37,7 +33,7 @@
             <!-- Recovery Code Section (Toggled) -->
             <div id="section_recovery" style="display: none;">
                 <div class="form-group">
-                    <label class="form-label" style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+                    <label class="form-label u-fs-13 u-muted u-mb-8">
                         <?php echo t('login_2fa.recovery_prompt', '8 karakterli yedek kurtarma kodunuzu girin:'); ?>
                     </label>
                     <input type="text" name="recovery_code" id="recovery_code" class="form-control"
@@ -50,7 +46,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 14px; font-size: 15px; font-weight: 700;">
-                <i class="fas fa-check-circle" style="margin-right: 6px;"></i> <?php echo t('login_2fa.btn_verify', 'Doğrula ve Giriş Yap'); ?>
+                <i class="fas fa-check-circle u-mr-6"></i> <?php echo t('login_2fa.btn_verify', 'Doğrula ve Giriş Yap'); ?>
             </button>
         </form>
 
@@ -70,34 +66,9 @@
     </div>
 
     <script>
-        let isRecovery = false;
-        function toggleAuthMode() {
-            isRecovery = !isRecovery;
-            const secTotp = document.getElementById('section_totp');
-            const secRec = document.getElementById('section_recovery');
-            const modeInput = document.getElementById('auth_mode');
-            const btn = document.getElementById('toggleModeBtn');
-
-            if (isRecovery) {
-                secTotp.style.display = 'none';
-                secRec.style.display = 'block';
-                modeInput.value = 'recovery';
-                btn.innerHTML = '<i class="fas fa-mobile-alt"></i> <?php echo addslashes(t('login_2fa.use_totp_code', 'Authenticator koduna geri dön')); ?>';
-                document.getElementById('recovery_code').focus();
-            } else {
-                secTotp.style.display = 'block';
-                secRec.style.display = 'none';
-                modeInput.value = 'totp';
-                btn.innerHTML = '<i class="fas fa-key"></i> <?php echo addslashes(t('login_2fa.use_recovery_code', 'Cihazınıza erişemiyor musunuz? Kurtarma kodu kullanın')); ?>';
-                document.getElementById('totp_code').focus();
-            }
-        }
-
-        // Auto-submit when 6 digits entered
-        document.getElementById('totp_code').addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            if (this.value.length === 6) {
-                document.getElementById('twoFactorForm').submit();
-            }
-        });
+        window.LOGIN_2FA_TEXT = {
+            use_totp: <?php echo json_encode(t('login_2fa.use_totp_code', 'Authenticator koduna geri dön')); ?>,
+            use_recovery: <?php echo json_encode(t('login_2fa.use_recovery_code', 'Cihazınıza erişemiyor musunuz? Kurtarma kodu kullanın')); ?>
+        };
     </script>
+<script src="<?php echo asset('/assets/js/login_two_factor.js'); ?>"></script>

@@ -1,15 +1,15 @@
 #!/usr/bin/env php
 <?php
 /**
- * AI PBX Arka Plan Mobil Push Gönderici
+ * AI PBX background mobile push sender
  *
- * Asterisk dialplan'ı (DialplanBuilders::buildExtensionDialLines) gelen
- * çağrıda mobil cihazı uyandırmak için arka planda çağırır:
- *   System(/usr/local/bin/push_dispatcher.php <dahili> "<arayan_no>" "<arayan_ad>" &)
+ * The Asterisk dialplan (DialplanBuilders::buildExtensionDialLines) calls it
+ * in the background on an incoming call to wake the mobile device:
+ *   System(/usr/local/bin/push_dispatcher.php <extension> "<caller_no>" "<caller_name>" &)
  *
- * 2026-09-27'ye kadar bu betik yalnızca Karabük sunucusunda elle kurulmuş bir
- * kopya olarak vardı; repoda ve install.sh'de yoktu — yeni kurulumlarda push
- * açılınca dialplan var olmayan bir dosyayı çağırıyordu.
+ * Until 2026-09-27 this script existed only as a copy installed by hand on
+ * the Karabük server; it was in neither the repo nor install.sh — on new
+ * installs, enabling push made the dialplan call a file that did not exist.
  */
 if (PHP_SAPI !== 'cli') {
     exit(1);

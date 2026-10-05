@@ -3,21 +3,21 @@
  * Sync Outbound Routes Dialplan (/etc/asterisk/pbx/extensions_outbound.conf)
  */
 /*
- * MixMonitor'da `b` secenegi KULLANILMIYOR.
+ * The `b` option of MixMonitor is NOT USED.
  *
- * `b` yalnizca cagri koprulendikten sonra yazmaya baslar; anons, calma ve
- * tuslama kayda girmez. Ustelik bekleneni de yapmiyor: cagri hic
- * koprulenmezse dosya yine olusuyor, sadece ICI BOS kaliyor (44 bayt, salt
- * WAV basligi — 2026-09-01'de giden cagri kayitlarinda goruldu). Yani bos
- * dosya birikmesini de onlemiyor.
+ * `b` starts writing only after the call is bridged; announcements, ringing
+ * and keypresses are not recorded. It does not even do what one expects: if
+ * the call is never bridged the file is still created, just EMPTY (44 bytes,
+ * a bare WAV header — seen in outbound call recordings on 2026-09-01). So it
+ * does not prevent empty files from piling up either.
  */
 function syncOutboundDialplan() {
     return withSyncLock('outbound_dialplan', '__syncOutboundDialplanBody');
 }
 
 function __syncOutboundDialplanBody() {
-    // Trunk kanal sinirlari. Rotanin trunks_json'inda bu bilgi yok; sinir
-    // trunk'in kendi kaydinda (pbx_trunks.max_channels) tutuluyor.
+    // Trunk channel limits. The route's trunks_json does not have them; the
+    // limit is kept on the trunk's own record (pbx_trunks.max_channels).
     $trunk_limitleri = [];
     $trunk_cid_norm = [];
     foreach (getDB()->query("SELECT trunk_name, max_channels, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
@@ -32,12 +32,12 @@ function __syncOutboundDialplanBody() {
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
-    // Rotalar gruba gore ayrilir. Her grup kendi context'ini alir; kullanici
-    // hangi gruptaysa yalnizca o gruptaki rotalari kullanabilir.
+    // Routes are split by group. Every group gets its own context; users can
+    // only use the routes of the group they are in.
     //
-    // Grup 1 ayrica [from-internal-outbound] adiyla da uretilir: mevcut uclar
-    // ve kuyruklardaki Local/...@from-internal-pbx cagrilari bu ada bagli,
-    // yani grup atanmamis kurulumlarda hicbir sey degismez.
+    // Group 1 is also generated as [from-internal-outbound]: the existing
+    // endpoints and the Local/...@from-internal-pbx calls in the queues are
+    // bound to this name, so nothing changes on installs without groups.
     $gruplar = [];
     foreach ($routes as $r) {
         $g = max(1, intval($r['route_group'] ?? 1));
@@ -54,7 +54,7 @@ function __syncOutboundDialplanBody() {
     $route_blocks = [];
 
     foreach ($gruplar as $grup_no => $grup_rotalari) {
-        $conf .= "; ---- Giden Rota Grubu {$grup_no} ----\n";
+        $conf .= "; ---- Outbound route group {$grup_no} ----\n";
         $conf .= "[from-internal-outbound-{$grup_no}]\n\n";
         $routes = $grup_rotalari;
 
@@ -68,10 +68,11 @@ function __syncOutboundDialplanBody() {
             $strip_back = intval($r['strip_back'] ?? 0);
             $is_internal = !empty($r['is_internal']);
 
-            // Dış hat listesi: birincil/yedek ayrımı yok — tek tek eklenen, sırasıyla
-            // denenen bir zincir. Her girişin kendi Caller ID maskeleme değeri olabilir.
-            // Boş/tanımsız trunk adları elenir; hiç trunk kalmazsa (yeni/boş kurulum)
-            // sistemdeki tek aktif trunk'a düşülür, o da yoksa Congestion() ile biter.
+            // Trunk list: no primary/backup split — a chain of trunks added one
+            // by one and tried in order. Every entry can have its own caller ID
+            // masking value. Empty/undefined trunk names are dropped; if no
+            // trunk is left (new/empty install) the single active trunk in the
+            // system is used, and without one it ends with Congestion().
             $trunks_raw = !empty($r['trunks_json']) ? (json_decode($r['trunks_json'], true) ?: []) : [];
             $trunk_chain = [];
             foreach ($trunks_raw as $t) {
@@ -101,15 +102,15 @@ function __syncOutboundDialplanBody() {
                 continue;
             }
 
-            // Numara dönüşümü: önce baştan/sondan silme, sonra ön ek/son ek eklenir.
-            // Asterisk ${VAR:offset:length} negatif length ile "sondan N karakter" ifade eder.
+            // Number transformation: strip from the front/back first, then add the prefix/suffix.
+            // Asterisk ${VAR:offset:length} with a negative length means "N characters from the end".
             $core = "\${EXTEN}";
             if ($strip_front > 0 || $strip_back > 0) {
                 $core = ($strip_back > 0) ? "\${EXTEN:{$strip_front}:-{$strip_back}}" : "\${EXTEN:{$strip_front}}";
             }
             $dial_num = $prepend . $core . $append;
 
-            // İlk denenecek trunk'ın CID'i, kayıt dosyası adı belirlenmeden önce uygulanır.
+            // The CID of the first trunk to try is applied before the recording file name is set.
             // The original caller number is restored before every trunk attempt,
             // so a fallback trunk's normalization does not stack on the previous one.
             $conf .= " same => n,Set(AIPBX_SRC_CID=\${CALLERID(num)})\n";
@@ -121,8 +122,8 @@ function __syncOutboundDialplanBody() {
             $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";
 
-            // Sırayla dene: bir trunk CHANUNAVAIL/CONGESTION dönerse bir sonrakine geç.
-            // Her deneme kendi trunk'ının CID'ini uygular (ilk deneme yukarıda zaten uygulandı).
+            // Try in order: when a trunk returns CHANUNAVAIL/CONGESTION, move on to the next.
+            // Every attempt applies its own trunk's CID (the first one was applied above already).
             $count = count($trunk_chain);
             foreach ($trunk_chain as $idx => $t) {
                 $step = $idx + 1;
@@ -132,22 +133,22 @@ function __syncOutboundDialplanBody() {
                     $conf .= buildTrunkCallerIdLine($t, $is_internal);
                     $conf .= buildTrunkCidNormalizeLine($trunk_cid_norm[$t['trunk_name']] ?? null);
                 }
-                // Trunk kanal siniri. `max_channels` panelde giriliyor ve
-                // veritabanina yaziliyordu ama dialplan'a HIC yansimiyordu:
-                // "en fazla N kanal" denmesine ragmen sinirsiz arama
-                // yapiliyordu (2026-09-01 alan denetimi).
+                // Trunk channel limit. `max_channels` was entered in the panel
+                // and saved to the database but NEVER reached the dialplan:
+                // calls were unlimited although "at most N channels" was set
+                // (2026-09-01 field audit).
                 //
-                // GROUP sayaci kanal bazlidir; cagri bitince Asterisk kendisi
-                // dusurur. Sinir dolduysa bu trunk CONGESTION saydirilir ki
-                // zincirdeki bir sonraki trunk denensin.
+                // The GROUP counter is per channel; Asterisk drops it itself
+                // when the call ends. When the limit is full this trunk counts
+                // as CONGESTION so the next trunk in the chain is tried.
                 $limit = intval($t['max_channels'] ?? 0);
                 if ($limit > 0) {
                     $conf .= " same => n,Set(GROUP(trunk)={$t['trunk_name']})\n";
                     $conf .= " same => n,GotoIf(\$[\${GROUP_COUNT(" . $t['trunk_name'] . "@trunk)} > {$limit}]?trunkfull{$step})\n";
                 }
-                // D-1: 'r' seçeneği kaldırıldı (yalnızca 'T' kullanılıyor).
-                // Böylece operatörün erken medyası (183 Session Progress / anons / gerçek meşgul tonu)
-                // arayana doğrudan iletilir, yapay yerel zil ile maskelenmez.
+                // D-1: the 'r' option was removed (only 'T' is used).
+                // The carrier's early media (183 Session Progress / announcement / real busy tone)
+                // thus reaches the caller directly instead of being masked by a fake local ring.
                 $conf .= " same => n,Set(JITTERBUFFER(adaptive)=default)\n";
                 $conf .= " same => n,Dial(PJSIP/{$dial_num}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limit > 0) {
@@ -161,8 +162,8 @@ function __syncOutboundDialplanBody() {
                     $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\"=\"CHANUNAVAIL\"|\"\${DIALSTATUS}\"=\"CONGESTION\"]?try{$next}:donecall)\n";
                 }
             }
-            // D-2: Dial bitiminde argümansız Hangup yerine gerçek DIALSTATUS ve HANGUPCAUSE
-            // kodlarını SIP tarafına ileten durum yöneticisine dallanılır.
+            // D-2: after Dial, instead of a bare Hangup, branch to the status handler that
+            // passes the real DIALSTATUS and HANGUPCAUSE codes on to the SIP side.
             $done_label = ($count > 1) ? '(donecall)' : '';
             $conf .= " same => n{$done_label},Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n\n";
             $route_blocks[(int)$r['id']] = [$pattern, substr($conf, $block_start)];
@@ -171,7 +172,7 @@ function __syncOutboundDialplanBody() {
         $fallback_trunk = AsteriskHelper::getPrimaryTrunkName();
         $conf .= "; Fallback Outbound Route\n";
         if ($fallback_trunk === null) {
-            $conf .= "; Henuz hicbir trunk/dis hat tanimlanmadi - giden arama devre disi.\n";
+            $conf .= "; No trunk defined yet - outbound calling is disabled.\n";
             $conf .= "exten => _NXXXXXX,1,NoOp(No trunk configured)\n";
             $conf .= " same => n,Congestion(10)\n";
             $conf .= " same => n,Hangup(34)\n\n";
@@ -196,16 +197,16 @@ function __syncOutboundDialplanBody() {
         $conf .= preg_replace('/^exten => ' . preg_quote($pattern, '/') . ',1,/m', 'exten => _[0-9*#+].,1,', $block, 1);
     }
 
-    // Grup 1'i eski adiyla da yayinla: mevcut uclarin context'i ve
-    // kuyruklardaki Local/...@from-internal-pbx cagrilari bu ada bagli.
-    // Boylece grup atanmamis kurulumlarda hicbir sey degismiyor.
-    $conf .= "; ---- Geriye uyumluluk: grup 1'in eski adi ----\n";
+    // Publish group 1 under the old name too: the existing endpoints' context
+    // and the Local/...@from-internal-pbx calls in the queues are bound to it.
+    // So nothing changes on installs without groups.
+    $conf .= "; ---- Backward compatibility: the old name of group 1 ----\n";
     $conf .= "[from-internal-outbound]\n";
     $conf .= "include => from-internal-outbound-1\n\n";
 
-    // Giden çağrı sonlandırma ve durum yönetimi (D-1 / D-2)
-    // BUSY -> 486 Busy Here, CONGESTION -> 503, NOANSWER -> 480, CHANUNAVAIL -> HANGUPCAUSE (örn 404/603)
-    $conf .= "; ---- Giden Cagri Durum Yonetimi (D-1 / D-2) ----\n";
+    // Outbound call termination and status handling (D-1 / D-2)
+    // BUSY -> 486 Busy Here, CONGESTION -> 503, NOANSWER -> 480, CHANUNAVAIL -> HANGUPCAUSE (e.g. 404/603)
+    $conf .= "; ---- Outbound call status handling (D-1 / D-2) ----\n";
     $conf .= "[sub-outbound-status]\n";
     $conf .= "exten => s,1,NoOp(Outbound Status: s - Cause: \${HANGUPCAUSE})\n";
     $conf .= " same => n,Hangup(\${IF(\$[\"\${HANGUPCAUSE}\" != \"\" & \"\${HANGUPCAUSE}\" != \"0\"]?\${HANGUPCAUSE}:16)})\n\n";

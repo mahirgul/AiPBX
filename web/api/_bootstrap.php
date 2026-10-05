@@ -1,21 +1,21 @@
 <?php
 /**
- * api/ katmanı için ortak minimum güvenlik girişi — JSON/fetch() tabanlı uç
- * noktalar (sayfaya değil, tarayıcı JS'ine yanıt veren dosyalar) için.
+ * Shared minimum security entry point for the api/ layer — for JSON/fetch()
+ * based endpoints (files that answer browser JS, not render a page).
  *
- * api/cc.php BUNU KULLANMAZ — o, action bazlı requireRole()+CSRF akışını
- * kendi içinde daha nüanslı biçimde yönetiyor (bkz. cc.php üstündeki not).
- * fax_download.php/sound_play.php gibi TARAYICI TARAFINDAN DOĞRUDAN
- * navigasyonla açılan (img src / a href / audio src) uç noktalar da bunu
- * kullanmaz — onlar için oturum süresi dolunca JSON değil, sayfaya
- * redirect (requireLogin()) doğru davranıştır.
+ * api/cc.php does NOT USE IT — it handles its per-action requireRole()+CSRF
+ * flow itself in a more nuanced way (see the note at the top of cc.php).
+ * Endpoints the browser opens BY DIRECT navigation (img src / a href /
+ * audio src), such as fax_download.php/sound_play.php, do not use it either
+ * — for them a redirect to the page (requireLogin()) on session expiry is the
+ * right behaviour, not JSON.
  *
- * Her yeni JSON api/*.php dosyası requireLogin()/requireApiLogin() eklemeyi
- * unutabilir (bu tam olarak destinations.php'de 2026-08-21'de bir kez
- * gerçekleşmişti) — bunun yerine sadece bu dosyayı require etmek, o riski
- * dosya bazlı disiplinden tek bir zorunlu giriş noktasına taşır. Modül-özel
- * ek RBAC/sahiplik kontrolleri (destinations.php'nin hasModulePermission()
- * kontrolü gibi) hâlâ ilgili dosyada, bu noktadan SONRA yapılmaya devam eder.
+ * Every new JSON api/*.php file could forget to add requireLogin()/
+ * requireApiLogin() (exactly that happened once in destinations.php on
+ * 2026-08-21) — requiring just this file instead moves that risk from
+ * per-file discipline to one mandatory entry point. Module-specific extra
+ * RBAC/ownership checks (like destinations.php's hasModulePermission() check)
+ * still happen in the file itself, AFTER this point.
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';

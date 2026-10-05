@@ -5,9 +5,9 @@ class CcAgentRepository extends BaseRepository
     protected static string $table = 'pbx_queues';
 
     /**
-     * Kullanıcının en az bir aktif kuyruğa temsilci (üye) olarak atanıp
-     * atanmadığını kontrol eder (cc_agent olmayan roller için "Temsilci
-     * Ekranı"na erişim izni bu kontrolle veriliyor).
+     * Checks whether the user is assigned as agent (member) to at least one
+     * active queue (access to the "Agent screen" for roles other than
+     * cc_agent is granted by this check).
      */
     public static function isAssignedQueueAgent(string $extension): bool
     {

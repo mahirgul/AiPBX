@@ -1,5 +1,5 @@
 <?php
-// Temsilci oturum aksiyonları: login, logout, pause, unpause, get_status, auto_login
+// Agent session actions: login, logout, pause, unpause, get_status, auto_login
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 require_once __DIR__ . '/../../src/queue_helper.php';
 
@@ -52,7 +52,7 @@ if ($action === 'logout') {
             QueueHelper::setMembership($user_ext, $qn, false);
         }
 
-        // Statik olduğu kuyruklarda hâlâ üye (ve belki molada) — mola kaydı açık kalmalı.
+        // Still a member (and maybe paused) in the queues where the agent is static — the pause record must stay open.
         if (empty($static_q)) {
             $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
             $stmt->execute([$user_ext]);
@@ -71,9 +71,9 @@ if ($action === 'pause') {
     if (empty($reason)) $reason = 'Mola';
 
     if (!empty($user_ext)) {
-        // Önceden burada "queue pause member X reason Y" gönderiliyordu —
-        // Asterisk gerekçeyi kuyruk adı olmadan kabul etmediği için komut
-        // "Usage" ile reddediliyor, moladaki ajana çağrı gitmeye devam ediyordu.
+        // "queue pause member X reason Y" used to be sent here — Asterisk
+        // does not accept a reason without a queue name, so the command was
+        // rejected with "Usage" and calls kept going to the paused agent.
         QueueHelper::pauseInAsterisk((string)$user_ext, $reason);
 
         withAgentPauseLock($db, $user_ext, function() use ($db, $user_ext, $user_name, $reason) {
@@ -98,7 +98,7 @@ if ($action === 'pause') {
 
 if ($action === 'unpause') {
     if (!empty($user_ext)) {
-        // Asterisk: Belirli bir kuyruk adı verilmediğinde üyenin dahil olduğu TÜM kuyruklarda moladan dönülür
+        // Asterisk: without a specific queue name, the member is unpaused in ALL queues it belongs to
         @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$user_ext@from-internal-pbx/n"), $out);
         @exec("asterisk -rx " . escapeshellarg("queue unpause member PJSIP/$user_ext"), $out);
 
@@ -187,19 +187,20 @@ if ($action === 'auto_login') {
             if ($is_assigned && (empty($last_queues) || in_array($q_name, $last_queues))) {
                 @exec("asterisk -rx " . escapeshellarg("queue add member Local/$user_ext@from-internal-pbx/n to $q_name penalty 0 as \"Temsilci $user_ext\" state_interface hint:$user_ext@from-internal-pbx"), $out);
 
-                // Asterisk restart/reload sonrası dinamik üyelik sıfırlanır ve
-                // yeni eklenen üye varsayılan olarak PAUSE'SUZ (aktif) başlar.
-                // Ajanın kendi PAUSED kaydı hâlâ varsa bunu Asterisk tarafına
-                // da yansıt — yoksa moladaki bir ajana gerçek çağrı gidebilir.
+                // After an Asterisk restart/reload the dynamic membership is
+                // reset and a newly added member starts UNPAUSED (active) by
+                // default. If the agent's own PAUSED record still exists,
+                // reflect it on the Asterisk side too — otherwise a real call
+                // could go to a paused agent.
                 $stmt_chk = $db->prepare("SELECT pause_reason FROM cc_pause_logs WHERE agent_extension = ? AND status = 'PAUSED' ORDER BY id DESC LIMIT 1");
                 $stmt_chk->execute([$user_ext]);
                 $active_reason = $stmt_chk->fetchColumn();
                 if ($active_reason === false) {
                     @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$user_ext@from-internal-pbx/n queue $q_name"), $out);
                 } else {
-                    // Gerekçe tırnaklı olmalı: "Yemek Molası" gibi boşluklu bir
-                    // gerekçe tırnaksız gidince CLI "Usage" ile reddediyor ve
-                    // moladaki ajan kuyrukta AKTİF kalıyordu.
+                    // The reason must be quoted: an unquoted reason with spaces
+                    // like "Lunch break" was rejected by the CLI with "Usage"
+                    // and the paused agent stayed ACTIVE in the queue.
                     $active_reason_cli = str_replace('"', '', (string)$active_reason);
                     @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n queue $q_name reason \"$active_reason_cli\""), $out);
                 }

@@ -35,7 +35,7 @@ class QueueService {
             if ($fallback_action === 'forward' && empty($fallback_target)) {
                 throw new \Exception("Zaman Aşımı Aksiyonu \"Dahiliye Yönlendir\" seçildiğinde bir Yönlendirme Dahilisi seçmelisiniz!");
             }
-            // Her temsilci için member_mode[ext] = '' (atanmamış) | 'dynamic' | 'static'.
+            // For every agent member_mode[ext] = '' (not assigned) | 'dynamic' | 'static'.
             $selected_members = [];
             $selected_static = [];
             if (isset($data['member_mode']) && is_array($data['member_mode'])) {
@@ -111,9 +111,9 @@ class QueueService {
             $id = DBHelper::save('pbx_queues', $q_data);
             QueueHelper::syncQueueToDetails($q_data);
 
-            // Asterisk'e hemen yansıtılmıyor — "Uygula" sayfasından admin
-            // Gönder'e basana kadar bekletiliyor (2026-08-24, ertelenmiş
-            // reload sistemi). Gerçek regen+reload: applyPendingSync().
+            // Not pushed to Asterisk right away — it waits until the admin
+            // presses Apply on the "Apply" page (2026-08-24, deferred reload
+            // system). The real regen+reload: applyPendingSync().
             markPendingSync('queues', 'queue', $queue_name, "Kuyruk: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
@@ -127,11 +127,12 @@ class QueueService {
     }
 
     /**
-     * Bir kuyruk, ona işaret eden aktif bir Gelen Rota/IVR seçeneği/Zaman Koşulu
-     * varken silinemez — dest_type/dest_id polimorfik alanı (pbx_dids vb.) DB
-     * seviyesinde FK olamadığı için (2026-08-23 incelemesinde bulundu: sessizce
-     * bozuk/geçersiz bir hedefe düşen DID riski) bu kontrol burada yapılıyor.
-     * TimeConditionService::deleteTimeGroup()'taki mevcut desenle aynı yaklaşım.
+     * A queue cannot be deleted while an active inbound route/IVR option/time
+     * condition points to it — the polymorphic dest_type/dest_id field
+     * (pbx_dids etc.) cannot be an FK at the DB level (found in the 2026-08-23
+     * review: the risk of a DID silently landing on a broken/invalid target),
+     * so the check is done here. The same approach as the existing pattern in
+     * TimeConditionService::deleteTimeGroup().
      */
     public static function deleteQueue($queue_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($queue_id) {

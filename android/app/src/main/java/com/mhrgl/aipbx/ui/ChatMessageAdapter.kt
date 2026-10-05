@@ -17,7 +17,7 @@ class ChatMessageAdapter(
     private val myExtension: String,
     private val baseUrl: String,
     private var isGroup: Boolean = false,
-    /** Güncel oturum tokeni — medya indirmek/açmak için (token yenilenebildiği için sağlayıcı). */
+    /** The current session token — for downloading/opening media (a provider, since the token can be refreshed). */
     private val tokenProvider: () -> String? = { null }
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -155,11 +155,11 @@ class ChatMessageAdapter(
             if (m.msgType == "image" && !m.attachmentUrl.isNullOrEmpty()) {
                 ivImage.visibility = View.VISIBLE
                 val fullImageUrl = resolveMediaUrl(m.attachmentUrl)
-                // Listede sunucunun ürettiği küçük resim (≈20 KB) kullanılır;
-                // yoksa orijinal görsele düşülür.
+                // The list uses the thumbnail the server generated (≈20 KB);
+                // otherwise it falls back to the original image.
                 SimpleImageLoader.load(resolveMediaUrl(thumbPathFor(m.attachmentUrl)), ivImage, tokenProvider(), fullImageUrl)
 
-                // Harici tarayıcı yerine uygulama içi tam ekran görüntüleyici.
+                // An in-app full-screen viewer instead of an external browser.
                 ivImage.setOnClickListener {
                     ImageViewerDialog.show(ctx, fullImageUrl, tokenProvider())
                 }
@@ -208,8 +208,8 @@ class ChatMessageAdapter(
         }
 
         /**
-         * Harici tarayıcı/görüntüleyici Authorization başlığı gönderemez ve
-         * sohbet çerezine sahip değil; sunucu /chat/media/ için ?token= kabul ediyor.
+         * An external browser/viewer cannot send an Authorization header and
+         * has no chat cookie; the server accepts ?token= for /chat/media/.
          */
         private fun withToken(url: String): String {
             val token = tokenProvider()
@@ -218,7 +218,7 @@ class ChatMessageAdapter(
             return url + sep + "token=" + Uri.encode(token)
         }
 
-        /** /chat/media/images/<ad>.<uzantı> → /chat/media/thumbs/<ad>_thumb.<uzantı> (sunucunun adlandırması). */
+        /** /chat/media/images/<name>.<ext> → /chat/media/thumbs/<name>_thumb.<ext> (the server's naming). */
         private fun thumbPathFor(path: String): String {
             val marker = "/media/images/"
             val idx = path.indexOf(marker)

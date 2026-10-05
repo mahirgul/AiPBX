@@ -11,20 +11,16 @@ class FaxSendController extends BaseController
         $user_ext = $_SESSION['extension'] ?? '8960';
         $user_role = $_SESSION['user_role'] ?? 'user';
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            $res = FaxSendService::sendFax($_POST, $_FILES, $user_id, $user_ext);
-            if ($res['success']) $message = $res['message']; else $error = $res['error'];
-        }
+        $notices = static::isPost()
+            ? static::notices(FaxSendService::sendFax($_POST, $_FILES, $user_id, $user_ext))
+            : ['message' => '', 'error' => ''];
 
         $csrf_token = getCSRFToken();
 
-        // Admin kendi SIP dahilisi (ör. 19000) yerine bir faks birimi ADINA
-        // gönderim yapabilsin diye dropdown listesi — sadece admin için
-        // sorgulanıyor, sıradan faks kullanıcısı zaten hep kendi dahilisini
-        // kullanıyor (2026-08-31, kullanıcı isteği).
+        // A dropdown so the admin can send ON BEHALF of a fax unit instead of
+        // their own SIP extension (e.g. 19000) — queried only for admin; a
+        // regular fax user always uses their own extension anyway (2026-08-31,
+        // user request).
         $fax_users = ($user_role === 'admin') ? FaxSettingsRepository::faxUsersForDropdown() : [];
 
         $page_title = t('fax_send.title');
@@ -33,6 +29,6 @@ class FaxSendController extends BaseController
             'user_role' => $user_role,
             'fax_users' => $fax_users,
             'csrf_token' => $csrf_token,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

@@ -9,21 +9,11 @@ class DidRouteController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_did_route'])) {
-                $res = PBXHelper::saveDIDRoute($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_dids', $_POST['route_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_did_route'])) {
-                $res = PBXHelper::deleteDIDRoute($_POST['route_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_did_route' => fn() => RouteService::saveDIDRoute($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('pbx_dids', $_POST['route_id'] ?? 0, static::csrfToken()),
+            'delete_did_route' => fn() => RouteService::deleteDIDRoute($_POST['route_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $routes = DidRouteRepository::allOrdered();
         $modules = DestinationRegistry::getModuleList();
@@ -34,6 +24,6 @@ class DidRouteController extends BaseController
             'routes' => $routes,
             'modules' => $modules,
             'didDeptMap' => $didDeptMap,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

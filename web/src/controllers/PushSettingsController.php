@@ -9,59 +9,29 @@ class PushSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        // Handle AJAX Test Push
-        if (isset($_GET['action']) && $_GET['action'] === 'test_push') {
-            header('Content-Type: application/json; charset=utf-8');
-            if (!hasModulePermission('push_settings', 'edit')) {
-                echo json_encode(['success' => false, 'message' => 'Bu işlem için yetkiniz bulunmamaktadır.']);
-                exit;
-            }
-            $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => 'Geçersiz güvenlik oturumu (CSRF).']);
-                exit;
-            }
-
+        // AJAX: send a test push
+        if (($_GET['action'] ?? '') === 'test_push') {
+            static::requireAjaxAccess('push_settings', 'edit', 'Bu işlem için yetkiniz bulunmamaktadır.', 'Geçersiz güvenlik oturumu (CSRF).');
             $target = trim($_POST['target'] ?? '');
-            $type = trim($_POST['type'] ?? 'extension');
-
             if ($target === '') {
-                echo json_encode(['success' => false, 'message' => 'Lütfen test yapılacak dahili veya cihazı seçin.']);
-                exit;
+                static::json(['success' => false, 'message' => 'Lütfen test yapılacak dahili veya cihazı seçin.']);
             }
-
-            $result = PushSettingsService::testPush($target, $type);
-            echo json_encode($result, JSON_UNESCAPED_UNICODE);
-            exit;
+            static::json(PushSettingsService::testPush($target, trim($_POST['type'] ?? 'extension')));
         }
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['save_push_settings'])) {
-            if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-                $error = 'Geçersiz form tokeni (CSRF). Lütfen sayfayı yenileyip tekrar deneyin.';
-            } else {
-                $res = PushSettingsService::saveSettings($_POST);
-                if ($res['success']) {
-                    $message = $res['message'];
-                } else {
-                    $error = $res['error'];
-                }
-            }
-        }
+        $notices = static::handlePost([
+            'save_push_settings' => fn() => static::verifyCsrf()
+                ? PushSettingsService::saveSettings($_POST)
+                : ['success' => false, 'error' => t('common.invalid_csrf')],
+        ]);
 
         $settings = PushSettingsRepository::currentSettings();
         $devices = PushSettingsRepository::activeMobileDevices();
 
         $page_title = 'Mobil Bildirim';
-        $active_page = 'push_settings.php';
-
         static::renderPage('push_settings/index', [
             'settings' => $settings,
             'devices' => $devices,
-            'message' => $message,
-            'error' => $error,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

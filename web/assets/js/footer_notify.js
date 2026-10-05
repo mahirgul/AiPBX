@@ -1,12 +1,12 @@
 /**
- * Ortak Footer Bildirim & Sistem Uyarı Yöneticisi (Unified Footer Notification System)
- * AI PBX — Santral, Faks & Çağrı Merkezi Portalı
+ * Shared footer notification & system warning manager (Unified Footer Notification System)
+ * AI PBX — PBX, fax & call center portal
  */
 
 (function() {
     'use strict';
 
-    // Bildirim Kuyruğu & Aktif Durum Yönetimi
+    // Notification queue & active state
     let _queue = [];
     let _activeToastTimer = null;
     let _activeToastCount = 0;
@@ -16,7 +16,7 @@
     });
 
     /**
-     * Footer Canlı Saat Modülü
+     * Footer live clock module
      */
     function startFooterClock() {
         const clockEl = document.getElementById('footer-clock');
@@ -39,7 +39,7 @@
     }
 
     /**
-     * Güvenli HTML Kaçış Yardımcısı
+     * Safe HTML escape helper
      */
     function escapeHtml(str) {
         if (!str) return '';
@@ -49,10 +49,10 @@
     }
 
     /**
-     * Ortalanmış Yüzen Toast Bildirimi (Footer Center)
-     * @param {string} msg 
+     * Centered floating toast notification (footer center)
+     * @param {string} msg
      * @param {string} type - 'success', 'danger', 'warning', 'info'
-     * @param {number} durationMs 
+     * @param {number} durationMs
      */
     function showFooterToast(msg, type = 'success', durationMs = 6000) {
         if (!msg) return;
@@ -60,7 +60,7 @@
         let container = document.getElementById('footer-toast-container');
         let legacyToast = document.getElementById('footer-center-toast');
 
-        // Ana konteyner yoksa oluştur
+        // Create the main container if missing
         if (!container) {
             container = document.createElement('div');
             container.id = 'footer-toast-container';
@@ -88,32 +88,32 @@
             <button type="button" class="toast-close-btn" title="Kapat">&times;</button>
         `;
 
-        // Kapat Butonu Olayı
+        // Close button event
         const closeBtn = toastItem.querySelector('.toast-close-btn');
         closeBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             dismissToast(toastItem);
         });
 
-        // Eski toast elementini gizle/kaldır
+        // Hide/remove the old toast element
         if (legacyToast) {
             legacyToast.style.display = 'none';
         }
 
         container.appendChild(toastItem);
 
-        // Giriş animasyonu tetikleme
+        // Trigger the entry animation
         requestAnimationFrame(() => {
             toastItem.classList.remove('toast-enter');
             toastItem.classList.add('toast-active');
         });
 
-        // Otomatik Kapanma Sayacı
+        // Auto-close timer
         let timer = setTimeout(() => {
             dismissToast(toastItem);
         }, durationMs);
 
-        // Hover durumunda süreyi dondurma
+        // Freeze the timer on hover
         toastItem.addEventListener('mouseenter', () => clearTimeout(timer));
         toastItem.addEventListener('mouseleave', () => {
             timer = setTimeout(() => dismissToast(toastItem), 3000);
@@ -138,7 +138,7 @@
         }, 300);
     }
 
-    // Global Fonksiyonlar & API Tanımları
+    // Global functions & API definitions
     window.showFooterToast = showFooterToast;
 
     // Ortak Nesne API: window.notify

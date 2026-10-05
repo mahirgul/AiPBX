@@ -12,81 +12,41 @@ class MsTeamsController extends BaseController
         static::requireModule('ms_teams', 'view');
 
         $active_tab = $_GET['tab'] ?? 'direct_routing';
-        $message = '';
-        $error = '';
 
-        // --- AJAX: Test Webhook Gönderimi ---
-        if (isset($_GET['action']) && $_GET['action'] === 'test_webhook') {
-            header('Content-Type: application/json; charset=utf-8');
-            if (!hasModulePermission('ms_teams', 'edit')) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_edit_perm')]);
-                exit;
-            }
-            $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
-                exit;
-            }
+        $ajax = $_GET['action'] ?? '';
+        $noEdit = t('ms_teams.msg_no_edit_perm');
+        $badCsrf = t('ms_teams.msg_invalid_csrf');
 
+        // --- AJAX: send a test webhook ---
+        if ($ajax === 'test_webhook') {
+            static::requireAjaxAccess('ms_teams', 'edit', $noEdit, $badCsrf);
             $url = trim($_POST['webhook_url'] ?? '');
             if ($url === '') {
-                $current = MsTeamsRepository::currentSettings();
-                $url = $current['teams_webhook_url'] ?? '';
+                $url = MsTeamsRepository::currentSettings()['teams_webhook_url'] ?? '';
             }
-
-            $result = MsTeamsService::sendTestWebhook($url);
-            echo json_encode($result, JSON_UNESCAPED_UNICODE);
-            exit;
+            static::json(MsTeamsService::sendTestWebhook($url));
         }
 
-        // --- AJAX: Kullanıcı Eşleştirmesi Kaydet / Düzenle ---
-        if (isset($_GET['action']) && $_GET['action'] === 'save_mapping') {
-            header('Content-Type: application/json; charset=utf-8');
-            if (!hasModulePermission('ms_teams', 'edit')) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_edit_perm')]);
-                exit;
-            }
-            $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
-                exit;
-            }
-
-            $result = MsTeamsRepository::saveUserMapping($_POST);
-            echo json_encode($result, JSON_UNESCAPED_UNICODE);
-            exit;
+        // --- AJAX: save / edit a user mapping ---
+        if ($ajax === 'save_mapping') {
+            static::requireAjaxAccess('ms_teams', 'edit', $noEdit, $badCsrf);
+            static::json(MsTeamsRepository::saveUserMapping($_POST));
         }
 
-        // --- AJAX: Kullanıcı Eşleştirmesi Sil ---
-        if (isset($_GET['action']) && $_GET['action'] === 'delete_mapping') {
-            header('Content-Type: application/json; charset=utf-8');
-            if (!hasModulePermission('ms_teams', 'delete')) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_no_delete_perm')]);
-                exit;
-            }
-            $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_csrf')]);
-                exit;
-            }
-
-            $id = (int)($_POST['id'] ?? 0);
+        // --- AJAX: delete a user mapping ---
+        if ($ajax === 'delete_mapping') {
+            static::requireAjaxAccess('ms_teams', 'delete', t('ms_teams.msg_no_delete_perm'), $badCsrf);
+            $id = (int) ($_POST['id'] ?? 0);
             if ($id <= 0) {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_invalid_id')]);
-                exit;
+                static::json(['success' => false, 'message' => t('ms_teams.msg_invalid_id')]);
             }
-
-            $deleted = MsTeamsRepository::deleteUserMapping($id);
-            if ($deleted) {
-                echo json_encode(['success' => true, 'message' => t('ms_teams.msg_delete_success')]);
-            } else {
-                echo json_encode(['success' => false, 'message' => t('ms_teams.msg_delete_error')]);
-            }
-            exit;
+            static::json(MsTeamsRepository::deleteUserMapping($id)
+                ? ['success' => true, 'message' => t('ms_teams.msg_delete_success')]
+                : ['success' => false, 'message' => t('ms_teams.msg_delete_error')]);
         }
 
-        // --- PowerShell Script İndir ---
-        if (isset($_GET['action']) && $_GET['action'] === 'download_powershell') {
+        // --- Download the PowerShell script ---
+        if ($ajax === 'download_powershell') {
             $settings = MsTeamsRepository::currentSettings();
             $mappings = MsTeamsRepository::allUserMappings();
             $script = MsTeamsService::generatePowerShellScript($settings, $mappings);
@@ -99,32 +59,20 @@ class MsTeamsController extends BaseController
             exit;
         }
 
-        // --- Standart Form Gönderimleri (Direct Routing & Webhook Ayarları) ---
-        if (static::isPost()) {
-            $csrf = $_POST['csrf_token'] ?? '';
-            if (!verifyCSRFToken($csrf)) {
-                $error = t('ms_teams.msg_invalid_csrf');
-            } elseif (!hasModulePermission('ms_teams', 'edit')) {
-                $error = t('ms_teams.msg_no_edit_perm');
-            } else {
-                if (isset($_POST['save_direct_routing'])) {
-                    $res = MsTeamsService::saveDirectRoutingSettings($_POST);
-                    $active_tab = 'direct_routing';
-                    if ($res['success']) {
-                        $message = $res['message'];
-                    } else {
-                        $error = $res['error'];
-                    }
-                } elseif (isset($_POST['save_webhook_settings'])) {
-                    $res = MsTeamsService::saveWebhookSettings($_POST);
-                    $active_tab = 'webhooks';
-                    if ($res['success']) {
-                        $message = $res['message'];
-                    } else {
-                        $error = $res['error'];
-                    }
-                }
-            }
+        // --- Regular form posts (Direct Routing & webhook settings) ---
+        $guarded = fn(callable $save) => match (true) {
+            !static::verifyCsrf() => ['success' => false, 'error' => $badCsrf],
+            !hasModulePermission('ms_teams', 'edit') => ['success' => false, 'error' => $noEdit],
+            default => $save(),
+        };
+        $notices = static::handlePost([
+            'save_direct_routing' => fn() => $guarded(fn() => MsTeamsService::saveDirectRoutingSettings($_POST)),
+            'save_webhook_settings' => fn() => $guarded(fn() => MsTeamsService::saveWebhookSettings($_POST)),
+        ]);
+        if (isset($_POST['save_webhook_settings'])) {
+            $active_tab = 'webhooks';
+        } elseif (isset($_POST['save_direct_routing'])) {
+            $active_tab = 'direct_routing';
         }
 
         $settings = MsTeamsRepository::currentSettings();
@@ -134,8 +82,6 @@ class MsTeamsController extends BaseController
         $powerShellScript = MsTeamsService::generatePowerShellScript($settings, $mappings);
 
         $page_title = t('ms_teams.title');
-        $active_page = 'ms_teams.php';
-
         static::renderPage('ms_teams/index', [
             'settings'         => $settings,
             'mappings'         => $mappings,
@@ -143,10 +89,8 @@ class MsTeamsController extends BaseController
             'certInfo'         => $certInfo,
             'powerShellScript' => $powerShellScript,
             'active_tab'       => $active_tab,
-            'message'          => $message,
-            'error'            => $error,
             'can_edit'         => hasModulePermission('ms_teams', 'edit'),
             'can_delete'       => hasModulePermission('ms_teams', 'delete'),
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

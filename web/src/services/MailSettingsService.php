@@ -76,16 +76,16 @@ class MailSettingsService
 
     public static function syncPostfix(string $host, int $port, string $security, string $auth, string $user, string $pass): array
     {
-        // Postfix ayarları root yetkisiyle PrivHelper (aipbx-priv `postfix` alt
-        // komutları) üzerinden yazılıyor; her adım sabit bir postconf işlemi.
+        // The Postfix settings are written as root through PrivHelper (the
+        // aipbx-priv `postfix` subcommands); every step is a fixed postconf operation.
         if (empty($host)) {
             PrivHelper::run(['postfix', 'relay-clear']);
             PrivHelper::run(['service', 'reload', 'postfix']);
             return ['success' => true];
         }
 
-        // Host sasl_passwd satırına ve relayhost değerine giriyor — boşluk,
-        // satır sonu, köşeli parantez vb. her iki dosyanın söz dizimini bozar.
+        // The host goes into the sasl_passwd line and the relayhost value —
+        // spaces, line breaks, square brackets etc. would break the syntax of both files.
         if (!preg_match('/^[A-Za-z0-9.:_-]{1,253}$/', $host)) {
             return ['success' => false, 'error' => 'Geçersiz relay sunucu adı: ' . $host];
         }
@@ -97,8 +97,8 @@ class MailSettingsService
         ];
 
         if ($auth === 'yes' && !empty($user)) {
-            // sasl_passwd satır tabanlı: satır sonu içeren bir değer dosyaya
-            // yeni kayıt ekleyebilirdi.
+            // sasl_passwd is line-based: a value with a line break could add a
+            // new entry to the file.
             if (preg_match('/[\x00-\x1f\x7f]/', $user . $pass)) {
                 return ['success' => false, 'error' => 'SMTP kullanıcı adı/parola kontrol karakteri içeremez.'];
             }

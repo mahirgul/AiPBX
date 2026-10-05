@@ -7,18 +7,10 @@ class HangupActionController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_hangup_action'])) {
-                $res = PBXHelper::saveHangupAction($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_hangup_action'])) {
-                $res = PBXHelper::deleteHangupAction($_POST['hangup_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_hangup_action' => fn() => HangupActionService::saveHangupAction($_POST),
+            'delete_hangup_action' => fn() => HangupActionService::deleteHangupAction($_POST['hangup_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $actions = HangupActionRepository::allWithAnnouncementTitle();
         $announcements = HangupActionRepository::allAnnouncementsForDropdown();
@@ -27,6 +19,6 @@ class HangupActionController extends BaseController
         static::renderPage('end_call/index', [
             'actions' => $actions,
             'announcements' => $announcements,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

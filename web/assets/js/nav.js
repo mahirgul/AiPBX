@@ -7,14 +7,14 @@ function toggleNavGroup(groupId) {
 
     const isOpen = target.classList.contains('open');
 
-    // Accordion: Diğer tüm açık menüleri kapat
+    // Accordion: close every other open menu
     document.querySelectorAll('.nav-group').forEach(function(group) {
         if (group.id !== groupId) {
             group.classList.remove('open');
         }
     });
 
-    // Seçilen grubu aç/kapat
+    // Open/close the selected group
     if (isOpen) {
         target.classList.remove('open');
     } else {
@@ -40,7 +40,7 @@ function toggleSidebar(e) {
     const overlay = document.getElementById('mobile-sidebar-overlay');
     if (!sidebar) return;
 
-    // Mobil ekranda (<=900px) drawer olarak aç/kapat
+    // On mobile screens (<=900px) open/close as a drawer
     if (window.innerWidth <= 900) {
         const isMobileOpen = sidebar.classList.toggle('mobile-open');
         if (overlay) {
@@ -51,7 +51,7 @@ function toggleSidebar(e) {
         return;
     }
 
-    // Masaüstü ekranda tam kayar menü olarak aç/kapat (Linear / Slack tarzı)
+    // On desktop screens open/close as a fully sliding menu (Linear / Slack style)
     const isCollapsed = sidebar.classList.toggle('collapsed');
     localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
     document.cookie = "sidebar_collapsed=" + (isCollapsed ? "true" : "false") + "; path=/; max-age=31536000";

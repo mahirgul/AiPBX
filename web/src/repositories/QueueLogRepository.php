@@ -15,9 +15,9 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * Arama metodunu görünüm moduna göre dallandırır:
-     * - 'grouped': Çağrı bacaklarını call_id'ye göre birleştirip çağrı yolculuğu (journey) oluşturur.
-     * - 'raw': Ham Asterisk event loglarını satır satır listeler.
+     * Branches the search method by view mode:
+     * - 'grouped': joins the call legs by call_id into a call journey.
+     * - 'raw': lists the raw Asterisk event logs line by line.
      */
     public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $sayfa = 1, int $boyut = 50): array
     {
@@ -28,8 +28,8 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * Birleştirilmiş (Grouped by call_id) Çağrı Listesi.
-     * 1 Kuyruk Çağrısı = 1 Satır (Açılabilir Çağrı Yolculuğu / Timeline ile).
+     * Grouped call list (by call_id).
+     * 1 queue call = 1 row (with an expandable call journey / timeline).
      */
     public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
     {
@@ -62,20 +62,20 @@ class QueueLogRepository extends BaseRepository
             }
         }
 
-        // Toplam benzersiz çağrı (call_id) sayısını hesaplayalım
+        // Count the unique calls (call_id)
         $countSql = "SELECT COUNT(DISTINCT call_id) FROM cc_queue_logs" . $where;
         $countStmt = $db->prepare($countSql);
         $countStmt->execute($params);
         $totalCalls = (int)$countStmt->fetchColumn();
 
-        // İstatistikler (Filtrelenen aralıktaki tüm satırlar üzerinden)
+        // Statistics (over all rows in the filtered range)
         $stats = static::calculateStats($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery);
 
         if ($totalCalls === 0) {
             return array_merge(['view_mode' => 'grouped', 'logs' => [], 'total' => 0], $stats);
         }
 
-        // Filtrelere uyan en güncel çağrıları (call_id) belirleyelim (sayfalamalı)
+        // Pick the most recent calls (call_id) matching the filters (paged)
         $offset = max(0, ($sayfa - 1) * $boyut);
         $sqlCalls = "SELECT call_id, MIN(time_id) AS first_ts, MAX(time_id) AS last_ts, MAX(queue_name) AS q_name 
                      FROM cc_queue_logs"
@@ -93,7 +93,7 @@ class QueueLogRepository extends BaseRepository
         $callIds = array_column($callRows, 'call_id');
         $placeholders = implode(',', array_fill(0, count($callIds), '?'));
 
-        // Seçilen çağrılara ait TÜM olayları çekelim (kronolojik sıra)
+        // Fetch ALL events of the selected calls (chronological order)
         $sqlEvents = "SELECT id, time_id, created_at, call_id, queue_name, agent, event, data1, data2, data3, data4, data5 
                       FROM cc_queue_logs 
                       WHERE call_id IN ($placeholders) 
@@ -107,7 +107,7 @@ class QueueLogRepository extends BaseRepository
             $eventsByCall[$ev['call_id']][] = $ev;
         }
 
-        // Asterisk CDR tablosundan ses kaydı (userfield) eşleştirmesi
+        // Match recordings (userfield) from the Asterisk CDR table
         $recordingsMap = [];
         try {
             $sqlCdr = "SELECT uniqueid, linkedid, userfield, id FROM asteriskcdr 
@@ -149,7 +149,7 @@ class QueueLogRepository extends BaseRepository
                     $queueName = $ev['queue_name'];
                 }
 
-                // Temsilci dahilisini ayıkla (PJSIP/1001 veya 1001)
+                // Extract the agent's extension (PJSIP/1001 or 1001)
                 $agentExt = '';
                 if (preg_match('/PJSIP\/([0-9]+)/i', $evAgent, $m)) {
                     $agentExt = $m[1];
@@ -210,7 +210,7 @@ class QueueLogRepository extends BaseRepository
                     if ($status !== 'CONNECTED') $status = 'KEY';
                 }
 
-                // Adım detayını biçimlendir
+                // Format the step detail
                 $stepInfo = static::formatStepInfo($ev, $agentExt, $agentName);
                 $journeySteps[] = [
                     'id' => $ev['id'],
@@ -236,7 +236,7 @@ class QueueLogRepository extends BaseRepository
             // Durum etiketi ve rozeti
             $statusBadge = static::getStatusBadge($status);
 
-            // Ses kaydı kontrolü
+            // Recording check
             $rec = $recordingsMap[$cid] ?? null;
             $recordingPath = '';
             $cdrId = 0;
@@ -308,7 +308,7 @@ class QueueLogRepository extends BaseRepository
             }
         }
 
-        // Toplam ham kayıt sayısını hesaplayalım
+        // Count the total raw records
         $countSql = "SELECT COUNT(*) FROM cc_queue_logs" . $sqlWhere;
         $countStmt = static::db()->prepare($countSql);
         $countStmt->execute($params);
@@ -366,7 +366,7 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * İstatistik sayaçlarını hızlı tek bir SQL sorgusuyla hesaplar.
+     * Computes the statistics counters with one fast SQL query.
      */
     private static function calculateStats(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery): array
     {
@@ -429,7 +429,7 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * Çağrı yolculuğundaki her adımı açıklayıcı görsel öğelerle biçimlendirir.
+     * Formats every step of the call journey with descriptive visual elements.
      */
     public static function formatStepInfo(array $ev, string $agentExt, string $agentName): array
     {
@@ -549,7 +549,7 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * Çağrı durum rozetini belirler.
+     * Decides the call status badge.
      */
     public static function getStatusBadge(string $status): array
     {

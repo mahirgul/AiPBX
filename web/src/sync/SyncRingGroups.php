@@ -49,11 +49,11 @@ function __syncRingGroupsBody() {
             $entry = preg_replace('/[^0-9+]/', '', trim($entry));
             if ($entry === '') continue;
 
-            // Dahili numara kontrolü (5 haneye kadar veya dahili veritabanında kayıtlı)
+            // Extension number check (up to 5 digits or registered in the extension database)
             if (strlen($entry) <= 5 && !str_starts_with($entry, '0')) {
                 $channels[] = "Local/{$entry}@from-internal-pbx-ortak/n";
             } else {
-                // Harici numara (dış hat rotaları üzerinden)
+                // External number (through the outbound routes)
                 $channels[] = "Local/{$entry}@from-internal-outbound-1/n";
             }
         }
@@ -68,7 +68,7 @@ function __syncRingGroupsBody() {
                 $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?rg_done_{$id})\n";
             }
         } else {
-            // 'ringall' veya 'random' (varsayılan: tüm hedefleri aynı anda çaldır)
+            // 'ringall' or 'random' (default: ring all targets at the same time)
             if ($strategy === 'random') {
                 shuffle($channels);
             }

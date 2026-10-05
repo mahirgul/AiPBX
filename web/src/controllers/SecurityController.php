@@ -33,7 +33,7 @@ class SecurityController extends BaseController
             } else {
                 $action = $_POST['action'] ?? '';
 
-                // 1. 2FA Etkinleştirme (Kod onaylama)
+                // 1. Enable 2FA (confirm the code)
                 if ($action === 'enable_2fa') {
                     $secret = trim($_POST['secret'] ?? '');
                     $code = trim($_POST['verify_code'] ?? '');
@@ -52,7 +52,7 @@ class SecurityController extends BaseController
                     }
                 }
 
-                // 2. 2FA Devre Dışı Bırakma
+                // 2. Disable 2FA
                 elseif ($action === 'disable_2fa') {
                     $password = (string)($_POST['current_password'] ?? '');
                     $res = TwoFactorService::disableTwoFactor($userId, $password);
@@ -65,7 +65,7 @@ class SecurityController extends BaseController
                     }
                 }
 
-                // 3. Yeni Kurtarma Kodları Üretme
+                // 3. Generate new recovery codes
                 elseif ($action === 'regen_recovery_codes') {
                     $password = (string)($_POST['current_password'] ?? '');
                     $res = TwoFactorService::regenerateRecoveryCodes($userId, $password);
@@ -77,7 +77,7 @@ class SecurityController extends BaseController
                     }
                 }
 
-                // 4. Şifre Değiştirme
+                // 4. Change password
                 elseif ($action === 'change_password') {
                     $curPass = (string)($_POST['current_password'] ?? '');
                     $newPass = (string)($_POST['new_password'] ?? '');
@@ -95,7 +95,7 @@ class SecurityController extends BaseController
                         $error = t('security.password_mismatch', 'Yeni şifreler birbiriyle uyuşmuyor.');
                     } else {
                         $newHash = password_hash($newPass, PASSWORD_DEFAULT);
-                        // Şifre değişince telefonlardaki oturumlar da düşer (token_epoch).
+                        // When the password changes, the sessions on the phones drop too (token_epoch).
                         $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, token_epoch = token_epoch + 1 WHERE id = ?');
                         $upd->execute([$newHash, $userId]);
                         if (function_exists('writeAuditLog')) {
@@ -105,7 +105,7 @@ class SecurityController extends BaseController
                     }
                 }
 
-                // 5. Google ile Giriş Ayarları (Yalnızca Yönetici)
+                // 5. Google sign-in settings (administrators only)
                 elseif ($action === 'save_google_settings' && $user['role'] === 'admin') {
                     $res = GoogleAuthService::saveSettings($_POST);
                     if ($res['success']) {
@@ -117,7 +117,7 @@ class SecurityController extends BaseController
             }
         }
 
-        // 2FA kurulum secret ve QR kodu (eğer 2FA henüz aktif değilse)
+        // 2FA setup secret and QR code (if 2FA is not enabled yet)
         $setupSecret = '';
         $qrCodeDataUri = '';
         if (!$twoFactorEnabled) {
@@ -130,17 +130,9 @@ class SecurityController extends BaseController
             $qrCodeDataUri = TwoFactorService::getQrCodeDataUri($otpUri);
         }
 
-        // Kullanıcının kayıtlı Passkey listesi
+        // The user's registered passkeys
         $passkeys = PasskeyService::getUserPasskeys($userId);
 
-        // Google OAuth ayarları (Yönetici için)
-        $googleSettings = [
-            'enabled' => GoogleAuthService::isEnabled(),
-            'raw_enabled' => (function_exists('getSystemSetting') ? getSystemSetting('google_oauth_enabled', '0') : '0') === '1',
-            'client_id' => GoogleAuthService::getClientId(),
-            'client_secret' => GoogleAuthService::getClientSecret(),
-            'redirect_uri' => GoogleAuthService::getRedirectUri()
-        ];
 
         $page_title = t('security.page_title', 'Güvenlik Ayarları (2FA, Passkey & Google)');
         static::renderPage('security/index', [
@@ -149,10 +141,8 @@ class SecurityController extends BaseController
             'setupSecret' => $setupSecret,
             'qrCodeDataUri' => $qrCodeDataUri,
             'passkeys' => $passkeys,
-            'googleSettings' => $googleSettings,
+            'googleSettings' => GoogleAuthService::settingsForPage(),
             'newRecoveryCodes' => $newRecoveryCodes,
-            'message' => $message,
-            'error' => $error,
             'csrf_token' => getCSRFToken(),
         ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }

@@ -12,10 +12,10 @@ class CcBoardRepository extends BaseRepository
     }
 
     /**
-     * Kullanıcı bu kuyruğun (çoklu supervisors_json VEYA eski tek
-     * supervisor_extension alanı üzerinden) süpervizörü mü? Hem erişim
-     * kontrolü hem "Kuyruklarım" filtresi için kullanılıyor — Erişim
-     * Kontrolü (queue_monitor) ile aynı kapsam mantığı.
+     * Is the user a supervisor of this queue (through the multiple
+     * supervisors_json OR the old single supervisor_extension field)? Used for
+     * both the access check and the "My queues" filter — the same scope logic
+     * as the access control (queue_monitor).
      */
     public static function isSupervisorOf(array $queue, string $userExt): bool
     {
@@ -27,5 +27,19 @@ class CcBoardRepository extends BaseRepository
             $sups[] = $queue['supervisor_extension'];
         }
         return in_array($userExt, array_map('strval', $sups));
+    }
+
+    /** Is the extension a supervisor of at least one active queue? */
+    public static function supervisesAnyQueue(string $userExt): bool
+    {
+        if ($userExt === '') {
+            return false;
+        }
+        foreach (static::activeQueuesForSupervisorScope() as $queue) {
+            if (static::isSupervisorOf($queue, $userExt)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -16,7 +16,7 @@
 
 
 
-    <!-- Gönderim Modu Sekmeleri: PDF Yükle / Metin Yaz -->
+    <!-- Send mode tabs: Upload PDF / Write text -->
     <div class="fax-compose-tabs" style="display: flex; gap: 4px; padding: 0 20px; margin-top: 12px; border-bottom: 1px solid var(--border-color);">
         <button type="button" class="fax-compose-tab-btn active" data-mode="pdf" onclick="switchFaxComposeMode('pdf')">
             <i class="fas fa-file-pdf"></i> <?php echo t('fax_send.tab_pdf'); ?>
@@ -48,7 +48,7 @@
 
         <div class="form-group">
             <label class="form-label"><?php echo t('fax_send.field_dest'); ?></label>
-            <div style="position: relative;">
+            <div class="u-relative">
                 <i class="fas fa-phone-alt" style="position: absolute; left: 16px; top: 15px; color: var(--text-muted);"></i>
                 <input type="text" name="dest_number" class="form-control" style="padding-left: 44px;" required>
             </div>
@@ -106,39 +106,6 @@
 </div>
 
 <link rel="stylesheet" href="<?php echo asset('/assets/css/quill.snow.css'); ?>">
-<style>
-    .fax-compose-tab-btn {
-        background: none; border: none; border-bottom: 3px solid transparent;
-        padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--text-muted);
-        cursor: pointer; display: flex; align-items: center; gap: 6px;
-    }
-    .fax-compose-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
-    #fax-text-editor { background: #fff; color: #1a1a1a; min-height: 260px; }
-    #fax-text-editor .ql-editor { min-height: 260px; font-size: 12px; }
-    /* Quill'in ql-size sinif tabanli boyutlandirmasi devre disi - style tabanli
-       attributor kullaniliyor (assets/js/fax_send.js), boylece uretilen HTML
-       kendi icinde tasinabilir (inline style), Quill'in kendi CSS'ine bagimli degil. */
-
-    /* Quill'in varsayilan font seciciyi 108px'e sabitleyen kurali dar kaliyordu -
-       Turkce etiketler ("Sans"/"Serif"/"Daktilo" olarak zaten kisaltildi) yine de
-       tasip alt satira sarkiyordu (2026-08-31, kullanici bulgusu). Araç çubuğu
-       geneli de sarilabilir/mobilde daha sik hale getirildi. */
-    #fax-text-toolbar.ql-toolbar.ql-snow {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
-        padding: 8px 10px;
-    }
-    #fax-text-toolbar .ql-formats { margin-right: 0; display: flex; align-items: center; gap: 2px; }
-    #fax-text-toolbar .ql-picker.ql-font { width: 92px; }
-    #fax-text-toolbar .ql-picker.ql-size { width: 60px; }
-    #fax-text-toolbar .ql-picker-label { padding-left: 6px; }
-
-    @media (max-width: 600px) {
-        #fax-text-toolbar.ql-toolbar.ql-snow { gap: 4px 6px; padding: 6px 8px; }
-        #fax-text-toolbar .ql-picker.ql-font { width: 78px; }
-        #fax-text-toolbar .ql-picker.ql-size { width: 52px; }
-        #fax-text-toolbar .ql-picker { font-size: 12px; }
-        #fax-text-toolbar button { width: 22px; }
-    }
-</style>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/fax_send.css'); ?>">
 <script src="<?php echo asset('/assets/js/quill.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/fax_send.js'); ?>"></script>

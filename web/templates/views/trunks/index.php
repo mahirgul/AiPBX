@@ -195,7 +195,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: Kimlik Doğrulama & Kayıt (Auth & Registration) -->
+                <!-- TAB 2: authentication & registration (auth & registration) -->
                 <div id="trunk_tab_auth" class="trunk-tab-pane" style="display: none;">
                     <div class="form-group" style="margin-bottom: 16px; background: var(--bg-card); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
                         <label class="form-label u-check-label u-mb-0">
@@ -249,7 +249,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: Arayan Bilgisi & Başlıklar (Caller ID & Headers) -->
+                <!-- TAB 3: caller info & headers (caller ID & headers) -->
                 <div id="trunk_tab_callerid" class="trunk-tab-pane" style="display: none;">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('trunks.field_outbound_caller_id'); ?></label>
@@ -274,14 +274,14 @@
                         <div class="form-group">
                             <label class="form-label u-check-label">
                                 <input type="checkbox" name="send_caller_name" id="modal_send_caller_name" value="1" class="u-check">
-                                <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_caller_name'); ?></span>
+                                <span class="u-fw-600 u-fs-13"><?php echo t('trunks.field_send_caller_name'); ?></span>
                             </label>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label u-check-label">
                                 <input type="checkbox" name="send_pai" id="modal_send_pai" value="1" class="u-check">
-                                <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_pai'); ?></span>
+                                <span class="u-fw-600 u-fs-13"><?php echo t('trunks.field_send_pai'); ?></span>
                             </label>
                         </div>
                     </div>
@@ -289,7 +289,7 @@
                     <div class="form-group" style="margin-top: 8px;">
                         <label class="form-label u-check-label">
                             <input type="checkbox" name="send_rpid" id="modal_send_rpid" value="1" class="u-check">
-                            <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_send_rpid'); ?></span>
+                            <span class="u-fw-600 u-fs-13"><?php echo t('trunks.field_send_rpid'); ?></span>
                         </label>
                     </div>
                 </div>
@@ -430,7 +430,7 @@
                         </div>
                     </div>
 
-                    <!-- Gelen Çağrı & DID Normalizasyonu / Transit Rota -->
+                    <!-- Inbound call & DID normalization / transit route -->
                     <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
                         <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
                             <i class="fas fa-random u-primary"></i> <?php echo t('trunks.section_inbound_routing'); ?>
@@ -456,13 +456,13 @@
                         <div class="form-group u-mb-0 u-mt-12">
                             <label class="form-label u-check-label">
                                 <input type="checkbox" name="allow_outbound_routing" id="modal_allow_outbound_routing" value="1" class="u-check">
-                                <span style="font-weight: 600; font-size: 13px;"><?php echo t('trunks.field_allow_outbound_routing'); ?></span>
+                                <span class="u-fw-600 u-fs-13"><?php echo t('trunks.field_allow_outbound_routing'); ?></span>
                             </label>
                             <small class="u-hint u-fs-11"><?php echo t('trunks.allow_outbound_routing_help'); ?></small>
                         </div>
                     </div>
 
-                    <!-- Giden Çağrı Arayan No Normalizasyonu -->
+                    <!-- Outbound caller number normalization -->
                     <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
                         <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
                             <i class="fas fa-phone-alt u-primary"></i> <?php echo t('trunks.section_outbound_cid'); ?>

@@ -11,14 +11,14 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-RX] $*" | tee -a "$LOGFILE"
 }
 
-# Ortam fallback'leri — kodda statik değer yok (kural: AGENTS.md)
+# Environment fallbacks — no static values in code (rule: AGENTS.md)
 if [ -r /etc/ai-pbx.env ]; then
     . /etc/ai-pbx.env
 fi
 
 TIF_FILE="$1"
-# Değerler aşağıda SQL'e ve dosya yollarına giriyor: dialplan zaten süzüyor,
-# burada da yalnızca beklenen karakterler kalır (ikinci savunma hattı).
+# The values go into SQL and file paths below: the dialplan already filters
+# them, and here too only the expected characters are kept (second line of defence).
 EXTEN="$(printf '%s' "$2" | tr -cd '0-9+')"
 CALLERID="$(printf '%s' "$3" | tr -cd '0-9+')"
 if ! [[ "$TIF_FILE" =~ ^/var/spool/asterisk/fax/[A-Za-z0-9_.+-]+\.tif$ ]]; then
@@ -75,7 +75,7 @@ chown asterisk:asterisk "$ARCHIVE_TIF" "$ARCHIVE_PDF" 2>/dev/null
 
 log "Archived: $ARCHIVE_PDF"
 
-# Parola komut satırında değil ortamda: -p<parola> `ps` çıktısında herkese görünüyordu.
+# The password goes in the environment, not on the command line: -p<password> was visible to everyone in `ps`.
 export MYSQL_PWD="${DB_PASS}"
 MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
 MYSQL_QUERY="$MYSQL_EXEC -N -s"
@@ -108,12 +108,13 @@ ATTACH_PDF_ENABLED=$($MYSQL_QUERY -e \
   "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_rx_attach_pdf' LIMIT 1;" 2>/dev/null)
 if [ -z "$ATTACH_PDF_ENABLED" ]; then ATTACH_PDF_ENABLED="yes"; fi
 
-# Bildirim e-postası ve birim adı üç kademeli önceliktir (2026-08-19 "1 öneki"
-# revizyonu: DID (ör. 19276) ile faks kullanıcısının dahilisi (ör. 9276) artık
-# metinsel olarak eşleşmiyor — "1" yalnızca DID tarafında kalıyor):
-# 1) sys_did_mappings.notification_email/department_name (DID ile birebir eşleşen, admin tarafından açıkça girilmiş)
-# 2) sys_did_mappings.assigned_user_id -> sys_users (Faks Birimleri sayfasından bağlanmış faks kullanıcısı)
-# 3) EXTEN başındaki "1" düşürülüp sys_users.extension ile eşleştirme (henüz sys_did_mappings'e hiç kaydedilmemiş yeni DID'ler için güvenlik ağı)
+# The notification email and unit name follow a three-level priority (the
+# 2026-08-19 "1 prefix" revision: the DID (e.g. 19276) and the fax user's
+# extension (e.g. 9276) no longer match textually — the "1" stays only on the
+# DID side):
+# 1) sys_did_mappings.notification_email/department_name (exact DID match, entered explicitly by the admin)
+# 2) sys_did_mappings.assigned_user_id -> sys_users (the fax user linked on the Fax Units page)
+# 3) drop the leading "1" of EXTEN and match sys_users.extension (a safety net for new DIDs never saved in sys_did_mappings)
 NOTIFY_EMAIL=$($MYSQL_QUERY -e \
   "SELECT notification_email FROM sys_did_mappings WHERE did_extension = '$EXTEN' AND is_active = 1 AND notification_email != '' LIMIT 1;" 2>/dev/null)
 
@@ -160,8 +161,8 @@ if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ 
     FROM_NAME="=?UTF-8?B?$(echo -n "$FROM_NAME_RAW" | base64)?="
     SUBJECT="=?UTF-8?B?$(echo -n "Yeni Faks Alindi - $DEPT_NAME ($EXTEN)" | base64)?="
 
-    # PORTAL_DOMAIN: sys_settings pjsip_external_domain → yukarıda source edilen env fallback'i
-    # (anahtar DB'de tanımlı değilse sorgu boş döner; env değerini SADECE doluysa ez ki link kırılmasın)
+    # PORTAL_DOMAIN: sys_settings pjsip_external_domain → the env fallback sourced above
+    # (the query returns empty if the key is not in the DB; override the env value ONLY when filled, so the link does not break)
     _db_portal_domain=$($MYSQL_QUERY -e \
       "SELECT setting_value FROM sys_settings WHERE setting_key = 'pjsip_external_domain' LIMIT 1;" 2>/dev/null)
     if [ -n "$_db_portal_domain" ]; then

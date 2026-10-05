@@ -30,7 +30,7 @@ function __syncPermissionsBody() {
 
     foreach ($groups as $g) {
         $gid = intval($g['id']);
-        if ($gid === 1) continue; // Grup 1 varsayılan her yöne açık
+        if ($gid === 1) continue; // group 1 is open in every direction by default
 
         $gname = toCleanAscii($g['group_name']);
         $default_action = $g['default_action'] ?? 'allow';
@@ -53,7 +53,7 @@ function __syncPermissionsBody() {
             if ($is_exact) {
                 $conf .= "exten => {$pattern},1,{$action}\n";
             } else {
-                // Prefix: numara pattern ile başlıyorsa eşleş
+                // Prefix: match when the number starts with the pattern
                 $prefix_exten = str_starts_with($pattern, '_') ? $pattern : "_{$pattern}.";
                 $conf .= "exten => {$prefix_exten},1,{$action}\n";
             }

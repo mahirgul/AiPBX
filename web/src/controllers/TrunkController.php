@@ -7,21 +7,11 @@ class TrunkController extends BaseController
     {
         static::requireRole('admin');
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost()) {
-            if (isset($_POST['save_trunk'])) {
-                $res = PBXHelper::saveTrunk($_POST);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['toggle_status'])) {
-                $res = PBXHelper::toggleStatus('pbx_trunks', $_POST['trunk_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            } elseif (isset($_POST['delete_trunk'])) {
-                $res = PBXHelper::deleteTrunk($_POST['trunk_id'] ?? 0, $_POST['csrf_token'] ?? '');
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'save_trunk' => fn() => TrunkService::saveTrunk($_POST),
+            'toggle_status' => fn() => PBXHelper::toggleStatus('pbx_trunks', $_POST['trunk_id'] ?? 0, static::csrfToken()),
+            'delete_trunk' => fn() => TrunkService::deleteTrunk($_POST['trunk_id'] ?? 0, static::csrfToken()),
+        ]);
 
         $trunks = TrunkRepository::allOrdered();
         $trunk_statuses = TrunkRepository::livePjsipStatuses();
@@ -30,6 +20,6 @@ class TrunkController extends BaseController
         static::renderPage('trunks/index', [
             'trunks' => $trunks,
             'trunk_statuses' => $trunk_statuses,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

@@ -12,10 +12,10 @@ class ExtensionService {
             $sip_password = trim($data['sip_password'] ?? '');
             $full_name = trim($data['full_name'] ?? '');
             $extension_type = ($data['extension_type'] ?? 'sip') === 'fax' ? 'fax' : 'sip';
-            // Giden rota grubu: kullanici yalnizca bu gruptaki rotalari
-            // kullanabilir. 1 varsayilan; gecersiz deger 1'e dusuruluyor ki
-            // kullanici var olmayan bir context'e dusup disari hic arayamaz
-            // hale gelmesin.
+            // Outbound route group: the user can only use the routes of this
+            // group. 1 is the default; an invalid value falls back to 1 so the
+            // user does not land in a context that does not exist and become
+            // unable to call out at all.
             $outbound_group = max(1, min(99, intval($data['outbound_group'] ?? 1)));
             $sip_auth_digest = isset($data['sip_auth_digest']) ? (intval($data['sip_auth_digest']) ? 1 : 0) : 1;
             $cid_internal = trim($data['cid_internal'] ?? '');
@@ -28,13 +28,13 @@ class ExtensionService {
             if (empty($full_name)) {
                 throw new \Exception('Ad Soyad zorunludur!');
             }
-            // Faks kullanıcıları hiç SIP kaydı yapmaz (PJSIP endpoint üretilmez).
-            // Auth Digest etkin olan SIP dahililer için şifre zorunludur.
+            // Fax users never register over SIP (no PJSIP endpoint is generated).
+            // A password is required for SIP extensions with digest auth.
             if ($extension_type === 'sip' && $sip_auth_digest === 1 && strlen($sip_password) < 6) {
                 throw new \Exception('SIP şifresi en az 6 karakter olmalıdır!');
             }
 
-            // Dahili numarası benzersiz olmalı
+            // The extension number must be unique
             $stmt = $db->prepare('SELECT id FROM sys_users WHERE extension = ? AND id != ?');
             $stmt->execute([$extension, $user_id]);
             if ($stmt->fetch()) {
@@ -56,9 +56,10 @@ class ExtensionService {
             $voicemail_attach_audio = isset($data['voicemail_attach_audio']) ? intval($data['voicemail_attach_audio']) : 1;
             $vm_on_noanswer = isset($data['vm_on_noanswer']) ? intval($data['vm_on_noanswer']) : 0;
             $vm_on_busy = isset($data['vm_on_busy']) ? intval($data['vm_on_busy']) : 0;
-            // Formdaki "ulaşılamıyorsa" kutusu hiç okunmuyordu: değişken yalnızca
-            // faks dalında tanımlıydı, SIP dahilisi kaydı sütun NOT NULL olduğu için
-            // "vm_on_unavail cannot be null" ile başarısız oluyordu.
+            // The "when unreachable" box on the form was never read: the
+            // variable was defined only in the fax branch, and saving a SIP
+            // extension failed with "vm_on_unavail cannot be null" because the
+            // column is NOT NULL.
             $vm_on_unavail = isset($data['vm_on_unavail']) ? intval($data['vm_on_unavail']) : 0;
             $vm_always = isset($data['vm_always']) ? intval($data['vm_always']) : 0;
 
@@ -75,7 +76,7 @@ class ExtensionService {
 
             // Save/Update Extension
             if ($user_id > 0) {
-                // Mevcut kayıt: eski dahili dosyasını da temizle (numara değişebilir)
+                // Existing record: clean up the old extension file too (the number may change)
                 $old_ext = DBHelper::fetchColumn('SELECT extension FROM sys_users WHERE id = ?', [$user_id]);
                 DBHelper::update('sys_users', [
                     'full_name' => $full_name,
@@ -111,7 +112,7 @@ class ExtensionService {
                 markPendingSync('permissions', 'permissions', 'all', "Yetki grupları ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 $msg = "{$extension} dahili abonesi güncellendi! Etkili olması için Uygula sayfasından gönderin.";
             } else {
-                // Yeni dahili abone: cihaz amaçlı minimal sistem kaydı oluştur
+                // New extension subscriber: create a minimal system record for the device
                 $username = 'ext' . $extension;
                 $stmt = $db->prepare('SELECT id FROM sys_users WHERE username = ?');
                 $stmt->execute([$username]);
@@ -167,7 +168,7 @@ class ExtensionService {
             if (empty($old_ext)) {
                 throw new \Exception('Bu kayıtta dahili numarası tanımlı değil!');
             }
-            // Dahiliyi kaldır (kullanıcı hesabı korunur)
+            // Remove the extension (the user account is kept)
             DBHelper::update('sys_users', ['extension' => null, 'sip_password' => null], 'id', $user_id);
             markPendingSync('extensions', 'extension', $old_ext, "Dahili: {$old_ext} (kaldırıldı)", 'delete', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$old_ext} kaldırıldı)", 'update', $_SESSION['user_id'] ?? null);
@@ -177,13 +178,8 @@ class ExtensionService {
     }
 
     /**
-     * /extensions sayfasındaki "Tüm Dahilileri Yeniden Senkronize Et" butonu —
-     * PBXHelper::syncAllExtensions() proxy'si üzerinden ExtensionController'dan
-     * çağrılıyor. 2026-08-24 rollout taramasında (grep sadece doğrudan
-     * "ExtensionService::syncAll" çağrılarını aradı, PBXHelper indirection
-     * katmanını KAÇIRDI) bu gerçek/erişilebilir çağrı yeri gözden kaçmıştı —
-     * kullanıcının "unutulmuş özellik bağları var mı" sorusu üzerine bulunup
-     * düzeltildi.
+     * "Resync all extensions" button on /extensions (ExtensionController).
+     * Marks every extension for the next Apply.
      */
     public static function syncAll($csrf_token) {
         return PBXHelper::handleAction($csrf_token, function () {

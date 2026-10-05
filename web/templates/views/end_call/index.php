@@ -78,7 +78,7 @@
 
 <!-- Create / Edit Hangup Action Modal -->
 <div class="modal-overlay" id="hangupModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="hangupModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('end_call.modal_new_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closeHangupModal()" title="<?php echo t('end_call.close_tooltip'); ?>"><i class="fas fa-times"></i></button>

@@ -7,20 +7,20 @@ require_once dirname(__DIR__, 2) . '/src/services/Fail2banService.php';
 require_once dirname(__DIR__, 2) . '/src/services/FirewallService.php';
 
 /**
- * Güvenlik sayfalarının (firewall / fail2ban) giriş doğrulaması.
+ * Input validation of the security pages (firewall / fail2ban).
  *
- * İkisi de 2026-08-31 denetiminde bulunan gerçek kusurların düzeltmesi:
- *  - addIgnoreIp() CIDR ekini hiç doğrulamıyordu → "0.0.0.0/0" ile tüm internet
- *    beyaz listeye alınıp fail2ban fiilen devre dışı bırakılabiliyordu.
- *  - removeRichRule() koruması yalnızca tam port eşleşmesine bakıyordu → RTP
- *    aralığını kapsayan bir kural kaldırılabiliyordu.
+ * Both fix real flaws found in the 2026-08-31 audit:
+ *  - addIgnoreIp() never validated the CIDR suffix → with "0.0.0.0/0" the
+ *    whole internet could be whitelisted, effectively disabling fail2ban.
+ *  - removeRichRule()'s protection only looked at exact port matches → a rule
+ *    covering the RTP range could be removed.
  */
 final class ValidationTest extends TestCase
 {
     /**
-     * private static bir metodu çağırır.
-     * NOT: setAccessible() çağrılmıyor — PHP 8.1'den beri etkisiz, 8.5'te
-     * deprecated (testler PHP 8.5'te koşuyor).
+     * Calls a private static method.
+     * NOTE: setAccessible() is not called — it has no effect since PHP 8.1
+     * and is deprecated in 8.5 (the tests run on PHP 8.5).
      */
     private function ozelMetot(string $class, string $method, array $args)
     {

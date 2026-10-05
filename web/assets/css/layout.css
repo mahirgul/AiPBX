@@ -42,7 +42,7 @@ body {
     overflow: hidden;
 }
 
-/* Sidebar - Linear / Slack Tarzı Pürüzsüz Tam Kayar Menü */
+/* Sidebar - smooth fully sliding menu, Linear / Slack style */
 .sidebar {
     width: 260px;
     min-width: 260px;
@@ -94,7 +94,7 @@ body {
     box-shadow: 0 0 10px var(--primary-glow);
 }
 
-/* Header ile Yüksekliği Tam Eşit 70px Logo/Brand Alanı */
+/* 70px logo/brand area, exactly as tall as the header */
 .brand {
     height: 70px;
     min-height: 70px;
@@ -329,6 +329,6 @@ body {
     font-weight: 700;
 }
 
-/* .content-area tanımı style.css'e taşındı (bu dosya components.css'ten
-   önce yüklendiği için buradaki kural hiçbir zaman etkili olmuyordu —
-   bkz. style.css'teki not). Ölü kod olarak burada kalmasın diye kaldırıldı. */
+/* The .content-area definition moved to style.css (this file loads before
+   components.css, so the rule here never took effect — see the note in
+   style.css). Removed so it does not linger here as dead code. */

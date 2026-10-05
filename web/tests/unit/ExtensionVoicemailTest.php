@@ -6,8 +6,8 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/services/ExtensionService.php';
 
 /**
- * Dahili formundaki "ulaşılamıyorsa sesli mesaj" (vm_on_unavail) kutusu SIP
- * dahililerinde hiç okunmuyordu: değişken yalnızca faks dalında tanımlıydı.
+ * The "voicemail when unreachable" (vm_on_unavail) box on the extension form
+ * was never read for SIP extensions: the variable was defined only in the fax branch.
  */
 final class ExtensionVoicemailTest extends TestCase
 {

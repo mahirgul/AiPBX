@@ -17,7 +17,7 @@
             </div>
             <button class="btn btn-secondary u-btn-pad" onclick="closeCdrAudioModal()" title="<?php echo t('cdr_reports.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body" style="padding: 20px;">
+        <div class="modal-body u-p-20">
             <!-- Waveform Visualizer Canvas Container -->
             <div style="background: rgba(0, 0, 0, 0.04); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; position: relative;">
                 <div id="cdrWaveform" style="width: 100%; min-height: 90px;"></div>

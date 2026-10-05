@@ -7,24 +7,25 @@ class AsteriskHelper {
     /**
      * Safely execute an Asterisk CLI command via asterisk -rx.
      *
-     * ÖNEMLİ (2026-08-24 incelemesinde bulundu, canlıda doğrulandı):
-     * `asterisk -rx` KOMUTUN KENDİSİ BAŞARISIZ OLSA BİLE HER ZAMAN exit code 0
-     * döner — `asterisk -rx "olmayan bir komut"` bile 0 ile çıkar. Yani $ret
-     * hiçbir zaman gerçek başarı/başarısızlık göstergesi olmamış (önceki kod
-     * `'success' => ($ret === 0)` yazıyordu — bu HER ZAMAN true demekle
-     * eşdeğerdi, syncXxx() fonksiyonları reload'un GERÇEKTEN çalıştığını hiç
-     * bilmiyordu). $ret artık kontrol edilmiyor — çıktı metninde bilinen hata
-     * kalıplarını arayan bir HEURİSTİK kullanılıyor. Bu KESİN değil (Asterisk
-     * CLI çıktı formatı resmi/stabil bir API değil) ama "her zaman başarılı
-     * say" varsayımından kesinlikle daha iyi — ve çıktının TAMAMI her durumda
-     * çağırana döndürülüyor, admin isterse ham metni görebilir.
+     * IMPORTANT (found in the 2026-08-24 review, verified live):
+     * `asterisk -rx` ALWAYS exits with code 0 EVEN WHEN THE COMMAND ITSELF
+     * FAILS — even `asterisk -rx "a command that does not exist"` exits 0. So
+     * $ret was never a real success/failure indicator (the old code wrote
+     * `'success' => ($ret === 0)`, which was the same as saying "always true";
+     * the syncXxx() functions never knew whether the reload REALLY worked).
+     * $ret is no longer checked — a HEURISTIC looks for known error patterns
+     * in the output text. It is not EXACT (the Asterisk CLI output format is
+     * not an official/stable API) but definitely better than assuming "always
+     * success" — and the FULL output is returned to the caller in every case,
+     * so the admin can see the raw text if needed.
      */
     public static function execCLI($command) {
-        // TEST KİLİDİ: otomatik testler canlı Asterisk'e ASLA komut göndermemeli.
-        // syncAllTrunks() gibi üreteçler writeConfWithRollback() içinden reload
-        // tetikliyor; bu kilit olmadan birim testleri üretimdeki Asterisk'i
-        // reload ederdi. tests/bootstrap.php bu değişkeni kuruyor; üretimde hiç
-        // tanımlı olmadığı için normal akış hiç değişmez.
+        // TEST LOCK: automated tests must NEVER send commands to the live
+        // Asterisk. Generators such as syncAllTrunks() trigger reloads from
+        // inside writeConfWithRollback(); without this lock the unit tests
+        // would reload the production Asterisk. tests/bootstrap.php sets this
+        // variable; it is never defined in production, so the normal flow
+        // does not change at all.
         if (getenv('AIPBX_NO_ASTERISK') === '1') {
             return ['success' => true, 'output' => '[test-modu] atlandi: ' . $command];
         }
@@ -39,22 +40,21 @@ class AsteriskHelper {
     }
 
     /**
-     * `asterisk -rx` çıktısında bilinen hata kalıplarını arayan paylaşılan
-     * heuristik — execCLI() dışında `asterisk -rx` çıktısı işleyen yerler de
-     * aynı kontrolü paylaşsın diye ayrı bir metoda çıkarıldı.
+     * Shared heuristic that looks for known error patterns in `asterisk -rx`
+     * output — split into its own method so the other places that process
+     * `asterisk -rx` output share the same check as execCLI().
      */
     public static function looksLikeCliFailure($output) {
         return (bool) preg_match('/no such command|not found|unable to|error|failed|invalid|usage:/i', (string) $output);
     }
 
     /**
-     * Bir veya daha fazla execCLI() sonucunu ($success/$output içeren dizi)
-     * kontrol eder, herhangi biri başarısızsa TÜM hata çıktılarını birleştiren
-     * bir Exception fırlatır. syncXxx() fonksiyonları bunu her reload
-     * çağrısından sonra kullanır — applyPendingSync()'in zaten var olan
-     * try/catch'i bu Exception'ı yakalayıp o domain'i "başarısız" olarak
-     * işaretler (satır pending listede kalır, admin ham Asterisk çıktısını
-     * /pending-sync sayfasında görür).
+     * Checks one or more execCLI() results (arrays with $success/$output) and
+     * throws an Exception joining ALL error outputs if any of them failed.
+     * The syncXxx() functions use it after every reload call — the existing
+     * try/catch in applyPendingSync() catches this Exception and marks that
+     * domain "failed" (the row stays in the pending list and the admin sees
+     * the raw Asterisk output on the /pending-sync page).
      */
     public static function assertReloadsOk(array $results, $context) {
         $failures = [];
@@ -99,10 +99,10 @@ class AsteriskHelper {
     /**
      * Reload RTP configuration (/etc/asterisk/rtp.conf)
      *
-     * DİKKAT — kapsam sınırı: bu reload `strictrtp` gibi davranış ayarlarını
-     * devreye alır, ancak `rtpstart`/`rtpend` port ARALIĞI değişikliği için
-     * Asterisk TAM YENİDEN BAŞLATMA gerektirir (port havuzu modül yüklenirken
-     * bir kez ayrılıyor). Kullanıcıya bu ayrım arayüzde ayrıca belirtiliyor.
+     * CAUTION — scope limit: this reload activates behaviour settings such as
+     * `strictrtp`, but changing the `rtpstart`/`rtpend` port RANGE needs a
+     * FULL Asterisk RESTART (the port pool is allocated once when the module
+     * loads). The interface tells the user about this separately.
      */
     public static function reloadRTP() {
         return self::execCLI('module reload res_rtp_asterisk.so');
@@ -141,12 +141,13 @@ class AsteriskHelper {
 
     /**
      * Get live PJSIP endpoint statuses (e.g. 3001-sip => Not in use, main_trunk => Not in use).
-     * 2026-08-19 düzeltmesi: `pjsip show endpoints` her satırı `<name>/<CID>` biçiminde basar
-     * (ör. `3001-sip/3001`) ve durum "Not in use" gibi BİRDEN FAZLA kelime olabilir. Eski regex
-     * yalnızca ilk kelimeyi ("Not") yakalıyor ve `/<CID>` sonekini anahtara dahil ediyordu — bu
-     * yüzden `$statuses["3001"]` gibi çıplak-numara sorguları HİÇBİR ZAMAN eşleşmiyordu
-     * (dual-endpoint'te gerçek anahtarlar `3001-sip`/`3001-webrtc`). Aşağıdaki regex hem `/<CID>`
-     * sonekini atar hem tam durum metnini ("Not in use") yakalar.
+     * 2026-08-19 fix: `pjsip show endpoints` prints every line as `<name>/<CID>`
+     * (e.g. `3001-sip/3001`) and the status can be SEVERAL words such as "Not in
+     * use". The old regex caught only the first word ("Not") and included the
+     * `/<CID>` suffix in the key — so bare-number lookups like
+     * `$statuses["3001"]` NEVER matched (with dual endpoints the real keys are
+     * `3001-sip`/`3001-webrtc`). The regex below drops the `/<CID>` suffix and
+     * captures the full status text ("Not in use").
      */
     public static function getPJSIPStatuses() {
         $res = self::execCLI("pjsip show endpoints");

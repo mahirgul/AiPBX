@@ -44,7 +44,7 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	mu         sync.RWMutex
-	// Yükleme imzası doğrulaması için (uploads.go); main.go atar.
+	// For upload signature verification (uploads.go); set by main.go.
 	secretKey string
 	// When each extension last went offline (in memory, reset on restart).
 	lastSeen map[string]time.Time
@@ -167,8 +167,8 @@ func (h *Hub) Run() {
 				h.broadcastPresence(ext, true, "")
 			}
 
-			// Liste boş olsa da gönderilir: istemci anlık görüntüyü tam liste
-			// olarak kullanıp elindeki eski "çevrimiçi" kayıtlarını temizliyor.
+			// Sent even when the list is empty: the client uses the snapshot as
+			// the full list and clears the old "online" entries it holds.
 			if onlineExts == nil {
 				onlineExts = []string{}
 			}
@@ -374,14 +374,14 @@ func (c *Client) handleSendMessage(in *InMessage) {
 		return
 	}
 
-	// CH-2: Katılımcı doğrulaması (IDOR önleme)
+	// CH-2: participant check (prevents IDOR)
 	isPart, err := IsParticipant(convID, c.user.Extension)
 	if err != nil || !isPart {
 		log.Printf("[WS] Send blocked: Ext %s is not participant in conv %d", c.user.Extension, convID)
 		return
 	}
 
-	// CH-4: attachment_url yalnızca kendi medya yollarımız ve göndericinin kendi yüklemesi
+	// CH-4: attachment_url may only be one of our own media paths and the sender's own upload
 	if in.AttachmentURL != "" {
 		if !validMediaURL(in.AttachmentURL) || !attachmentOwnedBy(c.hub.secretKey, in.AttachmentURL, c.user.Extension) {
 			log.Printf("[WS] Rejected attachment_url from %s: %s", c.user.Extension, in.AttachmentURL)

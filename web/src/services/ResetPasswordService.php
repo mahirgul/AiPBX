@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
- * Reset Password (Şifre Sıfırlama) Service
+ * Reset password service
  */
 class ResetPasswordService {
     /**
@@ -32,20 +32,21 @@ class ResetPasswordService {
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
         $db = getDB();
-        // "Şifremi unuttum" sıfırlamasında telefonlardaki oturumlar da düşer
-        // (token_epoch). Davet/ilk şifre belirlemede (must_reset_password=1)
-        // düşmez: kullanıcı e-postadaki bağlantıyla uygulamaya zaten girmiş
-        // olabilir. token_epoch ÖNCE atanmalı — MariaDB SET'i soldan sağa
-        // uygular, must_reset_password aşağıda 0 oluyor.
+        // A "forgot my password" reset also drops the sessions on the phones
+        // (token_epoch). An invitation/first password setup
+        // (must_reset_password=1) does not: the user may already have signed
+        // in to the app with the link in the email. token_epoch must be set
+        // FIRST — MariaDB applies SET from left to right, and
+        // must_reset_password becomes 0 below.
         $upd = $db->prepare('UPDATE sys_users SET token_epoch = token_epoch + IF(must_reset_password = 1, 0, 1), password_hash = ?, must_reset_password = 0, reset_token = NULL, reset_token_expires = NULL WHERE id = ?');
         $upd->execute([$new_hash, $user['id']]);
         unset($_SESSION['pending_reset_user_id']);
 
-        // Kimlik bilgisi değişikliği güvenlik açısından önemli bir olay ama
-        // hiçbir yerde iz bırakmıyordu (2026-08-31 denetiminde bulundu —
-        // admin'in yaptığı şifre sıfırlama UserService'te zaten loglanıyor,
-        // eksik olan self-servis akıştı). user_id NULL: oturum yok, işlemi
-        // token sahibi kullanıcı kendisi yapıyor (entity_id o kullanıcı).
+        // A credential change is a security-relevant event but left no trace
+        // anywhere (found in the 2026-08-31 audit — a reset done by the admin
+        // is already logged in UserService; the self-service flow was the
+        // missing one). user_id is NULL: there is no session, the token owner
+        // does it themselves (entity_id is that user).
         writeAuditLog(null, 'system_users', $user['id'], "Şifre self-servis olarak sıfırlandı: " . ($user['username'] ?? '?'), 'password_reset', null);
 
         return ['success' => true];

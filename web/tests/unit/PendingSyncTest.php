@@ -6,13 +6,13 @@ require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
 require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 /**
- * Ertelenmiş reload ("Uygula" sayfası) sisteminin sözleşmesi.
+ * The contract of the deferred reload ("Apply" page) system.
  *
- * Sözleşme: bir servis kaydı Asterisk config'ine DOKUNMAMALI, sadece
- * sys_pending_sync'e satır düşürmeli. Bu sözleşme bozulduğunda admin'in
- * onay akışı sessizce baypas edilmiş olur — 2026-08-24'te tam olarak bu oldu
- * (PBXHelper::toggleStatus() rollout'tan atlanmış, anında reload yapmaya
- * devam ediyordu ve haftalarca fark edilmedi).
+ * Contract: a service save must NOT TOUCH the Asterisk config, only drop a row
+ * into sys_pending_sync. When this contract breaks, the admin's approval flow
+ * is silently bypassed — exactly that happened on 2026-08-24
+ * (PBXHelper::toggleStatus() had been skipped in the rollout, kept reloading
+ * instantly and went unnoticed for weeks).
  */
 final class PendingSyncTest extends TestCase
 {
@@ -75,9 +75,9 @@ final class PendingSyncTest extends TestCase
     {
         markPendingSync('trunks', 'trunk', 42, 'Ozel Etiket', 'create', null);
 
-        // getPendingSyncList() düz dizi DEĞİL, domain'e göre gruplanmış
-        // ['trunks' => [satir, ...]] biçiminde dönüyor (Uygula sayfası
-        // değişiklikleri domain başlıkları altında listeliyor).
+        // getPendingSyncList() does NOT return a flat array but one grouped by
+        // domain, ['trunks' => [row, ...]] (the Apply page lists the changes
+        // under domain headings).
         $list = getPendingSyncList();
         $this->assertArrayHasKey('trunks', $list);
         $this->assertCount(1, $list['trunks']);

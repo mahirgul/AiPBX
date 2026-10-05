@@ -1,55 +1,38 @@
 <?php
 /**
- * Mobile Google OAuth / ID Token Giriş Uç Noktası
- * Android ve iOS uygulamalarının Google ile şifresiz oturum açmasını sağlar.
+ * Mobile Google OAuth / ID token sign-in endpoint
+ * Lets the Android and iOS apps sign in with Google without a password.
  */
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 require_once __DIR__ . '/auth_helper.php';
+mobileApiStart('GET, POST, OPTIONS');
+
 require_once __DIR__ . '/../../src/services/GoogleAuthService.php';
 
 $client_ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-// Google ile giriş kapalıyken bu uç nokta da çalışmamalı (önceden bakılmıyordu).
+// This endpoint must not work while Google sign-in is off (it used to be unchecked).
 if (!GoogleAuthService::isEnabled()) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Google ile giriş bu sunucuda etkin değil.'], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Google ile giriş bu sunucuda etkin değil.', 403);
 }
 
-$input_raw = file_get_contents('php://input');
-$json = json_decode($input_raw, true) ?: [];
+$json = mobileInput();
 
 $idToken = trim($json['id_token'] ?? $_POST['id_token'] ?? '');
 $code = trim($json['code'] ?? $_POST['code'] ?? '');
 $device_name = trim($json['device_name'] ?? $_POST['device_name'] ?? 'Mobile');
 
 if (empty($idToken) && empty($code)) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Google id_token veya authorization code parametresi gereklidir.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Google id_token veya authorization code parametresi gereklidir.', 400);
 }
 
 $userInfo = null;
 
-// 1. Google ID Token doğrulaması
+// 1. Google ID token verification
 if (!empty($idToken)) {
     $userInfo = GoogleAuthService::verifyIdToken($idToken);
 }
 
-// 2. Veya Google Authorization Code takası
+// 2. Or the Google authorization code exchange
 if (!$userInfo && !empty($code)) {
     $tokens = GoogleAuthService::exchangeCode($code);
     if (!empty($tokens['id_token'])) {
@@ -60,60 +43,38 @@ if (!$userInfo && !empty($code)) {
 }
 
 if (!$userInfo || empty($userInfo['email'])) {
-    http_response_code(401);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Google kimlik doğrulaması başarısız veya e-posta adresi doğrulanamadı.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Google kimlik doğrulaması başarısız veya e-posta adresi doğrulanamadı.', 401);
 }
 
 $email = $userInfo['email'];
 
-// 3. E-posta adresi ile veritabanında aktif kullanıcıyı eşleştir
+// 3. Match the active user in the database by email address
 $user = GoogleAuthService::findUserByEmail($email);
 
 if (!$user) {
     if (function_exists('logLoginAttempt')) {
         logLoginAttempt($client_ip, $email, 'FAILED');
     }
-    http_response_code(404);
-    echo json_encode([
-        'success' => false,
-        'error' => "Google hesabınız ({$email}) ile eşleşen bir AiPBX dahili kullanıcısı bulunamadı."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError("Google hesabınız ({$email}) ile eşleşen bir AiPBX dahili kullanıcısı bulunamadı.", 404);
 }
 
 if (empty($user['is_active'])) {
-    http_response_code(403);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Kullanıcı hesabı devre dışıdır.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Kullanıcı hesabı devre dışıdır.', 403);
 }
 
 if (empty($user['extension'])) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.', 400);
 }
 
 if (!empty($user['two_factor_enabled'])) {
-    http_response_code(401);
-    echo json_encode([
+    mobileJson([
         'success' => false,
         'otp_required' => true,
         'error' => 'Bu hesapta iki adımlı doğrulama açık. Kullanıcı adı, şifre ve doğrulama koduyla giriş yapın.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ], 401);
 }
 
-// Giriş başarılı: log kaydet
+// Sign-in succeeded: write the log
 if (function_exists('logLoginAttempt')) {
     logLoginAttempt($client_ip, $user['username'], 'SUCCESS');
 }
@@ -121,6 +82,6 @@ if (function_exists('writeAuditLog')) {
     writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' Mobil Uygulamadan Google ({$email}) ile giriş yaptı.", 'google_mobile_login');
 }
 
-// Standart mobil giriş yanıtını döndür
+// Return the standard mobile sign-in response
 $response = buildMobileLoginResponse($user);
-echo json_encode($response, JSON_UNESCAPED_UNICODE);
+mobileJson($response);

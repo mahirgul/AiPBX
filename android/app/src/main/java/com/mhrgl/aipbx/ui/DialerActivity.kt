@@ -89,13 +89,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (uri != null) handleChatPickedUri(uri, "image")
     }
 
-    // Kamera: çekilen fotoğraf galeridekiyle aynı hazırlama/yükleme akışından geçer.
+    // Camera: a shot photo goes through the same prepare/upload flow as one from the gallery.
     private val takeChatPhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) handleChatPickedUri(ChatUploadPrep.cameraUri(this), "image")
     }
 
-    // Manifest CAMERA izni tanımladığı için Android, kamera uygulamasını açmadan
-    // önce bu iznin verilmiş olmasını şart koşuyor.
+    // Since the manifest declares the CAMERA permission, Android requires it
+    // to be granted before the camera app can be opened.
     private val chatCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
         else Toast.makeText(this, "Fotoğraf çekmek için kamera izni gerekli.", Toast.LENGTH_LONG).show()
@@ -174,7 +174,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding = ActivityDialerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Edge-to-edge WindowInsets desteği
+        // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -255,7 +255,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     }
                     startActivity(intent)
                 } catch (e: Exception) {
-                    // Cihaz intent'i desteklemiyorsa sessizce geç
+                    // Skip silently if the device does not support the intent
                 }
             }
         }
@@ -684,8 +684,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             filterContacts(text?.toString() ?: "")
         }
 
-        // READ_CONTACTS izni verilmişse cihaz rehberini arka planda önceden yükle,
-        // böylece kurumsal sekmedeyken arama yapıldığında telefon kişileri de anında bulunur (§5.6)
+        // With READ_CONTACTS granted, preload the device contacts in the background,
+        // so phone contacts are found instantly too when searching on the organisation tab (§5.6)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             loadDeviceContacts()
         }
@@ -1293,8 +1293,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             } else {
                 "Dahili #$currentChatTargetExt"
             }
-            // Sabit "Çevrimdışı" yerine soketin bildiği anlık durum — presence
-            // olayı karşı taraf zaten bağlıyken bir daha gelmiyor.
+            // The current state the socket knows instead of a fixed "Offline" — the presence
+            // event does not come again while the other side is already connected.
             applyChatRoomPresence(ChatWebSocketManager.instance.isOnline(currentChatTargetExt))
         }
     }
@@ -1714,7 +1714,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     // ================= TAB 5: FEATURES (DND & CF) =================
 
     private fun setupFeaturesTab() {
-        // 1. Sürüm ve Sistem Bilgileri
+        // 1. Version and system info
         binding.tvAppVersion.text = "Uygulama: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})"
         binding.tvDeviceInfo.text = "Cihaz: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})"
         val serverUrl = prefs.serverUrl
@@ -1723,7 +1723,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         // FCM Durumu
         updateFcmStatusUI()
 
-        // Sunucudan güncel sürüm/marka bilgisini ping ile çekip göster
+        // Fetch the current version/brand info from the server with ping and show it
         if (serverUrl.isNotEmpty()) {
             lifecycleScope.launch {
                 val pingRes = apiClient.ping(serverUrl)
@@ -1735,7 +1735,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
 
-        // 2. Süre Açılır Listesi (Dropdown)
+        // 2. Duration dropdown
         val timeoutAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, timeoutOptions.map { "$it sn" })
         binding.actvNoAnswerTimeout.setAdapter(timeoutAdapter)
         binding.actvNoAnswerTimeout.setOnItemClickListener { _, _, position, _ ->
@@ -1749,7 +1749,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
 
-        // 4. Yönlendirmeleri Kaydet
+        // 4. Save the forwarding settings
         binding.btnSaveForward.setOnClickListener {
             val fwdAlways = binding.etForwardAlways.text?.toString()?.trim() ?: ""
             val fwdBusy = binding.etForwardBusy.text?.toString()?.trim() ?: ""
@@ -1767,7 +1767,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             )
         }
 
-        // 5. Yönlendirmeleri Temizle
+        // 5. Clear the forwarding settings
         binding.btnClearForward.setOnClickListener {
             binding.etForwardAlways.setText("")
             binding.etForwardBusy.setText("")
@@ -2128,8 +2128,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 if (!currentChatIsGroup && extension == currentChatTargetExt) {
                     applyChatRoomPresence(isOnline)
                 } else if (currentChatIsGroup) {
-                    // Anlık görüntü her dahili için ayrı olay üretiyor — yalnızca
-                    // bu grubun üyesiyse (ya da üyeler henüz bilinmiyorsa) yenile.
+                    // The snapshot produces a separate event for every extension — refresh
+                    // only if it is a member of this group (or the members are not known yet).
                     val members = currentChatGroupDetails?.participants
                     if (members == null || members.any { it.extension == extension }) {
                         loadChatRoomGroupDetails()

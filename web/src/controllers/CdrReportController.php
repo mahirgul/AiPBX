@@ -26,7 +26,7 @@ class CdrReportController extends BaseController
             if ($deleted) {
                 static::redirect('/cdr-reports');
             }
-            // Yetkisiz/CSRF hatası: orijinal davranış gibi normal render'a devam edilir (redirect yok).
+            // Unauthorized/CSRF error: like the original behaviour, keep rendering normally (no redirect).
         }
 
         $agents = CdrReportRepository::agentsForFilter();
@@ -77,10 +77,10 @@ class CdrReportController extends BaseController
 
         $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
-        // Ozet TUM eslesen kayitlar uzerinden, veritabaninda hesaplaniyor.
-        // Eskiden PHP'de satir satir donuluyordu; sayfalamayla birlikte bu
-        // yalnizca goruntulenen sayfayi kapsar ve ozet yanlis olurdu. Ayrica
-        // her satir icin file_exists() cagriliyordu.
+        // The summary is computed in the database over ALL matching records.
+        // It used to be looped row by row in PHP; with paging that would cover
+        // only the displayed page and the summary would be wrong. It also
+        // called file_exists() for every row.
         $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
         $stat_total            = $ozet['toplam'];

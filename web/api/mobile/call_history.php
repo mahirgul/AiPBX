@@ -1,16 +1,7 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 require_once __DIR__ . '/auth_helper.php';
+mobileApiStart('GET, OPTIONS');
+
 require_once __DIR__ . '/../../src/core/BaseRepository.php';
 require_once __DIR__ . '/../../src/repositories/MyPhoneRepository.php';
 
@@ -18,12 +9,7 @@ $user = requireMobileAuth();
 $ext = trim($user['extension'] ?? '');
 
 if ($ext === '') {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Kullanıcıya ait dahili numara bulunamadı.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    mobileError('Kullanıcıya ait dahili numara bulunamadı.', 400);
 }
 
 $filter = trim($_GET['filter'] ?? 'all');
@@ -43,11 +29,11 @@ $calls = MyPhoneRepository::getRecentCalls(
 
 $stats = MyPhoneRepository::getCallStats($ext);
 
-echo json_encode([
+mobileJson([
     'success' => true,
     'extension' => $ext,
     'filter' => $filter,
     'total_returned' => count($calls),
     'stats' => $stats,
     'calls' => $calls
-], JSON_UNESCAPED_UNICODE);
+]);

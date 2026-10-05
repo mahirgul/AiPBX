@@ -50,13 +50,14 @@ if ($is_spa_request) {
     echo '<section class="content-area">';
     echo $spa_content;
 
-    // NOT: Bildirim script'i ve $extra_js (ör. cc_agent.php'nin agent_ui.js'i)
-    // eskiden bu </section>'dan SONRA (yani .content-area dışında) basılıyordu.
-    // spa_router.js SPA yanıtından sadece doc.querySelector('.content-area')'nın
-    // innerHTML'ini alıp mevcut içerik alanına yazıyor — dışarıda kalan her şey
-    // sessizce atılıyordu (bildirim hiç gösterilmiyordu, cc_agent.php'ye SPA ile
-    // gidildiğinde agent_ui.js hiç yüklenmiyordu). Section kapanmadan ÖNCE basılınca
-    // executePageScripts() bunları normal sayfa script'i gibi bulup çalıştırıyor.
+    // NOTE: the notification script and $extra_js (e.g. cc_agent.php's
+    // agent_ui.js) used to be printed AFTER this </section> (i.e. outside
+    // .content-area). spa_router.js takes only the innerHTML of
+    // doc.querySelector('.content-area') from the SPA response and writes it
+    // into the current content area — everything outside was silently dropped
+    // (the notification never showed, and agent_ui.js never loaded when going
+    // to cc_agent.php via SPA). Printed BEFORE the section closes,
+    // executePageScripts() finds and runs them like normal page scripts.
     if (!empty($all_notifications)) {
         echo '<script>';
         foreach ($all_notifications as $item) {
@@ -88,7 +89,7 @@ if ($is_spa_request) {
             <div class="footer-stat-pill u-muted u-fs-11" title="AiPBX">v<?php echo htmlspecialchars(AIPBX_VERSION); ?></div>
         </div>
 
-        <!-- Sağ: Kullanıcı Menüsü -->
+        <!-- Right: user menu -->
         <div class="footer-right-group">
             <?php
             if (!isset($user) && function_exists('getCurrentUser')) {
@@ -109,7 +110,7 @@ if ($is_spa_request) {
                 </div>
 
                 <div class="user-profile-dropdown" id="userProfileDropdown">
-                    <!-- Simge tabanlı hızlı ayarlar: tema, yazı boyutu, dil, çıkış — tek satır -->
+                    <!-- Icon-based quick settings: theme, font size, language, logout — one row -->
                     <div style="display: flex; align-items: center; gap: 4px; padding: 6px 8px;">
                         <button type="button" class="btn btn-xs" id="theme-toggle-btn" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent;" title="<?php echo t('sidebar.theme_toggle_tooltip'); ?>">
                             <i class="fas fa-moon" id="theme-icon"></i>

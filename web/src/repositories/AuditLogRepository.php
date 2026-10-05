@@ -1,8 +1,8 @@
 <?php
 /**
- * Kalıcı denetim kaydı (sys_audit_log) okuma sorguları — yazma tarafı
- * src/asterisk_sync.php::writeAuditLog() içinde (markPendingSync()/
- * applyPendingSync() tarafından çağrılıyor).
+ * Read queries of the permanent audit record (sys_audit_log) — the write
+ * side is in src/asterisk_sync.php::writeAuditLog() (called by
+ * markPendingSync()/applyPendingSync()).
  */
 class AuditLogRepository extends BaseRepository
 {
@@ -14,9 +14,9 @@ class AuditLogRepository extends BaseRepository
     }
 
     /**
-     * Filtrelenmiş denetim kaydı listesi (en yeni üstte, en fazla 500 satır —
-     * QueueLogRepository::searchAndParse() ile aynı basit LIMIT deseni,
-     * ayrı bir pager kurulmadı).
+     * Filtered audit record list (newest first, at most 500 rows — the same
+     * simple LIMIT pattern as QueueLogRepository::searchAndParse(), no
+     * separate pager).
      */
     public static function search(int $startTs, int $endTs, string $domainFilter, string $actionFilter, string $userFilter, string $searchQuery): array
     {
@@ -57,13 +57,13 @@ class AuditLogRepository extends BaseRepository
     }
 
     /**
-     * Giriş denemeleri (sys_login_logs) — bu tablo aslında zaten vardı
-     * (brute-force kilitleme mantığı checkBruteForceLockout()'ta kullanıyor)
-     * ama hiçbir sayfada GÖRÜNTÜLENMİYORDU (2026-08-24'e kadar). Ayrı bir
-     * şema (ip_address/username STRING, user_id FK değil — henüz hiç
-     * kaydolmamış/yanlış yazılmış kullanıcı adlarını da kaydedebilmek için
-     * bilerek böyle) olduğu için sys_audit_log ile BİRLEŞTİRİLMEDİ, /audit-log
-     * sayfasında ayrı bir bölüm olarak gösteriliyor.
+     * Sign-in attempts (sys_login_logs) — this table already existed (the
+     * brute-force lockout logic in checkBruteForceLockout() uses it) but was
+     * SHOWN on no page (until 2026-08-24). It has a different schema
+     * (ip_address/username STRING, not a user_id FK — on purpose, so it can
+     * record usernames that never registered/were mistyped), so it was NOT
+     * merged with sys_audit_log and is shown as a separate section on the
+     * /audit-log page.
      */
     public static function searchLoginAttempts(int $startTs, int $endTs, string $statusFilter, string $searchQuery): array
     {

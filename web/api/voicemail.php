@@ -12,7 +12,7 @@ $userExt = trim($user['extension'] ?? '');
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $targetExt = trim($_GET['ext'] ?? ($_POST['ext'] ?? $userExt));
 
-// Sadece kendi dahilisini dinleyebilir/yönetebilir veya admin rolünde olmalıdır
+// Only the own extension can be listened to/managed, unless the user has the admin role
 if ($role !== 'admin' && ($targetExt === '' || $targetExt !== $userExt)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Bu sesli postaya erişim yetkiniz yok.']);

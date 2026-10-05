@@ -10,30 +10,20 @@ class FaxSentController extends BaseController
         $user_id = $_SESSION['user_id'];
         $user_role = $_SESSION['user_role'] ?? '';
 
-        $message = '';
-        $error = '';
-
-        if (static::isPost() && isset($_POST['delete_sent_fax'])) {
-            if (!hasModulePermission('fax_sent', 'delete')) {
-                $error = 'Faks silme yetkiniz bulunmamaktadır.';
-            } else {
-                $res = FaxSentService::deleteSentFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        } elseif (static::isPost() && isset($_POST['resend_sent_fax'])) {
-            if (!hasModulePermission('fax_sent', 'edit')) {
-                $error = 'Faks yeniden gönderme yetkiniz bulunmamaktadır.';
-            } else {
-                $res = FaxSentService::resendFax($_POST['fax_id'] ?? 0, $_POST['csrf_token'] ?? '', $user_role, $user_id);
-                if ($res['success']) $message = $res['message']; else $error = $res['error'];
-            }
-        }
+        $notices = static::handlePost([
+            'delete_sent_fax' => fn() => hasModulePermission('fax_sent', 'delete')
+                ? FaxSentService::deleteSentFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_id)
+                : ['success' => false, 'error' => 'Faks silme yetkiniz bulunmamaktadır.'],
+            'resend_sent_fax' => fn() => hasModulePermission('fax_sent', 'edit')
+                ? FaxSentService::resendFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_id)
+                : ['success' => false, 'error' => 'Faks yeniden gönderme yetkiniz bulunmamaktadır.'],
+        ]);
 
         $sent_faxes = FaxSentRepository::listForUser($user_role, $user_id);
 
         $page_title = t('fax_sent.title');
         static::renderPage('fax_sent/index', [
             'sent_faxes' => $sent_faxes,
-        ], ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        ], ['title' => $page_title] + $notices);
     }
 }

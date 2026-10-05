@@ -1,17 +1,17 @@
 <?php
 /**
- * lang/tr.php ve lang/en.php arasındaki anahtar tutarlılığını + kodda t()
- * ile çağrılan her anahtarın dosyalarda gerçekten var olduğunu kontrol eder.
+ * Checks the key consistency between lang/tr.php and lang/en.php + that every
+ * key called with t() in the code really exists in the files.
  *
- * t()'in kendisi eksik bir anahtarda hata FIRLATMIYOR ($default ?? $key'e
- * düşüyor) — bu bilinçli bir tasarım (sayfa asla kırılmaz) ama sonucu sessiz
- * bir eksik-çeviri hatası: sayfada "sidebar.item_foo" gibi çiğ bir anahtar
- * görünür, kimse fark etmeyene kadar. Bu script o sessizliği CI/manuel
- * çalıştırmada görünür hataya çevirir. 2026-08-23 mimari incelemesinin 6.
- * orta öncelikli maddesi.
+ * t() itself does NOT THROW on a missing key (it falls back to
+ * $default ?? $key) — a deliberate design (the page never breaks), but the
+ * result is a silent missing-translation bug: a raw key such as
+ * "sidebar.item_foo" shows on the page until somebody notices. This script
+ * turns that silence into a visible error in CI/manual runs. Item 6 (medium
+ * priority) of the 2026-08-23 architecture review.
  *
- * Kullanım: php bin/lint_lang.php
- * Çıkış kodu: 0 = temiz, 1 = sorun bulundu.
+ * Usage: php bin/lint_lang.php
+ * Exit code: 0 = clean, 1 = problems found.
  */
 
 $root = dirname(__DIR__);
@@ -40,10 +40,10 @@ if (!empty($only_in_en)) {
     $problems += count($only_in_en);
 }
 
-// 2) Kodda t('...') / t("...") ile çağrılan her anahtar iki dosyada da var mı?
-// Not: dinamik anahtarlar (ör. t($var)) regex ile yakalanamaz — bu script
-// sadece SABİT string literal çağrıları tarar, dinamik kullanım manuel
-// gözden geçirme gerektirir (kod tabanında bu nadir bir desen).
+// 2) Does every key called with t('...') / t("...") in the code exist in both files?
+// Note: dynamic keys (e.g. t($var)) cannot be caught with a regex — this
+// script only scans CONSTANT string literal calls; dynamic use needs a manual
+// review (a rare pattern in this code base).
 $dirs = ['src', 'templates', 'modules'];
 $root_files = ['config.php', 'auth.php', 'index.php', 'templates/layouts/app_header.php', 'templates/layouts/app_footer.php'];
 $used_keys = [];
@@ -67,10 +67,10 @@ $dynamic_prefixes = [];
 foreach ($scan_paths as $path) {
     $src = file_get_contents($path);
     if ($src === false) continue;
-    // Yakalanan grup 2, kapanış tırnağından hemen sonraki karakter — bir '.'
-    // ise bu t('prefix' . $var) gibi DİNAMİK bir anahtar (ör. roles.php'nin
-    // grup/modül rozetleri), "prefix" kendisi gerçek bir anahtar değildir,
-    // eksik-anahtar kontrolünden hariç tutulur (ayrı, bilgi amaçlı listelenir).
+    // Captured group 2 is the character right after the closing quote — if it
+    // is a '.', this is a DYNAMIC key such as t('prefix' . $var) (e.g. the
+    // group/module badges in roles.php); "prefix" itself is not a real key and
+    // is excluded from the missing-key check (listed separately, for info).
     if (preg_match_all('/\bt\(\s*[\'"]([a-zA-Z0-9_.]+)[\'"](\s*\.)?/', $src, $m, PREG_SET_ORDER)) {
         foreach ($m as $match) {
             $key = $match[1];

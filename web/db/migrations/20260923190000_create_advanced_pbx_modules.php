@@ -4,11 +4,11 @@ use Phinx\Migration\AbstractMigration;
 
 /**
  * Migration for Advanced PBX Modules:
- * 1. Calling Permission Groups & Rules (Arama Yetki Grupları)
- * 2. Voicemail Settings on sys_users (Sesli Posta)
- * 3. Boss-Secretary Groups (Şef - Sekreter Grupları)
- * 4. Ring Groups (Çalma Grupları)
- * 5. Conference Rooms (Konferans Odaları)
+ * 1. Calling Permission Groups & Rules
+ * 2. Voicemail Settings on sys_users
+ * 3. Boss-Secretary Groups
+ * 4. Ring Groups
+ * 5. Conference Rooms
  * 6. Feature codes for Whisper, Barge, and Voicemail
  */
 final class CreateAdvancedPbxModules extends AbstractMigration
@@ -28,7 +28,7 @@ final class CreateAdvancedPbxModules extends AbstractMigration
                 PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
 
-            // Seed default group (Her Yöne Açık)
+            // Seed default group (open in every direction)
             $this->execute("INSERT INTO `pbx_permission_groups` (`id`, `group_name`, `description`, `default_action`, `is_active`) 
                 VALUES (1, 'Her Yöne Açık (Varsayılan)', 'Tüm iç ve dış aramalara kısıtlama olmadan izin verir.', 'allow', 1)");
         }

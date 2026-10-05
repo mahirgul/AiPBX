@@ -1,8 +1,8 @@
 <?php
 // ============================================================================
-// System Configuration — KODDA STATİK AYAR YOKTUR.
-// Sırlar ve altyapı ayarları: /etc/ai-pbx.env (640 root:asterisk)
-// İş/branding ayarları:        DB `sys_settings` (getSystemSetting)
+// System configuration — NO STATIC SETTINGS IN CODE.
+// Secrets and infrastructure: /etc/ai-pbx.env (640 root:asterisk)
+// Business/branding settings: DB `sys_settings` (getSystemSetting)
 // ============================================================================
 
 if (is_file(__DIR__ . '/vendor/autoload.php')) {
@@ -10,8 +10,8 @@ if (is_file(__DIR__ . '/vendor/autoload.php')) {
 }
 
 /**
- * /etc/ai-pbx.env dosyasını okur (anahtar=değer satırları, # yorum).
- * Apache SetEnv (getenv) değerleri önceliklidir.
+ * Reads /etc/ai-pbx.env (key=value lines, # comments).
+ * Apache SetEnv (getenv) values take precedence.
  */
 function loadPortalEnv($path = null) {
     static $cache = null;
@@ -33,7 +33,7 @@ function loadPortalEnv($path = null) {
     return $cache;
 }
 
-/** Ortam değerini okur: getenv → env dosyası → (varsa) fallback */
+/** Reads an environment value: getenv → env file → fallback (if any) */
 function portalEnv($key, $default = '') {
     $v = getenv($key);
     if ($v === false || $v === '') {
@@ -45,8 +45,8 @@ function portalEnv($key, $default = '') {
 
 define('DB_HOST', portalEnv('DB_HOST', 'localhost'));
 define('DB_NAME', portalEnv('DB_NAME', 'asterisk'));
-define('DB_USER', portalEnv('DB_USER'));          // sır: fallback YOK
-define('DB_PASS', portalEnv('DB_PASS'));          // sır: fallback YOK
+define('DB_USER', portalEnv('DB_USER'));          // secret: NO fallback
+define('DB_PASS', portalEnv('DB_PASS'));          // secret: NO fallback
 
 define('SITE_NAME', portalEnv('SITE_NAME', 'AI PBX Portalı'));
 define('FAX_STORAGE_PATH', portalEnv('FAX_STORAGE_PATH', '/var/www/faxes'));
@@ -62,7 +62,7 @@ define('ASTERISK_CALL_SPOOL', portalEnv('ASTERISK_CALL_SPOOL', '/var/spool/aster
 define('SYNC_QUEUE_LOGS_SCRIPT', portalEnv('SYNC_QUEUE_LOGS_SCRIPT', '/usr/local/bin/sync_queue_logs.php'));
 define('GS_BINARY', portalEnv('GS_BINARY', '/usr/bin/gs'));
 
-// Centralized Asterisk AMI Credentials (sır: fallback YOK)
+// Centralized Asterisk AMI credentials (secret: NO fallback)
 define('AMI_HOST', portalEnv('AMI_HOST', '127.0.0.1'));
 define('AMI_PORT', portalEnv('AMI_PORT', '5038'));
 define('AMI_USER', portalEnv('AMI_USER'));
@@ -71,10 +71,10 @@ define('AMI_PASS', portalEnv('AMI_PASS'));
 // Dynamic System Timezone Configuration
 date_default_timezone_set(portalEnv('TIMEZONE', 'Europe/Istanbul'));
 
-// WebRTC TURN sunucusu (coturn) — REST API tarzı zaman-sınırlı kimlik bilgisi
-// üretimi için kullanılır (sır: fallback YOK). Sadece TURNS (TLS/TCP) kullanılıyor
-// — düz STUN/TURN ağ kenar cihazında protokol imzasından filtreleniyor
-// (dış test ile doğrulandı, 2026-08-20).
+// WebRTC TURN server (coturn) — used to issue REST-API style time-limited
+// credentials (secret: NO fallback). Only TURNS (TLS/TCP) is used — plain
+// STUN/TURN is filtered by protocol signature at the network edge
+// (verified with an external test, 2026-08-20).
 define('TURN_SECRET', portalEnv('TURN_SECRET'));
 define('CHAT_JWT_SECRET', portalEnv('CHAT_JWT_SECRET'));
 define('TURN_HOST', portalEnv('TURN_HOST', 'pbx.example.com'));
@@ -90,13 +90,15 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 /**
- * Themed fatal-error page (aynı auth.php 403 sayfasının tasarım diline uyar). Gerçek teknik
- * detayı (ör. PDOException mesajı) her zaman error_log()'a yazar — 2026-08-19'daki DB kesintisinde
- * `die('Veritabanı bağlantı hatası!')` gerçek nedeni (env dosyası okunamıyordu) hiçbir yere
- * loglamadan sessizce yutuyordu, teşhis canlı CLI hata ayıklaması gerektirdi. Kullanıcıya asla ham
- * exception mesajı gösterilmez (sunucu yolu/kimlik bilgisi sızdırma riski). API istekleri
- * (`/api/` altı veya `Accept: application/json`) JSON döner ki fetch().then(res=>res.json())
- * sessizce patlamasın.
+ * Themed fatal-error page (follows the design of the auth.php 403 page). The
+ * real technical detail (e.g. the PDOException message) always goes to
+ * error_log() — during the DB outage of 2026-08-19,
+ * `die('Veritabanı bağlantı hatası!')` silently swallowed the real cause (the
+ * env file was unreadable) without logging it anywhere, and diagnosing it took
+ * live CLI debugging. The raw exception message is never shown to the user
+ * (risk of leaking server paths/credentials). API requests (under `/api/` or
+ * with `Accept: application/json`) get JSON so fetch().then(res=>res.json())
+ * does not blow up silently.
  */
 function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503) {
     if ($logDetail !== '') {
@@ -143,9 +145,9 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
 }
 
 /**
- * PHP fatal hatalarını (try/catch ile yakalanmayanlar) da bu sayfaya yönlendirir — önceden
- * display_errors=Off olduğu için kullanıcı boş beyaz sayfa görüyordu, hata hiçbir yerde
- * görünmüyordu (log_errors=On ama error_log çağıran kimse yoktu).
+ * Also sends PHP fatal errors (the ones not caught by try/catch) to this page
+ * — with display_errors=Off the user used to get a blank white page and the
+ * error showed up nowhere (log_errors=On, but nothing called error_log).
  */
 register_shutdown_function(function () {
     $err = error_get_last();
@@ -197,12 +199,12 @@ function verifyCSRFToken($token) {
 }
 
 // Fetch System Setting Value with Fallback Default
-// Marka & Görünüm'de logo resmi yüklenmemişse / varsayılana dönülünce kullanılan AiPBX logosu.
+// AiPBX logo used when no logo image is uploaded in Brand & Appearance / after a reset to defaults.
 const BRAND_DEFAULT_LOGO_URL = '/assets/images/aipbx-logo.png';
 
-// Kurulu AiPBX sürümü: repo kökündeki VERSION (yayınlar bin/release.sh ile
-// etiketlenir; güncelleme conf/sbin/aipbx-update). Dosya yoksa (geliştirme
-// kopyası vb.) "dev".
+// Installed AiPBX version: VERSION at the repo root (releases are tagged by
+// bin/release.sh; updates by conf/sbin/aipbx-update). "dev" when the file is
+// missing (development checkout etc.).
 define('AIPBX_VERSION', (function (): string {
     $f = dirname(__DIR__) . '/VERSION';
     $v = is_readable($f) ? trim((string) file_get_contents($f)) : '';
@@ -222,13 +224,13 @@ function getSystemSetting($key, $default = '') {
 }
 
 /**
- * Marka & Görünüm sayfasında (src/brand_settings.php) tanımlanan özel ana renkleri
- * (--primary/--secondary) enjekte eder. Bare `:root` seçicisi kullanılıyor —
- * variables.css'te hem `:root,[data-theme="dark"]` hem `[data-theme="light"]`
- * ile AYNI özgüllükte (0,1,0) ama daha SONRA yüklendiği için, kaynak sırası
- * gereği her iki temada da bu override kazanır (ekstra [data-theme] koşuluna
- * gerek yok). Tüm HTML kabuğu döken sayfalarda (header.php, login.php,
- * force_reset.php, reset_password.php) variables.css linkinden SONRA çağrılmalı.
+ * Injects the custom main colours (--primary/--secondary) set on the Brand &
+ * Appearance page (src/brand_settings.php). A bare `:root` selector is used —
+ * it has the SAME specificity (0,1,0) as both `:root,[data-theme="dark"]` and
+ * `[data-theme="light"]` in variables.css but loads LATER, so by source order
+ * this override wins in both themes (no extra [data-theme] condition needed).
+ * Every page that prints the HTML shell (header.php, login.php,
+ * force_reset.php, reset_password.php) must call it AFTER the variables.css link.
  */
 function renderBrandColorOverrideCSS() {
     $primary = getSystemSetting('brand_color_primary', '');
@@ -240,8 +242,8 @@ function renderBrandColorOverrideCSS() {
     echo '}</style>' . "\n";
 }
 
-// Dil kodu -> Türkçe okunabilir isim. Kapsamadığı bir kod (yeni bir paket) varsa
-// getAvailableLanguages() zaten ham kodu (ör. "de") fallback olarak gösterir.
+// Language code -> readable Turkish name. For a code not covered here (a new
+// package) getAvailableLanguages() already shows the raw code (e.g. "de").
 const LANGUAGE_LABELS = [
     'tr' => 'Türkçe',
     'en' => 'İngilizce (en)',
@@ -257,10 +259,12 @@ const LANGUAGE_LABELS = [
 ];
 
 /**
- * Sunucuda gerçekten kurulu Asterisk ses dili klasörlerini tarar (/var/lib/asterisk/sounds/<kod>).
- * 'custom' (özel Türkçe anonslar) ve 'phonetic' (fonetik alfabe, gerçek bir dil değil) hariç tutulur.
- * Dil Ayarları (Santral Ayarları / Gelen Rota / IVR / Kuyruk) dropdown'larını bu liste besler —
- * yeni bir dil paketi yüklenince koda dokunmadan otomatik seçilebilir hale gelir.
+ * Scans the Asterisk sound language folders really installed on the server
+ * (/var/lib/asterisk/sounds/<code>). 'custom' (custom Turkish prompts) and
+ * 'phonetic' (phonetic alphabet, not a real language) are excluded.
+ * This list feeds the language dropdowns (PBX Settings / Inbound Route / IVR /
+ * Queue) — a newly installed language pack becomes selectable automatically,
+ * without touching the code.
  */
 function getAvailableLanguages() {
     $base = dirname(SOUNDS_CUSTOM_DIR);
@@ -275,23 +279,49 @@ function getAvailableLanguages() {
     return $langs;
 }
 
+/**
+ * Looks up the account a sign-in name refers to. The name may be a username
+ * or an extension; when one user's username equals another user's
+ * extension, the username match wins.
+ */
+function findLoginUser(string $login, string $columns): array|false
+{
+    $stmt = getDB()->prepare("SELECT {$columns} FROM sys_users WHERE username = ? OR extension = ? ORDER BY (username = ?) DESC, id ASC LIMIT 1");
+    $stmt->execute([$login, $login, $login]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Checks a sign-in password. The exact input is tried first, then the
+ * trimmed form: self-service password changes store the password as typed,
+ * while admin resets used to trim it, and logins used to trim always — so a
+ * password with leading/trailing spaces could never sign in.
+ */
+function verifyLoginPassword(string $input, string $hash): bool
+{
+    if (password_verify($input, $hash)) {
+        return true;
+    }
+    $trimmed = trim($input);
+    return $trimmed !== $input && password_verify($trimmed, $hash);
+}
+
 // Rate Limiting & Brute Force Tracker
 function checkBruteForceLockout($ip, $username) {
     $db = getDB();
 
-    // IP bazlı kilitleme: aynı kaynaktan gelen klasik brute-force'u yakalar,
-    // eşik düşük tutulabilir çünkü sadece o IP'yi etkiler.
+    // Per-IP lockout: catches classic brute force from one source; the
+    // threshold can stay low because it only affects that IP.
     $stmt = $db->prepare("SELECT COUNT(*) FROM sys_login_logs WHERE ip_address = ? AND status = 'FAILED' AND created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
     $stmt->execute([$ip]);
     if ($stmt->fetchColumn() >= 5) return true;
 
-    // Kullanıcı adı bazlı kilitleme: farklı IP'lerden dağıtık saldırıyı
-    // yakalamak için var, ama IP'den TAMAMEN bağımsız olduğu için eşik düşük
-    // tutulursa (5 gibi) herkes, bilinen bir kullanıcı adını hiçbir kimlik
-    // doğrulaması gerektirmeden dilediği zaman art arda 5 yanlış denemeyle
-    // KALICI OLARAK kilitleyebilir (kampüs NAT'ı arkasındaki paylaşılan bir IP
-    // için de aynı risk geçerli) — bu yüzden çok daha yüksek bir eşik kullanılır
-    // (2026-08-21 denetiminde bulundu).
+    // Per-username lockout: exists to catch a distributed attack from many
+    // IPs, but since it is COMPLETELY independent of the IP, a low threshold
+    // (like 5) would let anyone lock a known username PERMANENTLY at will with
+    // 5 wrong attempts in a row, without any authentication (the same risk
+    // applies to a shared IP behind a campus NAT) — so a much higher threshold
+    // is used (found in the 2026-08-21 audit).
     $stmt = $db->prepare("SELECT COUNT(*) FROM sys_login_logs WHERE username = ? AND status = 'FAILED' AND created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
     $stmt->execute([$username]);
     return $stmt->fetchColumn() >= 20;
@@ -305,15 +335,16 @@ function logLoginAttempt($ip, $username, $status) {
     
     // Log failures to Fail2ban logfile
     if ($status === 'FAILED') {
-        // $username $_POST'tan geliyor ve sadece trim() ediliyor — \r\n içerirse
-        // log dosyasına sahte ek satır enjekte edilebilir (fail2ban/analiz araçlarını
-        // yanıltabilir), bu yüzden log satırına yazmadan önce temizleniyor.
+        // $username comes from $_POST and is only trim()med — if it contains
+        // \r\n, fake extra lines could be injected into the log file
+        // (misleading fail2ban/analysis tools), so it is cleaned before being
+        // written to the log line.
         $safe_username = preg_replace('/[\r\n]+/', ' ', $username);
-        // Zaman damgası saat dilimi ofsetiyle yazılıyor: portal TIMEZONE'u ile
-        // sunucunun sistem saat dilimi farklı olabilir, fail2ban ofsetsiz bir
-        // saati sistem saati sanıp satırları "gelecekte" diye yok sayardı.
-        // Dizin install.sh'de www-data'ya yazılabilir kuruluyor (/etc/fail2ban/
-        // jail.d/aipbx-web.local bu dosyayı izliyor).
+        // The timestamp is written with its timezone offset: the portal
+        // TIMEZONE and the server's system timezone may differ, and fail2ban
+        // would take an offset-less time for system time and ignore the lines
+        // as being "in the future". install.sh makes the directory writable
+        // for www-data (/etc/fail2ban/jail.d/aipbx-web.local watches this file).
         $log_line = sprintf("%s - [%s] FAILED_LOGIN user=%s\n", $ip, date(DATE_ATOM), $safe_username);
         @file_put_contents('/var/log/aipbx/web_login_failures.log', $log_line, FILE_APPEND);
     }
@@ -348,10 +379,10 @@ function getFlashNotifications() {
  * for Asterisk configuration files and CLI commands.
  */
 /**
- * Önbellek dostu varlık (CSS/JS) adresi: dosya değiştikçe değişen ?v=<mtime>.
- * Önceden şablonlar ?v=time() kullanıyordu — sürüm her istekte değiştiği için
- * tarayıcı CSS/JS dosyalarını HİÇ önbelleğe alamıyor, her sayfada yeniden
- * indiriyordu.
+ * Cache-friendly asset (CSS/JS) URL: ?v=<mtime> changes only when the file
+ * does. Templates used to use ?v=time() — the version changed on every
+ * request, so the browser could NEVER cache the CSS/JS files and downloaded
+ * them again on every page.
  */
 function asset(string $path): string {
     static $cache = [];
@@ -375,10 +406,11 @@ function toCleanAscii($str) {
 }
 
 /**
- * Whitelist a routing destination type (Gelen Rota / IVR / Zaman Koşulu hedef türü)
- * against the fixed set buildDestinationLines() understands. Anything else is
- * interpolated raw into generated Asterisk dialplan NoOp/comment lines by the
- * sync layer, so an unvalidated value here is a config-injection vector.
+ * Whitelist a routing destination type (inbound route / IVR / time condition
+ * destination type) against the fixed set buildDestinationLines() understands.
+ * Anything else is interpolated raw into generated Asterisk dialplan
+ * NoOp/comment lines by the sync layer, so an unvalidated value here is a
+ * config-injection vector.
  */
 function sanitizeDestType($type) {
     $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route'];
@@ -387,10 +419,10 @@ function sanitizeDestType($type) {
 }
 
 /**
- * Web arayüzü çoklu dil (i18n) sistemi. Bu, Asterisk'in SESLİ anons dilinden
- * (pbx_dids/pbx_ivrs/pbx_queues.language, getAvailableLanguages()) TAMAMEN
- * AYRI bir katmandır — biri telefon görüşmesindeki sesi, bu ise web
- * panelindeki metinleri kontrol eder.
+ * Multi-language (i18n) system of the web interface. This is a layer
+ * COMPLETELY SEPARATE from Asterisk's SPOKEN prompt language
+ * (pbx_dids/pbx_ivrs/pbx_queues.language, getAvailableLanguages()) — one
+ * controls the audio in a phone call, this one the texts in the web panel.
  */
 const UI_LANGUAGES = ['tr' => 'Türkçe', 'en' => 'English'];
 
@@ -402,9 +434,10 @@ function getUserLanguage() {
 }
 
 /**
- * Çeviri anahtarını aktif dile göre döner. Çeviri bulunamazsa (eksik anahtar
- * ya da hiç çevrilmemiş bir sayfa) sessizce boş göstermek yerine anahtarın
- * kendisi (ya da verilen $default) gösterilir — eksik çeviriler görünür kalır.
+ * Returns the translation key in the active language. When no translation is
+ * found (a missing key or a page never translated) the key itself (or the
+ * given $default) is shown instead of silently showing nothing — missing
+ * translations stay visible.
  */
 function t($key, $default = null) {
     static $translations = [];
@@ -417,6 +450,6 @@ function t($key, $default = null) {
 }
 
 
-// UI bileşen yardımcıları ayrı dosyaya taşındı (2026-08-31) — bkz. src/ui_helpers.php.
-// Buradan require ediliyor ki config.php'yi yükleyen her yerde eskisi gibi kullanılabilsin.
+// UI component helpers moved to their own file (2026-08-31) — see src/ui_helpers.php.
+// Required from here so they keep working everywhere config.php is loaded.
 require_once __DIR__ . '/src/ui_helpers.php';

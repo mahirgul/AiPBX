@@ -23,9 +23,9 @@ if (!$cdr) {
 }
 
 $user_ext = $user['extension'] ?? '';
-// agent_extension artık kuyruk-yönlendirmesiz aramalarda ARANAN tarafı da
-// gösterebiliyor (bkz. cdrs view güncellemesi) — "kendi araması" kontrolü hem
-// arayan hem aranan tarafı kapsasın diye caller_num de ayrıca kontrol ediliyor.
+// agent_extension can now also show the CALLED side on calls not routed
+// through a queue (see the cdrs view update) — caller_num is checked
+// separately too, so the "own call" check covers both caller and callee.
 $is_own_call = (!empty($user_ext) && ($cdr['agent_extension'] === $user_ext || $cdr['caller_num'] === $user_ext));
 $can_listen = !empty($user['can_listen_recordings']);
 
@@ -37,14 +37,14 @@ if ($role !== 'admin' && !$can_listen && !$is_own_call) {
 $file = realpath($cdr['recording_path']);
 $allowed_dir = realpath(MONITOR_STORAGE_PATH);
 
-// Sonda '/' — yalnızca önek karşılaştırması "/monitor2/..." gibi kardeş
-// dizinleri de kabul ederdi.
+// Trailing '/' — a plain prefix comparison would also accept sibling
+// directories such as "/monitor2/...".
 if (!$file || !$allowed_dir || strpos($file, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file)) {
     http_response_code(404);
     die('Audio file not found');
 }
 
-// Kuyruk kayıt biçimi wav dışında da olabilir (record_format).
+// The queue recording format can be something other than wav (record_format).
 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 $mime = ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'][$ext] ?? 'application/octet-stream';
 header('Content-Type: ' . $mime);

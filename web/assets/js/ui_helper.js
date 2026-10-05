@@ -216,8 +216,8 @@ document.addEventListener('keydown', function(e) {
 });
 
 /**
- * Güçlü karmaşık SIP şifresi üretir (16 karakter, kriptografik rastgele).
- * system_users.php ve extensions.php'deki "otomatik üret" butonları kullanır.
+ * Generates a strong, complex SIP password (16 characters, cryptographically random).
+ * Used by the "generate" buttons in system_users.php and extensions.php.
  */
 function generateSipPassword(length = 16) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*_-';
@@ -237,7 +237,7 @@ function generateSipPassword(length = 16) {
 }
 
 /**
- * Header "Uygula" (Pending Sync) Dropdown & Direkt Uygulama Yönetimi
+ * Header "Apply" (pending sync) dropdown & direct apply handling
  */
 function toggleHeaderSyncDropdown(event) {
     if (event) {
@@ -264,7 +264,7 @@ function closeHeaderSyncDropdown() {
     if (btn) btn.classList.remove('active');
 }
 
-// Dropdown dışına tıklandığında menüyü kapat
+// Close the menu when clicking outside the dropdown
 document.addEventListener('click', function(e) {
     const container = document.getElementById('header-pending-sync-container');
     if (container && !container.contains(e.target)) {
@@ -303,7 +303,7 @@ function executeDirectPendingSync(event) {
             if (typeof showFooterToast === 'function') {
                 showFooterToast(data.message || 'Değişiklikler başarıyla Asterisk\'e uygulandı.', 'success');
             }
-            // Başarılı: Başlık ve kenar çubuğundaki rozetleri gizle, sayaçları sıfırla
+            // Success: hide the badges in the header and sidebar, reset the counters
             const headerContainer = document.getElementById('header-pending-sync-container');
             if (headerContainer) headerContainer.style.display = 'none';
 
@@ -320,7 +320,7 @@ function executeDirectPendingSync(event) {
             const pageData = document.getElementById('spa-page-data');
             if (pageData) pageData.setAttribute('data-pending-sync-count', '0');
 
-            // Eğer şu an /pending-sync sayfasındaysa o sayfayı da yenile
+            // If we are on the /pending-sync page right now, reload that page too
             if (window.location.pathname === '/pending-sync') {
                 if (typeof loadSPAPage === 'function') {
                     loadSPAPage('/pending-sync', false);

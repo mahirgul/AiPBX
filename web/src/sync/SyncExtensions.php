@@ -7,30 +7,29 @@
 require_once __DIR__ . '/../sip_helper.php';
 
 /**
- * PJSIP identify blogunun From basliginda kabul edecegi HOST listesi.
+ * HOST list the PJSIP identify block accepts in the From header.
  *
- * Neden gerekli: identify blogu yalnizca kullanici kismina bakiyordu
- * (`<?sip:3001[@:]`), yani From basliginin HOST kismi ne olursa olsun
- * esleşiyordu. 2026-09-05'te sentetik SIP OPTIONS ile OLCULDU:
- * `From: <sip:3001@198.51.100.1>` (trunk'in adresi) de `3001-sip`
- * endpoint'iyle esleşiyor, `sip:999999@198.51.100.1` ise "No matching
- * endpoint" aliyor. Yani dis hattan gelen ve arayan numarasi bir portal
- * dahilisine esit olan bir cagri, trunk endpoint'i yerine o kullanicinin
- * endpoint'iyle eslesip auth istendigi icin 401 ile dusebiliyordu
- * (bulgu2.md B2-3). Kimlik dogrulama acigi DEGIL — islevsel bir risk.
+ * Why: the identify block looked only at the user part
+ * (`<?sip:3001[@:]`), so it matched whatever the HOST part of the From header
+ * was. MEASURED with synthetic SIP OPTIONS on 2026-09-05:
+ * `From: <sip:3001@198.51.100.1>` (the trunk's address) also matches the
+ * `3001-sip` endpoint, while `sip:999999@198.51.100.1` gets "No matching
+ * endpoint". So a call from the outside line whose caller number equals a
+ * portal extension could match that user's endpoint instead of the trunk
+ * endpoint and fail with 401 because auth was requested (bulgu2.md B2-3).
+ * NOT an authentication hole — a functional risk.
  *
- * Cozum: host kismini santralin KENDI adreslerine baglamak. Gercek masaustu
- * telefon loglarda `From: "3001" <sip:3001@pbx.example.com>` gonderiyor,
- * yani PBX'in adresini kullaniyor; disaridan gelen cagri ise kendi/uzak
- * hostunu tasiyor.
+ * Fix: tie the host part to the PBX's OWN addresses. Real desk phones send
+ * `From: "3001" <sip:3001@pbx.example.com>` in the logs, i.e. they use the
+ * PBX's address; a call from outside carries its own/remote host.
  *
- * Liste `pjsip_identify_hosts` ayariyla (virgullu) EZILEBILIR. Otomatik
- * kaynaklar: pjsip_external_ip, sunucunun yerel IPv4 adresleri, Apache
- * ServerName ve localhost. Liste bos kalirsa ESKI GENIS desen kullanilir —
- * yanlis bir daraltmanin telefonlari kayit disi birakmasindansa eski
- * davranisa donmek yeglenir.
+ * The list can be OVERRIDDEN by the `pjsip_identify_hosts` setting (comma
+ * separated). Automatic sources: pjsip_external_ip, the server's local IPv4
+ * addresses, the Apache ServerName and localhost. If the list ends up empty
+ * the OLD WIDE pattern is used — falling back to the old behaviour beats a
+ * wrong narrowing that unregisters the phones.
  *
- * @return string[] regex'e girecek ham host degerleri
+ * @return string[] raw host values that go into the regex
  */
 function pjsipIdentifyHosts(): array
 {
@@ -75,9 +74,9 @@ function syncAllExtensions() {
 
 function __syncAllExtensionsBody() {
     $db = getDB();
-    // Faks kullanıcıları (extension_type='fax') hiçbir zaman SIP kaydı yapmaz
-    // (gelen faks doğrudan [from-trunk-fax]'a düşer, giden faks call-file ile
-    // gönderilir) — bu yüzden PJSIP endpoint/AOR/auth ÜRETİLMEZ.
+    // Fax users (extension_type='fax') never register over SIP (an incoming
+    // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
+    // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
     $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     $webrtc_codecs = getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722');
@@ -92,7 +91,7 @@ function __syncAllExtensionsBody() {
     $conf .= "; ==========================================================\n\n";
 
     // 1. Base Templates
-    // Standart SIP cihazları (masa telefonu, klasik softphone): DTLS/ICE/AVPF YOK
+    // Standard SIP devices (desk phone, classic softphone): NO DTLS/ICE/AVPF
     $conf .= "[endpoint-sip](!)\n";
     $conf .= "type=endpoint\n";
     $conf .= "context=from-internal-pbx\n";
@@ -108,7 +107,7 @@ function __syncAllExtensionsBody() {
     $conf .= "rtp_timeout=60\n";
     $conf .= "rtp_timeout_hold=300\n\n";
 
-    // WebRTC (tarayıcı/WSS) istemcileri: DTLS-SRTP, ICE, AVPF
+    // WebRTC (browser/WSS) clients: DTLS-SRTP, ICE, AVPF
     $conf .= "[endpoint-wss](!)\n";
     $conf .= "type=endpoint\n";
     $conf .= "context=from-internal-pbx\n";
@@ -138,13 +137,13 @@ function __syncAllExtensionsBody() {
     $conf .= "type=auth\n";
     $conf .= "auth_type=userpass\n\n";
 
-    // Dual-Endpoint AOR izolasyonu: Her endpoint YALNIZCA kendi AOR'una baglanir.
-    // Capraz baglama YAPILMAZ: PJSIP_DIAL_CONTACTS(<ext>-sip) endpoint'in TUM
-    // AOR'larini tarar; -sip endpoint'i -webrtc AOR'una bagliysa webphone
-    // kontagi DTLS'siz endpoint konfigurasyonuyla aranir ve tarayici
-    // "Called with SDP without DTLS fingerprint" hatasi verir. Paralel calma
-    // dialplan tarafinda C_SIP & C_WEB birlestirilerek saglanir.
-    // (remove_existing=no → ayni turden ikinci cihaz birinciyi silmez)
+    // Dual-endpoint AOR isolation: every endpoint is bound ONLY to its own AOR.
+    // NO cross binding: PJSIP_DIAL_CONTACTS(<ext>-sip) scans ALL AORs of the
+    // endpoint; if the -sip endpoint were bound to the -webrtc AOR, the
+    // webphone contact would be dialed with the DTLS-less endpoint config and
+    // the browser would fail with "Called with SDP without DTLS fingerprint".
+    // Parallel ringing comes from the dialplan joining C_SIP & C_WEB.
+    // (remove_existing=no → a second device of the same kind does not delete the first)
     $conf .= "[aor-dual](!)\n";
     $conf .= "type=aor\n";
     $conf .= "max_contacts=10\n";
@@ -154,8 +153,8 @@ function __syncAllExtensionsBody() {
     $conf .= "minimum_expiration=60\n";
     $conf .= "qualify_frequency={$qualify_frequency}\n\n";
 
-    // Mobil WebRTC AOR Sablonu (M6):
-    // Tek mobil cihaz, yeni baglanti geldiginde eski olu kontak derhal silinir
+    // Mobile WebRTC AOR template (M6):
+    // One mobile device; when a new connection arrives the old dead contact is removed at once
     $conf .= "[aor-mobile](!)\n";
     $conf .= "type=aor\n";
     $conf .= "max_contacts=1\n";
@@ -189,13 +188,13 @@ function __syncAllExtensionsBody() {
         if (isset($sip_map['auth_digest']) && !isset($u['sip_auth_digest'])) {
             $auth_digest = !in_array(strtolower($sip_map['auth_digest']), ['no', '0', 'false', 'off'], true);
         }
-        // Kullanicinin giden rota grubu context'i belirler. Grup 1 (varsayilan)
-        // eski adi kullanir; boylece grup atanmamis kurulumlarda hicbir ucun
-        // context'i degismez. Diger gruplar kendi context'ine gider ve yalnizca
-        // o gruptaki giden rotalari gorur.
+        // The user's outbound route group decides the context. Group 1 (the
+        // default) keeps the old name, so no endpoint's context changes on
+        // installs without groups. Other groups go to their own context and see
+        // only that group's outbound routes.
         //
-        // sip tablosunda elle bir context tanimlanmissa o kazanir (ozel durumlar
-        // icin kacis yolu).
+        // A context set by hand in the sip table wins (an escape hatch for
+        // special cases).
         $grup = max(1, intval($u['outbound_group'] ?? 1));
         $grup_context = ($grup > 1) ? "from-internal-g{$grup}" : 'from-internal-pbx';
         $context = !empty($sip_map['context']) ? $sip_map['context'] : $grup_context;
@@ -203,24 +202,25 @@ function __syncAllExtensionsBody() {
         $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
         $max_contacts = !empty($sip_map['max_contacts']) ? $sip_map['max_contacts'] : '5';
 
-        // Kullanıcının dahili/harici arama CID tercihleri kanal değişkeni olarak
-        // endpoint'e gömülür; [from-internal-outbound] rota tipine göre bunlardan
-        // birini CALLERID(num) olarak uygular (bkz. SyncDialplan.php).
+        // The user's internal/external call CID preferences are embedded into
+        // the endpoint as channel variables; [from-internal-outbound] applies
+        // one of them as CALLERID(num) depending on the route type (see
+        // SyncDialplan.php).
         $cid_internal = toCleanAscii($u['cid_internal'] ?? '');
         $cid_external = toCleanAscii($u['cid_external'] ?? '');
         $role = trim($u['role'] ?? '');
         $perm_group = max(1, intval($u['permission_group_id'] ?? 1));
         $set_vars = "set_var=CID_INTERNAL={$cid_internal}\nset_var=CID_EXTERNAL={$cid_external}\nset_var=__CID_INTERNAL={$cid_internal}\nset_var=__CID_EXTERNAL={$cid_external}\nset_var=USER_ROLE={$role}\nset_var=PERMISSION_GROUP_ID={$perm_group}\n";
 
-        // Grup çekme (Pickup) için: aynı pickup_group'taki dahililer birbirinin
-        // çalan çağrısını *20 (bkz. SyncFeatureCodes.php) ile çekebilir.
+        // For group pickup: extensions in the same pickup_group can pick up
+        // each other's ringing call with *20 (see SyncFeatureCodes.php).
         $pickup_group = trim($u['pickup_group'] ?? '');
         $pickup_lines = '';
         if ($pickup_group !== '') {
             $pickup_lines = "named_call_group={$pickup_group}\nnamed_pickup_group={$pickup_group}\n";
         }
 
-        $conf .= "; Extension {$ext}: {$name} (Dual-Endpoint: Standart SIP + WebRTC)\n";
+        $conf .= "; Extension {$ext}: {$name} (Dual-Endpoint: standard SIP + WebRTC)\n";
         $conf .= "[{$ext}-sip](endpoint-sip)\n";
         if ($auth_digest) {
             $conf .= "auth=auth{$ext}-sip\n";
@@ -236,8 +236,8 @@ function __syncAllExtensionsBody() {
         }
 
         // Pass-through any extra custom PJSIP parameters stored in `sip` table.
-        // WebRTC'ye özgü anahtarlar (dtls/ice/avpf/direct_media) standart SIP
-        // endpoint'ine ASLA yazılmaz — masa telefonları bu parametrelerle uyumsuzdur.
+        // WebRTC-specific keys (dtls/ice/avpf/direct_media) are NEVER written to
+        // the standard SIP endpoint — desk phones are incompatible with them.
         $ignore_keys = ['type', 'account', 'secret', 'context', 'callerid', 'transport', 'max_contacts', 'remove_existing', 'auth_digest'];
         $sip_blocked = [
             'disallow', 'allow', 'rtp_symmetric', 'rewrite_contact', 'force_rport',
@@ -275,14 +275,14 @@ function __syncAllExtensionsBody() {
             $conf .= "password={$secret}\n\n";
         }
 
-        // Standart SIP cihazları (masaüstü/donanım telefonları, PhonerLite vb.) kullanıcı adı
-        // olarak <dahili>-sip yerine doğrudan <dahili> gönderir. Asterisk PJSIP'in gelen
-        // From başlığındaki dahiliyi (örn. "3001") doğru endpoint ile eşleştirebilmesi
-        // için identify bloğu her zaman eklenir.
+        // Standard SIP devices (desk/hardware phones, PhonerLite etc.) send the
+        // plain <extension> as username instead of <extension>-sip. The identify
+        // block is always added so Asterisk PJSIP can match the extension in
+        // the incoming From header (e.g. "3001") to the right endpoint.
         //
-        // Host kısmı santralin kendi adresleriyle sınırlandırıldı (2026-09-05,
-        // bulgu2.md B2-3) — gerekçe ve ölçüm için bkz. pjsipIdentifyHosts().
-        // Liste boşsa eski geniş desene düşülür.
+        // The host part is limited to the PBX's own addresses (2026-09-05,
+        // bulgu2.md B2-3) — see pjsipIdentifyHosts() for the reason and the
+        // measurement. With an empty list it falls back to the old wide pattern.
         $conf .= "[{$ext}-sip-identify]\n";
         $conf .= "type=identify\n";
         $conf .= "endpoint={$ext}-sip\n";
@@ -300,12 +300,12 @@ function __syncAllExtensionsBody() {
         $conf .= "username={$ext}-mob-webrtc\n";
         $conf .= "password={$secret}\n\n";
 
-        // Önceki mantık ("değer 10'dan büyükse kullan, değilse 10 kullan") 10'u
-        // aşılamaz bir TABAN yapıyordu — admin bir dahiliyi kasıtlı olarak daha
-        // az eşzamanlı cihazla (ör. 2) sınırlamak istese bile bu her zaman 10'a
-        // yükseltiliyordu (2026-08-21 denetiminde bulundu). Artık pozitif herhangi
-        // bir yapılandırılmış değer olduğu gibi kullanılıyor, sadece eksik/geçersiz
-        // (0 veya negatif) durumda 10'a düşülüyor.
+        // The old logic ("use the value if it is above 10, otherwise 10") made
+        // 10 a FLOOR that could not be undercut — even when the admin wanted to
+        // limit an extension to fewer simultaneous devices (e.g. 2) on purpose,
+        // it was always raised to 10 (found in the 2026-08-21 audit). Now any
+        // positive configured value is used as is; only a missing/invalid
+        // (0 or negative) value falls back to 10.
         $max_c = (intval($max_contacts) > 0) ? intval($max_contacts) : 10;
         $conf .= "[{$ext}-webrtc](aor-dual)\nmax_contacts={$max_c}\n\n";
         $conf .= "[{$ext}-mob-webrtc](aor-mobile)\n\n";

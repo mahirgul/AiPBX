@@ -32,7 +32,7 @@ class ChatWebSocketManager private constructor() {
     private val listeners = CopyOnWriteArrayList<ChatEventListener>()
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var isConnected = false
-    /** El sıkışma sürerken gelen ikinci connect() çağrısı yeni soket açmasın diye. */
+    /** So a second connect() call during the handshake does not open a new socket. */
     @Volatile private var isConnecting = false
     private var isManuallyClosed = false
     private var reconnectAttempts = 0
@@ -95,11 +95,11 @@ class ChatWebSocketManager private constructor() {
     fun connect(baseUrl: String, token: String) {
         if (baseUrl.isEmpty() || token.isEmpty()) return
 
-        // ChatListActivity, ChatActivity, DialerActivity ve PbxForegroundService
-        // hepsi connect() çağırıyor. Önceden el sıkışma sürerken gelen çağrı eski
-        // soketi iptal edip yenisini açıyordu: sunucu aynı telefonu iki cihaz
-        // sayıyor, iptal edilen soketin geç gelen onFailure'ı da yeni bağlantının
-        // online listesini siliyordu (herkes "Çevrimdışı" görünüyordu).
+        // ChatListActivity, ChatActivity, DialerActivity and PbxForegroundService
+        // all call connect(). A call arriving during the handshake used to cancel
+        // the old socket and open a new one: the server counted the same phone as
+        // two devices, and the cancelled socket's late onFailure wiped the new
+        // connection's online list (everyone looked "Offline").
         if ((isConnected || isConnecting) && webSocket != null && currentUrl == baseUrl && currentToken == token) {
             Log.d(TAG, "Chat WS already connected/connecting with current credentials, skipping redundant connect")
             return
@@ -213,7 +213,7 @@ class ChatWebSocketManager private constructor() {
                             for (l in listeners) l.onPresence(ext, isOnline)
                         }
                         "presence_snapshot" -> {
-                            // Anlık görüntü tam listedir: listede olmayanlar çevrimdışı.
+                            // The snapshot is the full list: anyone not on it is offline.
                             val snapshot = mutableSetOf<String>()
                             val arr = root.optJSONArray("extensions")
                             if (arr != null) {
@@ -307,7 +307,7 @@ class ChatWebSocketManager private constructor() {
 
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                 Log.i(TAG, "Chat WebSocket closed: $code / $reason")
-                // Yerine yenisi açılmış (iptal edilmiş) eski soket: durumu bozmasın.
+                // An old socket replaced (cancelled) by a new one: it must not disturb the state.
                 if (ws !== webSocket) return
                 isConnecting = false
                 isConnected = false

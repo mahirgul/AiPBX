@@ -15,7 +15,7 @@
         </button>
     </div>
 
-    <!-- BÖLÜM 1: Kimlik -->
+    <!-- SECTION 1: identity -->
     <div id="tab_identity" class="settings-tab-pane active">
     <div class="card">
         <div class="card-header">
@@ -49,7 +49,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM 2: Logo & Favicon -->
+    <!-- SECTION 2: logo & favicon -->
     <div id="tab_logo" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -108,7 +108,7 @@
                                 <i id="logo_preview_icon" class="fas <?php echo htmlspecialchars($s['site_logo_icon']); ?>" style="font-size: 28px; color: var(--primary);"></i>
                             <?php endif; ?>
                         </div>
-                        <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px;"><?php echo t('brand_settings.logo_label'); ?></div>
+                        <div class="u-fs-11 u-muted u-text-center u-mt-6"><?php echo t('brand_settings.logo_label'); ?></div>
                     </div>
                     <div>
                         <div style="width: 48px; height: 48px; border-radius: 8px; background: var(--bg-sidebar); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden;">
@@ -118,7 +118,7 @@
                                 <i class="fas fa-globe" id="favicon_preview_img" style="font-size: 20px; color: var(--text-muted);"></i>
                             <?php endif; ?>
                         </div>
-                        <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px;"><?php echo t('brand_settings.favicon_label'); ?></div>
+                        <div class="u-fs-11 u-muted u-text-center u-mt-6"><?php echo t('brand_settings.favicon_label'); ?></div>
                     </div>
                     <div class="u-flex-1">
                         <div style="font-size: 13px; font-weight: 700; color: var(--text-main);" id="brand_title_preview"><?php echo htmlspecialchars($s['brand_title']); ?></div>
@@ -130,7 +130,7 @@
     </div>
     </div>
 
-    <!-- BÖLÜM 3: Renkler -->
+    <!-- SECTION 3: colours -->
     <div id="tab_colors" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
@@ -163,7 +163,7 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 16px; background: var(--bg-input); border-radius: 10px;">
-            <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;"><?php echo t('brand_settings.live_preview'); ?></span>
+            <span class="u-fs-12 u-muted u-fw-700"><?php echo t('brand_settings.live_preview'); ?></span>
             <button type="button" class="btn" id="preview_btn_primary" style="background: <?php echo htmlspecialchars($s['brand_color_primary'] ?: 'var(--primary)'); ?>; color: #fff;"><?php echo t('brand_settings.primary_button'); ?></button>
             <button type="button" class="btn" id="preview_btn_secondary" style="background: <?php echo htmlspecialchars($s['brand_color_secondary'] ?: 'var(--secondary)'); ?>; color: #fff;"><?php echo t('brand_settings.secondary_button'); ?></button>
             <?php if (hasModulePermission('brand_settings', 'edit')): ?>
@@ -188,66 +188,4 @@
     <input type="hidden" name="reset_brand_settings" value="1">
 </form>
 
-<script>
-function toggleLogoTypeFields() {
-    const type = document.getElementById('logo_type_select').value;
-    document.getElementById('logo_icon_field').style.display = (type === 'icon') ? '' : 'none';
-    document.getElementById('logo_image_field').style.display = (type === 'image') ? '' : 'none';
-    updateBrandPreview();
-}
-
-function updateBrandPreview() {
-    const type = document.getElementById('logo_type_select').value;
-    const box = document.getElementById('brand_logo_preview_box');
-    if (type === 'icon') {
-        const iconName = document.getElementById('logo_icon_input').value.trim() || 'fa-network-wired';
-        box.innerHTML = '<i class="fas ' + iconName.replace(/[^a-z0-9-]/gi, '') + '" style="font-size: 28px; color: var(--primary);"></i>';
-    }
-}
-
-function previewFileInput(input, imgId) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const existing = document.getElementById(imgId);
-        if (!existing) return;
-        if (existing.tagName === 'IMG') {
-            existing.src = e.target.result;
-        } else {
-            // Henüz yüklenmiş dosya yoksa yerine ikon (<i>) gösteriliyordu — ilk
-            // yüklemede önizlemenin çalışması için gerçek bir <img>'e çeviriyoruz.
-            const img = document.createElement('img');
-            img.id = imgId;
-            img.style.cssText = 'max-width:100%; max-height:100%; object-fit:contain;';
-            img.src = e.target.result;
-            existing.replaceWith(img);
-        }
-    };
-    reader.readAsDataURL(input.files[0]);
-}
-
-function syncColorText(which) {
-    document.getElementById(which + '_color_text').value = document.getElementById(which + '_color_picker').value;
-    updateColorPreviewButtons();
-}
-function syncColorPicker(which) {
-    const val = document.getElementById(which + '_color_text').value;
-    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-        document.getElementById(which + '_color_picker').value = val;
-    }
-    updateColorPreviewButtons();
-}
-function updateColorPreviewButtons() {
-    const p = document.getElementById('primary_color_text').value;
-    const s = document.getElementById('secondary_color_text').value;
-    document.getElementById('preview_btn_primary').style.background = /^#[0-9A-Fa-f]{6}$/.test(p) ? p : 'var(--primary)';
-    document.getElementById('preview_btn_secondary').style.background = /^#[0-9A-Fa-f]{6}$/.test(s) ? s : 'var(--secondary)';
-}
-function resetBrandColors() {
-    document.getElementById('primary_color_text').value = '';
-    document.getElementById('secondary_color_text').value = '';
-    document.getElementById('primary_color_picker').value = '#0284c7';
-    document.getElementById('secondary_color_picker').value = '#2563eb';
-    updateColorPreviewButtons();
-}
-</script>
+<script src="<?php echo asset('/assets/js/brand_settings.js'); ?>"></script>
