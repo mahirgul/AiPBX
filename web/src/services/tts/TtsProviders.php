@@ -292,6 +292,27 @@ final class GoogleTts extends TtsProvider
         }
         return $audio;
     }
+
+    /**
+     * Lossless variant for building prompt sets: 16-bit PCM WAV at the given
+     * sample rate (Google returns LINEAR16 with a WAV header).
+     */
+    public function synthesizeWav(string $text, string $voice, string $language, float $speed, int $sampleRate): string
+    {
+        [$key, $headers] = $this->auth();
+        $body = json_encode([
+            'input' => ['text' => $text],
+            'voice' => ['languageCode' => $language, 'name' => $voice],
+            'audioConfig' => ['audioEncoding' => 'LINEAR16', 'sampleRateHertz' => $sampleRate, 'speakingRate' => $speed],
+        ], JSON_UNESCAPED_UNICODE);
+        $r = TtsHttp::request('POST', self::url('/text:synthesize', $key), $headers + ['Content-Type' => 'application/json; charset=utf-8'], $body);
+        $data = TtsHttp::json($r, 'Google');
+        $audio = base64_decode((string) ($data['audioContent'] ?? ''), true);
+        if (!$audio) {
+            throw new TtsException('Google: empty audio');
+        }
+        return $audio;
+    }
 }
 
 /** Amazon Polly, access key + secret (SigV4). */

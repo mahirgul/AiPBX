@@ -1,0 +1,573 @@
+Turkish Asterisk core sounds — AiPBX (asterisk-core-sounds-tr)
+
+Generated with Google Cloud Text-to-Speech, voice tr-TR-Wavenet-C, as a
+16 kHz 16-bit mono master (silence trimmed, peak -6 dBFS, 150 ms tail).
+One voice for the whole set: the Asterisk core sounds (same names as
+asterisk-core-sounds-en), voicemail and AiPBX's own prompts.
+
+Asterisk has no Turkish say.c rules, so numbers, dates and voicemail
+counts are assembled in English order; the texts below are worded so that
+order still sounds natural in Turkish (e.g. vm-youhave "Posta kutunuzda").
+
+Non-speech files (tones) come from the English set:
+ascending-2tone beep beeperr descending-2tone confbridge-join
+confbridge-leave tt-monkeys; silence/1..10 are generated.
+
+Build: web/bin/generate_tr_sounds.php (masters) →
+       scripts/build_tr_sounds.sh (formats + package)
+
+Format: <prompt name>|<Turkish text>
+
+activated|Etkinleştirildi.
+added|Eklendi.
+agent-alreadyon|Bu temsilci zaten oturum açmış. Lütfen temsilci numaranızı girip kare tuşuna basın.
+agent-incorrect|Giriş hatalı. Lütfen temsilci numaranızı girip kare tuşuna basın.
+agent-loggedoff|Temsilci oturumu kapatıldı.
+agent-loginok|Temsilci oturumu açıldı.
+agent-newlocation|Lütfen yeni dahili numarayı girip kare tuşuna basın.
+agent-pass|Lütfen şifrenizi girip kare tuşuna basın.
+agent-user|Temsilci girişi. Lütfen temsilci numaranızı girip kare tuşuna basın.
+all-circuits-busy-now|Şu anda tüm hatlar meşgul.
+astcc-followed-by-the-pound-key|ardından kare tuşuna basın.
+at-tone-time-exactly|Sinyal sesiyle birlikte saat tam olarak
+auth-incorrect|Şifre hatalı. Lütfen şifrenizi girip kare tuşuna basın.
+auth-thankyou|Teşekkürler.
+basic-pbx-ivr-main|Süper Harika Şirket'i aradığınız için teşekkür ederiz. Görüşmek istediğiniz kişinin dahili numarasını biliyorsanız istediğiniz zaman tuşlayabilirsiniz. Satış için 1'e, müşteri temsilcisiyle görüşmek için 2'ye, muhasebe için 3'e, şirket rehberi için 4'e, operatör için sıfıra basın.
+call-forwarding|Çağrı yönlendirme.
+call-fwd-no-ans|Cevap yoksa yönlendirme.
+call-fwd-on-busy|Meşgulse yönlendirme.
+call-fwd-unconditional|Koşulsuz yönlendirme.
+call-waiting|Çağrı bekletme.
+calling|Aranıyor.
+cancelled|İptal edildi.
+cannot-complete-as-dialed|Aramanız tuşladığınız şekilde tamamlanamıyor.
+check-number-dial-again|Lütfen numarayı kontrol edip tekrar arayın.
+conf-adminmenu-162|Kendi mikrofonunuzu kapatıp açmak için 1'e, konferansı kilitlemek ya da kilidini açmak için 2'ye, son katılanı çıkarmak için 3'e, konferans sesini azaltmak ya da artırmak için 4 ya da 6'ya, konferansı uzatmak için 5'e, kendi sesinizi azaltmak ya da artırmak için 7 ya da 9'a, çıkmak için 8'e basın.
+conf-adminmenu-18|Kendi mikrofonunuzu kapatıp açmak için 1'e, konferansı kilitlemek ya da kilidini açmak için 2'ye, son katılanı çıkarmak için 3'e, konferans sesini azaltmak ya da artırmak için 4 ya da 6'ya, konferansı uzatmak için 5'e, kendi sesinizi azaltmak ya da artırmak için 7 ya da 9'a, diğer seçenekler için 8'e basın.
+conf-adminmenu-menu8|Konferanstaki katılımcıları dinlemek için 1'e, yönetici olmayan tüm katılımcıları çıkarmak için 2'ye, yönetici olmayan tüm katılımcıların sesini kapatmak ya da açmak için 3'e, konferansı kaydetmek için 4'e, bu menüden çıkıp konferansa dönmek için 8'e basın.
+conf-adminmenu|Kendi mikrofonunuzu kapatıp açmak için 1'e, konferansı kilitlemek ya da kilidini açmak için 2'ye, son katılanı çıkarmak için 3'e, konferans sesini azaltmak ya da artırmak için 4 ya da 6'ya, kendi sesinizi azaltmak ya da artırmak için 7 ya da 9'a, çıkmak için 8'e basın.
+conf-enteringno|Girdiğiniz konferans numarası:
+conf-errormenu|Geçersiz seçim.
+conf-extended|Konferans uzatıldı.
+conf-full|Bu konferans dolu.
+conf-getchannel|Lütfen kanal numarasını girip kare tuşuna basın.
+conf-getconfno|Lütfen konferans numaranızı girip kare tuşuna basın.
+conf-getpin|Lütfen konferans şifresini girin.
+conf-hasjoin|konferansa katıldı.
+conf-hasleft|konferanstan ayrıldı.
+conf-invalid|Bu geçerli bir konferans numarası değil. Lütfen tekrar deneyin.
+conf-invalidpin|Bu şifre bu konferans için geçersiz.
+conf-kicked|Konferanstan çıkarıldınız.
+conf-leaderhasleft|Konferans yöneticisi ayrıldı.
+conf-locked|Bu konferans kilitli.
+conf-lockednow|Konferans şimdi kilitlendi.
+conf-muted|Mikrofonunuz kapatıldı.
+conf-noempty|Şu anda boş konferans odası yok.
+conf-nonextended|Konferans uzatılamıyor.
+conf-now-muted|Konferansın sesi kapatıldı.
+conf-now-recording|Konferans şimdi kaydediliyor.
+conf-now-unmuted|Konferansın sesi açıldı.
+conf-onlyone|Konferansta sizden başka bir katılımcı var.
+conf-onlyperson|Şu anda konferanstaki tek kişi sizsiniz.
+conf-otherinparty|katılımcı daha var.
+conf-placeintoconf|Şimdi konferansa bağlanıyorsunuz.
+conf-roll-callcomplete|Katılımcı listesi okundu.
+conf-thereare|Konferansta şu anda
+conf-unlockednow|Konferansın kilidi açıldı.
+conf-unmuted|Mikrofonunuz açıldı.
+conf-usermenu-162|Kendi mikrofonunuzu kapatıp açmak için 1'e, konferans sesini azaltmak ya da artırmak için 4 ya da 6'ya, konferansı uzatmak için 5'e, kendi sesinizi azaltmak ya da artırmak için 7 ya da 9'a, bu menüden çıkıp konferansa dönmek için 8'e basın.
+conf-usermenu|Kendi mikrofonunuzu kapatıp açmak için 1'e, konferans sesini azaltmak ya da artırmak için 4 ya da 6'ya, kendi sesinizi azaltmak ya da artırmak için 7 ya da 9'a, çıkmak için 8'e basın.
+conf-userswilljoin|kişi konferansa katılacak.
+conf-userwilljoin|kişi konferansa katılacak.
+conf-waitforleader|Konferans, yönetici katıldığında başlayacak.
+confbridge-begin-glorious-a|Konferans, değerli yöneticimiz katıldığında başlayacak.
+confbridge-begin-glorious-b|Konferans, değerli yöneticimiz katıldığında başlayacak.
+confbridge-begin-glorious-c|Konferans, değerli yöneticimiz katıldığında başlayacak.
+confbridge-begin-leader|Konferans, yönetici katıldığında başlayacak.
+confbridge-binaural-off|Üç boyutlu ses kapatıldı.
+confbridge-binaural-on|Üç boyutlu ses açıldı.
+confbridge-conf-begin|Konferans şimdi başlıyor.
+confbridge-conf-end|Konferans sona erdi.
+confbridge-dec-list-vol-in|Diğer katılımcıların sesini azaltmak için
+confbridge-dec-list-vol-out|tuşuyla diğer katılımcıların sesini azaltabilirsiniz.
+confbridge-dec-talk-vol-in|Konuşma sesinizi azaltmak için
+confbridge-dec-talk-vol-out|tuşuyla konuşma sesinizi azaltabilirsiniz.
+confbridge-has-joined|konferansa katıldı.
+confbridge-has-left|konferanstan ayrıldı.
+confbridge-inc-list-vol-in|Diğer katılımcıların sesini artırmak için
+confbridge-inc-list-vol-out|tuşuyla diğer katılımcıların sesini artırabilirsiniz.
+confbridge-inc-talk-vol-in|Konuşma sesinizi artırmak için
+confbridge-inc-talk-vol-out|tuşuyla konuşma sesinizi artırabilirsiniz.
+confbridge-invalid|Geçersiz bir seçenek girdiniz.
+confbridge-leave-in|Konferanstan ayrılmak için
+confbridge-leave-out|tuşuyla konferanstan ayrılabilirsiniz.
+confbridge-lock-extended|tuşuyla konferansı kilitleyebilir ya da kilidini açabilirsiniz. Konferans kilitliyken yalnızca yöneticiler katılabilir.
+confbridge-lock-in|Konferansı kilitlemek ya da kilidini açmak için
+confbridge-lock-no-join|Konferans şu anda kilitli, katılamazsınız.
+confbridge-lock-out|tuşuyla konferansı kilitleyebilir ya da kilidini açabilirsiniz.
+confbridge-locked|Konferans şimdi kilitlendi.
+confbridge-menu-exit-in|Menüden çıkmak için
+confbridge-menu-exit-out|tuşuyla menüden çıkabilirsiniz.
+confbridge-mute-extended|tuşuyla mikrofonunuzu kapatıp açabilirsiniz. Mikrofonunuz kapalıyken diğer katılımcılar sizi duymaz, ama siz onları duymaya devam edersiniz.
+confbridge-mute-in|Mikrofonunuzu kapatıp açmak için
+confbridge-mute-out|tuşuyla mikrofonunuzu kapatıp açabilirsiniz.
+confbridge-muted|Mikrofonunuz kapatıldı.
+confbridge-only-one|Konferansta sizden başka bir katılımcı var.
+confbridge-only-participant|Şu anda konferanstaki tek katılımcı sizsiniz.
+confbridge-participants|katılımcı var.
+confbridge-pin-bad|Çok fazla sayıda hatalı şifre girdiniz.
+confbridge-pin|Lütfen şifrenizi girip kare tuşuna basın.
+confbridge-remove-last-in|Konferansa en son katılan kişiyi çıkarmak için
+confbridge-remove-last-out|tuşuyla konferansa en son katılan kişiyi çıkarabilirsiniz.
+confbridge-removed|Konferanstan çıkarıldınız.
+confbridge-rest-list-vol-in|Konferans sesini varsayılan düzeye getirmek için
+confbridge-rest-list-vol-out|tuşuyla konferans sesini varsayılan düzeye getirebilirsiniz.
+confbridge-rest-talk-vol-in|Konuşma sesinizi varsayılan düzeye getirmek için
+confbridge-rest-talk-vol-out|tuşuyla konuşma sesinizi varsayılan düzeye getirebilirsiniz.
+confbridge-there-are|Konferansta şu anda
+confbridge-unlocked|Konferansın kilidi açıldı.
+confbridge-unmuted|Mikrofonunuz açıldı.
+de-activated|Devre dışı bırakıldı.
+demo-abouttotry|Şimdi Digium'daki bir tanıtım sunucusuna IAX bağlantısı kurmayı deneyeceğim. Bunun için internete bağlı olmanız gerekir. Bağlantıyı kurmaya çalışırken lütfen bekleyin.
+demo-congrats|Tebrikler. Açık kaynaklı Asterisk santralini başarıyla kurup çalıştırdınız. Başlamanıza yardımcı olacak örnek sesler ve yapılandırma dosyaları da kuruldu. Normal bir santralde olduğu gibi bu tanıtımda da tuşlara basarak ilerleyeceksiniz.
+demo-echodone|Yankı testi tamamlandı.
+demo-echotest|Yankı testine giriyorsunuz. Bu modda söylediğiniz her şey size hemen geri çalınır. Bu test, sizinle sunucu arasındaki gecikmeyi kulakla fark etmenizi sağlar. Testi bitirmek için telefonu kapatın ya da kare tuşuna basın.
+demo-enterkeywords|Lütfen yıldız tuşuyla ayırarak bir ya da daha fazla anahtar kelime girin, ardından kare tuşuna basın.
+demo-instruct|Asterisk hakkında teknik bilgi almak için şimdi 2'yi tuşlayın. Yankı testi için 600'ü tuşlayın. Sesli postanıza ulaşmak için 8500'ü tuşlayın. Santralden çıkmak için kare tuşuna basabilirsiniz.
+demo-moreinfo|Asterisk, Linux üzerinde çalışan, açık kaynaklı, tam özellikli bir santral ve sesli yanıt platformudur. Daha fazla bilgi için asterisk nokta org adresini ziyaret edin.
+demo-nogo|Maalesef tanıtım sunucusuna bağlantı kuramadım. Asterisk konsolunda yardımcı olabilecek hata bilgileri bulabilirsiniz.
+demo-nomatch|Üzgünüm, bu anahtar kelimelerle eşleşen sonuç yok.
+demo-thanks|Hoşça kalın. Asterisk açık kaynak santralini denediğiniz için teşekkürler.
+dictate/both_help|Duraklatmak ya da devam etmek için yıldız, yeni bir dikte dosyası adı girmek için kare tuşuna basın.
+dictate/enter_filename|Dikte dosyası için bir numara girip kare tuşuna basın, çıkmak için yalnızca kare tuşuna basın.
+dictate/forhelp|Yardım için sıfıra basın.
+dictate/pause|duraklat
+dictate/paused|duraklatıldı
+dictate/play_help|Kayıt moduna geçmek için 1'e, hızlı dinlemeyi açıp kapatmak için 2'ye, geri sarmak için 7'ye, ileri sarmak için 8'e basın.
+dictate/playback|dinleme
+dictate/playback_mode|dinleme modu
+dictate/record|kayıt
+dictate/record_help|Dinleme moduna geçmek için 1'e, dosyayı silip baştan başlamak için 8'e basın.
+dictate/record_mode|kayıt modu
+dictate/truncating_audio|kayıt siliniyor
+digits/0|sıfır
+digits/1|bir
+digits/2|iki
+digits/3|üç
+digits/4|dört
+digits/5|beş
+digits/6|altı
+digits/7|yedi
+digits/8|sekiz
+digits/9|dokuz
+digits/10|on
+digits/11|on bir
+digits/12|on iki
+digits/13|on üç
+digits/14|on dört
+digits/15|on beş
+digits/16|on altı
+digits/17|on yedi
+digits/18|on sekiz
+digits/19|on dokuz
+digits/20|yirmi
+digits/30|otuz
+digits/40|kırk
+digits/50|elli
+digits/60|altmış
+digits/70|yetmiş
+digits/80|seksen
+digits/90|doksan
+digits/a-m|öğleden önce
+digits/at|saat
+digits/billion|milyar
+digits/day-0|Pazar
+digits/day-1|Pazartesi
+digits/day-2|Salı
+digits/day-3|Çarşamba
+digits/day-4|Perşembe
+digits/day-5|Cuma
+digits/day-6|Cumartesi
+digits/dollars|dolar
+digits/h-1|birinci
+digits/h-2|ikinci
+digits/h-3|üçüncü
+digits/h-4|dördüncü
+digits/h-5|beşinci
+digits/h-6|altıncı
+digits/h-7|yedinci
+digits/h-8|sekizinci
+digits/h-9|dokuzuncu
+digits/h-10|onuncu
+digits/h-11|on birinci
+digits/h-12|on ikinci
+digits/h-13|on üçüncü
+digits/h-14|on dördüncü
+digits/h-15|on beşinci
+digits/h-16|on altıncı
+digits/h-17|on yedinci
+digits/h-18|on sekizinci
+digits/h-19|on dokuzuncu
+digits/h-20|yirminci
+digits/h-30|otuzuncu
+digits/h-40|kırkıncı
+digits/h-50|ellinci
+digits/h-60|altmışıncı
+digits/h-70|yetmişinci
+digits/h-80|sekseninci
+digits/h-90|doksanıncı
+digits/h-billion|milyarıncı
+digits/h-hundred|yüzüncü
+digits/h-million|milyonuncu
+digits/h-thousand|bininci
+digits/hundred|yüz
+digits/million|milyon
+digits/minus|eksi
+digits/mon-0|Ocak
+digits/mon-1|Şubat
+digits/mon-2|Mart
+digits/mon-3|Nisan
+digits/mon-4|Mayıs
+digits/mon-5|Haziran
+digits/mon-6|Temmuz
+digits/mon-7|Ağustos
+digits/mon-8|Eylül
+digits/mon-9|Ekim
+digits/mon-10|Kasım
+digits/mon-11|Aralık
+digits/oclock|sıfır sıfır
+digits/oh|sıfır
+digits/p-m|öğleden sonra
+digits/pound|kare
+digits/star|yıldız
+digits/thousand|bin
+digits/today|bugün
+digits/tomorrow|yarın
+digits/yesterday|dün
+dir-first|harfini, aradığınız kişinin adından girin.
+dir-firstlast|harfini, aradığınız kişinin adından ya da soyadından girin.
+dir-instr|Aradığınız kişi buysa şimdi 1'e, değilse yıldız tuşuna basın.
+dir-intro-fn|Rehbere hoş geldiniz. Lütfen tuş takımını kullanarak aradığınız kişinin adının ilk üç harfini girin. Q için 7, Z için 9 tuşunu kullanın.
+dir-intro|Rehbere hoş geldiniz. Lütfen tuş takımını kullanarak aradığınız kişinin soyadının ilk üç harfini girin. Q için 7, Z için 9 tuşunu kullanın.
+dir-last|harfini, aradığınız kişinin soyadından girin.
+dir-multi1|Lütfen
+dir-multi2|tuşlayın:
+dir-multi3|dahili
+dir-multi9|Diğer kayıtlar için 9'a basın.
+dir-nomatch|Aramanızla eşleşen rehber kaydı yok.
+dir-nomore|Rehberde başka uygun kayıt yok.
+dir-pls-enter|Lütfen ilk
+dir-usingkeypad|Tuş takımını kullanın. Q için 7, Z için 9 tuşunu kullanın.
+dir-welcome|Rehbere hoş geldiniz.
+disabled|Devre dışı.
+do-not-disturb|Rahatsız etmeyin.
+enabled|Etkin.
+enter-num-blacklist|Lütfen kara listeye eklenecek numarayı girin.
+entr-num-rmv-blklist|Lütfen kara listeden çıkarılacak numarayı girin.
+extension|Dahili.
+feature-not-avail-line|Bu özellik bu hatta kullanılamıyor.
+followme/call-from|Gelen çağrı:
+followme/no-recording|Bir çağrınız var.
+followme/options|Çağrıyı kabul etmek için 1'e, reddetmek için 2'ye basın.
+followme/pls-hold-while-try|Lütfen bekleyin, aradığınız kişiye ulaşmaya çalışıyorum.
+followme/sorry|Üzgünüm, aradığınız kişiye ulaşamadım.
+followme/status|Aradığınız kişi şu anda masasında değil, size ulaştırmaya çalışıyorum.
+for|için
+from-unknown-caller|Bilinmeyen bir arayandan.
+goodbye|Hoşça kalın.
+hello-world|Merhaba dünya.
+hello|Merhaba.
+hours|saat
+if-correct-press|Doğruysa tuşlayın:
+im-sorry|Üzgünüm.
+info-about-last-call|Son çağrınızla ilgili bilgi.
+invalid|Üzgünüm, bu geçerli bir dahili numara değil. Lütfen tekrar deneyin.
+is-in-use|kullanımda.
+is-set-to|şu değere ayarlı:
+is|şu:
+letters/a|a
+letters/ascii123|sol süslü parantez
+letters/ascii124|dikey çizgi
+letters/ascii125|sağ süslü parantez
+letters/ascii126|yaklaşık işareti
+letters/ascii34|tırnak işareti
+letters/ascii36|dolar işareti
+letters/ascii37|yüzde
+letters/ascii38|ve işareti
+letters/ascii39|kesme işareti
+letters/ascii40|parantez aç
+letters/ascii41|parantez kapa
+letters/ascii42|yıldız
+letters/ascii44|virgül
+letters/ascii58|iki nokta
+letters/ascii59|noktalı virgül
+letters/ascii60|küçüktür
+letters/ascii62|büyüktür
+letters/ascii63|soru işareti
+letters/ascii91|sol köşeli parantez
+letters/ascii92|ters eğik çizgi
+letters/ascii93|sağ köşeli parantez
+letters/ascii94|şapka
+letters/ascii95|alt çizgi
+letters/ascii96|ters tırnak
+letters/asterisk|yıldız
+letters/at|et
+letters/b|be
+letters/c|ce
+letters/d|de
+letters/dash|tire
+letters/dollar|dolar
+letters/dot|nokta
+letters/e|e
+letters/equals|eşittir
+letters/exclaimation-point|ünlem işareti
+letters/f|fe
+letters/g|ge
+letters/h|he
+letters/i|i
+letters/j|je
+letters/k|ke
+letters/l|le
+letters/m|me
+letters/n|ne
+letters/o|o
+letters/p|pe
+letters/plus|artı
+letters/q|kû
+letters/r|re
+letters/s|se
+letters/slash|eğik çizgi
+letters/space|boşluk
+letters/t|te
+letters/u|u
+letters/v|ve
+letters/w|çift ve
+letters/x|iks
+letters/y|ye
+letters/z|ze
+letters/zed|ze
+location|Konum.
+lowercase|küçük harf
+minute|dakika
+minutes|dakika
+num-was-successfully|Numara başarıyla
+number-not-answering|Aradığınız numara yanıt vermiyor.
+number|Numara.
+one-moment-please|Bir dakika lütfen.
+pbx-invalid|Üzgünüm, bu geçerli bir dahili numara değil. Lütfen tekrar deneyin.
+pbx-invalidpark|Üzgünüm, bu park yerinde bekleyen bir çağrı yok. Lütfen tekrar deneyin.
+pbx-parkingfailed|Çağrı park edilemedi.
+pbx-transfer|Aktarım.
+phonetic/9_p|dokuz
+phonetic/a_p|Adana
+phonetic/b_p|Bolu
+phonetic/c_p|Ceyhan
+phonetic/d_p|Denizli
+phonetic/e_p|Edirne
+phonetic/f_p|Fatsa
+phonetic/g_p|Giresun
+phonetic/h_p|Hatay
+phonetic/i_p|İzmir
+phonetic/j_p|Jandarma
+phonetic/k_p|Kars
+phonetic/l_p|Lüleburgaz
+phonetic/m_p|Muş
+phonetic/n_p|Niğde
+phonetic/o_p|Ordu
+phonetic/p_p|Polatlı
+phonetic/q_p|Kuebek
+phonetic/r_p|Rize
+phonetic/s_p|Sinop
+phonetic/t_p|Tokat
+phonetic/u_p|Uşak
+phonetic/v_p|Van
+phonetic/w_p|Vaşington
+phonetic/x_p|İksir
+phonetic/y_p|Yozgat
+phonetic/z_p|Zonguldak
+please-try-again|Lütfen tekrar deneyin.
+please-try-call-later|Lütfen daha sonra tekrar arayın.
+pls-hold-while-try|Lütfen bekleyin, sizi bağlamaya çalışıyoruz.
+pls-try-call-later|Lütfen daha sonra tekrar arayın.
+pm-invalid-option|Bu seçenek geçersiz. Lütfen tekrar deneyin.
+priv-callee-options|Bu arayanın şimdi ve bundan sonra size doğrudan ulaşmasını istiyorsanız 1'e, şimdi ve bundan sonra sesli postaya gönderilmesini istiyorsanız 2'ye, şimdi ve bundan sonra işkence menülerine gönderilmesini istiyorsanız 3'e, şimdi ve bundan sonra kibar bir aramayın menüsüne gönderilmesini istiyorsanız 4'e, bundan sonra size doğrudan ulaşmasını ama bu sefer sesli postaya gönderilmesini istiyorsanız 5'e basın.
+priv-callpending|Bekleyen bir arayan var, kendini şöyle tanıtıyor:
+priv-introsaved|Teşekkürler. Lütfen bekleyin, sizi aradığınız kişiye bağlamaya çalışıyorum.
+priv-recordintro|Sinyal sesinden sonra lütfen adınızı söyleyin.
+privacy-incorrect|Üzgünüm, bu numara geçerli değil.
+privacy-prompt|Lütfen telefon numaranızı alan koduyla birlikte girin.
+privacy-thankyou|Teşekkürler.
+privacy-to-blacklist-last-caller|Son arayan:
+privacy-unident|Aradığınız kişi, numarası gizli çağrıları kabul etmiyor.
+queue-agentlogin-success|Kuyruğa giriş yaptınız.
+queue-callswaiting|Temsilcilerimizle görüşmek için bekliyorsunuz.
+queue-holdtime|Tahmini bekleme süreniz
+queue-less-than|en fazla
+queue-minute|dakika
+queue-minutes|dakika
+queue-periodic-announce|Tüm temsilcilerimiz şu anda başka çağrılarla ilgileniyor. Lütfen hattan ayrılmayın, çağrınız ilk boşalan temsilcimiz tarafından yanıtlanacak.
+queue-quantity1|Şu anda
+queue-quantity2|kişiden fazla arayan temsilcilerimizle görüşmek için bekliyor.
+queue-reporthold|Bekleme süresi
+queue-seconds|saniye
+queue-thankyou|Sabrınız için teşekkür ederiz.
+queue-thereare|Sıranız:
+queue-youarenext|Sıradaki çağrı sizsiniz, ilk boşalan temsilcimiz tarafından yanıtlanacaksınız.
+removed|Kaldırıldı.
+screen-callee-options|Seçenekleriniz şunlar: Çağrıya hemen bağlanmak için 1'e, arayanı sesli postaya göndermek için 2'ye, işkence menülerine göndermek için 3'e, kibar bir aramayın menüsüne göndermek için 4'e basın.
+second|saniye
+seconds|saniye
+simul-call-limit-reached|Eş zamanlı çağrı sınırına ulaşıldı.
+something-terribly-wrong|Çok ciddi bir sorun var!
+sorry-youre-having-problems|Sorun yaşadığınız için üzgünüz.
+sorry|Üzgünüz.
+speed-dial-empty|Seçtiğiniz hızlı arama kaydı boş.
+speed-dial|Hızlı arama.
+spy-agent|Temsilci
+spy-console|Konsol
+spy-dahdi|Dahdi
+spy-h323|H üç iki üç
+spy-iax2|İ A X
+spy-iax|İ A X
+spy-jingle|Cingıl
+spy-local|Yerel
+spy-mgcp|M G C P
+spy-misdn|M I S D N
+spy-mobile|Bluetooth mobil
+spy-nbs|N B S
+spy-sip|SİP
+spy-skinny|Skinny
+spy-unistim|Unistim
+spy-usbradio|USB radyo
+spy-zap|Zap
+ss-noservice|Aradığınız numara kullanılmamaktadır. Lütfen numarayı kontrol edip tekrar deneyin.
+telephone-number|Telefon numarası.
+time|Saat.
+to-call-this-number|Bu numarayı aramak için
+to-extension|Dahiliye
+to-listen-to-it|Dinlemek için
+to-rerecord-it|Yeniden kaydetmek için
+transfer|Lütfen bekleyin, bu dahiliyi deniyorum.
+tt-allbusy|Tüm ev halkı şu anda başka telefon satıcılarıyla ilgileniyor. Lütfen bekleyin, çağrınız geliş sırasına göre yanıtlanacak.
+tt-monkeysintro|Maymunlar tarafından kaçırıldılar.
+tt-somethingwrong|Çok ciddi bir sorun var.
+tt-weasels|Gelincikler telefon sistemimizi yedi.
+unidentified-no-callback|Numara gizli ya da tanımsız olduğu için geri aranamıyor.
+uppercase|büyük harf
+vm-advopts|Gelişmiş seçenekler için 3'e basın.
+vm-and|ve
+vm-calldiffnum|Farklı bir numara girmek için 2'ye basın.
+vm-changeto|Hangi klasöre geçmek istiyorsunuz?
+vm-Cust1|klasör 5
+vm-Cust2|klasör 6
+vm-Cust3|klasör 7
+vm-Cust4|klasör 8
+vm-Cust5|klasör 9
+vm-delete|Bu mesajı silmek için 7'ye basın.
+vm-deleted|Mesaj silindi.
+vm-dialout|Lütfen bekleyin, aramanızı bağlıyorum.
+vm-duration|Bu mesajın süresi
+vm-enter-num-to-call|Lütfen aramak istediğiniz numarayı girin.
+vm-extension|dahili
+vm-Family|aile
+vm-first|ilk
+vm-for|için
+vm-forward-multiple|Bu mesajı göndermek için 1'e, başka bir alıcı eklemek için 2'ye basın.
+vm-forward|Dahili numara girmek için 1'e, rehberi kullanmak için 2'ye basın.
+vm-forwardoptions|Mesajın başına bir not eklemek için 1'e, mesajı olduğu gibi iletmek için 2'ye basın.
+vm-Friends|arkadaşlar
+vm-from-extension|Mesajı gönderen dahili:
+vm-from-phonenumber|Mesajı gönderen numara:
+vm-from|gönderen:
+vm-goodbye|Hoşça kalın.
+vm-helpexit|Yardım için yıldız, çıkmak için kare tuşuna basın.
+vm-INBOX|yeni
+vm-incorrect-mailbox|Giriş hatalı. Posta kutusu numaranızı girin.
+vm-incorrect|Giriş hatalı.
+vm-instructions|Mesajlarınızı dinlemek için şimdi 1'e basın. Kare tuşuna basarak sesli postadan istediğiniz zaman çıkabilirsiniz.
+vm-intro|Lütfen sinyal sesinden sonra mesajınızı bırakın. Bitirdiğinizde telefonu kapatın ya da kare tuşuna basın.
+vm-invalid-password|Bu şifre posta kutusunun en düşük gereksinimlerini karşılamıyor. Lütfen tekrar deneyin.
+vm-invalidpassword|Geçersiz şifre. Lütfen tekrar deneyin.
+vm-isonphone|şu anda başka bir görüşmede.
+vm-isunavail|şu anda ulaşılamıyor.
+vm-last|son
+vm-leavemsg|Mesaj bırakmak için 5'e basın.
+vm-login|Sesli posta. Posta kutusu numaranızı girin.
+vm-mailboxfull|Üzgünüz, kullanıcının posta kutusu dolu; yeni mesaj alamıyor.
+vm-marked-nonurgent|Acil işareti kaldırıldı.
+vm-marked-urgent|Mesaj acil olarak işaretlendi.
+vm-message|mesaj
+vm-messages|mesaj
+vm-minutes|dakika
+vm-mismatch|Girdiğiniz şifreler eşleşmiyor. Lütfen tekrar deneyin.
+vm-msgforwarded|Mesajınız başarıyla iletildi.
+vm-msginstruct|Sonraki mesaj için 6'ya, bu mesajı tekrar dinlemek için 5'e, önceki mesaj için 4'e, bu mesajı silmek ya da silmeyi geri almak için sıfıra, sesli postadan çıkmak için kare tuşuna basın.
+vm-msgsaved|Mesajınız kaydedildi.
+vm-newpassword|Lütfen yeni şifrenizi girip kare tuşuna basın.
+vm-newuser|Sesli postaya hoş geldiniz. Önce sizi kısa bir kurulumdan geçireceğim.
+vm-next|Sonraki mesajı dinlemek için 6'ya basın.
+vm-no|hiç
+vm-nobodyavail|Şu anda çağrınızı yanıtlayabilecek kimse yok.
+vm-nobox|Bu mesaja yanıt veremezsiniz, çünkü gönderenin posta kutusu yok.
+vm-nomore|Başka mesaj yok.
+vm-nonumber|Maalesef bu mesajı kimin gönderdiğini bilmiyorum.
+vm-num-i-have|Kayıtlı numara:
+vm-Old|eski
+vm-onefor-full|Dinlemek için 1'e basın:
+vm-onefor|Bire basın:
+vm-options|Ulaşılamıyor mesajınızı kaydetmek için 1'e, meşgul mesajınızı kaydetmek için 2'ye, adınızı kaydetmek için 3'e, geçici karşılama mesajınızı kaydetmek için 4'e, şifrenizi değiştirmek için 5'e, ana menüye dönmek için yıldız tuşuna basın.
+vm-opts-full|Diğer klasörlerdeki mesajlar için 2'ye, başka bir posta kutusuna mesaj kaydetmek için 3'e, karşılama ve şifre ayarları için sıfıra basın.
+vm-opts|Klasör değiştirmek için 2'ye, gelişmiş seçenekler için 3'e, posta kutusu seçenekleri için sıfıra basın.
+vm-passchanged|Şifreniz değiştirildi.
+vm-password|şifre
+vm-pls-try-again|Lütfen tekrar deneyin.
+vm-press|Lütfen tuşlayın:
+vm-prev|Önceki mesaj için 4'e basın.
+vm-reachoper|Operatöre bağlanmak için sıfıra basın.
+vm-rec-busy|Sinyal sesinden sonra meşgul mesajınızı söyleyin, ardından kare tuşuna basın.
+vm-rec-name|Sinyal sesinden sonra adınızı söyleyin, ardından kare tuşuna basın.
+vm-rec-temp|Sinyal sesinden sonra geçici mesajınızı söyleyin, ardından kare tuşuna basın.
+vm-rec-unv|Sinyal sesinden sonra ulaşılamıyor mesajınızı söyleyin, ardından kare tuşuna basın.
+vm-received|alındı
+vm-record-prepend|Sinyal sesinden sonra iletilen mesaj için bir giriş kaydedin. Bitirdiğinizde kare tuşuna basın.
+vm-reenterpassword|Lütfen şifrenizi tekrar girip kare tuşuna basın.
+vm-repeat|Bu mesajı tekrar dinlemek için 5'e basın.
+vm-review-nonurgent|Bu mesajın acil işaretini kaldırmak için 4'e basın.
+vm-review-urgent|Bu mesajı acil olarak işaretlemek için 4'e basın.
+vm-review|Bu kaydı onaylamak için 1'e, dinlemek için 2'ye, yeniden kaydetmek için 3'e basın.
+vm-saved|kaydedildi.
+vm-savedto|Şu klasöre kaydedildi:
+vm-savefolder|Mesajı hangi klasöre kaydedeyim?
+vm-savemessage|ya da bu mesajı kaydetmek için 9'a basın.
+vm-saveoper|Bu kaydı onaylamak için 1'e basın, aksi halde lütfen hatta bekleyin.
+vm-sorry|Üzgünüm, yanıtınızı anlayamadım.
+vm-star-cancel|İptal etmek için yıldız tuşuna basın.
+vm-starmain|Ana menüye dönmek için yıldız tuşuna basın.
+vm-tempgreetactive|Geçici karşılama mesajınız şu anda etkin.
+vm-tempgreeting2|Geçici karşılama mesajınızı kaydetmek için 1'e, silmek için 2'ye basın.
+vm-tempgreeting|Geçici karşılama mesajınızı kaydetmek için 1'e basın.
+vm-tempremoved|Geçici karşılama mesajınız silindi.
+vm-then-pound|ardından kare tuşuna basın.
+vm-theperson|Aradığınız dahili
+vm-tmpexists|Standart karşılama mesajlarınızın yerine çalan bir geçici karşılama mesajınız var.
+vm-tocallback|Bu mesajı gönderen kişiyi aramak için 2'ye basın.
+vm-tocallnum|Bu numarayı aramak için 1'e basın.
+vm-tocancel|ya da iptal etmek için kare tuşuna basın.
+vm-tocancelmsg|Bu mesajı iptal etmek için yıldız tuşuna basın.
+vm-toenternumber|Numara girmek için 1'e basın.
+vm-toforward|Mesajı başka bir kullanıcıya iletmek için 8'e basın.
+vm-tohearenv|Mesajın zaman ve gönderen bilgisini dinlemek için 3'e basın.
+vm-tomakecall|Dış arama yapmak için 4'e basın.
+vm-tooshort|Mesajınız çok kısa.
+vm-toreply|Yanıt göndermek için 1'e basın.
+vm-torerecord|Mesajınızı yeniden kaydetmek için 3'e basın.
+vm-undelete|Bu mesajın silinmesini geri almak için 7'ye basın.
+vm-undeleted|Mesajın silinmesi geri alındı.
+vm-unknown-caller|bilinmeyen bir arayandan
+vm-Urgent|acil
+vm-whichbox|Mesaj bırakmak için lütfen posta kutusu numarasını girin.
+vm-Work|iş
+vm-youhave|Posta kutunuzda
+with|ile
+you-entered|Girdiğiniz:
+your|Sizin
