@@ -926,7 +926,14 @@ ok "Nginx (Edge 443 ALPN Multiplexer) & Apache2 (80/8443) configured"
 step "9. Configuring Asterisk PBX"
 
 mkdir -p /etc/asterisk/pbx
-cp "$INSTALL_DIR/asterisk-config/pbx/"*.conf /etc/asterisk/pbx/ 2>/dev/null || true
+# The pbx/ files are generated from the database (asterisk_sync.php below);
+# the repo copies only seed a fresh install. Overwriting them on upgrade made
+# Asterisk restart with no extensions, hints or queue members: phones dropped
+# their registration and static queue members stayed "Invalid" (never rung)
+# because their hints did not exist yet when the queues were loaded.
+for f in "$INSTALL_DIR/asterisk-config/pbx/"*.conf; do
+    [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
+done
 
 for f in extensions.conf pjsip.conf queues.conf musiconhold.conf http.conf rtp.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf; do
     if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
