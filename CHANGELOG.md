@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 2.2.2
+
+Update recommended for call centers.
+
+**Install / update**
+- Updating no longer overwrites the generated Asterisk configuration
+  (`/etc/asterisk/pbx/`) with empty seed files before restarting Asterisk.
+  Asterisk came up without extensions, hints and queue members; static queue
+  agents then stayed "Invalid" and queues rang nobody until a member was
+  changed. Phones also no longer lose their registration during an update.
+
 ## 2.2.1
 
 **WebRTC**
