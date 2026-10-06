@@ -25,9 +25,10 @@ language Asterisk plays the English one, so a partly translated set gives mixed-
 
 ## Turkish prompts
 
-The Turkish set ships as one package at the repo root, `asterisk-core-sounds-tr-<version>.tar.gz`
-(with a `.sha256`), laid out like Asterisk's own `asterisk-core-sounds-*` packages so it can be used
-on any Asterisk server: extract it into the `tr` sounds directory.
+The Turkish set ships at the repo root as one package per format,
+`asterisk-core-sounds-tr-<format>-<version>.tar.xz` (with `asterisk-core-sounds-tr-<version>.SHA256SUMS`),
+laid out like Asterisk's own `asterisk-core-sounds-*` packages so it can be used on any Asterisk
+server: extract the formats you need into the `tr` sounds directory.
 
 - One voice (Google `tr-TR-Wavenet-C`), generated with AiPBX Cloud TTS from 16 kHz masters: every
   Asterisk core prompt (same names as `asterisk-core-sounds-en`, including voicemail, digits,
