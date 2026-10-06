@@ -478,6 +478,16 @@ func (s *Server) HandleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The chat_token cookie is sent by the browser on its own, so a page on
+	// another site could open a socket as the logged-in user and read their
+	// messages. The web chat passes ?token=, so the cookie fallback is only
+	// accepted from the portal's own origin.
+	if TokenFromCookie(r) && !SameOrigin(r) {
+		log.Printf("[WS Auth Failed] Cookie token from foreign origin %q (remote: %s)", r.Header.Get("Origin"), r.RemoteAddr)
+		http.Error(w, "Forbidden: origin not allowed", http.StatusForbidden)
+		return
+	}
+
 	user, err := ValidateBearerToken(token, s.cfg.SecretKey)
 	if err != nil {
 		log.Printf("[WS Auth Failed] Invalid token for %s: %v (remote: %s)", r.URL.Path, err, r.RemoteAddr)

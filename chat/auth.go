@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -22,6 +23,34 @@ type cachedAuth struct {
 var (
 	authCache sync.Map
 )
+
+// PruneAuthCache drops expired entries. An entry is otherwise only removed
+// when the same token is presented again after it expired, so tokens that are
+// never reused (every web chat page load issues a new one) would pile up.
+func PruneAuthCache(now time.Time) {
+	authCache.Range(func(key, val any) bool {
+		if c, ok := val.(cachedAuth); !ok || !now.Before(c.expiresAt) {
+			authCache.Delete(key)
+		}
+		return true
+	})
+}
+
+// StartAuthCachePruner runs PruneAuthCache every interval until ctx is done.
+func StartAuthCachePruner(ctx context.Context, interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case now := <-ticker.C:
+				PruneAuthCache(now)
+			}
+		}
+	}()
+}
 
 func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 	tokenStr = strings.TrimSpace(tokenStr)
@@ -65,6 +94,16 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 		return nil, fmt.Errorf("token expired")
 	}
 
+	// The signature is hex SHA-256 (64 chars). Checking the shape here turns
+	// most garbage tokens away before the DB lookup below; the HMAC itself
+	// can only be verified after it, since it covers the user's token_epoch.
+	if len(sig) != 64 {
+		return nil, fmt.Errorf("invalid signature")
+	}
+	if _, err := hex.DecodeString(sig); err != nil {
+		return nil, fmt.Errorf("invalid signature")
+	}
+
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil || strconv.Itoa(userID) != userIDStr {
 		return nil, fmt.Errorf("invalid user id")
@@ -101,6 +140,39 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 	})
 
 	return user, nil
+}
+
+// TokenFromCookie reports whether ExtractToken would fall back to the
+// chat_token cookie, i.e. the request carries no Authorization header and no
+// ?token= query parameter. A browser attaches that cookie on its own, so only
+// such requests can be forged by another page (cross-site WebSocket hijacking).
+func TokenFromCookie(r *http.Request) bool {
+	if strings.TrimSpace(r.Header.Get("Authorization")) != "" || r.URL.Query().Get("token") != "" {
+		return false
+	}
+	cookie, err := r.Cookie("chat_token")
+	return err == nil && cookie.Value != ""
+}
+
+// SameOrigin reports whether the request's Origin header (if any) names the
+// host the request was sent to. Behind Apache's ProxyPass the original host
+// is in X-Forwarded-Host; r.Host is then 127.0.0.1:8086. Requests without
+// an Origin header (native apps, curl) are not browser-initiated and pass.
+func SameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+	host = strings.TrimSpace(strings.Split(host, ",")[0])
+	return strings.EqualFold(u.Host, host)
 }
 
 func ExtractToken(r *http.Request) string {

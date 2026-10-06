@@ -214,7 +214,7 @@ function __syncAllExtensionsBody() {
 
         // For group pickup: extensions in the same pickup_group can pick up
         // each other's ringing call with *20 (see SyncFeatureCodes.php).
-        $pickup_group = trim($u['pickup_group'] ?? '');
+        $pickup_group = cleanPickupGroup($u['pickup_group'] ?? '');
         $pickup_lines = '';
         if ($pickup_group !== '') {
             $pickup_lines = "named_call_group={$pickup_group}\nnamed_pickup_group={$pickup_group}\n";

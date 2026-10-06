@@ -36,6 +36,15 @@ class LogoutController extends BaseController
             setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
         }
         session_destroy();
+        // The web chat token (ChatController) is a separate 24-hour cookie;
+        // without this the next person on a shared browser could keep using
+        // the chat as the logged-out user.
+        setcookie('chat_token', '', [
+            'expires' => time() - 42000,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         static::redirect('/login');
     }
 }

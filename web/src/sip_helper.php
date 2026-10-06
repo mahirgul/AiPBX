@@ -117,14 +117,7 @@ class SIPHelper {
 
         $ip = trim($t['ip_address'] ?? '');
         $port = intval($t['port'] ?? 5060) ?: 5060;
-        $raw_tr = strtolower(trim($t['transport'] ?? 'udp'));
-        if (strpos($raw_tr, 'transport-') === 0) {
-            $transport = $raw_tr;
-        } elseif (in_array($raw_tr, ['udp', 'tcp', 'tls', 'wss', 'ws'])) {
-            $transport = 'transport-' . $raw_tr;
-        } else {
-            $transport = 'transport-udp';
-        }
+        $transport = normalizeSipTransport($t['transport'] ?? 'udp');
         $codecs = !empty($t['codecs']) ? $t['codecs'] : 'alaw,ulaw';
         $qualify = intval($t['qualify_frequency'] ?? 60) ?: 60;
         $title = toCleanAscii($t['title'] ?? $t_name);

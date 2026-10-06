@@ -35,14 +35,7 @@ function __syncAllTrunksBody() {
 
         $ip = toCleanAscii(!empty($sip_map['ip_address']) ? trim($sip_map['ip_address']) : trim($t['ip_address']));
         $port = !empty($sip_map['port']) ? intval($sip_map['port']) : intval($t['port'] ?: 5060);
-        $raw_tr = strtolower(trim(!empty($sip_map['transport']) ? $sip_map['transport'] : ($t['transport'] ?? 'udp')));
-        if (strpos($raw_tr, 'transport-') === 0) {
-            $transport = $raw_tr;
-        } elseif (in_array($raw_tr, ['udp', 'tcp', 'tls', 'wss', 'ws'])) {
-            $transport = 'transport-' . $raw_tr;
-        } else {
-            $transport = 'transport-udp';
-        }
+        $transport = normalizeSipTransport(!empty($sip_map['transport']) ? $sip_map['transport'] : ($t['transport'] ?? 'udp'));
         $codecs = toCleanAscii(!empty($sip_map['allow']) ? $sip_map['allow'] : (!empty($t['codecs']) ? $t['codecs'] : 'alaw,ulaw'));
         $raw_context = toCleanAscii(!empty($sip_map['context']) ? $sip_map['context'] : (!empty($t['context']) ? $t['context'] : 'from-trunk-inbound'));
         $context = ($raw_context === '' || $raw_context === 'from-trunk-inbound' || $raw_context === 'from-trunk-kapanma-tonu')

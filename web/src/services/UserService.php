@@ -34,7 +34,7 @@ class UserService {
             $extension = trim($data['extension'] ?? '');
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
-            $pickup_group = trim($data['pickup_group'] ?? '');
+            $pickup_group = cleanPickupGroup($data['pickup_group'] ?? '');
             $can_listen = isset($data['can_listen_recordings']) ? 1 : 0;
             $can_view_cdrs = isset($data['can_view_all_cdrs']) ? 1 : 0;
             $can_view_queue_monitor = isset($data['can_view_queue_monitor']) ? 1 : 0;

@@ -11,7 +11,8 @@ class TrunkService {
             $title = trim($data['title'] ?? $trunk_name);
             $ip_address = trim($data['ip_address'] ?? '');
             $port = intval(($data['port'] ?? '') ?: 5060);
-            $transport = trim($data['transport'] ?? 'udp');
+            // Stored without the 'transport-' prefix, as the form sends it.
+            $transport = substr(normalizeSipTransport($data['transport'] ?? 'udp'), strlen('transport-'));
             $codecs = trim($data['codecs'] ?? 'alaw,ulaw');
             $t38 = intval($data['t38_support'] ?? 1);
             $qualify = intval(($data['qualify_frequency'] ?? '') ?: 60);

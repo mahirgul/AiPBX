@@ -406,6 +406,29 @@ function toCleanAscii($str) {
 }
 
 /**
+ * Map a trunk transport value ('udp', 'TLS', 'transport-tcp', ...) to one of
+ * the transport sections install.sh defines. The value is written raw into
+ * pjsip_trunks.conf, so anything outside the whitelist (e.g. an embedded
+ * newline followed by extra config lines) falls back to transport-udp.
+ */
+function normalizeSipTransport($value): string {
+    $tr = strtolower(trim((string)$value));
+    if (strpos($tr, 'transport-') === 0) {
+        $tr = substr($tr, strlen('transport-'));
+    }
+    return in_array($tr, ['udp', 'tcp', 'tls', 'wss', 'ws'], true) ? 'transport-' . $tr : 'transport-udp';
+}
+
+/**
+ * Keep only characters valid in a PJSIP named call/pickup group list
+ * ("sales,support"). The value ends up in pjsip_extensions.conf; a newline
+ * would let the field add arbitrary config lines.
+ */
+function cleanPickupGroup($value): string {
+    return trim((string)preg_replace('/[^A-Za-z0-9_,-]/', '', (string)$value), ',');
+}
+
+/**
  * Whitelist a routing destination type (inbound route / IVR / time condition
  * destination type) against the fixed set buildDestinationLines() understands.
  * Anything else is interpolated raw into generated Asterisk dialplan

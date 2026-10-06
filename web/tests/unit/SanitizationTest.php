@@ -92,4 +92,37 @@ final class SanitizationTest extends TestCase
             'whitelist disi bir dest_type oldugu gibi gecti — dialplan enjeksiyonu mumkun'
         );
     }
+
+    #[DataProvider('satirSonuVaryantlari')]
+    public function testNormalizeSipTransportRejectsLineBreaks(string $input): void
+    {
+        $this->assertSame('transport-udp', normalizeSipTransport('transport-' . $input));
+        $this->assertSame('transport-udp', normalizeSipTransport($input));
+    }
+
+    public function testNormalizeSipTransportKeepsValidValues(): void
+    {
+        $this->assertSame('transport-tls', normalizeSipTransport('TLS'));
+        $this->assertSame('transport-tcp', normalizeSipTransport(' transport-tcp '));
+        $this->assertSame('transport-wss', normalizeSipTransport('wss'));
+        $this->assertSame('transport-udp', normalizeSipTransport('sctp'));
+        $this->assertSame('transport-udp', normalizeSipTransport(''));
+    }
+
+    #[DataProvider('satirSonuVaryantlari')]
+    public function testCleanPickupGroupRejectsLineBreaks(string $input): void
+    {
+        $out = cleanPickupGroup($input);
+        $this->assertStringNotContainsString("\n", $out);
+        $this->assertStringNotContainsString("\r", $out);
+        $this->assertStringNotContainsString('[', $out);
+        $this->assertStringNotContainsString('=', $out);
+    }
+
+    public function testCleanPickupGroupKeepsGroupLists(): void
+    {
+        $this->assertSame('sales,support', cleanPickupGroup('sales,support'));
+        $this->assertSame('group_1', cleanPickupGroup(' group_1 '));
+        $this->assertSame('', cleanPickupGroup(''));
+    }
 }

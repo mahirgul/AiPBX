@@ -32,6 +32,9 @@ func main() {
 	hub.secretKey = cfg.SecretKey
 	go hub.Run()
 
+	// Lives for the whole process; the service exits right after shutdown.
+	StartAuthCachePruner(context.Background(), 5*time.Minute)
+
 	server := NewServer(cfg, hub)
 
 	mux := http.NewServeMux()

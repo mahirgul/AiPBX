@@ -23,7 +23,10 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Auth is checked via Bearer token before upgrade
+		// HandleWS checks the token before the upgrade and rejects a
+		// cookie-authenticated request from a foreign Origin (SameOrigin);
+		// token-in-URL/header clients (web chat, apps) may come from anywhere.
+		return true
 	},
 }
 
