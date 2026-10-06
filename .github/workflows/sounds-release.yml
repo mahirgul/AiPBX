@@ -1,0 +1,58 @@
+name: Turkish Sounds Release
+
+# Publishes the asterisk-core-sounds-tr packages as assets of the GitHub
+# release sounds-tr-<version>, where install.sh downloads them from. The repo
+# keeps only asterisk-core-sounds-tr-<version>.SHA256SUMS; this workflow takes
+# the packages from a commit that still has them at the repo root (v1.0.0 for
+# 1.0.0). New versions are uploaded straight from scripts/build_tr_sounds.sh
+# output with `gh release create` (see docs/sounds.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Sounds version (asterisk-core-sounds-tr-<version>)'
+        required: true
+        default: '1.0.0'
+        type: string
+      source_ref:
+        description: 'Tag/branch/commit whose repo root holds the .tar.xz packages'
+        required: true
+        default: 'v1.0.0'
+        type: string
+
+jobs:
+  publish:
+    name: Upload packages to sounds-tr-${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write   # gh release create / upload
+
+    steps:
+      - name: Checkout package source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Verify checksums
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sums="asterisk-core-sounds-tr-$VERSION.SHA256SUMS"
+          test -f "$sums" || { echo "::error::$sums not found at ${{ inputs.source_ref }}"; exit 1; }
+          sha256sum -c "$sums"
+
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          tag="sounds-tr-$VERSION"
+          sums="asterisk-core-sounds-tr-$VERSION.SHA256SUMS"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$(git rev-parse HEAD)" --latest=false \
+              --title "Turkish Asterisk sounds $VERSION" \
+              --notes "asterisk-core-sounds-tr $VERSION — Turkish prompts in wav, ulaw, alaw, gsm, g722 and sln16. Downloaded by install.sh; verify with $sums."
+          fi
+          gh release upload "$tag" --clobber "$sums" $(awk '{print $2}' "$sums")

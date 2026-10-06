@@ -25,9 +25,12 @@ language Asterisk plays the English one, so a partly translated set gives mixed-
 
 ## Turkish prompts
 
-The Turkish set ships at the repo root as one package per format,
-`asterisk-core-sounds-tr-<format>-<version>.tar.xz` (with `asterisk-core-sounds-tr-<version>.SHA256SUMS`),
-laid out like Asterisk's own `asterisk-core-sounds-*` packages so it can be used on any Asterisk
+The Turkish set ships as one package per format,
+`asterisk-core-sounds-tr-<format>-<version>.tar.xz`, attached to the GitHub release
+[`sounds-tr-<version>`](https://github.com/mahirgul/AiPBX/releases). The repo root only holds
+`asterisk-core-sounds-tr-<version>.SHA256SUMS`; `install.sh` downloads the packages listed there,
+verifies them against it and keeps them next to it for later upgrades (set `AIPBX_SOUNDS_URL` to
+download from a mirror). The packages are laid out like Asterisk's own `asterisk-core-sounds-*` packages so it can be used on any Asterisk
 server: extract the formats you need into the `tr` sounds directory.
 
 - One voice (Google `tr-TR-Wavenet-C`), generated with AiPBX Cloud TTS from 16 kHz masters: every
@@ -49,7 +52,12 @@ must be configured under **AI → Cloud TTS**) and rebuild the package:
 sudo php web/bin/generate_tr_sounds.php --out=/tmp/tr-master             # all prompts
 sudo php web/bin/generate_tr_sounds.php --out=/tmp/tr-master vm-intro    # or only some
 scripts/build_tr_sounds.sh /tmp/tr-master 1.0.1
+gh release create sounds-tr-1.0.1 --latest=false --title "Turkish Asterisk sounds 1.0.1" \
+    asterisk-core-sounds-tr-*-1.0.1.tar.xz asterisk-core-sounds-tr-1.0.1.SHA256SUMS
+git add asterisk-core-sounds-tr-1.0.1.SHA256SUMS && git rm asterisk-core-sounds-tr-1.0.0.SHA256SUMS
 ```
+
+Publish the release before committing the new SHA256SUMS: installs follow the committed file.
 
 `build_tr_sounds.sh` needs every prompt's master in the directory; to rebuild with only a few
 changed prompts, first extract the current package's `.sln16` files back to WAV masters

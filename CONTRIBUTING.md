@@ -26,7 +26,7 @@ AI PBX is organized as a unified monorepo:
 | `chat/` | High-Concurrency Chat Engine | Go (Gorilla WebSocket) |
 | `android/` | Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
 | `docs/` | Images used by the README and docs (the aipbx.bid website is maintained separately) | PNG, JPG |
-| `sounds/`, `asterisk-core-sounds-tr-*.tar.xz` | Bundled sounds, Turkish prompt texts and packages | `scripts/build_tr_sounds.sh` |
+| `sounds/`, `asterisk-core-sounds-tr-*.SHA256SUMS` | Bundled sounds, Turkish prompt texts and package checksums (packages are release assets) | `scripts/build_tr_sounds.sh` |
 | `install.sh` | Turnkey Auto-Installer | Bash (Ubuntu 26.04 LTS) |
 
 ---

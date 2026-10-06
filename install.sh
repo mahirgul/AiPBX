@@ -987,16 +987,40 @@ if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
 fi
 
 # Turkish prompts: the asterisk-core-sounds-tr-<format>-<version>.tar.xz
-# packages at the repo root (built by scripts/build_tr_sounds.sh; texts in
+# packages (built by scripts/build_tr_sounds.sh; texts in
 # sounds/core-sounds-tr.txt), one per format like Asterisk's own sound
-# packages. It is AiPBX's own set, so it replaces older copies. Formats the
-# packages do not ship (e.g. a stale .g729 or .sln of the same prompt) are
-# removed first, or Asterisk could still pick the old recording by format cost.
+# packages. The repo only carries asterisk-core-sounds-tr-<version>.SHA256SUMS;
+# the packages are assets of the GitHub release sounds-tr-<version> and are
+# downloaded next to it on first use (kept there for later upgrades; ignored by
+# git). AIPBX_SOUNDS_URL points the download at a mirror. It is AiPBX's own
+# set, so it replaces older copies. Formats the packages do not ship (e.g. a
+# stale .g729 or .sln of the same prompt) are removed first, or Asterisk could
+# still pick the old recording by format cost.
 TR_SOUNDS_SUMS="$(ls "$INSTALL_DIR"/asterisk-core-sounds-tr-*.SHA256SUMS 2>/dev/null | sort -V | tail -1)"
 if [[ -n "$TR_SOUNDS_SUMS" ]]; then
+    TR_SOUNDS_VERSION="$(basename "$TR_SOUNDS_SUMS" .SHA256SUMS)"
+    TR_SOUNDS_VERSION="${TR_SOUNDS_VERSION#asterisk-core-sounds-tr-}"
+    TR_SOUNDS_URL="${AIPBX_SOUNDS_URL:-https://github.com/mahirgul/AiPBX/releases/download/sounds-tr-$TR_SOUNDS_VERSION}"
+    mapfile -t TR_SOUNDS_PKGS < <(awk '{print $2}' "$TR_SOUNDS_SUMS")
+    command -v curl >/dev/null || apt-get install -y -qq curl
+    TR_SOUNDS_MISSING=""
+    for pkg in "${TR_SOUNDS_PKGS[@]}"; do
+        # A cached copy that fails the checksum (interrupted download) is fetched again.
+        if [[ -f "$INSTALL_DIR/$pkg" ]] && (cd "$INSTALL_DIR" && grep -F "  $pkg" "$(basename "$TR_SOUNDS_SUMS")" | sha256sum -c --quiet - >/dev/null 2>&1); then
+            continue
+        fi
+        info "Downloading $pkg..."
+        curl -fsSL --retry 3 -o "$INSTALL_DIR/$pkg.part" "$TR_SOUNDS_URL/$pkg" \
+            && mv -f "$INSTALL_DIR/$pkg.part" "$INSTALL_DIR/$pkg" \
+            || { rm -f "$INSTALL_DIR/$pkg.part"; TR_SOUNDS_MISSING+=" $pkg"; }
+    done
+fi
+if [[ -n "$TR_SOUNDS_SUMS" && -n "$TR_SOUNDS_MISSING" ]]; then
+    # Not fatal: an upgrade keeps the prompts already installed.
+    warn "Turkish sound packages could not be downloaded from $TR_SOUNDS_URL:$TR_SOUNDS_MISSING — Turkish prompts not updated"
+elif [[ -n "$TR_SOUNDS_SUMS" ]]; then
     (cd "$INSTALL_DIR" && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")") \
         || error "Turkish sound packages: checksum mismatch ($TR_SOUNDS_SUMS)"
-    mapfile -t TR_SOUNDS_PKGS < <(awk '{print $2}' "$TR_SOUNDS_SUMS")
     while IFS= read -r f; do
         base="/var/lib/asterisk/sounds/tr/${f%.wav}"
         rm -f "$base".{g729,sln,sln32,sln48,siren7,siren14,wav16}

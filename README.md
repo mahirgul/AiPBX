@@ -239,7 +239,7 @@ AiPBX/
 ├── ios/                    # SwiftUI app
 ├── asterisk-config/        # Asterisk base configuration
 ├── sounds/                 # bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
-├── asterisk-core-sounds-tr-*.tar.xz  # Turkish prompts, one package per format (+ SHA256SUMS)
+├── asterisk-core-sounds-tr-*.SHA256SUMS  # Turkish prompt packages (release assets, see docs/sounds.md)
 ├── docs/                   # administrator documentation
 ├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
 ├── db/seed.sql             # initial roles, permissions, settings

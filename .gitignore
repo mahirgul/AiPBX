@@ -106,6 +106,10 @@ CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
 .vboxclient*
 .xsession*
 
+# === Turkish sound packages (GitHub release assets; only SHA256SUMS is committed) ===
+asterisk-core-sounds-tr-*.tar.xz
+asterisk-core-sounds-tr-*.tar.xz.part
+
 # === TLS keys / certificates (never commit) ===
 *.pem
 *.key

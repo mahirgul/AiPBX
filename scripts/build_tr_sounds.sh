@@ -13,7 +13,10 @@
 # asterisk-core-sounds-<lang>-<format>-<version> packages:
 #   asterisk-core-sounds-tr-<format>-VERSION.tar.xz   (flat; extract into sounds/tr)
 #   asterisk-core-sounds-tr-VERSION.SHA256SUMS
-# Packages of older versions are removed.
+# Packages of older versions are removed. Only the SHA256SUMS file is
+# committed; the .tar.xz files are git-ignored and published as assets of the
+# GitHub release sounds-tr-VERSION, where install.sh downloads them from
+# (see docs/sounds.md).
 
 set -euo pipefail
 
