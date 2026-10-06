@@ -987,26 +987,50 @@ if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
 fi
 
 # Turkish prompts: the asterisk-core-sounds-tr-<format>-<version>.tar.xz
-# packages at the repo root (built by scripts/build_tr_sounds.sh; texts in
+# packages (built by scripts/build_tr_sounds.sh; texts in
 # sounds/core-sounds-tr.txt), one per format like Asterisk's own sound
 # packages. It is AiPBX's own set, so it replaces older copies. Formats the
 # packages do not ship (e.g. a stale .g729 or .sln of the same prompt) are
 # removed first, or Asterisk could still pick the old recording by format cost.
-TR_SOUNDS_SUMS="$(ls "$INSTALL_DIR"/asterisk-core-sounds-tr-*.SHA256SUMS 2>/dev/null | sort -V | tail -1)"
+#
+# The packages are not in git: they are assets of the sounds-tr-<version>
+# GitHub release. A build left at the repo root is used as is; otherwise the
+# pinned version is downloaded into /var/cache/aipbx. A missing ls match used
+# to end the script silently here (set -e + pipefail), half-way through step 9.
+TR_SOUNDS_VERSION=1.0.0
+TR_SOUNDS_URL="https://github.com/mahirgul/AiPBX/releases/download/sounds-tr-${TR_SOUNDS_VERSION}"
+TR_SOUNDS_SUMS="$(ls "$INSTALL_DIR"/asterisk-core-sounds-tr-*.SHA256SUMS 2>/dev/null | sort -V | tail -1 || true)"
+if [[ -z "$TR_SOUNDS_SUMS" ]]; then
+    TR_SOUNDS_CACHE="/var/cache/aipbx/sounds-tr-${TR_SOUNDS_VERSION}"
+    TR_SOUNDS_SUMS="$TR_SOUNDS_CACHE/asterisk-core-sounds-tr-${TR_SOUNDS_VERSION}.SHA256SUMS"
+    if ! (cd "$TR_SOUNDS_CACHE" 2>/dev/null && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")" >/dev/null 2>&1); then
+        info "Downloading Turkish sound packages (sounds-tr-${TR_SOUNDS_VERSION})..."
+        mkdir -p "$TR_SOUNDS_CACHE"
+        if curl -fsSL --retry 3 -o "$TR_SOUNDS_SUMS" "$TR_SOUNDS_URL/$(basename "$TR_SOUNDS_SUMS")"; then
+            while read -r _ pkg; do
+                curl -fsSL --retry 3 -o "$TR_SOUNDS_CACHE/$pkg" "$TR_SOUNDS_URL/$pkg" || { rm -f "$TR_SOUNDS_SUMS"; break; }
+            done < "$TR_SOUNDS_SUMS"
+        else
+            rm -f "$TR_SOUNDS_SUMS"
+        fi
+    fi
+    [[ -f "$TR_SOUNDS_SUMS" ]] || TR_SOUNDS_SUMS=""
+fi
 if [[ -n "$TR_SOUNDS_SUMS" ]]; then
-    (cd "$INSTALL_DIR" && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")") \
+    TR_SOUNDS_DIR="$(dirname "$TR_SOUNDS_SUMS")"
+    (cd "$TR_SOUNDS_DIR" && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")") \
         || error "Turkish sound packages: checksum mismatch ($TR_SOUNDS_SUMS)"
     mapfile -t TR_SOUNDS_PKGS < <(awk '{print $2}' "$TR_SOUNDS_SUMS")
     while IFS= read -r f; do
         base="/var/lib/asterisk/sounds/tr/${f%.wav}"
         rm -f "$base".{g729,sln,sln32,sln48,siren7,siren14,wav16}
-    done < <(tar -tJf "$INSTALL_DIR/${TR_SOUNDS_PKGS[0]}" | sed -n 's|^\./||; /\.[a-z0-9]*$/{ s/\.[a-z0-9]*$/.wav/; p }' | grep -v '^core-sounds\|^LICENSE\|^CHANGES')
+    done < <(tar -tJf "$TR_SOUNDS_DIR/${TR_SOUNDS_PKGS[0]}" | sed -n 's|^\./||; /\.[a-z0-9]*$/{ s/\.[a-z0-9]*$/.wav/; p }' | grep -v '^core-sounds\|^LICENSE\|^CHANGES')
     for pkg in "${TR_SOUNDS_PKGS[@]}"; do
-        tar -xJf "$INSTALL_DIR/$pkg" --no-same-owner -C /var/lib/asterisk/sounds/tr
+        tar -xJf "$TR_SOUNDS_DIR/$pkg" --no-same-owner -C /var/lib/asterisk/sounds/tr
     done
     ok "Turkish prompts installed (${#TR_SOUNDS_PKGS[@]} formats, $(basename "$TR_SOUNDS_SUMS" .SHA256SUMS))"
 else
-    warn "Turkish sound packages (asterisk-core-sounds-tr-*.tar.xz) not found — Turkish prompts skipped"
+    warn "Turkish sound packages could not be downloaded ($TR_SOUNDS_URL) — Turkish prompts skipped; run install.sh --upgrade again later"
 fi
 
 # Set default language to Turkish in asterisk.conf
