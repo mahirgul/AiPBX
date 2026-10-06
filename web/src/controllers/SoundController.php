@@ -27,6 +27,13 @@ class SoundController extends BaseController
             'announcements' => $announcements,
             'moh_classes' => $moh_classes,
             'custom_dir' => $custom_dir,
+            'sound_packs' => [
+                'catalog' => SoundPackService::CATALOG,
+                'formats' => SoundPackService::FORMATS,
+                'installed' => SoundPackService::installed(),
+                'status' => SoundPackService::status(),
+                'log' => SoundPackService::logTail(),
+            ],
         ], ['title' => $page_title] + $notices);
     }
 }

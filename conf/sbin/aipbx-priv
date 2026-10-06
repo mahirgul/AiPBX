@@ -253,6 +253,23 @@ case "$cmd" in
         esac
         ;;
 
+    sounds)
+        # Sounds page → Asterisk sound packs: sounds install|remove KIND LANG FORMAT.
+        # Downloading can take minutes, so it runs in its own systemd unit;
+        # progress is read from /var/lib/aipbx/sound-packs-status.json.
+        [ $# -eq 4 ] || die "usage: sounds install|remove KIND LANG FORMAT"
+        case "$1" in install|remove) ;; *) die "invalid operation: $1" ;; esac
+        case "$2" in core|extra|moh) ;; *) die "invalid kind: $2" ;; esac
+        match "$3" '^([a-z]{2}(_[A-Z]{2})?|opsound)$'
+        case "$4" in wav|ulaw|alaw|gsm|g722|sln16) ;; *) die "invalid format: $4" ;; esac
+        if systemctl is-active --quiet aipbx-sounds.service; then
+            die "a sound pack operation is already running"
+        fi
+        systemctl reset-failed aipbx-sounds.service >/dev/null 2>&1 || true
+        exec systemd-run --quiet --collect --unit=aipbx-sounds \
+            --description="AiPBX sound pack: $1 $2-$3-$4" /usr/local/sbin/aipbx-sounds "$1" "$2" "$3" "$4"
+        ;;
+
     *)
         die "unknown command: ${cmd:-<empty>}"
         ;;
