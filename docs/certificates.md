@@ -59,8 +59,8 @@ The result of the last operation is in `/var/lib/aipbx/cert-status.json` and on 
 
 certbot's deploy hook (`/etc/letsencrypt/renewal-hooks/deploy/aipbx.sh`) calls
 `aipbx-cert renewal-hook`. It only acts while Let's Encrypt is the active source, and copies the
-renewed certificate with its **full chain** to coturn and Asterisk. Before 2.2.0, TURNS stopped
-working silently after the first renewal because coturn kept serving its old copy.
+renewed certificate with its **full chain** to coturn and Asterisk, so TURNS keeps working after a
+renewal.
 
 ## Self-signed and internal domains
 

@@ -232,7 +232,7 @@ if is_upgrade; then
     TURN_SECRET="$(env_get TURN_SECRET)"
     ODBC_PASS="$(env_get ODBC_DB_PASS)"
     if [[ -z "$ODBC_PASS" ]]; then
-        # Installs before 2.0.0 kept it only in res_odbc.conf.
+        # Older installs kept it only in res_odbc.conf.
         ODBC_PASS="$(sed -n 's/^[[:space:]]*password[[:space:]]*=>*[[:space:]]*//p' /etc/asterisk/res_odbc.conf 2>/dev/null | head -1)"
     fi
     if [[ -z "$ODBC_PASS" || "$ODBC_PASS" == *'${'* ]]; then ODBC_PASS=$(gen_hex 16); fi
@@ -447,7 +447,7 @@ if is_upgrade; then
     # The environment file belongs to the installation (admins edit it):
     # only keys added by newer releases are appended.
     env_ensure ODBC_DB_PASS "$ODBC_PASS"
-    # Up to 2.2.0 clients were sent coturn's own port; TURNS goes through the
+    # Older installs sent clients coturn's own port; TURNS goes through the
     # 443 multiplexer now, which also passes networks that only allow 443.
     if [[ "$(env_get TURNS_PORT)" == 5349 ]]; then
         sed -i 's/^TURNS_PORT=5349$/TURNS_PORT=443/' /etc/ai-pbx.env

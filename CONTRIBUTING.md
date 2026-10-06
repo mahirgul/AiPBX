@@ -68,11 +68,11 @@ backups, the MP3 converter and migrations.
 # once: a clean Ubuntu 26.04 container with two snapshots
 lxc launch ubuntu:26.04 aipbx-test
 lxc snapshot aipbx-test pristine
-lxc exec aipbx-test -- bash -c 'curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | AIPBX_REF=v2.0.0 bash'
+lxc exec aipbx-test -- bash -c 'curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | AIPBX_REF=v1.0.0 bash'
 lxc snapshot aipbx-test installed-200
 
 scripts/e2e/run.sh fresh     # install from scratch
-scripts/e2e/run.sh upgrade   # upgrade the v2.0.0 install
+scripts/e2e/run.sh upgrade   # upgrade the older install in snapshot installed-200
 scripts/e2e/run.sh           # both
 ```
 

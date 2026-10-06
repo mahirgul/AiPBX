@@ -2,7 +2,7 @@
 # End-to-end test of the current commit in an LXD container running Ubuntu 26.04.
 #
 #   scripts/e2e/run.sh fresh     restore snapshot "pristine", install from scratch
-#   scripts/e2e/run.sh upgrade   restore snapshot "installed-200" (v2.0.0), install.sh --upgrade
+#   scripts/e2e/run.sh upgrade   restore snapshot "installed-200" (an older install), install.sh --upgrade
 #   scripts/e2e/run.sh           both
 #
 # Needs: lxc, a container (AIPBX_E2E_CONTAINER, default aipbx-test) with the two
