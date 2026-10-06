@@ -17,6 +17,7 @@ require_once __DIR__ . '/services/IVRService.php';
 require_once __DIR__ . '/services/TimeConditionService.php';
 require_once __DIR__ . '/services/RouteService.php';
 require_once __DIR__ . '/services/SoundService.php';
+require_once __DIR__ . '/services/SoundPackService.php';
 require_once __DIR__ . '/services/ExtensionService.php';
 require_once __DIR__ . '/services/FeatureCodeService.php';
 require_once __DIR__ . '/services/HangupActionService.php';

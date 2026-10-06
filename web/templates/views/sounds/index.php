@@ -1,10 +1,13 @@
-<!-- 2-Tab Navigation Bar -->
+<!-- 3-Tab Navigation Bar -->
 <div class="sub-tab-nav">
     <button type="button" class="sub-tab-btn active" id="tab-btn-announcements" onclick="switchSoundTab('announcements')">
         <i class="fas fa-volume-up"></i> <?php echo t('sounds.tab_announcements'); ?>
     </button>
     <button type="button" class="sub-tab-btn" id="tab-btn-moh" onclick="switchSoundTab('moh')">
         <i class="fas fa-music"></i> <?php echo t('sounds.tab_moh'); ?>
+    </button>
+    <button type="button" class="sub-tab-btn" id="tab-btn-packs" onclick="switchSoundTab('packs')">
+        <i class="fas fa-box-archive"></i> <?php echo t('sound_packs.tab'); ?>
     </button>
 </div>
 
@@ -172,6 +175,101 @@
         </div>
     </div>
 </div>
+
+<!-- TAB 3: Asterisk sound packs (downloads.asterisk.org) -->
+<div class="tab-pane" id="tab-pane-packs">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-box-archive u-primary"></i> <?php echo t('sound_packs.title'); ?>
+            </div>
+            <div class="u-flex-gap">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundPackHelpBox')" title="Modül Rehberi">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="module-help-box" id="soundPackHelpBox">
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('sound_packs.help_title'); ?></h4>
+            <?php echo t('sound_packs.help_body'); ?>
+        </div>
+
+        <?php if (hasModulePermission('sounds', 'edit')): ?>
+            <div class="u-flex-gap" style="flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px;">
+                <div class="form-group u-m-0">
+                    <label class="form-label" for="sp-kind"><?php echo t('sound_packs.field_kind'); ?></label>
+                    <select id="sp-kind" class="form-control" onchange="spFillLanguages()">
+                        <option value="core"><?php echo t('sound_packs.kind_core'); ?></option>
+                        <option value="extra"><?php echo t('sound_packs.kind_extra'); ?></option>
+                        <option value="moh"><?php echo t('sound_packs.kind_moh'); ?></option>
+                    </select>
+                </div>
+                <div class="form-group u-m-0">
+                    <label class="form-label" for="sp-lang"><?php echo t('sound_packs.field_lang'); ?></label>
+                    <select id="sp-lang" class="form-control"></select>
+                </div>
+                <div class="form-group u-m-0">
+                    <label class="form-label" for="sp-format"><?php echo t('sound_packs.field_format'); ?></label>
+                    <select id="sp-format" class="form-control">
+                        <?php foreach ($sound_packs['formats'] as $fmt): ?>
+                            <option value="<?php echo $fmt; ?>"><?php echo $fmt; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" id="sp-install-btn" onclick="spInstall()">
+                    <i class="fas fa-download"></i> <?php echo t('sound_packs.btn_install'); ?>
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <div id="sp-state" class="u-fw-600" style="margin-bottom: 10px;"></div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><?php echo t('sound_packs.col_pack'); ?></th>
+                        <th><?php echo t('sound_packs.col_lang'); ?></th>
+                        <th><?php echo t('sound_packs.field_format'); ?></th>
+                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_version'); ?></th>
+                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_files'); ?></th>
+                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_installed_at'); ?></th>
+                        <th class="u-text-right"></th>
+                    </tr>
+                </thead>
+                <tbody id="sp-installed"></tbody>
+            </table>
+        </div>
+
+        <details style="margin-top: 16px;">
+            <summary class="u-strong" style="cursor: pointer;"><?php echo t('sound_packs.log'); ?></summary>
+            <pre id="sp-log" style="white-space: pre-wrap; background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 280px; overflow: auto; margin-top: 8px;"></pre>
+        </details>
+    </div>
+</div>
+
+<script>
+window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
+    'can_edit' => hasModulePermission('sounds', 'edit'),
+    'text' => [
+        'kind_core' => t('sound_packs.kind_core'),
+        'kind_extra' => t('sound_packs.kind_extra'),
+        'kind_moh' => t('sound_packs.kind_moh'),
+        'empty' => t('sound_packs.empty'),
+        'verified' => t('sound_packs.verified'),
+        'unverified' => t('sound_packs.unverified'),
+        'remove' => t('sound_packs.btn_remove'),
+        'installed' => t('sound_packs.already_installed'),
+        'confirm_install' => t('sound_packs.confirm_install'),
+        'confirm_remove' => t('sound_packs.confirm_remove'),
+        'running' => t('sound_packs.state_running'),
+        'done' => t('sound_packs.state_done'),
+        'failed' => t('sound_packs.state_failed'),
+        'request_failed' => t('sound_packs.start_failed'),
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
+</script>
 
 <!-- Upload Announcement Modal -->
 <!-- Upload / Edit Announcement Modal -->
@@ -354,3 +452,4 @@
 
 <script src="/assets/js/wavesurfer.min.js"></script>
 <script src="<?php echo asset('/assets/js/sounds.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/sound_packs.js'); ?>"></script>

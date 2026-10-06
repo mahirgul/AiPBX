@@ -1,0 +1,231 @@
+#!/bin/bash
+# aipbx-sounds — installs / removes Asterisk's official sound packages
+# (https://downloads.asterisk.org/pub/telephony/sounds/).
+#
+#   aipbx-sounds install KIND LANG FORMAT    e.g. install core fr g722
+#   aipbx-sounds remove  KIND LANG FORMAT
+#
+#   KIND    core | extra | moh       (moh: LANG is "opsound")
+#   FORMAT  wav | ulaw | alaw | gsm | g722 | sln16
+#
+# Prompts go to /var/lib/asterisk/sounds/<lang> (like AiPBX's Turkish set) and
+# /usr/share/asterisk/sounds/<lang>, where Asterisk looks, points there. A
+# language Debian manages with update-alternatives (en, en_US) gets ours as a
+# higher-priority alternative, so the packaged files are never overwritten and
+# removing the pack falls back to them. Music on hold goes to
+# /var/lib/asterisk/moh/opsound (a MOH class named "opsound" plays it).
+#
+# Every installed pack keeps a file list; remove deletes exactly those files.
+# The portal starts this through aipbx-priv in its own systemd unit and reads
+# /var/lib/aipbx/sound-packs.json (installed) and sound-packs-status.json
+# (running / done / failed).
+#
+# install.sh COPIES this file to /usr/local/sbin as root:root 0755.
+
+set -uo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C.UTF-8
+
+BASE_URL="https://downloads.asterisk.org/pub/telephony/sounds"
+SOUNDS_DIR=/var/lib/asterisk/sounds
+SYS_SOUNDS_DIR=/usr/share/asterisk/sounds
+MOH_DIR=/var/lib/asterisk/moh
+STATE_DIR=/var/lib/aipbx
+DB_FILE="$STATE_DIR/sound-packs.json"            # read by the portal (www-data)
+STATUS_FILE="$STATE_DIR/sound-packs-status.json" # read by the portal (www-data)
+MANIFEST_DIR="$STATE_DIR/sound-packs"
+LOG_FILE=/var/log/aipbx/sound-packs.log
+ALT_PRIORITY=100   # Debian's own prompts use 50
+
+die() { echo "aipbx-sounds: $*" >&2; exit 64; }
+
+[[ $EUID -eq 0 ]] || die "run as root"
+[[ $# -eq 4 ]] || die "usage: aipbx-sounds install|remove KIND LANG FORMAT"
+ACTION="$1"; KIND="$2"; LANG_CODE="$3"; FORMAT="$4"
+case "$ACTION" in install|remove) ;; *) die "invalid action: $ACTION" ;; esac
+case "$KIND" in
+    core|extra) [[ "$LANG_CODE" =~ ^[a-z]{2}(_[A-Z]{2})?$ ]] || die "invalid language: $LANG_CODE" ;;
+    moh) [[ "$LANG_CODE" == opsound ]] || die "invalid moh set: $LANG_CODE" ;;
+    *) die "invalid kind: $KIND" ;;
+esac
+case "$FORMAT" in wav|ulaw|alaw|gsm|g722|sln16) ;; *) die "invalid format: $FORMAT" ;; esac
+
+KEY="${KIND}-${LANG_CODE}-${FORMAT}"
+if [[ "$KIND" == moh ]]; then
+    PKG="asterisk-moh-opsound-${FORMAT}-current.tar.gz"
+    TARGET="$MOH_DIR/opsound"
+else
+    PKG="asterisk-${KIND}-sounds-${LANG_CODE}-${FORMAT}-current.tar.gz"
+    TARGET="$SOUNDS_DIR/$LANG_CODE"
+fi
+MANIFEST="$MANIFEST_DIR/$KEY.list"
+
+mkdir -p "$STATE_DIR" "$MANIFEST_DIR" "$(dirname "$LOG_FILE")"
+touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+
+exec 9>/run/aipbx-sounds.lock
+flock -n 9 || die "another sound pack operation is running"
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"; }
+
+# state: running | done | failed
+status() {
+    local tmpf; tmpf="$(mktemp "$STATE_DIR/.sound-packs-status.XXXXXX")"
+    python3 - "$1" "$2" "$ACTION" "$KEY" > "$tmpf" <<'PY'
+import json, sys, datetime
+state, step, action, key = sys.argv[1:5]
+print(json.dumps({"state": state, "step": step, "action": action, "pack": key,
+                  "updated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds")},
+                 ensure_ascii=False))
+PY
+    chmod 644 "$tmpf"; mv -f "$tmpf" "$STATUS_FILE"
+}
+
+fail() { log "ERROR: $1"; status failed "$1"; exit 1; }
+
+# db_set KEY JSON | db_del KEY — the installed-pack list, rewritten atomically.
+db_write() {
+    local tmpf; tmpf="$(mktemp "$STATE_DIR/.sound-packs.XXXXXX")"
+    python3 - "$DB_FILE" "$@" > "$tmpf" <<'PY' || { rm -f "$tmpf"; return 1; }
+import json, sys
+path, op, key = sys.argv[1:4]
+try:
+    with open(path) as f:
+        db = json.load(f)
+    if not isinstance(db, dict):
+        db = {}
+except (OSError, ValueError):
+    db = {}
+if op == "set":
+    db[key] = json.loads(sys.argv[4])
+else:
+    db.pop(key, None)
+print(json.dumps(db, ensure_ascii=False, indent=1, sort_keys=True))
+PY
+    chmod 644 "$tmpf"; mv -f "$tmpf" "$DB_FILE"
+}
+
+# Makes /usr/share/asterisk/sounds/<lang> point at our directory.
+link_language() {
+    local link="$SYS_SOUNDS_DIR/$LANG_CODE"
+    local alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
+    if update-alternatives --query "$alt" >/dev/null 2>&1; then
+        update-alternatives --quiet --install "$link" "$alt" "$TARGET" "$ALT_PRIORITY" >>"$LOG_FILE" 2>&1
+        return
+    fi
+    if [[ -L "$link" ]]; then
+        [[ "$(readlink -f "$link")" == "$(readlink -f "$TARGET")" ]] && return 0
+        fail "$link already points to $(readlink "$link")"
+    fi
+    [[ -e "$link" ]] && fail "$link is a directory managed by another package"
+    mkdir -p "$SYS_SOUNDS_DIR"
+    ln -sfn "$TARGET" "$link"
+}
+
+unlink_language() {
+    local link="$SYS_SOUNDS_DIR/$LANG_CODE"
+    local alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
+    if update-alternatives --query "$alt" 2>/dev/null | grep -qx "Alternative: $TARGET"; then
+        update-alternatives --quiet --remove "$alt" "$TARGET" >>"$LOG_FILE" 2>&1
+    elif [[ -L "$link" && "$(readlink -f "$link")" == "$(readlink -f "$TARGET")" ]]; then
+        rm -f "$link"
+    fi
+}
+
+# ------------------------------------------------------------------ install
+do_install() {
+    [[ "$LANG_CODE" == tr ]] && fail "Turkish prompts are AiPBX's own set (install.sh)"
+    # Extra prompts alone would replace the language's core set (e.g. Debian's
+    # English prompts) once the language points at our directory.
+    if [[ "$KIND" == extra ]] && ! compgen -G "$MANIFEST_DIR/core-$LANG_CODE-*.list" >/dev/null; then
+        fail "Install a core pack for '$LANG_CODE' first"
+    fi
+    tmp="$(mktemp -d /tmp/aipbx-sounds.XXXXXX)"   # global: the EXIT trap runs after this function returns
+    trap 'rm -rf "$tmp"' EXIT
+
+    log "===== Installing $PKG ====="
+    status running "Downloading $PKG"
+    curl -fsSL --retry 3 --max-time 900 -o "$tmp/$PKG" "$BASE_URL/$PKG" 2>>"$LOG_FILE" \
+        || fail "Download failed: $BASE_URL/$PKG"
+
+    # Most packages publish a .sha1; a few (e.g. en_AU) do not.
+    local verified=false
+    if curl -fsSL --retry 3 --max-time 60 -o "$tmp/$PKG.sha1" "$BASE_URL/$PKG.sha1" 2>/dev/null; then
+        local want got
+        want="$(awk '{print $1; exit}' "$tmp/$PKG.sha1")"
+        got="$(sha1sum "$tmp/$PKG" | awk '{print $1}')"
+        [[ -n "$want" && "$want" == "$got" ]] || fail "Checksum mismatch for $PKG"
+        verified=true
+        log "SHA1 verified"
+    else
+        log "No .sha1 published for $PKG; downloaded over HTTPS only"
+    fi
+
+    status running "Extracting $PKG"
+    # Only plain relative paths: a crafted archive must not escape TARGET.
+    tar -tzf "$tmp/$PKG" > "$tmp/list" 2>>"$LOG_FILE" || fail "Archive is unreadable"
+    if grep -qE '(^/|(^|/)\.\.(/|$))' "$tmp/list"; then
+        fail "Archive contains unsafe paths"
+    fi
+    if tar -tvzf "$tmp/$PKG" 2>/dev/null | grep -q '^[^-d]'; then
+        fail "Archive contains links or special files"
+    fi
+    # The .sha1 names the real file (…-wav-1.6.1.tar.gz); "current" otherwise.
+    local version
+    version="$(grep -oE '[0-9]+(\.[0-9]+)+\.tar\.gz' "$tmp/$PKG.sha1" 2>/dev/null | head -1 | sed 's/\.tar\.gz$//')"
+    [[ -n "$version" ]] || version=current
+
+    mkdir -p "$TARGET"
+    tar -xzf "$tmp/$PKG" --no-same-owner --no-same-permissions -C "$TARGET" 2>>"$LOG_FILE" \
+        || fail "Extraction failed"
+    sed 's|^\./||' "$tmp/list" | grep -v '/$' | sort -u > "$MANIFEST"
+    chown -R asterisk:asterisk "$TARGET"
+    find "$TARGET" -type d -exec chmod 755 {} +
+    find "$TARGET" -type f -exec chmod 644 {} +
+
+    [[ "$KIND" == core ]] && link_language
+
+    local files; files="$(wc -l < "$MANIFEST")"
+    db_write set "$KEY" "$(python3 -c 'import json,sys,datetime; print(json.dumps({"kind":sys.argv[1],"lang":sys.argv[2],"format":sys.argv[3],"package":sys.argv[4],"version":sys.argv[5],"verified":sys.argv[6]=="true","files":int(sys.argv[7]),"path":sys.argv[8],"installed_at":datetime.datetime.now().astimezone().isoformat(timespec="seconds")}))' \
+        "$KIND" "$LANG_CODE" "$FORMAT" "$PKG" "$version" "$verified" "$files" "$TARGET")" \
+        || fail "Could not record the installed pack"
+
+    log "===== Installed $PKG ($files files → $TARGET) ====="
+    status done "Installed: $KEY"
+}
+
+# ------------------------------------------------------------------ remove
+do_remove() {
+    [[ -f "$MANIFEST" ]] || { db_write del "$KEY"; fail "Not installed: $KEY"; }
+    local last_core=false
+    if [[ "$KIND" == core ]] && [[ "$(compgen -G "$MANIFEST_DIR/core-$LANG_CODE-*.list" | wc -l)" -eq 1 ]]; then
+        last_core=true
+        compgen -G "$MANIFEST_DIR/extra-$LANG_CODE-*.list" >/dev/null \
+            && fail "Remove the extra packs for '$LANG_CODE' first"
+    fi
+    log "===== Removing $KEY ====="
+    status running "Removing $KEY"
+
+    # A file another installed pack also lists (same name and format) stays.
+    local others=()
+    for m in "$MANIFEST_DIR"/*.list; do
+        [[ "$m" != "$MANIFEST" && -f "$m" ]] && others+=("$m")
+    done
+    while IFS= read -r rel; do
+        [[ -z "$rel" || "$rel" == /* || "$rel" == *..* ]] && continue
+        if (( ${#others[@]} )) && grep -qxF -- "$rel" "${others[@]}" 2>/dev/null; then
+            continue
+        fi
+        rm -f -- "$TARGET/$rel"
+    done < "$MANIFEST"
+    find "$TARGET" -mindepth 1 -type d -empty -delete 2>/dev/null
+
+    rm -f "$MANIFEST"
+    db_write del "$KEY"
+    [[ "$last_core" == true ]] && unlink_language
+    [[ -d "$TARGET" && -z "$(ls -A "$TARGET")" ]] && rmdir "$TARGET"
+    log "===== Removed $KEY ====="
+    status done "Removed: $KEY"
+}
+
+"do_$ACTION"
