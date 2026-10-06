@@ -37,9 +37,6 @@ router), set **External IP Address** and list your **Local Network & VPN Subnets
 - an `[ice_host_candidates]` section in `rtp.conf` mapping the server's private address to the public
   one, with `include_local_address=yes` so clients on the LAN can still use the private address.
 
-Before 2.2.0 the mapping was written under `[general]`, where Asterisk ignores it, so clients outside
-the LAN (a phone on mobile data) only got private candidates and had no audio.
-
 ### 2. TURNS port — `/etc/ai-pbx.env`
 
 | Setting | Clients are given | Needs open |
@@ -51,8 +48,8 @@ coturn listens on 5349; the nginx multiplexer on 443 passes TLS connections with
 the apps) or with `stun.turn` to it. Clients are given 443, so WebRTC audio works on networks that
 allow nothing but 443 (hotels, hospitals, guest Wi-Fi, strict corporate networks). Change it in
 `/etc/ai-pbx.env`; the portal reads the file on every request, and clients pick the new port up with
-their next credential refresh or sign-in. Updates keep the value, except that 5349 — the default
-before 2.2.1 — is switched to 443 once.
+their next credential refresh or sign-in. Updates keep the value, except that the
+old default 5349 is switched to 443 once.
 
 coturn relays on the server's own address (`relay-ip` in `/etc/turnserver.conf`, set by the
 installer). TURNS connections that arrive through the 443 edge come from `127.0.0.1`; without

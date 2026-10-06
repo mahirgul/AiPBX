@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Attach the APK to this existing GitHub Release (e.g. v2.0.0); skips Google Play'
+        description: 'Attach the APK to this existing GitHub Release (e.g. v1.0.0); skips Google Play'
         required: false
         default: ''
         type: string

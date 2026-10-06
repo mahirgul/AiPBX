@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Attach the IPA and simulator build to this existing GitHub Release (e.g. v2.0.0)'
+        description: 'Attach the IPA and simulator build to this existing GitHub Release (e.g. v1.0.0)'
         required: false
         default: ''
         type: string

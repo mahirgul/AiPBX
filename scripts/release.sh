@@ -1,11 +1,11 @@
 #!/bin/bash
 # Publishes an AiPBX server release (developer tool).
 #
-#   scripts/release.sh 2.1.0
+#   scripts/release.sh 1.0.1
 #
-# 1. CHANGELOG.md must contain a "## 2.1.0" section (the release notes).
+# 1. CHANGELOG.md must contain a "## 1.0.1" section (the release notes).
 # 2. VERSION is updated and committed.
-# 3. An annotated git tag v2.1.0 is created (message = the CHANGELOG section;
+# 3. An annotated git tag v1.0.1 is created (message = the CHANGELOG section;
 #    installations show it via `aipbx-update --check` and the portal's "What's new").
 # 4. Commit and tag are pushed to GitHub and a GitHub Release is created (if gh exists).
 #
