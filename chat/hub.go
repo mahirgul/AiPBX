@@ -253,20 +253,21 @@ func (h *Hub) BroadcastToAll(msg []byte) {
 	}
 }
 
+// SendToExtension queues msg for every connected device of ext. It reports
+// whether at least one device took it: a device whose send buffer is full
+// drops the message, and that must not count as delivered.
 func (h *Hub) SendToExtension(ext string, msg []byte) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	clients, ok := h.clients[ext]
-	if !ok || len(clients) == 0 {
-		return false
-	}
-	for c := range clients {
+	queued := false
+	for c := range h.clients[ext] {
 		select {
 		case c.send <- msg:
+			queued = true
 		default:
 		}
 	}
-	return true
+	return queued
 }
 
 func (h *Hub) BroadcastToConversation(convID int, msg []byte, excludeExt string) {
@@ -357,35 +358,47 @@ func (c *Client) sendPong() {
 	}
 }
 
-func (c *Client) handleSendMessage(in *InMessage) {
+// sendError is a rejected send: status is what the REST endpoint answers,
+// the WebSocket path only logs it.
+type sendError struct {
+	status int
+	msg    string
+}
+
+func (e *sendError) Error() string { return e.msg }
+
+// SendMessage checks, stores and delivers a message from user: live over the
+// WebSocket to every participant's devices, as a push notification to the
+// other participants, then the receipts. It is the one send path behind both
+// POST /api/messages and the "send_message" WebSocket action. The returned
+// message is the sender's view (is_me, status "sent").
+func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	convID := in.ConversationID
 
-	// If no conversation ID was provided but target_ext was, get or create it
+	// No conversation ID but a target extension: get or create the direct chat
 	if convID <= 0 && in.TargetExt != "" {
-		conv, err := GetOrCreateDirectConversation(c.user.Extension, in.TargetExt, c.user.Extension)
+		conv, err := GetOrCreateDirectConversation(user.Extension, in.TargetExt, user.Extension)
 		if err != nil {
-			log.Printf("[WS] Failed to get/create conv between %s and %s: %v", c.user.Extension, in.TargetExt, err)
-			return
+			return nil, &sendError{http.StatusInternalServerError, "Sohbet başlatılamadı: " + err.Error()}
 		}
 		convID = conv.ID
 	}
-
 	if convID <= 0 {
-		return
+		return nil, &sendError{http.StatusBadRequest, "conversation_id veya target_ext zorunludur."}
 	}
 
 	// CH-2: participant check (prevents IDOR)
-	isPart, err := IsParticipant(convID, c.user.Extension)
-	if err != nil || !isPart {
-		log.Printf("[WS] Send blocked: Ext %s is not participant in conv %d", c.user.Extension, convID)
-		return
+	if isPart, err := IsParticipant(convID, user.Extension); err != nil || !isPart {
+		return nil, &sendError{http.StatusForbidden, "Bu sohbete mesaj gönderme yetkiniz yok."}
 	}
 
 	// CH-4: attachment_url may only be one of our own media paths and the sender's own upload
 	if in.AttachmentURL != "" {
-		if !validMediaURL(in.AttachmentURL) || !attachmentOwnedBy(c.hub.secretKey, in.AttachmentURL, c.user.Extension) {
-			log.Printf("[WS] Rejected attachment_url from %s: %s", c.user.Extension, in.AttachmentURL)
-			return
+		if !validMediaURL(in.AttachmentURL) {
+			return nil, &sendError{http.StatusBadRequest, "Geçersiz attachment_url formatı."}
+		}
+		if !attachmentOwnedBy(h.secretKey, in.AttachmentURL, user.Extension) {
+			return nil, &sendError{http.StatusForbidden, "Bu dosyayı iliştirme yetkiniz yok."}
 		}
 	}
 
@@ -393,30 +406,27 @@ func (c *Client) handleSendMessage(in *InMessage) {
 	if msgType == "" {
 		msgType = "text"
 	}
-
 	textMsg := in.Message
 	if textMsg == "" && in.Content != "" {
 		textMsg = in.Content
 	}
 
-	saved, err := SaveMessage(convID, c.user.Extension, msgType, textMsg, in.AttachmentURL, in.FileName, in.FileSize, in.MimeType)
+	saved, err := SaveMessage(convID, user.Extension, msgType, textMsg, in.AttachmentURL, in.FileName, in.FileSize, in.MimeType)
 	if err != nil {
-		log.Printf("[WS] SaveMessage error: %v", err)
-		return
+		return nil, &sendError{http.StatusInternalServerError, "Mesaj kaydedilemedi: " + err.Error()}
 	}
 
 	participants, _ := GetParticipants(convID)
 
-	// Send to sender (flagged as is_me=true)
+	// The sender's own devices get it flagged as is_me
 	saved.IsMe = true
 	saved.Status = "sent"
 	senderPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
 		"data":  saved,
 	})
-	c.hub.SendToExtension(c.user.Extension, senderPayload)
+	h.SendToExtension(user.Extension, senderPayload)
 
-	// Send to others (flagged as is_me=false)
 	saved.IsMe = false
 	saved.Status = ""
 	otherPayload, _ := json.Marshal(map[string]interface{}{
@@ -427,57 +437,65 @@ func (c *Client) handleSendMessage(in *InMessage) {
 	conv, _ := GetConversationByID(convID)
 	isGroup := conv != nil && conv.Type == "group"
 
+	senderTitle := user.FullName
+	if senderTitle == "" {
+		senderTitle = "Dahili " + user.Extension
+	}
+	bodyPreview := saved.Message
+	if saved.MsgType == "image" {
+		bodyPreview = "📷 [Fotoğraf]"
+	} else if saved.MsgType == "file" {
+		bodyPreview = "📎 [Dosya] " + saved.FileName
+	}
+	bodyPreview = truncateRunes(bodyPreview, 100)
+
 	for _, ext := range participants {
-		if ext == c.user.Extension {
+		if ext == user.Extension {
 			continue
 		}
-
-		if c.hub.SendToExtension(ext, otherPayload) {
+		if h.SendToExtension(ext, otherPayload) {
 			_ = MarkDelivered(convID, ext, saved.ID)
 		}
 
-		// Trigger FCM push notification for recipient
-		// Even if delivered to web, mobile app might be in background
-		bodyPreview := saved.Message
-		if saved.MsgType == "image" {
-			bodyPreview = "📷 [Fotoğraf]"
-		} else if saved.MsgType == "file" {
-			bodyPreview = "📎 [Dosya] " + saved.FileName
-		}
-		if len(bodyPreview) > 100 {
-			bodyPreview = bodyPreview[:97] + "..."
-		}
-
-		senderTitle := c.user.FullName
-		if senderTitle == "" {
-			senderTitle = "Dahili " + c.user.Extension
-		}
-
+		// Push even when a device got it live: the mobile app may be in the background
 		pushTitle := senderTitle
 		pushBody := bodyPreview
 		extra := map[string]string{
 			"conversation_id":   strconv.Itoa(convID),
-			"sender_ext":        c.user.Extension,
+			"sender_ext":        user.Extension,
 			"sender_name":       senderTitle,
 			"msg_id":            strconv.FormatInt(saved.ID, 10),
 			"msg_type":          saved.MsgType,
 			"conversation_type": "direct",
 		}
-
 		if isGroup {
 			pushTitle = conv.Title
 			pushBody = fmt.Sprintf("%s: %s", senderTitle, bodyPreview)
 			extra["conversation_type"] = "group"
 			extra["group_title"] = conv.Title
 		}
-
 		TriggerFcmPush(ext, pushTitle, pushBody, "new_message", extra)
 	}
-	c.hub.PushReceipts(convID)
+	h.PushReceipts(convID)
+
+	saved.IsMe = true
+	saved.Status = "sent"
+	return saved, nil
+}
+
+func (c *Client) handleSendMessage(in *InMessage) {
+	if _, err := c.hub.SendMessage(c.user, in); err != nil {
+		log.Printf("[WS] Send from %s rejected: %s", c.user.Extension, err.msg)
+	}
 }
 
 func (c *Client) handleTyping(in *InMessage) {
 	if in.ConversationID <= 0 {
+		return
+	}
+	// Same participant check as every other action: otherwise anyone could
+	// send typing events into conversations they do not belong to.
+	if isPart, _ := IsParticipant(in.ConversationID, c.user.Extension); !isPart {
 		return
 	}
 	participants, _ := GetParticipants(in.ConversationID)

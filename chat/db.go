@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -91,6 +93,39 @@ var displayLoc = time.Local
 
 func fmtTime(t time.Time) string {
 	return t.In(displayLoc).Format(timeLayout)
+}
+
+// truncateRunes shortens s to at most max characters, ending with "..." when
+// it was cut. It counts runes, not bytes: a byte cut could split a multi-byte
+// character (ş, ğ, emoji) and strict MariaDB rejects the invalid UTF-8, which
+// failed the whole message. VARCHAR(n) on utf8mb4 also counts characters.
+func truncateRunes(s string, max int) string {
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+	r := []rune(s)
+	if max <= 3 {
+		return string(r[:max])
+	}
+	return string(r[:max-3]) + "..."
+}
+
+// clipRunes shortens s to at most max characters without a marker.
+func clipRunes(s string, max int) string {
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+	return string([]rune(s)[:max])
+}
+
+// systemMeta builds the system_meta JSON of a system message. Values come from
+// users (group titles), so they must be encoded, not formatted into a string.
+func systemMeta(fields map[string]string) string {
+	b, err := json.Marshal(fields)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
 }
 
 func InitDB(cfg *Config) error {
@@ -417,9 +452,7 @@ func SaveMessage(convID int, senderExt, msgType, message, attachmentURL, fileNam
 	} else if msgType == "audio" {
 		lastPreview = "🎤 [Ses Kaydı]"
 	}
-	if len(lastPreview) > 250 {
-		lastPreview = lastPreview[:247] + "..."
-	}
+	lastPreview = truncateRunes(lastPreview, 250)
 
 	_, err = tx.Exec(`
 		UPDATE chat_conversations
@@ -562,13 +595,19 @@ func GetParticipants(convID int) ([]string, error) {
 	return exts, nil
 }
 
-// IsParticipant verifies whether the given extension belongs to the conversation (CH-1, CH-2, CH-G6)
+// IsParticipant verifies whether the given extension belongs to the conversation (CH-1, CH-2, CH-G6).
+// A deleted conversation has no participants: deleting a group only sets
+// is_deleted, so without this check its members could still read and post.
 func IsParticipant(convID int, ext string) (bool, error) {
 	if convID <= 0 || ext == "" || db == nil {
 		return false, nil
 	}
 	var exists int
-	err := db.QueryRow("SELECT 1 FROM chat_participants WHERE conversation_id = ? AND extension = ? AND left_at IS NULL LIMIT 1", convID, ext).Scan(&exists)
+	err := db.QueryRow(`
+		SELECT 1 FROM chat_participants p
+		JOIN chat_conversations c ON c.id = p.conversation_id AND c.is_deleted = 0
+		WHERE p.conversation_id = ? AND p.extension = ? AND p.left_at IS NULL
+		LIMIT 1`, convID, ext).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -589,6 +628,7 @@ func CanAccessAttachment(filename, ext string) (bool, error) {
 	err := db.QueryRow(`
 		SELECT 1 FROM chat_messages m
 		JOIN chat_participants p ON p.conversation_id = m.conversation_id AND p.extension = ? AND p.left_at IS NULL
+		JOIN chat_conversations mc ON mc.id = m.conversation_id AND mc.is_deleted = 0
 		WHERE SUBSTRING_INDEX(m.attachment_url, '/', -1) = ?
 		UNION ALL
 		SELECT 1 FROM chat_conversations c
@@ -640,13 +680,8 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 	if title == "" {
 		return nil, nil, fmt.Errorf("Grup adı boş olamaz")
 	}
-	if len(title) > 100 {
-		title = title[:100]
-	}
-	description = strings.TrimSpace(description)
-	if len(description) > 255 {
-		description = description[:255]
-	}
+	title = clipRunes(title, 100)
+	description = clipRunes(strings.TrimSpace(description), 255)
 
 	// Clean and deduplicate members
 	memberMap := make(map[string]bool)
@@ -718,7 +753,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		creatorName = u.FullName
 	}
 	sysMsgText := fmt.Sprintf("%s \"%s\" grubunu oluşturdu", creatorName, title)
-	sysMeta := fmt.Sprintf(`{"actor":"%s","value":"%s"}`, creatorExt, title)
+	sysMeta := systemMeta(map[string]string{"actor": creatorExt, "value": title})
 
 	sRes, err := tx.Exec(`
 		INSERT INTO chat_messages (conversation_id, sender_ext, msg_type, message, system_event, system_meta, created_at)
@@ -891,7 +926,7 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 
 	sysMsgText := fmt.Sprintf("%s, %s kullanıcısını gruba ekledi", actorName, strings.Join(targetNames, ", "))
-	sysMeta := fmt.Sprintf(`{"actor":"%s","target":"%s"}`, actorExt, strings.Join(added, ","))
+	sysMeta := systemMeta(map[string]string{"actor": actorExt, "target": strings.Join(added, ",")})
 
 	sRes, err := tx.Exec(`
 		INSERT INTO chat_messages (conversation_id, sender_ext, msg_type, message, system_event, system_meta, created_at)
@@ -960,7 +995,7 @@ func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error)
 	}
 
 	sysMsgText := fmt.Sprintf("%s, %s kullanıcısını gruptan çıkardı", actorName, targetName)
-	sysMeta := fmt.Sprintf(`{"actor":"%s","target":"%s"}`, actorExt, targetExt)
+	sysMeta := systemMeta(map[string]string{"actor": actorExt, "target": targetExt})
 	sysMsg, err := SaveSystemMessage(convID, "member_removed", actorExt, targetExt, sysMsgText, sysMeta)
 	if err != nil {
 		return nil, err
@@ -974,6 +1009,11 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 	isPart, err := IsParticipant(convID, ext)
 	if err != nil || !isPart {
 		return nil, fmt.Errorf("Bu grubun aktif bir üyesi değilsiniz")
+	}
+	// Leaving is for groups only: on a direct chat the "no admin left" step
+	// below would make the other person admin of the private conversation.
+	if conv, err := GetConversationByID(convID); err != nil || conv.Type != "group" {
+		return nil, fmt.Errorf("Bu sohbet bir grup değildir")
 	}
 
 	_, err = db.Exec(`
@@ -1011,7 +1051,7 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 		userName = u.FullName
 	}
 	sysMsgText := fmt.Sprintf("%s gruptan ayrıldı", userName)
-	sysMeta := fmt.Sprintf(`{"actor":"%s"}`, ext)
+	sysMeta := systemMeta(map[string]string{"actor": ext})
 	sysMsg, _ := SaveSystemMessage(convID, "member_left", ext, "", sysMsgText, sysMeta)
 
 	return sysMsg, nil
@@ -1030,13 +1070,8 @@ func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string)
 	if title == "" {
 		return nil, fmt.Errorf("Grup adı boş olamaz")
 	}
-	if len(title) > 100 {
-		title = title[:100]
-	}
-	description = strings.TrimSpace(description)
-	if len(description) > 255 {
-		description = description[:255]
-	}
+	title = clipRunes(title, 100)
+	description = clipRunes(strings.TrimSpace(description), 255)
 
 	_, err = db.Exec(`
 		UPDATE chat_conversations
@@ -1052,7 +1087,7 @@ func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string)
 		actorName = u.FullName
 	}
 	sysMsgText := fmt.Sprintf("%s grup bilgilerini güncelledi", actorName)
-	sysMeta := fmt.Sprintf(`{"actor":"%s","value":"%s"}`, actorExt, title)
+	sysMeta := systemMeta(map[string]string{"actor": actorExt, "value": title})
 	sysMsg, _ := SaveSystemMessage(convID, "group_updated", actorExt, "", sysMsgText, sysMeta)
 
 	return sysMsg, nil
@@ -1094,15 +1129,19 @@ func DeleteGroup(convID int, actorExt string) error {
 	return err
 }
 
-// IsGroupAdmin verifies whether the extension is an active group admin (CH-G1)
+// IsGroupAdmin verifies whether the extension is an active group admin (CH-G1).
+// Only a live group has admins: an admin row on a direct chat (left over from
+// before LeaveGroup checked the type) must not unlock the group operations,
+// or a third person could be added to a private conversation.
 func IsGroupAdmin(convID int, ext string) (bool, error) {
 	if convID <= 0 || ext == "" || db == nil {
 		return false, nil
 	}
 	var exists int
 	err := db.QueryRow(`
-		SELECT 1 FROM chat_participants
-		WHERE conversation_id = ? AND extension = ? AND role = 'admin' AND left_at IS NULL
+		SELECT 1 FROM chat_participants p
+		JOIN chat_conversations c ON c.id = p.conversation_id AND c.type = 'group' AND c.is_deleted = 0
+		WHERE p.conversation_id = ? AND p.extension = ? AND p.role = 'admin' AND p.left_at IS NULL
 		LIMIT 1
 	`, convID, ext).Scan(&exists)
 	if err == sql.ErrNoRows {
