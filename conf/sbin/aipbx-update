@@ -77,7 +77,10 @@ CURRENT="v$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION" 2>/dev/null || echo 0.0.0
 CURRENT_COMMIT="$(git_in rev-parse HEAD)"
 
 # ---------------------------------------------------------------- fetch releases
-if ! git_in fetch --quiet --tags --force origin 2>>"$LOG_FILE"; then
+# --prune-tags: a release tag deleted on GitHub (e.g. when versioning was reset
+# to 1.0.0) must disappear here too; a stale local v2.2.2 was offered as an
+# "update" and would have moved the installation back to old code.
+if ! git_in fetch --quiet --tags --force --prune --prune-tags origin 2>>"$LOG_FILE"; then
     log "ERROR: could not reach GitHub (git fetch)"
     [[ "$MODE" == check ]] && printf '{"ok":false,"error":"GitHub unreachable","current":%s,"checked_at":%s}\n' \
         "$(json_str "$CURRENT")" "$(json_str "$(date -Iseconds)")" > "$CHECK_FILE" && chmod 644 "$CHECK_FILE"
