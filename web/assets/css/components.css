@@ -629,6 +629,34 @@ body.auth-body {
     padding: 24px;
 }
 
+/* Language switch in the top-right corner of the sign-in pages */
+.auth-lang-switch {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    gap: 4px;
+    font-size: 12.5px;
+    z-index: 10;
+}
+.auth-lang-switch a,
+.auth-lang-switch span {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    text-decoration: none;
+}
+.auth-lang-switch a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+.auth-lang-switch .active {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
 .auth-card {
     width: 100%;
     background: var(--bg-card);

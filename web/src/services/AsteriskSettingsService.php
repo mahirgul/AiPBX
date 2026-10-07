@@ -215,7 +215,11 @@ class AsteriskSettingsService {
         markPendingSync('rtp', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('udptl', 'system_setting', 'general', $label, 'update', $uid);
 
-        $lang_changed = syncDefaultLanguage($new_settings['system_default_language']);
+        try {
+            $lang_changed = syncDefaultLanguage($new_settings['system_default_language']);
+        } catch (RuntimeException $e) {
+            return ['success' => false, 'error' => t('srv_asterisk.saved') . ' ' . $e->getMessage()];
+        }
 
         $message = t('srv_asterisk.saved');
         if ($lang_changed) {

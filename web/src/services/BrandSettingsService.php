@@ -58,7 +58,7 @@ class BrandSettingsService {
         }
         $target = $uploadDir . '/' . $baseName . '.' . $ext;
         if (!move_uploaded_file($_FILES[$fileKey]['tmp_name'], $target)) {
-            throw new \Exception('Dosya kaydedilemedi (yazma izni sorunu olabilir).');
+            throw new \Exception(sprintf(t('srv_brand.err_write'), $uploadDir));
         }
         @chmod($target, 0644);
 

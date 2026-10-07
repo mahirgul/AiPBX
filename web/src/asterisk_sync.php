@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/file_helper.php';
 require_once __DIR__ . '/asterisk_helper.php';
+require_once __DIR__ . '/priv_helper.php';
 
 /**
  * Helper to safely write file with ownership
@@ -277,22 +278,17 @@ require_once __DIR__ . '/sync/SyncPermissions.php';
  */
 function syncDefaultLanguage($lang) {
     $lang = preg_replace('/[^a-zA-Z_]/', '', $lang) ?: 'en';
-    $conf_path = ASTERISK_CONF_DIR . '/asterisk.conf';
-    $content = @file_get_contents($conf_path);
-    if ($content === false) return false;
-
-    if (preg_match('/^defaultlanguage\s*=\s*(.*)$/m', $content, $m) && trim($m[1]) === $lang) {
+    $content = @file_get_contents(ASTERISK_CONF_DIR . '/asterisk.conf');
+    if ($content !== false && preg_match('/^defaultlanguage\s*=\s*(.*)$/m', $content, $m) && trim($m[1]) === $lang) {
         return false; // same value already, nothing changed
     }
-
-    if (preg_match('/^defaultlanguage\s*=.*$/m', $content)) {
-        $content = preg_replace('/^defaultlanguage\s*=.*$/m', "defaultlanguage = {$lang}", $content, 1);
-    } else {
-        // Append at the end of the [options] section (up to the next [section] or end of file)
-        $content = preg_replace('/(\[options\][^\[]*)/', "$1defaultlanguage = {$lang}\n", $content, 1);
+    // asterisk.conf is asterisk:asterisk 0640 — the portal cannot write it, so
+    // the old file_put_contents() here failed silently and the language never
+    // changed although the page asked for a restart. Written as root now.
+    $res = PrivHelper::run(['asterisk-lang', $lang]);
+    if (!$res['success']) {
+        throw new RuntimeException(sprintf(t('srv_asterisk.err_lang'), $res['output']));
     }
-
-    file_put_contents($conf_path, $content);
     return true;
 }
 

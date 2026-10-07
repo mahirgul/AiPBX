@@ -113,3 +113,6 @@ CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
 
 # aipbx.bid website (own git repo, deployed to 10.8.0.1)
 /aipbx.bid/
+
+# === Uploads (Appearance → Branding) ===
+web/assets/images/brand/

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/ForceResetService.php';
+require_once __DIR__ . '/../services/ResetPasswordService.php';
 
 class ForceResetController extends BaseController
 {
@@ -19,11 +20,23 @@ class ForceResetController extends BaseController
 
         $error = '';
         $sent = false;
+        $changed = false;
 
         if (static::isPost()) {
-            $res = ForceResetService::requestResetEmail($_POST, $user);
-            $sent = $res['sent'];
-            $error = $res['error'] ?? '';
+            if (isset($_POST['new_password'])) {
+                // The user has just signed in with the current password, so the
+                // new one can be set here directly. Before, the only way out was
+                // a link by e-mail: a user without an e-mail address (accounts
+                // created with a generated password) or with mail not working
+                // was locked out.
+                $res = ResetPasswordService::resetPassword($_POST, $user);
+                $changed = $res['success'];
+                $error = $res['error'] ?? '';
+            } else {
+                $res = ForceResetService::requestResetEmail($_POST, $user);
+                $sent = $res['sent'];
+                $error = $res['error'] ?? '';
+            }
         }
 
         $csrf_token = getCSRFToken();
@@ -41,6 +54,7 @@ class ForceResetController extends BaseController
         static::renderAuthPage('force_reset/index', [
             'error' => $error,
             'sent' => $sent,
+            'changed' => $changed,
             'csrf_token' => $csrf_token,
             'brand_title' => $brand_title,
             'brand_sub' => $brand_sub,

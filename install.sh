@@ -430,6 +430,10 @@ mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/lib/aipbx
+# Logo / favicon uploads (Appearance → Branding). The code checkout belongs to
+# root, so without this folder the portal could not save an uploaded logo.
+mkdir -p "$INSTALL_DIR/web/assets/images/brand"
+chown www-data:www-data "$INSTALL_DIR/web/assets/images/brand"
 # TWO processes write to the fax directories: Asterisk (user asterisk; incoming
 # faxes, send results) and the portal (www-data, member of group asterisk;
 # outgoing fax archive and the .call file). Previously /var/www/faxes belonged to
