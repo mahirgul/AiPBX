@@ -3017,4 +3017,5 @@ return [
     'sync.ctx_outbound' => 'outbound route sync',
     'sync.ctx_queues' => 'queue sync',
     'sync.ctx_voicemail' => 'voicemail sync',
+    'common.error_colon' => 'Error: %s',
 ];

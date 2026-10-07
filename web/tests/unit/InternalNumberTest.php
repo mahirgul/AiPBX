@@ -73,7 +73,7 @@ final class InternalNumberTest extends TestCase
             $this->fail('gercek dahiliyle cakisma yakalanmadi');
         } catch (Exception $e) {
             $this->assertStringContainsString('3001', $e->getMessage());
-            $this->assertStringContainsString('dahili', $e->getMessage());
+            $this->assertStringContainsString('extension', $e->getMessage());
         } finally {
             getDB()->exec("DELETE FROM sys_users WHERE username = 'tuser'");
         }

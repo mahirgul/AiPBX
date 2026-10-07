@@ -83,8 +83,8 @@ final class UserImportTest extends TestCase
             2 => ['username' => 'csvtest_mevcut', 'full_name' => 'X', 'email' => '', 'extension' => '', 'role' => '', 'password' => ''],
             3 => ['username' => 'csvtest_yeni', 'full_name' => 'Y', 'email' => '', 'extension' => '7105', 'role' => '', 'password' => ''],
         ], 'cc_agent');
-        $this->assertStringContainsString('zaten var', $v[2]['errors'][0]);
-        $this->assertStringContainsString('başka bir kullanıcıya', $v[3]['errors'][0]);
+        $this->assertStringContainsString('already exists', $v[2]['errors'][0]);
+        $this->assertStringContainsString('assigned to another user', $v[3]['errors'][0]);
     }
 
     public function testImportCreatesUsersAndReturnsGeneratedPasswords(): void
@@ -121,6 +121,6 @@ final class UserImportTest extends TestCase
             'password' => self::tempSecret(), 'role' => 'cc_agent', 'extension' => '7106',
         ]);
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('başka bir kullanıcıya atanmış', $res['error']);
+        $this->assertStringContainsString('is assigned to another user', $res['error']);
     }
 }

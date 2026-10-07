@@ -197,10 +197,10 @@ final class MsTeamsTest extends TestCase
 
         $modules = RoleRepository::modulesDefinition();
         $this->assertArrayHasKey('ms_teams', $modules);
-        $this->assertSame('Entegrasyonlar', $modules['ms_teams']['group']);
+        $this->assertSame('Integrations', $modules['ms_teams']['group']);
 
         $groups = RoleRepository::groupSlugs();
-        $this->assertArrayHasKey('Entegrasyonlar', $groups);
-        $this->assertSame('integrations', $groups['Entegrasyonlar']);
+        $this->assertArrayHasKey('Integrations', $groups);
+        $this->assertSame('integrations', $groups['Integrations']);
     }
 }

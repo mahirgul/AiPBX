@@ -37,7 +37,7 @@ class FaxSettingsService {
             writeAuditLog(null, 'did_mapping', $db->lastInsertId(), "Fax unit: {$dept}", 'create', $uid);
             return ['success' => true, 'message' => sprintf(t('srv_fax.dept_added'), $dept)];
         } catch (\PDOException $e) {
-            return ['success' => false, 'error' => "Hata: " . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('common.error_colon'), $e->getMessage())];
         }
     }
 
