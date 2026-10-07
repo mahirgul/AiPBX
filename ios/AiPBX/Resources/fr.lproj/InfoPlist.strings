@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "L'accès au microphone est nécessaire pour les appels PBX et les conversations vocales.";
+"NSCameraUsageDescription" = "L'accès à l'appareil photo est nécessaire pour se connecter avec le code QR du PBX et pour envoyer des photos dans les discussions.";
+"NSPhotoLibraryUsageDescription" = "L'accès à la photothèque est nécessaire pour partager des photos et des fichiers dans les discussions.";
