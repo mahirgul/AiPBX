@@ -49,33 +49,75 @@
     transform: translateY(-1px);
 }
 
-/* Room for two cards (phone turned sideways, tablet): side by side. The form
-   is taller than the screen, so the brand card stays at the top and in view. */
+/* Room for two cards (phone turned sideways, tablet): side by side and the
+   same height; the brand card spreads its content over that height. */
 @media (min-width: 640px) and (orientation: landscape) {
     .auth-cards.is-mobile {
         max-width: 860px;
         flex-direction: row;
-        align-items: flex-start;
+        align-items: stretch;
     }
     .auth-cards.is-mobile > .auth-card {
         flex: 1 1 0;
         min-width: 0;
     }
     .auth-cards.is-mobile > .brand-card {
-        position: sticky;
-        top: 16px;
+        justify-content: space-between;
     }
 }
 
-/* Phones: the EN/TR switch and the passkey button live in the brand card. */
-.brand-card .auth-lang-switch.inline {
-    position: static;
-    justify-content: flex-end;
-    margin: -8px -6px 8px 0;
+/* Phones: the passkey button and, at the bottom, the EN/TR buttons live in
+   the brand card; the language buttons are as big as the sign-in button. */
+.brand-card {
+    display: flex;
+    flex-direction: column;
 }
 .brand-card #btnPasskeyLogin {
     margin-top: 10px;
 }
+.brand-card .auth-lang-switch.inline {
+    position: static;
+    width: 100%;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 18px;
+}
+.brand-card .auth-lang-switch.inline a,
+.brand-card .auth-lang-switch.inline span {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 13px 14px;
+    font-size: 15px;
+    border-radius: 10px;
+}
+.brand-card .auth-lang-switch.inline .active {
+    border-color: var(--primary);
+    color: var(--primary);
+}
 body.auth-body:has(.auth-cards.is-mobile) {
     padding-top: 16px;
+}
+
+/* Security check: the question and the answer box on one row. */
+.captcha-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.captcha-question {
+    flex: 0 0 auto;
+    padding: 0 14px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--primary);
+    font-size: 17px;
+    white-space: nowrap;
+}
+.captcha-row .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
 }

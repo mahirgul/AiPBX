@@ -21,7 +21,6 @@ ob_start(); ?>
     <?php if ($is_mobile_device): ?>
     <!-- Phones: logo + Google Play in their own card (side by side with the form in landscape) -->
     <div class="auth-card brand-card">
-        <?php $lang_switch_class = 'inline'; require dirname(__DIR__, 2) . '/auth_lang_switch.php'; ?>
 <?php echo $brand_html; ?>
         <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-play" title="<?php echo htmlspecialchars(t('login.mobile_app_desc')); ?>">
             <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
@@ -29,6 +28,7 @@ ob_start(); ?>
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
             <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
         </button>
+        <?php $lang_switch_class = 'inline'; require dirname(__DIR__, 2) . '/auth_lang_switch.php'; ?>
     </div>
     <?php endif; ?>
     <div class="auth-card login-card">
@@ -56,12 +56,12 @@ ob_start(); ?>
             </div>
 
             <!-- Dynamic Math Security Challenge -->
-            <div class="form-group" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px;">
-                <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span><?php echo t('login.security_check'); ?></span>
-                    <strong class="u-primary u-fs-16"><?php echo $num1; ?> + <?php echo $num2; ?> = ?</strong>
-                </label>
-                <input type="number" name="captcha_answer" class="form-control" placeholder="<?php echo t('login.captcha_placeholder'); ?>" required autocomplete="off">
+            <div class="form-group">
+                <label class="form-label" for="captcha_answer"><?php echo t('login.security_check'); ?></label>
+                <div class="captcha-row">
+                    <strong class="captcha-question"><?php echo $num1; ?> + <?php echo $num2; ?> = ?</strong>
+                    <input type="number" inputmode="numeric" id="captcha_answer" name="captcha_answer" class="form-control" placeholder="<?php echo t('login.captcha_placeholder'); ?>" required autocomplete="off">
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('login.submit_tooltip'); ?>">

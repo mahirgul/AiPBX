@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.9
+
+- Sign-in page: the security question and its answer box are on one row.
+- Phones: the **English / Türkçe** buttons sit at the bottom of the top
+  card, as big as the sign-in button; turned sideways, both cards have the
+  same height.
+
 ## 1.3.8
 
 - Phone sign-in page: the **English / Türkçe** switch and **Sign in with a
