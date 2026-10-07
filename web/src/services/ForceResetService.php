@@ -12,10 +12,10 @@ class ForceResetService {
         $csrf_token = $post['csrf_token'] ?? '';
 
         if (!verifyCSRFToken($csrf_token)) {
-            return ['sent' => false, 'error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.'];
+            return ['sent' => false, 'error' => t('common.invalid_csrf')];
         }
         if (empty($user['email'])) {
-            return ['sent' => false, 'error' => 'Bu hesapta kayıtlı bir e-posta adresi yok. Sıfırlama için sistem yöneticisiyle iletişime geçin.'];
+            return ['sent' => false, 'error' => t('srv_reset.err_no_email')];
         }
 
         $db = getDB();
@@ -39,15 +39,11 @@ class ForceResetService {
         $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
 
         $fromAddress = preg_replace('/[\r\n]+/', '', getSystemSetting('portal_email_from_address', 'no-reply@example.com'));
-        $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('portal_email_from_name', 'AI PBX Portalı'));
+        $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('portal_email_from_name', 'AI PBX Portal'));
         $brandTitle = getSystemSetting('brand_title', 'AI PBX');
 
-        $subject = 'Şifre Sıfırlama Bağlantınız';
-        $body = "Merhaba " . $user['username'] . ",\r\n\r\n"
-            . $brandTitle . " hesabınız için şifre sıfırlama talebi alındı.\r\n"
-            . "Aşağıdaki bağlantıya tıklayarak yeni bir şifre belirleyebilirsiniz. Bağlantı 30 dakika içinde geçerliliğini yitirecektir:\r\n\r\n"
-            . $resetUrl . "\r\n\r\n"
-            . "Bu talebi siz yapmadıysanız bu e-postayı yok sayabilirsiniz.\r\n";
+        $subject = t('srv_reset.mail_subject');
+        $body = str_replace('\n', "\r\n", sprintf(t('srv_reset.mail_body'), $user['username'], $brandTitle, $resetUrl));
 
         $headers = "From: " . $fromName . " <" . $fromAddress . ">\r\n"
             . "Content-Type: text/plain; charset=UTF-8\r\n";
@@ -57,6 +53,6 @@ class ForceResetService {
         if ($mailOk) {
             return ['sent' => true];
         }
-        return ['sent' => false, 'error' => 'E-posta gönderilemedi. Lütfen daha sonra tekrar deneyin veya sistem yöneticisiyle iletişime geçin.'];
+        return ['sent' => false, 'error' => t('srv_reset.err_send')];
     }
 }

@@ -166,7 +166,7 @@ class QrLoginService
     private static function createToken(int $userId, string $purpose, int $ttlSeconds, bool $revokePrevious = false): array
     {
         if ($userId <= 0) {
-            return ['success' => false, 'error' => 'Geçersiz kullanıcı oturumu!'];
+            return ['success' => false, 'error' => t('srv_qr.err_session')];
         }
 
         $db = getDB();
@@ -175,11 +175,11 @@ class QrLoginService
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user || empty($user['is_active'])) {
-            return ['success' => false, 'error' => 'Kullanıcı hesabı bulunamadı veya pasif durumda.'];
+            return ['success' => false, 'error' => t('srv_qr.err_user')];
         }
 
         if (empty($user['extension'])) {
-            return ['success' => false, 'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmuyor. Mobil giriş için dahili zorunludur.'];
+            return ['success' => false, 'error' => t('srv_qr.err_no_ext')];
         }
 
         // Clean up old unused tokens
@@ -264,7 +264,7 @@ class QrLoginService
     {
         $qrToken = trim($qrToken);
         if (empty($qrToken)) {
-            return ['success' => false, 'error' => 'QR kod anahtarı (qr_token) gereklidir.', 'code' => 400];
+            return ['success' => false, 'error' => t('mobile_api.qr_token_required'), 'code' => 400];
         }
 
         $db = getDB();
@@ -279,23 +279,23 @@ class QrLoginService
         $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$record) {
-            return ['success' => false, 'error' => 'Geçersiz QR kod! Lütfen web ekranından yeni bir QR kod üretin.', 'code' => 401];
+            return ['success' => false, 'error' => t('srv_qr.err_invalid'), 'code' => 401];
         }
 
         if (!empty($record['used_at'])) {
-            return ['success' => false, 'error' => 'Bu QR kod daha önce kullanılmış. Güvenlik nedeniyle her QR kod yalnızca tek seferliktir.', 'code' => 401];
+            return ['success' => false, 'error' => t('srv_qr.err_used'), 'code' => 401];
         }
 
         if (strtotime($record['expires_at']) < time()) {
-            return ['success' => false, 'error' => 'Giriş kodunun süresi dolmuş. Lütfen yeni bir QR kod veya davet bağlantısı isteyin.', 'code' => 401];
+            return ['success' => false, 'error' => t('srv_qr.err_expired'), 'code' => 401];
         }
 
         if (empty($record['is_active'])) {
-            return ['success' => false, 'error' => 'Kullanıcı hesabı devre dışıdır.', 'code' => 403];
+            return ['success' => false, 'error' => t('mobile_api.account_disabled'), 'code' => 403];
         }
 
         if (empty($record['extension'])) {
-            return ['success' => false, 'error' => 'Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.', 'code' => 400];
+            return ['success' => false, 'error' => t('mobile_api.no_extension_assigned'), 'code' => 400];
         }
 
         // Mark the token as used
@@ -340,7 +340,7 @@ class QrLoginService
             'fcm_sender_id' => getSystemSetting('push_fcm_sender_id', ''),
         ];
 
-        writeAuditLog(null, 'user_account', $record['id'], "Mobil QR kod ile giriş başarılı: {$record['username']} ({$deviceName})", 'login', $record['id']);
+        writeAuditLog(null, 'user_account', $record['id'], "Mobile QR code sign-in: {$record['username']} ({$deviceName})", 'login', $record['id']);
 
         $loginResponse = [
             'success' => true,

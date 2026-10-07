@@ -13,10 +13,10 @@ class FaxSentController extends BaseController
         $notices = static::handlePost([
             'delete_sent_fax' => fn() => hasModulePermission('fax_sent', 'delete')
                 ? FaxSentService::deleteSentFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_id)
-                : ['success' => false, 'error' => 'Faks silme yetkiniz bulunmamaktadır.'],
+                : ['success' => false, 'error' => t('fax.err_no_delete')],
             'resend_sent_fax' => fn() => hasModulePermission('fax_sent', 'edit')
                 ? FaxSentService::resendFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_id)
-                : ['success' => false, 'error' => 'Faks yeniden gönderme yetkiniz bulunmamaktadır.'],
+                : ['success' => false, 'error' => t('fax.err_no_resend')],
         ]);
 
         $sent_faxes = FaxSentRepository::listForUser($user_role, $user_id);

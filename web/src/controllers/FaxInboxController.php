@@ -18,7 +18,7 @@ class FaxInboxController extends BaseController
         $notices = static::handlePost([
             'delete_fax' => fn() => hasModulePermission('fax_inbox', 'delete')
                 ? FaxInboxService::deleteFax($_POST['fax_id'] ?? 0, static::csrfToken(), $user_role, $user_ext, $user_id)
-                : ['success' => false, 'error' => 'Faks silme yetkiniz bulunmamaktadır.'],
+                : ['success' => false, 'error' => t('fax.err_no_delete')],
         ]);
 
         $page = max(1, intval($_GET['page'] ?? 1));

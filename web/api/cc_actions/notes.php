@@ -39,7 +39,7 @@ if ($action === 'get_pending_note') {
     // the pending note entered earlier. The agent identity is always decided by the server
     // (the session's $user_ext); an extension number from the client is not trusted.
     if ($user_ext === '') {
-        echo json_encode(['success' => false, 'error' => 'Dahili bulunamadı']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_ext')]);
         exit;
     }
 
@@ -84,7 +84,7 @@ if ($action === 'save_call_note') {
     } else {
         // Active call: no call_id yet, keep it as a "pending" note tied to the agent
         if ($user_ext === '') {
-            echo json_encode(['success' => false, 'error' => 'Dahili bulunamadı, aktif çağrı notu kaydedilemedi']);
+            echo json_encode(['success' => false, 'error' => t('api_cc.err_note_ext')]);
             exit;
         }
 
@@ -101,6 +101,6 @@ if ($action === 'save_call_note') {
         }
     }
 
-    echo json_encode(['success' => true, 'message' => 'Çağrı notu kaydedildi']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.note_saved')]);
     exit;
 }

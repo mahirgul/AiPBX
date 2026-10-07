@@ -25,7 +25,7 @@ class View
     {
         $file = dirname(__DIR__, 2) . '/templates/views/' . $view . '.php';
         if (!is_file($file)) {
-            throw new \RuntimeException("View bulunamadı: {$view} ({$file})");
+            throw new \RuntimeException("View not found: {$view} ({$file})");
         }
         extract($data, EXTR_SKIP);
         require $file;

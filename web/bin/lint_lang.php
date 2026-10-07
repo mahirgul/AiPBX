@@ -19,7 +19,7 @@ $tr = require $root . '/lang/tr.php';
 $en = require $root . '/lang/en.php';
 
 if (!is_array($tr) || !is_array($en)) {
-    fwrite(STDERR, "HATA: lang/tr.php veya lang/en.php bir dizi döndürmüyor.\n");
+    fwrite(STDERR, "ERROR: lang/tr.php or lang/en.php does not return an array.\n");
     exit(1);
 }
 
@@ -91,7 +91,7 @@ foreach ($used_keys as $key => $files) {
 }
 
 if (!empty($missing)) {
-    echo "\nKodda kullanılan ama lang dosyalarında eksik olan anahtarlar (" . count($missing) . "):\n";
+    echo "\nKeys used in the code but missing from the lang files (" . count($missing) . "):\n";
     foreach ($missing as $key => $files) {
         $in_tr = array_key_exists($key, $tr) ? 'tr:var' : 'tr:YOK';
         $in_en = array_key_exists($key, $en) ? 'en:var' : 'en:YOK';
@@ -101,14 +101,14 @@ if (!empty($missing)) {
 }
 
 if (!empty($dynamic_prefixes)) {
-    echo "\nDinamik anahtar öneki (t('prefix' . \$var) deseni, kontrol edilemedi — " . count($dynamic_prefixes) . "):\n";
+    echo "\nDynamic key prefixes (t('prefix' . \$var), not checked — " . count($dynamic_prefixes) . "):\n";
     foreach ($dynamic_prefixes as $prefix => $files) {
         echo "  - {$prefix}* — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' dosya daha' : '') . "\n";
     }
 }
 
 echo "\n" . ($problems === 0
-    ? "TEMİZ: tr/en anahtar sayısı eşit (" . count($tr) . "), kodda kullanılan " . count($used_keys) . " sabit anahtarın hepsi her iki dosyada da mevcut.\n"
-    : "SORUN BULUNDU: $problems madde yukarıda listelendi.\n");
+    ? "CLEAN: tr/en have the same number of keys (" . count($tr) . "); all " . count($used_keys) . " fixed keys used in the code exist in both files.\n"
+    : "PROBLEMS FOUND: $problems item(s) listed above.\n");
 
 exit($problems === 0 ? 0 : 1);

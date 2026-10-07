@@ -28,37 +28,37 @@ const INTERNAL_NUMBER_SOURCES = [
     'ivr' => [
         'table' => 'pbx_ivrs', 'label_col' => 'title',
         'dest_type' => 'ivr', 'dest_col' => 'id',
-        'ui' => 'IVR Menüsü',
+        'ui' => 'IVR menu',
     ],
     'queue' => [
         'table' => 'pbx_queues', 'label_col' => 'title',
         'dest_type' => 'queue', 'dest_col' => 'id',
-        'ui' => 'Kuyruk',
+        'ui' => 'Queue',
     ],
     'time_condition' => [
         'table' => 'pbx_time_conditions', 'label_col' => 'title',
         'dest_type' => 'time_condition', 'dest_col' => 'id',
-        'ui' => 'Zaman Koşulu',
+        'ui' => 'Time condition',
     ],
     'announcement' => [
         'table' => 'pbx_announcements', 'label_col' => 'title',
         'dest_type' => 'announcement', 'dest_col' => 'id',
-        'ui' => 'Anons',
+        'ui' => 'Announcement',
     ],
     'ring_group' => [
         'table' => 'pbx_ring_groups', 'label_col' => 'name',
         'dest_type' => 'ring_group', 'dest_col' => 'id',
-        'ui' => 'Çalma Grubu',
+        'ui' => 'Ring group',
     ],
     'conference' => [
         'table' => 'pbx_conferences', 'label_col' => 'title',
         'dest_type' => 'conference', 'dest_col' => 'id',
-        'ui' => 'Konferans Odası',
+        'ui' => 'Conference room',
     ],
     'hangup' => [
         'table' => 'pbx_hangup_actions', 'label_col' => 'title',
         'dest_type' => 'hangup', 'dest_col' => 'action_key',
-        'ui' => 'Çağrı Sonlandırma',
+        'ui' => 'Hangup action',
     ],
 ];
 
@@ -121,14 +121,14 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
         $u->execute([$number]);
     }
     if ($row = $u->fetch(PDO::FETCH_ASSOC)) {
-        $tip = ($row['extension_type'] === 'fax') ? 'faks dahilisi' : 'dahili';
+        $tip = ($row['extension_type'] === 'fax') ? t('internal_number.fax_extension') : t('internal_number.extension');
         return "{$tip}: " . $row['full_name'];
     }
 
     $f = $db->prepare("SELECT title FROM pbx_feature_codes WHERE code = ? LIMIT 1");
     $f->execute([$number]);
     if ($title = $f->fetchColumn()) {
-        return "özellik kodu: {$title}";
+        return sprintf(t('internal_number.feature_code'), $title);
     }
 
     foreach (INTERNAL_NUMBER_SOURCES as $key => $src) {
@@ -141,7 +141,7 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
         $st = $db->prepare($sql . " LIMIT 1");
         $st->execute($params);
         if ($label = $st->fetchColumn()) {
-            return $src['ui'] . ": " . $label;
+            return t('internal_number.src_' . $key, $src['ui']) . ": " . $label;
         }
     }
 
@@ -163,12 +163,12 @@ function assertInternalNumberAvailable(string $number, string $sourceKey, int $o
 
     $len = strlen($number);
     if ($len < 2 || $len > 6) {
-        throw new \Exception("Dahili hedef numarası 2-6 hane arasında olmalıdır (girilen: {$number}).");
+        throw new \Exception(sprintf(t('internal_number.err_length'), $number));
     }
 
     $owner = internalNumberOwner($number, $sourceKey, $ownerId);
     if ($owner !== null) {
-        throw new \Exception("{$number} numarası zaten kullanımda ({$owner}). Lütfen başka bir numara seçin.");
+        throw new \Exception(sprintf(t('internal_number.err_used_choose'), $number, $owner));
     }
 }
 
@@ -199,7 +199,7 @@ function asteriskPatternToRegex(string $pattern): ?string
         elseif ($c === 'N')        { $re .= '[2-9]'; }
         elseif ($c === '.')        { $re .= '.+'; }
         elseif ($c === '!')        { $re .= '.*'; }
-        elseif ($c === '-')        { /* Asterisk desenlerinde tire yok sayılır */ }
+        elseif ($c === '-')        { /* Asterisk ignores dashes in patterns */ }
         elseif (ctype_digit($c))   { $re .= $c; }
         elseif ($c === '[') {
             $end = strpos($p, ']', $i);
@@ -235,9 +235,7 @@ function internalNumberRouteWarning(string $number): ?string
         $re = asteriskPatternToRegex((string) $r['match_pattern']);
         if ($re === null) continue;
         if (preg_match($re, $number) === 1) {
-            return "{$number} numarası '" . $r['route_name'] . "' giden rotasının deseni ("
-                 . $r['match_pattern'] . ") ile de eşleşiyor. Dahili hedef önce çalışır, "
-                 . "yani bu numara artık dış hatta çıkmayacak.";
+            return sprintf(t('internal_number.warn_outbound'), $number, $r['match_pattern'], $r['route_name']);
         }
     }
 
@@ -258,6 +256,6 @@ function internalNumberValidate(string $number, ?string $source = null, int $id 
 {
     $owner = internalNumberOwner($number, $source, $id);
     if ($owner !== null) {
-        throw new \Exception("{$number} numarası zaten kullanımda ({$owner}).");
+        throw new \Exception(sprintf(t('internal_number.err_used'), $number, $owner));
     }
 }

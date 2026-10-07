@@ -13,7 +13,7 @@ class BrandSettingsService {
         return [
             'site_title' => 'AiPBX',
             'brand_title' => 'AiPBX',
-            'brand_sub' => 'Santral & Çağrı Merkezi',
+            'brand_sub' => 'PBX & Call Center',
             // Empty site_logo_image = the AiPBX default logo (BRAND_DEFAULT_LOGO_URL).
             'site_logo_type' => 'image',
             'site_logo_icon' => 'fa-network-wired',
@@ -40,14 +40,14 @@ class BrandSettingsService {
             return null;
         }
         if ($_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) {
-            throw new \Exception('Dosya yüklenirken hata oluştu (kod: ' . $_FILES[$fileKey]['error'] . ')');
+            throw new \Exception(sprintf(t('srv_brand.err_upload'), $_FILES[$fileKey]['error']));
         }
         if ($_FILES[$fileKey]['size'] > $maxBytes) {
-            throw new \Exception('Dosya çok büyük (maks ' . round($maxBytes / 1024 / 1024, 1) . 'MB).');
+            throw new \Exception(sprintf(t('srv_brand.err_too_big'), round($maxBytes / 1024 / 1024, 1)));
         }
         $ext = strtolower(pathinfo($_FILES[$fileKey]['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExt, true)) {
-            throw new \Exception('Desteklenmeyen dosya türü (.' . htmlspecialchars($ext) . '). İzin verilenler: ' . implode(', ', $allowedExt));
+            throw new \Exception(sprintf(t('srv_brand.err_type'), htmlspecialchars($ext), implode(', ', $allowedExt)));
         }
         $uploadDir = self::uploadDir();
         if (!is_dir($uploadDir)) {
@@ -89,7 +89,7 @@ class BrandSettingsService {
     public static function resetToDefaults(array $post): array
     {
         if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         try {
             foreach (array_merge(glob(self::uploadDir() . '/logo.*') ?: [], glob(self::uploadDir() . '/favicon.*') ?: []) as $old) {
@@ -99,8 +99,8 @@ class BrandSettingsService {
             foreach (self::defaults() as $k => $v) {
                 $stmt->execute([$k, $v]);
             }
-            writeAuditLog(null, 'brand_settings', 'general', 'Marka & Görünüm Ayarları varsayılana döndürüldü', 'update', $_SESSION['user_id'] ?? null);
-            return ['success' => true, 'message' => 'Marka & görünüm ayarları AiPBX varsayılanlarına döndürüldü!'];
+            writeAuditLog(null, 'brand_settings', 'general', 'Branding & appearance settings reset to defaults', 'update', $_SESSION['user_id'] ?? null);
+            return ['success' => true, 'message' => t('srv_brand.reset')];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
@@ -117,7 +117,7 @@ class BrandSettingsService {
     public static function saveSettings(array $post): array
     {
         if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $defaults = self::defaults();
@@ -130,7 +130,7 @@ class BrandSettingsService {
             $primary = trim($post['brand_color_primary'] ?? '');
             $secondary = trim($post['brand_color_secondary'] ?? '');
             if (!self::isValidHexColor($primary) || !self::isValidHexColor($secondary)) {
-                throw new \Exception('Renk kodları #RRGGBB biçiminde olmalı (ör. #0284c7).');
+                throw new \Exception(t('srv_brand.err_color'));
             }
 
             $new_settings = [
@@ -170,8 +170,8 @@ class BrandSettingsService {
                 $stmt->execute([$k, $v]);
             }
 
-            writeAuditLog(null, 'brand_settings', 'general', 'Marka & Görünüm Ayarları güncellendi', 'update', $_SESSION['user_id'] ?? null);
-            return ['success' => true, 'message' => 'Marka & görünüm ayarları kaydedildi!'];
+            writeAuditLog(null, 'brand_settings', 'general', 'Branding & appearance settings updated', 'update', $_SESSION['user_id'] ?? null);
+            return ['success' => true, 'message' => t('srv_brand.saved')];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

@@ -24,21 +24,21 @@ class FeatureCodeService {
             // with a queue ID dialed) start with '_*' in Asterisk pattern syntax (e.g. _*81.).
             $starts_ok = ($code !== '') && (($code[0] === '*') || (strpos($code, '_*') === 0));
             if (empty($title) || !$starts_ok) {
-                throw new \Exception('Başlık zorunludur ve kod "*" (veya desen kodlarında "_*") ile başlamalıdır!');
+                throw new \Exception(t('srv_fc.err_code'));
             }
 
             $db = getDB();
             $dup = $db->prepare("SELECT id FROM pbx_feature_codes WHERE code = ? AND id != ?");
             $dup->execute([$code, $id]);
             if ($dup->fetchColumn()) {
-                throw new \Exception("Kod '{$code}' başka bir özellik tarafından kullanılıyor!");
+                throw new \Exception(sprintf(t('srv_fc.err_taken'), $code));
             }
 
             if ($id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_feature_codes SET title = ?, code = ?, allowed_roles = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$title, $code, $allowed_roles, $is_active, $id]);
-                markPendingSync('featurecodes', 'feature_code', $id, "Özellik Kodu: {$title} ({$code})", 'update', $_SESSION['user_id'] ?? null);
-                return "'{$title}' feature code'u güncellendi! Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('featurecodes', 'feature_code', $id, "Feature code: {$title} ({$code})", 'update', $_SESSION['user_id'] ?? null);
+                return sprintf(t('srv_fc.updated'), $title);
             }
             return '';
         });
@@ -50,8 +50,8 @@ class FeatureCodeService {
             if ($id > 0) {
                 $title = DBHelper::fetchColumn("SELECT title FROM pbx_feature_codes WHERE id = ?", [$id]);
                 getDB()->prepare("UPDATE pbx_feature_codes SET is_active = NOT is_active WHERE id = ?")->execute([$id]);
-                markPendingSync('featurecodes', 'feature_code', $id, "Özellik Kodu: " . ($title ?: $id) . " (durum değişti)", 'update', $_SESSION['user_id'] ?? null);
-                return 'Durum güncellendi! Etkili olması için Uygula sayfasından gönderin.';
+                markPendingSync('featurecodes', 'feature_code', $id, "Feature code: " . ($title ?: $id) . " (status changed)", 'update', $_SESSION['user_id'] ?? null);
+                return t('srv_fc.status_updated');
             }
             return '';
         });

@@ -169,7 +169,7 @@ if ($action === 'get_supervisor_agents') {
 if ($action === 'spy_call') {
     $role = $_SESSION['user_role'] ?? '';
     if (!in_array($role, ['admin', 'cc_manager'], true)) {
-        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmamaktadır.']);
+        echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         exit;
     }
 
@@ -178,7 +178,7 @@ if ($action === 'spy_call') {
     $supervisor_ext = $user_ext;
 
     if (empty($target_ext) || empty($supervisor_ext)) {
-        echo json_encode(['success' => false, 'error' => 'Hedef temsilci veya yönetici dahili numarası bulunamadı.']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_spy_ext')]);
         exit;
     }
 
@@ -217,11 +217,11 @@ if ($action === 'spy_call') {
         }
     }
     if (!empty($res['Response']) && strtolower($res['Response']) === 'success') {
-        $mode_labels = ['spy' => 'Gizli Dinleme', 'whisper' => 'Fısıldama', 'barge' => 'Araya Girme'];
+        $mode_labels = ['spy' => t('api_cc.mode_spy'), 'whisper' => t('api_cc.mode_whisper'), 'barge' => t('api_cc.mode_barge')];
         $label = $mode_labels[$mode] ?? 'Dinleme';
-        echo json_encode(['success' => true, 'message' => "Telefonunuz çaldırılıyor ({$label}). Açtığınızda {$target_ext} numaralı temsilcinin görüşmesine bağlanacaksınız."]);
+        echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.spy_ringing'), $label, $target_ext)]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Dinleme başlatılamadı: ' . ($res['Message'] ?? 'Bilinmeyen hata')]);
+        echo json_encode(['success' => false, 'error' => sprintf(t('api_cc.err_spy'), ($res['Message'] ?? 'Unknown error'))]);
     }
     exit;
 }
@@ -231,23 +231,23 @@ if ($action === 'toggle_queue') {
     $do_login = ($_POST['login'] ?? '1') === '1';
 
     if (empty($q_name) || empty($user_ext)) {
-        echo json_encode(['success' => false, 'error' => 'Geçersiz kuyruk adı veya dahili']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_queue_ext')]);
         exit;
     }
 
     // Check if user is assigned to this queue
     if (!QueueHelper::isAssignedMember($user_ext, $q_name) && $do_login) {
-        echo json_encode(['success' => false, 'error' => "Dahili numaranız ($user_ext) bu kuyruğa ($q_name) tanımlı değildir!"]);
+        echo json_encode(['success' => false, 'error' => sprintf(t('api_cc.err_not_in_queue'), $user_ext, $q_name)]);
         exit;
     }
 
     if (!$do_login && QueueHelper::isStaticMember($user_ext, $q_name)) {
-        echo json_encode(['success' => false, 'error' => 'Bu kuyrukta statik temsilcisiniz; kuyruktan çıkamazsınız, sadece mola verebilirsiniz.']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_static')]);
         exit;
     }
 
     QueueHelper::setMembership($user_ext, $q_name, $do_login);
-    $msg = $do_login ? "$q_name kuyruğuna giriş yapıldı" : "$q_name kuyruktan çıkış yapıldı";
+    $msg = $do_login ? sprintf(t('api_cc.queue_login'), $q_name) : sprintf(t('api_cc.queue_logout'), $q_name);
 
     echo json_encode(['success' => true, 'message' => $msg]);
     exit;

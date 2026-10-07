@@ -134,17 +134,17 @@ function __syncRtpSettingsBody()
     $onceki = is_readable(RTP_CONF_PATH) ? file_get_contents(RTP_CONF_PATH) : null;
 
     if (!FileHelper::writeFile(RTP_CONF_PATH, $conf, 'asterisk', 'asterisk', 0644)) {
-        throw new \Exception('rtp.conf yazılamadı (izin/sahiplik?)');
+        throw new \Exception(sprintf(t('sync.err_conf_write'), 'rtp.conf'));
     }
 
     try {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadRTP()], 'RTP ayarları');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadRTP()], t('sync.ctx_rtp'));
     } catch (\Exception $e) {
         if ($onceki !== null && FileHelper::writeFile(RTP_CONF_PATH, $onceki, 'asterisk', 'asterisk', 0644)) {
             AsteriskHelper::reloadRTP();
-            throw new \Exception('RTP ayarları uygulanamadı, ÖNCEKİ HÂLE OTOMATİK GERİ ALINDI: ' . $e->getMessage());
+            throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'RTP', $e->getMessage()));
         }
-        throw new \Exception('RTP ayarları uygulanamadı ve GERİ ALINAMADI, ELLE MÜDAHALE GEREKİYOR: ' . $e->getMessage());
+        throw new \Exception(sprintf(t('sync.err_settings_no_rollback'), 'RTP', $e->getMessage()));
     }
 
     return true;

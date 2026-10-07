@@ -176,7 +176,7 @@ class QueueHelper {
         }
 
         if ($join) {
-            @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty 0 as \"Temsilci $ext\" state_interface hint:$ext@from-internal-pbx"));
+            @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty 0 as \"Agent $ext\" state_interface hint:$ext@from-internal-pbx"));
             @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
         } else {
             @exec("asterisk -rx " . escapeshellarg("queue remove member Local/$ext@from-internal-pbx/n from $queue_name"));
@@ -206,7 +206,7 @@ class QueueHelper {
         // Get the agent's name from sys_users
         $stmt_user = $db->prepare("SELECT full_name FROM sys_users WHERE extension = ?");
         $stmt_user->execute([$ext]);
-        $agent_name = $stmt_user->fetchColumn() ?: "Temsilci $ext";
+        $agent_name = $stmt_user->fetchColumn() ?: "Agent $ext";
 
         // cc_pause_logs tablosuna kaydet
         $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");

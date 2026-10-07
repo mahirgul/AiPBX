@@ -30,7 +30,7 @@ function __syncInboundDialplanBody() {
 
             $conf .= "; --- Trunk inbound: {$t_name} ({$title}) ---\n";
             $conf .= "[from-trunk-{$t_name}]\n";
-            $conf .= "exten => _.,1,NoOp(Gelen Dis Hat Cagrisi [{$t_name}] - Arayan: \${CALLERID(num)} - Hedef: \${EXTEN})\n";
+            $conf .= "exten => _.,1,NoOp(Inbound trunk call [{$t_name}] - caller: \${CALLERID(num)} - target: \${EXTEN})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
 
@@ -136,6 +136,6 @@ function __syncInboundDialplanBody() {
     $conf .= " same => n,Hangup()\n\n";
 
     return writeConfWithRollback('extensions_inbound.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Gelen Rota senkronizasyonu');
-    }, 'Gelen Rota senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_inbound'));
+    }, t('sync.ctx_inbound'));
 }

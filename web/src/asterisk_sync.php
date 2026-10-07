@@ -17,7 +17,7 @@ function writePBXConf($filename, $content) {
     // old file and the pending change was marked as applied.
     if (FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0644) === false) {
         $err = error_get_last()['message'] ?? 'unknown error';
-        throw new \Exception("Yapılandırma dosyası yazılamadı: {$file_path} ({$err})");
+        throw new \Exception(sprintf(t('sync.err_write'), $file_path, $err));
     }
     return $file_path;
 }
@@ -65,15 +65,15 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
         return true;
     } catch (\Exception $e) {
         if ($previous_content === null) {
-            throw new \Exception("{$context} başarısız oldu (bu ayar için önceki bir sürüm olmadığından otomatik geri alma yapılamadı): " . $e->getMessage());
+            throw new \Exception(sprintf(t('sync.err_no_rollback'), $context, $e->getMessage()));
         }
         writePBXConf($filename, $previous_content);
         try {
             $reloadFn();
         } catch (\Exception $e2) {
-            throw new \Exception("{$context} başarısız oldu VE otomatik geri alma da başarısız oldu — ELLE MÜDAHALE GEREKİYOR. İlk hata: " . $e->getMessage() . " | Geri alma hatası: " . $e2->getMessage());
+            throw new \Exception(sprintf(t('sync.err_rollback_failed'), $context, $e->getMessage(), $e2->getMessage()));
         }
-        throw new \Exception("{$context} başarısız oldu, ÖNCEKİ ÇALIŞAN AYARLARA OTOMATİK OLARAK GERİ ALINDI (değişikliğiniz uygulanmadı, sistem önceki hâliyle çalışmaya devam ediyor). Asterisk'in verdiği hata: " . $e->getMessage());
+        throw new \Exception(sprintf(t('sync.err_rolled_back'), $context, $e->getMessage()));
     }
 }
 
@@ -153,7 +153,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
  */
 function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $action = 'update', $user_id = null) {
     if (!array_key_exists($domain, PENDING_SYNC_DOMAIN_MAP)) {
-        throw new \InvalidArgumentException("Bilinmeyen pending-sync domain'i: {$domain}");
+        throw new \InvalidArgumentException("Unknown pending-sync domain: {$domain}");
     }
     $db = getDB();
     $stmt = $db->prepare(
@@ -168,34 +168,9 @@ function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $acti
     writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id);
 }
 
-/**
- * Permanent audit record — no row is ever deleted or updated (2026-08-24).
- * Called by markPendingSync() (when a record changes) and applyPendingSync()
- * (when Apply is pressed, per domain). $user_id may be null (e.g. an action
- * started from the CLI) — the username is denormalized from the current DB
- * snapshot and stored, so the record stays readable even if the user is
- * deleted later.
- */
-function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id = null) {
-    try {
-        $db = getDB();
-        $username = null;
-        if ($user_id) {
-            $username = $db->prepare("SELECT full_name FROM sys_users WHERE id = ?");
-            $username->execute([$user_id]);
-            $username = $username->fetchColumn() ?: null;
-        }
-        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-        $stmt = $db->prepare(
-            "INSERT INTO sys_audit_log (domain, entity_type, entity_id, entity_label, action, user_id, username, ip_address, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
-        );
-        $stmt->execute([$domain, $entity_type, (string)$entity_id, $entity_label, $action, $user_id, $username, $ip]);
-    } catch (\Exception $e) {
-        // Failing to write the audit record must NEVER block the actual
-        // operation (saving/applying settings) — it is silently skipped.
-    }
-}
+// writeAuditLog() lives in src/audit_log.php (loaded by config.php for every
+// request: API endpoints and controllers that never load this file used to
+// fail with "undefined function" after their change was already made).
 
 /**
  * A lightweight counter for the sidebar badge.
@@ -243,7 +218,7 @@ function applyPendingSync($user_id = null) {
     foreach ($domains as $domain) {
         $fn = PENDING_SYNC_DOMAIN_MAP[$domain] ?? null;
         if (!$fn || !function_exists($fn)) {
-            $results[$domain] = ['success' => false, 'error' => "Bilinmeyen domain: {$domain}"];
+            $results[$domain] = ['success' => false, 'error' => "Unknown domain: {$domain}"];
             continue;
         }
         try {

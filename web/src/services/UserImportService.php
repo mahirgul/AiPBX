@@ -28,9 +28,9 @@ class UserImportService
     /** Sample template (UTF-8 with BOM, semicolon-separated so Excel opens it correctly). */
     public static function templateCsv(): string
     {
-        return "\xEF\xBB\xBF" . "kullanici_adi;ad_soyad;eposta;dahili;rol;sifre\r\n"
-            . "ahmet.yilmaz;Ahmet Yılmaz;ahmet.yilmaz@example.com;2001;cc_agent;\r\n"
-            . "ayse.demir;Ayşe Demir;;2002;cc_agent;\r\n";
+        return "\xEF\xBB\xBF" . "username;full_name;email;extension;role;password\r\n"
+            . "john.smith;John Smith;john.smith@example.com;2001;cc_agent;\r\n"
+            . "jane.doe;Jane Doe;;2002;cc_agent;\r\n";
     }
 
     /**
@@ -40,7 +40,7 @@ class UserImportService
     public static function parse(string $content): array
     {
         if ($content === '' || strlen($content) > self::MAX_BYTES) {
-            return ['success' => false, 'error' => 'Dosya boş veya 1 MB sınırını aşıyor.'];
+            return ['success' => false, 'error' => t('srv_import.err_size')];
         }
         if (strncmp($content, "\xEF\xBB\xBF", 3) === 0) {
             $content = substr($content, 3);
@@ -65,7 +65,7 @@ class UserImportService
 
         $header = fgetcsv($fh, 0, $delimiter, '"', '');
         if (!$header) {
-            return ['success' => false, 'error' => 'Başlık satırı okunamadı.'];
+            return ['success' => false, 'error' => t('srv_import.err_header')];
         }
         $map = [];
         foreach ($header as $i => $h) {
@@ -76,7 +76,7 @@ class UserImportService
             }
         }
         if (!in_array('username', $map, true) || !in_array('full_name', $map, true)) {
-            return ['success' => false, 'error' => 'Başlıkta en az "kullanici_adi" ve "ad_soyad" sütunları olmalı (şablonu indirip kullanın).'];
+            return ['success' => false, 'error' => t('srv_import.err_columns')];
         }
 
         $rows = [];
@@ -93,13 +93,13 @@ class UserImportService
             $rows[$lineNo] = $row;
             if (count($rows) > self::MAX_ROWS) {
                 fclose($fh);
-                return ['success' => false, 'error' => 'Bir seferde en fazla ' . self::MAX_ROWS . ' kullanıcı içe aktarılabilir.'];
+                return ['success' => false, 'error' => sprintf(t('srv_import.err_max'), self::MAX_ROWS)];
             }
         }
         fclose($fh);
 
         if (!$rows) {
-            return ['success' => false, 'error' => 'Dosyada kullanıcı satırı bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_import.err_empty')];
         }
         return ['success' => true, 'rows' => $rows];
     }
@@ -126,42 +126,42 @@ class UserImportService
             }
 
             if ($row['username'] === '') {
-                $errors[] = 'Kullanıcı adı boş';
+                $errors[] = t('srv_import.e_username_empty');
             } elseif (!preg_match('/^[A-Za-z0-9._@-]{2,64}$/', $row['username'])) {
-                $errors[] = 'Kullanıcı adında yalnızca harf, rakam, nokta, tire, alt çizgi ve @ olabilir';
+                $errors[] = t('srv_import.e_username_chars');
             } else {
                 $u = mb_strtolower($row['username']);
                 if (isset($existingUsers[$u])) {
-                    $errors[] = 'Kullanıcı adı sistemde zaten var';
+                    $errors[] = t('srv_import.e_username_exists');
                 } elseif (isset($seenUsers[$u])) {
-                    $errors[] = 'Kullanıcı adı dosyada tekrar ediyor (satır ' . $seenUsers[$u] . ')';
+                    $errors[] = sprintf(t('srv_import.e_username_dup'), $seenUsers[$u]);
                 }
                 $seenUsers[$u] = $seenUsers[$u] ?? $lineNo;
             }
 
             if ($row['full_name'] === '') {
-                $errors[] = 'Ad soyad boş';
+                $errors[] = t('srv_import.e_name_empty');
             }
             if ($row['email'] !== '' && !filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
-                $errors[] = 'Geçersiz e-posta';
+                $errors[] = t('srv_import.e_email');
             }
             if ($row['extension'] !== '') {
                 if (!preg_match('/^[0-9]{2,10}$/', $row['extension'])) {
-                    $errors[] = 'Dahili yalnızca 2-10 haneli rakam olabilir';
+                    $errors[] = t('srv_import.e_ext_format');
                 } elseif (isset($existingExts[$row['extension']])) {
-                    $errors[] = 'Dahili başka bir kullanıcıya atanmış';
+                    $errors[] = t('srv_import.e_ext_taken');
                 } elseif (isset($seenExts[$row['extension']])) {
-                    $errors[] = 'Dahili dosyada tekrar ediyor (satır ' . $seenExts[$row['extension']] . ')';
+                    $errors[] = sprintf(t('srv_import.e_ext_dup'), $seenExts[$row['extension']]);
                 } elseif (($owner = internalNumberOwner($row['extension'])) !== null) {
-                    $errors[] = "Numara kullanımda ({$owner})";
+                    $errors[] = sprintf(t('srv_import.e_number_used'), $owner);
                 }
                 $seenExts[$row['extension']] = $seenExts[$row['extension']] ?? $lineNo;
             }
             if (!in_array($row['role'], $validRoles, true)) {
-                $errors[] = "Geçersiz rol: {$row['role']}";
+                $errors[] = sprintf(t('srv_import.e_role'), $row['role']);
             }
             if ($row['password'] !== '' && mb_strlen($row['password']) < 8) {
-                $errors[] = 'Şifre en az 8 karakter olmalı (boş bırakılırsa otomatik oluşturulur)';
+                $errors[] = t('srv_import.e_password');
             }
 
             $result[$lineNo] = ['row' => $row, 'errors' => $errors];
@@ -195,7 +195,7 @@ class UserImportService
                 'skip_invitation' => $sendInvitations ? 0 : 1,
             ]);
             if (empty($res['success'])) {
-                $failed[$lineNo] = ['username' => $row['username'], 'error' => $res['error'] ?? 'Bilinmeyen hata'];
+                $failed[$lineNo] = ['username' => $row['username'], 'error' => $res['error'] ?? t('common.unknown_error')];
                 continue;
             }
             $created++;
@@ -212,7 +212,7 @@ class UserImportService
             }
         }
 
-        writeAuditLog(null, 'user_account', 'csv_import', "CSV ile toplu kullanıcı ekleme: {$created} eklendi, " . count($failed) . ' hata', 'create', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'user_account', 'csv_import', "CSV user import: {$created} added, " . count($failed) . ' errors', 'create', $_SESSION['user_id'] ?? null);
 
         return ['created' => $created, 'failed' => $failed, 'generated' => $generated, 'invited' => $invited];
     }

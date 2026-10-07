@@ -16,7 +16,7 @@ class SoundService {
         $cmd = 'sox ' . escapeshellarg($srcPath) . ' -t wav -r 8000 -c 1 -b 16 ' . escapeshellarg($destPath) . ' 2>&1';
         exec($cmd, $out, $ret);
         if ($ret !== 0 || !file_exists($destPath) || filesize($destPath) === 0) {
-            throw new \Exception('Ses dosyası Asterisk uyumlu formata dönüştürülemedi: ' . implode(' ', $out));
+            throw new \Exception(sprintf(t('srv_sound.err_convert'), implode(' ', $out)));
         }
     }
 
@@ -26,7 +26,7 @@ class SoundService {
             $custom_dir = SOUNDS_CUSTOM_DIR;
 
             if (!isset($files['audio_file']) || $files['audio_file']['error'] !== UPLOAD_ERR_OK || empty($sound_name)) {
-                throw new \Exception("Lütfen geçerli bir ses dosyası ve isim belirtin!");
+                throw new \Exception(t('srv_sound.err_file_name'));
             }
 
             $tmp_path = $files['audio_file']['tmp_name'];
@@ -54,13 +54,13 @@ class SoundService {
                 // route/IVR/time condition — one announcement can affect all
                 // three domains AT ONCE, so each gets its own mark.
                 $uid = $_SESSION['user_id'] ?? null;
-                markPendingSync('inbound_dialplan', 'announcement', $sound_name, "Anons: {$title}", 'create', $uid);
-                markPendingSync('ivrs', 'announcement', $sound_name, "Anons: {$title}", 'create', $uid);
-                markPendingSync('time_conditions', 'announcement', $sound_name, "Anons: {$title}", 'create', $uid);
+                markPendingSync('inbound_dialplan', 'announcement', $sound_name, "Announcement: {$title}", 'create', $uid);
+                markPendingSync('ivrs', 'announcement', $sound_name, "Announcement: {$title}", 'create', $uid);
+                markPendingSync('time_conditions', 'announcement', $sound_name, "Announcement: {$title}", 'create', $uid);
 
-                return "Ses anons dosyası 'custom/$sound_name.wav' yüklendi! Etkili olması için Uygula sayfasından gönderin.";
+                return sprintf(t('srv_sound.uploaded'), $sound_name);
             } else {
-                throw new \Exception("Ses dosyası yüklenirken hata oluştu!");
+                throw new \Exception(t('srv_sound.err_upload'));
             }
         });
     }
@@ -73,7 +73,7 @@ class SoundService {
             $custom_dir = SOUNDS_CUSTOM_DIR;
 
             if ($anc_id <= 0 || empty($title)) {
-                throw new \Exception("Lütfen geçerli bir anons başlığı belirtin!");
+                throw new \Exception(t('srv_sound.err_title'));
             }
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
@@ -88,16 +88,16 @@ class SoundService {
                 'internal_number' => $internal_number !== '' ? $internal_number : null,
             ], 'id', $anc_id);
             $uid = $_SESSION['user_id'] ?? null;
-            markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Anons: {$title}", 'update', $uid);
-            markPendingSync('ivrs', 'announcement', $anc_id, "Anons: {$title}", 'update', $uid);
-            markPendingSync('time_conditions', 'announcement', $anc_id, "Anons: {$title}", 'update', $uid);
+            markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
+            markPendingSync('ivrs', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
+            markPendingSync('time_conditions', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
                 markPendingSync('internal_numbers', 'announcement', $anc_id,
-                    "Dahili hedef numarasi: " . ($internal_number !== '' ? $internal_number : 'kaldirildi'),
+                    "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $uid);
             }
-            $msg = "Ses anonsu başlığı '$title' güncellendi! Etkili olması için Uygula sayfasından gönderin.";
+            $msg = sprintf(t('srv_sound.title_updated'), $title);
 
             if (isset($files['audio_file']) && $files['audio_file']['error'] === UPLOAD_ERR_OK) {
                 $anc = DBHelper::fetchOne("SELECT audio_file FROM pbx_announcements WHERE id = ?", [$anc_id]);
@@ -114,7 +114,7 @@ class SoundService {
                         @chown($target_file, 'asterisk');
                         @chgrp($target_file, 'asterisk');
                         @chmod($target_file, 0664);
-                        $msg = "Ses anonsu başlığı ve ses dosyası güncellendi!";
+                        $msg = t('srv_sound.updated');
                     }
                 }
             }
@@ -139,11 +139,11 @@ class SoundService {
                 markPendingSync('time_conditions', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
                 if (!empty($silinen_numara)) {
                     markPendingSync('internal_numbers', 'announcement', $anc_id,
-                        "Dahili hedef numarasi silindi: {$silinen_numara}", 'delete', $uid);
+                        "Internal number removed: {$silinen_numara}", 'delete', $uid);
                 }
-                return "Ses anonsu başarıyla silindi! Etkili olması için Uygula sayfasından gönderin.";
+                return t('srv_sound.deleted');
             }
-            throw new \Exception("Anons kaydı bulunamadı!");
+            throw new \Exception(t('srv_sound.err_not_found'));
         });
     }
 
@@ -151,7 +151,7 @@ class SoundService {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
             $class_name = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['class_name'] ?? ''));
             if (empty($class_name)) {
-                throw new \Exception("Geçersiz MOH sınıf ismi!");
+                throw new \Exception(t('srv_sound.err_moh_name'));
             }
             $target_dir = MOH_BASE_DIR . '/' . $class_name;
             if (!is_dir($target_dir)) {
@@ -163,15 +163,15 @@ class SoundService {
             $stmt = $db->prepare("INSERT INTO pbx_moh_classes (name, directory, mode, sort) VALUES (?, ?, 'files', 'alpha') ON DUPLICATE KEY UPDATE directory = VALUES(directory)");
             $stmt->execute([$class_name, $target_dir]);
 
-            markPendingSync('moh', 'moh_class', $class_name, "MOH Sınıfı: {$class_name}", 'create', $_SESSION['user_id'] ?? null);
-            return "Bekleme Müziği (MOH) Sınıfı '{$class_name}' başarıyla oluşturuldu! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('moh', 'moh_class', $class_name, "MOH class: {$class_name}", 'create', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_sound.moh_created'), $class_name);
         });
     }
 
     public static function deleteMOHClass($moh_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($moh_id) {
             $moh_id = intval($moh_id);
-            if ($moh_id <= 0) throw new \Exception("Geçersiz MOH ID!");
+            if ($moh_id <= 0) throw new \Exception(t('srv_sound.err_moh_id'));
 
             $db = getDB();
             $stmt = $db->prepare("SELECT name FROM pbx_moh_classes WHERE id = ? AND name != 'default'");
@@ -187,10 +187,10 @@ class SoundService {
                     foreach ($files as $f) { if (is_file($f)) @unlink($f); }
                     @rmdir($dir);
                 }
-                markPendingSync('moh', 'moh_class', $class_name, "MOH Sınıfı: {$class_name} (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-                return "MOH sınıfı '{$class_name}' silindi! Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('moh', 'moh_class', $class_name, "MOH class: {$class_name} (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+                return sprintf(t('srv_sound.moh_deleted'), $class_name);
             }
-            throw new \Exception("Varsayılan MOH sınıfı silinemez veya sınıf bulunamadı!");
+            throw new \Exception(t('srv_sound.err_moh_default'));
         });
     }
 
@@ -229,15 +229,15 @@ class SoundService {
                     @chgrp($target_path, 'asterisk');
                     @chmod($target_path, 0664);
 
-                    markPendingSync('moh', 'moh_class', $moh_class, "MOH Sınıfı: {$moh_class} (yeni dosya: {$file_name})", 'update', $_SESSION['user_id'] ?? null);
-                    return "MOH Ses dosyası '$file_name' [$moh_class] sınıfına yüklendi! Etkili olması için Uygula sayfasından gönderin.";
+                    markPendingSync('moh', 'moh_class', $moh_class, "MOH class: {$moh_class} (new file: {$file_name})", 'update', $_SESSION['user_id'] ?? null);
+                    return sprintf(t('srv_sound.moh_uploaded'), $file_name, $moh_class);
                 } catch (\Exception $e) {
-                    throw new \Exception("MOH ses dosyası dönüştürülürken hata oluştu: " . $e->getMessage());
+                    throw new \Exception(sprintf(t('srv_sound.err_moh_convert'), $e->getMessage()));
                 } finally {
                     @unlink($raw_upload);
                 }
             }
-            throw new \Exception("MOH ses dosyası yüklenirken hata oluştu!");
+            throw new \Exception(t('srv_sound.err_moh_upload'));
         });
     }
 }

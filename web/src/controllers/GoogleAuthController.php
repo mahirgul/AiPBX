@@ -15,7 +15,7 @@ class GoogleAuthController extends BaseController
     public static function auth(): void
     {
         if (!GoogleAuthService::isEnabled()) {
-            notify('Google ile giriş şu anda sistemde etkin değildir.', 'warning');
+            notify(t('mobile_api.google_disabled'), 'warning');
             static::redirect('/login');
             return;
         }
@@ -37,7 +37,7 @@ class GoogleAuthController extends BaseController
         // 1. Did the user cancel or did an error occur?
         if (isset($_GET['error'])) {
             $err = htmlspecialchars($_GET['error']);
-            notify('Google girişi tamamlanamadı veya iptal edildi (' . $err . ').', 'warning');
+            notify(sprintf(t('google.err_cancelled'), $err), 'warning');
             static::redirect('/login');
             return;
         }
@@ -46,7 +46,7 @@ class GoogleAuthController extends BaseController
         $state = $_GET['state'] ?? '';
         $stateResult = GoogleAuthService::verifyState($state);
         if (!$stateResult['valid']) {
-            notify('Güvenlik doğrulaması zaman aşımına uğradı. Lütfen tekrar deneyin.', 'danger');
+            notify(t('google.err_state'), 'danger');
             static::redirect('/login');
             return;
         }
@@ -56,7 +56,7 @@ class GoogleAuthController extends BaseController
         // 3. Authorization code check
         $code = trim($_GET['code'] ?? '');
         if (empty($code)) {
-            notify('Google yetkilendirme kodu alınamadı.', 'danger');
+            notify(t('google.err_code'), 'danger');
             static::redirect('/login');
             return;
         }
@@ -64,7 +64,7 @@ class GoogleAuthController extends BaseController
         // 4. Kodu Token ile Takas Et
         $tokenData = GoogleAuthService::exchangeCode($code);
         if (!$tokenData || empty($tokenData['access_token'])) {
-            notify('Google sunucularından kimlik doğrulaması alınamadı.', 'danger');
+            notify(t('google.err_token'), 'danger');
             static::redirect('/login');
             return;
         }
@@ -80,7 +80,7 @@ class GoogleAuthController extends BaseController
 
         $email = $userInfo['email'] ?? '';
         if (empty($email)) {
-            notify('Google hesabınızdan doğrulanmış bir e-posta adresi temin edilemedi.', 'danger');
+            notify(t('google.err_email'), 'danger');
             static::redirect('/login');
             return;
         }
@@ -91,11 +91,11 @@ class GoogleAuthController extends BaseController
             $safeEmail = htmlspecialchars($email);
             if ($isMobile) {
                 // Raw email: the view escapes it (it used to be escaped twice).
-                self::renderMobileCallback(false, 'Kullanıcı bulunamadı', null, "Google hesabınız ({$email}) ile kayıtlı bir AiPBX dahili kullanıcısı bulunamadı.");
+                self::renderMobileCallback(false, t('srv_2fa.err_user'), null, sprintf(t('mobile_api.google_no_match'), $email));
                 return;
             }
 
-            notify("Google hesabınız ({$safeEmail}) ile kayıtlı aktif bir AiPBX kullanıcısı bulunamadı. Lütfen yöneticinizle iletişime geçin.", 'danger');
+            notify(sprintf(t('google.err_no_user'), $safeEmail), 'danger');
             static::redirect('/login');
             return;
         }
@@ -105,7 +105,7 @@ class GoogleAuthController extends BaseController
         // from the browser to the app has no code step — sign in with password + code or by QR.
         if (!empty($user['two_factor_enabled'])) {
             if ($isMobile) {
-                self::renderMobileCallback(false, 'İki adımlı doğrulama', null, 'Bu hesapta iki adımlı doğrulama açık. Uygulamaya kullanıcı adı, şifre ve doğrulama koduyla ya da web portalındaki QR kodla girin.');
+                self::renderMobileCallback(false, t('google.otp_title'), null, t('google.otp_text'));
                 return;
             }
             session_regenerate_id(true);
@@ -127,17 +127,17 @@ class GoogleAuthController extends BaseController
             require_once dirname(__DIR__) . '/services/QrLoginService.php';
             $codeRes = QrLoginService::createGoogleCode((int) $user['id']);
             if (empty($codeRes['success'])) {
-                self::renderMobileCallback(false, 'Giriş yapılamadı', null, $codeRes['error'] ?? 'Mobil giriş kodu oluşturulamadı.');
+                self::renderMobileCallback(false, t('mobile_api.login_failed'), null, $codeRes['error'] ?? t('google.err_mobile_code'));
                 return;
             }
-            writeAuditLog(null, 'user_account', $user['id'], "Google ile mobil giriş kodu üretildi: {$user['username']}", 'login', $user['id']);
-            self::renderMobileCallback(true, 'Giriş Başarılı', ['code' => $codeRes['token']]);
+            writeAuditLog(null, 'user_account', $user['id'], "Mobile sign-in code created with Google: {$user['username']}", 'login', $user['id']);
+            self::renderMobileCallback(true, t('google.login_ok'), ['code' => $codeRes['token']]);
             return;
         }
 
         // 8. Web sign-in and redirect
         $redirectUrl = GoogleAuthService::loginUser($user, $clientIp);
-        notify("Hoş geldiniz, {$user['full_name']}! Google hesabınızla başarıyla giriş yaptınız.", 'success');
+        notify(sprintf(t('google.welcome'), $user['full_name']), 'success');
         static::redirect($redirectUrl);
     }
 

@@ -39,7 +39,7 @@ class ConferenceService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($room_number) || empty($title)) {
-                throw new \Exception("Oda Dahili Numarası ve Başlık zorunludur!");
+                throw new \Exception(t('srv_conf.err_required'));
             }
 
             // Conflict check
@@ -57,7 +57,7 @@ class ConferenceService {
 
             markPendingSync('conferences', 'conference', $id, "{$title} ({$room_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
             markPendingSync('internal_numbers', 'conference', $id, "{$title} ({$room_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            return "Konferans odası başarıyla kaydedildi.";
+            return t('srv_conf.saved');
         });
     }
 
@@ -71,22 +71,22 @@ class ConferenceService {
             $dids = $db->prepare("SELECT did_number FROM pbx_dids WHERE dest_type = 'conference' AND dest_id = ?");
             $dids->execute([$id]);
             if ($d = $dids->fetchAll(PDO::FETCH_COLUMN)) {
-                $refs[] = "Gelen Rotalar (" . implode(', ', $d) . ")";
+                $refs[] = "Inbound routes (" . implode(', ', $d) . ")";
             }
 
             if (!empty($refs)) {
-                throw new \Exception("Bu konferans odası şu modüllerde hedef olarak kullanıldığı için silinemez: " . implode(', ', $refs));
+                throw new \Exception(sprintf(t('srv_conf.err_in_use'), implode(', ', $refs)));
             }
 
             $cf = self::getConference($id);
-            $label = $cf ? "{$cf['title']} ({$cf['room_number']})" : "Oda #{$id}";
+            $label = $cf ? "{$cf['title']} ({$cf['room_number']})" : "Room #{$id}";
 
             $del = $db->prepare("DELETE FROM pbx_conferences WHERE id = ?");
             $del->execute([$id]);
 
             markPendingSync('conferences', 'conference', $id, $label, 'delete', $_SESSION['user_id'] ?? null);
             markPendingSync('internal_numbers', 'conference', $id, $label, 'delete', $_SESSION['user_id'] ?? null);
-            return "Konferans odası silindi.";
+            return t('srv_conf.deleted');
         });
     }
 
@@ -118,9 +118,9 @@ class ConferenceService {
             $chan = preg_replace('/[^a-zA-Z0-9\/@_.-]/', '', (string)$channel);
             if ($room && $chan) {
                 @exec("asterisk -rx " . escapeshellarg("confbridge kick {$room} {$chan}"));
-                return "Katılımcı odadan çıkarıldı.";
+                return t('srv_conf.kicked');
             }
-            throw new \Exception("Geçersiz oda veya kanal");
+            throw new \Exception(t('srv_conf.err_invalid'));
         });
     }
 
@@ -131,9 +131,9 @@ class ConferenceService {
             if ($room && $chan) {
                 $cmd = $mute ? "confbridge mute {$room} {$chan}" : "confbridge unmute {$room} {$chan}";
                 @exec("asterisk -rx " . escapeshellarg($cmd));
-                return $mute ? "Katılımcı sessize alındı." : "Katılımcının sesi açıldı.";
+                return $mute ? t('srv_conf.muted') : t('srv_conf.unmuted');
             }
-            throw new \Exception("Geçersiz oda veya kanal");
+            throw new \Exception(t('srv_conf.err_invalid'));
         });
     }
 }

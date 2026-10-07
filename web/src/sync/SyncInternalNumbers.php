@@ -85,7 +85,7 @@ function buildInternalNumbersConf(array $entries): string
     $conf .= "[internal-numbers-pbx]\n";
 
     if (empty($entries)) {
-        $conf .= "; (tanimli dahili hedef numarasi yok)\n";
+        $conf .= "; (no internal numbers defined)\n";
         return $conf;
     }
 
@@ -97,7 +97,7 @@ function buildInternalNumbersConf(array $entries): string
 
         $label = toCleanAscii((string) $e['label']);
         $conf .= "\n; " . $e['dest_type'] . " #" . $e['dest_id'] . " ({$label})\n";
-        $conf .= "exten => {$num},1,NoOp(Dahili hedef {$num} -> " . $e['dest_type'] . "/" . $e['dest_id'] . " - {$label})\n";
+        $conf .= "exten => {$num},1,NoOp(Internal number {$num} -> " . $e['dest_type'] . "/" . $e['dest_id'] . " - {$label})\n";
         $conf .= " same => n,Set(CDR(direction)=internal)\n";
         if (internalNumberNeedsAnswer($e['dest_type'], $e['dest_id'])) {
             $conf .= " same => n,Answer()\n";
@@ -116,7 +116,7 @@ function __syncInternalNumbersBody()
     return writeConfWithRollback('extensions_internalnumbers.conf', $conf, function () {
         AsteriskHelper::assertReloadsOk(
             [AsteriskHelper::reloadDialplan()],
-            'Dahili hedef numarasi senkronizasyonu'
+            t('sync.ctx_internal_numbers')
         );
-    }, 'Dahili hedef numarasi senkronizasyonu');
+    }, t('sync.ctx_internal_numbers'));
 }

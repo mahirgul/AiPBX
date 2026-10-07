@@ -133,7 +133,7 @@ final class QueueMembershipTest extends TestCase
         $confContent = (string)file_get_contents($confPath);
 
         $this->assertStringContainsString('[support_queue]', $confContent);
-        $this->assertStringContainsString('member => Local/2001@from-internal-pbx/n,0,Temsilci 2001,hint:2001@from-internal-pbx', $confContent);
+        $this->assertStringContainsString('member => Local/2001@from-internal-pbx/n,0,Agent 2001,hint:2001@from-internal-pbx', $confContent);
         // Dynamic member (2002) should NOT be statically written in queues.conf
         $this->assertStringNotContainsString('member => Local/2002@from-internal-pbx/n', $confContent);
     }

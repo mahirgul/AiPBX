@@ -60,7 +60,7 @@ function __syncRingGroupsBody() {
         $channels = array_values(array_unique($channels));
 
         if (empty($channels)) {
-            $conf .= " same => n,NoOp(Ring Group {$id} icinde aranacak numara yok)\n";
+            $conf .= " same => n,NoOp(Ring group {$id} has no numbers to ring)\n";
         } elseif ($strategy === 'sequential') {
             $step_timeout = max(5, intval($timeout / max(1, count($channels))));
             foreach ($channels as $idx => $chan) {
@@ -79,12 +79,12 @@ function __syncRingGroupsBody() {
 
         // Fallback Hedefi
         $fallback = buildDestinationLines($rg['fallback_dest_type'] ?? 'hangup', $rg['fallback_dest_id'] ?? 'busy');
-        $conf .= " same => n,NoOp(Ring Group {$id} cevap verilmedi -> Fallback)\n";
+        $conf .= " same => n,NoOp(Ring group {$id} not answered -> fallback)\n";
         $conf .= $fallback . "\n";
         $conf .= " same => n(rg_done_{$id}),Hangup()\n\n";
     }
 
     return writeConfWithRollback('extensions_ringgroups.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Çalma Grupları senkronizasyonu');
-    }, 'Çalma Grupları senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_ring_groups'));
+    }, t('sync.ctx_ring_groups'));
 }

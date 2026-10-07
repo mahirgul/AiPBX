@@ -30,10 +30,10 @@ class VoicemailService {
             $stmt->execute([$voicemail_enabled, $pin, $email, $attach, $vm_on_noanswer, $vm_on_busy, $vm_on_unavail, $vm_always, $userId]);
 
             // Voicemail ve General Dialplan sync gerekli
-            markPendingSync('voicemail', 'voicemail', 'mailbox', "Sesli posta ayarları (#{$userId})", 'update', $_SESSION['user_id'] ?? null);
-            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı (Sesli posta)", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('voicemail', 'voicemail', 'mailbox', "Voicemail settings (#{$userId})", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan (voicemail)", 'update', $_SESSION['user_id'] ?? null);
 
-            return "Sesli posta ayarları başarıyla güncellendi.";
+            return t('srv_vm.saved');
         });
     }
 
@@ -42,7 +42,7 @@ class VoicemailService {
         if ($ext === '') return [];
 
         $spoolDir = "/var/spool/asterisk/voicemail/default/{$ext}";
-        $folders = ['INBOX' => 'Yeni', 'Old' => 'Dinlenmiş'];
+        $folders = ['INBOX' => t('srv_vm.folder_new'), 'Old' => t('srv_vm.folder_old')];
         $messages = [];
 
         foreach ($folders as $folderKey => $folderName) {
@@ -95,7 +95,7 @@ class VoicemailService {
         return PBXHelper::handleAction($csrf_token, function() use ($ext, $msgId) {
             $ext = preg_replace('/[^0-9]/', '', (string)$ext);
             $parts = explode(':', (string)$msgId, 2);
-            if (count($parts) !== 2) throw new \Exception("Geçersiz mesaj ID");
+            if (count($parts) !== 2) throw new \Exception(t('srv_vm.err_id'));
 
             $folder = preg_replace('/[^a-zA-Z]/', '', $parts[0]);
             $msgNum = preg_replace('/[^a-zA-Z0-9]/', '', $parts[1]);
@@ -104,15 +104,15 @@ class VoicemailService {
             $pattern = "{$dir}/{$msgNum}.*";
             $files = glob($pattern) ?: [];
             if (empty($files)) {
-                throw new \Exception("Sesli mesaj bulunamadı.");
+                throw new \Exception(t('srv_vm.err_not_found'));
             }
             foreach ($files as $f) {
                 // The error used to be swallowed and "deleted" was reported even when it could not be deleted.
                 if (!@unlink($f)) {
-                    throw new \Exception("Sesli mesaj silinemedi (dosya izni).");
+                    throw new \Exception(t('srv_vm.err_delete'));
                 }
             }
-            return "Sesli mesaj silindi.";
+            return t('srv_vm.deleted');
         });
     }
 }

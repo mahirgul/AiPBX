@@ -16,7 +16,7 @@ class FaxMailSettingsController extends BaseController
         $page_title = t('fax_mail_settings.title');
         static::renderPage('fax_mail_settings/index', [
             'fax_from_addr' => $sys_settings['fax_email_from_address'] ?? 'fax@example.com',
-            'fax_from_name' => $sys_settings['fax_email_from_name'] ?? 'AI PBX Faks Sistemi',
+            'fax_from_name' => $sys_settings['fax_email_from_name'] ?? 'AI PBX Fax System',
             'fax_rx_enabled' => $sys_settings['fax_email_rx_enabled'] ?? 'yes',
             'fax_rx_attach' => $sys_settings['fax_email_rx_attach_pdf'] ?? 'yes',
             'fax_tx_enabled' => $sys_settings['fax_email_tx_enabled'] ?? 'yes',

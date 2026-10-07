@@ -13,7 +13,7 @@ class ChatController extends BaseController
         $ext = trim($user['extension'] ?? '');
 
         if ($ext === '') {
-            static::notifyError('Sohbet özelliğini kullanabilmek için kullanıcınıza bir dahili numara atanmış olmalıdır.');
+            static::notifyError(t('chat.err_no_extension'));
             static::redirect('/dashboard');
             return;
         }

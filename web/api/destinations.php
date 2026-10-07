@@ -11,7 +11,7 @@ require_once __DIR__ . '/../modules/destinations/DestinationRegistry.php';
 // one of these three modules (e.g. a pure cc_agent) can no longer call it.
 if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view') && !hasModulePermission('ring_groups', 'view') && !hasModulePermission('boss_secretary', 'view')) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Yetkisiz erişim']);
+    echo json_encode(['success' => false, 'error' => t('api.err_unauthorized')]);
     exit;
 }
 
@@ -39,7 +39,7 @@ try {
         exit;
     }
 
-    echo json_encode(['success' => false, 'error' => 'Modül anahtarı belirtilmedi!']);
+    echo json_encode(['success' => false, 'error' => t('api.err_no_module')]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

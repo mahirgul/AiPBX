@@ -11,10 +11,10 @@ class PushSettingsController extends BaseController
 
         // AJAX: send a test push
         if (($_GET['action'] ?? '') === 'test_push') {
-            static::requireAjaxAccess('push_settings', 'edit', 'Bu işlem için yetkiniz bulunmamaktadır.', 'Geçersiz güvenlik oturumu (CSRF).');
+            static::requireAjaxAccess('push_settings', 'edit', t('api.err_no_permission'), t('common.invalid_csrf'));
             $target = trim($_POST['target'] ?? '');
             if ($target === '') {
-                static::json(['success' => false, 'message' => 'Lütfen test yapılacak dahili veya cihazı seçin.']);
+                static::json(['success' => false, 'message' => t('push.err_select_target')]);
             }
             static::json(PushSettingsService::testPush($target, trim($_POST['type'] ?? 'extension')));
         }

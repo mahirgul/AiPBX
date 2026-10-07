@@ -15,19 +15,19 @@ class ResetPasswordService {
         $confirm_password = (string)($post['confirm_password'] ?? '');
 
         if (!verifyCSRFToken($csrf_token)) {
-            return ['success' => false, 'error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         if (!$user) {
-            return ['success' => false, 'error' => 'Bağlantının süresi dolmuş veya geçersiz. Lütfen tekrar giriş yapmayı deneyip yeni bir sıfırlama bağlantısı isteyin.'];
+            return ['success' => false, 'error' => t('srv_resetpw.err_link')];
         }
         if (mb_strlen($new_password) < 8) {
-            return ['success' => false, 'error' => 'Yeni şifre en az 8 karakter olmalıdır.'];
+            return ['success' => false, 'error' => t('srv_resetpw.err_length')];
         }
         if (strcasecmp($new_password, $user['username']) === 0) {
-            return ['success' => false, 'error' => 'Yeni şifre kullanıcı adınızla aynı olamaz.'];
+            return ['success' => false, 'error' => t('srv_resetpw.err_same_user')];
         }
         if ($new_password !== $confirm_password) {
-            return ['success' => false, 'error' => 'Şifreler birbiriyle eşleşmiyor.'];
+            return ['success' => false, 'error' => t('srv_resetpw.err_mismatch')];
         }
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
@@ -47,7 +47,7 @@ class ResetPasswordService {
         // is already logged in UserService; the self-service flow was the
         // missing one). user_id is NULL: there is no session, the token owner
         // does it themselves (entity_id is that user).
-        writeAuditLog(null, 'system_users', $user['id'], "Şifre self-servis olarak sıfırlandı: " . ($user['username'] ?? '?'), 'password_reset', null);
+        writeAuditLog(null, 'system_users', $user['id'], "Password reset (self-service): " . ($user['username'] ?? '?'), 'password_reset', null);
 
         return ['success' => true];
     }

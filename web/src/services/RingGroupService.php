@@ -36,11 +36,11 @@ class RingGroupService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($group_number) || empty($name)) {
-                throw new \Exception("Grup Dahili Numarası ve Grup Adı zorunludur!");
+                throw new \Exception(t('srv_rg.err_required'));
             }
 
             if (empty($numbers_list)) {
-                throw new \Exception("Çalacak en az bir dahili veya harici numara girmelisiniz!");
+                throw new \Exception(t('srv_rg.err_members'));
             }
 
             // Conflict check (with extensions, feature codes, IVRs, queues etc.)
@@ -58,7 +58,7 @@ class RingGroupService {
 
             markPendingSync('ring_groups', 'ring_group', $id, "{$name} ({$group_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
             markPendingSync('internal_numbers', 'ring_group', $id, "{$name} ({$group_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            return "Çalma grubu başarıyla kaydedildi.";
+            return t('srv_rg.saved');
         });
     }
 
@@ -72,22 +72,22 @@ class RingGroupService {
             $dids = $db->prepare("SELECT did_number FROM pbx_dids WHERE dest_type = 'ring_group' AND dest_id = ?");
             $dids->execute([$id]);
             if ($d = $dids->fetchAll(PDO::FETCH_COLUMN)) {
-                $refs[] = "Gelen Rotalar (" . implode(', ', $d) . ")";
+                $refs[] = "Inbound routes (" . implode(', ', $d) . ")";
             }
 
             if (!empty($refs)) {
-                throw new \Exception("Bu çalma grubu şu modüllerde hedef olarak kullanıldığı için silinemez: " . implode(', ', $refs));
+                throw new \Exception(sprintf(t('srv_rg.err_in_use'), implode(', ', $refs)));
             }
 
             $rg = self::getRingGroup($id);
-            $label = $rg ? "{$rg['name']} ({$rg['group_number']})" : "Grup #{$id}";
+            $label = $rg ? "{$rg['name']} ({$rg['group_number']})" : "Group #{$id}";
 
             $del = $db->prepare("DELETE FROM pbx_ring_groups WHERE id = ?");
             $del->execute([$id]);
 
             markPendingSync('ring_groups', 'ring_group', $id, $label, 'delete', $_SESSION['user_id'] ?? null);
             markPendingSync('internal_numbers', 'ring_group', $id, $label, 'delete', $_SESSION['user_id'] ?? null);
-            return "Çalma grubu silindi.";
+            return t('srv_rg.deleted');
         });
     }
 }

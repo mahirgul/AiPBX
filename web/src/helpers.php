@@ -28,13 +28,13 @@ class PBXHelper {
      */
     public static function handleAction($csrf_token, callable $action) {
         if (!verifyCSRFToken($csrf_token)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         try {
             $msg = $action();
-            return ['success' => true, 'message' => is_string($msg) ? $msg : 'İşlem başarıyla tamamlandı!'];
+            return ['success' => true, 'message' => is_string($msg) ? $msg : t('common.done')];
         } catch (\PDOException $e) {
-            return ['success' => false, 'error' => 'Veritabanı hatası: ' . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('common.db_error'), $e->getMessage())];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => 'Hata: ' . $e->getMessage()];
         }
@@ -65,13 +65,13 @@ class PBXHelper {
                 'sys_did_mappings' => ['domain' => 'inbound_dialplan', 'label_col' => 'department_name', 'entity_type' => 'did_mapping'],
             ];
             if (!isset($allowed_tables[$table])) {
-                throw new \Exception("Geçersiz tablo adı!");
+                throw new \Exception("Invalid table name!");
             }
             $id = intval($id);
             $meta = $allowed_tables[$table];
             $row = DBHelper::fetchOne("SELECT is_active, {$meta['label_col']} AS label" . ($table === 'sys_users' ? ', extension' : '') . " FROM {$table} WHERE id = ?", [$id]);
             if (!$row || $row['is_active'] === null) {
-                throw new \Exception("Kayıt bulunamadı!");
+                throw new \Exception(t('common.not_found'));
             }
             $current = $row['is_active'];
             $new_status = ($current == 1) ? 0 : 1;
@@ -86,14 +86,14 @@ class PBXHelper {
                 if ($target_role === 'admin') {
                     $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$id]);
                     if (intval($other_admins) < 1) {
-                        throw new \Exception("Sistemdeki son aktif admin hesabı pasife alınamaz! Önce başka bir kullanıcıyı admin yapın.");
+                        throw new \Exception(t('srv_user.err_last_admin_disable'));
                     }
                 }
             }
 
             DBHelper::update($table, ['is_active' => $new_status], 'id', $id);
 
-            $status_text = ($new_status == 1) ? 'Aktif' : 'Pasif';
+            $status_text = ($new_status == 1) ? t('common.active') : t('common.passive');
             // sys_users special case: the active/passive state of a user
             // without an extension (e.g. plain office staff) does not affect
             // the PJSIP config at all — do not dirty the "extensions" domain
@@ -106,16 +106,16 @@ class PBXHelper {
                     $num = DBHelper::fetchColumn("SELECT internal_number FROM {$table} WHERE id = ?", [$id]);
                     if (!empty($num)) {
                         markPendingSync('internal_numbers', $meta['entity_type'], $id,
-                            ($row['label'] ?: $id) . " ({$status_text}, dahili {$num})",
+                            ($row['label'] ?: $id) . " ({$status_text}, ext {$num})",
                             'update', $_SESSION['user_id'] ?? null);
                     }
                 }
                 if ($table === 'pbx_outbound_routes') {
                     markPendingSync('ivrs', $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
                 }
-                return "Kayıt durumu {$status_text} olarak güncellendi! Etkili olması için Uygula sayfasından gönderin.";
+                return sprintf(t('common.status_set_apply'), $status_text);
             }
-            return "Kayıt durumu {$status_text} olarak güncellendi!";
+            return sprintf(t('common.status_set'), $status_text);
         });
     }
 }

@@ -129,24 +129,24 @@ class FirewallService {
      */
     public static function addPortRule(string $port, string $protocol, string $sourceSubnet, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $port = preg_replace('/[^0-9\-]/', '', trim($port));
         $protocol = in_array($protocol, ['tcp', 'udp'], true) ? $protocol : 'tcp';
         $sourceSubnet = trim($sourceSubnet);
 
         if ($port === '' || !preg_match('/^[0-9]+(-[0-9]+)?$/', $port)) {
-            return ['success' => false, 'error' => 'Geçersiz port numarası!'];
+            return ['success' => false, 'error' => t('srv_fw.err_port')];
         }
         // Validate the full format: only the IP before "/" used to be checked,
         // the CIDR suffix and characters such as quotes were free — e.g.
         // `1.2.3.4/32" accept` passed validation and could break the rich-rule
         // syntax (found in the 2026-08-31 audit).
         if ($sourceSubnet !== '' && !preg_match('#^\d{1,3}(\.\d{1,3}){3}(/\d{1,2})?$#', $sourceSubnet)) {
-            return ['success' => false, 'error' => 'Geçersiz kaynak IP/subnet formatı! (ör. 192.0.2.0/24)'];
+            return ['success' => false, 'error' => t('srv_fw.err_subnet')];
         }
         if ($sourceSubnet !== '' && !filter_var(explode('/', $sourceSubnet)[0], FILTER_VALIDATE_IP)) {
-            return ['success' => false, 'error' => 'Geçersiz kaynak IP adresi!'];
+            return ['success' => false, 'error' => t('srv_fw.err_ip')];
         }
 
         // The source-restricted rule is generated as a rich rule by aipbx-priv:
@@ -157,10 +157,10 @@ class FirewallService {
             : self::runLiveAndPermanent(['add-port', $port, $protocol]);
 
         if (!$res['success']) {
-            return ['success' => false, 'error' => "Firewall kuralı eklenemedi: " . $res['output']];
+            return ['success' => false, 'error' => sprintf(t('srv_fw.err_add'), $res['output'])];
         }
-        writeAuditLog(null, 'firewall', $port, "Firewall kuralı eklendi: {$port}/{$protocol}" . ($sourceSubnet !== '' ? " (kaynak: {$sourceSubnet})" : ' (genel)'), 'create', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => "Kural eklendi: {$port}/{$protocol}" . ($sourceSubnet !== '' ? " ({$sourceSubnet})" : '')];
+        writeAuditLog(null, 'firewall', $port, "Firewall rule added: {$port}/{$protocol}" . ($sourceSubnet !== '' ? " (source: {$sourceSubnet})" : ' (any)'), 'create', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => sprintf(t('srv_fw.added'), "{$port}/{$protocol}" . ($sourceSubnet !== '' ? " ({$sourceSubnet})" : ''))];
     }
 
     /**
@@ -169,22 +169,22 @@ class FirewallService {
      */
     public static function removePortRule(string $port, string $protocol, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $port = preg_replace('/[^0-9\-]/', '', trim($port));
         $protocol = in_array($protocol, ['tcp', 'udp'], true) ? $protocol : 'tcp';
 
         if (self::coversProtectedPort($port)) {
-            return ['success' => false, 'error' => "Bu kural kritik bir portu (SSH/Web/SIP/RTP) kapsıyor — kaldırılamaz!"];
+            return ['success' => false, 'error' => t('srv_fw.err_critical_port')];
         }
 
         $res = self::runLiveAndPermanent(['remove-port', $port, $protocol]);
 
         if (!$res['success']) {
-            return ['success' => false, 'error' => "Firewall kuralı kaldırılamadı: " . $res['output']];
+            return ['success' => false, 'error' => sprintf(t('srv_fw.err_remove'), $res['output'])];
         }
-        writeAuditLog(null, 'firewall', $port, "Firewall kuralı kaldırıldı: {$port}/{$protocol}", 'delete', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => "Kural kaldırıldı: {$port}/{$protocol}"];
+        writeAuditLog(null, 'firewall', $port, "Firewall rule removed: {$port}/{$protocol}", 'delete', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => sprintf(t('srv_fw.removed_port'), "{$port}/{$protocol}")];
     }
 
     /**
@@ -193,18 +193,18 @@ class FirewallService {
      */
     public static function removeRichRule(string $rule, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $rule = trim($rule);
         if ($rule === '') {
-            return ['success' => false, 'error' => 'Geçersiz kural.'];
+            return ['success' => false, 'error' => t('srv_fw.err_rule')];
         }
         // The port value inside a rich rule can be a range too ("10000-20000")
         // — coversProtectedPort() also checks range overlap (2026-08-31 audit:
         // only exact matches used to be checked, so a rule removing the RTP
         // range was not blocked).
         if (preg_match('/port="([0-9\-]+)"/', $rule, $m) && self::coversProtectedPort($m[1])) {
-            return ['success' => false, 'error' => "Bu kural kritik bir portu (SSH/Web/SIP/RTP) kapsıyor — kaldırılamaz!"];
+            return ['success' => false, 'error' => t('srv_fw.err_critical_port')];
         }
         // A rich rule can also name the port BY SERVICE NAME
         // (`service name="ssh"`) — then the port check above never matches and
@@ -212,16 +212,16 @@ class FirewallService {
         // right now; forward-looking defence (2026-08-31).
         if (preg_match('/service name="([a-zA-Z0-9_-]+)"/', $rule, $m)
             && in_array(strtolower($m[1]), self::PROTECTED_SERVICES, true)) {
-            return ['success' => false, 'error' => "Bu kural kritik bir servisi ({$m[1]}) kapsıyor — kaldırılamaz!"];
+            return ['success' => false, 'error' => sprintf(t('srv_fw.err_critical_service'), $m[1])];
         }
 
         $res = self::runLiveAndPermanent(['remove-rich-rule', $rule]);
 
         if (!$res['success']) {
-            return ['success' => false, 'error' => "Kural kaldırılamadı: " . $res['output']];
+            return ['success' => false, 'error' => sprintf(t('srv_fw.err_remove_rule'), $res['output'])];
         }
-        writeAuditLog(null, 'firewall', 'rich-rule', "Firewall rich-rule kaldırıldı: {$rule}", 'delete', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => 'Kural kaldırıldı.'];
+        writeAuditLog(null, 'firewall', 'rich-rule', "Firewall rich rule removed: {$rule}", 'delete', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('srv_fw.removed')];
     }
 }
 

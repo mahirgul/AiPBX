@@ -12,7 +12,7 @@ class RoleService {
     public static function saveRole(array $data, array $modulesDefinition): array
     {
         if (!verifyCSRFToken($data['csrf_token'] ?? '')) {
-            return ['error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['error' => t('common.invalid_csrf')];
         }
 
         $db = getDB();
@@ -34,7 +34,7 @@ class RoleService {
             $actual_role_key->execute([$role_id]);
             $actual_role_key = $actual_role_key->fetchColumn();
             if ($actual_role_key === false) {
-                $error = 'Düzenlenmek istenen rol bulunamadı!';
+                $error = t('srv_role.err_not_found');
                 $role_key = '';
             } else {
                 $role_key = $actual_role_key;
@@ -42,7 +42,7 @@ class RoleService {
         }
 
         if (empty($role_key) || empty($role_name)) {
-            return ['error' => $error ?: 'Rol anahtarı ve rol adı zorunludur!'];
+            return ['error' => $error ?: t('srv_role.err_required')];
         }
 
         try {
@@ -86,12 +86,12 @@ class RoleService {
             // This does not affect the Asterisk config at all (RBAC is read
             // from the DB on every request) — so writeAuditLog() directly, NOT
             // markPendingSync() (domain=NULL, not a PENDING_SYNC_DOMAIN_MAP domain).
-            writeAuditLog(null, 'role', $role_key, "Rol: {$role_name} (izin matrisi güncellendi)", $role_id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            writeAuditLog(null, 'role', $role_key, "Role: {$role_name} (permission matrix updated)", $role_id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
 
-            notify("Kullanıcı Rolü '$role_name' ve modül izin matrisi başarıyla kaydedildi!", "success");
+            notify(sprintf(t('srv_role.saved'), $role_name), "success");
             return ['redirect' => '/roles'];
         } catch (\Exception $e) {
-            return ['error' => 'Hata oluştu: ' . $e->getMessage()];
+            return ['error' => sprintf(t('common.error_detail'), $e->getMessage())];
         }
     }
 
@@ -101,7 +101,7 @@ class RoleService {
     public static function deleteRole(array $data): array
     {
         if (!verifyCSRFToken($data['csrf_token'] ?? '')) {
-            return ['error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['error' => t('common.invalid_csrf')];
         }
 
         $role_id = intval($data['role_id'] ?? 0);
@@ -125,13 +125,13 @@ class RoleService {
         $count_stmt->execute([$role_key]);
         $in_use = (int)$count_stmt->fetchColumn();
         if ($in_use > 0) {
-            return ['error' => "Bu rol {$in_use} kullanıcıya atanmış durumda, önce onları başka bir role taşımadan silinemez!"];
+            return ['error' => sprintf(t('srv_role.err_in_use'), $in_use)];
         }
 
         $db->prepare("DELETE FROM sys_roles WHERE id = ?")->execute([$role_id]);
         $db->prepare("DELETE FROM sys_role_permissions WHERE role_key = ?")->execute([$role_key]);
-        writeAuditLog(null, 'role', $role_key, "Rol: {$role_key} (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-        notify("Kullanıcı rolü '$role_key' silindi.", "warning");
+        writeAuditLog(null, 'role', $role_key, "Role: {$role_key} (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+        notify(sprintf(t('srv_role.deleted'), $role_key), "warning");
         return ['redirect' => '/roles'];
     }
 }

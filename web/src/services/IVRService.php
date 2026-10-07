@@ -27,7 +27,7 @@ class IVRService {
             $allow_direct_dial = isset($data['allow_direct_dial']) ? intval($data['allow_direct_dial']) : 0;
             $digit_timeout = max(1, min(10, intval($data['digit_timeout'] ?? 3)));
 
-            if (empty($title)) throw new \Exception("IVR başlığı zorunludur!");
+            if (empty($title)) throw new \Exception(t('srv_ivr.err_title'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
             $eski_numara = (string) (DBHelper::fetchColumn(
@@ -58,11 +58,11 @@ class IVRService {
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
                 markPendingSync('internal_numbers', 'ivr', $id,
-                    "Dahili hedef numarasi: " . ($internal_number !== '' ? $internal_number : 'kaldirildi'),
+                    "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
             }
 
-            return "IVR Menüsü '{$title}' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            return sprintf(t('srv_ivr.saved'), $title);
         });
     }
 
@@ -93,18 +93,18 @@ class IVRService {
                 [(string)$ivr_id, (string)$ivr_id, $ivr_id, $ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, '%"match_dest_type":"ivr","match_dest_id":"' . $ivr_id . '"%']
             );
             if ($refs > 0) {
-                throw new \Exception("Bu IVR bir Gelen Rota, başka bir IVR seçeneği veya Zaman Koşuluna bağlı olduğu için silinemez! Önce o bağlantıları kaldırın veya başka bir hedefe yönlendirin.");
+                throw new \Exception(t('srv_ivr.err_in_use'));
             }
             $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_ivrs WHERE id = ?", [$ivr_id]) ?? '');
             DBHelper::delete('pbx_ivrs', 'id', $ivr_id);
             markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
             if ($silinen_numara !== '') {
                 markPendingSync('internal_numbers', 'ivr', $ivr_id,
-                    "Dahili hedef numarasi silindi: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$silinen_numara}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 
-            return "IVR Menüsü silindi! Etkili olması için Uygula sayfasından gönderin.";
+            return t('srv_ivr.deleted');
         });
     }
 
@@ -115,15 +115,15 @@ class IVRService {
             $dest_type = sanitizeDestType($data['dest_type'] ?? 'queue');
             $dest_id = trim($data['dest_id'] ?? '');
 
-            if ($ivr_id <= 0 || $digit === '') throw new \Exception("Geçersiz IVR seçeneği!");
+            if ($ivr_id <= 0 || $digit === '') throw new \Exception(t('srv_ivr.err_option'));
 
             $db = getDB();
             $stmt = $db->prepare("INSERT INTO pbx_ivr_entries (ivr_id, digit, dest_type, dest_id) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE dest_type = VALUES(dest_type), dest_id = VALUES(dest_id)");
             $stmt->execute([$ivr_id, $digit, $dest_type, $dest_id]);
 
             $ivr_title = DBHelper::fetchColumn("SELECT title FROM pbx_ivrs WHERE id = ?", [$ivr_id]);
-            markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (tuşlama: {$digit})", 'update', $_SESSION['user_id'] ?? null);
-            return "IVR Tuşlama Haritası (Tuş: {$digit}) güncellendi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (key: {$digit})", 'update', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_ivr.option_saved'), $digit);
         });
     }
 
@@ -134,9 +134,9 @@ class IVRService {
             DBHelper::delete('pbx_ivr_entries', 'id', $entry_id);
             if ($ivr_id) {
                 $ivr_title = DBHelper::fetchColumn("SELECT title FROM pbx_ivrs WHERE id = ?", [$ivr_id]);
-                markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (bir tuşlama seçeneği silindi)", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (a key option deleted)", 'update', $_SESSION['user_id'] ?? null);
             }
-            return "IVR Tuşlama seçeneği silindi! Etkili olması için Uygula sayfasından gönderin.";
+            return t('srv_ivr.option_deleted');
         });
     }
 }

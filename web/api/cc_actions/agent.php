@@ -15,7 +15,7 @@ if ($action === 'login') {
         }
 
         if (empty($assigned)) {
-            echo json_encode(['success' => false, 'error' => "Dahili numaranız ($user_ext) herhangi bir aktif kuyruğa tanımlı değildir!"]);
+            echo json_encode(['success' => false, 'error' => sprintf(t('api_cc.err_no_queue'), $user_ext)]);
             exit;
         }
 
@@ -30,7 +30,7 @@ if ($action === 'login') {
         $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt->execute([$user_ext]);
     }
-    echo json_encode(['success' => true, 'message' => 'Kuyruğa giriş yapıldı ve aktif duruma geçildi']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.logged_in')]);
     exit;
 }
 
@@ -43,7 +43,7 @@ if ($action === 'logout') {
         $target_q = trim($_POST['queue_name'] ?? '');
         $static_q = QueueHelper::staticQueuesOf($user_ext);
         if (!empty($target_q) && in_array($target_q, $static_q, true)) {
-            echo json_encode(['success' => false, 'error' => 'Bu kuyrukta statik temsilcisiniz; kuyruktan çıkamazsınız, sadece mola verebilirsiniz.']);
+            echo json_encode(['success' => false, 'error' => t('api_cc.err_static')]);
             exit;
         }
         $queues_to_leave = array_diff((!empty($target_q)) ? [$target_q] : $all_q, $static_q);
@@ -59,10 +59,10 @@ if ($action === 'logout') {
         }
     }
     if (!empty($static_q)) {
-        echo json_encode(['success' => true, 'message' => 'Dinamik kuyruklardan çıkış yapıldı. Statik temsilcisi olduğunuz kuyruklarda kalmaya devam ediyorsunuz.']);
+        echo json_encode(['success' => true, 'message' => t('api_cc.logged_out_dynamic')]);
         exit;
     }
-    echo json_encode(['success' => true, 'message' => 'Kuyruktan çıkış yapıldı']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.logged_out')]);
     exit;
 }
 
@@ -92,7 +92,7 @@ if ($action === 'pause') {
             }
         });
     }
-    echo json_encode(['success' => true, 'message' => "Mola başlatıldı ($reason)", 'reason' => $reason]);
+    echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.break_started'), $reason), 'reason' => $reason]);
     exit;
 }
 
@@ -108,7 +108,7 @@ if ($action === 'unpause') {
             $stmt->execute([$user_ext]);
         });
     }
-    echo json_encode(['success' => true, 'message' => 'Moladan dönüldü, kuyrukta aktifsiniz']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.break_ended')]);
     exit;
 }
 
@@ -149,7 +149,7 @@ if ($action === 'get_status') {
     $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
     $auto_login = ($settings['cc_auto_queue_login'] ?? '1') === '1';
-    $raw_reasons = $settings['cc_break_reasons'] ?? 'Yemek Molası,Kısa Dinlenme,Eğitim / Toplantı,Evrak / İdari İşler,Teknik Problem';
+    $raw_reasons = $settings['cc_break_reasons'] ?? t('api_cc.default_break_reasons');
     $reasons = array_filter(array_map('trim', explode(',', $raw_reasons)));
 
     echo json_encode([
@@ -185,7 +185,7 @@ if ($action === 'auto_login') {
 
             // Only auto-login if explicitly assigned AND (either in last_queues or last_queues is empty)
             if ($is_assigned && (empty($last_queues) || in_array($q_name, $last_queues))) {
-                @exec("asterisk -rx " . escapeshellarg("queue add member Local/$user_ext@from-internal-pbx/n to $q_name penalty 0 as \"Temsilci $user_ext\" state_interface hint:$user_ext@from-internal-pbx"), $out);
+                @exec("asterisk -rx " . escapeshellarg("queue add member Local/$user_ext@from-internal-pbx/n to $q_name penalty 0 as \"Agent $user_ext\" state_interface hint:$user_ext@from-internal-pbx"), $out);
 
                 // After an Asterisk restart/reload the dynamic membership is
                 // reset and a newly added member starts UNPAUSED (active) by
@@ -211,6 +211,6 @@ if ($action === 'auto_login') {
             }
         }
     }
-    echo json_encode(['success' => true, 'message' => 'Otomatik kuyruk kontrolü tamamlandı']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.auto_check_done')]);
     exit;
 }

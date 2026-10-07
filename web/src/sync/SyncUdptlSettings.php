@@ -36,17 +36,17 @@ function __syncUdptlSettingsBody()
     $onceki = is_readable(UDPTL_CONF_PATH) ? file_get_contents(UDPTL_CONF_PATH) : null;
 
     if (!FileHelper::writeFile(UDPTL_CONF_PATH, $conf, 'asterisk', 'asterisk', 0644)) {
-        throw new \Exception('udptl.conf yazılamadı (izin/sahiplik?)');
+        throw new \Exception(sprintf(t('sync.err_conf_write'), 'udptl.conf'));
     }
 
     try {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadUDPTL()], 'UDPTL ayarları');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadUDPTL()], t('sync.ctx_udptl'));
     } catch (\Exception $e) {
         if ($onceki !== null && FileHelper::writeFile(UDPTL_CONF_PATH, $onceki, 'asterisk', 'asterisk', 0644)) {
             AsteriskHelper::reloadUDPTL();
-            throw new \Exception('UDPTL ayarları uygulanamadı, ÖNCEKİ HÂLE OTOMATİK GERİ ALINDI: ' . $e->getMessage());
+            throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'UDPTL', $e->getMessage()));
         }
-        throw new \Exception('UDPTL ayarları uygulanamadı ve GERİ ALINAMADI, ELLE MÜDAHALE GEREKİYOR: ' . $e->getMessage());
+        throw new \Exception(sprintf(t('sync.err_settings_no_rollback'), 'UDPTL', $e->getMessage()));
     }
 
     return true;

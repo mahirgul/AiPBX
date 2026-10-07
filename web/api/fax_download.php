@@ -30,12 +30,12 @@ if ($type === 'sent') {
     
     if (!$fax) {
         http_response_code(404);
-        die('Faks kaydı bulunamadı');
+        die(t('api.err_fax_not_found'));
     }
     
     if ($user_role !== 'admin' && $fax['user_id'] != $user_id) {
         http_response_code(403);
-        die('Yetkisiz Erişim');
+        die(t('api.err_unauthorized'));
     }
 } else {
     $stmt = $db->prepare('SELECT id, did_extension, pdf_path FROM fax_received WHERE id = ?');
@@ -44,7 +44,7 @@ if ($type === 'sent') {
     
     if (!$fax) {
         http_response_code(404);
-        die('Faks kaydı bulunamadı');
+        die(t('api.err_fax_not_found'));
     }
     
     if ($user_role !== 'admin') {
@@ -52,7 +52,7 @@ if ($type === 'sent') {
         $allowed_dids = FaxInboxRepository::getAllowedDIDs($user_id, $user_ext);
         if (!in_array($fax['did_extension'], $allowed_dids, true)) {
             http_response_code(403);
-            die('Yetkisiz Erişim');
+            die(t('api.err_unauthorized'));
         }
     }
 
@@ -65,7 +65,7 @@ $allowed_dir = realpath(FAX_STORAGE_PATH);
 // Trailing '/': a plain prefix comparison would also accept sibling directories such as "/var/www/faxes2/...".
 if (!$file_path || !$allowed_dir || strpos($file_path, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file_path)) {
     http_response_code(404);
-    die('Faks dosyası sunucuda bulunamadı veya erişim engellendi');
+    die(t('api.err_fax_file'));
 }
 
 header('Content-Type: application/pdf');

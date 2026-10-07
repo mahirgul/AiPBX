@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (function_exists('syncGeneralDialplan')) {
             syncGeneralDialplan();
         } else {
-            error_log('mobile/features.php: syncGeneralDialplan() yuklu degil, dialplan guncellenmedi');
+            error_log('mobile/features.php: syncGeneralDialplan() not loaded, dialplan not updated');
         }
     } catch (\Throwable $e) {
         // The setting was written to the DB but the dialplan could not be

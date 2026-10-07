@@ -9,7 +9,7 @@ if (!$user || empty($user['extension'])) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'error' => 'Aktif dahili bulunamadı.'
+        'error' => t('api.err_no_active_ext')
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -18,7 +18,7 @@ if (!hasModulePermission('chat', 'access') && !hasModulePermission('chat', 'view
     http_response_code(403);
     echo json_encode([
         'success' => false,
-        'error' => 'Sohbet modülüne erişim yetkiniz bulunmamaktadır.'
+        'error' => t('api.err_no_chat')
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

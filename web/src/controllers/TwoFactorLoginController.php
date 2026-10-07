@@ -95,7 +95,7 @@ class TwoFactorLoginController extends BaseController
                         logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
                     }
                     if (function_exists('writeAuditLog')) {
-                        writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' 2FA ile başarılı oturum açtı.", 'two_factor_login');
+                        writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in with 2FA.", 'two_factor_login');
                     }
 
                     static::redirect(roleHomePath($user['role']));
@@ -120,7 +120,7 @@ class TwoFactorLoginController extends BaseController
         $csrf_token = getCSRFToken();
         $site_title = getSystemSetting('site_title', 'AiPBX');
         $brand_title = getSystemSetting('brand_title', 'AiPBX');
-        $brand_sub = getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi');
+        $brand_sub = getSystemSetting('brand_sub', 'PBX & Call Center');
         $site_logo_type = getSystemSetting('site_logo_type', 'image');
         $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
         $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);

@@ -197,7 +197,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         return [
             'terminal' => true,
             'lines' => [
-                " same => n,NoOp(Kosulsuz Sesli Postaya Yonlendirme aktif - {$ext})",
+                " same => n,NoOp(Unconditional voicemail forwarding on - {$ext})",
                 " same => n,VoiceMail({$ext}@default,u)",
                 " same => n,Hangup()"
             ]
@@ -294,13 +294,13 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $lines[] = " same => n,Hangup()";
 
     // 6. Busy
-    $lines[] = " same => n(lbl_busy_{$lbl}),NoOp(Dahili {$ext} Mesgul - DIALSTATUS=\${DIALSTATUS})";
+    $lines[] = " same => n(lbl_busy_{$lbl}),NoOp(Extension {$ext} busy - DIALSTATUS=\${DIALSTATUS})";
     if ($cfBusy !== '') {
         $lines[] = " same => n,NoOp(Mesgulken Yonlendirme aktif - {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_busy'])) {
-        $lines[] = " same => n,NoOp(Mesgulken Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,NoOp(Voicemail on busy - {$ext})";
         $lines[] = " same => n,VoiceMail({$ext}@default,b)";
         $lines[] = " same => n,Hangup()";
     } else {
@@ -308,13 +308,13 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     }
 
     // 7. No answer
-    $lines[] = " same => n(lbl_noans_{$lbl}),NoOp(Dahili {$ext} Cevapsiz - DIALSTATUS=\${DIALSTATUS})";
+    $lines[] = " same => n(lbl_noans_{$lbl}),NoOp(Extension {$ext} no answer - DIALSTATUS=\${DIALSTATUS})";
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Cevapsizken Yonlendirme aktif - {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_noanswer'])) {
-        $lines[] = " same => n,NoOp(Cevapsizken Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,NoOp(Voicemail on no answer - {$ext})";
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
         $lines[] = " same => n,Hangup()";
     } else {
@@ -322,7 +322,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     }
 
     // 8. Unreachable / offline
-    $lines[] = " same => n(lbl_unavail_{$lbl}),NoOp(Dahili {$ext} Kayitli Cihaz Yok veya Ulasilamiyor)";
+    $lines[] = " same => n(lbl_unavail_{$lbl}),NoOp(Extension {$ext} has no registered device or is unreachable)";
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Ulasilamadi -> Cevapsizken Yonlendirme: {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
@@ -332,7 +332,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && (!empty($u['vm_on_unavail']) || !empty($u['vm_on_noanswer']))) {
-        $lines[] = " same => n,NoOp(Ulasilamadi -> Sesli Posta aktif - {$ext})";
+        $lines[] = " same => n,NoOp(Unreachable -> voicemail - {$ext})";
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
         $lines[] = " same => n,Hangup()";
     } else {
@@ -384,7 +384,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
                 $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
                 $lines[] = " same => n,MixMonitor(\${REC_FILE})";
                 $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
-                $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Kuyruk kaydi: \${MIXMONITOR_FILENAME})";
+                $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
             }
             // A language set on the queue itself overrides the language set so
             // far (inbound route/IVR) — queue hold prompts (announce-holdtime/
@@ -496,7 +496,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
                 $lines[] = buildDestinationLines($sonraki_tip, $sonraki_id, $orig_did, $derinlik + 1);
             } else {
                 if ($derinlik >= 3) {
-                    $lines[] = " same => n,NoOp(Anons zinciri cok derin, kapatiliyor)";
+                    $lines[] = " same => n,NoOp(Announcement chain too deep, hanging up)";
                 }
                 $lines[] = " same => n,Hangup()";
             }

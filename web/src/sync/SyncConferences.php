@@ -69,6 +69,6 @@ function __syncConferencesBody() {
     }
 
     return writeConfWithRollback('extensions_conferences.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Konferans Odaları senkronizasyonu');
-    }, 'Konferans Odaları senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_conferences'));
+    }, t('sync.ctx_conferences'));
 }

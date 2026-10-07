@@ -7,7 +7,7 @@ requireLogin();
 
 if (!hasModulePermission('conferences', 'view')) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Yetkisiz erişim']);
+    echo json_encode(['success' => false, 'error' => t('api.err_unauthorized')]);
     exit;
 }
 
@@ -20,4 +20,4 @@ if ($action === 'members') {
     exit;
 }
 
-echo json_encode(['success' => false, 'error' => 'Geçersiz işlem']);
+echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')]);

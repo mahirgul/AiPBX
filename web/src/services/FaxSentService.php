@@ -18,7 +18,7 @@ class FaxSentService {
     public static function deleteSentFax($faxId, $csrfToken, string $userRole, int $userId): array
     {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $fax_id = intval($faxId);
@@ -37,7 +37,7 @@ class FaxSentService {
         $fax = $stmt->fetch();
 
         if (!$fax) {
-            return ['success' => false, 'error' => 'Bu faks kaydına erişim yetkiniz yok veya kayıt bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_fax.err_access_nf')];
         }
 
         // Physical files are deleted ONLY when no other record uses the same
@@ -62,8 +62,8 @@ class FaxSentService {
             $db->prepare("DELETE FROM fax_sent WHERE id = ? AND user_id = ?")->execute([$fax_id, $userId]);
         }
 
-        writeAuditLog(null, 'fax_sent', $fax_id, "Giden Faks: " . ($fax['sender_extension'] ?? '?') . " -> " . ($fax['destination_number'] ?? '?') . " (" . ($fax['created_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => 'Giden faks kaydı silindi.'];
+        writeAuditLog(null, 'fax_sent', $fax_id, "Sent fax: " . ($fax['sender_extension'] ?? '?') . " -> " . ($fax['destination_number'] ?? '?') . " (" . ($fax['created_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('srv_fax.out_deleted')];
     }
 
     /**
@@ -78,12 +78,12 @@ class FaxSentService {
     public static function resendFax($faxId, $csrfToken, string $userRole, int $userId): array
     {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $fax_id = intval($faxId);
         if ($fax_id <= 0) {
-            return ['success' => false, 'error' => 'Geçersiz faks kaydı.'];
+            return ['success' => false, 'error' => t('srv_fax.err_record')];
         }
 
         $db = getDB();
@@ -97,16 +97,16 @@ class FaxSentService {
         $fax = $stmt->fetch();
 
         if (!$fax) {
-            return ['success' => false, 'error' => 'Bu faks kaydına erişim yetkiniz yok veya kayıt bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_fax.err_access_nf')];
         }
         if ($fax['status'] !== 'FAILED') {
-            return ['success' => false, 'error' => 'Sadece başarısız (FAILED) faks kayıtları yeniden gönderilebilir.'];
+            return ['success' => false, 'error' => t('srv_fax.err_resend_failed_only')];
         }
         if (empty($fax['tif_path']) || !file_exists($fax['tif_path'])) {
-            return ['success' => false, 'error' => 'Kaynak faks dosyası artık sunucuda bulunamadığı için yeniden gönderilemiyor.'];
+            return ['success' => false, 'error' => t('srv_fax.err_source_gone')];
         }
         if (AsteriskHelper::getPrimaryTrunkName() === null) {
-            return ['success' => false, 'error' => 'Tanımlı/aktif bir dış hat (trunk) bulunamadı. Faks gönderebilmek için önce Dış Hat Ayarları\'ndan bir trunk tanımlamalısınız.'];
+            return ['success' => false, 'error' => t('srv_fax.err_no_trunk')];
         }
 
         $stmt2 = $db->prepare('INSERT INTO fax_sent (user_id, sender_extension, destination_number, pdf_path, tif_path, pages, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "PENDING", NOW())');
@@ -121,8 +121,8 @@ class FaxSentService {
             return ['success' => false, 'error' => $e->getMessage()];
         }
 
-        writeAuditLog(null, 'fax_sent', $new_fax_id, "Giden Faks yeniden gönderildi: " . $fax['sender_extension'] . " -> " . $fax['destination_number'] . " (orijinal kayıt #$fax_id)", 'resend', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'fax_sent', $new_fax_id, "Fax resent: " . $fax['sender_extension'] . " -> " . $fax['destination_number'] . " (original #$fax_id)", 'resend', $_SESSION['user_id'] ?? null);
 
-        return ['success' => true, 'message' => "Faks yeniden gönderim kuyruğuna eklendi! (Yeni İşlem ID: #$new_fax_id)"];
+        return ['success' => true, 'message' => sprintf(t('srv_fax.requeued'), $new_fax_id)];
     }
 }

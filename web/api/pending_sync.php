@@ -12,7 +12,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'GET') {
     if (!hasModulePermission('pending_sync', 'view') && ($_SESSION['user_role'] ?? '') !== 'admin') {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmuyor.']);
+        echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         return;
     }
     $action = $_GET['action'] ?? 'count';
@@ -27,14 +27,14 @@ if ($method === 'GET') {
         echo json_encode(['success' => true, 'count' => $count, 'pending' => $pending]);
         return;
     }
-    echo json_encode(['success' => false, 'error' => 'Geçersiz aksiyon.']);
+    echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')]);
     return;
 }
 
 if ($method === 'POST') {
     if (!hasModulePermission('pending_sync', 'edit') && ($_SESSION['user_role'] ?? '') !== 'admin') {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Bu işlem için yetkiniz bulunmuyor.']);
+        echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         return;
     }
 

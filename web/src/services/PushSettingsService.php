@@ -37,7 +37,7 @@ class PushSettingsService
             if (!is_array($parsed) || empty($parsed['client_email']) || empty($parsed['private_key'])) {
                 return [
                     'success' => false,
-                    'error' => 'Geçersiz Firebase Servis Hesabı JSON formatı. "client_email" ve "private_key" alanları bulunmalıdır.'
+                    'error' => t('srv_push.err_json')
                 ];
             }
             $serviceAccount = $serviceAccountInput;
@@ -52,13 +52,13 @@ class PushSettingsService
             if (empty($projectId)) {
                 return [
                     'success' => false,
-                    'error' => 'FCM sağlayıcısı için Firebase Proje Kimliği (Project ID) zorunludur.'
+                    'error' => t('srv_push.err_project')
                 ];
             }
             if (empty($serviceAccount)) {
                 return [
                     'success' => false,
-                    'error' => 'FCM sağlayıcısı için Google Servis Hesabı JSON içeriği zorunludur.'
+                    'error' => t('srv_push.err_sa')
                 ];
             }
         }
@@ -85,18 +85,18 @@ class PushSettingsService
         }
 
         if ($changed) {
-            writeAuditLog('general_dialplan', 'sys_settings', 'push_settings', 'Mobil Bildirim Ayarları', 'update', $_SESSION['user_id'] ?? null);
+            writeAuditLog('general_dialplan', 'sys_settings', 'push_settings', 'Mobile push settings', 'update', $_SESSION['user_id'] ?? null);
             // The push settings affect the extensions' dial lines
             // (buildExtensionDialLines) → the general dialplan must be
             // regenerated. The previous markPendingSync('dialplan') call used a
             // domain that does not exist and too few arguments: saving died with
             // ArgumentCountError.
-            markPendingSync('general_dialplan', 'sys_settings', 'push_settings', 'Mobil Bildirim Ayarları', 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'sys_settings', 'push_settings', 'Mobile push settings', 'update', $_SESSION['user_id'] ?? null);
         }
 
         return [
             'success' => true,
-            'message' => 'Mobil bildirim ayarları başarıyla kaydedildi.'
+            'message' => t('srv_push.saved')
         ];
     }
 
@@ -109,14 +109,14 @@ class PushSettingsService
         if (!$provider->isConfigured()) {
             return [
                 'success' => false,
-                'message' => 'Bildirim servisi henüz yapılandırılmamış veya etkinleştirilmemiş.'
+                'message' => t('srv_push.err_not_configured')
             ];
         }
 
         $payload = [
             'action' => 'test_push',
             'title' => 'AI PBX Test Bildirimi',
-            'body' => 'Mobil bildirim katmanı başarıyla çalışıyor! (Zaman: ' . date('H:i:s') . ')',
+            'body' => sprintf(t('srv_push.test_body'), date('H:i:s')),
             'timestamp' => (string)time()
         ];
 
@@ -128,14 +128,14 @@ class PushSettingsService
         if ($res['success']) {
             return [
                 'success' => true,
-                'message' => "Başarılı! {$res['delivered']} cihaza bildirim iletildi."
+                'message' => sprintf(t('srv_push.test_ok'), $res['delivered'])
             ];
         }
 
-        $errStr = !empty($res['errors']) ? implode(', ', $res['errors']) : ($res['message'] ?? 'Bilinmeyen hata');
+        $errStr = !empty($res['errors']) ? implode(', ', $res['errors']) : ($res['message'] ?? t('common.unknown_error'));
         return [
             'success' => false,
-            'message' => "Bildirim gönderilemedi: {$errStr}"
+            'message' => sprintf(t('srv_push.err_send'), $errStr)
         ];
     }
 }

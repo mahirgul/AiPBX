@@ -48,16 +48,16 @@ class FaxSendService {
         }
 
         if (!verifyCSRFToken($csrf_token)) {
-            return ['success' => false, 'error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         if (empty($dest_number)) {
-            return ['success' => false, 'error' => 'Lütfen alıcı faks numarasını girin!'];
+            return ['success' => false, 'error' => t('srv_fax.err_to')];
         }
 
         $safe_text_html = '';
         if ($compose_mode === 'pdf') {
             if (!isset($files['pdf_file']) || $files['pdf_file']['error'] !== UPLOAD_ERR_OK) {
-                return ['success' => false, 'error' => 'Lütfen geçerli bir PDF dosyası yükleyin!'];
+                return ['success' => false, 'error' => t('srv_fax.err_pdf')];
             }
 
             $file_tmp = $files['pdf_file']['tmp_name'];
@@ -65,7 +65,7 @@ class FaxSendService {
             $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
             if ($ext !== 'pdf') {
-                return ['success' => false, 'error' => 'Yalnızca PDF formatındaki dosyalar yüklenebilir!'];
+                return ['success' => false, 'error' => t('srv_fax.err_pdf_only')];
             }
         } else {
             // The editor's HTML comes from the browser (it can be tampered with
@@ -73,11 +73,11 @@ class FaxSendService {
             // TextFaxHelper::sanitizeHtml().
             $safe_text_html = TextFaxHelper::sanitizeHtml($post['fax_text_content'] ?? '');
             if (trim(strip_tags($safe_text_html)) === '') {
-                return ['success' => false, 'error' => 'Lütfen gönderilecek metni yazın!'];
+                return ['success' => false, 'error' => t('srv_fax.err_text')];
             }
         }
         if (AsteriskHelper::getPrimaryTrunkName() === null) {
-            return ['success' => false, 'error' => 'Tanımlı/aktif bir dış hat (trunk) bulunamadı. Faks gönderebilmek için önce Dış Hat Ayarları\'ndan bir trunk tanımlamalısınız.'];
+            return ['success' => false, 'error' => t('srv_fax.err_no_trunk')];
         }
 
         $db = getDB();
@@ -105,13 +105,13 @@ class FaxSendService {
 
         if ($compose_mode === 'pdf') {
             if (!move_uploaded_file($file_tmp, $archived_pdf)) {
-                return ['success' => false, 'error' => 'Yüklenen dosya sunucuya kaydedilemedi!'];
+                return ['success' => false, 'error' => t('srv_fax.err_save')];
             }
         } else {
             try {
                 TextFaxHelper::htmlToPdf($safe_text_html, $archived_pdf);
             } catch (\Throwable $e) {
-                return ['success' => false, 'error' => 'Metin PDF\'e dönüştürülürken hata oluştu: ' . $e->getMessage()];
+                return ['success' => false, 'error' => sprintf(t('srv_fax.err_text_pdf'), $e->getMessage())];
             }
         }
         @chown($archived_pdf, 'asterisk');
@@ -121,7 +121,7 @@ class FaxSendService {
         exec($gs_cmd, $output, $return_code);
 
         if (!(file_exists($archived_tif) && filesize($archived_tif) > 0)) {
-            return ['success' => false, 'error' => "PDF -> TIFF dönüşüm hatası oluştu! " . implode(" ", $output)];
+            return ['success' => false, 'error' => sprintf(t('srv_fax.err_tiff'), implode(" ", $output))];
         }
         @chown($archived_tif, 'asterisk');
 
@@ -147,7 +147,7 @@ class FaxSendService {
             return ['success' => false, 'error' => $e->getMessage()];
         }
 
-        return ['success' => true, 'message' => "Faks gönderim kuyruğuna eklendi! (İşlem ID: #$fax_id, Sayfa: $page_count)"];
+        return ['success' => true, 'message' => sprintf(t('srv_fax.queued'), $fax_id, $page_count)];
     }
 
     /**
@@ -218,13 +218,13 @@ class FaxSendService {
         $asterisk_spool = ASTERISK_CALL_SPOOL . "/fax_$faxId.call";
 
         if (file_put_contents($tmp_call_file, $call_file_content) === false) {
-            throw new \Exception('Faks çağrı dosyası yazılamadı: ' . $tmp_call_file);
+            throw new \Exception('Fax call file could not be written: ' . $tmp_call_file);
         }
         @chgrp($tmp_call_file, 'asterisk');
         chmod($tmp_call_file, 0660);
         if (!rename($tmp_call_file, $asterisk_spool)) {
             @unlink($tmp_call_file);
-            throw new \Exception('Faks çağrı dosyası Asterisk kuyruğuna bırakılamadı: ' . ASTERISK_CALL_SPOOL);
+            throw new \Exception('Fax call file could not be placed in the Asterisk spool: ' . ASTERISK_CALL_SPOOL);
         }
     }
 

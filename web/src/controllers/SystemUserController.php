@@ -43,7 +43,7 @@ class SystemUserController extends BaseController
                 // Step 1: validate the file and write NOTHING; keep the valid
                 // rows in the session until the confirmation step.
                 if (empty($_FILES['csv_file']['tmp_name']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
-                    $error = 'Lütfen bir CSV dosyası seçin.';
+                    $error = t('system_users.err_choose_csv');
                 } else {
                     $parsed = UserImportService::parse((string) file_get_contents($_FILES['csv_file']['tmp_name']));
                     if (!$parsed['success']) {
@@ -75,16 +75,16 @@ class SystemUserController extends BaseController
                 $pending = $_SESSION['user_import'] ?? null;
                 unset($_SESSION['user_import']);
                 if (!$pending || !hash_equals($pending['key'], (string) ($_POST['import_key'] ?? ''))) {
-                    $error = 'İçe aktarma oturumu bulunamadı veya süresi doldu; dosyayı yeniden yükleyin.';
+                    $error = t('system_users.err_import_session');
                 } else {
                     $import_result = UserImportService::import($pending['rows'], (bool) $pending['send_invitations'], static::csrfToken());
                 }
             } elseif (isset($_POST['send_activation_mail'])) {
                 $res = UserInvitationService::sendInvitationEmail((int) ($_POST['user_id'] ?? 0), false);
                 if ($res['success']) {
-                    $message = $res['message'] ?? 'Aktivasyon ve şifre belirleme maili başarıyla gönderildi.';
+                    $message = $res['message'] ?? t('system_users.invite_sent');
                 } else {
-                    $error = $res['error'] ?? 'E-posta gönderilemedi.';
+                    $error = $res['error'] ?? t('system_users.err_mail');
                 }
             } elseif (isset($_POST['bulk_send_activation_mail'])) {
                 $rawSelected = $_POST['selected_users'] ?? [];
@@ -93,14 +93,14 @@ class SystemUserController extends BaseController
                 if ($res['success']) {
                     $message = $res['message'];
                 } else {
-                    $error = $res['message'] ?: ($res['error'] ?? 'Toplu e-posta gönderimi başarısız oldu.');
+                    $error = $res['message'] ?: ($res['error'] ?? t('system_users.err_bulk_mail'));
                 }
             } elseif (isset($_POST['reset_2fa'])) {
                 $res = TwoFactorService::disableTwoFactor((int) ($_POST['user_id'] ?? 0), '', true);
                 if ($res['success']) {
                     $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
                 } else {
-                    $error = $res['error'] ?? 'İşlem başarısız.';
+                    $error = $res['error'] ?? t('common.action_failed');
                 }
             } elseif (isset($_POST['save_system_role'])) {
                 // Uses the same RoleService::saveRole() as the full permission

@@ -311,7 +311,7 @@ class GoogleAuthService
             logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
         }
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' Google ({$user['email']}) ile giriş yaptı.", 'google_login');
+            writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in with Google ({$user['email']}).", 'google_login');
         }
 
         return roleHomePath($user['role']);
@@ -327,7 +327,7 @@ class GoogleAuthService
         $clientSecret = trim($post['google_client_secret'] ?? '');
 
         if ($enabled === '1' && empty($clientId)) {
-            return ['success' => false, 'error' => 'Google ile giriş açıldığında Client ID boş bırakılamaz.'];
+            return ['success' => false, 'error' => t('srv_google.err_client_id')];
         }
 
         try {
@@ -340,9 +340,9 @@ class GoogleAuthService
                 $stmt->execute(['google_client_secret', $clientSecret]);
             }
 
-            return ['success' => true, 'message' => 'Google ile giriş ayarları başarıyla kaydedildi.'];
+            return ['success' => true, 'message' => t('srv_google.saved')];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => 'Ayarlar kaydedilemedi: ' . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('common.err_save'), $e->getMessage())];
         }
     }
 }

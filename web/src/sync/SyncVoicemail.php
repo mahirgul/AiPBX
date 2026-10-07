@@ -53,6 +53,6 @@ function __syncVoicemailBody() {
     }
 
     return writeConfWithRollback('voicemail_pbx.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadVoicemail()], 'Sesli Posta senkronizasyonu');
-    }, 'Sesli Posta senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadVoicemail()], t('sync.ctx_voicemail'));
+    }, t('sync.ctx_voicemail'));
 }

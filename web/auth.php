@@ -293,14 +293,14 @@ function requireModulePermission($module_key, $action = 'access') {
         if (isPostDeleteRequest()) {
             if (!hasModulePermission($module_key, 'delete')) {
                 if (function_exists('notify')) {
-                    notify("Bu modülde silme yetkiniz bulunmamaktadır.", "danger");
+                    notify(t('auth.no_delete_module'), "danger");
                 }
                 header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
                 exit;
             }
         } elseif (!hasModulePermission($module_key, 'edit')) {
             if (function_exists('notify')) {
-                notify("Bu modülde değişiklik / kaydetme yetkiniz bulunmamaktadır.", "danger");
+                notify(t('auth.no_edit_module'), "danger");
             }
             header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
             exit;
@@ -309,11 +309,11 @@ function requireModulePermission($module_key, $action = 'access') {
 
     if (!$allowed) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="tr"><head><title>403 - Yetkisiz Erişim</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>403 - ' . t('auth.forbidden') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - Yetkisiz Erişim</h2>';
-        echo '<p style="margin:20px 0; color:var(--text-muted);">Bu modüle (' . htmlspecialchars($module_key) . ') erişim yetkiniz bulunmamaktadır.</p>';
-        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Ana Sayfaya Dön</a>';
+        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
+        echo '<p style="margin:20px 0; color:var(--text-muted);">' . sprintf(t('auth.no_module_access'), htmlspecialchars($module_key)) . '</p>';
+        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
         echo '</div></body></html>';
         exit;
     }
@@ -340,14 +340,14 @@ function requireRole($allowed_roles) {
             if (isPostDeleteRequest()) {
                 if (!hasModulePermission($module_key, 'delete')) {
                     if (function_exists('notify')) {
-                        notify("Bu sayfada silme yetkiniz bulunmamaktadır.", "danger");
+                        notify(t('auth.no_delete_page'), "danger");
                     }
                     header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
                     exit;
                 }
             } elseif (!hasModulePermission($module_key, 'edit')) {
                 if (function_exists('notify')) {
-                    notify("Bu sayfada değişiklik yapma / kaydetme yetkiniz bulunmamaktadır.", "danger");
+                    notify(t('auth.no_edit_page'), "danger");
                 }
                 header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/dashboard'));
                 exit;
@@ -365,11 +365,11 @@ function requireRole($allowed_roles) {
     $role_perm_map = getRolePermissionsMap($user_role);
     if (isset($role_perm_map[$module_key])) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="tr"><head><title>Erişim Engellendi</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - Yetkisiz Erişim</h2>';
-        echo '<p style="margin:20px 0; color:var(--text-muted);">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>';
-        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Ana Sayfaya Dön</a>';
+        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
+        echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
+        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
         echo '</div></body></html>';
         exit;
     }
@@ -380,11 +380,11 @@ function requireRole($allowed_roles) {
 
     if (!in_array($user_role, $allowed_roles)) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="tr"><head><title>Erişim Engellendi</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - Yetkisiz Erişim</h2>';
-        echo '<p style="margin:20px 0; color:var(--text-muted);">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>';
-        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Ana Sayfaya Dön</a>';
+        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
+        echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
+        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
         echo '</div></body></html>';
         exit;
     }

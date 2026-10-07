@@ -135,7 +135,7 @@ if ($needs_dialplan_sync) {
     try {
         syncEverything();
     } catch (\Throwable $e) {
-        fwrite(STDERR, "syncEverything() hatası: " . $e->getMessage() . "\n");
+        fwrite(STDERR, "syncEverything() error: " . $e->getMessage() . "\n");
     }
 }
 exit(0);

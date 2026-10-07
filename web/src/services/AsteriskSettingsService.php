@@ -71,7 +71,7 @@ class AsteriskSettingsService {
     public static function saveSettings(array $post): array
     {
         if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $db = getDB();
@@ -131,12 +131,12 @@ class AsteriskSettingsService {
         $rtp_start = max(1024, min(65534, intval($post['rtp_start'] ?? 10000)));
         $rtp_end   = max(1025, min(65535, intval($post['rtp_end'] ?? 12999)));
         if ($rtp_end <= $rtp_start) {
-            return ['success' => false, 'error' => 'RTP bitiş portu, başlangıç portundan büyük olmalı!'];
+            return ['success' => false, 'error' => t('srv_asterisk.err_rtp_order')];
         }
         // Asterisk allocates port pairs from the range for every call; a range
         // that is too narrow silently limits concurrent calls.
         if (($rtp_end - $rtp_start) < 100) {
-            return ['success' => false, 'error' => 'RTP port aralığı en az 100 port olmalı (eşzamanlı çağrı sayısını sınırlar).'];
+            return ['success' => false, 'error' => t('srv_asterisk.err_rtp_min')];
         }
         // Overlap with coturn: both run on the same server and two of them
         // cannot bind the same port — on overlap the TURN relay or RTP breaks
@@ -146,8 +146,7 @@ class AsteriskSettingsService {
         $coturn_end   = 14999;
         if ($rtp_start <= $coturn_end && $rtp_end >= $coturn_start) {
             return ['success' => false, 'error' =>
-                "RTP aralığı ({$rtp_start}-{$rtp_end}) coturn'ün TURN relay aralığıyla ({$coturn_start}-{$coturn_end}) çakışıyor! "
-                . 'Bu, WebRTC ses yolunu bozar. Farklı bir aralık seçin.'];
+                sprintf(t('srv_asterisk.err_rtp_overlap'), $rtp_start, $rtp_end, $coturn_start, $coturn_end)];
         }
         $new_settings['rtp_start']  = (string) $rtp_start;
         $new_settings['rtp_end']    = (string) $rtp_end;
@@ -157,7 +156,7 @@ class AsteriskSettingsService {
         $udptl_start = max(1024, min(65534, intval($post['udptl_start'] ?? 4100)));
         $udptl_end   = max(1025, min(65535, intval($post['udptl_end'] ?? 4999)));
         if ($udptl_end <= $udptl_start) {
-            return ['success' => false, 'error' => 'UDPTL bitiş portu, başlangıç portundan büyük olmalı!'];
+            return ['success' => false, 'error' => t('srv_asterisk.err_udptl_order')];
         }
         $new_settings['udptl_start']       = (string) $udptl_start;
         $new_settings['udptl_end']         = (string) $udptl_end;
@@ -205,7 +204,7 @@ class AsteriskSettingsService {
         // RESTART rather than a "reload": a separate confirmation/action
         // category, tied to the Restart button on the Dashboard).
         $uid = $_SESSION['user_id'] ?? null;
-        $label = "Genel Asterisk Ayarları (PJSIP/kodek/zaman aşımı)";
+        $label = "General Asterisk settings (PJSIP/codecs/timeouts)";
         markPendingSync('transports', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('extensions', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('inbound_dialplan', 'system_setting', 'general', $label, 'update', $uid);
@@ -218,12 +217,12 @@ class AsteriskSettingsService {
 
         $lang_changed = syncDefaultLanguage($new_settings['system_default_language']);
 
-        $message = "Tüm santral gelişmiş ayarları kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+        $message = t('srv_asterisk.saved');
         if ($lang_changed) {
-            $message .= " Sistem varsayılan dili değişti — devreye girmesi için Asterisk'in TAM yeniden başlatılması gerekiyor (sadece reload yetmez); bu otomatik yapılamadı, lütfen yönetici oturumundan (Claude) yeniden başlatılmasını isteyin.";
+            $message .= ' ' . t('srv_asterisk.lang_restart');
         }
         if ($rtp_range_changed) {
-            $message .= " RTP port aralığı değişti — 'strictrtp' Uygula ile devreye girer, ancak PORT ARALIĞI için Asterisk'in TAM yeniden başlatılması gerekir (port havuzu modül yüklenirken bir kez ayrılıyor).";
+            $message .= ' ' . t('srv_asterisk.rtp_restart');
         }
 
         return ['success' => true, 'message' => $message];

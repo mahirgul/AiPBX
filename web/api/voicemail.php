@@ -15,7 +15,7 @@ $targetExt = trim($_GET['ext'] ?? ($_POST['ext'] ?? $userExt));
 // Only the own extension can be listened to/managed, unless the user has the admin role
 if ($role !== 'admin' && ($targetExt === '' || $targetExt !== $userExt)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Bu sesli postaya erişim yetkiniz yok.']);
+    echo json_encode(['success' => false, 'error' => t('api.err_vm_access')]);
     exit;
 }
 
@@ -25,7 +25,7 @@ if ($action === 'play') {
 
     if (empty($targetExt) || empty($msg)) {
         http_response_code(400);
-        die('Geçersiz parametre');
+        die(t('api.err_param'));
     }
 
     $basePath = "/var/spool/asterisk/voicemail/default/{$targetExt}/{$folder}/{$msg}";
@@ -39,7 +39,7 @@ if ($action === 'play') {
 
     if (!$filePath || !file_exists($filePath)) {
         http_response_code(404);
-        die('Ses dosyası bulunamadı');
+        die(t('api.err_audio_not_found'));
     }
 
     header('Content-Type: audio/wav');
@@ -65,4 +65,4 @@ if ($action === 'list') {
     exit;
 }
 
-echo json_encode(['success' => false, 'error' => 'Geçersiz işlem']);
+echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')]);

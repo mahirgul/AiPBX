@@ -7,7 +7,7 @@ class MailSettingsService
     public static function saveSettings(array $data): array
     {
         if (!verifyCSRFToken($data['csrf_token'] ?? '')) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik doğrulama kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $host = trim($data['mail_relay_host'] ?? '');
@@ -27,7 +27,7 @@ class MailSettingsService
         $from_address = trim($data['mail_from_address'] ?? 'no-reply@example.com');
         $from_name = trim($data['mail_from_name'] ?? 'AI PBX');
         $fax_from_address = trim($data['fax_email_from_address'] ?? 'fax@example.com');
-        $fax_from_name = trim($data['fax_email_from_name'] ?? 'AI PBX Faks Sistemi');
+        $fax_from_name = trim($data['fax_email_from_name'] ?? 'AI PBX Fax System');
         $sync_postfix = !empty($data['mail_sync_postfix']) ? 'yes' : 'no';
 
         $db = getDB();
@@ -65,13 +65,13 @@ class MailSettingsService
             }
             $postfix_res = self::syncPostfix($host, $port, $security, $auth, $user, $current_pass);
             if (!$postfix_res['success']) {
-                $postfix_msg = ' (Uyarı: Postfix güncellenirken hata: ' . $postfix_res['error'] . ')';
+                $postfix_msg = ' (' . sprintf(t('srv_mail.warn_postfix'), $postfix_res['error']) . ')';
             }
         }
 
-        writeAuditLog(null, 'mail_settings', 'general', 'E-Posta & Mail Relay ayarları güncellendi', 'update', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'mail_settings', 'general', 'E-mail & mail relay settings updated', 'update', $_SESSION['user_id'] ?? null);
 
-        return ['success' => true, 'message' => 'E-Posta ve Mail Relay ayarları başarıyla kaydedildi!' . $postfix_msg];
+        return ['success' => true, 'message' => t('srv_mail.saved') . $postfix_msg];
     }
 
     public static function syncPostfix(string $host, int $port, string $security, string $auth, string $user, string $pass): array
@@ -87,7 +87,7 @@ class MailSettingsService
         // The host goes into the sasl_passwd line and the relayhost value —
         // spaces, line breaks, square brackets etc. would break the syntax of both files.
         if (!preg_match('/^[A-Za-z0-9.:_-]{1,253}$/', $host)) {
-            return ['success' => false, 'error' => 'Geçersiz relay sunucu adı: ' . $host];
+            return ['success' => false, 'error' => sprintf(t('srv_mail.err_host'), $host)];
         }
 
         $relay_spec = '[' . $host . ']:' . $port;
@@ -100,7 +100,7 @@ class MailSettingsService
             // sasl_passwd is line-based: a value with a line break could add a
             // new entry to the file.
             if (preg_match('/[\x00-\x1f\x7f]/', $user . $pass)) {
-                return ['success' => false, 'error' => 'SMTP kullanıcı adı/parola kontrol karakteri içeremez.'];
+                return ['success' => false, 'error' => t('srv_mail.err_ctrl')];
             }
             $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
@@ -126,22 +126,14 @@ class MailSettingsService
     public static function sendTestEmail(string $toEmail): array
     {
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'Geçersiz alıcı e-posta adresi!'];
+            return ['success' => false, 'error' => t('srv_mail.err_to')];
         }
 
         $fromAddress = getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com'));
         $fromName = getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AI PBX'));
 
-        $subject = 'AI PBX Test E-Postası (' . date('d.m.Y H:i:s') . ')';
-        $body = "Sayın Yetkili,\n\n"
-              . "Bu e-posta AI PBX Santral & Faks Portalı Mail Relay / SMTP ayarlarını doğrulamak amacıyla gönderilmiştir.\n\n"
-              . "Detaylar:\n"
-              . "- Tarih/Saat: " . date('d.m.Y H:i:s') . "\n"
-              . "- Gönderici: " . $fromName . " <" . $fromAddress . ">\n"
-              . "- Alıcı: " . $toEmail . "\n"
-              . "- Sunucu: " . (gethostname() ?: 'voice') . "\n\n"
-              . "Bu e-postayı aldıysanız, sisteminizin E-Posta / Relay ayarları başarıyla çalışmaktadır.\n\n"
-              . "İyi çalışmalar,\nAI PBX İletişim Sistemi";
+        $subject = sprintf(t('srv_mail.test_subject'), date('d.m.Y H:i:s'));
+        $body = str_replace('\n', "\n", sprintf(t('srv_mail.test_body'), date('d.m.Y H:i:s'), $fromName, $fromAddress, $toEmail, (gethostname() ?: 'voice')));
 
         $headers = "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddress}>\r\n"
                  . "Reply-To: {$fromAddress}\r\n"
@@ -153,10 +145,10 @@ class MailSettingsService
         $mailOk = @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers, '-f ' . $fromAddress);
 
         if ($mailOk) {
-            return ['success' => true, 'message' => "Test e-postası başarıyla gönderim kuyruğuna iletildi ({$toEmail}). Lütfen gelen kutunuzu kontrol ediniz."];
+            return ['success' => true, 'message' => sprintf(t('srv_mail.test_sent'), $toEmail)];
         }
 
-        $lastError = error_get_last()['message'] ?? 'Bilinmeyen posta sistemi hatası';
-        return ['success' => false, 'error' => 'E-posta gönderimi başarısız oldu: ' . $lastError];
+        $lastError = error_get_last()['message'] ?? t('srv_mail.err_unknown');
+        return ['success' => false, 'error' => sprintf(t('srv_mail.err_send'), $lastError)];
     }
 }

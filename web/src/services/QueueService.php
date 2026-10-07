@@ -33,7 +33,7 @@ class QueueService {
             }
 
             if ($fallback_action === 'forward' && empty($fallback_target)) {
-                throw new \Exception("Zaman Aşımı Aksiyonu \"Dahiliye Yönlendir\" seçildiğinde bir Yönlendirme Dahilisi seçmelisiniz!");
+                throw new \Exception(t('srv_queue.err_timeout_ext'));
             }
             // For every agent member_mode[ext] = '' (not assigned) | 'dynamic' | 'static'.
             $selected_members = [];
@@ -64,7 +64,7 @@ class QueueService {
                 $selected_supervisors = [$data['supervisor_extension']];
             }
 
-            if (empty($queue_name)) throw new \Exception("Kuyruk sistem ismi zorunludur!");
+            if (empty($queue_name)) throw new \Exception(t('srv_queue.err_name'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
             $eski_numara = (string) (DBHelper::fetchColumn(
@@ -114,15 +114,15 @@ class QueueService {
             // Not pushed to Asterisk right away — it waits until the admin
             // presses Apply on the "Apply" page (2026-08-24, deferred reload
             // system). The real regen+reload: applyPendingSync().
-            markPendingSync('queues', 'queue', $queue_name, "Kuyruk: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('queues', 'queue', $queue_name, "Queue: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
                 markPendingSync('internal_numbers', 'queue', $id,
-                    "Dahili hedef numarasi: " . ($internal_number !== '' ? $internal_number : 'kaldirildi'),
+                    "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
             }
 
-            return "Kuyruk '{$title}' ({$queue_name}) kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            return sprintf(t('srv_queue.saved'), $title, $queue_name);
         });
     }
 
@@ -153,7 +153,7 @@ class QueueService {
                     [$q_name, $q_name, $q_name, $q_name, $q_name, $q_name, '%"match_dest_type":"queue","match_dest_id":"' . $q_name . '"%']
                 );
                 if ($refs > 0) {
-                    throw new \Exception("Bu kuyruk bir Gelen Rota, IVR seçeneği veya Zaman Koşuluna bağlı olduğu için silinemez! Önce o bağlantıları kaldırın veya başka bir hedefe yönlendirin.");
+                    throw new \Exception(t('srv_queue.err_in_use'));
                 }
                 QueueHelper::deleteDetails($q_name);
             }
@@ -162,11 +162,11 @@ class QueueService {
             markPendingSync('queues', 'queue', $q_name ?: ('id_' . $queue_id), "Kuyruk: " . ($q_row['title'] ?? $q_name ?? $queue_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
             if ($silinen_numara !== '') {
                 markPendingSync('internal_numbers', 'queue', $queue_id,
-                    "Dahili hedef numarasi silindi: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$silinen_numara}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 
-            return "Kuyruk kaydı silindi! Etkili olması için Uygula sayfasından gönderin.";
+            return t('srv_queue.deleted');
         });
     }
 }

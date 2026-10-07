@@ -180,7 +180,7 @@ class TwoFactorService
                     $userId,
                     'sys_users',
                     $userId,
-                    "Kullanıcı '{$user['username']}' kurtarma kodu ile 2FA oturumu açtı. Kalan kurtarma kodu: " . count($updatedList),
+                    "User '{$user['username']}' signed in with a 2FA recovery code. Recovery codes left: " . count($updatedList),
                     'login_recovery_code'
                 );
             }
@@ -225,7 +225,7 @@ class TwoFactorService
     public static function enableTwoFactor(int $userId, string $secret, string $verifyCode): array
     {
         if (!self::verifyCode($secret, $verifyCode)) {
-            return ['success' => false, 'error' => 'Girdiğiniz 6 haneli doğrulama kodu geçersiz. Lütfen tekrar deneyin.'];
+            return ['success' => false, 'error' => t('srv_2fa.err_code')];
         }
 
         $plainCodes = self::generateRecoveryCodes(8);
@@ -239,7 +239,7 @@ class TwoFactorService
             $uStmt = $db->prepare('SELECT username FROM sys_users WHERE id = ?');
             $uStmt->execute([$userId]);
             $un = $uStmt->fetchColumn() ?: (string)$userId;
-            writeAuditLog($userId, 'sys_users', $userId, "Kullanıcı '{$un}' iki faktörlü doğrulamayı (2FA) etkinleştirdi.", 'two_factor_enable');
+            writeAuditLog($userId, 'sys_users', $userId, "User '{$un}' enabled two-factor authentication (2FA).", 'two_factor_enable');
         }
 
         return [
@@ -260,12 +260,12 @@ class TwoFactorService
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user) {
-            return ['success' => false, 'error' => 'Kullanıcı bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_2fa.err_user')];
         }
 
         if (!$isAdminReset) {
             if (empty($password) || !password_verify($password, $user['password_hash'])) {
-                return ['success' => false, 'error' => 'Geçerli parolanızı hatalı girdiniz.'];
+                return ['success' => false, 'error' => t('srv_2fa.err_password')];
             }
         }
 
@@ -275,8 +275,8 @@ class TwoFactorService
         if (function_exists('writeAuditLog')) {
             $actorId = $_SESSION['user_id'] ?? $userId;
             $msg = $isAdminReset
-                ? "Admin tarafından '{$user['username']}' kullanıcısının 2FA doğrulaması sıfırlandı."
-                : "Kullanıcı '{$user['username']}' 2FA doğrulamasını devre dışı bıraktı.";
+                ? "2FA of user '{$user['username']}' was reset by an admin."
+                : "User '{$user['username']}' disabled 2FA.";
             writeAuditLog($actorId, 'sys_users', $userId, $msg, 'two_factor_disable');
         }
 
@@ -295,11 +295,11 @@ class TwoFactorService
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user || (int)$user['two_factor_enabled'] !== 1) {
-            return ['success' => false, 'error' => 'İki faktörlü doğrulama aktif değil.'];
+            return ['success' => false, 'error' => t('srv_2fa.err_not_enabled')];
         }
 
         if (empty($password) || !password_verify($password, $user['password_hash'])) {
-            return ['success' => false, 'error' => 'Geçerli parolanızı hatalı girdiniz.'];
+            return ['success' => false, 'error' => t('srv_2fa.err_password')];
         }
 
         $plainCodes = self::generateRecoveryCodes(8);
@@ -309,7 +309,7 @@ class TwoFactorService
         $upd->execute([$hashedCodes, $userId]);
 
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($userId, 'sys_users', $userId, "Kullanıcı '{$user['username']}' yeni 2FA yedek kurtarma kodları oluşturdu.", 'two_factor_regen_codes');
+            writeAuditLog($userId, 'sys_users', $userId, "User '{$user['username']}' created new 2FA recovery codes.", 'two_factor_regen_codes');
         }
 
         return [
