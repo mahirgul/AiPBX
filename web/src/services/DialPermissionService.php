@@ -32,7 +32,7 @@ class DialPermissionService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($group_name)) {
-                throw new \Exception("Yetki grubu adı zorunludur!");
+                throw new \Exception(t('srv_dialperm.err_name'));
             }
 
             $db = getDB();
@@ -46,7 +46,7 @@ class DialPermissionService {
             }
 
             markPendingSync('permissions', 'group', $id, $group_name, $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            return "Arama yetki grubu başarıyla kaydedildi.";
+            return t('srv_dialperm.saved');
         });
     }
 
@@ -54,7 +54,7 @@ class DialPermissionService {
         return PBXHelper::handleAction($csrf_token, function() use ($id) {
             $id = intval($id);
             if ($id <= 1) {
-                throw new \Exception("Varsayılan grup silinemez!");
+                throw new \Exception(t('srv_dialperm.err_default'));
             }
 
             $db = getDB();
@@ -65,8 +65,8 @@ class DialPermissionService {
             $del = $db->prepare("DELETE FROM pbx_permission_groups WHERE id = ?");
             $del->execute([$id]);
 
-            markPendingSync('permissions', 'group', $id, "Grup #{$id}", 'delete', $_SESSION['user_id'] ?? null);
-            return "Arama yetki grubu silindi.";
+            markPendingSync('permissions', 'group', $id, "Group #{$id}", 'delete', $_SESSION['user_id'] ?? null);
+            return t('srv_dialperm.deleted');
         });
     }
 
@@ -88,7 +88,7 @@ class DialPermissionService {
             $description = trim($data['description'] ?? '');
 
             if ($group_id <= 0 || empty($pattern)) {
-                throw new \Exception("Grup ve Numara Kalıbı zorunludur!");
+                throw new \Exception(t('srv_dialperm.err_rule'));
             }
 
             $db = getDB();
@@ -102,7 +102,7 @@ class DialPermissionService {
             }
 
             markPendingSync('permissions', 'rule', $id, "Kural {$pattern}", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            return "Kural başarıyla kaydedildi.";
+            return t('srv_dialperm.rule_saved');
         });
     }
 
@@ -114,7 +114,7 @@ class DialPermissionService {
             $del->execute([$ruleId]);
 
             markPendingSync('permissions', 'rule', $ruleId, "Kural #{$ruleId}", 'delete', $_SESSION['user_id'] ?? null);
-            return "Kural silindi.";
+            return t('srv_dialperm.rule_deleted');
         });
     }
 }

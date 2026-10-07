@@ -18,11 +18,11 @@ class CdrReportService {
     public static function deleteCdr($del_id, $csrf_token, bool $canDeleteCdr): bool
     {
         if (!$canDeleteCdr) {
-            notify('Çağrı kaydı silme yetkiniz bulunmamaktadır!', 'danger');
+            notify(t('srv_cdr.err_no_delete'), 'danger');
             return false;
         }
         if (!verifyCSRFToken($csrf_token)) {
-            notify('Güvenlik doğrulaması başarısız!', 'danger');
+            notify(t('common.invalid_csrf'), 'danger');
             return false;
         }
 
@@ -42,8 +42,8 @@ class CdrReportService {
         } else {
             DBHelper::delete('asteriskcdr', 'id', $del_id);
         }
-        writeAuditLog(null, 'cdr', $del_id, "Çağrı Kaydı: " . ($cdr['caller_num'] ?? $del_id) . " (" . ($cdr['start_time'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
-        notify('Çağrı kaydı ve ses dosyası başarıyla silindi.', 'success');
+        writeAuditLog(null, 'cdr', $del_id, "Call record: " . ($cdr['caller_num'] ?? $del_id) . " (" . ($cdr['start_time'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
+        notify(t('srv_cdr.deleted'), 'success');
         return true;
     }
 }

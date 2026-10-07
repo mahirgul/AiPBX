@@ -17,7 +17,7 @@ class FaxInboxService {
     public static function deleteFax($faxId, $csrfToken, string $userRole, string $userExt, int $userId = 0): array
     {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
         $fax_id = intval($faxId);
@@ -31,14 +31,14 @@ class FaxInboxService {
         $fax = $stmt->fetch();
 
         if (!$fax) {
-            return ['success' => false, 'error' => 'Bu faks kaydına erişim yetkiniz yok veya kayıt bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_fax.err_access_nf')];
         }
 
         if ($userRole !== 'admin') {
             require_once __DIR__ . '/../repositories/FaxInboxRepository.php';
             $allowedDids = FaxInboxRepository::getAllowedDIDs($userId, $userExt);
             if (!in_array($fax['did_extension'], $allowedDids, true)) {
-                return ['success' => false, 'error' => 'Bu faks kaydına erişim yetkiniz yok.'];
+                return ['success' => false, 'error' => t('srv_fax.err_access')];
             }
         }
 
@@ -47,7 +47,7 @@ class FaxInboxService {
 
         $db->prepare("DELETE FROM fax_received WHERE id = ?")->execute([$fax_id]);
 
-        writeAuditLog(null, 'fax_inbox', $fax_id, "Gelen Faks: " . ($fax['caller_id'] ?? '?') . " -> " . ($fax['did_extension'] ?? '?') . " (" . ($fax['received_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => 'Gelen faks kaydı silindi.'];
+        writeAuditLog(null, 'fax_inbox', $fax_id, "Incoming fax: " . ($fax['caller_id'] ?? '?') . " -> " . ($fax['did_extension'] ?? '?') . " (" . ($fax['received_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('srv_fax.in_deleted')];
     }
 }

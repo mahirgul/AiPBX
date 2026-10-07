@@ -46,7 +46,7 @@ switch ($action) {
 
         if (empty($clientDataJSON) || empty($authenticatorData) || empty($signature) || empty($credentialId)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Eksik kimlik doğrulama parametreleri.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_auth_params')]);
             exit;
         }
 
@@ -65,14 +65,14 @@ switch ($action) {
     case 'register-options':
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Oturum açılmalıdır.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
             exit;
         }
 
         $user = getCurrentUser();
         if (!$user) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Kullanıcı bulunamadı.']);
+            echo json_encode(['success' => false, 'error' => t('srv_2fa.err_user')]);
             exit;
         }
 
@@ -91,7 +91,7 @@ switch ($action) {
     case 'register-verify':
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Oturum açılmalıdır.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
             exit;
         }
 
@@ -101,7 +101,7 @@ switch ($action) {
 
         if (empty($clientDataJSON) || empty($attestationObject)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Eksik kayıt parametreleri.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_reg_params')]);
             exit;
         }
 
@@ -120,30 +120,30 @@ switch ($action) {
     case 'delete':
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Oturum açılmalıdır.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
             exit;
         }
 
         $csrf = $inputData['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!verifyCSRFToken($csrf)) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Güvenlik doğrulaması (CSRF) geçersiz.']);
+            echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')]);
             exit;
         }
 
         $passkeyId = (int)($inputData['passkey_id'] ?? 0);
         if ($passkeyId <= 0) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Geçersiz Passkey ID.']);
+            echo json_encode(['success' => false, 'error' => t('api.err_passkey_id')]);
             exit;
         }
 
         $deleted = PasskeyService::deletePasskey((int)$_SESSION['user_id'], $passkeyId);
-        echo json_encode(['success' => $deleted, 'message' => $deleted ? 'Passkey silindi.' : 'Passkey silinemedi.']);
+        echo json_encode(['success' => $deleted, 'message' => $deleted ? t('api.passkey_deleted') : t('api.passkey_not_deleted')]);
         exit;
 
     default:
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Geçersiz işlem.']);
+        echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')]);
         exit;
 }

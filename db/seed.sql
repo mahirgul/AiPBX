@@ -15,16 +15,16 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_feature_codes` WRITE;
 /*!40000 ALTER TABLE `pbx_feature_codes` DISABLE KEYS */;
 INSERT IGNORE INTO `pbx_feature_codes` VALUES
-(1,'dnd_toggle','Rahatsız Etme (DND) Aç/Kapa','*78',NULL,1,'2026-08-19 20:56:03'),
-(2,'cf_set','Çağrı Yönlendirme Ayarla','*72',NULL,1,'2026-08-19 20:56:03'),
-(3,'cf_cancel','Çağrı Yönlendirme İptal','*73',NULL,1,'2026-08-19 20:56:03'),
-(4,'pickup_group','Gruptan Çağrı Çekme','*20',NULL,1,'2026-08-19 20:56:03'),
-(5,'pickup_directed','Belirli Dahiliden Çağrı Çekme','*21',NULL,1,'2026-08-19 20:56:03'),
-(6,'spy','Çağrı Dinleme (Spy)','*90','admin,cc_manager',1,'2026-08-19 20:56:03'),
-(7,'queue_login','Kuyruğa Giriş (Kuyruk ID ile, *81<id>)','_*81.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
-(8,'queue_logout','Kuyruktan Çıkış (Kuyruk ID ile, *80<id>)','_*80.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
-(9,'queue_pause','Kuyruk Mola Al (Mola ID ile, *22<id>)','_*22.','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41'),
-(10,'queue_unpause','Kuyruk Mola İptal / Dönüş (*23)','*23','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41');
+(1,'dnd_toggle','Do Not Disturb (DND) on/off','*78',NULL,1,'2026-08-19 20:56:03'),
+(2,'cf_set','Set call forwarding','*72',NULL,1,'2026-08-19 20:56:03'),
+(3,'cf_cancel','Cancel call forwarding','*73',NULL,1,'2026-08-19 20:56:03'),
+(4,'pickup_group','Group call pickup','*20',NULL,1,'2026-08-19 20:56:03'),
+(5,'pickup_directed','Directed call pickup','*21',NULL,1,'2026-08-19 20:56:03'),
+(6,'spy','Call listening (spy)','*90','admin,cc_manager',1,'2026-08-19 20:56:03'),
+(7,'queue_login','Queue login (with queue ID, *81<id>)','_*81.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
+(8,'queue_logout','Queue logout (with queue ID, *80<id>)','_*80.','admin,cc_manager,cc_agent',1,'2026-08-21 14:37:22'),
+(9,'queue_pause','Queue break (with break ID, *22<id>)','_*22.','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41'),
+(10,'queue_unpause','End queue break (*23)','*23','admin,cc_manager,cc_agent,user',1,'2026-09-16 20:26:41');
 /*!40000 ALTER TABLE `pbx_feature_codes` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -34,9 +34,9 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `pbx_hangup_actions` WRITE;
 /*!40000 ALTER TABLE `pbx_hangup_actions` DISABLE KEYS */;
 INSERT IGNORE INTO `pbx_hangup_actions` VALUES
-(1,'hangup','Çağrıyı Kapat','hangup',NULL,1,'2026-08-10 14:53:18',NULL),
-(2,'busy','Meşgul Tonu Ver','busy',NULL,1,'2026-08-10 14:53:18','1050'),
-(3,'congestion','Şebeke Meşgul','congestion',NULL,1,'2026-08-10 14:53:18',NULL);
+(1,'hangup','Hang up','hangup',NULL,1,'2026-08-10 14:53:18',NULL),
+(2,'busy','Play busy tone','busy',NULL,1,'2026-08-10 14:53:18','1050'),
+(3,'congestion','Network busy (congestion)','congestion',NULL,1,'2026-08-10 14:53:18',NULL);
 /*!40000 ALTER TABLE `pbx_hangup_actions` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;
@@ -87,12 +87,12 @@ LOCK TABLES `sys_settings` WRITE;
 INSERT IGNORE INTO `sys_settings` VALUES
 ('brand_color_primary',''),
 ('brand_color_secondary',''),
-('brand_sub','Santral & Çağrı Merkezi'),
+('brand_sub','PBX & Call Center'),
 ('brand_title','AiPBX'),
 ('cc_auto_queue_login','1'),
-('cc_break_reasons','Yemek Molası,Kısa Dinlenme,Eğitim / Toplantı,Evrak / İdari İşler,Teknik Problem'),
+('cc_break_reasons','Lunch,Short break,Training / Meeting,Paperwork,Technical issue'),
 ('fax_email_from_address',''),
-('fax_email_from_name','AiPBX Faks'),
+('fax_email_from_name','AiPBX Fax'),
 ('fax_email_rx_attach_pdf','yes'),
 ('fax_email_rx_enabled','yes'),
 ('fax_email_tx_enabled','yes'),
@@ -168,12 +168,12 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `sys_roles` WRITE;
 /*!40000 ALTER TABLE `sys_roles` DISABLE KEYS */;
 INSERT IGNORE INTO `sys_roles` VALUES
-(1,'admin','Yönetici','Tam yetkili sistem yöneticisi',1,'2026-08-12 13:15:29'),
-(2,'read_only_admin','İzleyici','Tüm panelleri görüntüleyebilir fakat düzenleme/silme yapamaz',1,'2026-08-12 13:15:29'),
-(3,'cc_agent','Temsilci','Temsilci ekranı, mola yönetimi ve arama kayıtları erişimi',1,'2026-08-12 13:15:29'),
-(4,'fax_user','Faks','Gelen/giden faks yönetimi ve faks gönderimi',1,'2026-08-12 13:15:29'),
-(5,'cc_manager','Kuyruk Yönetici','Çağrı merkezi canlı takip, kuyruk yöneticisi, temsilciler, molalar ve raporlar yetkilisi',1,'2026-08-14 00:35:09'),
-(6,'user','Kullanıcı','Telefonum, rehber, sohbet ve kendi arama geçmişi (faks ve çağrı merkezi yetkisi yok)',1,'2026-09-30 00:00:00');
+(1,'admin','Admin','Full-access system administrator',1,'2026-08-12 13:15:29'),
+(2,'read_only_admin','Viewer','Can view every panel but cannot edit or delete',1,'2026-08-12 13:15:29'),
+(3,'cc_agent','Agent','Agent desk, break management and call recordings',1,'2026-08-12 13:15:29'),
+(4,'fax_user','Fax','Incoming/outgoing fax management and sending faxes',1,'2026-08-12 13:15:29'),
+(5,'cc_manager','Queue Manager','Call centre live monitoring, queues, agents, breaks and reports',1,'2026-08-14 00:35:09'),
+(6,'user','User','My Phone, directory, chat and own call history (no fax or call centre access)',1,'2026-09-30 00:00:00');
 /*!40000 ALTER TABLE `sys_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

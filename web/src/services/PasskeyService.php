@@ -87,11 +87,11 @@ class PasskeyService
         string $deviceName = 'Passkey'
     ): array {
         if (empty($_SESSION['webauthn_reg_challenge']) || empty($_SESSION['webauthn_reg_user_id'])) {
-            return ['success' => false, 'error' => 'Geçersiz veya süresi dolmuş kayıt oturumu.'];
+            return ['success' => false, 'error' => t('srv_passkey.err_reg_session')];
         }
 
         if ((int)$_SESSION['webauthn_reg_user_id'] !== $userId) {
-            return ['success' => false, 'error' => 'Kullanıcı oturumu uyuşmazlığı.'];
+            return ['success' => false, 'error' => t('srv_passkey.err_user_mismatch')];
         }
 
         $challenge = $_SESSION['webauthn_reg_challenge'];
@@ -142,12 +142,12 @@ class PasskeyService
                 $uStmt = $db->prepare('SELECT username FROM sys_users WHERE id = ?');
                 $uStmt->execute([$userId]);
                 $un = $uStmt->fetchColumn() ?: (string)$userId;
-                writeAuditLog($userId, 'sys_user_passkeys', $insertedId, "Kullanıcı '{$un}' yeni bir Passkey ekledi: {$cleanDeviceName}", 'passkey_register');
+                writeAuditLog($userId, 'sys_user_passkeys', $insertedId, "User '{$un}' added a passkey: {$cleanDeviceName}", 'passkey_register');
             }
 
             return ['success' => true, 'id' => $insertedId];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => 'Passkey kaydı doğrulanamadı: ' . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('srv_passkey.err_register'), $e->getMessage())];
         }
     }
 
@@ -200,7 +200,7 @@ class PasskeyService
         string $clientIp
     ): array {
         if (empty($_SESSION['webauthn_auth_challenge'])) {
-            return ['success' => false, 'error' => 'Doğrulama oturumu zaman aşımına uğradı. Lütfen sayfayı yenileyin.'];
+            return ['success' => false, 'error' => t('srv_passkey.err_timeout')];
         }
 
         // The challenge is single-use: it is dropped on a failed attempt too
@@ -229,11 +229,11 @@ class PasskeyService
         $passkey = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$passkey) {
-            return ['success' => false, 'error' => 'Bu Passkey sisteme kayıtlı değil veya kaldırılmış.'];
+            return ['success' => false, 'error' => t('srv_passkey.err_unknown')];
         }
 
         if ((int)$passkey['is_active'] !== 1) {
-            return ['success' => false, 'error' => 'Kullanıcı hesabınız pasif durumda. Yöneticiye başvurun.'];
+            return ['success' => false, 'error' => t('srv_passkey.err_inactive')];
         }
 
         try {
@@ -301,7 +301,7 @@ class PasskeyService
                 logLoginAttempt($clientIp, $passkey['username'], 'SUCCESS');
             }
             if (function_exists('writeAuditLog')) {
-                writeAuditLog($passkey['user_id'], 'sys_users', $passkey['user_id'], "Kullanıcı '{$passkey['username']}' Passkey ({$passkey['device_name']}) ile giriş yaptı.", 'passkey_login');
+                writeAuditLog($passkey['user_id'], 'sys_users', $passkey['user_id'], "User '{$passkey['username']}' signed in with a passkey ({$passkey['device_name']}).", 'passkey_login');
             }
 
             $redirect = roleHomePath($passkey['role']);
@@ -311,7 +311,7 @@ class PasskeyService
             if (function_exists('logLoginAttempt')) {
                 logLoginAttempt($clientIp, $passkey['username'] ?? 'UNKNOWN_PASSKEY', 'FAILED');
             }
-            return ['success' => false, 'error' => 'Passkey doğrulanamadı: ' . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('srv_passkey.err_verify'), $e->getMessage())];
         }
     }
 
@@ -344,7 +344,7 @@ class PasskeyService
         $del->execute([$passkeyId, $userId]);
 
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($userId, 'sys_user_passkeys', $passkeyId, "Kullanıcı '{$row['device_name']}' adlı Passkey'ini sildi.", 'passkey_delete');
+            writeAuditLog($userId, 'sys_user_passkeys', $passkeyId, "User deleted the passkey '{$row['device_name']}'.", 'passkey_delete');
         }
 
         return true;

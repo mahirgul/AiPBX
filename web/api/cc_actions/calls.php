@@ -5,7 +5,7 @@ if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 if ($action === 'originate') {
     $to = preg_replace('/[^0-9+]/', '', $_POST['to'] ?? '');
     if (empty($to) || empty($user_ext)) {
-        echo json_encode(['success' => false, 'error' => 'Geçersiz hedef numara veya dahili']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_target')]);
         exit;
     }
 
@@ -20,19 +20,19 @@ if ($action === 'originate') {
            "Context: $outbound_context\r\n" .
            "Exten: $to\r\n" .
            "Priority: 1\r\n" .
-           "CallerID: Temsilci $user_ext <$user_ext>\r\n" .
+           "CallerID: Agent $user_ext <$user_ext>\r\n" .
            "Variable: __SAVED_DST=$to\r\n\r\n";
 
     $res = sendAMICommand($cmd);
     if (!$res || strpos($res, 'Response: Success') === false) {
         echo json_encode([
             'success' => false,
-            'error' => "Arama başlatılamadı! Dahili numaranızın ($user_ext) santral kaydı (WebRTC/SIP) aktif / çevrimiçi değil."
+            'error' => sprintf(t('api_cc.err_not_registered'), $user_ext)
         ]);
         exit;
     }
 
-    echo json_encode(['success' => true, 'message' => "$user_ext dahilisinden $to aranıyor..."]);
+    echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.calling'), $user_ext, $to)]);
     exit;
 }
 
@@ -42,7 +42,7 @@ if ($action === 'hangup') {
     $channels = findAgentChannels($user_ext);
     if (empty($channels)) {
         // The client-side termination may already have succeeded; do not count it as an error.
-        echo json_encode(['success' => true, 'message' => 'Aktif kanal bulunamadı (muhtemelen zaten kapatıldı)']);
+        echo json_encode(['success' => true, 'message' => t('api_cc.no_channel')]);
         exit;
     }
     $ok = false;
@@ -50,14 +50,14 @@ if ($action === 'hangup') {
         $res = sendAMICommand("Action: Hangup\r\nChannel: $ch\r\n\r\n");
         if ($res && strpos($res, 'Response: Success') !== false) $ok = true;
     }
-    echo json_encode(['success' => $ok, 'message' => $ok ? 'Arama kapatıldı' : 'Kapatma komutu başarısız oldu']);
+    echo json_encode(['success' => $ok, 'message' => $ok ? t('api_cc.hung_up') : t('api_cc.err_hangup')]);
     exit;
 }
 
 if ($action === 'transfer') {
     $to = preg_replace('/[^0-9+]/', '', $_POST['to'] ?? '');
     if (empty($to) || empty($user_ext)) {
-        echo json_encode(['success' => false, 'error' => 'Geçersiz hedef numara']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_number')]);
         exit;
     }
     // The real transfer is already done in the browser with JsSIP session.refer();
@@ -72,12 +72,12 @@ if ($action === 'transfer') {
     // same second the agent went to 8915.
     $caller_channel = findCallerChannelForAgent($user_ext);
     if (empty($caller_channel)) {
-        echo json_encode(['success' => false, 'error' => 'Aktarılacak çağrı bulunamadı']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_no_call')]);
         exit;
     }
     $res = sendAMICommand("Action: Redirect\r\nChannel: $caller_channel\r\nContext: cc-internal\r\nExten: $to\r\nPriority: 1\r\n\r\n");
     $ok = ($res && strpos($res, 'Response: Success') !== false);
-    echo json_encode(['success' => $ok, 'message' => $ok ? "Çağrı $to numarasına aktarılıyor..." : 'Aktarma komutu başarısız oldu']);
+    echo json_encode(['success' => $ok, 'message' => $ok ? sprintf(t('api_cc.transferring'), $to) : t('api_cc.err_transfer')]);
     exit;
 }
 
@@ -85,7 +85,7 @@ if ($action === 'hold') {
     // The real hold is done in the browser with JsSIP session.hold() (re-INVITE,
     // sendonly) — this action does nothing extra on the server (the old code that
     // closed the channel BY MISTAKE was removed). It only confirms to the client.
-    echo json_encode(['success' => true, 'message' => 'Çağrı beklemeye alındı']);
+    echo json_encode(['success' => true, 'message' => t('api_cc.on_hold')]);
     exit;
 }
 
@@ -97,7 +97,7 @@ if ($action === 'pickup_call') {
     $target_channel = preg_replace('/[^A-Za-z0-9\/_.@;-]/', '', trim($_POST['channel'] ?? ''));
 
     if (empty($target_channel) || empty($user_ext)) {
-        echo json_encode(['success' => false, 'error' => 'Geçersiz çağrı kanalı veya dahili']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_channel')]);
         exit;
     }
 
@@ -129,14 +129,14 @@ if ($action === 'pickup_call') {
         // extension leg…) cannot be taken — the check used to be skipped in
         // that case and any channel could be redirected to the agent.
         if ($found_queue === null) {
-            echo json_encode(['success' => false, 'error' => 'Bu çağrı artık kuyrukta beklemiyor']);
+            echo json_encode(['success' => false, 'error' => t('api_cc.err_not_waiting')]);
             exit;
         }
         $mem_stmt = $db->prepare("SELECT members_json FROM pbx_queues WHERE queue_name = ? AND is_active = 1");
         $mem_stmt->execute([$found_queue]);
         $members = json_decode($mem_stmt->fetchColumn() ?: '[]', true) ?: [];
         if (!in_array((string)$user_ext, array_map('strval', $members), true)) {
-            echo json_encode(['success' => false, 'error' => 'Bu çağrı üyesi olmadığınız bir kuyrukta bekliyor']);
+            echo json_encode(['success' => false, 'error' => t('api_cc.err_not_member')]);
             exit;
         }
     }
@@ -144,10 +144,10 @@ if ($action === 'pickup_call') {
     // Redirect waiting queue caller to agent's extension in cc-internal
     $res = sendAMICommand("Action: Redirect\r\nChannel: $target_channel\r\nContext: cc-internal\r\nExten: $user_ext\r\nPriority: 1\r\n\r\n");
     if (!$res || strpos($res, 'Response: Success') === false) {
-        echo json_encode(['success' => false, 'error' => 'Çağrı başka bir temsilci tarafından zaten alınmış olabilir']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_taken')]);
         exit;
     }
 
-    echo json_encode(['success' => true, 'message' => "Çağrı dahilinize ($user_ext) yönlendirildi"]);
+    echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.picked_up'), $user_ext)]);
     exit;
 }

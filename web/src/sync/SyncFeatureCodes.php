@@ -262,6 +262,6 @@ function __syncFeatureCodesBody() {
     }
 
     return writeConfWithRollback('extensions_featurecodes.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Özellik Kodu senkronizasyonu');
-    }, 'Özellik Kodu senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_feature_codes'));
+    }, t('sync.ctx_feature_codes'));
 }

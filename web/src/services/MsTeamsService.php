@@ -96,21 +96,21 @@ class MsTeamsService
         $payload = [
             '@type'      => 'MessageCard',
             '@context'   => 'https://schema.org/extensions',
-            'summary'    => 'AiPBX - Microsoft Teams Entegrasyon Testi',
+            'summary'    => t('srv_teams.test_summary'),
             'themeColor' => '6264A7',
-            'title'      => 'AiPBX & Microsoft Teams Bağlantı Testi',
+            'title'      => t('srv_teams.test_title'),
             'sections'   => [
                 [
-                    'activityTitle'    => 'Santral Bildirim Servisi Doğrulaması',
-                    'activitySubtitle' => 'AiPBX Kurumsal İletişim Platformu',
+                    'activityTitle'    => t('srv_teams.test_activity'),
+                    'activitySubtitle' => t('srv_teams.test_subtitle'),
                     'activityImage'    => 'https://raw.githubusercontent.com/mahirgul/AiPBX/main/docs/logo.png',
                     'facts'            => [
-                        ['name' => 'Durum:', 'value' => '✅ Aktif & Çalışıyor (200 OK)'],
-                        ['name' => 'Zaman:', 'value' => date('d.m.Y H:i:s')],
-                        ['name' => 'Sunucu:', 'value' => gethostname() ?: 'AiPBX Gateway'],
-                        ['name' => 'Bildirim Türü:', 'value' => 'Sistem Test Mesajı'],
+                        ['name' => t('srv_teams.f_status'), 'value' => t('srv_teams.f_status_ok')],
+                        ['name' => t('srv_teams.f_time'), 'value' => date('d.m.Y H:i:s')],
+                        ['name' => t('srv_teams.f_server'), 'value' => gethostname() ?: 'AiPBX Gateway'],
+                        ['name' => t('srv_teams.f_type'), 'value' => t('srv_teams.f_type_test')],
                     ],
-                    'text'             => 'Tebrikler! AiPBX ile Microsoft Teams kanalınız arasındaki Webhook bağlantısı başarıyla kuruldu. Cevapsız çağrılar, sesli mesajlar ve kuyruk uyarıları bu kanala iletilecektir.',
+                    'text'             => t('srv_teams.test_text'),
                 ],
             ],
             'potentialAction' => [
@@ -216,8 +216,8 @@ class MsTeamsService
             'is_expired'     => $isExpired,
             'color'          => $isExpired ? 'danger' : ($isExpiringSoon ? 'warning' : 'success'),
             'message'        => $isExpired
-                ? "Sertifika süresi dolmuş! ({$daysRemaining} gün önce)"
-                : ($isExpiringSoon ? "Sertifika yakında dolacak ({$daysRemaining} gün kaldı)" : "Sertifika geçerli ({$daysRemaining} gün kaldı)"),
+                ? sprintf(t('srv_teams.cert_expired'), $daysRemaining)
+                : ($isExpiringSoon ? sprintf(t('srv_teams.cert_soon'), $daysRemaining) : sprintf(t('srv_teams.cert_ok'), $daysRemaining)),
         ];
     }
 
@@ -239,7 +239,7 @@ class MsTeamsService
         $output[] = "# SBC FQDN: {$domain} (Port: {$port})";
         $output[] = "# ==============================================================================";
         $output[] = "";
-        $output[] = "# 1. Microsoft Teams PowerShell Modulunu Kurun ve Baglanin (Gerekiyorsa)";
+        $output[] = "# 1. Install and connect the Microsoft Teams PowerShell module (if needed)";
         $output[] = "if (-not (Get-Module -ListAvailable -Name MicrosoftTeams)) {";
         $output[] = "    Write-Host 'MicrosoftTeams modulu yukleniyor...' -ForegroundColor Cyan";
         $output[] = "    Install-Module -Name MicrosoftTeams -Scope CurrentUser -Force -AllowClobber";
@@ -263,7 +263,7 @@ class MsTeamsService
         $output[] = "        -Enabled \$true";
         $output[] = "}";
         $output[] = "";
-        $output[] = "# 3. PSTN Kullanimi ve Ses Yonlendirme Politikalari";
+        $output[] = "# 3. PSTN usage and voice routing policies";
         $output[] = "Write-Host 'Ses Yonlendirme Politikasi olusturuluyor...' -ForegroundColor Cyan";
         $output[] = "Set-CsOnlinePstnUsage -Identity Global -Usage @{Add='{$pstnUsage}'} -ErrorAction SilentlyContinue";
         $output[] = "";
@@ -283,11 +283,11 @@ class MsTeamsService
         $output[] = "        -Description 'AiPBX Direct Routing Santral Politikasi'";
         $output[] = "}";
         $output[] = "";
-        $output[] = "# 4. Kullanici ve Dahili Eslestirmeleri";
+        $output[] = "# 4. User and extension mappings";
 
         if (empty($mappings)) {
             $output[] = "# Henuz web arayuzunde kullanici eslestirmesi yapilmamis.";
-            $output[] = "# Ornek Kullanici Atama Komutu:";
+            $output[] = "# Example user assignment command:";
             $output[] = "# Grant-CsOnlineVoiceRoutingPolicy -Identity 'kullanici@alanadiniz.com' -PolicyName '{$voicePolicy}'";
             $output[] = "# Set-CsPhoneNumberAssignment -Identity 'kullanici@alanadiniz.com' -PhoneNumber '+90212XXXXXXX' -PhoneNumberType DirectRouting";
         } else {
@@ -297,17 +297,17 @@ class MsTeamsService
                 $ext = $m['extension'];
                 $phone = !empty($m['phone_number']) ? $m['phone_number'] : "+{$ext}";
 
-                $output[] = "Write-Host 'Kullanici ataniyor: {$upn} (Dahili: {$ext})' -ForegroundColor Green";
+                $output[] = "Write-Host 'Assigning user: {$upn} (extension: {$ext})' -ForegroundColor Green";
                 $output[] = "Grant-CsOnlineVoiceRoutingPolicy -Identity '{$upn}' -PolicyName '{$voicePolicy}'";
                 $output[] = "Set-CsPhoneNumberAssignment -Identity '{$upn}' -PhoneNumber '{$phone}' -PhoneNumberType DirectRouting";
             }
         }
 
         $output[] = "";
-        $output[] = "# 5. Durum Kontrolu";
+        $output[] = "# 5. Status check";
         $output[] = "Write-Host '--- SBC Gateway Durumu ---' -ForegroundColor Yellow";
         $output[] = "Get-CsOnlinePSTNGateway -Identity '{$domain}' | Format-List Fqdn, SipSignalingPort, Enabled, Status";
-        $output[] = "Write-Host 'Kurulum tamamlandi! AiPBX ile Teams Direct Routing baglantiniz hazir.' -ForegroundColor Green";
+        $output[] = "Write-Host 'Done! Your AiPBX - Teams Direct Routing connection is ready.' -ForegroundColor Green";
 
         return implode("\n", $output);
     }

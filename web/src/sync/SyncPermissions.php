@@ -21,7 +21,7 @@ function __syncPermissionsBody() {
     $conf .= " same => n(perm_allow),Return()\n\n";
 
     $conf .= "[sub-permission-denied]\n";
-    $conf .= "exten => s,1,NoOp(Arama Yetki Kisitlamasi: Hedef aranamaz!)\n";
+    $conf .= "exten => s,1,NoOp(Dial permission restriction: destination not allowed!)\n";
     $conf .= " same => n,Set(CDR(userfield)=CALL_BARRED)\n";
     $conf .= " same => n,Answer()\n";
     $conf .= " same => n,Playback(ss-noservice)\n";
@@ -68,6 +68,6 @@ function __syncPermissionsBody() {
     }
 
     return writeConfWithRollback('extensions_permissions.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Arama Yetki Grupları senkronizasyonu');
-    }, 'Arama Yetki Grupları senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_permissions'));
+    }, t('sync.ctx_permissions'));
 }

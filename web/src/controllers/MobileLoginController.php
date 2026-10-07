@@ -34,9 +34,9 @@ class MobileLoginController extends BaseController
         $data = [
             'info' => $info,
             'platform' => $platform,
-            'site_title' => getSystemSetting('site_title', 'AI PBX Portalı'),
+            'site_title' => getSystemSetting('site_title', 'AI PBX Portal'),
             'brand_title' => getSystemSetting('brand_title', 'AI PBX'),
-            'brand_sub' => getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi'),
+            'brand_sub' => getSystemSetting('brand_sub', 'PBX & Call Center'),
             'play_url' => 'https://play.google.com/store/apps/details?id=' . QrLoginService::ANDROID_PACKAGE,
         ];
 

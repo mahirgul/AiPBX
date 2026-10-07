@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if (!verifyCSRFToken($csrf)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Geçersiz CSRF doğrulama kodu']);
+        echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')]);
         exit;
     }
 } else {
@@ -26,7 +26,7 @@ $user = $stmt->fetch();
 
 if (!$user) {
     http_response_code(404);
-    echo json_encode(['success' => false, 'error' => 'Kullanıcı bulunamadı']);
+    echo json_encode(['success' => false, 'error' => t('srv_2fa.err_user')]);
     exit;
 }
 
@@ -34,7 +34,7 @@ if (($user['extension_type'] ?? '') !== 'sip' || empty($user['is_active'])) {
     echo json_encode([
         'success' => false,
         'disabled' => true,
-        'error' => 'WebRTC softphone bu kullanıcı türü için etkin değildir'
+        'error' => t('api.err_webrtc_disabled')
     ]);
     exit;
 }

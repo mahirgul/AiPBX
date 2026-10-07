@@ -21,9 +21,9 @@ final class RoleMatrixTest extends TestCase
 
     /** Sidebar group id => matrix group. */
     private const SIDEBAR_GROUPS = [
-        'group-dashboard' => 'Genel', 'group-trunks' => 'Dış Hat Yönetimi', 'group-pbx' => 'PBX Yönetimi',
-        'group-admin' => 'Yönetim', 'group-security' => 'Güvenlik', 'group-integrations' => 'Entegrasyonlar', 'group-ai' => 'Yapay Zekâ',
-        'group-fax' => 'Faks Sistemi', 'group-cc' => 'Çağrı Merkezi',
+        'group-dashboard' => 'General', 'group-trunks' => 'Outbound Line Management', 'group-pbx' => 'PBX Management',
+        'group-admin' => 'Administration', 'group-security' => 'Security', 'group-integrations' => 'Integrations', 'group-ai' => 'AI',
+        'group-fax' => 'Fax System', 'group-cc' => 'Call Center',
     ];
 
     /** @return array<string, string> route path => module key */

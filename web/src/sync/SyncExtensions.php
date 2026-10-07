@@ -326,7 +326,7 @@ function __syncAllExtensionsBody() {
         AsteriskHelper::assertReloadsOk([
             AsteriskHelper::reloadPJSIP(),
             AsteriskHelper::reloadDialplan(),
-        ], 'Dahili senkronizasyonu');
-    }, 'Dahili senkronizasyonu');
+        ], t('sync.ctx_extensions'));
+    }, t('sync.ctx_extensions'));
 }
 

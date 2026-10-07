@@ -11,7 +11,8 @@
 /**
  * UI Component Helpers for Centralized Single-Point UI Management
  */
-function uiSaveButton($title = 'Kaydet', $extra_attr = '', $icon = 'fa-save') {
+function uiSaveButton($title = null, $extra_attr = '', $icon = 'fa-save') {
+    $title = $title ?? t('common.save');
     $module = getModuleKeyForPage();
     if (!hasModulePermission($module, 'edit')) {
         return '';
@@ -19,15 +20,17 @@ function uiSaveButton($title = 'Kaydet', $extra_attr = '', $icon = 'fa-save') {
     return '<button type="submit" class="btn btn-primary" title="' . htmlspecialchars($title, ENT_QUOTES) . '" ' . $extra_attr . '><i class="fas ' . htmlspecialchars($icon, ENT_QUOTES) . '"></i><span class="btn-label">' . htmlspecialchars($title, ENT_QUOTES) . '</span></button>';
 }
 
-function uiCancelButton($onclick = '', $title = 'İptal') {
+function uiCancelButton($onclick = '', $title = null) {
+    $title = $title ?? t('common.cancel');
     $click_attr = !empty($onclick) ? 'onclick="' . htmlspecialchars($onclick, ENT_QUOTES) . '"' : '';
     return '<button type="button" class="btn btn-secondary" ' . $click_attr . ' title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas fa-times"></i><span class="btn-label">' . htmlspecialchars($title, ENT_QUOTES) . '</span></button>';
 }
 
-function uiModalFooter($close_fn = '', $save_title = 'Kaydet', $save_attr = '', $save_icon = 'fa-save') {
+function uiModalFooter($close_fn = '', $save_title = null, $save_attr = '', $save_icon = 'fa-save') {
+    $save_title = $save_title ?? t('common.save');
     $module = getModuleKeyForPage();
     $can_edit = hasModulePermission($module, 'edit');
-    $close_label = $can_edit ? 'İptal' : 'Kapat';
+    $close_label = $can_edit ? t('common.cancel') : t('common.close');
     return '<div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">' .
                uiCancelButton($close_fn, $close_label) .
                ($can_edit ? uiSaveButton($save_title, $save_attr, $save_icon) : '') .
@@ -42,7 +45,7 @@ function uiModalFooter($close_fn = '', $save_title = 'Kaydet', $save_attr = '', 
 function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle_status') {
     $active = ((int)$isActive === 1);
     $icon = $active ? 'fa-check-circle' : 'fa-times-circle';
-    $label = $active ? 'Aktif' : 'Pasif';
+    $label = $active ? t('common.active') : t('common.passive');
     $module = getModuleKeyForPage();
     if (!hasModulePermission($module, 'edit')) {
         $badgeClass = $active ? 'badge-success' : 'badge-danger';
@@ -55,7 +58,7 @@ function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle
         . '<input type="hidden" name="csrf_token" value="' . getCSRFToken() . '">'
         . '<input type="hidden" name="' . htmlspecialchars($toggleField) . '" value="1">'
         . '<input type="hidden" name="' . htmlspecialchars($idFieldName) . '" value="' . htmlspecialchars($id) . '">'
-        . '<button type="submit" class="btn btn-sm ' . $btnClass . '" title="Durumu Değiştir (Tıkla)" style="padding: 2px 8px; font-size: 11px;">'
+        . '<button type="submit" class="btn btn-sm ' . $btnClass . '" title="' . htmlspecialchars(t('common.toggle_status'), ENT_QUOTES) . '" style="padding: 2px 8px; font-size: 11px;">'
         . '<i class="fas ' . $icon . '"></i> ' . $label
         . '</button></form>';
 }
@@ -65,7 +68,9 @@ function uiStatusToggleForm($id, $isActive, $idFieldName, $toggleField = 'toggle
  * $extraHidden lets pages with a compound delete key (e.g. roles.php's role_key) add extra hidden
  * fields after the id field, in insertion order, without needing their own copy of this form.
  */
-function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $title = 'Sil', $icon = 'fa-trash-alt', array $extraHidden = [], $formStyle = 'display:inline;') {
+function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = null, $title = null, $icon = 'fa-trash-alt', array $extraHidden = [], $formStyle = 'display:inline;') {
+    $confirmMessage = $confirmMessage ?? t('common.confirm_delete');
+    $title = $title ?? t('common.delete');
     $module = getModuleKeyForPage();
     if (!hasModulePermission($module, 'delete')) {
         return '';
@@ -89,11 +94,12 @@ function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = 'Bu kay
  * (e.g. system_users.php's "reset password") can still reuse this piece instead of the full
  * uiRowActions() wrapper.
  */
-function uiEditButton(array $row, $editJsFn, $title = 'Düzenle', $icon = 'fa-edit', $btnClass = 'btn-secondary') {
+function uiEditButton(array $row, $editJsFn, $title = null, $icon = 'fa-edit', $btnClass = 'btn-secondary') {
+    $title = $title ?? t('common.edit');
     $module = getModuleKeyForPage();
     $can_edit = hasModulePermission($module, 'edit');
     if (!$can_edit) {
-        $title = 'Görüntüle';
+        $title = t('common.view');
         $icon = 'fa-eye';
     }
     $rowJson = json_encode($row, JSON_HEX_APOS | JSON_HEX_QUOT);
@@ -105,7 +111,7 @@ function uiEditButton(array $row, $editJsFn, $title = 'Düzenle', $icon = 'fa-ed
  * common case where a row's actions are exactly "edit" + "delete". Set $showDelete = false for rows
  * where deletion is conditionally disabled (e.g. end_call.php's built-in hangup/busy/congestion).
  */
-function uiRowActions(array $row, $editJsFn, $idFieldName, $deleteField, $confirmMessage = 'Bu kaydı silmek istediğinize emin misiniz?', $deleteTitle = 'Sil', $deleteIcon = 'fa-trash-alt', $editTitle = 'Düzenle', $editIcon = 'fa-edit', array $extraHidden = [], $showDelete = true, $editBtnClass = 'btn-secondary') {
+function uiRowActions(array $row, $editJsFn, $idFieldName, $deleteField, $confirmMessage = null, $deleteTitle = null, $deleteIcon = 'fa-trash-alt', $editTitle = null, $editIcon = 'fa-edit', array $extraHidden = [], $showDelete = true, $editBtnClass = 'btn-secondary') {
     $module = getModuleKeyForPage();
     if (!hasModulePermission($module, 'delete')) {
         $showDelete = false;
@@ -134,7 +140,8 @@ function uiStatusBadge($value, array $map, $default = 'info', $label = null, $ic
 /**
  * Centralized Empty Table State Row Renderer
  */
-function uiTableEmptyRow($colspan = 1, $message = 'Henüz kayıt bulunamadı', $icon = 'fa-inbox') {
+function uiTableEmptyRow($colspan = 1, $message = null, $icon = 'fa-inbox') {
+    $message = $message ?? t('common.no_records');
     return '<tr><td colspan="' . (int)$colspan . '">' .
                '<div class="empty-table-box">' .
                    '<i class="fas ' . htmlspecialchars($icon) . '"></i>' .

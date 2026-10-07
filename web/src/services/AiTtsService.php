@@ -304,7 +304,7 @@ class AiTtsService
         // Same as an upload in Sounds & Announcements: destinations read the table.
         $uid = $_SESSION['user_id'] ?? null;
         foreach (['inbound_dialplan', 'ivrs', 'time_conditions'] as $domain) {
-            markPendingSync($domain, 'announcement', $soundName, "Anons: {$title}", 'create', $uid);
+            markPendingSync($domain, 'announcement', $soundName, "Announcement: {$title}", 'create', $uid);
         }
         writeAuditLog(null, 'ai_tts', (string) $id, "Saved as announcement custom/{$soundName}", 'create', $uid);
         return 'custom/' . $soundName;

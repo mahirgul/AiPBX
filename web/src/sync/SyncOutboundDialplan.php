@@ -87,7 +87,7 @@ function __syncOutboundDialplanBody() {
                 }
             }
 
-            $trunk_label = !empty($trunk_chain) ? implode(' -> ', array_column($trunk_chain, 'trunk_name')) : 'YOK (tanımlı/aktif trunk bulunamadı)';
+            $trunk_label = !empty($trunk_chain) ? implode(' -> ', array_column($trunk_chain, 'trunk_name')) : 'NONE (no defined/active trunk)';
             $block_start = strlen($conf);
             $conf .= "; Outbound Route: {$name} (Pattern: {$pattern} -> Trunk: {$trunk_label})\n";
             $conf .= "exten => {$pattern},1,NoOp(Outbound Call via Route {$name} -> Trunk {$trunk_label})\n";
@@ -95,7 +95,7 @@ function __syncOutboundDialplanBody() {
             $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
 
             if (empty($trunk_chain)) {
-                $conf .= " same => n,NoOp(Bu rota icin tanimli/aktif bir dis hat yok)\n";
+                $conf .= " same => n,NoOp(No defined/active trunk for this route)\n";
                 $conf .= " same => n,Congestion(10)\n";
                 $conf .= " same => n,Hangup(34)\n\n";
                 $route_blocks[(int)$r['id']] = [$pattern, substr($conf, $block_start)];
@@ -235,6 +235,6 @@ function __syncOutboundDialplanBody() {
     $conf .= "exten => h,1,NoOp(Outbound Channel Hangup Complete)\n\n";
 
     return writeConfWithRollback('extensions_outbound.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Giden Rota senkronizasyonu');
-    }, 'Giden Rota senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_outbound'));
+    }, t('sync.ctx_outbound'));
 }

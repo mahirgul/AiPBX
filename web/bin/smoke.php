@@ -501,7 +501,7 @@ echo "\n";
 foreach ($COUNTS as $g => $n) { printf("  %-14s %d kontrol\n", $g, $n); }
 
 if (empty($FAILS)) {
-    echo "\nTEMİZ — tüm kontroller geçti.\n";
+    echo "\nCLEAN — all checks passed.\n";
     exit(0);
 }
 

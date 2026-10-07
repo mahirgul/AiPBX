@@ -106,40 +106,40 @@ class Fail2banService {
 
         $flag = $is_v6 ? FILTER_FLAG_IPV6 : FILTER_FLAG_IPV4;
         if (filter_var($addr, FILTER_VALIDATE_IP, $flag) === false) {
-            return 'Geçersiz IP adresi!';
+            return t('srv_f2b.err_ip');
         }
         if (!isset($parts[1])) return null; // plain IP, no suffix
 
         if (!preg_match('/^\d{1,3}$/', $parts[1])) {
-            return 'Geçersiz CIDR eki! (ör. 192.0.2.0/24)';
+            return t('srv_f2b.err_cidr');
         }
         $prefix = (int) $parts[1];
         $max = $is_v6 ? 128 : 32;
         $min = $is_v6 ? 32 : 8;
         if ($prefix > $max) {
-            return "Geçersiz CIDR eki! (en fazla /{$max})";
+            return sprintf(t('srv_f2b.err_cidr_max'), $max);
         }
         if ($prefix < $min) {
-            return "Bu blok fazla geniş (/{$prefix}) — fail2ban'ı fiilen devre dışı bırakır. En geniş /{$min} kabul ediliyor.";
+            return sprintf(t('srv_f2b.err_too_wide'), $prefix, $min);
         }
         return null;
     }
 
     public static function unbanIp(string $jail, string $ip, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $jail = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($jail));
         $ip = trim($ip);
         if (!in_array($jail, self::listJails(), true) || !filter_var($ip, FILTER_VALIDATE_IP)) {
-            return ['success' => false, 'error' => 'Geçersiz jail veya IP adresi.'];
+            return ['success' => false, 'error' => t('srv_f2b.err_jail_ip')];
         }
         $res = self::run('set', $jail, 'unbanip', $ip);
         if (!$res['success']) {
-            return ['success' => false, 'error' => 'IP ban kaldırılamadı: ' . trim($res['output'])];
+            return ['success' => false, 'error' => sprintf(t('srv_f2b.err_unban'), trim($res['output']))];
         }
-        writeAuditLog(null, 'fail2ban', $jail, "IP ban kaldırıldı ({$jail}): {$ip}", 'unban', $_SESSION['user_id'] ?? null);
-        return ['success' => true, 'message' => "{$ip} adresinin banı kaldırıldı."];
+        writeAuditLog(null, 'fail2ban', $jail, "IP unbanned ({$jail}): {$ip}", 'unban', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => sprintf(t('srv_f2b.unbanned'), $ip)];
     }
 
     /**
@@ -149,35 +149,35 @@ class Fail2banService {
      */
     public static function updateJailConfig(string $jail, int $bantime, int $findtime, int $maxretry, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $jail = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($jail));
         if (!in_array($jail, self::listJails(), true)) {
-            return ['success' => false, 'error' => 'Geçersiz jail.'];
+            return ['success' => false, 'error' => t('srv_f2b.err_jail')];
         }
         if ($bantime < 60 || $findtime < 60 || $maxretry < 1) {
-            return ['success' => false, 'error' => 'Değerler mantıksız (bantime/findtime en az 60sn, maxretry en az 1 olmalı).'];
+            return ['success' => false, 'error' => t('srv_f2b.err_values')];
         }
 
         $r1 = self::run('set', $jail, 'bantime', (string) $bantime);
         $r2 = self::run('set', $jail, 'findtime', (string) $findtime);
         $r3 = self::run('set', $jail, 'maxretry', (string) $maxretry);
         if (!$r1['success'] || !$r2['success'] || !$r3['success']) {
-            return ['success' => false, 'error' => 'Ayarlar canlıya uygulanamadı: ' . trim($r1['output'] . ' ' . $r2['output'] . ' ' . $r3['output'])];
+            return ['success' => false, 'error' => sprintf(t('srv_f2b.err_apply'), trim($r1['output'] . ' ' . $r2['output'] . ' ' . $r3['output']))];
         }
 
         $state = self::readOverrideState();
         $state['jails'][$jail] = ['bantime' => $bantime, 'findtime' => $findtime, 'maxretry' => $maxretry];
         $persist_err = self::writeOverrideState($state);
 
-        writeAuditLog(null, 'fail2ban', $jail, "Jail ayarları güncellendi ({$jail}): bantime={$bantime} findtime={$findtime} maxretry={$maxretry}", 'update', $_SESSION['user_id'] ?? null);
-        if ($persist_err !== null) return self::persistFailure("{$jail} ayarları", $persist_err);
-        return ['success' => true, 'message' => "{$jail} ayarları güncellendi."];
+        writeAuditLog(null, 'fail2ban', $jail, "Jail settings updated ({$jail}): bantime={$bantime} findtime={$findtime} maxretry={$maxretry}", 'update', $_SESSION['user_id'] ?? null);
+        if ($persist_err !== null) return self::persistFailure(sprintf(t('srv_f2b.what_jail'), $jail), $persist_err);
+        return ['success' => true, 'message' => sprintf(t('srv_f2b.jail_updated'), $jail)];
     }
 
     public static function addIgnoreIp(string $ip, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $ip = trim($ip);
         if (($err = self::validateIpOrCidr($ip)) !== null) {
@@ -190,18 +190,18 @@ class Fail2banService {
         if (!in_array($ip, $state['ignoreip'], true)) $state['ignoreip'][] = $ip;
         $persist_err = self::writeOverrideState($state);
 
-        writeAuditLog(null, 'fail2ban', 'ignoreip', "IP beyaz listeye eklendi: {$ip}", 'create', $_SESSION['user_id'] ?? null);
-        if ($persist_err !== null) return self::persistFailure("{$ip} beyaz listeye eklendi", $persist_err);
-        return ['success' => true, 'message' => "{$ip} beyaz listeye eklendi."];
+        writeAuditLog(null, 'fail2ban', 'ignoreip', "IP added to the whitelist: {$ip}", 'create', $_SESSION['user_id'] ?? null);
+        if ($persist_err !== null) return self::persistFailure(sprintf(t('srv_f2b.wl_added'), $ip), $persist_err);
+        return ['success' => true, 'message' => sprintf(t('srv_f2b.wl_added'), $ip)];
     }
 
     public static function removeIgnoreIp(string $ip, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
-            return ['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu!'];
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $ip = trim($ip);
         if (in_array($ip, self::PROTECTED_IGNOREIPS, true)) {
-            return ['success' => false, 'error' => "{$ip} (localhost) beyaz listeden asla kaldırılamaz!"];
+            return ['success' => false, 'error' => sprintf(t('srv_f2b.err_localhost'), $ip)];
         }
         foreach (self::listJails() as $jail) {
             self::run('set', $jail, 'delignoreip', $ip);
@@ -210,9 +210,9 @@ class Fail2banService {
         $state['ignoreip'] = array_values(array_diff($state['ignoreip'], [$ip]));
         $persist_err = self::writeOverrideState($state);
 
-        writeAuditLog(null, 'fail2ban', 'ignoreip', "IP beyaz listeden kaldırıldı: {$ip}", 'delete', $_SESSION['user_id'] ?? null);
-        if ($persist_err !== null) return self::persistFailure("{$ip} beyaz listeden kaldırıldı", $persist_err);
-        return ['success' => true, 'message' => "{$ip} beyaz listeden kaldırıldı."];
+        writeAuditLog(null, 'fail2ban', 'ignoreip', "IP removed from the whitelist: {$ip}", 'delete', $_SESSION['user_id'] ?? null);
+        if ($persist_err !== null) return self::persistFailure(sprintf(t('srv_f2b.wl_removed'), $ip), $persist_err);
+        return ['success' => true, 'message' => sprintf(t('srv_f2b.wl_removed'), $ip)];
     }
 
     /**
@@ -223,11 +223,10 @@ class Fail2banService {
      * entity_label carries the error text, not just the name).
      */
     private static function persistFailure(string $what, string $reason): array {
-        writeAuditLog(null, 'fail2ban', 'persist_failed', mb_substr("KALICI KAYIT BAŞARISIZ ({$what}): {$reason}", 0, 255), 'error', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'fail2ban', 'persist_failed', mb_substr("PERSIST FAILED ({$what}): {$reason}", 0, 255), 'error', $_SESSION['user_id'] ?? null);
         return [
             'success' => false,
-            'error' => "{$what} — CANLIYA uygulandı, ANCAK kalıcı olarak kaydedilemedi ({$reason}). "
-                     . 'fail2ban yeniden başlatılırsa bu değişiklik KAYBOLUR.',
+            'error' => sprintf(t('srv_f2b.err_persist'), $what, $reason),
         ];
     }
 
@@ -271,11 +270,11 @@ class Fail2banService {
         $ignoreip = array_values(array_unique(array_merge(self::PROTECTED_IGNOREIPS, array_filter($state['ignoreip']))));
         if (empty($state['ignoreip'])) {
             // read failed → leave the existing file alone (do not break it silently)
-            return 'mevcut beyaz liste okunamadı, dosya güvenlik gereği hiç değiştirilmedi';
+            return t('srv_f2b.err_read_wl');
         }
 
         $lines = [];
-        $lines[] = '# AI PBX panelinden yönetiliyor (otomatik üretilir, elle düzenlemeyin)';
+        $lines[] = '# Managed by the AI PBX portal (generated, do not edit by hand)';
         $lines[] = '[DEFAULT]';
         $lines[] = 'ignoreip = ' . implode(' ', $ignoreip);
         $lines[] = '';
@@ -288,11 +287,11 @@ class Fail2banService {
         }
 
         if (!FileHelper::writeFile(self::STAGING_FILE, implode("\n", $lines) . "\n", null, null, 0640)) {
-            return self::STAGING_FILE . ' yazılamadı (dosya izni/sahipliği?)';
+            return sprintf(t('srv_f2b.err_write'), self::STAGING_FILE);
         }
         $res = PrivHelper::run(['f2b', 'install-override']);
         if (!$res['success']) {
-            return self::OVERRIDE_FILE . ' kurulamadı: ' . trim($res['output']);
+            return sprintf(t('srv_f2b.err_install'), self::OVERRIDE_FILE, trim($res['output']));
         }
         return null;
     }

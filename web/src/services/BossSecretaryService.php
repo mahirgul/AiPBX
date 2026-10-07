@@ -45,7 +45,7 @@ class BossSecretaryService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($group_name) || empty($boss_extension)) {
-                throw new \Exception("Grup Adı ve Şef Dahilisi zorunludur!");
+                throw new \Exception(t('srv_boss.err_required'));
             }
 
             $db = getDB();
@@ -53,7 +53,7 @@ class BossSecretaryService {
             $chk = $db->prepare("SELECT id FROM pbx_boss_secretary_groups WHERE group_number = ? AND id != ?");
             $chk->execute([$group_number, $id]);
             if ($chk->fetch()) {
-                throw new \Exception("{$group_number} numaralı grup zaten mevcut, lütfen farklı bir grup numarası seçin.");
+                throw new \Exception(sprintf(t('srv_boss.err_exists'), $group_number));
             }
 
             if ($id > 0) {
@@ -72,7 +72,7 @@ class BossSecretaryService {
             }
 
             markPendingSync('general_dialplan', 'boss_secretary', $id, $group_name, $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            return "Şef - Sekreter grubu başarıyla kaydedildi.";
+            return t('srv_boss.saved');
         });
     }
 
@@ -87,8 +87,8 @@ class BossSecretaryService {
             $del = $db->prepare("DELETE FROM pbx_boss_secretary_groups WHERE id = ?");
             $del->execute([$id]);
 
-            markPendingSync('general_dialplan', 'boss_secretary', $id, "Şef Grubu #{$id}", 'delete', $_SESSION['user_id'] ?? null);
-            return "Şef - Sekreter grubu silindi.";
+            markPendingSync('general_dialplan', 'boss_secretary', $id, "Boss group #{$id}", 'delete', $_SESSION['user_id'] ?? null);
+            return t('srv_boss.deleted');
         });
     }
 }

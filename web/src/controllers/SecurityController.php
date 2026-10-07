@@ -47,7 +47,7 @@ class SecurityController extends BaseController
                             unset($_SESSION['pending_2fa_setup_secret']);
                             $message = t('security.2fa_enabled_success', 'İki faktörlü doğrulama başarıyla aktifleştirildi! Kurtarma kodlarınızı lütfen güvenli bir yere kaydedin.');
                         } else {
-                            $error = $res['error'] ?? 'Doğrulama kodu geçersiz!';
+                            $error = $res['error'] ?? t('security.err_code');
                         }
                     }
                 }
@@ -61,7 +61,7 @@ class SecurityController extends BaseController
                         unset($_SESSION['pending_2fa_setup_secret']);
                         $message = t('security.2fa_disabled_success', 'İki faktörlü doğrulama devre dışı bırakıldı.');
                     } else {
-                        $error = $res['error'] ?? 'İşlem başarısız.';
+                        $error = $res['error'] ?? t('common.action_failed');
                     }
                 }
 
@@ -73,7 +73,7 @@ class SecurityController extends BaseController
                         $newRecoveryCodes = $res['recovery_codes'];
                         $message = t('security.recovery_codes_regen_success', 'Yeni kurtarma kodları üretildi. Eski kurtarma kodları artık geçersizdir.');
                     } else {
-                        $error = $res['error'] ?? 'İşlem başarısız.';
+                        $error = $res['error'] ?? t('common.action_failed');
                     }
                 }
 
@@ -99,7 +99,7 @@ class SecurityController extends BaseController
                         $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, token_epoch = token_epoch + 1 WHERE id = ?');
                         $upd->execute([$newHash, $userId]);
                         if (function_exists('writeAuditLog')) {
-                            writeAuditLog($userId, 'sys_users', $userId, "Kullanıcı '{$user['username']}' web giriş şifresini değiştirdi.", 'password_change');
+                            writeAuditLog($userId, 'sys_users', $userId, "User '{$user['username']}' changed their web password.", 'password_change');
                         }
                         $message = t('security.password_changed_success', 'Şifreniz başarıyla güncellendi.');
                     }

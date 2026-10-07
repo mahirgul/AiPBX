@@ -19,7 +19,7 @@ class RouteService {
             }
 
             if (empty($did_number) || empty($title)) {
-                throw new \Exception("DID Numarası ve Tanımı zorunludur!");
+                throw new \Exception(t('srv_route.err_did'));
             }
 
             $is_new = ($route_id <= 0);
@@ -34,8 +34,8 @@ class RouteService {
                 'is_active' => $is_active
             ]);
 
-            markPendingSync('inbound_dialplan', 'did_route', $did_number, "Gelen Rota: {$did_number} ({$title})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            return "Gelen Rota '{$did_number}' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('inbound_dialplan', 'did_route', $did_number, "Inbound route: {$did_number} ({$title})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_route.did_saved'), $did_number);
         });
     }
 
@@ -44,8 +44,8 @@ class RouteService {
             $route_id = intval($route_id);
             $d_row = DBHelper::fetchOne("SELECT did_number, title FROM pbx_dids WHERE id = ?", [$route_id]);
             DBHelper::delete('pbx_dids', 'id', $route_id);
-            markPendingSync('inbound_dialplan', 'did_route', $d_row['did_number'] ?? ('id_' . $route_id), "Gelen Rota: " . ($d_row['did_number'] ?? $route_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            return "Gelen Rota silindi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('inbound_dialplan', 'did_route', $d_row['did_number'] ?? ('id_' . $route_id), "Inbound route: " . ($d_row['did_number'] ?? $route_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+            return t('srv_route.did_deleted');
         });
     }
 
@@ -80,10 +80,10 @@ class RouteService {
             }
 
             if (empty($route_name) || empty($match_pattern)) {
-                throw new \Exception("Rota ismi ve eşleşme deseni zorunludur!");
+                throw new \Exception(t('srv_route.err_out'));
             }
             if (empty($trunks)) {
-                throw new \Exception("En az bir dış hat eklemelisiniz!");
+                throw new \Exception(t('srv_route.err_trunk'));
             }
             // Asterisk keeps only the first of two identical patterns in a context.
             $dup = DBHelper::fetchOne(
@@ -91,7 +91,7 @@ class RouteService {
                 [$match_pattern, $route_group, $route_id]
             );
             if ($dup) {
-                throw new \Exception("'{$match_pattern}' deseni bu grupta zaten '{$dup['route_name']}' rotasında kullanılıyor — farklı bir desen girin.");
+                throw new \Exception(sprintf(t('srv_route.err_dup'), $match_pattern, $dup['route_name']));
             }
 
             $is_new = ($route_id <= 0);
@@ -112,9 +112,9 @@ class RouteService {
                 getDB()->prepare("UPDATE pbx_outbound_routes SET sort_order = (SELECT m FROM (SELECT COALESCE(MAX(sort_order), 0) + 1 AS m FROM pbx_outbound_routes) x) WHERE id = ?")->execute([$saved_id]);
             }
 
-            markPendingSync('outbound_dialplan', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            markPendingSync('ivrs', 'outbound_route', $route_name, "Giden Rota: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            return "Giden Rota '{$route_name}' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('outbound_dialplan', 'outbound_route', $route_name, "Outbound route: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'outbound_route', $route_name, "Outbound route: {$route_name}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_route.out_saved'), $route_name);
         });
     }
 
@@ -123,9 +123,9 @@ class RouteService {
             $route_id = intval($route_id);
             $route_name = DBHelper::fetchColumn("SELECT route_name FROM pbx_outbound_routes WHERE id = ?", [$route_id]);
             DBHelper::delete('pbx_outbound_routes', 'id', $route_id);
-            markPendingSync('outbound_dialplan', 'outbound_route', $route_name ?: ('id_' . $route_id), "Giden Rota: " . ($route_name ?: $route_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            markPendingSync('ivrs', 'outbound_route', $route_name ?: ('id_' . $route_id), "Giden Rota: " . ($route_name ?: $route_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            return "Giden Rota silindi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('outbound_dialplan', 'outbound_route', $route_name ?: ('id_' . $route_id), "Outbound route: " . ($route_name ?: $route_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'outbound_route', $route_name ?: ('id_' . $route_id), "Outbound route: " . ($route_name ?: $route_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+            return t('srv_route.out_deleted');
         });
     }
 }

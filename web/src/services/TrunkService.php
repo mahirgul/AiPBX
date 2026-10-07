@@ -19,7 +19,7 @@ class TrunkService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($trunk_name) || empty($ip_address)) {
-                throw new \Exception("Trunk sistem ismi ve IP adresi zorunludur!");
+                throw new \Exception(t('srv_trunk.err_required'));
             }
             // Format validation: an invalid IP/hostname or an out-of-range port
             // could be written to the PJSIP config and silently produce a
@@ -27,7 +27,7 @@ class TrunkService {
             $is_valid_ip = filter_var($ip_address, FILTER_VALIDATE_IP) !== false;
             $is_valid_hostname = (bool)preg_match('/^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/', $ip_address);
             if (!$is_valid_ip && !$is_valid_hostname) {
-                throw new \Exception("Geçersiz IP adresi veya sunucu adı: '{$ip_address}'");
+                throw new \Exception(sprintf(t('srv_trunk.err_host'), $ip_address));
             }
             $old_name = null;
             if ($trunk_id > 0) {
@@ -35,10 +35,10 @@ class TrunkService {
             }
             $renamed = ($old_name !== null && $old_name !== $trunk_name);
             if (($trunk_id <= 0 || $renamed) && DBHelper::fetchOne("SELECT id FROM pbx_trunks WHERE trunk_name = ?", [$trunk_name])) {
-                throw new \Exception("'{$trunk_name}' sistem adıyla bir trunk zaten var — farklı bir ad girin.");
+                throw new \Exception(sprintf(t('srv_trunk.err_exists'), $trunk_name));
             }
             if ($port < 1 || $port > 65535) {
-                throw new \Exception("Port numarası 1-65535 aralığında olmalıdır!");
+                throw new \Exception(t('srv_trunk.err_port'));
             }
 
             // Connection mode: 'ip' (IP-based identify, default) or 'register'
@@ -53,8 +53,7 @@ class TrunkService {
             // PASSWORD, so anyone who can reach the same IP could take over the trunk.
             if ($connection_mode === 'register' && ($auth_username === '' || $auth_password === '')) {
                 throw new \Exception(
-                    'Kayıt modunda kullanıcı adı ve parola zorunludur — '
-                    . 'bunlar olmadan gelen kayıt kimlik doğrulaması yapılamaz.'
+                    t('srv_trunk.err_register_auth')
                 );
             }
 
@@ -189,9 +188,9 @@ class TrunkService {
             // (SyncDialplan.php::buildTrunkCallerIdLine -> extensions_outbound.conf),
             // not pjsip_trunks.conf — without marking this domain too, the
             // setting had no effect after "Apply" (found in the 2026-08-31 audit).
-            markPendingSync('outbound_dialplan', 'trunk', $trunk_name, "Trunk CID ayarı: {$title} ({$trunk_name})", 'update', $_SESSION['user_id'] ?? null);
-            markPendingSync('inbound_dialplan', 'trunk', $trunk_name, "Trunk gelen rota/DID ayarı: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            return "SIP Trunk '{$title}' ({$trunk_name}) kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('outbound_dialplan', 'trunk', $trunk_name, "Trunk caller ID: {$title} ({$trunk_name})", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('inbound_dialplan', 'trunk', $trunk_name, "Trunk inbound route/DID: {$title} ({$trunk_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_trunk.saved'), $title, $trunk_name);
         });
     }
 
@@ -226,7 +225,7 @@ class TrunkService {
             }
             DBHelper::delete('pbx_trunks', 'id', $trunk_id);
             markPendingSync('trunks', 'trunk', $t_name ?: ('id_' . $trunk_id), "Trunk: " . ($t_row['title'] ?? $t_name ?? $trunk_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            return "Trunk kaydı silindi! Etkili olması için Uygula sayfasından gönderin.";
+            return t('srv_trunk.deleted');
         });
     }
 }

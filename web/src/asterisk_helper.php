@@ -60,11 +60,11 @@ class AsteriskHelper {
         $failures = [];
         foreach ($results as $r) {
             if (empty($r['success'])) {
-                $failures[] = trim($r['output'] ?? '') ?: '(Asterisk boş/belirsiz bir yanıt döndürdü)';
+                $failures[] = trim($r['output'] ?? '') ?: t('sync.err_empty_reply');
             }
         }
         if (!empty($failures)) {
-            throw new \Exception("{$context} sırasında Asterisk hata döndürdü: " . implode(' | ', $failures));
+            throw new \Exception(sprintf(t('sync.err_asterisk'), $context, implode(' | ', $failures)));
         }
     }
 

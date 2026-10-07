@@ -26,7 +26,7 @@ function __syncTimeConditionBody($tc_id) {
 
     if (!$tc || intval($tc['is_active']) !== 1) {
         FileHelper::deleteFile($filepath);
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Zaman Koşulu senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_time_condition'));
         return true;
     }
 
@@ -132,8 +132,8 @@ function __syncTimeConditionBody($tc_id) {
     $conf .= " same => n,Hangup()\n";
 
     return writeConfWithRollback($filename, $conf, function() use ($tc_id) {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], "Zaman Koşulu #{$tc_id} senkronizasyonu");
-    }, "Zaman Koşulu #{$tc_id} senkronizasyonu");
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], sprintf(t('sync.ctx_time_condition_id'), $tc_id));
+    }, sprintf(t('sync.ctx_time_condition_id'), $tc_id));
 }
 
 function syncAllTimeConditions() {
@@ -154,6 +154,6 @@ function syncAllTimeConditions() {
         }
     }
 
-    AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Zaman Koşulu toplu senkronizasyonu');
+    AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_time_conditions_all'));
     return true;
 }

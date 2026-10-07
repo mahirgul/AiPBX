@@ -48,7 +48,7 @@ class MailSettingsRepository extends BaseRepository
         return [
             'is_running' => $is_running,
             'relayhost' => $relayhost,
-            'queue_summary' => $queue_raw ?: 'Kuyruk boş',
+            'queue_summary' => $queue_raw ?: t('mail.queue_empty'),
             'queue_count' => $queue_count
         ];
     }

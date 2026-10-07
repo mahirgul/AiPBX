@@ -28,8 +28,8 @@ class ForceResetController extends BaseController
 
         $csrf_token = getCSRFToken();
         $brand_title = getSystemSetting('brand_title', 'AI PBX');
-        $brand_sub = getSystemSetting('brand_sub', 'Santral & Çağrı Merkezi');
-        $site_title = getSystemSetting('site_title', 'AI PBX Portalı');
+        $brand_sub = getSystemSetting('brand_sub', 'PBX & Call Center');
+        $site_title = getSystemSetting('site_title', 'AI PBX Portal');
 
         $maskedEmail = '';
         if (!empty($user['email']) && strpos($user['email'], '@') !== false) {

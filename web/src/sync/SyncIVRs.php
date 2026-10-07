@@ -87,7 +87,7 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
         }
 
         if (!empty($outbound_routes)) {
-            $conf .= "; Menu sirasinda dahili/santraller arasi giden rota desenleri\n";
+            $conf .= "; Outbound route patterns dialable during the menu (internal/inter-PBX)\n";
             foreach ($outbound_routes as $r) {
                 $pattern = trim($r['match_pattern'] ?? '');
                 if ($pattern === '') continue;

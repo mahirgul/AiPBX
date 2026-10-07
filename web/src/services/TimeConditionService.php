@@ -41,7 +41,7 @@ class TimeConditionService {
             $nomatch_dest_id = trim($data['nomatch_dest_id'] ?? '');
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
-            if (empty($title)) throw new \Exception("Zaman koşulu başlığı zorunludur!");
+            if (empty($title)) throw new \Exception(t('srv_tc.err_title'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
             $eski_numara = (string) (DBHelper::fetchColumn(
@@ -64,15 +64,15 @@ class TimeConditionService {
                 'is_active' => $is_active
             ]);
 
-            markPendingSync('time_conditions', 'time_condition', $id, "Zaman Koşulu: {$title}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('time_conditions', 'time_condition', $id, "Time condition: {$title}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
                 markPendingSync('internal_numbers', 'time_condition', $id,
-                    "Dahili hedef numarasi: " . ($internal_number !== '' ? $internal_number : 'kaldirildi'),
+                    "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
             }
 
-            return "Zaman Koşulu '{$title}' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            return sprintf(t('srv_tc.saved'), $title);
         });
     }
 
@@ -82,14 +82,14 @@ class TimeConditionService {
             $tc_title = DBHelper::fetchColumn("SELECT title FROM pbx_time_conditions WHERE id = ?", [$tc_id]);
             $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_time_conditions WHERE id = ?", [$tc_id]) ?? '');
             DBHelper::delete('pbx_time_conditions', 'id', $tc_id);
-            markPendingSync('time_conditions', 'time_condition', $tc_id, "Zaman Koşulu: " . ($tc_title ?: $tc_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('time_conditions', 'time_condition', $tc_id, "Time condition: " . ($tc_title ?: $tc_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             if ($silinen_numara !== '') {
                 markPendingSync('internal_numbers', 'time_condition', $tc_id,
-                    "Dahili hedef numarasi silindi: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$silinen_numara}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 
-            return "Zaman Koşulu silindi! Etkili olması için Uygula sayfasından gönderin.";
+            return t('srv_tc.deleted');
         });
     }
 
@@ -111,19 +111,19 @@ class TimeConditionService {
             if (strlen($time_start) == 5) $time_start .= ':00';
             if (strlen($time_end) == 5) $time_end .= ':00';
 
-            if (empty($title)) throw new \Exception("Zaman grubu başlığı zorunludur!");
+            if (empty($title)) throw new \Exception(t('srv_tc.err_group_title'));
 
             $db = getDB();
             if ($tg_id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_time_groups SET title = ?, time_start = ?, time_end = ?, days_of_week = ?, holidays_json = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $is_active, $tg_id]);
-                $msg = "Zaman Grubu '{$title}' güncellendi!";
+                $msg = sprintf(t('srv_tc.group_updated'), $title);
                 $group_id = $tg_id;
                 $group_action = 'update';
             } else {
                 $stmt = $db->prepare("INSERT INTO pbx_time_groups (title, time_start, time_end, days_of_week, holidays_json, is_active) VALUES (?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $is_active]);
-                $msg = "Yeni Zaman Grubu '{$title}' eklendi!";
+                $msg = sprintf(t('srv_tc.group_added'), $title);
                 $group_id = $db->lastInsertId();
                 $group_action = 'create';
             }
@@ -133,8 +133,8 @@ class TimeConditionService {
             // the domain level triggers a single regen (no need to know which
             // TCs use this group, syncAllTimeConditions() regenerates them all
             // anyway).
-            markPendingSync('time_conditions', 'time_group', $group_id, "Zaman Grubu: {$title}", $group_action, $_SESSION['user_id'] ?? null);
-            $msg .= " Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('time_conditions', 'time_group', $group_id, "Time group: {$title}", $group_action, $_SESSION['user_id'] ?? null);
+            $msg .= ' ' . t('common.apply_hint');
             return $msg;
         });
     }
@@ -151,17 +151,17 @@ class TimeConditionService {
         return PBXHelper::handleAction($csrf_token, function() use ($tg_id) {
             $tg_id = intval($tg_id);
             if ($tg_id <= 0) {
-                throw new \Exception("Geçersiz Zaman Grubu ID!");
+                throw new \Exception(t('srv_tc.err_group_id'));
             }
             $db = getDB();
             $check = $db->prepare("SELECT COUNT(*) FROM pbx_time_conditions WHERE time_group_id = ? OR rules_json LIKE ?");
             $check->execute([$tg_id, '%"time_group_id":' . $tg_id . '%']);
             if ($check->fetchColumn() > 0) {
-                throw new \Exception("Bu Zaman Grubu aktif bir Zaman Koşuluna bağlı olduğu için silinemez!");
+                throw new \Exception(t('srv_tc.err_group_in_use'));
             }
             $stmt = $db->prepare("DELETE FROM pbx_time_groups WHERE id = ?");
             $stmt->execute([$tg_id]);
-            return "Zaman Grubu silindi!";
+            return t('srv_tc.group_deleted');
         });
     }
 }

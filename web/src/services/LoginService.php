@@ -17,20 +17,20 @@ class LoginService {
 
         // Check 1: CSRF Token
         if (!verifyCSRFToken($csrf_token)) {
-            return ['error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.'];
+            return ['error' => t('common.invalid_csrf')];
         }
         // Check 2: Brute force lockout check (5 failures in 15 mins)
         if (checkBruteForceLockout($clientIp, $username)) {
-            return ['error' => 'Çok fazla hatalı deneme yapıldı! Hesabınız ve IP adresiniz 15 dakika süreyle kilitlenmiştir.'];
+            return ['error' => t('mobile_api.too_many_attempts')];
         }
         // Check 3: Math Captcha
         if ($user_captcha !== $correct_captcha) {
             logLoginAttempt($clientIp, $username, 'FAILED');
-            return ['error' => 'Güvenlik kodu (matematik sorusu) hatalı!'];
+            return ['error' => t('srv_login.err_captcha')];
         }
         // Check 4: User authentication
         if (empty($username) || empty($password)) {
-            return ['error' => 'Lütfen tüm alanları doldurun!'];
+            return ['error' => t('srv_login.err_fields')];
         }
 
         $user = findLoginUser($username, 'id, username, password_hash, full_name, role, extension, theme_preference, language_preference, is_active, must_reset_password, two_factor_enabled, two_factor_secret');
@@ -82,6 +82,6 @@ class LoginService {
         }
 
         logLoginAttempt($clientIp, $username, 'FAILED');
-        return ['error' => 'Geçersiz kullanıcı adı, dahili numara veya şifre!'];
+        return ['error' => t('srv_login.err_credentials')];
     }
 }

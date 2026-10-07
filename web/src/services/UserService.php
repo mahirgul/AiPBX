@@ -41,7 +41,7 @@ class UserService {
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
             if (empty($username) || empty($full_name)) {
-                throw new \Exception("Kullanıcı adı ve ad soyad zorunludur!");
+                throw new \Exception(t('srv_user.err_required'));
             }
 
             if (isset($data['allowed_phone_modes']) && is_array($data['allowed_phone_modes'])) {
@@ -58,10 +58,10 @@ class UserService {
             // could get the same extension (two accounts wrote the same PJSIP
             // endpoint).
             if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE username = ? AND id != ?', [$username, $user_id]) > 0) {
-                throw new \Exception("'{$username}' kullanıcı adı zaten kullanılıyor!");
+                throw new \Exception(sprintf(t('srv_user.err_username_taken'), $username));
             }
             if ($extension !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE extension = ? AND id != ?', [$extension, $user_id]) > 0) {
-                throw new \Exception("{$extension} numaralı dahili başka bir kullanıcıya atanmış!");
+                throw new \Exception(sprintf(t('srv_user.err_ext_taken'), $extension));
             }
             // It must not collide with a queue, IVR, conference, ring group, feature code etc. either.
             if ($extension !== '') {
@@ -71,7 +71,7 @@ class UserService {
 
             $valid_roles = array_column(DBHelper::fetchAll('SELECT role_key FROM sys_roles'), 'role_key');
             if (!in_array($role, $valid_roles, true)) {
-                throw new \Exception("Geçersiz sistem rolü: '{$role}'");
+                throw new \Exception(sprintf(t('srv_user.err_role'), $role));
             }
 
             $old_extension = $user_id > 0 ? DBHelper::fetchColumn('SELECT extension FROM sys_users WHERE id = ?', [$user_id]) : null;
@@ -90,7 +90,7 @@ class UserService {
                 if ($old_role === 'admin' && ($role !== 'admin' || $is_active == 0)) {
                     $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);
                     if (intval($other_admins) < 1) {
-                        throw new \Exception("Sistemdeki son aktif admin hesabının rolü değiştirilemez veya pasife alınamaz! Önce başka bir kullanıcıyı admin yapın.");
+                        throw new \Exception(t('srv_user.err_last_admin_role'));
                     }
                 }
             }
@@ -119,8 +119,8 @@ class UserService {
                     $save_data['sip_password'] = $sip_password;
                 }
                 DBHelper::save('sys_users', $save_data);
-                $msg = "Kullanıcı '{$username}' güncellendi!";
-                writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'update', $_SESSION['user_id'] ?? null);
+                $msg = sprintf(t('srv_user.updated'), $username);
+                writeAuditLog(null, 'user_account', $user_id, "User: {$username} ({$full_name}, role: {$role})", 'update', $_SESSION['user_id'] ?? null);
             } else {
                 if (empty($password)) {
                     if (!empty($email)) {
@@ -157,8 +157,8 @@ class UserService {
                     'must_reset_password' => $generated_password !== '' ? 1 : 0
                 ]);
                 $user_id = (int) getDB()->lastInsertId();
-                $msg = "Yeni sistem kullanıcısı '{$username}' oluşturuldu!";
-                writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: {$username} ({$full_name}, rol: {$role})", 'create', $_SESSION['user_id'] ?? null);
+                $msg = sprintf(t('srv_user.created'), $username);
+                writeAuditLog(null, 'user_account', $user_id, "User: {$username} ({$full_name}, role: {$role})", 'create', $_SESSION['user_id'] ?? null);
 
                 // With an email set, send the automatic activation and password-setup mail
                 // (the admin can turn invitations off on CSV import: skip_invitation).
@@ -166,9 +166,9 @@ class UserService {
                     require_once __DIR__ . '/UserInvitationService.php';
                     $inviteRes = UserInvitationService::sendInvitationEmail($user_id, true);
                     if ($inviteRes['success']) {
-                        $msg .= " Aktivasyon ve şifre belirleme e-postası ({$email}) gönderildi.";
+                        $msg .= ' ' . sprintf(t('srv_user.invite_sent'), $email);
                     } else {
-                        $msg .= " (Uyarı: Aktivasyon maili gönderilemedi: " . ($inviteRes['error'] ?? '') . ")";
+                        $msg .= ' (' . sprintf(t('srv_user.invite_failed'), ($inviteRes['error'] ?? '')) . ')';
                     }
                 }
             }
@@ -179,14 +179,14 @@ class UserService {
                 $cur_pass = DBHelper::fetchColumn("SELECT sip_password FROM sys_users WHERE extension = ?", [$extension]);
                 $effective_sip_pass = !empty($sip_password) ? $sip_password : (!empty($cur_pass) ? $cur_pass : SIPHelper::generateStrongSIPPassword());
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $effective_sip_pass);
-                markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'update', $uid);
-                markPendingSync('general_dialplan', 'extension', $extension, "Dahili Dialplan: {$extension}", 'update', $uid);
-                $msg .= " Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $extension, "Extension: {$extension} ({$full_name})", 'update', $uid);
+                markPendingSync('general_dialplan', 'extension', $extension, "Extension dialplan: {$extension}", 'update', $uid);
+                $msg .= ' ' . t('common.apply_hint');
             } elseif (!empty($old_extension)) {
                 // The extension number was removed: regenerate so the old PJSIP endpoint drops out of the conf
-                markPendingSync('extensions', 'extension', $old_extension, "Dahili: {$old_extension} (kaldırıldı)", 'delete', $uid);
-                markPendingSync('general_dialplan', 'extension', $old_extension, "Dahili Dialplan: {$old_extension} (kaldırıldı)", 'delete', $uid);
-                $msg .= " Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $old_extension, "Extension: {$old_extension} (removed)", 'delete', $uid);
+                markPendingSync('general_dialplan', 'extension', $old_extension, "Extension dialplan: {$old_extension} (removed)", 'delete', $uid);
+                $msg .= ' ' . t('common.apply_hint');
             }
             return $msg;
         });
@@ -199,7 +199,7 @@ class UserService {
     public static function deleteUser($user_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($user_id) {
             $user_id = intval($user_id);
-            if ($user_id <= 0) throw new \Exception("Geçersiz kullanıcı ID!");
+            if ($user_id <= 0) throw new \Exception(t('srv_invite.err_invalid_id'));
 
             // roles.php/system_users.php are open only to users with
             // role==='admin' (auth.php circuit breaker) — if the LAST active
@@ -211,14 +211,14 @@ class UserService {
             if ($target_role === 'admin') {
                 $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);
                 if (intval($other_admins) < 1) {
-                    throw new \Exception("Sistemdeki son aktif admin hesabı silinemez! Önce başka bir kullanıcıyı admin yapın.");
+                    throw new \Exception(t('srv_user.err_last_admin_delete'));
                 }
             }
 
             $target_user = DBHelper::fetchOne("SELECT username, full_name, extension FROM sys_users WHERE id = ?", [$user_id]);
             $ext = $target_user['extension'] ?? null;
             DBHelper::delete('sys_users', 'id', $user_id);
-            writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: " . ($target_user['username'] ?? $user_id) . " (" . ($target_user['full_name'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            writeAuditLog(null, 'user_account', $user_id, "User: " . ($target_user['username'] ?? $user_id) . " (" . ($target_user['full_name'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
 
             if (!empty($ext)) {
                 SIPHelper::deleteSettings($ext);
@@ -242,7 +242,7 @@ class UserService {
                     ];
                     // A static member is a "member =>" line in queues_pbx.conf; the config must be regenerated.
                     if (count($st_new) !== count($st_list)) {
-                        markPendingSync('queues', 'queue', $q['queue_name'], "Kuyruk: {$q['queue_name']} (statik temsilci {$ext} silindi)", 'update', $_SESSION['user_id'] ?? null);
+                        markPendingSync('queues', 'queue', $q['queue_name'], "Queue: {$q['queue_name']} (static agent {$ext} removed)", 'update', $_SESSION['user_id'] ?? null);
                     }
                     if ((string)$q['supervisor_extension'] === (string)$ext) {
                         $update_data['supervisor_extension'] = !empty($s_new) ? $s_new[0] : null;
@@ -260,10 +260,10 @@ class UserService {
                         QueueHelper::setMembership($ext, $qn, false);
                     }
                 }
-                markPendingSync('extensions', 'extension', $ext, "Dahili: {$ext} (kullanıcı silindi)", 'delete', $_SESSION['user_id'] ?? null);
-                return "Kullanıcı hesabı silindi! Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $ext, "Extension: {$ext} (user deleted)", 'delete', $_SESSION['user_id'] ?? null);
+                return t('srv_user.deleted_apply');
             }
-            return "Kullanıcı hesabı silindi!";
+            return t('srv_user.deleted');
         });
     }
 
@@ -274,7 +274,7 @@ class UserService {
             $new_sip_password = trim($data['new_sip_password'] ?? '');
 
             if ($user_id <= 0 || (empty($new_password) && empty($new_sip_password))) {
-                throw new \Exception("Lütfen güncellenecek en az bir şifre alanını doldurun!");
+                throw new \Exception(t('srv_user.err_no_password'));
             }
 
             $up_fields = [];
@@ -293,17 +293,17 @@ class UserService {
             // The passwords THEMSELVES are never logged — only "which kind of
             // password changed" (web sign-in / SIP / both).
             $changed_kinds = [];
-            if (!empty($new_password)) $changed_kinds[] = 'web girişi';
+            if (!empty($new_password)) $changed_kinds[] = 'web login';
             if (!empty($new_sip_password)) $changed_kinds[] = 'SIP';
             $u_username = DBHelper::fetchColumn("SELECT username FROM sys_users WHERE id = ?", [$user_id]);
-            writeAuditLog(null, 'user_account', $user_id, "Kullanıcı: " . ($u_username ?: $user_id) . " (şifre değişti: " . implode('+', $changed_kinds) . ")", 'update', $_SESSION['user_id'] ?? null);
+            writeAuditLog(null, 'user_account', $user_id, "User: " . ($u_username ?: $user_id) . " (password changed: " . implode('+', $changed_kinds) . ")", 'update', $_SESSION['user_id'] ?? null);
 
             $u_ext = DBHelper::fetchColumn("SELECT extension FROM sys_users WHERE id = ?", [$user_id]);
             if (!empty($u_ext) && !empty($new_sip_password)) {
-                markPendingSync('extensions', 'extension', $u_ext, "Dahili: {$u_ext} (SIP şifresi değişti)", 'update', $_SESSION['user_id'] ?? null);
-                return "Kullanıcı şifre ayarları başarıyla güncellendi! SIP şifresinin etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $u_ext, "Extension: {$u_ext} (SIP password changed)", 'update', $_SESSION['user_id'] ?? null);
+                return t('srv_user.pw_updated_apply');
             }
-            return "Kullanıcı şifre ayarları başarıyla güncellendi!";
+            return t('srv_user.pw_updated');
         });
     }
 }

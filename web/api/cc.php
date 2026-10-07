@@ -33,13 +33,13 @@ requireRole($allowed_roles);
 if (!in_array($action, $READ_ONLY_SAFE_ACTIONS, true)) {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
-        echo json_encode(['success' => false, 'error' => 'Bu işlem sadece POST isteğiyle yapılabilir']);
+        echo json_encode(['success' => false, 'error' => t('api.err_post_only')]);
         exit;
     }
     $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if (!verifyCSRFToken($csrf)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Geçersiz CSRF doğrulama kodu']);
+        echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')]);
         exit;
     }
 }
@@ -50,7 +50,7 @@ $user = getCurrentUser();
 // empty($user_ext). '101' used to be assumed: an admin without an extension
 // could start calls and pause as 101 and see 101's call records.
 $user_ext = preg_replace('/[^0-9]/', '', (string)($user['extension'] ?? ''));
-$user_name = $user['full_name'] ?? ('Temsilci ' . $user_ext);
+$user_name = $user['full_name'] ?? ('Agent ' . $user_ext);
 
 define('CC_DISPATCH_ACTIVE', true);
 require_once __DIR__ . '/cc_actions/cc_lib.php';
@@ -81,7 +81,7 @@ $ACTION_FILES = [
 ];
 
 if (!isset($ACTION_FILES[$action])) {
-    echo json_encode(['success' => false, 'error' => 'Geçersiz işlem']);
+    echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')]);
     exit;
 }
 

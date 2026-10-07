@@ -12,7 +12,7 @@ header('Cache-Control: no-store');
 
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Oturum açmanız gerekmektedir.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'error' => t('api.err_login_required')], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -23,7 +23,7 @@ if ($action === 'generate') {
         $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!verifyCSRFToken($csrf)) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Geçersiz CSRF güvenlik kodu.'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')], JSON_UNESCAPED_UNICODE);
             exit;
         }
     }
@@ -47,6 +47,6 @@ if ($action === 'generate') {
     exit;
 } else {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Geçersiz işlem.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'error' => t('api.err_invalid_action')], JSON_UNESCAPED_UNICODE);
     exit;
 }

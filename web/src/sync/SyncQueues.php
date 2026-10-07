@@ -58,7 +58,7 @@ function __syncAllQueuesBody() {
         foreach (QueueHelper::staticMembersOf($q) as $s_ext) {
             $s_ext = preg_replace('/[^0-9]/', '', $s_ext);
             if ($s_ext === '') continue;
-            $conf .= "member => Local/{$s_ext}@from-internal-pbx/n,0,Temsilci {$s_ext},hint:{$s_ext}@from-internal-pbx\n";
+            $conf .= "member => Local/{$s_ext}@from-internal-pbx/n,0,Agent {$s_ext},hint:{$s_ext}@from-internal-pbx\n";
         }
         $conf .= "\n";
     }
@@ -72,8 +72,8 @@ function __syncAllQueuesBody() {
     }
 
     $result = writeConfWithRollback("queues_pbx.conf", $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], 'Kuyruk senkronizasyonu');
-    }, 'Kuyruk senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], t('sync.ctx_queues'));
+    }, t('sync.ctx_queues'));
 
     foreach ($queues as $q) {
         purgeStaticFromPersistentMembers($q['queue_name'], QueueHelper::staticMembersOf($q));

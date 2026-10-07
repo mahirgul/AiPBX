@@ -48,7 +48,7 @@ define('DB_NAME', portalEnv('DB_NAME', 'asterisk'));
 define('DB_USER', portalEnv('DB_USER'));          // secret: NO fallback
 define('DB_PASS', portalEnv('DB_PASS'));          // secret: NO fallback
 
-define('SITE_NAME', portalEnv('SITE_NAME', 'AI PBX Portalı'));
+define('SITE_NAME', portalEnv('SITE_NAME', 'AI PBX Portal'));
 define('FAX_STORAGE_PATH', portalEnv('FAX_STORAGE_PATH', '/var/www/faxes'));
 define('MONITOR_STORAGE_PATH', portalEnv('MONITOR_STORAGE_PATH', '/var/spool/asterisk/monitor'));
 define('FAX_OUTGOING_SPOOL', portalEnv('FAX_OUTGOING_SPOOL', '/var/spool/asterisk/fax/outgoing'));
@@ -134,9 +134,9 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
     <h2 style="margin:0 0 12px; color:var(--text-main); font-size:19px;"><?php echo htmlspecialchars($title); ?></h2>
     <p style="color:var(--text-muted); font-size:14px; line-height:1.6; margin:0 0 24px;"><?php echo htmlspecialchars($message); ?></p>
     <button onclick="location.reload()" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:8px; margin:0 auto;">
-        <i class="fas fa-rotate-right"></i> Tekrar Dene
+        <i class="fas fa-rotate-right"></i> <?php echo htmlspecialchars(t('error_page.retry')); ?>
     </button>
-    <p style="color:var(--text-muted); font-size:11px; margin-top:20px;">Hata zamanı: <?php echo date('d.m.Y H:i:s'); ?></p>
+    <p style="color:var(--text-muted); font-size:11px; margin-top:20px;"><?php echo htmlspecialchars(t('error_page.time')); ?>: <?php echo date('d.m.Y H:i:s'); ?></p>
 </div>
 </body>
 </html>
@@ -154,8 +154,8 @@ register_shutdown_function(function () {
     if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
         if (!headers_sent()) {
             renderFatalErrorPage(
-                'Beklenmeyen Bir Hata Oluştu',
-                'Sistem beklenmeyen bir sorunla karşılaştı. Sorun devam ederse sistem yöneticisine bildirin.',
+                t('error_page.unexpected_title'),
+                t('error_page.unexpected_text'),
                 $err['message'] . ' @ ' . $err['file'] . ':' . $err['line']
             );
         }
@@ -177,8 +177,8 @@ function getDB() {
             ]);
         } catch (PDOException $e) {
             renderFatalErrorPage(
-                'Veritabanı Bağlantısı Kurulamadı',
-                'Sistem şu anda veritabanına bağlanamıyor. Bu genellikle geçicidir — lütfen birkaç dakika içinde tekrar deneyin. Sorun devam ederse sistem yöneticisine bildirin.',
+                t('error_page.db_title'),
+                t('error_page.db_text'),
                 'DB connection failed: ' . $e->getMessage()
             );
         }
@@ -242,20 +242,24 @@ function renderBrandColorOverrideCSS() {
     echo '}</style>' . "\n";
 }
 
-// Language code -> readable Turkish name. For a code not covered here (a new
-// package) getAvailableLanguages() already shows the raw code (e.g. "de").
+// Prompt language code -> its name in that language (same in every UI
+// language). A code not listed here (a new package) is shown as the raw code.
 const LANGUAGE_LABELS = [
-    'tr' => 'Türkçe',
-    'en' => 'İngilizce (en)',
-    'en_AU' => 'İngilizce - Avustralya (en_AU)',
-    'en_GB' => 'İngilizce - İngiltere (en_GB)',
-    'es' => 'İspanyolca (es)',
-    'fr' => 'Fransızca (fr)',
-    'de' => 'Almanca (de)',
-    'it' => 'İtalyanca (it)',
-    'ru' => 'Rusça (ru)',
-    'pr' => 'Portekizce (pr)',
-    'pt_BR' => 'Portekizce - Brezilya (pt_BR)',
+    'en' => 'English (en)',
+    'en_US' => 'English - US (en_US)',
+    'en_AU' => 'English - Australia (en_AU)',
+    'en_GB' => 'English - UK (en_GB)',
+    'en_NZ' => 'English - New Zealand (en_NZ)',
+    'tr' => 'Türkçe (tr)',
+    'es' => 'Español (es)',
+    'fr' => 'Français (fr)',
+    'de' => 'Deutsch (de)',
+    'it' => 'Italiano (it)',
+    'ja' => '日本語 (ja)',
+    'ru' => 'Русский (ru)',
+    'sv' => 'Svenska (sv)',
+    'pr' => 'Português (pr)',
+    'pt_BR' => 'Português - Brasil (pt_BR)',
 ];
 
 /**
@@ -487,6 +491,9 @@ function localizeRole(array $row): array {
 function localizeRoles(array $rows): array {
     return array_map('localizeRole', $rows);
 }
+
+// Audit log (writeAuditLog) — needed by services called from API endpoints too.
+require_once __DIR__ . '/src/audit_log.php';
 
 // UI component helpers moved to their own file (2026-08-31) — see src/ui_helpers.php.
 // Required from here so they keep working everywhere config.php is loaded.

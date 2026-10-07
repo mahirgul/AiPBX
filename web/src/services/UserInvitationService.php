@@ -17,7 +17,7 @@ class UserInvitationService
     public static function sendInvitationEmail(int $userId, bool $isNew = false): array
     {
         if ($userId <= 0) {
-            return ['success' => false, 'error' => 'Geçersiz kullanıcı ID!'];
+            return ['success' => false, 'error' => t('srv_invite.err_invalid_id')];
         }
 
         $db = getDB();
@@ -26,21 +26,22 @@ class UserInvitationService
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user) {
-            return ['success' => false, 'error' => 'Kullanıcı bulunamadı.'];
+            return ['success' => false, 'error' => t('srv_invite.err_not_found')];
         }
 
         $email = trim($user['email'] ?? '');
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return [
                 'success' => false,
-                'error' => "Kullanıcının ({$user['username']}) kayıtlı geçerli bir e-posta adresi bulunmuyor."
+                'error' => sprintf(t('srv_invite.err_no_email'), $user['username']),
+                'code' => 'no_email'
             ];
         }
 
         if (empty($user['is_active'])) {
             return [
                 'success' => false,
-                'error' => "Kullanıcı hesabı ({$user['username']}) devre dışıdır."
+                'error' => sprintf(t('srv_invite.err_disabled'), $user['username'])
             ];
         }
 
@@ -71,38 +72,53 @@ class UserInvitationService
         $fromAddress = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com')));
         $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AI PBX')));
         $brandTitle = getSystemSetting('brand_title', 'AI PBX');
-        $brandSub = getSystemSetting('brand_sub', 'Kurumsal İletişim Platformu');
+        $brandSub = getSystemSetting('brand_sub', 'Business Communication Platform');
 
         $subject = $isNew
-            ? "[{$brandTitle}] Hesabınız Oluşturuldu - Giriş ve Şifre Belirleme Bağlantınız"
-            : "[{$brandTitle}] Giriş ve Şifre Belirleme Bağlantınız";
+            ? sprintf(t('srv_invite.subject_new'), $brandTitle)
+            : sprintf(t('srv_invite.subject'), $brandTitle);
 
         $displayName = !empty($user['full_name']) ? $user['full_name'] : $user['username'];
-        $extInfo = !empty($user['extension']) ? "<li><strong>Dahili Numaranız:</strong> {$user['extension']}</li>" : "";
-        $extText = !empty($user['extension']) ? "- Dahili Numaranız: {$user['extension']}\n" : "";
+        $lblExt = t('srv_invite.lbl_extension');
+        $lblUser = t('srv_invite.lbl_username');
+        $lblEmail = t('srv_invite.lbl_email');
+        $extInfo = !empty($user['extension']) ? "<li><strong>{$lblExt}:</strong> {$user['extension']}</li>" : "";
+        $extText = !empty($user['extension']) ? "- {$lblExt}: {$user['extension']}\n" : "";
 
         if ($mobileUrl !== '') {
+            $txMobileTitle = t('srv_invite.mobile_title');
+            $txMobileBody = t('srv_invite.mobile_body');
+            $txMobileBtn = t('srv_invite.mobile_button');
+            $txMobileNote = t('srv_invite.mobile_note');
             $mobileBlock = <<<HTML
 <div class="qr-tip-box">
-      <strong>📱 Mobil Uygulamaya Giriş</strong><br>
-      Şifre gerekmez. Bu e-postayı <strong>telefonunuzda</strong> açtıysanız butona dokunun: AiPBX uygulaması açılır ve giriş yapılır (uygulama yüklü değilse mağazaya yönlendirilirsiniz). <strong>Bilgisayarda</strong> açtıysanız ekranda çıkan QR kodu uygulamayla okutun.
+      <strong>{$txMobileTitle}</strong><br>
+      {$txMobileBody}
       <div style="text-align: center; margin: 18px 0 6px 0;">
-        <a href="{$mobileUrl}" class="btn" target="_blank">Mobil Uygulamaya Giriş Yap</a>
+        <a href="{$mobileUrl}" class="btn" target="_blank">{$txMobileBtn}</a>
       </div>
-      <span style="font-size: 12px;">Bu bağlantı size özeldir; <strong>7 gün</strong> geçerli ve tek kullanımlıktır.</span>
+      <span style="font-size: 12px;">{$txMobileNote}</span>
     </div>
 HTML;
-            $mobileText = "Mobil uygulamaya giriş (şifre gerekmez, 7 gün geçerli, tek kullanımlık):\n{$mobileUrl}\n"
-                . "Telefonda açarsanız uygulama açılıp giriş yapar; bilgisayarda açarsanız çıkan QR kodu uygulamayla okutun.\n\n";
+            $mobileText = str_replace('\n', "\n", sprintf(t('srv_invite.mobile_text'), $mobileUrl));
         } else {
             $mobileBlock = '';
             $mobileText = '';
         }
 
+        $htmlLang = getUserLanguage();
+        $txGreeting = sprintf(t('srv_invite.greeting'), $displayName);
+        $txIntro = sprintf(t('srv_invite.intro'), $brandTitle);
+        $txAccount = t('srv_invite.account_details');
+        $txButton = t('srv_invite.button');
+        $txFallback = t('srv_invite.fallback');
+        $txSecurity = t('srv_invite.security');
+        $txFooter = sprintf(t('srv_invite.footer'), $brandTitle);
+
         // HTML email body
         $htmlBody = <<<HTML
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="{$htmlLang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -132,33 +148,33 @@ HTML;
     <p>{$brandSub}</p>
   </div>
   <div class="email-body">
-    <div class="greeting">Merhaba {$displayName},</div>
-    <p>{$brandTitle} iletişim santralinde hesabınız tanımlanmıştır. Sisteme güvenli bir şekilde giriş yapabilmek için lütfen aşağıdaki butona tıklayarak parolanızı belirleyin:</p>
+    <div class="greeting">{$txGreeting}</div>
+    <p>{$txIntro}</p>
     
     <div class="info-box">
-      <strong>Hesap Bilgileriniz:</strong>
+      <strong>{$txAccount}</strong>
       <ul>
-        <li><strong>Kullanıcı Adı:</strong> {$user['username']}</li>
+        <li><strong>{$lblUser}:</strong> {$user['username']}</li>
         {$extInfo}
-        <li><strong>E-Posta:</strong> {$email}</li>
+        <li><strong>{$lblEmail}:</strong> {$email}</li>
       </ul>
     </div>
 
     <div class="btn-container">
-      <a href="{$resetUrl}" class="btn" target="_blank">Şifrenizi Belirleyin ve Giriş Yapın</a>
+      <a href="{$resetUrl}" class="btn" target="_blank">{$txButton}</a>
     </div>
 
-    <p style="font-size: 13px; color: #475569;">Buton çalışmıyorsa aşağıdaki bağlantıyı tarayıcınızın adres çubuğuna yapıştırabilirsiniz:<br>
+    <p style="font-size: 13px; color: #475569;">{$txFallback}<br>
     <a href="{$resetUrl}" style="color: #2563eb; word-break: break-all;">{$resetUrl}</a></p>
 
     {$mobileBlock}
 
     <div class="security-note">
-      🔒 <strong>Güvenlik Notu:</strong> Bu şifre belirleme bağlantısı <strong>48 saat</strong> boyunca geçerlidir ve tek kullanımlıktır. Bu e-postayı siz talep etmediyseniz veya beklemiyorsanız sistem yöneticiniz ile iletişime geçiniz.
+      {$txSecurity}
     </div>
   </div>
   <div class="email-footer">
-    &copy; {$brandTitle} - Tüm Hakları Saklıdır. Bu otomatik bir bilgilendirme e-postasıdır.
+    {$txFooter}
   </div>
 </div>
 </body>
@@ -166,17 +182,8 @@ HTML;
 HTML;
 
         // Plain-text alternative
-        $textBody = "Merhaba {$displayName},\n\n"
-            . "{$brandTitle} hesabınız oluşturuldu / şifre belirleme talebiniz alındı.\n\n"
-            . "Hesap Bilgileriniz:\n"
-            . "- Kullanıcı Adı: {$user['username']}\n"
-            . $extText
-            . "- E-Posta: {$email}\n\n"
-            . "Aşağıdaki bağlantıya tıklayarak şifrenizi belirleyebilirsiniz:\n"
-            . "{$resetUrl}\n\n"
-            . "Bu bağlantı 48 saat boyunca geçerlidir ve tek kullanımlıktır.\n\n"
-            . $mobileText
-            . "İyi çalışmalar,\n{$brandTitle}";
+        $textBody = str_replace('\n', "\n", sprintf(t('srv_invite.text_body'),
+            $displayName, $brandTitle, $user['username'], $extText, $email, $resetUrl, $mobileText, $brandTitle));
 
         // Email headers (MIME multipart HTML + plain text)
         $boundary = '=_bnd_' . md5(uniqid((string)time(), true));
@@ -200,18 +207,18 @@ HTML;
         $mailOk = @mail($email, $encodedSubject, $messageBody, $headers, '-f ' . $fromAddress);
 
         if ($mailOk) {
-            writeAuditLog(null, 'system_users', $userId, "Aktivasyon/Giriş maili gönderildi: {$user['username']} ({$email})", 'mail_sent', $_SESSION['user_id'] ?? null);
+            writeAuditLog(null, 'system_users', $userId, "Activation/sign-in e-mail sent: {$user['username']} ({$email})", 'mail_sent', $_SESSION['user_id'] ?? null);
             return [
                 'success' => true,
-                'message' => "'{$user['username']}' kullanıcısına ({$email}) aktivasyon ve şifre belirleme maili başarıyla iletildi.",
+                'message' => sprintf(t('srv_invite.sent'), $user['username'], $email),
                 'token' => $token
             ];
         }
 
-        $lastErr = error_get_last()['message'] ?? 'E-posta servisi yanıt vermedi';
+        $lastErr = error_get_last()['message'] ?? t('srv_invite.err_no_response');
         return [
             'success' => false,
-            'error' => "E-posta gönderimi başarısız oldu ({$email}): {$lastErr}"
+            'error' => sprintf(t('srv_invite.err_send'), $email, $lastErr)
         ];
     }
 
@@ -236,24 +243,24 @@ HTML;
             if ($res['success']) {
                 $sentCount++;
             } else {
-                if (str_contains($res['error'] ?? '', 'geçerli bir e-posta adresi bulunmuyor')) {
+                if (($res['code'] ?? '') === 'no_email') {
                     $skippedCount++;
                 } else {
                     $failedCount++;
-                    $errors[] = $res['error'] ?? "ID {$userId} için hata";
+                    $errors[] = $res['error'] ?? sprintf(t('srv_invite.err_user'), $userId);
                 }
             }
         }
 
         $msgParts = [];
         if ($sentCount > 0) {
-            $msgParts[] = "{$sentCount} kullanıcıya giriş ve şifre belirleme maili başarıyla gönderildi.";
+            $msgParts[] = sprintf(t('srv_invite.bulk_sent'), $sentCount);
         }
         if ($skippedCount > 0) {
-            $msgParts[] = "{$skippedCount} kullanıcının e-posta adresi olmadığı için atlandı.";
+            $msgParts[] = sprintf(t('srv_invite.bulk_skipped'), $skippedCount);
         }
         if ($failedCount > 0) {
-            $msgParts[] = "{$failedCount} kullanıcıya gönderimde hata oluştu (" . implode(', ', array_slice($errors, 0, 3)) . ").";
+            $msgParts[] = sprintf(t('srv_invite.bulk_failed'), $failedCount, implode(', ', array_slice($errors, 0, 3)));
         }
 
         if (empty($msgParts)) {
@@ -262,7 +269,7 @@ HTML;
                 'sent_count' => 0,
                 'skipped_count' => 0,
                 'failed_count' => 0,
-                'message' => 'Gönderim yapılacak kullanıcı seçilmedi.'
+                'message' => t('srv_invite.bulk_none')
             ];
         }
 

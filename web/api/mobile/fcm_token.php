@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                  updated_at = NOW() 
                            WHERE id = ?")
                ->execute([$yabanci['id']]);
-            error_log("fcm_token.php: token yeniden atandi, eski kayit pasiflendi (id={$yabanci['id']}, eski user_id={$yabanci['user_id']})");
+            error_log("fcm_token.php: token reassigned, old record deactivated (id={$yabanci['id']}, eski user_id={$yabanci['user_id']})");
         }
     }
 

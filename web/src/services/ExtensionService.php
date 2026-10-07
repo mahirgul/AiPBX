@@ -23,7 +23,7 @@ class ExtensionService {
             $is_active = isset($data['is_active']) ? 1 : 0;
 
             if (!preg_match('/^\d{3,6}$/', $extension)) {
-                throw new \Exception('Dahili numarası 3-6 haneli sayılardan oluşmalıdır!');
+                throw new \Exception(t('srv_ext.err_number'));
             }
             if (empty($full_name)) {
                 throw new \Exception('Ad Soyad zorunludur!');
@@ -31,14 +31,14 @@ class ExtensionService {
             // Fax users never register over SIP (no PJSIP endpoint is generated).
             // A password is required for SIP extensions with digest auth.
             if ($extension_type === 'sip' && $sip_auth_digest === 1 && strlen($sip_password) < 6) {
-                throw new \Exception('SIP şifresi en az 6 karakter olmalıdır!');
+                throw new \Exception(t('srv_ext.err_password'));
             }
 
             // The extension number must be unique
             $stmt = $db->prepare('SELECT id FROM sys_users WHERE extension = ? AND id != ?');
             $stmt->execute([$extension, $user_id]);
             if ($stmt->fetch()) {
-                throw new \Exception("{$extension} dahilisi zaten başka bir kayda atanmış!");
+                throw new \Exception(sprintf(t('srv_ext.err_taken'), $extension));
             }
 
             $permission_group_id = !empty($data['permission_group_id']) ? intval($data['permission_group_id']) : 1;
@@ -103,14 +103,14 @@ class ExtensionService {
                 SIPHelper::setSettings($extension, ['auth_digest' => $sip_auth_digest ? 'yes' : 'no']);
                 if ($old_ext && $old_ext !== $extension) {
                     SIPHelper::deleteSettings($old_ext);
-                    markPendingSync('extensions', 'extension', $old_ext, "Dahili: {$old_ext} (numara değişti, kaldırıldı)", 'delete', $_SESSION['user_id'] ?? null);
+                    markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (number changed, removed)", 'delete', $_SESSION['user_id'] ?? null);
                 }
-                markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('voicemail', 'voicemail', 'all', "Sesli posta ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('permissions', 'permissions', 'all', "Yetki grupları ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                $msg = "{$extension} dahili abonesi güncellendi! Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $extension, "Extension: {$extension} ({$full_name})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('voicemail', 'voicemail', 'all', "Voicemail ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('permissions', 'permissions', 'all', "Permission groups ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                $msg = sprintf(t('srv_ext.updated'), $extension);
             } else {
                 // New extension subscriber: create a minimal system record for the device
                 $username = 'ext' . $extension;
@@ -147,12 +147,12 @@ class ExtensionService {
                     'created_at' => date('Y-m-d H:i:s')
                 ]);
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $sip_password, $sip_auth_digest);
-                markPendingSync('extensions', 'extension', $extension, "Dahili: {$extension} ({$full_name})", 'create', $_SESSION['user_id'] ?? null);
-                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('voicemail', 'voicemail', 'all', "Sesli posta ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                markPendingSync('permissions', 'permissions', 'all', "Yetki grupları ({$extension})", 'update', $_SESSION['user_id'] ?? null);
-                $msg = "{$extension} dahili abonesi oluşturuldu! Etkili olması için Uygula sayfasından gönderin.";
+                markPendingSync('extensions', 'extension', $extension, "Extension: {$extension} ({$full_name})", 'create', $_SESSION['user_id'] ?? null);
+                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('voicemail', 'voicemail', 'all', "Voicemail ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                markPendingSync('permissions', 'permissions', 'all', "Permission groups ({$extension})", 'update', $_SESSION['user_id'] ?? null);
+                $msg = sprintf(t('srv_ext.created'), $extension);
             }
             return $msg;
         });
@@ -162,18 +162,18 @@ class ExtensionService {
         return PBXHelper::handleAction($csrf_token, function () use ($user_id) {
             $user_id = intval($user_id);
             if ($user_id <= 0) {
-                throw new \Exception('Geçersiz kayıt!');
+                throw new \Exception(t('srv_ext.err_invalid'));
             }
             $old_ext = DBHelper::fetchColumn('SELECT extension FROM sys_users WHERE id = ?', [$user_id]);
             if (empty($old_ext)) {
-                throw new \Exception('Bu kayıtta dahili numarası tanımlı değil!');
+                throw new \Exception(t('srv_ext.err_no_ext'));
             }
             // Remove the extension (the user account is kept)
             DBHelper::update('sys_users', ['extension' => null, 'sip_password' => null], 'id', $user_id);
-            markPendingSync('extensions', 'extension', $old_ext, "Dahili: {$old_ext} (kaldırıldı)", 'delete', $_SESSION['user_id'] ?? null);
-            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Dahili arama planı ({$old_ext} kaldırıldı)", 'update', $_SESSION['user_id'] ?? null);
-            markPendingSync('ivrs', 'ivrs', 'all', "IVR doğrudan dahili arama ({$old_ext} kaldırıldı)", 'update', $_SESSION['user_id'] ?? null);
-            return "{$old_ext} dahilisi kaldırıldı (kullanıcı hesabı korundu)! Etkili olması için Uygula sayfasından gönderin.";
+            markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (removed)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
+            return sprintf(t('srv_ext.removed'), $old_ext);
         });
     }
 
@@ -183,8 +183,8 @@ class ExtensionService {
      */
     public static function syncAll($csrf_token) {
         return PBXHelper::handleAction($csrf_token, function () {
-            markPendingSync('extensions', 'system_setting', 'all_extensions', 'Tüm Dahililer (elle yeniden senkronize)', 'update', $_SESSION['user_id'] ?? null);
-            return 'Tüm dahili abone konfigürasyonları işaretlendi! Etkili olması için Uygula sayfasından gönderin.';
+            markPendingSync('extensions', 'system_setting', 'all_extensions', 'All extensions (manual resync)', 'update', $_SESSION['user_id'] ?? null);
+            return t('srv_ext.resync');
         });
     }
 }

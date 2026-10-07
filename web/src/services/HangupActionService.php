@@ -14,7 +14,7 @@ class HangupActionService {
             $announcement_id = !empty($data['announcement_id']) ? intval($data['announcement_id']) : null;
 
             if (empty($action_key) || empty($title)) {
-                throw new \Exception('Sonlandırma kimlik anahtarı (Action Key) ve başlık zorunludur!');
+                throw new \Exception(t('srv_hangup.err_required'));
             }
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
@@ -41,16 +41,16 @@ class HangupActionService {
             // in the deferred system).
             $uid = $_SESSION['user_id'] ?? null;
             $action = $is_new ? 'create' : 'update';
-            markPendingSync('inbound_dialplan', 'hangup_action', $action_id, "Sonlandırma: {$title}", $action, $uid);
-            markPendingSync('ivrs', 'hangup_action', $action_id, "Sonlandırma: {$title}", $action, $uid);
-            markPendingSync('time_conditions', 'hangup_action', $action_id, "Sonlandırma: {$title}", $action, $uid);
+            markPendingSync('inbound_dialplan', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
+            markPendingSync('ivrs', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
+            markPendingSync('time_conditions', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
             // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
             if ($internal_number !== $eski_numara) {
                 markPendingSync('internal_numbers', 'hangup_action', $action_id,
-                    "Dahili hedef numarasi: " . ($internal_number !== '' ? $internal_number : 'kaldirildi'),
+                    "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $uid);
             }
-            return "Çağrı sonlandırma seçeneği '$title' kaydedildi! Etkili olması için Uygula sayfasından gönderin.";
+            return sprintf(t('srv_hangup.saved'), $title);
         });
     }
 
@@ -64,15 +64,15 @@ class HangupActionService {
                 $stmt = $db->prepare("DELETE FROM pbx_hangup_actions WHERE id = ? AND action_key NOT IN ('hangup', 'busy', 'congestion')");
                 $stmt->execute([$action_id]);
                 $uid = $_SESSION['user_id'] ?? null;
-                $label = "Sonlandırma: " . ($title ?: $action_id) . " (silindi)";
+                $label = "Hangup action: " . ($title ?: $action_id) . " (deleted)";
                 markPendingSync('inbound_dialplan', 'hangup_action', $action_id, $label, 'delete', $uid);
                 markPendingSync('ivrs', 'hangup_action', $action_id, $label, 'delete', $uid);
                 markPendingSync('time_conditions', 'hangup_action', $action_id, $label, 'delete', $uid);
                 if ($silinen_numara !== '') {
                     markPendingSync('internal_numbers', 'hangup_action', $action_id,
-                        "Dahili hedef numarasi silindi: {$silinen_numara}", 'delete', $uid);
+                        "Internal number removed: {$silinen_numara}", 'delete', $uid);
                 }
-                return "Sonlandırma seçeneği silindi! Etkili olması için Uygula sayfasından gönderin.";
+                return t('srv_hangup.deleted');
             }
             return '';
         });

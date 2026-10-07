@@ -70,7 +70,7 @@ function __syncGeneralDialplanBody() {
                     $conf .= " same => n,GotoIf(\$[" . implode(' | ', $condParts) . "]?allow_boss_{$ext})\n";
                 }
 
-                $conf .= " same => n,NoOp(Sef arandi: {$ext}, arayan yetkili degil -> Sekreter caldiriliyor)\n";
+                $conf .= " same => n,NoOp(Boss {$ext} called, caller not allowed -> ringing the secretary)\n";
                 $sec_channels = [];
                 foreach ($secs as $s_ext) {
                     $s_clean = preg_replace('/[^0-9]/', '', $s_ext);
@@ -96,7 +96,7 @@ function __syncGeneralDialplanBody() {
                     }
                 }
 
-                $conf .= " same => n,NoOp(Sekreter cevap vermedi -> Fallback)\n";
+                $conf .= " same => n,NoOp(Secretary did not answer -> fallback)\n";
                 $conf .= buildDestinationLines($bg['fallback_dest_type'] ?? 'hangup', $bg['fallback_dest_id'] ?? 'busy') . "\n";
                 $conf .= " same => n(sec_ans_{$ext}),Hangup()\n";
                 $conf .= " same => n(allow_boss_{$ext}),NoOp(Sefe erisim yetkili)\n";
@@ -226,6 +226,6 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Return()\n\n";
 
     return writeConfWithRollback('extensions_general.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'Genel Ayarlar senkronizasyonu');
-    }, 'Genel Ayarlar senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_general'));
+    }, t('sync.ctx_general'));
 }
