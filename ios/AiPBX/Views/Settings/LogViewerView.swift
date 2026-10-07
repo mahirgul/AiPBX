@@ -42,7 +42,7 @@ public struct LogViewerView: View {
             }
 
             // Search Field
-            SearchBarView(text: $searchText, placeholder: "Günlüklerde ara...")
+            SearchBarView(text: $searchText, placeholder: L("Search logs..."))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
 
@@ -51,7 +51,7 @@ public struct LogViewerView: View {
             // Logs List
             if filteredLogs.isEmpty {
                 Spacer()
-                Text("Kayıt yok")
+                Text(L("No entries"))
                     .foregroundColor(.secondary)
                 Spacer()
             } else {
@@ -88,7 +88,7 @@ public struct LogViewerView: View {
                 }
             }
         }
-        .navigationBarTitle("Sistem Günlükleri", displayMode: .inline)
+        .navigationBarTitle(L("System Logs"), displayMode: .inline)
         .navigationBarItems(
             trailing: HStack(spacing: 16) {
                 Button(action: { logManager.clear() }) {

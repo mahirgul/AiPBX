@@ -6,9 +6,9 @@ public struct ChatTabView: View {
     @State private var showNewGroupSheet: Bool = false
 
     private let filters: [(id: String, label: String)] = [
-        ("all", "Tümü"),
-        ("direct", "Bireysel"),
-        ("group", "Gruplar")
+        ("all", L("All")),
+        ("direct", L("Direct")),
+        ("group", L("Groups"))
     ]
 
     public init() {}
@@ -50,7 +50,7 @@ public struct ChatTabView: View {
                     Button(action: { showNewGroupSheet = true }) {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
-                            Text("Yeni Grup")
+                            Text(L("New Group"))
                         }
                         .font(.footnote.bold())
                         .padding(.horizontal, 10)
@@ -73,7 +73,7 @@ public struct ChatTabView: View {
                         Image(systemName: "bubble.left.and.bubble.right")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary.opacity(0.6))
-                        Text("Sohbet bulunamadı")
+                        Text(L("No chats found"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -92,7 +92,7 @@ public struct ChatTabView: View {
                     }
                 }
             }
-            .navigationBarTitle("Sohbet", displayMode: .inline)
+            .navigationBarTitle(L("Chat"), displayMode: .inline)
             .sheet(isPresented: $showNewGroupSheet) {
                 NewGroupChatView()
                     .environmentObject(appState)

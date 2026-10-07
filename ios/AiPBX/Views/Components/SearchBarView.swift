@@ -4,7 +4,7 @@ public struct SearchBarView: View {
     @Binding public var text: String
     public var placeholder: String
 
-    public init(text: Binding<String>, placeholder: String = "Ara...") {
+    public init(text: Binding<String>, placeholder: String = L("Search...")) {
         self._text = text
         self.placeholder = placeholder
     }

@@ -21,7 +21,7 @@ public struct ChatConversationRowView: View {
                         .lineLimit(1)
 
                     if conversation.isGroup {
-                        Text("Grup")
+                        Text(L("Group"))
                             .font(.system(size: 10, weight: .bold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -40,7 +40,7 @@ public struct ChatConversationRowView: View {
                 }
 
                 HStack {
-                    Text(conversation.lastMessageText ?? "Henüz mesaj yok")
+                    Text(conversation.lastMessageText ?? L("No messages yet"))
                         .font(.subheadline)
                         .foregroundColor(conversation.unreadCount > 0 ? .primary : .secondary)
                         .fontWeight(conversation.unreadCount > 0 ? .medium : .regular)

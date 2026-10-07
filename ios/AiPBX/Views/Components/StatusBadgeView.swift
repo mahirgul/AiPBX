@@ -16,7 +16,7 @@ public struct StatusBadgeView: View {
                 .frame(width: 8, height: 8)
 
             if showText {
-                Text(isOnline ? "Çevrimiçi" : "Çevrimdışı")
+                Text(isOnline ? L("Online") : L("Offline"))
                     .font(.caption2)
                     .foregroundColor(isOnline ? .green : .secondary)
             }
@@ -33,10 +33,10 @@ public struct RoleBadgeView: View {
 
     private var displayRole: String {
         switch role.lowercased() {
-        case "admin": return "Yönetici"
+        case "admin": return L("Admin")
         case "cc_agent": return "Temsilci"
         case "standard_user": return "Standart"
-        case "user": return "Kullanıcı"
+        case "user": return L("User")
         default: return role.capitalized
         }
     }

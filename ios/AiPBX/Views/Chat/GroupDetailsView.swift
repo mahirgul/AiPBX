@@ -27,7 +27,7 @@ public struct GroupDetailsView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    Text("\(conversation.memberCount ?? 0) Katılımcı")
+                    Text(L("%@ participants", "\(conversation.memberCount ?? 0)"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -37,7 +37,7 @@ public struct GroupDetailsView: View {
 
             // Participants Section
             if let participants = conversation.participants, !participants.isEmpty {
-                Section(header: Text("Katılımcılar")) {
+                Section(header: Text(L("Participants"))) {
                     ForEach(participants) { member in
                         HStack(spacing: 12) {
                             AvatarView(name: member.displayName, size: 36)
@@ -45,7 +45,7 @@ public struct GroupDetailsView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(member.displayName)
                                     .font(.system(size: 15, weight: .medium))
-                                Text("Dahili: \(member.extensionNumber)")
+                                Text(L("Extension: %@", "\(member.extensionNumber)"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -53,7 +53,7 @@ public struct GroupDetailsView: View {
                             Spacer()
 
                             if member.role.lowercased() == "admin" {
-                                Text("Yönetici")
+                                Text(L("Admin"))
                                     .font(.caption2.bold())
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
@@ -74,7 +74,7 @@ public struct GroupDetailsView: View {
                         if isLeaving {
                             ProgressView()
                         } else {
-                            Text("Gruptan Ayrıl")
+                            Text(L("Leave Group"))
                                 .fontWeight(.semibold)
                         }
                         Spacer()
@@ -84,7 +84,7 @@ public struct GroupDetailsView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
-        .navigationBarTitle("Grup Bilgisi", displayMode: .inline)
+        .navigationBarTitle(L("Group Info"), displayMode: .inline)
     }
 
     private func leaveGroup() {

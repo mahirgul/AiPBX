@@ -22,7 +22,7 @@ public struct ContactsTabView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // Search Bar
-                SearchBarView(text: $searchText, placeholder: "İsim veya dahili ara...")
+                SearchBarView(text: $searchText, placeholder: L("Search name or extension..."))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
 
@@ -34,7 +34,7 @@ public struct ContactsTabView: View {
                         Image(systemName: "person.2.slash")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary.opacity(0.6))
-                        Text("Kişi bulunamadı")
+                        Text(L("No contacts found"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -55,7 +55,7 @@ public struct ContactsTabView: View {
                     }
                 }
             }
-            .navigationBarTitle("Rehber (\(appState.contacts.count))", displayMode: .inline)
+            .navigationBarTitle(L("Contacts (%@)", "\(appState.contacts.count)"), displayMode: .inline)
             .background(
                 NavigationLink(
                     destination: selectedConversation.map { ChatRoomView(conversation: $0) },

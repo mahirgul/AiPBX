@@ -18,16 +18,16 @@ public struct SettingsTabView: View {
         NavigationView {
             Form {
                 // User Profile Section
-                Section(header: Text("Kullanıcı Bilgileri")) {
+                Section(header: Text(L("User Info"))) {
                     HStack(spacing: 14) {
-                        AvatarView(name: appState.userProfile?.displayName ?? "Kullanıcı", size: 54)
+                        AvatarView(name: appState.userProfile?.displayName ?? L("User"), size: 54)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(appState.userProfile?.displayName ?? "Bilinmiyor")
+                            Text(appState.userProfile?.displayName ?? L("Unknown"))
                                 .font(.headline)
 
                             HStack(spacing: 6) {
-                                Text("Dahili: \(appState.userProfile?.extensionNumber ?? "-")")
+                                Text(L("Extension: %@", appState.userProfile?.extensionNumber ?? "-"))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
 
@@ -45,39 +45,39 @@ public struct SettingsTabView: View {
                 }
 
                 // PBX Features Section
-                Section(header: Text("Santral Özellikleri")) {
-                    Toggle("Rahatsız Etmeyin (DND)", isOn: $dndEnabled)
+                Section(header: Text(L("PBX Features"))) {
+                    Toggle(L("Do Not Disturb (DND)"), isOn: $dndEnabled)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Her Zaman Yönlendir")
+                        Text(L("Always Forward"))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        TextField("Dahili veya Numara", text: $callForwardAlways)
+                        TextField(L("Extension or Number"), text: $callForwardAlways)
                             .keyboardType(.phonePad)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Meşgulde Yönlendir")
+                        Text(L("Forward When Busy"))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        TextField("Dahili veya Numara", text: $callForwardBusy)
+                        TextField(L("Extension or Number"), text: $callForwardBusy)
                             .keyboardType(.phonePad)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Cevapsızda Yönlendir")
+                        Text(L("Forward When Unanswered"))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        TextField("Dahili veya Numara", text: $callForwardNoAnswer)
+                        TextField(L("Extension or Number"), text: $callForwardNoAnswer)
                             .keyboardType(.phonePad)
                     }
 
-                    Picker("Çalma Süresi", selection: $noAnswerTimeout) {
-                        Text("10 saniye").tag(10)
-                        Text("15 saniye").tag(15)
-                        Text("20 saniye").tag(20)
-                        Text("30 saniye").tag(30)
-                        Text("45 saniye").tag(45)
+                    Picker(L("Ring Time"), selection: $noAnswerTimeout) {
+                        Text(L("10 seconds")).tag(10)
+                        Text(L("15 seconds")).tag(15)
+                        Text(L("20 seconds")).tag(20)
+                        Text(L("30 seconds")).tag(30)
+                        Text(L("45 seconds")).tag(45)
                     }
 
                     Button(action: saveFeatures) {
@@ -87,7 +87,7 @@ public struct SettingsTabView: View {
                                 ProgressView()
                                     .padding(.trailing, 6)
                             }
-                            Text("Ayarları Kaydet")
+                            Text(L("Save Settings"))
                                 .fontWeight(.semibold)
                             Spacer()
                         }
@@ -101,23 +101,35 @@ public struct SettingsTabView: View {
                     }
                 }
 
+                // Language Section
+                Section(header: Text(L("Language"))) {
+                    Picker(L("Language"), selection: Binding(
+                        get: { AppLanguage.shared.code },
+                        set: { AppLanguage.shared.set($0) }
+                    )) {
+                        ForEach(AppLanguage.supported, id: \.self) { code in
+                            Text(AppLanguage.names[code] ?? code).tag(code)
+                        }
+                    }
+                }
+
                 // Diagnostics & Logs Section
-                Section(header: Text("Sistem & Teşhis")) {
+                Section(header: Text(L("System & Diagnostics"))) {
                     NavigationLink(destination: LogViewerView()) {
-                        Label("Sistem Günlükleri", systemImage: "text.alignleft")
+                        Label(L("System Logs"), systemImage: "text.alignleft")
                     }
 
                     HStack {
-                        Text("SIP Durumu")
+                        Text(L("SIP Status"))
                         Spacer()
                         Text(appState.connectionStatus.localizedText)
                             .foregroundColor(appState.connectionStatus == .connected ? .green : .secondary)
                     }
 
                     HStack {
-                        Text("Sohbet Servisi")
+                        Text(L("Chat Service"))
                         Spacer()
-                        Text(ChatWebSocketManager.shared.isConnected ? "Bağlı" : "Bağlantı Yok")
+                        Text(ChatWebSocketManager.shared.isConnected ? L("Connected") : L("Not Connected"))
                             .foregroundColor(ChatWebSocketManager.shared.isConnected ? .green : .secondary)
                     }
                 }
@@ -127,25 +139,25 @@ public struct SettingsTabView: View {
                     Button(role: .destructive, action: { showLogoutAlert = true }) {
                         HStack {
                             Spacer()
-                            Label("Çıkış Yap", systemImage: "rectangle.portrait.and.arrow.right")
+                            Label(L("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                                 .fontWeight(.semibold)
                             Spacer()
                         }
                     }
                 }
             }
-            .navigationBarTitle("Santral", displayMode: .inline)
+            .navigationBarTitle(L("PBX"), displayMode: .inline)
             .onAppear {
                 loadCurrentFeatures()
             }
             .alert(isPresented: $showLogoutAlert) {
                 Alert(
-                    title: Text("Çıkış Yap"),
-                    message: Text("Oturumunuz kapatılacaktır. Onaylıyor musunuz?"),
-                    primaryButton: .destructive(Text("Çıkış")) {
+                    title: Text(L("Sign Out")),
+                    message: Text(L("You will be signed out. Continue?")),
+                    primaryButton: .destructive(Text(L("Sign out"))) {
                         appState.logout()
                     },
-                    secondaryButton: .cancel(Text("Vazgeç"))
+                    secondaryButton: .cancel(Text(L("Cancel")))
                 )
             }
         }
@@ -177,7 +189,7 @@ public struct SettingsTabView: View {
             await appState.updateFeatures(current)
             await MainActor.run {
                 self.isSavingFeatures = false
-                self.saveStatusText = "✓ Ayarlar başarıyla kaydedildi"
+                self.saveStatusText = L("✓ Settings saved")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     self.saveStatusText = nil
                 }

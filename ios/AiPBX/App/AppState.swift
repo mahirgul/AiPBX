@@ -174,7 +174,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
             let token = param("token") ?? ""
             let lower = server.lowercased()
             guard (lower.hasPrefix("https://") || lower.hasPrefix("http://")), !token.isEmpty else {
-                errorMessage = "Giriş bağlantısı eksik veya bozuk."
+                errorMessage = L("The sign-in link is missing or broken.")
                 return
             }
             // A fake link must not connect the app to another PBX: ask first.
@@ -186,7 +186,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
             // is exchanged on the server where we started the sign-in.
             if param("success") == "1" {
                 guard let code = param("code"), !code.isEmpty else {
-                    errorMessage = "Google girişi tamamlanamadı. Lütfen tekrar deneyin."
+                    errorMessage = L("Google sign-in could not be completed. Please try again.")
                     return
                 }
                 let server = baseUrl
@@ -194,7 +194,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
                     _ = await self.loginWithQr(serverUrl: server, qrToken: code)
                 }
             } else {
-                errorMessage = param("error") ?? "Google ile giriş başarısız oldu."
+                errorMessage = param("error") ?? L("Google sign-in failed.")
             }
 
         default:

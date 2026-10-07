@@ -40,7 +40,7 @@ public struct ChatRoomView: View {
             // Typing Indicator Banner
             if let typing = typingUser {
                 HStack(spacing: 6) {
-                    Text("\(typing) yazıyor...")
+                    Text(L("%@ is typing...", "\(typing)"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .italic()
@@ -55,7 +55,7 @@ public struct ChatRoomView: View {
 
             // Input Bar
             HStack(spacing: 10) {
-                TextField("Mesaj yazın...", text: $inputText)
+                TextField(L("Type a message..."), text: $inputText)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(10)
                     .background(Color(.systemGray6))
