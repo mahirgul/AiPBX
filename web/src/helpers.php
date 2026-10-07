@@ -36,7 +36,7 @@ class PBXHelper {
         } catch (\PDOException $e) {
             return ['success' => false, 'error' => sprintf(t('common.db_error'), $e->getMessage())];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => 'Hata: ' . $e->getMessage()];
+            return ['success' => false, 'error' => sprintf(t('common.error_colon'), $e->getMessage())];
         }
     }
 

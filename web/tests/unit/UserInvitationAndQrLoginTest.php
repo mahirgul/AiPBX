@@ -67,7 +67,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
         $res = UserInvitationService::sendInvitationEmail($this->testUserId, false);
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('geçerli bir e-posta adresi bulunmuyor', $res['error']);
+        $this->assertStringContainsString('has no valid e-mail address', $res['error']);
     }
 
     public function testSendBulkInvitations(): void
@@ -118,7 +118,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
         // 5. SINGLE-USE CHECK: a 2nd sign-in with the same token must be REJECTED
         $secondAttempt = QrLoginService::authenticateMobile($token, 'Hacker-Device', '192.168.1.50');
         $this->assertFalse($secondAttempt['success']);
-        $this->assertStringContainsString('daha önce kullanılmış', $secondAttempt['error']);
+        $this->assertStringContainsString('already used', $secondAttempt['error']);
     }
 
     public function testQrLoginRejectsExpiredToken(): void
@@ -133,7 +133,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
 
         $authRes = QrLoginService::authenticateMobile($token, 'Test-Device', '127.0.0.1');
         $this->assertFalse($authRes['success']);
-        $this->assertStringContainsString('süresi dolmuş', $authRes['error']);
+        $this->assertStringContainsString('has expired', $authRes['error']);
     }
 
     public function testEmailLinkInspectionDoesNotConsumeToken(): void

@@ -48,7 +48,7 @@ final class InternalNumberConflictTest extends TestCase
         ConferenceService::saveConference(['csrf_token' => 'test-token', 'room_number' => '7301', 'title' => 'Test Odası']);
         $res = RingGroupService::saveRingGroup(['csrf_token' => 'test-token', 'group_number' => '7301', 'name' => 'Test Grubu', 'numbers_list' => '1001']);
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('Konferans Odası', $res['error']);
+        $this->assertStringContainsString('Conference room', $res['error']);
 
         $ok = RingGroupService::saveRingGroup(['csrf_token' => 'test-token', 'group_number' => '7303', 'name' => 'Test Grubu', 'numbers_list' => '1001']);
         $this->assertTrue($ok['success'], $ok['error'] ?? '');
@@ -70,6 +70,6 @@ final class InternalNumberConflictTest extends TestCase
             'password' => 'T' . bin2hex(random_bytes(8)), 'role' => 'cc_agent', 'extension' => '7302',
         ]);
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('Konferans Odası', $res['error']);
+        $this->assertStringContainsString('Conference room', $res['error']);
     }
 }

@@ -61,7 +61,7 @@ final class TrunkRouteBehaviorTest extends TestCase
     {
         $res = TrunkService::saveTrunk($this->trunkForm(['trunk_name' => Fixtures::TRUNK_NAME]));
         $this->assertFalse($res['success'] ?? true);
-        $this->assertStringContainsString('zaten var', $res['error'] ?? '');
+        $this->assertStringContainsString('already exists', $res['error'] ?? '');
     }
 
     public function testDuplicatePatternIsRejectedOnlyWithinTheSameGroup(): void

@@ -47,7 +47,7 @@ final class ReportExportTest extends TestCase
             $this->assertNotFalse(@simplexml_load_string($xml), "{$part} is well-formed XML");
         }
         $wb = $zip->getFromName('xl/workbook.xml');
-        $this->assertStringContainsString('name="Özet"', $wb);
+        $this->assertStringContainsString('name="Summary"', $wb);
         $this->assertStringContainsString('name="Çağrılar tümü"', $wb, 'characters Excel forbids in sheet names are replaced');
         $sheet = $zip->getFromName('xl/worksheets/sheet2.xml');
         // Phone numbers stay text (leading 0), durations are fractions of a day, percentages fractions.

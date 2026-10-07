@@ -3017,4 +3017,5 @@ return [
     'sync.ctx_outbound' => 'Giden Rota senkronizasyonu',
     'sync.ctx_queues' => 'Kuyruk senkronizasyonu',
     'sync.ctx_voicemail' => 'Sesli Posta senkronizasyonu',
+    'common.error_colon' => 'Hata: %s',
 ];

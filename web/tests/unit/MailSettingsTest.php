@@ -73,6 +73,6 @@ final class MailSettingsTest extends TestCase
     {
         $res = MailSettingsService::sendTestEmail('not-an-email');
         $this->assertFalse($res['success']);
-        $this->assertStringContainsString('Geçersiz alıcı e-posta', $res['error']);
+        $this->assertStringContainsString('Invalid recipient e-mail', $res['error']);
     }
 }
