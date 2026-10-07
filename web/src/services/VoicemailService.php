@@ -87,7 +87,7 @@ class VoicemailService {
         }
 
         // Sort descending by date/number
-        usort($messages, fn($a, $b) => strcmp($b['origdate'] ?? '', $a['origdate'] ?? ''));
+        usort($messages, fn($a, $b) => strcmp($b['origdate'], $a['origdate']));
         return $messages;
     }
 

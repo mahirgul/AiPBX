@@ -12,7 +12,7 @@ class UserInvitationService
      *
      * @param int $userId user ID in sys_users
      * @param bool $isNew is this a newly created user?
-     * @return array{success: bool, message?: string, error?: string, token?: string}
+     * @return array{success: bool, message?: string, error?: string, token?: string, code?: string}
      */
     public static function sendInvitationEmail(int $userId, bool $isNew = false): array
     {
