@@ -5,6 +5,40 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.0
+
+English is now the default language of the whole system; Turkish stays one
+click away.
+
+**Web portal**
+- The portal, its login page and every message are in English by default.
+  Switch with the TR / EN button in the user menu (bottom left) — each
+  user's choice is remembered. Everything is translated: pages, buttons, tables,
+  pop-ups, notifications, e-mails (password reset, invitations) and the
+  softphone, chat and call-center panels.
+- Built-in roles (Admin, Viewer, Agent, Queue Manager, ...) are shown
+  in the selected language. Roles you create keep the name you gave them.
+- Existing installations keep their data and language: users who already
+  use Turkish stay in Turkish.
+
+**Phone prompts (new installs)**
+- New installations speak English prompts. Turkish prompts can be added any
+  time on Sounds → Asterisk Sound Packs (or at install time with
+  `AIPBX_TR_SOUNDS=yes`). An update no longer switches an installation's
+  prompt language.
+
+**Mobile apps**
+- The server answers the apps in the app's language: error messages and
+  contact role names are English or Turkish to match the app. The Android
+  diagnostic report is in English. Android app 1.0.49.
+
+**Fixes**
+- System Update, Sound Packs and the mail settings page showed an error
+  after the action had actually succeeded ("Call to undefined function
+  writeAuditLog").
+- Read-only admins were re-checked: they can view everything but cannot
+  change anything.
+
 ## 1.2.0
 
 Mobile apps in English by default, with Turkish selectable.
