@@ -6,6 +6,8 @@
 #   aipbx-sounds remove  KIND LANG FORMAT
 #
 #   KIND    core | extra | moh       (moh: LANG is "opsound")
+#   core tr is AiPBX's own Turkish set (GitHub release sounds-tr-<version>,
+#   SHA256 verified); install.sh installs it through this script too.
 #   FORMAT  wav | ulaw | alaw | gsm | g722 | sln16
 #
 # Prompts go to /var/lib/asterisk/sounds/<lang> (like AiPBX's Turkish set) and
@@ -27,6 +29,11 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LC_ALL=C.UTF-8
 
 BASE_URL="https://downloads.asterisk.org/pub/telephony/sounds"
+TR_VERSION=1.0.0
+TR_URL="https://github.com/mahirgul/AiPBX/releases/download/sounds-tr-${TR_VERSION}"
+TR_SUMS="asterisk-core-sounds-tr-${TR_VERSION}.SHA256SUMS"
+# install.sh puts packages built locally (scripts/build_tr_sounds.sh) here.
+TR_CACHE="/var/cache/aipbx/sounds-tr-${TR_VERSION}"
 SOUNDS_DIR=/var/lib/asterisk/sounds
 SYS_SOUNDS_DIR=/usr/share/asterisk/sounds
 MOH_DIR=/var/lib/asterisk/moh
@@ -51,9 +58,13 @@ esac
 case "$FORMAT" in wav|ulaw|alaw|gsm|g722|sln16) ;; *) die "invalid format: $FORMAT" ;; esac
 
 KEY="${KIND}-${LANG_CODE}-${FORMAT}"
+[[ "$KIND/$LANG_CODE" == extra/tr ]] && die "there is no extra Turkish pack"
 if [[ "$KIND" == moh ]]; then
     PKG="asterisk-moh-opsound-${FORMAT}-current.tar.gz"
     TARGET="$MOH_DIR/opsound"
+elif [[ "$LANG_CODE" == tr ]]; then
+    PKG="asterisk-core-sounds-tr-${FORMAT}-${TR_VERSION}.tar.xz"
+    TARGET="$SOUNDS_DIR/tr"
 else
     PKG="asterisk-${KIND}-sounds-${LANG_CODE}-${FORMAT}-current.tar.gz"
     TARGET="$SOUNDS_DIR/$LANG_CODE"
@@ -134,7 +145,6 @@ unlink_language() {
 
 # ------------------------------------------------------------------ install
 do_install() {
-    [[ "$LANG_CODE" == tr ]] && fail "Turkish prompts are AiPBX's own set (install.sh)"
     # Extra prompts alone would replace the language's core set (e.g. Debian's
     # English prompts) once the language points at our directory.
     if [[ "$KIND" == extra ]] && ! compgen -G "$MANIFEST_DIR/core-$LANG_CODE-*.list" >/dev/null; then
@@ -145,38 +155,58 @@ do_install() {
 
     log "===== Installing $PKG ====="
     status running "Downloading $PKG"
-    curl -fsSL --retry 3 --max-time 900 -o "$tmp/$PKG" "$BASE_URL/$PKG" 2>>"$LOG_FILE" \
-        || fail "Download failed: $BASE_URL/$PKG"
-
-    # Most packages publish a .sha1; a few (e.g. en_AU) do not.
-    local verified=false
-    if curl -fsSL --retry 3 --max-time 60 -o "$tmp/$PKG.sha1" "$BASE_URL/$PKG.sha1" 2>/dev/null; then
-        local want got
-        want="$(awk '{print $1; exit}' "$tmp/$PKG.sha1")"
-        got="$(sha1sum "$tmp/$PKG" | awk '{print $1}')"
-        [[ -n "$want" && "$want" == "$got" ]] || fail "Checksum mismatch for $PKG"
-        verified=true
-        log "SHA1 verified"
+    local verified=false version=current
+    if [[ "$LANG_CODE" == tr ]]; then
+        # Local build in the cache, else the GitHub release; SHA256 is mandatory.
+        if [[ -f "$TR_CACHE/$TR_SUMS" && -f "$TR_CACHE/$PKG" ]]; then
+            cp "$TR_CACHE/$TR_SUMS" "$TR_CACHE/$PKG" "$tmp/"
+        else
+            curl -fsSL --retry 3 --max-time 60 -o "$tmp/$TR_SUMS" "$TR_URL/$TR_SUMS" 2>>"$LOG_FILE" \
+                || fail "Download failed: $TR_URL/$TR_SUMS"
+            curl -fsSL --retry 3 --max-time 900 -o "$tmp/$PKG" "$TR_URL/$PKG" 2>>"$LOG_FILE" \
+                || fail "Download failed: $TR_URL/$PKG"
+        fi
+        (cd "$tmp" && grep -F " $PKG" "$TR_SUMS" | sha256sum -c --quiet) >>"$LOG_FILE" 2>&1 \
+            || fail "Checksum mismatch for $PKG"
+        verified=true; version="$TR_VERSION"
+        log "SHA256 verified"
     else
-        log "No .sha1 published for $PKG; downloaded over HTTPS only"
+        curl -fsSL --retry 3 --max-time 900 -o "$tmp/$PKG" "$BASE_URL/$PKG" 2>>"$LOG_FILE" \
+            || fail "Download failed: $BASE_URL/$PKG"
+        # Most packages publish a .sha1; a few (e.g. en_GB extra) do not.
+        if curl -fsSL --retry 3 --max-time 60 -o "$tmp/$PKG.sha1" "$BASE_URL/$PKG.sha1" 2>/dev/null; then
+            local want got
+            want="$(awk '{print $1; exit}' "$tmp/$PKG.sha1")"
+            got="$(sha1sum "$tmp/$PKG" | awk '{print $1}')"
+            [[ -n "$want" && "$want" == "$got" ]] || fail "Checksum mismatch for $PKG"
+            verified=true
+            log "SHA1 verified"
+            # The .sha1 names the real file (…-wav-1.6.1.tar.gz).
+            version="$(grep -oE '[0-9]+(\.[0-9]+)+\.tar\.gz' "$tmp/$PKG.sha1" | head -1 | sed 's/\.tar\.gz$//')"
+            [[ -n "$version" ]] || version=current
+        else
+            log "No .sha1 published for $PKG; downloaded over HTTPS only"
+        fi
     fi
 
     status running "Extracting $PKG"
     # Only plain relative paths: a crafted archive must not escape TARGET.
-    tar -tzf "$tmp/$PKG" > "$tmp/list" 2>>"$LOG_FILE" || fail "Archive is unreadable"
+    tar -tf "$tmp/$PKG" > "$tmp/list" 2>>"$LOG_FILE" || fail "Archive is unreadable"
     if grep -qE '(^/|(^|/)\.\.(/|$))' "$tmp/list"; then
         fail "Archive contains unsafe paths"
     fi
-    if tar -tvzf "$tmp/$PKG" 2>/dev/null | grep -q '^[^-d]'; then
+    if tar -tvf "$tmp/$PKG" 2>/dev/null | grep -q '^[^-d]'; then
         fail "Archive contains links or special files"
     fi
-    # The .sha1 names the real file (…-wav-1.6.1.tar.gz); "current" otherwise.
-    local version
-    version="$(grep -oE '[0-9]+(\.[0-9]+)+\.tar\.gz' "$tmp/$PKG.sha1" 2>/dev/null | head -1 | sed 's/\.tar\.gz$//')"
-    [[ -n "$version" ]] || version=current
-
     mkdir -p "$TARGET"
-    tar -xzf "$tmp/$PKG" --no-same-owner --no-same-permissions -C "$TARGET" 2>>"$LOG_FILE" \
+    if [[ "$LANG_CODE" == tr ]]; then
+        # Formats the packages do not ship (a stale .g729 or .sln of the same
+        # prompt) go first, or Asterisk could still pick the old recording.
+        sed -n 's|^\./||; /\.[a-z0-9]*$/{ s/\.[a-z0-9]*$//; p }' "$tmp/list" | sort -u | while IFS= read -r base; do
+            rm -f "$TARGET/$base".{g729,sln,sln32,sln48,siren7,siren14,wav16}
+        done
+    fi
+    tar -xf "$tmp/$PKG" --no-same-owner --no-same-permissions -C "$TARGET" 2>>"$LOG_FILE" \
         || fail "Extraction failed"
     sed 's|^\./||' "$tmp/list" | grep -v '/$' | sort -u > "$MANIFEST"
     chown -R asterisk:asterisk "$TARGET"
