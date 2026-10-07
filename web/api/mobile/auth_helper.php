@@ -13,8 +13,12 @@ function mobileApiStart(string $methods = 'GET, POST, OPTIONS'): void
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Language');
     header('Access-Control-Allow-Methods: ' . $methods);
+    // Messages in the language picked in the app (X-App-Language: en|tr; else
+    // Accept-Language); English when neither names a supported language.
+    $lang = strtolower(substr((string) ($_SERVER['HTTP_X_APP_LANGUAGE'] ?? $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''), 0, 2));
+    $GLOBALS['AIPBX_REQUEST_LANGUAGE'] = isset(UI_LANGUAGES[$lang]) ? $lang : DEFAULT_UI_LANGUAGE;
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
         http_response_code(200);
         exit;
@@ -158,7 +162,7 @@ function requireMobileAuth(): array
 
     if (!$user) {
         header('Content-Type: application/json; charset=utf-8');
-        mobileError('Yetkisiz erişim! Geçersiz veya süresi dolmuş oturum tokenı.', 401);
+        mobileError(t('mobile_api.unauthorized'), 401);
     }
 
     return $user;

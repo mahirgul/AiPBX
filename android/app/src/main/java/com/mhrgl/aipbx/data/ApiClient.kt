@@ -33,6 +33,11 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
+            // The server answers (errors, role names) in the language picked in the app.
+            .addInterceptor(Interceptor { chain ->
+                val lang = try { L10n.current() } catch (e: Exception) { L10n.EN }
+                chain.proceed(chain.request().newBuilder().header("X-App-Language", lang).build())
+            })
             .build()
     }
 

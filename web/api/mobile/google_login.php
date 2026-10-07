@@ -12,7 +12,7 @@ $client_ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
 // This endpoint must not work while Google sign-in is off (it used to be unchecked).
 if (!GoogleAuthService::isEnabled()) {
-    mobileError('Google ile giriş bu sunucuda etkin değil.', 403);
+    mobileError(t('mobile_api.google_disabled'), 403);
 }
 
 $json = mobileInput();
@@ -43,7 +43,7 @@ if (!$userInfo && !empty($code)) {
 }
 
 if (!$userInfo || empty($userInfo['email'])) {
-    mobileError('Google kimlik doğrulaması başarısız veya e-posta adresi doğrulanamadı.', 401);
+    mobileError(t('mobile_api.google_verify_failed'), 401);
 }
 
 $email = $userInfo['email'];
@@ -55,22 +55,22 @@ if (!$user) {
     if (function_exists('logLoginAttempt')) {
         logLoginAttempt($client_ip, $email, 'FAILED');
     }
-    mobileError("Google hesabınız ({$email}) ile eşleşen bir AiPBX dahili kullanıcısı bulunamadı.", 404);
+    mobileError(sprintf(t('mobile_api.google_no_match'), $email), 404);
 }
 
 if (empty($user['is_active'])) {
-    mobileError('Kullanıcı hesabı devre dışıdır.', 403);
+    mobileError(t('mobile_api.account_disabled'), 403);
 }
 
 if (empty($user['extension'])) {
-    mobileError('Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.', 400);
+    mobileError(t('mobile_api.no_extension_assigned'), 400);
 }
 
 if (!empty($user['two_factor_enabled'])) {
     mobileJson([
         'success' => false,
         'otp_required' => true,
-        'error' => 'Bu hesapta iki adımlı doğrulama açık. Kullanıcı adı, şifre ve doğrulama koduyla giriş yapın.'
+        'error' => t('mobile_api.google_otp_enabled')
     ], 401);
 }
 
@@ -79,7 +79,7 @@ if (function_exists('logLoginAttempt')) {
     logLoginAttempt($client_ip, $user['username'], 'SUCCESS');
 }
 if (function_exists('writeAuditLog')) {
-    writeAuditLog($user['id'], 'sys_users', $user['id'], "Kullanıcı '{$user['username']}' Mobil Uygulamadan Google ({$email}) ile giriş yaptı.", 'google_mobile_login');
+    writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in from the mobile app with Google ({$email}).", 'google_mobile_login');
 }
 
 // Return the standard mobile sign-in response

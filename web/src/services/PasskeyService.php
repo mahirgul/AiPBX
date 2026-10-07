@@ -291,7 +291,7 @@ class PasskeyService
             $_SESSION['theme'] = $passkey['theme_preference'] ?? 'light';
             $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$passkey['language_preference'] ?? '']))
                 ? $passkey['language_preference']
-                : 'tr';
+                : DEFAULT_UI_LANGUAGE;
 
             unset($_SESSION['webauthn_auth_challenge']);
             unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);

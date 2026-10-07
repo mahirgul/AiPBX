@@ -232,6 +232,8 @@ public struct ContactItem: Codable, Identifiable, Hashable {
     public let extensionNumber: String
     public let name: String
     public let role: String?
+    /// Role in the app's language (built-in roles) or as named by the admin.
+    public let roleName: String?
     public var status: String // "online", "busy", "offline"
     public let sipStatus: String?
     public let webrtcStatus: String?
@@ -249,6 +251,7 @@ public struct ContactItem: Codable, Identifiable, Hashable {
         case extensionNumber = "extension"
         case name
         case role
+        case roleName = "role_name"
         case status
         case sipStatus = "sip_status"
         case webrtcStatus = "webrtc_status"

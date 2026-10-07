@@ -57,7 +57,7 @@ class ChatContactPickerAdapter(
             val context = itemView.context
             binding.tvContactName.text = item.name
             binding.tvContactExtension.text = itemView.context.getString(R.string.extension_label_item, item.extension)
-            binding.tvContactRole.text = if (item.role.isNullOrEmpty()) itemView.context.getString(R.string.contact_role_company) else item.role
+            binding.tvContactRole.text = item.roleName?.takeIf { it.isNotEmpty() } ?: item.role?.takeIf { it.isNotEmpty() } ?: itemView.context.getString(R.string.contact_role_company)
 
             val initial = item.name.firstOrNull()?.uppercase() ?: item.extension.firstOrNull()?.toString() ?: "?"
             binding.tvContactAvatar.text = initial

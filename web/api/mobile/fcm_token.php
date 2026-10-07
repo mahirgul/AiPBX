@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     mobileJson([
         'success' => true,
-        'message' => 'Cihaz ve bildirim bilgisi başarıyla kaydedildi.',
+        'message' => t('mobile_api.device_saved'),
         'device_id' => $deviceId,
         'push_type' => $pushType,
         'id' => (int)$id
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
     mobileJson([
         'success' => true,
-        'message' => 'Cihaz kaydı pasife alındı.'
+        'message' => t('mobile_api.device_deactivated')
     ]);
 }
 

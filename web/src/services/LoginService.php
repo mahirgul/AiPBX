@@ -70,7 +70,7 @@ class LoginService {
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['extension'] = $user['extension'];
             $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
-            $_SESSION['ui_language'] = isset(UI_LANGUAGES[$user['language_preference'] ?? '']) ? $user['language_preference'] : 'tr';
+            $_SESSION['ui_language'] = isset(UI_LANGUAGES[$user['language_preference'] ?? '']) ? $user['language_preference'] : DEFAULT_UI_LANGUAGE;
 
             // Log Successful Login
             logLoginAttempt($clientIp, $username, 'SUCCESS');

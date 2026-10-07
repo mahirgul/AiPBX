@@ -11,28 +11,28 @@ $password = (string) ($json['password'] ?? $_POST['password'] ?? '');
 $device_name = trim($json['device_name'] ?? $_POST['device_name'] ?? 'Android');
 
 if (empty($username) || empty($password)) {
-    mobileError('Kullanıcı adı ve şifre gereklidir.', 400);
+    mobileError(t('mobile_api.credentials_required'), 400);
 }
 
 // 1. Brute-force lockout check (5 failed attempts -> 15 minute lock)
 if (checkBruteForceLockout($client_ip, $username)) {
-    mobileError('Çok fazla hatalı deneme yapıldı! Hesabınız ve IP adresiniz 15 dakika süreyle kilitlenmiştir.', 429);
+    mobileError(t('mobile_api.too_many_attempts'), 429);
 }
 
 $user = findLoginUser($username, 'id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active, two_factor_enabled, two_factor_secret');
 
 if (!$user || !verifyLoginPassword($password, (string) $user['password_hash'])) {
     logLoginAttempt($client_ip, $username, 'FAILED');
-    mobileError('Geçersiz kullanıcı adı veya şifre!', 401);
+    mobileError(t('mobile_api.invalid_credentials'), 401);
 }
 
 if (empty($user['is_active'])) {
     logLoginAttempt($client_ip, $username, 'FAILED');
-    mobileError('Kullanıcı hesabı devre dışıdır.', 403);
+    mobileError(t('mobile_api.account_disabled'), 403);
 }
 
 if (empty($user['extension'])) {
-    mobileError('Bu kullanıcıya atanmış bir dahili numara bulunmamaktadır.', 400);
+    mobileError(t('mobile_api.no_extension_assigned'), 400);
 }
 
 // On an account with two-step verification the password alone is not enough
@@ -49,8 +49,8 @@ if (!empty($user['two_factor_enabled'])) {
             'success' => false,
             'otp_required' => true,
             'error' => $otp === ''
-                ? 'Bu hesapta iki adımlı doğrulama açık. Doğrulama uygulamanızdaki 6 haneli kodu girin.'
-                : 'Doğrulama kodu hatalı.'
+                ? t('mobile_api.otp_required')
+                : t('mobile_api.otp_invalid')
         ], 401);
     }
 }

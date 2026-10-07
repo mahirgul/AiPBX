@@ -302,7 +302,7 @@ class GoogleAuthService
         $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
         $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
             ? $user['language_preference']
-            : 'tr';
+            : DEFAULT_UI_LANGUAGE;
 
         unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 

@@ -6,11 +6,11 @@ $token = getMobileBearerToken();
 $user = validateMobileToken($token);
 
 if (!$user) {
-    mobileError('Oturum süresi dolmuş veya geçersiz token.', 401);
+    mobileError(t('mobile_api.session_expired'), 401);
 }
 
 if (empty($user['is_active'])) {
-    mobileError('Kullanıcı hesabı devre dışıdır.', 403);
+    mobileError(t('mobile_api.account_disabled'), 403);
 }
 
 // Exactly the same package as the sign-in response (new 30-day token, SIP, TURN, push).

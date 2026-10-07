@@ -98,13 +98,13 @@ class RoleRepository extends BaseRepository
 
     public static function allWithUserCount(): array
     {
-        return static::db()->query(
+        return localizeRoles(static::db()->query(
             "SELECT r.*, COUNT(u.id) as user_count
              FROM sys_roles r
              LEFT JOIN sys_users u ON r.role_key = u.role
              GROUP BY r.id
              ORDER BY r.is_system DESC, r.id ASC"
-        )->fetchAll();
+        )->fetchAll());
     }
 
     public static function allPermissionsMap(): array
