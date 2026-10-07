@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Kullanıcı Adı"
+            android:text="@string/ui_sample_username"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -57,7 +57,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Dahili: 101"
+            android:text="@string/ui_sample_extension"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
     </LinearLayout>
@@ -71,7 +71,7 @@
         android:backgroundTint="#DBEAFE"
         android:paddingHorizontal="8dp"
         android:paddingVertical="2dp"
-        android:text="Yönetici"
+        android:text="@string/ui_admin"
         android:textColor="#1D4ED8"
         android:textSize="11sp"
         android:textStyle="bold"
@@ -82,7 +82,7 @@
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="İşlem Seçenekleri"
+        android:contentDescription="@string/ui_actions"
         android:src="@drawable/ic_call_transfer"
         app:tint="@color/text_secondary"
         android:visibility="gone" />

@@ -172,8 +172,8 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
     private fun showNewChatMenu(anchor: View) {
         val popup = PopupMenu(this, anchor)
-        popup.menu.add(0, 1, 0, "Bireysel Sohbet")
-        popup.menu.add(0, 2, 1, "Yeni Grup")
+        popup.menu.add(0, 1, 0, getString(R.string.menu_direct_chat))
+        popup.menu.add(0, 2, 1, getString(R.string.menu_new_group))
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {
@@ -275,7 +275,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
                                 directKey = null,
                                 title = null,
                                 createdBy = "",
-                                lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
+                                lastMessageText = getString(R.string.chat_start_with_contact, contact.extension),
                                 lastMessageAt = null,
                                 unreadCount = 0,
                                 targetExt = contact.extension,
@@ -299,13 +299,13 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
             val btnNewGroup = findViewById<Button>(R.id.btnEmptyNewGroup)
 
             if (chatFilterMode == ChatFilter.GROUP) {
-                tvTitle?.text = "Henüz grup sohbeti yok"
-                tvSubtitle?.text = "Yeni bir grup oluşturarak ekibinizle anlık mesajlaşabilirsiniz."
+                tvTitle?.text = getString(R.string.chat_no_groups)
+                tvSubtitle?.text = getString(R.string.chat_no_groups_desc)
                 btnNewChat?.visibility = View.GONE
                 btnNewGroup?.visibility = View.VISIBLE
             } else {
-                tvTitle?.text = "Henüz bir sohbetiniz yok"
-                tvSubtitle?.text = "Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                tvTitle?.text = getString(R.string.ui_no_chats_yet)
+                tvSubtitle?.text = getString(R.string.ui_no_chats_desc)
                 btnNewChat?.visibility = View.VISIBLE
                 btnNewGroup?.visibility = View.VISIBLE
             }
@@ -339,9 +339,9 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
             if (otherContacts.isEmpty()) {
                 AlertDialog.Builder(this@ChatListActivity)
-                    .setTitle("Dahili Rehber")
-                    .setMessage("Sistemde mesajlaşılabilecek başka dahili bulunamadı.")
-                    .setPositiveButton("Tamam", null)
+                    .setTitle(getString(R.string.internal_directory_title))
+                    .setMessage(getString(R.string.no_extensions_to_chat))
+                    .setPositiveButton(getString(R.string.btn_ok), null)
                     .show()
                 return@launch
             }
@@ -405,9 +405,9 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
 
             if (otherContacts.isEmpty()) {
                 AlertDialog.Builder(this@ChatListActivity)
-                    .setTitle("Yeni Grup")
-                    .setMessage("Gruba eklenebilecek başka dahili bulunamadı.")
-                    .setPositiveButton("Tamam", null)
+                    .setTitle(getString(R.string.menu_new_group))
+                    .setMessage(getString(R.string.group_no_more_extensions))
+                    .setPositiveButton(getString(R.string.btn_ok), null)
                     .show()
                 return@launch
             }
@@ -418,7 +418,7 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
                 .create()
 
             val selectionAdapter = ContactSelectionAdapter { selected ->
-                dialogBinding.tvSelectedCount.text = "Üye Seçin (${selected.size} seçildi):"
+                dialogBinding.tvSelectedCount.text = getString(R.string.select_members_count, selected.size)
             }
 
             dialogBinding.rvGroupMembers.layoutManager = LinearLayoutManager(this@ChatListActivity)
@@ -443,17 +443,17 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
                 val selectedMembers = selectionAdapter.getSelectedExtensions().toList()
 
                 if (title.isEmpty()) {
-                    Toast.makeText(this@ChatListActivity, "Grup adı zorunludur.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatListActivity, getString(R.string.err_group_name_required), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 if (selectedMembers.isEmpty()) {
-                    Toast.makeText(this@ChatListActivity, "En az 1 üye seçmelisiniz.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatListActivity, getString(R.string.err_select_one_member), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 dialogBinding.btnSubmitNewGroup.isEnabled = false
-                dialogBinding.btnSubmitNewGroup.text = "Oluşturuluyor..."
+                dialogBinding.btnSubmitNewGroup.text = getString(R.string.msg_creating)
 
                 lifecycleScope.launch {
                     val createRes = apiClient.createGroupChat(
@@ -476,8 +476,8 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
                         )
                     }.onFailure { err ->
                         dialogBinding.btnSubmitNewGroup.isEnabled = true
-                        dialogBinding.btnSubmitNewGroup.text = "Grubu Oluştur"
-                        Toast.makeText(this@ChatListActivity, "Hata: ${err.message}", Toast.LENGTH_LONG).show()
+                        dialogBinding.btnSubmitNewGroup.text = getString(R.string.ui_create_group)
+                        Toast.makeText(this@ChatListActivity, getString(R.string.err_generic, err.message), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -527,10 +527,10 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
     override fun onConnectionStateChanged(isConnected: Boolean) {
         runOnUiThread {
             if (isConnected) {
-                tvWsStatus.text = "Bağlandı"
+                tvWsStatus.text = getString(R.string.ui_connected)
                 tvWsStatus.setTextColor(0xFF10B981.toInt())
             } else {
-                tvWsStatus.text = "Bağlanıyor..."
+                tvWsStatus.text = getString(R.string.call_connecting)
                 tvWsStatus.setTextColor(0xFFF59E0B.toInt())
             }
         }

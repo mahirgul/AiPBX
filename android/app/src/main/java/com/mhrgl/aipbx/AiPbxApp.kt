@@ -7,6 +7,7 @@ import com.mhrgl.aipbx.data.ChatWebSocketManager
 import android.util.Log
 import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.service.PbxForegroundService
+import com.mhrgl.aipbx.util.L10n
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -18,6 +19,8 @@ class AiPbxApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // App language before any screen is created: English by default, Turkish when picked.
+        L10n.init(this)
 
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityStarted(activity: Activity) {

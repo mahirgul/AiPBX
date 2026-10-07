@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.R
 import android.Manifest
 import android.app.KeyguardManager
 import android.content.ComponentName
@@ -74,7 +75,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         val callerNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER) ?: ""
 
         binding.tvIncomingCallerName.text = callerName
-        binding.tvIncomingCallerNumber.text = if (callerNumber.isNotEmpty()) "Dahili: $callerNumber" else "Santral Çağrısı"
+        binding.tvIncomingCallerNumber.text = if (callerNumber.isNotEmpty()) getString(R.string.extension_label_caller, callerNumber) else getString(R.string.call_from_pbx)
 
         binding.btnAnswer.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -105,7 +106,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         if (isGranted) {
             performAnswer()
         } else {
-            Toast.makeText(this, "Aramayı cevaplayabilmek için mikrofon izni gereklidir.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.err_mic_permission_answer), Toast.LENGTH_LONG).show()
         }
     }
 

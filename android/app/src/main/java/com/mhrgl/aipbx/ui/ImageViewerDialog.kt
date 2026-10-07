@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.R
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -37,7 +38,7 @@ object ImageViewerDialog {
         root.addView(progress, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
 
         val error = TextView(context).apply {
-            text = "Fotoğraf yüklenemedi"
+            text = context.getString(R.string.err_image_load)
             setTextColor(Color.WHITE)
             visibility = android.view.View.GONE
         }

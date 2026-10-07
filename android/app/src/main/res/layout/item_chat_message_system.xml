@@ -15,7 +15,7 @@
         android:gravity="center"
         android:paddingHorizontal="14dp"
         android:paddingVertical="5dp"
-        android:text="Sistem mesajı"
+        android:text="@string/ui_sample_system_message"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 

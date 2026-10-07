@@ -31,7 +31,7 @@
             android:id="@+id/ivCallerAvatar"
             android:layout_width="112dp"
             android:layout_height="112dp"
-            android:contentDescription="Arayan"
+            android:contentDescription="@string/ui_caller"
             android:src="@drawable/app_logo_white_circle" />
 
         <TextView
@@ -49,7 +49,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Dahili Arama"
+            android:text="@string/ui_internal_call"
             android:textColor="#94A3B8"
             android:textSize="16sp" />
     </LinearLayout>

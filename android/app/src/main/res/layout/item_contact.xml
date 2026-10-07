@@ -65,7 +65,7 @@
                 android:id="@+id/tvContactExtension"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dahili: 19001"
+                android:text="@string/ui_sample_extension_19001"
                 android:textColor="@color/primary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -77,7 +77,7 @@
                 android:layout_marginStart="8dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Bilgi İşlem"
+                android:text="@string/ui_sample_department"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -88,7 +88,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Ara"
+        android:contentDescription="@string/ui_call"
         android:padding="8dp"
         android:src="@drawable/ic_phone"
         app:tint="@color/call_green" />

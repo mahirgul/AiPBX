@@ -20,7 +20,7 @@
         <!-- Optional Image Attachment -->
         <ImageView
             android:id="@+id/ivImage"
-            android:contentDescription="Görsel"
+            android:contentDescription="@string/ui_image"
             android:layout_width="240dp"
             android:layout_height="180dp"
             android:layout_marginBottom="6dp"
@@ -78,7 +78,7 @@
             android:id="@+id/tvMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mesaj metni"
+            android:text="@string/ui_sample_message"
             android:textColor="#FFFFFF"
             android:textSize="14sp" />
 

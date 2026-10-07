@@ -21,7 +21,7 @@
             android:id="@+id/ivCallerAvatar"
             android:layout_width="84dp"
             android:layout_height="84dp"
-            android:contentDescription="Çağrı"
+            android:contentDescription="@string/ui_calls"
             android:src="@drawable/app_logo_white_circle" />
 
         <TextView
@@ -280,7 +280,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Tuşlanan..."
+                android:hint="@string/ui_dialed"
                 android:textColor="#38BDF8"
                 android:textColorHint="#475569"
                 android:textSize="22sp"

@@ -21,7 +21,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/ui_back"
             android:src="@drawable/ic_contacts"
             app:tint="@color/text_primary" />
 
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Tanı Logları"
+            android:text="@string/ui_diagnostic_logs"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -40,7 +40,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Yenile"
+            android:contentDescription="@string/ui_refresh"
             android:src="@drawable/ic_history"
             app:tint="@color/text_primary" />
 
@@ -50,7 +50,7 @@
             android:layout_height="36dp"
             android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Kopyala"
+            android:contentDescription="@string/ui_copy"
             android:src="@drawable/ic_settings_features"
             app:tint="@color/text_primary" />
 
@@ -60,7 +60,7 @@
             android:layout_height="36dp"
             android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="İndir ve Paylaş"
+            android:contentDescription="@string/ui_download_share"
             android:src="@drawable/ic_call_end"
             app:tint="@color/primary" />
     </LinearLayout>
@@ -78,7 +78,7 @@
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:background="@drawable/card_rounded_bg"
-            android:hint="Loglarda ara (örn: JsSIP, REGISTER, Error)..."
+            android:hint="@string/ui_search_logs_hint"
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:paddingHorizontal="12dp"
@@ -98,7 +98,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Loglar yükleniyor..."
+                android:text="@string/ui_logs_loading"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
@@ -107,7 +107,7 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:text="İndirilenler'e Kaydet"
+                android:text="@string/ui_save_to_downloads"
                 android:textColor="@color/primary"
                 android:textSize="11sp"
                 app:cornerRadius="6dp"

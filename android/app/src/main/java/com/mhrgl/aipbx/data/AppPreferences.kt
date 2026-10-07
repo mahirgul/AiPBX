@@ -160,6 +160,11 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_BRAND_SUB, DEFAULT_BRAND_SUB) ?: DEFAULT_BRAND_SUB
         set(value) = prefs.edit().putString(KEY_BRAND_SUB, value).apply()
 
+    /** App language ("en" or "tr"); English unless the user picks Turkish. Kept on logout. */
+    var appLanguage: String
+        get() = prefs.getString(KEY_APP_LANGUAGE, "en") ?: "en"
+        set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
+
     var hasSleepingWarning: Boolean
         get() = prefs.getBoolean(KEY_SLEEPING_WARNING, false)
         set(value) = prefs.edit().putBoolean(KEY_SLEEPING_WARNING, value).apply()
@@ -239,7 +244,8 @@ class AppPreferences(context: Context) {
     companion object {
         const val DEFAULT_SERVER_URL = ""
         const val DEFAULT_BRAND_TITLE = "AiPBX"
-        const val DEFAULT_BRAND_SUB = "Akıllı IP Santral"
+        // Empty: the screens show R.string.default_brand_sub (localized).
+        const val DEFAULT_BRAND_SUB = ""
 
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_BRAND_TITLE = "brand_title"
@@ -262,6 +268,7 @@ class AppPreferences(context: Context) {
         private const val KEY_FCM_API_KEY = "fcm_api_key"
         private const val KEY_FCM_SENDER_ID = "fcm_sender_id"
         private const val KEY_SLEEPING_WARNING = "has_sleeping_warning"
+        private const val KEY_APP_LANGUAGE = "app_language"
         private const val KEY_LAST_RESURRECTION_TS = "last_resurrection_ts"
         private const val KEY_DEVICE_UUID = "device_uuid"
         private const val KEY_LAST_TOKEN_REFRESH_TIME = "last_token_refresh_time"

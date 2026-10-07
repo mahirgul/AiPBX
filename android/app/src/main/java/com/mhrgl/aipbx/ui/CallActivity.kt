@@ -86,7 +86,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
 
             val engine = pbxService?.engine
             if (engine != null) {
-                binding.tvCallerName.text = engine.activeCallerName.ifEmpty { "Santral Çağrısı" }
+                binding.tvCallerName.text = engine.activeCallerName.ifEmpty { getString(R.string.call_from_pbx) }
                 updateCallStateUI(engine.currentCallStatus)
             }
         }
@@ -374,7 +374,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                 binding.tvHold.text = getString(R.string.btn_resume)
                 binding.ivHold.setImageResource(R.drawable.ic_play)
                 updateButtonState(binding.ivHold, true)
-                binding.tvCallState.text = "Beklemede"
+                binding.tvCallState.text = getString(R.string.call_on_hold)
             } else {
                 binding.tvHold.text = getString(R.string.btn_hold)
                 binding.ivHold.setImageResource(R.drawable.ic_pause)
@@ -479,7 +479,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
 
     private fun showTransferDialog() {
         val editText = EditText(this).apply {
-            hint = "Örn: 1002 veya 9998"
+            hint = getString(R.string.transfer_hint)
             inputType = InputType.TYPE_CLASS_PHONE
             textSize = 18f
             setPadding(40, 24, 40, 24)
@@ -506,9 +506,9 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                         getString(R.string.transfer_in_progress, target),
                         Toast.LENGTH_SHORT
                     ).show()
-                    binding.tvCallState.text = "Aktarılıyor: $target"
+                    binding.tvCallState.text = getString(R.string.transferring_to, target)
                 } else {
-                    Toast.makeText(this, "Lütfen bir dahili numara girin", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.err_enter_extension), Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -540,7 +540,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                 stopRingback()
                 applyAudioRouting(isSpeakerOn)
                 if (isHold) {
-                    binding.tvCallState.text = "Beklemede"
+                    binding.tvCallState.text = getString(R.string.call_on_hold)
                 } else {
                     binding.tvCallState.text = getString(R.string.call_ongoing)
                 }
@@ -548,7 +548,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
             }
             CallStatus.ON_HOLD -> {
                 stopRingback()
-                binding.tvCallState.text = "Beklemede"
+                binding.tvCallState.text = getString(R.string.call_on_hold)
             }
             CallStatus.ENDED, CallStatus.IDLE -> {
                 stopRingback()

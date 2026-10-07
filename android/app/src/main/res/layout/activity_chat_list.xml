@@ -22,7 +22,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/ui_back"
             android:src="@drawable/ic_contacts"
             app:tint="@color/text_primary" />
 
@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Mesajlar"
+            android:text="@string/ui_messages"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -41,7 +41,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
-            android:text="Bağlandı"
+            android:text="@string/ui_connected"
             android:textColor="#10B981"
             android:textSize="11sp"
             android:textStyle="bold" />
@@ -52,7 +52,7 @@
             android:layout_height="36dp"
             android:layout_marginEnd="6dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Yeni Grup"
+            android:contentDescription="@string/ui_new_group"
             android:src="@drawable/ic_group"
             app:tint="@color/primary" />
 
@@ -61,7 +61,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Yeni Sohbet"
+            android:contentDescription="@string/ui_new_chat"
             android:src="@drawable/ic_chat"
             app:tint="@color/primary" />
     </LinearLayout>
@@ -79,7 +79,7 @@
             android:background="@drawable/chip_tab_btn_bg"
             android:drawableStart="@drawable/ic_contacts"
             android:drawablePadding="8dp"
-            android:hint="Sohbet veya grup ara..."
+            android:hint="@string/ui_search_chats_hint"
             android:paddingHorizontal="12dp"
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_secondary"
@@ -105,7 +105,7 @@
             android:background="@drawable/chip_tab_btn_bg"
             android:backgroundTint="@color/primary"
             android:gravity="center"
-            android:text="Tümü"
+            android:text="@string/ui_all"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -118,7 +118,7 @@
             android:layout_weight="1"
             android:background="@drawable/chip_tab_btn_bg"
             android:gravity="center"
-            android:text="Bireysel"
+            android:text="@string/ui_direct"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -131,7 +131,7 @@
             android:layout_weight="1"
             android:background="@drawable/chip_tab_btn_bg"
             android:gravity="center"
-            android:text="Gruplar"
+            android:text="@string/ui_groups"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -160,7 +160,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Henüz bir sohbetiniz yok"
+            android:text="@string/ui_no_chats_yet"
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -171,7 +171,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:gravity="center"
-            android:text="Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+            android:text="@string/ui_no_chats_desc"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -186,7 +186,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/primary"
-                android:text="Yeni Sohbet"
+                android:text="@string/ui_new_chat"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF" />
 
@@ -196,7 +196,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:text="+ Yeni Grup"
+                android:text="@string/ui_new_group_plus"
                 android:textAllCaps="false"
                 android:textColor="@color/primary" />
         </LinearLayout>

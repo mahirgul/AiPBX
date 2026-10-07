@@ -56,8 +56,8 @@ class ChatContactPickerAdapter(
         fun bind(item: ContactItem) {
             val context = itemView.context
             binding.tvContactName.text = item.name
-            binding.tvContactExtension.text = "Dahili: ${item.extension}"
-            binding.tvContactRole.text = if (item.role.isNullOrEmpty()) "Kurumsal" else item.role
+            binding.tvContactExtension.text = itemView.context.getString(R.string.extension_label_item, item.extension)
+            binding.tvContactRole.text = if (item.role.isNullOrEmpty()) itemView.context.getString(R.string.contact_role_company) else item.role
 
             val initial = item.name.firstOrNull()?.uppercase() ?: item.extension.firstOrNull()?.toString() ?: "?"
             binding.tvContactAvatar.text = initial
@@ -72,7 +72,7 @@ class ChatContactPickerAdapter(
 
             binding.btnCallContact.setImageResource(R.drawable.ic_chat)
             binding.btnCallContact.imageTintList = ContextCompat.getColorStateList(context, R.color.primary)
-            binding.btnCallContact.contentDescription = "Sohbet Başlat"
+            binding.btnCallContact.contentDescription = itemView.context.getString(R.string.ui_start_chat)
 
             binding.btnCallContact.setOnClickListener { onContactClick(item) }
             itemView.setOnClickListener { onContactClick(item) }

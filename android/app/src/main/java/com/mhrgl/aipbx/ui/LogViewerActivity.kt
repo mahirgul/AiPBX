@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.R
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -79,7 +80,7 @@ class LogViewerActivity : AppCompatActivity() {
     private fun loadLogs() {
         binding.pbLoading.visibility = View.VISIBLE
         binding.tvLogText.text = ""
-        binding.tvLogCount.text = "Loglar toplanıyor..."
+        binding.tvLogCount.text = getString(R.string.msg_logs_collecting_short)
 
         lifecycleScope.launch {
             fullLogText = AppLogManager.collectLogs(this@LogViewerActivity)
@@ -94,30 +95,30 @@ class LogViewerActivity : AppCompatActivity() {
         val q = query.trim()
         if (q.isEmpty()) {
             binding.tvLogText.text = fullLogText
-            binding.tvLogCount.text = "Toplam: ${logLines.size} satır"
+            binding.tvLogCount.text = getString(R.string.logs_total, logLines.size)
         } else {
             val filtered = logLines.filter { it.contains(q, ignoreCase = true) }
             binding.tvLogText.text = filtered.joinToString("\n")
-            binding.tvLogCount.text = "Filtrelendi: ${filtered.size} / ${logLines.size} satır"
+            binding.tvLogCount.text = getString(R.string.logs_filtered, filtered.size, logLines.size)
         }
     }
 
     private fun copyAllLogs() {
         val currentText = binding.tvLogText.text.toString()
         if (currentText.isEmpty()) {
-            Toast.makeText(this, "Kopyalanacak log yok", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.logs_nothing_to_copy), Toast.LENGTH_SHORT).show()
             return
         }
 
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        val clip = ClipData.newPlainText("AI PBX Logları", currentText)
+        val clip = ClipData.newPlainText(getString(R.string.logs_clip_label), currentText)
         clipboard?.setPrimaryClip(clip)
-        Toast.makeText(this, "Loglar panoya kopyalandı", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.logs_copied), Toast.LENGTH_SHORT).show()
     }
 
     private fun shareLogs() {
         lifecycleScope.launch {
-            Toast.makeText(this@LogViewerActivity, "Log dosyası hazırlanıyor...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@LogViewerActivity, getString(R.string.logs_preparing_file), Toast.LENGTH_SHORT).show()
             val file = AppLogManager.saveLogsToFile(this@LogViewerActivity)
             AppLogManager.shareLogs(this@LogViewerActivity, file)
         }
@@ -125,12 +126,12 @@ class LogViewerActivity : AppCompatActivity() {
 
     private fun saveLogsToDownloads() {
         lifecycleScope.launch {
-            Toast.makeText(this@LogViewerActivity, "Loglar İndirilenler klasörüne kaydediliyor...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@LogViewerActivity, getString(R.string.logs_saving), Toast.LENGTH_SHORT).show()
             val uri = AppLogManager.exportLogsToDownloads(this@LogViewerActivity)
             if (uri != null) {
-                Toast.makeText(this@LogViewerActivity, "Başarıyla İndirilenler/AiPBX klasörüne kaydedildi!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@LogViewerActivity, getString(R.string.logs_saved_ok), Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(this@LogViewerActivity, "İndirilenler klasörüne kaydedilemedi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LogViewerActivity, getString(R.string.logs_save_failed), Toast.LENGTH_SHORT).show()
             }
         }
     }

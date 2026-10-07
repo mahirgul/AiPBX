@@ -54,7 +54,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Kullanıcı Adı"
+                android:text="@string/ui_sample_username"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -68,7 +68,7 @@
                 android:backgroundTint="#E0E7FF"
                 android:paddingHorizontal="6dp"
                 android:paddingVertical="1dp"
-                android:text="Grup"
+                android:text="@string/ui_group"
                 android:textColor="#4338CA"
                 android:textSize="10sp"
                 android:textStyle="bold"
@@ -98,7 +98,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Son mesaj içeriği..."
+                android:text="@string/ui_sample_last_message"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
