@@ -92,7 +92,7 @@ class ContactsAdapter(
 
             binding.tvContactName.text = item.name
             binding.tvContactExtension.text = if (item.role == itemView.context.getString(R.string.contact_role_device)) item.extension else itemView.context.getString(R.string.extension_label_item, item.extension)
-            binding.tvContactRole.text = if (item.role.isNullOrEmpty()) itemView.context.getString(R.string.contact_role_company) else item.role
+            binding.tvContactRole.text = item.roleName?.takeIf { it.isNotEmpty() } ?: item.role?.takeIf { it.isNotEmpty() } ?: itemView.context.getString(R.string.contact_role_company)
 
             // Avatar initial
             val initial = item.name.firstOrNull()?.uppercase() ?: item.extension.firstOrNull()?.toString() ?: "?"

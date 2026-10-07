@@ -134,7 +134,7 @@ INSERT IGNORE INTO `sys_settings` VALUES
 ('site_logo_image',''),
 ('site_logo_type','image'),
 ('site_title','AiPBX'),
-('system_default_language','tr'),
+('system_default_language','en'),
 ('teams_domain',''),
 ('teams_enabled','0'),
 ('teams_notify_cdr_summary','0'),

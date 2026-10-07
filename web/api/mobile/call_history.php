@@ -9,7 +9,7 @@ $user = requireMobileAuth();
 $ext = trim($user['extension'] ?? '');
 
 if ($ext === '') {
-    mobileError('Kullanıcıya ait dahili numara bulunamadı.', 400);
+    mobileError(t('mobile_api.no_extension_for_user'), 400);
 }
 
 $filter = trim($_GET['filter'] ?? 'all');

@@ -11,6 +11,6 @@ class FeatureCodeRepository extends BaseRepository
 
     public static function allRoles(): array
     {
-        return static::db()->query("SELECT role_key, role_name FROM sys_roles ORDER BY role_name ASC")->fetchAll();
+        return localizeRoles(static::db()->query("SELECT role_key, role_name FROM sys_roles ORDER BY role_name ASC")->fetchAll());
     }
 }

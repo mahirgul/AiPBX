@@ -29,7 +29,7 @@ if ($path === '') {
 if ($path === '/set-language') {
     $lang = $_GET['lang'] ?? '';
     if (!isset(UI_LANGUAGES[$lang])) {
-        $lang = 'tr';
+        $lang = DEFAULT_UI_LANGUAGE;
     }
     $_SESSION['ui_language'] = $lang;
     if (isset($_SESSION['user_id'])) {

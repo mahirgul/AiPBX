@@ -1008,12 +1008,16 @@ if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
 fi
 
 
-# Set default language to Turkish in asterisk.conf
+# Default prompt language (asterisk.conf) = the system_default_language
+# setting (PBX Settings). seed.sql makes it "en" on a fresh install; an
+# upgrade keeps whatever the installation uses (e.g. "tr").
+SPOKEN_LANG="$(mysql -N -B asterisk -e "SELECT setting_value FROM sys_settings WHERE setting_key='system_default_language'" 2>/dev/null | tr -cd 'a-zA-Z_' || true)"
+SPOKEN_LANG="${SPOKEN_LANG:-en}"
 if [[ -f /etc/asterisk/asterisk.conf ]]; then
     if grep -q "defaultlanguage" /etc/asterisk/asterisk.conf; then
-        sed -i 's/^;*defaultlanguage\s*=.*/defaultlanguage = tr/' /etc/asterisk/asterisk.conf
+        sed -i "s/^;*defaultlanguage\s*=.*/defaultlanguage = ${SPOKEN_LANG}/" /etc/asterisk/asterisk.conf
     else
-        echo "defaultlanguage = tr" >> /etc/asterisk/asterisk.conf
+        echo "defaultlanguage = ${SPOKEN_LANG}" >> /etc/asterisk/asterisk.conf
     fi
     if ! grep -q "^\[files\]" /etc/asterisk/asterisk.conf; then
         cat >> /etc/asterisk/asterisk.conf << 'EOF'
@@ -1050,9 +1054,21 @@ link_sound_dir /var/lib/asterisk/sounds/tr /usr/share/asterisk/sounds/tr
 # downloads and verifies them, so they also show up — and can be removed or
 # installed again — on Sounds → Asterisk Sound Packs. Packages built locally
 # at the repo root are used instead of downloading. A failed download only
-# warns: the install goes on. AIPBX_TR_SOUNDS=no skips this step.
-if [[ "${AIPBX_TR_SOUNDS:-yes}" == no ]]; then
-    info "Turkish prompts skipped (AIPBX_TR_SOUNDS=no) — install them later on Sounds → Asterisk Sound Packs"
+# warns: the install goes on.
+# AIPBX_TR_SOUNDS=auto (default) installs them when the prompt language is
+# Turkish or they are already installed (an upgrade keeps them current); a
+# fresh install is English and leaves them out. yes = always, no = never.
+TR_SOUNDS_MODE="${AIPBX_TR_SOUNDS:-auto}"
+if [[ "$TR_SOUNDS_MODE" == auto ]]; then
+    if [[ "$SPOKEN_LANG" == tr ]] || compgen -G "/var/lib/aipbx/sound-packs/core-tr-*.list" >/dev/null \
+       || compgen -G "/var/lib/asterisk/sounds/tr/*.wav" >/dev/null; then
+        TR_SOUNDS_MODE=yes
+    else
+        TR_SOUNDS_MODE=no
+    fi
+fi
+if [[ "$TR_SOUNDS_MODE" == no ]]; then
+    info "Turkish prompts not installed — add them any time on Sounds → Asterisk Sound Packs"
 else
     TR_SOUNDS_VERSION="$(sed -n 's/^TR_VERSION=//p' /usr/local/sbin/aipbx-sounds)"
     if compgen -G "$INSTALL_DIR/asterisk-core-sounds-tr-*-${TR_SOUNDS_VERSION}.tar.xz" >/dev/null \

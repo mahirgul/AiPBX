@@ -29,6 +29,12 @@ try {
     }
 } catch (\Throwable $e) {}
 
+// Role display names: built-in roles in the app's language, custom ones as typed.
+$roleNames = [];
+foreach (localizeRoles(getDB()->query('SELECT role_key, role_name FROM sys_roles')->fetchAll()) as $r) {
+    $roleNames[$r['role_key']] = $r['role_name'];
+}
+
 $contacts = [];
 foreach ($directory as $contact) {
     $cExt = trim($contact['extension'] ?? '');
@@ -61,6 +67,7 @@ foreach ($directory as $contact) {
         'extension' => $cExt,
         'name' => $contact['full_name'] ?? $cExt,
         'role' => $contact['role'] ?? '',
+        'role_name' => $roleNames[$contact['role'] ?? ''] ?? '',
         'status' => $status,
         'sip_status' => $sipStatus,
         'webrtc_status' => $webrtcStatus,

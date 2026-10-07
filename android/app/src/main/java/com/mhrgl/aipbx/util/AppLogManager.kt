@@ -39,27 +39,27 @@ object AppLogManager {
         val now = dateFormat.format(Date())
 
         sb.append("====================================================\n")
-        sb.append("            AI PBX SİSTEM VE TANI RAPORU            \n")
+        sb.append("            AI PBX SYSTEM & DIAGNOSTIC REPORT         \n")
         sb.append("====================================================\n")
-        sb.append("Tarih & Saat     : $now\n")
-        sb.append("Uygulama Sürümü  : v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})\n")
-        sb.append("Paket Adı        : ${context.packageName}\n")
-        sb.append("Cihaz            : ${Build.MANUFACTURER} ${Build.MODEL} (${Build.PRODUCT})\n")
-        sb.append("Android Sürümü   : ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n")
+        sb.append("Date & Time      : $now\n")
+        sb.append("App Version      : v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})\n")
+        sb.append("Package          : ${context.packageName}\n")
+        sb.append("Device           : ${Build.MANUFACTURER} ${Build.MODEL} (${Build.PRODUCT})\n")
+        sb.append("Android Version  : ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n")
         sb.append("CPU ABI          : ${Build.SUPPORTED_ABIS.joinToString(", ")}\n")
         sb.append("----------------------------------------------------\n")
-        sb.append("Santral Sunucusu : ${prefs.serverUrl}\n")
+        sb.append("PBX Server       : ${prefs.serverUrl}\n")
         sb.append("Domain           : ${prefs.domain}\n")
-        sb.append("Dahili (Ext)     : ${prefs.extension}\n")
-        sb.append("Kullanıcı Adı    : ${prefs.username}\n")
-        sb.append("Ad Soyad         : ${prefs.fullName}\n")
+        sb.append("Extension        : ${prefs.extension}\n")
+        sb.append("Username         : ${prefs.username}\n")
+        sb.append("Full Name        : ${prefs.fullName}\n")
         sb.append("WebSocket URL    : ${prefs.wsUrl}\n")
-        sb.append("TURN Sunucusu    : ${prefs.turnUrl ?: "Yok"}\n")
-        sb.append("FCM Token        : ${if (!prefs.fcmToken.isNullOrEmpty()) "Mevcut (${prefs.fcmToken?.take(15)}...)" else "Yok"}\n")
-        sb.append("Aktif Ağ Türü    : ${getActiveNetworkType(context)}\n")
+        sb.append("TURN Server      : ${prefs.turnUrl ?: "None"}\n")
+        sb.append("FCM Token        : ${if (!prefs.fcmToken.isNullOrEmpty()) "Present (${prefs.fcmToken?.take(15)}...)" else "None"}\n")
+        sb.append("Network Type     : ${getActiveNetworkType(context)}\n")
         sb.append("====================================================\n\n")
 
-        sb.append("--- LOGCAT ÇIKTISI (Son Olaylar) ---\n")
+        sb.append("--- LOGCAT OUTPUT (recent events) ---\n")
 
         try {
             // Get the last 1500 lines from Logcat
@@ -72,7 +72,7 @@ object AppLogManager {
             reader.close()
             process.waitFor()
         } catch (e: Exception) {
-            sb.append("Logcat okuma hatası: ${e.message}\n")
+            sb.append("Logcat read error: ${e.message}\n")
             Log.e(TAG, "Logcat reading failed", e)
         }
 
@@ -84,18 +84,18 @@ object AppLogManager {
      */
     private fun getActiveNetworkType(context: Context): String {
         return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return "Bilinmiyor"
-            val network = cm.activeNetwork ?: return "Ağ Yok"
-            val caps = cm.getNetworkCapabilities(network) ?: return "Bilinmiyor"
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return "Unknown"
+            val network = cm.activeNetwork ?: return "No Network"
+            val caps = cm.getNetworkCapabilities(network) ?: return "Unknown"
             when {
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Hücresel (Mobil Veri)"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
-                else -> "Diğer"
+                else -> "Other"
             }
         } catch (e: Exception) {
-            "Hata: ${e.message}"
+            "Error: ${e.message}"
         }
     }
 
@@ -166,7 +166,7 @@ object AppLogManager {
 
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "AI PBX Sistem Logları (${logFile.name})")
+                putExtra(Intent.EXTRA_SUBJECT, "AI PBX System Logs (${logFile.name})")
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }

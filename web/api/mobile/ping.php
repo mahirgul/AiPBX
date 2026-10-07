@@ -4,7 +4,7 @@ mobileApiStart('GET, OPTIONS');
 
 $site_title = getSystemSetting('site_title', 'AI PBX');
 $brand_title = getSystemSetting('brand_title', 'AI PBX');
-$brand_sub = getSystemSetting('brand_sub', 'İletişim Sistemi');
+$brand_sub = getSystemSetting('brand_sub', t('mobile_api.brand_sub_default'));
 
 mobileJson([
     'success' => true,

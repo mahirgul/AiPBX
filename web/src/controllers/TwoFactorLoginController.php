@@ -87,7 +87,7 @@ class TwoFactorLoginController extends BaseController
                     $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
                     $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
                         ? $user['language_preference']
-                        : 'tr';
+                        : DEFAULT_UI_LANGUAGE;
 
                     unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name']);
 

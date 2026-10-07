@@ -22,6 +22,13 @@ public enum ApiError: LocalizedError {
 }
 
 public final class ApiClient {
+    /// Every request carries the app language, so the server answers in it.
+    private func makeRequest(_ url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue(AppLanguage.shared.code, forHTTPHeaderField: "X-App-Language")
+        return request
+    }
+
     public static let shared = ApiClient()
 
     private let session: URLSession
@@ -45,7 +52,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
 
         let (data, response) = try await session.data(for: request)
@@ -66,7 +73,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
@@ -112,7 +119,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
@@ -148,7 +155,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
 
@@ -191,7 +198,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -211,7 +218,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -232,7 +239,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -254,7 +261,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
@@ -285,7 +292,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -308,7 +315,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -327,7 +334,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
@@ -355,7 +362,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
@@ -385,7 +392,7 @@ public final class ApiClient {
             throw ApiError.invalidUrl
         }
 
-        var request = URLRequest(url: url)
+        var request = makeRequest(url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")

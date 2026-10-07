@@ -26,16 +26,20 @@ public struct StatusBadgeView: View {
 
 public struct RoleBadgeView: View {
     public let role: String
+    /// Display name from the server (role_name); the key is mapped when it is missing.
+    public let name: String?
 
-    public init(role: String) {
+    public init(role: String, name: String? = nil) {
         self.role = role
+        self.name = name
     }
 
     private var displayRole: String {
+        if let name = name, !name.isEmpty { return name }
         switch role.lowercased() {
         case "admin": return L("Admin")
-        case "cc_agent": return "Temsilci"
-        case "standard_user": return "Standart"
+        case "cc_agent": return L("Agent")
+        case "standard_user": return L("Standard")
         case "user": return L("User")
         default: return role.capitalized
         }

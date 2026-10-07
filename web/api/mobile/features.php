@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     mobileJson([
         'success' => true,
-        'message' => 'Ayarlar başarıyla güncellendi.',
+        'message' => t('mobile_api.settings_updated'),
         'features' => [
             'extension' => $updated['extension'] ?? '',
             'dnd_enabled' => (bool)($updated['dnd_enabled'] ?? false),

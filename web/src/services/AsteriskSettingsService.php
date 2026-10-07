@@ -61,7 +61,7 @@ class AsteriskSettingsService {
             // /etc/asterisk/asterisk.conf by syncDefaultLanguage() — CAUTION:
             // unlike every other setting it takes effect only after a FULL
             // Asterisk restart, a "reload" is not enough (see asterisk_sync.php).
-            'system_default_language' => 'tr',
+            'system_default_language' => 'en',
         ];
     }
 
@@ -124,7 +124,7 @@ class AsteriskSettingsService {
                 ? strval(intval($post['video_max_framerate'] ?? 24)) : '24',
 
             'system_default_language' => in_array($post['system_default_language'] ?? '', getAvailableLanguages(), true)
-                ? $post['system_default_language'] : 'tr',
+                ? $post['system_default_language'] : 'en',
         ];
 
         // --- RTP (media) settings --------------------------------------------

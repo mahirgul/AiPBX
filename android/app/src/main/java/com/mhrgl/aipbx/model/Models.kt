@@ -116,6 +116,8 @@ data class ContactItem(
     @SerializedName("extension") val extension: String,
     @SerializedName("name") val name: String,
     @SerializedName("role") val role: String?,
+    /** Role in the app's language (built-in roles) or as named by the admin. */
+    @SerializedName("role_name") val roleName: String? = null,
     @SerializedName("status") val status: String, // "online", "busy", "offline"
     @SerializedName("sip_status") val sipStatus: String?,
     @SerializedName("webrtc_status") val webrtcStatus: String?,

@@ -134,3 +134,5 @@
 "You will be signed out. Continue?" = "Oturumunuz kapatılacaktır. Onaylıyor musunuz?";
 "✓ Settings saved" = "✓ Ayarlar başarıyla kaydedildi";
 "✗ Could not reach the server" = "✗ Sunucuya ulaşılamadı";
+"Agent" = "Temsilci";
+"Standard" = "Standart";

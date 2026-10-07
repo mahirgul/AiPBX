@@ -267,14 +267,21 @@ const LANGUAGE_LABELS = [
  * without touching the code.
  */
 function getAvailableLanguages() {
-    $base = dirname(SOUNDS_CUSTOM_DIR);
-    $exclude = ['custom', 'phonetic'];
+    // Asterisk plays prompts from /usr/share/asterisk/sounds/<lang> (Debian's
+    // English set lives only there); AiPBX's own and downloaded packs are in
+    // /var/lib/asterisk/sounds/<lang> and linked into it. Only language-code
+    // names count (en, tr, en_GB) — not custom/recordings/en_US_f_Allison.
     $langs = [];
-    foreach (glob($base . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
-        $code = basename($dir);
-        if (in_array($code, $exclude, true)) continue;
-        $langs[] = $code;
+    foreach (['/usr/share/asterisk/sounds', dirname(SOUNDS_CUSTOM_DIR)] as $base) {
+        foreach (glob($base . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $code = basename($dir);
+            // a link left for a language whose files were never installed does not count
+            if (preg_match('/^[a-z]{2}(_[A-Z]{2})?$/', $code) && glob($dir . '/*')) {
+                $langs[$code] = true;
+            }
+        }
     }
+    $langs = array_keys($langs);
     sort($langs);
     return $langs;
 }
@@ -424,13 +431,19 @@ function sanitizeDestType($type) {
  * (pbx_dids/pbx_ivrs/pbx_queues.language, getAvailableLanguages()) — one
  * controls the audio in a phone call, this one the texts in the web panel.
  */
-const UI_LANGUAGES = ['tr' => 'Türkçe', 'en' => 'English'];
+const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe'];
+// Language of a visitor with no preference yet (login page, new users).
+const DEFAULT_UI_LANGUAGE = 'en';
 
 function getUserLanguage() {
+    // Session-less requests (the mobile API) set the language of the request.
+    if (isset($GLOBALS['AIPBX_REQUEST_LANGUAGE'], UI_LANGUAGES[$GLOBALS['AIPBX_REQUEST_LANGUAGE']])) {
+        return $GLOBALS['AIPBX_REQUEST_LANGUAGE'];
+    }
     if (isset($_SESSION['ui_language']) && isset(UI_LANGUAGES[$_SESSION['ui_language']])) {
         return $_SESSION['ui_language'];
     }
-    return 'tr';
+    return DEFAULT_UI_LANGUAGE;
 }
 
 /**
@@ -449,6 +462,31 @@ function t($key, $default = null) {
     return $translations[$lang][$key] ?? ($default ?? $key);
 }
 
+
+/**
+ * Built-in roles (seed.sql, is_system = 1) are shown in the interface
+ * language: their name/description come from roles.system.<key>[_desc].
+ * Roles an admin creates keep the name typed for them.
+ */
+const SYSTEM_ROLE_KEYS = ['admin', 'read_only_admin', 'cc_agent', 'fax_user', 'cc_manager', 'user'];
+
+function localizeRole(array $row): array {
+    $key = $row['role_key'] ?? ($row['role'] ?? null);
+    if ($key === null || !in_array($key, SYSTEM_ROLE_KEYS, true)) {
+        return $row;
+    }
+    if (array_key_exists('role_name', $row)) {
+        $row['role_name'] = t('roles.system.' . $key, (string) $row['role_name']);
+    }
+    if (array_key_exists('description', $row)) {
+        $row['description'] = t('roles.system.' . $key . '_desc', (string) $row['description']);
+    }
+    return $row;
+}
+
+function localizeRoles(array $rows): array {
+    return array_map('localizeRole', $rows);
+}
 
 // UI component helpers moved to their own file (2026-08-31) — see src/ui_helpers.php.
 // Required from here so they keep working everywhere config.php is loaded.

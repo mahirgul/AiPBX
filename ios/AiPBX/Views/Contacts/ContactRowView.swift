@@ -32,7 +32,7 @@ public struct ContactRowView: View {
                         .foregroundColor(.primary)
 
                     if let role = contact.role, !role.isEmpty {
-                        RoleBadgeView(role: role)
+                        RoleBadgeView(role: role, name: contact.roleName)
                     }
                 }
 
