@@ -31,7 +31,7 @@
             <div class="card-title">
                 <i class="fas fa-network-wired u-primary"></i> <?php echo t('asterisk_settings.section1_title'); ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('astHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('astHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
@@ -259,8 +259,8 @@
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_udptl_checksums'); ?></label>
                 <select name="udptl_checksums" class="form-control">
-                    <option value="yes" <?php echo ($s['udptl_checksums'] ?? 'yes') === 'yes' ? 'selected' : ''; ?>>Yes (Aktif)</option>
-                    <option value="no" <?php echo ($s['udptl_checksums'] ?? 'yes') === 'no' ? 'selected' : ''; ?>>No (Pasif)</option>
+                    <option value="yes" <?php echo ($s['udptl_checksums'] ?? 'yes') === 'yes' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.yes_on'); ?></option>
+                    <option value="no" <?php echo ($s['udptl_checksums'] ?? 'yes') === 'no' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.no_off'); ?></option>
                 </select>
             </div>
         </div>

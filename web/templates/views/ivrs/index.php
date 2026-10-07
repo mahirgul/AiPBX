@@ -5,11 +5,11 @@
             <i class="fas fa-microphone-alt u-primary"></i> <?php echo t('ivr.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('ivrHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('ivrHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('ivrs', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateIvrModal()" title="Yeni Ekle">
+                <button class="btn btn-primary btn-sm" onclick="openCreateIvrModal()" title="<?php echo t('common.add_new'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -108,14 +108,14 @@
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('ivr.field_title'); ?></label>
-                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="ör: Ana Karşılama Menüsü">
+                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="<?php echo t('ivrs.title_ph'); ?>">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('internal_number.field'); ?></label>
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
-                           placeholder="ör: 1010">
+                           placeholder="<?php echo t('common.eg'); ?> 1010">
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
@@ -212,10 +212,10 @@
                 </div>
 
                 <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeIvrModal()" title="İptal">
+                    <button type="button" class="btn btn-secondary" onclick="closeIvrModal()" title="<?php echo t('common.cancel'); ?>">
                         <i class="fas fa-times"></i>
                     </button>
-                    <button type="submit" class="btn btn-primary" title="Kaydet">
+                    <button type="submit" class="btn btn-primary" title="<?php echo t('common.save'); ?>">
                         <i class="fas fa-save"></i>
                     </button>
                 </div>
@@ -229,7 +229,7 @@
     <div class="modal-card" style="max-width: 580px;">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-th u-primary"></i> <?php echo t('ivr.entries_modal_title'); ?> <span id="entries_title_label"></span></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeIvrEntriesModal()" title="Kapat"><i class="fas fa-times"></i></button>
+            <button class="btn btn-secondary u-btn-pad" onclick="closeIvrEntriesModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <?php

@@ -22,7 +22,7 @@ $formatDuration = function(int $seconds): string {
     </div>
     <div class="card u-mb-0">
         <div class="u-muted u-fs-12 u-fw-600 u-uppercase"><?php echo t('queue_logs.stat_avg_wait'); ?></div>
-        <div class="u-fs-26 u-fw-800 u-mt-4 u-warning"><?php echo $avg_holdtime; ?> sn</div>
+        <div class="u-fs-26 u-fw-800 u-mt-4 u-warning"><?php echo $avg_holdtime; ?> <?php echo t('common.sec_short'); ?></div>
     </div>
     <div class="card u-mb-0">
         <div class="u-muted u-fs-12 u-fw-600 u-uppercase"><?php echo t('queue_logs.stat_ring_no_answer'); ?></div>
@@ -327,9 +327,9 @@ $formatDuration = function(int $seconds): string {
                                 <td class="u-fs-13">
                                     <?php
                                     if ($log['event'] === 'CONNECT') {
-                                        echo t('queue_logs.detail_wait_time') . ": <strong>" . htmlspecialchars($log['data1']) . " sn</strong> | " . t('queue_logs.detail_ring') . ": " . htmlspecialchars($log['data3']) . " sn";
+                                        echo t('queue_logs.detail_wait_time') . ": <strong>" . htmlspecialchars($log['data1']) . " " . t('common.sec_short') . "</strong> | " . t('queue_logs.detail_ring') . ": " . htmlspecialchars($log['data3']) . " sn";
                                     } elseif ($log['event'] === 'COMPLETECALLER' || $log['event'] === 'COMPLETEAGENT') {
-                                        echo t('queue_logs.detail_wait') . ": " . htmlspecialchars($log['data1']) . " sn | " . t('queue_logs.detail_talk_time') . ": <strong>" . htmlspecialchars($log['data2']) . " sn</strong> (" . t('queue_logs.detail_queue_pos') . ": " . htmlspecialchars($log['data3']) . ")";
+                                        echo t('queue_logs.detail_wait') . ": " . htmlspecialchars($log['data1']) . " " . t('common.sec_short') . " | " . t('queue_logs.detail_talk_time') . ": <strong>" . htmlspecialchars($log['data2']) . " sn</strong> (" . t('queue_logs.detail_queue_pos') . ": " . htmlspecialchars($log['data3']) . ")";
                                     } elseif ($log['event'] === 'ABANDON') {
                                         echo t('queue_logs.detail_abandoned_pos') . ": " . htmlspecialchars($log['data1']) . " | " . t('queue_logs.detail_wait_time_short') . ": <strong>" . htmlspecialchars($log['data3']) . " sn</strong>";
                                     } elseif ($log['event'] === 'RINGNOANSWER') {

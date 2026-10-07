@@ -4,7 +4,7 @@
             <i class="fas fa-phone-slash u-danger"></i> <?php echo t('end_call.header_title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('endCallHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('endCallHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('end_call', 'edit')): ?>
@@ -105,7 +105,7 @@
                     <label class="form-label"><?php echo t('internal_number.field'); ?></label>
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
-                           placeholder="ör: 1010">
+                           placeholder="<?php echo t('common.eg'); ?> 1010">
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 

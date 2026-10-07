@@ -19,7 +19,7 @@
                 <i class="fas fa-volume-up u-primary"></i> <?php echo t('sounds.announcements_title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundHelpBox')" title="Modül Rehberi">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                     <i class="fas fa-question-circle"></i>
                 </button>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
@@ -112,7 +112,7 @@
                 <i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_section_title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('mohHelpBox')" title="Modül Rehberi">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('mohHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                     <i class="fas fa-question-circle"></i>
                 </button>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
@@ -184,7 +184,7 @@
                 <i class="fas fa-box-archive u-primary"></i> <?php echo t('sound_packs.title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundPackHelpBox')" title="Modül Rehberi">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundPackHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                     <i class="fas fa-question-circle"></i>
                 </button>
             </div>
@@ -301,7 +301,7 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                     <label class="form-label"><?php echo t('internal_number.field'); ?></label>
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
-                           placeholder="ör: 1010">
+                           placeholder="<?php echo t('common.eg'); ?> 1010">
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 

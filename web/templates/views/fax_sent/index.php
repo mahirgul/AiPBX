@@ -3,7 +3,7 @@
         <div class="card-title">
             <i class="fas fa-history u-primary"></i> <?php echo t('fax_sent.header_title'); ?>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSentHelpBox')" title="Modül Rehberi">
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSentHelpBox')" title="<?php echo t('common.module_guide'); ?>">
             <i class="fas fa-question-circle"></i>
         </button>
     </div>

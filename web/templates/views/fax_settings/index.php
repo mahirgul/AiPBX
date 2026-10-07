@@ -3,7 +3,7 @@
     <div class="card-header">
         <div class="card-title"><i class="fas fa-fax u-primary"></i> <?php echo t('fax_settings.title'); ?></div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSettingsHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSettingsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('fax_settings', 'edit')): ?>

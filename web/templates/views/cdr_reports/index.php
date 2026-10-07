@@ -29,7 +29,7 @@ $filter_url = function (array $override) {
 
     <div class="card u-mb-0">
         <div class="u-muted u-fs-13 u-fw-600"><?php echo t('cdr_reports.stat_talk_time'); ?></div>
-        <div class="u-fs-28 u-fw-800 u-mt-6 u-primary"><?php echo round($stat_total_billsec / 60, 1); ?> <span class="u-fs-14 u-muted u-fw-600">dk</span></div>
+        <div class="u-fs-28 u-fw-800 u-mt-6 u-primary"><?php echo round($stat_total_billsec / 60, 1); ?> <span class="u-fs-14 u-muted u-fw-600"><?php echo t('common.min_short'); ?></span></div>
         <div class="u-muted u-fs-12 u-mt-4"><?php echo t('cdr_reports.stat_talk_time_desc'); ?></div>
     </div>
 
@@ -62,7 +62,7 @@ $filter_url = function (array $override) {
             <i class="fas fa-file-audio u-primary"></i> <?php echo t('cdr_reports.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('cdrHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('cdrHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
 <?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>

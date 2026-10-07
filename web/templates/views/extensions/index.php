@@ -4,7 +4,7 @@
             <i class="fas fa-phone-alt u-primary"></i> <?php echo t('extensions.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('extHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('extHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('extensions', 'edit')): ?>
@@ -111,18 +111,18 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <div style="display: flex; flex-direction: column; gap: 3px;">
-                                    <span class="badge badge-secondary u-fs-10" title="Arama Yetki Grubu">
-                                        <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars($e['permission_group_name'] ?? 'Her Yöne Açık'); ?>
+                                    <span class="badge badge-secondary u-fs-10" title="<?php echo t('extensions.dial_group'); ?>">
+                                        <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars($e['permission_group_name'] ?? t('extensions.no_restriction')); ?>
                                     </span>
                                     <?php if (!empty($e['boss_secretary_role']) && $e['boss_secretary_role'] !== 'none'): ?>
                                         <?php if ($e['boss_secretary_role'] === 'boss'): ?>
-                                            <span class="badge badge-warning u-fs-10" title="Şef / Müdür"><i class="fas fa-crown"></i> Şef</span>
+                                            <span class="badge badge-warning u-fs-10" title="<?php echo t('extensions.boss_t'); ?>"><i class="fas fa-crown"></i> <?php echo t('extensions.boss'); ?></span>
                                         <?php else: ?>
-                                            <span class="badge badge-info u-fs-10" title="Sekreter"><i class="fas fa-user-tie"></i> Sekreter</span>
+                                            <span class="badge badge-info u-fs-10" title="<?php echo t('extensions.secretary'); ?>"><i class="fas fa-user-tie"></i> <?php echo t('extensions.secretary'); ?></span>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (($e['extension_type'] ?? 'sip') !== 'fax' && (int)($e['voicemail_enabled'] ?? 1) === 1): ?>
-                                        <span class="badge badge-primary" style="font-size: 9px; opacity: 0.8;" title="Sesli Posta Kutusu"><i class="fas fa-voicemail"></i> VM</span>
+                                        <span class="badge badge-primary" style="font-size: 9px; opacity: 0.8;" title="<?php echo t('extensions.vm_box'); ?>"><i class="fas fa-voicemail"></i> VM</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -234,9 +234,9 @@
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-user-tie text-warning"></i> <?php echo t('extensions.field_boss_secretary_group', 'Şef - Sekreter Grubu'); ?></label>
                         <select name="boss_secretary_group_id" id="modal_boss_secretary_group_id" class="form-control">
-                            <option value="">-- Grup Yok --</option>
+                            <option value=""><?php echo t('extensions.no_group'); ?></option>
                             <?php foreach ($boss_secretary_groups ?? [] as $bsg): ?>
-                                <option value="<?php echo $bsg['id']; ?>"><?php echo htmlspecialchars($bsg['group_name']); ?> (Grup <?php echo $bsg['group_number']; ?>)</option>
+                                <option value="<?php echo $bsg['id']; ?>"><?php echo htmlspecialchars($bsg['group_name']); ?> (<?php echo t('common.group'); ?> <?php echo $bsg['group_number']; ?>)</option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -244,38 +244,38 @@
 
                 <div class="card" id="voicemail_settings_group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
                     <div class="u-flex-between u-mb-10">
-                        <span class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-voicemail u-primary"></i> Sesli Posta (Voicemail)</span>
+                        <span class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?></span>
                         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
                             <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked class="u-accent">
-                            <span>Sesli Posta Kutusu Etkin</span>
+                            <span><?php echo t('extensions.vm_enabled'); ?></span>
                         </label>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div class="form-group u-mb-8">
-                            <label class="form-label u-fs-11">Sesli Posta PIN (Şifre)</label>
-                            <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control u-fs-12" placeholder="Boş ise dahili no">
+                            <label class="form-label u-fs-11"><?php echo t('my_phone.vm_pin'); ?></label>
+                            <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control u-fs-12" placeholder="<?php echo t('extensions.vm_pin_ph'); ?>">
                         </div>
                         <div class="form-group u-mb-8">
-                            <label class="form-label u-fs-11">Sesli Posta E-posta</label>
-                            <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="ornek@alanadi.com">
+                            <label class="form-label u-fs-11"><?php echo t('my_phone.vm_email'); ?></label>
+                            <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="name@example.com">
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                             <input type="checkbox" name="vm_on_noanswer" id="modal_vm_on_noanswer" value="1" class="u-accent">
-                            <span>Cevapsızda</span>
+                            <span><?php echo t('extensions.vm_noanswer'); ?></span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                             <input type="checkbox" name="vm_on_busy" id="modal_vm_on_busy" value="1" class="u-accent">
-                            <span>Meşgulde</span>
+                            <span><?php echo t('extensions.vm_busy'); ?></span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                             <input type="checkbox" name="vm_on_unavail" id="modal_vm_on_unavail" value="1" class="u-accent">
-                            <span>Ulaşılamadığında</span>
+                            <span><?php echo t('extensions.vm_unavail'); ?></span>
                         </label>
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                             <input type="checkbox" name="vm_always" id="modal_vm_always" value="1" class="u-accent">
-                            <span>Her Zaman Sesli Posta</span>
+                            <span><?php echo t('extensions.vm_always'); ?></span>
                         </label>
                     </div>
                 </div>

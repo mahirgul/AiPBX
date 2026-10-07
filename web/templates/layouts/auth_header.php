@@ -5,7 +5,7 @@
  *
  * Expected variables: $auth_title (page title), $auth_head (extra <head> content, raw HTML)
  */
-$auth_site_title = getSystemSetting('site_title', 'AI PBX Portalı');
+$auth_site_title = getSystemSetting('site_title', 'AI PBX Portal');
 $auth_favicon = getSystemSetting('site_favicon_url', '');
 ?>
 <!DOCTYPE html>

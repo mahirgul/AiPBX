@@ -36,7 +36,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             <div class="card-title">
                 <i class="fas fa-server u-primary"></i> <?php echo t('mail_settings.section_smtp', 'Mail Relay & SMTP Sunucusu'); ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('mailHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('mailHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
@@ -50,7 +50,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('mail_settings.field_host', 'SMTP / Relay Sunucu Adresi'); ?></label>
-                <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="192.168.1.25 veya mail.example.com">
+                <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="192.168.1.25 / mail.example.com">
                 <small class="u-hint"><?php echo t('mail_settings.host_help', 'Kurumsal mail sunucunuzun veya relay makinesinin IP / FQDN adresi.'); ?></small>
             </div>
 
@@ -66,7 +66,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <label class="form-label"><i class="fas fa-shield-alt"></i> <?php echo t('mail_settings.field_security', 'Güvenlik / Şifreleme'); ?></label>
                 <select name="mail_smtp_security" class="form-control">
                     <option value="none" <?php echo $security === 'none' ? 'selected' : ''; ?>><?php echo t('mail_settings.sec_none', 'Yok (Düz Metin / İç Ağ Relay)'); ?></option>
-                    <option value="tls" <?php echo $security === 'tls' ? 'selected' : ''; ?>>STARTTLS (Önerilen - Port 587)</option>
+                    <option value="tls" <?php echo $security === 'tls' ? 'selected' : ''; ?>><?php echo t('mail_settings.starttls'); ?></option>
                     <option value="ssl" <?php echo $security === 'ssl' ? 'selected' : ''; ?>>SSL / TLS (Port 465)</option>
                 </select>
             </div>
@@ -83,12 +83,12 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div id="auth_fields" style="display: <?php echo $auth === 'yes' ? 'grid' : 'none'; ?>; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
             <div class="form-group">
                 <label class="form-label"><?php echo t('mail_settings.field_user', 'SMTP Kullanıcı Adı'); ?></label>
-                <input type="text" name="mail_smtp_user" class="form-control" value="<?php echo htmlspecialchars($user); ?>" placeholder="kullanici@example.com">
+                <input type="text" name="mail_smtp_user" class="form-control" value="<?php echo htmlspecialchars($user); ?>" placeholder="user@example.com">
             </div>
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('mail_settings.field_pass', 'SMTP Parola'); ?></label>
-                <input type="password" name="mail_smtp_pass" class="form-control" placeholder="Değiştirmek istemiyorsanız boş bırakın">
+                <input type="password" name="mail_smtp_pass" class="form-control" placeholder="<?php echo t('mail_settings.keep_pw'); ?>">
             </div>
         </div>
 
@@ -194,7 +194,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="send_test_email" value="1">
                 <div class="u-flex-gap">
-                    <input type="email" name="test_recipient" class="form-control u-flex-1" placeholder="ornek@example.com" required>
+                    <input type="email" name="test_recipient" class="form-control u-flex-1" placeholder="name@example.com" required>
                     <button type="submit" class="btn btn-secondary">
                         <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.btn_send_test', 'Test Gönder'); ?>
                     </button>

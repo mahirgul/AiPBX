@@ -53,7 +53,7 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             <label class="form-label u-fs-13 u-fw-700">
                 <i class="fas fa-id-badge u-primary"></i> Google Client ID
             </label>
-            <input type="text" name="google_client_id" class="form-control" value="<?php echo htmlspecialchars($client_id); ?>" placeholder="Örn: 1234567890-abcdefg123456.apps.googleusercontent.com" style="height: 40px; font-family: monospace; font-size: 13px;">
+            <input type="text" name="google_client_id" class="form-control" value="<?php echo htmlspecialchars($client_id); ?>" placeholder="<?php echo t('common.eg'); ?> 1234567890-abcdefg123456.apps.googleusercontent.com" style="height: 40px; font-family: monospace; font-size: 13px;">
             <small style="color: var(--text-muted); display: block; margin-top: 5px;">
                 <?php echo t('google_integration.client_id_desc', 'Google Cloud Console üzerinden oluşturulan OAuth 2.0 Web Client ID değeri.'); ?>
             </small>
@@ -64,8 +64,8 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
                 <i class="fas fa-key u-primary"></i> Google Client Secret
             </label>
             <div class="u-relative">
-                <input type="password" id="googleClientSecretInput" name="google_client_secret" class="form-control" value="<?php echo htmlspecialchars($client_secret); ?>" placeholder="Örn: GOCSPX-xxxxxx..." style="height: 40px; font-family: monospace; font-size: 13px; padding-right: 40px;">
-                <button type="button" onclick="toggleSecretVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;" title="Göster/Gizle">
+                <input type="password" id="googleClientSecretInput" name="google_client_secret" class="form-control" value="<?php echo htmlspecialchars($client_secret); ?>" placeholder="<?php echo t('common.eg'); ?> GOCSPX-xxxxxx..." style="height: 40px; font-family: monospace; font-size: 13px; padding-right: 40px;">
+                <button type="button" onclick="toggleSecretVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;" title="<?php echo t('my_phone.show_hide'); ?>">
                     <i class="fas fa-eye" id="secretEyeIcon"></i>
                 </button>
             </div>

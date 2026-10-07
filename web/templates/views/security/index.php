@@ -110,7 +110,7 @@
                         <div class="u-mt-10">
                             <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;"><?php echo t('security.manual_key_label', 'QR kodu tarayamıyorsanız gizli anahtar:'); ?></span>
                             <code id="manual_secret_key" style="background: var(--bg-card); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--primary); word-break: break-all;"><?php echo htmlspecialchars($setupSecret); ?></code>
-                            <button type="button" class="btn btn-secondary btn-xs" onclick="copySecretKey()" style="margin-left: 6px;" title="Kopyala">
+                            <button type="button" class="btn btn-secondary btn-xs" onclick="copySecretKey()" style="margin-left: 6px;" title="<?php echo t('common.copy'); ?>">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -125,7 +125,7 @@
                             <label class="form-label u-fw-700 u-fs-13">
                                 <?php echo t('security.verify_code_label', 'Uygulamadaki 6 Haneli Doğrulama Kodunu Girin:'); ?>
                             </label>
-                            <input type="text" name="verify_code" class="form-control" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="Örn: 123456" required style="font-size: 18px; font-weight: 800; letter-spacing: 6px; text-align: center;">
+                            <input type="text" name="verify_code" class="form-control" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="<?php echo t('common.eg'); ?> 123456" required style="font-size: 18px; font-weight: 800; letter-spacing: 6px; text-align: center;">
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">

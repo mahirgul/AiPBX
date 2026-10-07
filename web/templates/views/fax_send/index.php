@@ -3,7 +3,7 @@
         <div class="card-title">
             <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_send.header_title'); ?>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSendHelpBox')" title="Modül Rehberi">
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSendHelpBox')" title="<?php echo t('common.module_guide'); ?>">
             <i class="fas fa-question-circle"></i>
         </button>
     </div>
@@ -70,7 +70,7 @@
                     <select class="ql-font">
                         <option value="dejavusans" selected>Sans</option>
                         <option value="dejavuserif">Serif</option>
-                        <option value="dejavusansmono">Daktilo</option>
+                        <option value="dejavusansmono"><?php echo t('fax_send.font_mono'); ?></option>
                     </select>
                     <select class="ql-size">
                         <option value="10px">10</option>

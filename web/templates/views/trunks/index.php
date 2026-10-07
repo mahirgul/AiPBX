@@ -5,11 +5,11 @@
             <i class="fas fa-network-wired u-primary"></i> <?php echo t('trunks.header'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('trunkHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('trunkHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('trunks', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateTrunkModal()" title="Yeni Ekle">
+                <button class="btn btn-primary btn-sm" onclick="openCreateTrunkModal()" title="<?php echo t('common.add_new'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -62,13 +62,13 @@
                             <td class="u-strong">
                                 <?php echo htmlspecialchars($t['title']); ?>
                                 <?php if (!empty($t['did_trim_digits'])): ?>
-                                    <span class="badge badge-warning" title="DID Kırpma: Son <?php echo intval($t['did_trim_digits']); ?> hane" style="font-size: 10px; margin-left: 4px;">
+                                    <span class="badge badge-warning" title="<?php echo htmlspecialchars(sprintf(t('trunks.did_trim_t'), intval($t['did_trim_digits']))); ?>" style="font-size: 10px; margin-left: 4px;">
                                         <i class="fas fa-cut"></i> -<?php echo intval($t['did_trim_digits']); ?>
                                     </span>
                                 <?php endif; ?>
                                 <?php if (!empty($t['allow_outbound_routing'])): ?>
-                                    <span class="badge badge-info" title="Transit / Trunk-to-Trunk Geçiş Aktif (Grup <?php echo intval($t['outbound_route_group'] ?? 1); ?>)" style="font-size: 10px; margin-left: 4px; background: #6366f1; color: #fff;">
-                                        <i class="fas fa-random"></i> Transit (G<?php echo intval($t['outbound_route_group'] ?? 1); ?>)
+                                    <span class="badge badge-info" title="<?php echo htmlspecialchars(sprintf(t('trunks.transit_t'), intval($t['outbound_route_group'] ?? 1))); ?>" style="font-size: 10px; margin-left: 4px; background: #6366f1; color: #fff;">
+                                        <i class="fas fa-random"></i> Transit (<?php echo t('trunks.group_short'); ?><?php echo intval($t['outbound_route_group'] ?? 1); ?>)
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -83,7 +83,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge <?php echo $live_badge; ?>" title="Asterisk PJSIP canlı durumu (OPTIONS/qualify sonucu)"><?php echo $live_text; ?></span>
+                                <span class="badge <?php echo $live_badge; ?>" title="<?php echo t('trunks.live_t'); ?>"><?php echo $live_text; ?></span>
                             </td>
                             <td>
                                 <?php echo uiStatusToggleForm($t['id'], $t['is_active'], 'trunk_id'); ?>
@@ -202,7 +202,7 @@
                             <input type="checkbox" name="registration_enabled" id="modal_registration_enabled" value="1" class="u-check">
                             <span class="u-fw-600"><?php echo t('trunks.field_registration_enabled'); ?></span>
                         </label>
-                        <small class="u-hint u-fs-11">Operatör PJSIP Outbound Registration gerektiriyorsa işaretleyin.</small>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.register_hint'); ?></small>
                     </div>
 
                     <div class="form-group">
@@ -222,12 +222,12 @@
                     <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_auth_username'); ?></label>
-                            <input type="text" name="auth_username" id="modal_auth_username" class="form-control" placeholder="0XXXXXXXXXX veya kullanıcı adı">
+                            <input type="text" name="auth_username" id="modal_auth_username" class="form-control" placeholder="<?php echo t('trunks.auth_user_ph'); ?>">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_auth_password'); ?></label>
-                            <input type="password" name="auth_password" id="modal_auth_password" autocomplete="new-password" class="form-control" placeholder="SIP Parolası">
+                            <input type="password" name="auth_password" id="modal_auth_password" autocomplete="new-password" class="form-control" placeholder="<?php echo t('trunks.auth_pass_ph'); ?>">
                         </div>
                     </div>
 
@@ -300,8 +300,8 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_dtmf_mode'); ?></label>
                             <select name="dtmf_mode" id="modal_dtmf_mode" class="form-control">
-                                <option value="rfc4733">RFC 4733 / RFC 2833 (Önerilen)</option>
-                                <option value="inband">Inband (Ses İçi)</option>
+                                <option value="rfc4733"><?php echo t('trunks.dtmf_rfc'); ?></option>
+                                <option value="inband"><?php echo t('trunks.dtmf_inband'); ?></option>
                                 <option value="info">SIP INFO</option>
                                 <option value="auto">Auto</option>
                             </select>
@@ -320,7 +320,7 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_t38_ec'); ?></label>
                             <select name="t38_udptl_ec" id="modal_t38_udptl_ec" class="form-control">
-                                <option value="redundancy">Redundancy (Önerilen)</option>
+                                <option value="redundancy"><?php echo t('trunks.t38_red'); ?></option>
                                 <option value="none">None</option>
                                 <option value="fec">FEC</option>
                             </select>
@@ -329,8 +329,8 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_t38_nat'); ?></label>
                             <select name="t38_udptl_nat" id="modal_t38_udptl_nat" class="form-control">
-                                <option value="yes">Yes (NAT Arkası)</option>
-                                <option value="no">No (Doğrudan IP)</option>
+                                <option value="yes"><?php echo t('trunks.nat_yes'); ?></option>
+                                <option value="no"><?php echo t('trunks.nat_no'); ?></option>
                             </select>
                         </div>
 
@@ -347,8 +347,8 @@
                                 <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.fax_detect_help'); ?></span></span>
                             </label>
                             <select name="fax_detect" id="modal_fax_detect" class="form-control">
-                                <option value="1">Aktif (Otomatik Algıla &amp; Yönlendir)</option>
-                                <option value="0">Pasif</option>
+                                <option value="1"><?php echo t('trunks.fax_detect_on'); ?></option>
+                                <option value="0"><?php echo t('common.passive'); ?></option>
                             </select>
                         </div>
 
@@ -370,8 +370,8 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_direct_media'); ?></label>
                             <select name="direct_media" id="modal_direct_media" class="form-control">
-                                <option value="no">No (PBX üzerinden)</option>
-                                <option value="yes">Yes (Doğrudan Medya)</option>
+                                <option value="no"><?php echo t('trunks.media_no'); ?></option>
+                                <option value="yes"><?php echo t('trunks.media_yes'); ?></option>
                                 <option value="nonat">NoNAT</option>
                             </select>
                         </div>
@@ -381,7 +381,7 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_rtp_symmetric'); ?></label>
                             <select name="rtp_symmetric" id="modal_rtp_symmetric" class="form-control">
-                                <option value="yes">Yes (Önerilen)</option>
+                                <option value="yes"><?php echo t('trunks.yes_recommended'); ?></option>
                                 <option value="no">No</option>
                             </select>
                         </div>
@@ -389,7 +389,7 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_rewrite_contact'); ?></label>
                             <select name="rewrite_contact" id="modal_rewrite_contact" class="form-control">
-                                <option value="yes">Yes (Önerilen)</option>
+                                <option value="yes"><?php echo t('trunks.yes_recommended'); ?></option>
                                 <option value="no">No</option>
                             </select>
                         </div>
@@ -399,7 +399,7 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_force_rport'); ?></label>
                             <select name="force_rport" id="modal_force_rport" class="form-control">
-                                <option value="yes">Yes (Önerilen)</option>
+                                <option value="yes"><?php echo t('trunks.yes_recommended'); ?></option>
                                 <option value="no">No</option>
                             </select>
                         </div>
@@ -407,8 +407,8 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_timers'); ?></label>
                             <select name="timers" id="modal_timers" class="form-control">
-                                <option value="yes">Yes (Session Timers Aktif)</option>
-                                <option value="no">No (Devre Dışı)</option>
+                                <option value="yes"><?php echo t('trunks.session_timers_on'); ?></option>
+                                <option value="no"><?php echo t('trunks.opt_no_disabled'); ?></option>
                                 <option value="always">Always</option>
                                 <option value="never">Never</option>
                             </select>

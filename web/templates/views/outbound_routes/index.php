@@ -5,11 +5,11 @@
             <i class="fas fa-sign-out-alt u-primary"></i> <?php echo t('outbound.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('outboundHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('outboundHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('outbound_routes', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateRouteModal()" title="Yeni Ekle">
+                <button class="btn btn-primary btn-sm" onclick="openCreateRouteModal()" title="<?php echo t('common.add_new'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -111,23 +111,23 @@
                 <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_route_name'); ?></label>
-                        <input type="text" name="route_name" id="modal_route_name" class="form-control" placeholder="Örn: 9+Dış Hat Araması" required>
+                        <input type="text" name="route_name" id="modal_route_name" class="form-control" placeholder="<?php echo t('outbound_routes.name_ph'); ?>" required>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_pattern'); ?></label>
-                        <input type="text" name="match_pattern" id="modal_match_pattern" class="form-control" placeholder="Örn: _9X. veya 112" required>
+                        <input type="text" name="match_pattern" id="modal_match_pattern" class="form-control" placeholder="<?php echo t('common.eg'); ?> _9X. / 112" required>
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_prepend'); ?></label>
-                        <input type="text" name="prepend" id="modal_prepend" class="form-control" placeholder="Örn: 0">
+                        <input type="text" name="prepend" id="modal_prepend" class="form-control" placeholder="<?php echo t('common.eg'); ?> 0">
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_append'); ?></label>
-                        <input type="text" name="append" id="modal_append" class="form-control" placeholder="Örn: 00">
+                        <input type="text" name="append" id="modal_append" class="form-control" placeholder="<?php echo t('common.eg'); ?> 00">
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_strip_front'); ?></label>

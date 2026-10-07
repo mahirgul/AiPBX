@@ -37,7 +37,7 @@
                         <?php echo t('login_2fa.recovery_prompt', '8 karakterli yedek kurtarma kodunuzu girin:'); ?>
                     </label>
                     <input type="text" name="recovery_code" id="recovery_code" class="form-control"
-                           placeholder="Örn: 8F3K-9M2Q"
+                           placeholder="<?php echo t('common.eg'); ?> 8F3K-9M2Q"
                            style="font-size: 18px; font-weight: 700; letter-spacing: 2px; text-align: center; text-transform: uppercase; height: 50px; border-radius: 12px;">
                     <small style="display: block; color: var(--text-muted); margin-top: 6px; font-size: 11px;">
                         <?php echo t('login_2fa.recovery_help', 'Her kurtarma kodu tek kullanımlıktır ve kullanıldıktan sonra geçersiz kalır.'); ?>

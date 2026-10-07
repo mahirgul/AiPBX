@@ -8,11 +8,11 @@ $destOptionsCache = [];
             <i class="fas fa-route u-primary"></i> <?php echo t('did.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('didHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('didHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('did_routes', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateDidModal()" title="Yeni Ekle">
+                <button class="btn btn-primary btn-sm" onclick="openCreateDidModal()" title="<?php echo t('common.add_new'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -102,12 +102,12 @@ $destOptionsCache = [];
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('did.field_did_number'); ?></label>
-                    <input type="text" name="did_number" id="modal_did_number" class="form-control" required placeholder="ör: 3000">
+                    <input type="text" name="did_number" id="modal_did_number" class="form-control" required placeholder="<?php echo t('common.eg'); ?> 3000">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('did.field_title'); ?></label>
-                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="ör: Santral Ana Hat">
+                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="<?php echo t('did_routes.title_ph'); ?>">
                 </div>
 
                 <div class="u-grid-2">

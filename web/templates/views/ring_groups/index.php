@@ -38,14 +38,14 @@ use PBX\Destinations\DestinationRegistry;
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 70px;">Dahili #</th>
-                    <th>Grup Adı</th>
-                    <th>Çalacak Numaralar (Hedefler)</th>
-                    <th>Strateji</th>
-                    <th>Süre</th>
-                    <th>Kayıt</th>
-                    <th>Durum</th>
-                    <th class="text-right">İşlemler</th>
+                    <th style="width: 70px;"><?php echo t('ring_groups.col_ext'); ?></th>
+                    <th><?php echo t('common.group_name'); ?></th>
+                    <th><?php echo t('ring_groups.col_targets'); ?></th>
+                    <th><?php echo t('ring_groups.col_strategy'); ?></th>
+                    <th><?php echo t('ring_groups.col_time'); ?></th>
+                    <th><?php echo t('ring_groups.col_recording'); ?></th>
+                    <th><?php echo t('common.status'); ?></th>
+                    <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -64,48 +64,48 @@ use PBX\Destinations\DestinationRegistry;
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                                     <?php foreach ($num_array as $num): ?>
                                         <?php if (strlen($num) > 6): ?>
-                                            <span class="badge badge-warning" title="Harici Numara"><i class="fas fa-globe"></i> <?php echo htmlspecialchars($num); ?></span>
+                                            <span class="badge badge-warning" title="<?php echo t('ring_groups.external'); ?>"><i class="fas fa-globe"></i> <?php echo htmlspecialchars($num); ?></span>
                                         <?php else: ?>
-                                            <span class="badge badge-primary" title="Dahili Numara"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($num); ?></span>
+                                            <span class="badge badge-primary" title="<?php echo t('ring_groups.internal'); ?>"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($num); ?></span>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </td>
                             <td>
                                 <?php if ($rg['ring_strategy'] === 'sequential'): ?>
-                                    <span class="badge badge-secondary"><i class="fas fa-sort-numeric-down"></i> Sırayla</span>
+                                    <span class="badge badge-secondary"><i class="fas fa-sort-numeric-down"></i> <?php echo t('common.sequential'); ?></span>
                                 <?php elseif ($rg['ring_strategy'] === 'random'): ?>
-                                    <span class="badge badge-warning"><i class="fas fa-random"></i> Rastgele</span>
+                                    <span class="badge badge-warning"><i class="fas fa-random"></i> <?php echo t('ring_groups.random_short'); ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-success"><i class="fas fa-bell"></i> Hepsi Birlikte</span>
+                                    <span class="badge badge-success"><i class="fas fa-bell"></i> <?php echo t('common.all_together'); ?></span>
                                 <?php endif; ?>
                             </td>
-                            <td><span class="badge badge-secondary"><?php echo (int)$rg['ring_timeout']; ?> sn</span></td>
+                            <td><span class="badge badge-secondary"><?php echo (int)$rg['ring_timeout']; ?> <?php echo t('common.sec_short'); ?></span></td>
                             <td>
                                 <?php if ((int)$rg['record_call'] === 1): ?>
-                                    <span class="badge badge-danger" title="Görüşme Kaydediliyor"><i class="fas fa-microphone"></i> Kayıt</span>
+                                    <span class="badge badge-danger" title="<?php echo t('ring_groups.recorded'); ?>"><i class="fas fa-microphone"></i> <?php echo t('ring_groups.col_recording'); ?></span>
                                 <?php else: ?>
                                     <span class="text-muted u-fs-11">-</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ((int)$rg['is_active'] === 1): ?>
-                                    <span class="badge badge-success"><i class="fas fa-check"></i> Aktif</span>
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> <?php echo t('common.active'); ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-danger"><i class="fas fa-times"></i> Pasif</span>
+                                    <span class="badge badge-danger"><i class="fas fa-times"></i> <?php echo t('common.passive'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
                                 <?php if (hasModulePermission('ring_groups', 'edit')): ?>
                                     <div style="display: inline-flex; gap: 4px;">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo json_encode($rg); ?>)' title="Düzenle">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo json_encode($rg); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <form method="POST" class="u-inline" onsubmit="return confirm('Bu çalma grubunu silmek istediğinizden emin misiniz?');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('ring_groups.confirm_delete')), ENT_QUOTES); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_ring_group" value="1">
                                             <input type="hidden" name="ring_group_id" value="<?php echo $rg['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm" title="Sil">
+                                            <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -124,7 +124,7 @@ use PBX\Destinations\DestinationRegistry;
 <div class="modal-overlay" id="rgModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
-            <h3 class="u-title" id="rgModalTitle"><i class="fas fa-users u-primary"></i> Çalma Grubu</h3>
+            <h3 class="u-title" id="rgModalTitle"><i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.modal_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('rgModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
@@ -135,60 +135,60 @@ use PBX\Destinations\DestinationRegistry;
 
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
                     <div class="form-group">
-                        <label class="form-label">Grup Dahili Numarası</label>
-                        <input type="text" name="group_number" id="modal_rg_number" class="form-control" placeholder="ör: 7000" pattern="[0-9]{3,6}" required>
+                        <label class="form-label"><?php echo t('ring_groups.group_number'); ?></label>
+                        <input type="text" name="group_number" id="modal_rg_number" class="form-control" placeholder="<?php echo t('common.eg'); ?> 7000" pattern="[0-9]{3,6}" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Grup Adı</label>
-                        <input type="text" name="name" id="modal_rg_name" class="form-control" placeholder="ör: Satış ve Destek Ekibi" required>
+                        <label class="form-label"><?php echo t('common.group_name'); ?></label>
+                        <input type="text" name="name" id="modal_rg_name" class="form-control" placeholder="<?php echo t('ring_groups.name_ph'); ?>" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Çalacak Numaralar (Dahili & Harici GSM/Sabit)</label>
-                    <textarea name="numbers_list" id="modal_rg_numbers" class="form-control" rows="3" placeholder="ör: 1001, 1002, 05051234567, 02129876543" required></textarea>
+                    <label class="form-label"><?php echo t('ring_groups.numbers'); ?></label>
+                    <textarea name="numbers_list" id="modal_rg_numbers" class="form-control" rows="3" placeholder="<?php echo t('common.eg'); ?> 1001, 1002, 05051234567, 02129876543" required></textarea>
                     <small class="u-hint u-fs-11">
-                        Numaraları virgülle veya boşlukla ayırarak yazabilirsiniz. Santral dahilileri ve harici numaralar aynı grupta birlikte çalabilir.
+                        <?php echo t('ring_groups.numbers_hint'); ?>
                     </small>
                 </div>
 
                 <div class="u-grid-2">
                     <div class="form-group">
-                        <label class="form-label">Çalma Stratejisi</label>
+                        <label class="form-label"><?php echo t('ring_groups.strategy'); ?></label>
                         <select name="ring_strategy" id="modal_rg_strategy" class="form-control">
-                            <option value="ringall">Hepsi Birlikte (Aynı Anda Çal - İlk Açan Bağlanır)</option>
-                            <option value="sequential">Sırayla (Teker Teker Çal)</option>
-                            <option value="random">Rastgele (Hedefler Arasından Rastgele Seç)</option>
+                            <option value="ringall"><?php echo t('ring_groups.ringall'); ?></option>
+                            <option value="sequential"><?php echo t('common.sequential_opt'); ?></option>
+                            <option value="random"><?php echo t('ring_groups.random'); ?></option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Çalma Süresi (Zaman Aşımı)</label>
+                        <label class="form-label"><?php echo t('common.ring_timeout'); ?></label>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <input type="number" name="ring_timeout" id="modal_rg_timeout" class="form-control" value="30" min="5" max="300" required>
-                            <span class="u-muted u-fs-12">saniye</span>
+                            <span class="u-muted u-fs-12"><?php echo t('common.seconds'); ?></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="u-grid-2">
                     <div class="form-group">
-                        <label class="form-label">Arayan Numaraya Ön Ek (CID Prefix)</label>
-                        <input type="text" name="cid_prefix" id="modal_rg_cid_prefix" class="form-control" placeholder="ör: [SATIŞ] ">
+                        <label class="form-label"><?php echo t('ring_groups.cid_prefix'); ?></label>
+                        <input type="text" name="cid_prefix" id="modal_rg_cid_prefix" class="form-control" placeholder="<?php echo t('ring_groups.cid_prefix_ph'); ?>">
                     </div>
 
                     <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 8px;">
                         <label class="form-label u-check-label u-m-0">
                             <input type="checkbox" name="record_call" id="modal_rg_record" value="1" checked class="u-check">
-                            <span class="u-fw-600">Görüşmeyi Ses Kaydı Yap</span>
+                            <span class="u-fw-600"><?php echo t('ring_groups.record'); ?></span>
                         </label>
                     </div>
                 </div>
 
                 <div class="u-grid-2">
                     <div class="form-group">
-                        <label class="form-label">Kimse Açmazsa Hedef Tipi</label>
+                        <label class="form-label"><?php echo t('ring_groups.fallback'); ?></label>
                         <select name="fallback_dest_type" id="modal_rg_dest_type" class="form-control" onchange="loadRgDestOptions()">
                             <?php foreach ($modules as $m): ?>
                                 <option value="<?php echo htmlspecialchars($m['key']); ?>"><?php echo htmlspecialchars($m['name']); ?></option>
@@ -197,9 +197,9 @@ use PBX\Destinations\DestinationRegistry;
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Hedef</label>
+                        <label class="form-label"><?php echo t('common.target'); ?></label>
                         <select name="fallback_dest_id" id="modal_rg_dest_id" class="form-control">
-                            <option value="">Yükleniyor...</option>
+                            <option value=""><?php echo t('chat.loading'); ?></option>
                         </select>
                     </div>
                 </div>
@@ -207,7 +207,7 @@ use PBX\Destinations\DestinationRegistry;
                 <div class="form-group u-mt-10">
                     <label class="form-label u-check-label">
                         <input type="checkbox" name="is_active" id="modal_rg_active" value="1" checked class="u-check">
-                        <span class="u-fw-600">Grup Aktif</span>
+                        <span class="u-fw-600"><?php echo t('common.group_active'); ?></span>
                     </label>
                 </div>
 
