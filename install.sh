@@ -37,6 +37,19 @@ step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 # --- Root check ---
 [[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
 
+# --- Supported OS: Ubuntu 26.04 LTS or newer ---
+# The PHP dependencies (Symfony 8 via Phinx, composer.lock) need PHP >= 8.4.1
+# and the portal targets Asterisk 22; Ubuntu 24.04 ships PHP 8.3 / Asterisk 20,
+# so an install there used to fail half-way with "vendor/bin/phinx" missing.
+# Stop before touching anything; AIPBX_SKIP_OS_CHECK=1 tries anyway.
+if [[ "${AIPBX_SKIP_OS_CHECK:-0}" != 1 ]]; then
+    OS_ID="$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}")"
+    OS_VER="$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-0}")"
+    if [[ "$OS_ID" != ubuntu ]] || [[ "$(printf '%s\n' 26.04 "$OS_VER" | sort -V | head -1)" != 26.04 ]]; then
+        error "AiPBX needs Ubuntu 26.04 LTS or newer (PHP >= 8.4, Asterisk 22); this is ${OS_ID} ${OS_VER}. Set AIPBX_SKIP_OS_CHECK=1 to try anyway."
+    fi
+fi
+
 # --- Mode: fresh install (default) or --upgrade ---
 AIPBX_MODE=install
 for arg in "$@"; do
@@ -784,8 +797,13 @@ a2ensite aipbx.conf 2>/dev/null
 a2dissite 000-default.conf 2>/dev/null || true
 a2enconf aipbx-routing 2>/dev/null
 
-# Composer dependencies
-cd "$INSTALL_DIR/web" && composer install --no-dev --no-interaction --quiet 2>/dev/null || true
+# Composer dependencies. Errors were hidden (--quiet 2>/dev/null || true) and
+# the install then stopped at the migrations with "vendor/bin/phinx" missing.
+info "Installing PHP dependencies (Composer)..."
+cd "$INSTALL_DIR/web"   # the migrations below run from here (vendor/bin/phinx)
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress 2>&1 | tail -20 \
+    || error "Composer install failed (see output above)"
+[[ -x "$INSTALL_DIR/web/vendor/bin/phinx" ]] || error "Composer did not install the PHP dependencies (see output above)"
 
 # Database schema (Phinx migrations), seed data, admin user, ODBC user.
 # Migrations are the single source of truth: the old db/schema.sql had fallen
