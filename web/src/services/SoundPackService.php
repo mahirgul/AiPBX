@@ -5,7 +5,8 @@ require_once __DIR__ . '/../priv_helper.php';
  * Sounds page → "Asterisk sound packs" tab.
  *
  * Installs Asterisk's official prompt / music-on-hold packages from
- * downloads.asterisk.org. The work is done as root by
+ * downloads.asterisk.org, and AiPBX's own Turkish prompts (core tr, GitHub
+ * release sounds-tr-<version>; install.sh installs them the same way). The work is done as root by
  * /usr/local/sbin/aipbx-sounds (conf/sbin/aipbx-sounds), started through
  * aipbx-priv in its own systemd unit because a download can take minutes;
  * the portal only reads the state files it writes.
@@ -22,6 +23,7 @@ class SoundPackService
     /** What downloads.asterisk.org publishes, per kind → language code → name. */
     public const CATALOG = [
         'core' => [
+            'tr' => 'Türkçe (AiPBX)',
             'en' => 'English (US)', 'en_AU' => 'English (Australia)', 'en_GB' => 'English (UK)',
             'en_NZ' => 'English (New Zealand)', 'es' => 'Español', 'fr' => 'Français',
             'it' => 'Italiano', 'ja' => '日本語', 'ru' => 'Русский', 'sv' => 'Svenska',

@@ -984,56 +984,11 @@ info "Installing Asterisk sound prompts (Turkish & WebRTC/IVR sounds)..."
 mkdir -p /var/lib/asterisk/sounds/custom /var/lib/asterisk/sounds/tr
 
 if [[ -d "$INSTALL_DIR/sounds/custom" ]]; then
-    # -n: sounds uploaded from the portal with the same name are kept (upgrade)
-    cp -an "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
+    # --update=none: sounds uploaded from the portal with the same name are kept
+    # (upgrade). Same as -n, which newer coreutils warn about.
+    cp -a --update=none "$INSTALL_DIR/sounds/custom/"* /var/lib/asterisk/sounds/custom/
 fi
 
-# Turkish prompts: the asterisk-core-sounds-tr-<format>-<version>.tar.xz
-# packages (built by scripts/build_tr_sounds.sh; texts in
-# sounds/core-sounds-tr.txt), one per format like Asterisk's own sound
-# packages. It is AiPBX's own set, so it replaces older copies. Formats the
-# packages do not ship (e.g. a stale .g729 or .sln of the same prompt) are
-# removed first, or Asterisk could still pick the old recording by format cost.
-#
-# The packages are not in git: they are assets of the sounds-tr-<version>
-# GitHub release. A build left at the repo root is used as is; otherwise the
-# pinned version is downloaded into /var/cache/aipbx. A missing ls match used
-# to end the script silently here (set -e + pipefail), half-way through step 9.
-TR_SOUNDS_VERSION=1.0.0
-TR_SOUNDS_URL="https://github.com/mahirgul/AiPBX/releases/download/sounds-tr-${TR_SOUNDS_VERSION}"
-TR_SOUNDS_SUMS="$(ls "$INSTALL_DIR"/asterisk-core-sounds-tr-*.SHA256SUMS 2>/dev/null | sort -V | tail -1 || true)"
-if [[ -z "$TR_SOUNDS_SUMS" ]]; then
-    TR_SOUNDS_CACHE="/var/cache/aipbx/sounds-tr-${TR_SOUNDS_VERSION}"
-    TR_SOUNDS_SUMS="$TR_SOUNDS_CACHE/asterisk-core-sounds-tr-${TR_SOUNDS_VERSION}.SHA256SUMS"
-    if ! (cd "$TR_SOUNDS_CACHE" 2>/dev/null && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")" >/dev/null 2>&1); then
-        info "Downloading Turkish sound packages (sounds-tr-${TR_SOUNDS_VERSION})..."
-        mkdir -p "$TR_SOUNDS_CACHE"
-        if curl -fsSL --retry 3 -o "$TR_SOUNDS_SUMS" "$TR_SOUNDS_URL/$(basename "$TR_SOUNDS_SUMS")"; then
-            while read -r _ pkg; do
-                curl -fsSL --retry 3 -o "$TR_SOUNDS_CACHE/$pkg" "$TR_SOUNDS_URL/$pkg" || { rm -f "$TR_SOUNDS_SUMS"; break; }
-            done < "$TR_SOUNDS_SUMS"
-        else
-            rm -f "$TR_SOUNDS_SUMS"
-        fi
-    fi
-    [[ -f "$TR_SOUNDS_SUMS" ]] || TR_SOUNDS_SUMS=""
-fi
-if [[ -n "$TR_SOUNDS_SUMS" ]]; then
-    TR_SOUNDS_DIR="$(dirname "$TR_SOUNDS_SUMS")"
-    (cd "$TR_SOUNDS_DIR" && sha256sum -c --quiet "$(basename "$TR_SOUNDS_SUMS")") \
-        || error "Turkish sound packages: checksum mismatch ($TR_SOUNDS_SUMS)"
-    mapfile -t TR_SOUNDS_PKGS < <(awk '{print $2}' "$TR_SOUNDS_SUMS")
-    while IFS= read -r f; do
-        base="/var/lib/asterisk/sounds/tr/${f%.wav}"
-        rm -f "$base".{g729,sln,sln32,sln48,siren7,siren14,wav16}
-    done < <(tar -tJf "$TR_SOUNDS_DIR/${TR_SOUNDS_PKGS[0]}" | sed -n 's|^\./||; /\.[a-z0-9]*$/{ s/\.[a-z0-9]*$/.wav/; p }' | grep -v '^core-sounds\|^LICENSE\|^CHANGES')
-    for pkg in "${TR_SOUNDS_PKGS[@]}"; do
-        tar -xJf "$TR_SOUNDS_DIR/$pkg" --no-same-owner -C /var/lib/asterisk/sounds/tr
-    done
-    ok "Turkish prompts installed (${#TR_SOUNDS_PKGS[@]} formats, $(basename "$TR_SOUNDS_SUMS" .SHA256SUMS))"
-else
-    warn "Turkish sound packages could not be downloaded ($TR_SOUNDS_URL) — Turkish prompts skipped; run install.sh --upgrade again later"
-fi
 
 # Set default language to Turkish in asterisk.conf
 if [[ -f /etc/asterisk/asterisk.conf ]]; then
@@ -1069,6 +1024,37 @@ link_sound_dir() {  # link_sound_dir TARGET LINK
 }
 link_sound_dir /var/lib/asterisk/sounds/custom /usr/local/share/asterisk/sounds
 link_sound_dir /var/lib/asterisk/sounds/tr /usr/share/asterisk/sounds/tr
+
+# Turkish prompts: AiPBX's own asterisk-core-sounds-tr packages (built by
+# scripts/build_tr_sounds.sh, texts in sounds/core-sounds-tr.txt), one per
+# format like Asterisk's own sound packages. They are not in git but assets of
+# the sounds-tr-<version> GitHub release; aipbx-sounds (installed in step 8)
+# downloads and verifies them, so they also show up — and can be removed or
+# installed again — on Sounds → Asterisk Sound Packs. Packages built locally
+# at the repo root are used instead of downloading. A failed download only
+# warns: the install goes on. AIPBX_TR_SOUNDS=no skips this step.
+if [[ "${AIPBX_TR_SOUNDS:-yes}" == no ]]; then
+    info "Turkish prompts skipped (AIPBX_TR_SOUNDS=no) — install them later on Sounds → Asterisk Sound Packs"
+else
+    TR_SOUNDS_VERSION="$(sed -n 's/^TR_VERSION=//p' /usr/local/sbin/aipbx-sounds)"
+    if compgen -G "$INSTALL_DIR/asterisk-core-sounds-tr-*-${TR_SOUNDS_VERSION}.tar.xz" >/dev/null \
+       && [[ -f "$INSTALL_DIR/asterisk-core-sounds-tr-${TR_SOUNDS_VERSION}.SHA256SUMS" ]]; then
+        mkdir -p "/var/cache/aipbx/sounds-tr-${TR_SOUNDS_VERSION}"
+        cp "$INSTALL_DIR"/asterisk-core-sounds-tr-*"${TR_SOUNDS_VERSION}"* "/var/cache/aipbx/sounds-tr-${TR_SOUNDS_VERSION}/"
+    fi
+    TR_SOUNDS_FAILED=()
+    for fmt in wav ulaw alaw gsm g722 sln16; do
+        # Already installed in this version (upgrade): nothing to download.
+        python3 -c 'import json,sys; d=json.load(open("/var/lib/aipbx/sound-packs.json")); sys.exit(d.get("core-tr-"+sys.argv[1],{}).get("version")!=sys.argv[2])' \
+            "$fmt" "$TR_SOUNDS_VERSION" 2>/dev/null && continue
+        /usr/local/sbin/aipbx-sounds install core tr "$fmt" >/dev/null 2>&1 || TR_SOUNDS_FAILED+=("$fmt")
+    done
+    if [[ ${#TR_SOUNDS_FAILED[@]} -eq 0 ]]; then
+        ok "Turkish prompts installed (6 formats, sounds-tr-${TR_SOUNDS_VERSION})"
+    else
+        warn "Turkish prompts not installed for: ${TR_SOUNDS_FAILED[*]} (see /var/log/aipbx/sound-packs.log) — install them later on Sounds → Asterisk Sound Packs"
+    fi
+fi
 chown -R asterisk:asterisk /etc/asterisk/
 # The portal (www-data, in the asterisk group) writes rtp.conf, udptl.conf,
 # voicemail.conf and asterisk.conf atomically (temp file + rename in the same
