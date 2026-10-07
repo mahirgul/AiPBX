@@ -85,9 +85,19 @@
 		4491659C355BA426C58890F1 /* jssip.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "jssip.min.js"; sourceTree = "<group>"; };
 		24C821D2FAF60C587288A293 /* phone_engine.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "phone_engine.html"; sourceTree = "<group>"; };
 		4D1C2CD162DFFB36E10BF93D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		F86C715CB8B8ACFC228FE6CF /* az */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = az; path = az.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8ED34FF7DFFDD05DD51333D1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		3543389D7E15C59988837C3D /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		90783E1165894886E9095421 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D3C367D7AF3F8A9DADE20873 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		26D444DC049388F1AF2EC2B4 /* sr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sr; path = sr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B40D6DC5C44D727CF6AF296D /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		9140C0FCD9DBBA0C162852B2 /* az */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = az; path = az.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		0FDE3F53E2C34C8D5C34CE6D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		8E3301BE9DD95AD9CBA4199B /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		57EAAFA981F949B5C3D353A4 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		C0F66EC6DE54A9F61866F1CB /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		6DA3CF0951146BE878829F89 /* sr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sr; path = sr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		49173B712942DB71A06FEAA8 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		0096DDB5D5C93DB7732319BF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
 		94B311C526101E51407A139E /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
@@ -289,7 +299,12 @@
 		535DAC8882659EA922843FD3 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				F86C715CB8B8ACFC228FE6CF /* az */,
 				8ED34FF7DFFDD05DD51333D1 /* en */,
+				3543389D7E15C59988837C3D /* es */,
+				90783E1165894886E9095421 /* fr */,
+				D3C367D7AF3F8A9DADE20873 /* ru */,
+				26D444DC049388F1AF2EC2B4 /* sr */,
 				B40D6DC5C44D727CF6AF296D /* tr */,
 			);
 			name = Localizable.strings;
@@ -298,7 +313,12 @@
 		E70C1D27D99222F6D9E31899 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
+				9140C0FCD9DBBA0C162852B2 /* az */,
 				0FDE3F53E2C34C8D5C34CE6D /* en */,
+				8E3301BE9DD95AD9CBA4199B /* es */,
+				57EAAFA981F949B5C3D353A4 /* fr */,
+				C0F66EC6DE54A9F61866F1CB /* ru */,
+				6DA3CF0951146BE878829F89 /* sr */,
 				49173B712942DB71A06FEAA8 /* tr */,
 			);
 			name = InfoPlist.strings;
@@ -343,7 +363,12 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				az,
 				en,
+				es,
+				fr,
+				ru,
+				sr,
 				tr,
 				Base,
 			);
