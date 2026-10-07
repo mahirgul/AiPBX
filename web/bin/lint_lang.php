@@ -107,6 +107,58 @@ if (!empty($dynamic_prefixes)) {
     }
 }
 
+// 3) Every language file (tr and the others): no keys English does not
+// have, the same placeholders as English (a translation with one %s fewer
+// breaks sprintf) and every language of UI_LANGUAGES has a file. Keys a
+// language lacks are only reported: t() shows the English text for them.
+function placeholderCount(string $v): int {
+    return preg_match_all('/%(?:\d+\$)?[sd]/', $v);
+}
+$config_src = (string) file_get_contents($root . '/config.php');
+preg_match("/const UI_LANGUAGES = \[(.*?)\];/s", $config_src, $ui);
+preg_match_all("/'([a-z]{2}(?:_[A-Z]{2})?)'\s*=>/", $ui[1] ?? '', $ui_codes);
+foreach ($ui_codes[1] as $code) {
+    if (!is_file("$root/lang/$code.php")) {
+        echo "\nUI_LANGUAGES lists '$code' but lang/$code.php does not exist.\n";
+        $problems++;
+    }
+}
+$coverage = [];
+foreach (glob($root . '/lang/*.php') as $file) {
+    $code = basename($file, '.php');
+    if ($code === 'en') continue;
+    $strings = require $file;
+    if (!is_array($strings)) {
+        echo "\nlang/$code.php does not return an array.\n";
+        $problems++;
+        continue;
+    }
+    $unknown = array_diff(array_keys($strings), array_keys($en));
+    if ($code !== 'tr' && !empty($unknown)) {
+        echo "\nlang/$code.php has keys English does not have (" . count($unknown) . "):\n";
+        foreach (array_slice($unknown, 0, 20) as $k) echo "  - $k\n";
+        $problems += count($unknown);
+    }
+    $bad = [];
+    foreach ($strings as $k => $v) {
+        if (isset($en[$k]) && is_string($v) && placeholderCount($v) !== placeholderCount((string) $en[$k])) {
+            $bad[] = $k;
+        }
+    }
+    if (!empty($bad)) {
+        echo "\nlang/$code.php: placeholder count (%s) differs from English (" . count($bad) . "):\n";
+        foreach (array_slice($bad, 0, 20) as $k) echo "  - $k\n";
+        $problems += count($bad);
+    }
+    $coverage[$code] = count(array_intersect_key($strings, $en));
+}
+if (count($coverage) > 1) {
+    echo "\nTranslated keys per language (English: " . count($en) . "):\n";
+    foreach ($coverage as $code => $n) {
+        printf("  %-6s %5d  %5.1f%%\n", $code, $n, 100 * $n / max(1, count($en)));
+    }
+}
+
 echo "\n" . ($problems === 0
     ? "CLEAN: tr/en have the same number of keys (" . count($tr) . "); all " . count($used_keys) . " fixed keys used in the code exist in both files.\n"
     : "PROBLEMS FOUND: $problems item(s) listed above.\n");

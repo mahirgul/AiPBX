@@ -435,7 +435,7 @@ function sanitizeDestType($type) {
  * (pbx_dids/pbx_ivrs/pbx_queues.language, getAvailableLanguages()) — one
  * controls the audio in a phone call, this one the texts in the web panel.
  */
-const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe'];
+const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe', 'hr' => 'Hrvatski'];
 
 /** Phone or tablet browser (sign-in page layout, app download button). */
 function isMobileUserAgent(): bool {
@@ -465,13 +465,20 @@ function getUserLanguage() {
  * translations stay visible.
  */
 function t($key, $default = null) {
-    static $translations = [];
     $lang = getUserLanguage();
-    if (!isset($translations[$lang])) {
+    // A language that is not (yet) fully translated shows English for the
+    // missing keys instead of the raw key.
+    return langStrings($lang)[$key] ?? langStrings('en')[$key] ?? ($default ?? $key);
+}
+
+/** The translations of one interface language (lang/<code>.php), loaded once. */
+function langStrings(string $lang): array {
+    static $cache = [];
+    if (!isset($cache[$lang])) {
         $file = __DIR__ . '/lang/' . $lang . '.php';
-        $translations[$lang] = is_file($file) ? require $file : [];
+        $cache[$lang] = is_file($file) ? require $file : [];
     }
-    return $translations[$lang][$key] ?? ($default ?? $key);
+    return $cache[$lang];
 }
 
 
@@ -510,7 +517,8 @@ function jsI18nScript(): string {
     static $lang = [];
     $code = getUserLanguage();
     if (!isset($lang[$code])) {
-        $all = require __DIR__ . '/lang/' . $code . '.php';
+        // English underneath, so keys a language lacks still show readable text.
+        $all = array_merge(langStrings('en'), langStrings($code));
         $lang[$code] = array_filter($all, fn($k) => str_starts_with($k, 'js.'), ARRAY_FILTER_USE_KEY);
     }
     return '<script>window.I18N = ' . json_encode((object) $lang[$code], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) . ';'
