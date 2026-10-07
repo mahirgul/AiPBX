@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.5
+
+**Install / update**
+- An update no longer fails and rolls back when Asterisk does not come up
+  on the first restart but starts a moment later by itself; the installer
+  waits up to 20 seconds for it.
+
 ## 1.3.4
 
 Fixes found while going through user feedback (#1).

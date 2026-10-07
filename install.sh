@@ -1141,7 +1141,19 @@ UMask=0002
 UNIT
 systemctl daemon-reload
 
-systemctl restart asterisk
+# A restart can fail although Asterisk comes up a moment later through the
+# unit's Restart=on-failure (seen once on an update: the new process got a
+# SIGKILL at start and was running 2 s later). Wait for that before failing
+# the whole install — a failed upgrade rolls back.
+if ! systemctl restart asterisk; then
+    warn "Asterisk did not start on the first try — waiting for the automatic restart"
+    for _ in $(seq 1 20); do
+        systemctl is-active --quiet asterisk && break
+        sleep 1
+    done
+    systemctl is-active --quiet asterisk || error "Asterisk does not start — see: journalctl -u asterisk"
+    ok "Asterisk is running"
+fi
 systemctl enable asterisk
 
 # Sync initial endpoints, dialplans, and transports from DB to Asterisk
