@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.2
+
+**Install / update**
+- Updates no longer run apt when every system package is already
+  installed (system package updates are left to the OS). On servers that
+  cannot reach the Ubuntu mirrors — e.g. behind a proxy that stalls port 80
+  — an update used to hang for many minutes in `apt-get update` and could
+  then fail on a package download and roll back. Only packages a new release
+  adds are installed, with short network timeouts.
+
 ## 1.3.1
 
 **Android app 1.0.50**
