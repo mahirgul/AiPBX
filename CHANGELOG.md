@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.1
+
+**Android app 1.0.50**
+- The QR code scanner no longer turns the screen sideways on phones; it
+  follows the device orientation like the rest of the app.
+
+**Server**
+- Static analysis fixes (no change in behaviour).
+
 ## 1.3.0
 
 English is now the default language of the whole system; Turkish stays one
