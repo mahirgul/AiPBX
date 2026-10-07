@@ -3642,4 +3642,7 @@ Your phone will ring.',
     'js.my_phone.mobile_device' => 'Mobile device',
     'js.sec.device' => 'Device',
     'js.ui.delete_confirm' => 'Are you sure you want to delete this record?',
+    'srv_mail.err_sasl_write' => 'Could not write the SMTP login to %s (file permissions). Run: sudo chown root:www-data /etc/postfix/sasl_passwd && sudo chmod 660 /etc/postfix/sasl_passwd',
+    'srv_mail.test_delivered' => 'The test e-mail to %1$s was accepted by the mail server: %2$s',
+    'srv_mail.test_failed' => 'The test e-mail could not be delivered. Mail server answer: %s',
 ];

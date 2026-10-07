@@ -284,6 +284,7 @@ PACKAGES=(
   asterisk-core-sounds-en
   asterisk-core-sounds-en-wav
   asterisk-modules
+  asterisk-moh-opsound-gsm
   mariadb-server
   mariadb-client
   xz-utils
@@ -409,6 +410,16 @@ mkdir -p /var/lib/asterisk/sounds/custom
 mkdir -p /var/lib/asterisk/sounds/tr
 mkdir -p /var/lib/asterisk/moh
 mkdir -p /var/lib/asterisk/moh/custom   # seed.sql's "custom" MOH class
+# The "default" MOH class plays /var/lib/asterisk/moh, but Ubuntu installs its
+# tracks (asterisk-moh-opsound-*) in /usr/share/asterisk/moh. An empty folder
+# makes Asterisk drop the class ("No music on hold classes configured") and
+# callers on hold or in a queue hear silence. Link the stock tracks in — only
+# while the folder has no audio of its own, so an admin's music is never touched.
+if ! find /var/lib/asterisk/moh -maxdepth 1 \( -type f -o -type l \) | grep -q .; then
+    for track in /usr/share/asterisk/moh/*; do
+        [[ -f "$track" ]] && ln -sf "$track" /var/lib/asterisk/moh/
+    done
+fi
 mkdir -p /var/lib/aipbx/chat_files /var/lib/aipbx/tts
 # Key that encrypts cloud credentials stored in the database (AI → Cloud TTS).
 # Created here so it belongs to the web server: one made by root would lock it out.

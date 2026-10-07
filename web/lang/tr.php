@@ -3642,4 +3642,7 @@ Telefonunuz çaldırılacak.',
     'js.my_phone.mobile_device' => 'Mobil Cihaz',
     'js.sec.device' => 'Cihaz',
     'js.ui.delete_confirm' => 'Bu kaydi silmek istediginize emin misiniz?',
+    'srv_mail.err_sasl_write' => 'SMTP girişi %s dosyasına yazılamadı (dosya izinleri). Çalıştırın: sudo chown root:www-data /etc/postfix/sasl_passwd && sudo chmod 660 /etc/postfix/sasl_passwd',
+    'srv_mail.test_delivered' => '%1$s adresine giden test e-postası mail sunucusu tarafından kabul edildi: %2$s',
+    'srv_mail.test_failed' => 'Test e-postası teslim edilemedi. Mail sunucusunun yanıtı: %s',
 ];
