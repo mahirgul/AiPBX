@@ -1,6 +1,10 @@
 <?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/login.css'); ?>">
-    <div class="auth-card" style="max-width: 420px;">
+<?php
+// Phones get two cards (logo + Google Play, sign-in form), side by side in landscape — pages/login.css.
+$login_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$is_mobile_device = (bool) preg_match('/(android|iphone|ipad|ipod|mobile|phone|silk|blackberry|opera mini|windows phone)/i', $login_ua);
+ob_start(); ?>
         <div class="u-text-center u-mb-24">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
                 <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
@@ -12,6 +16,20 @@
             <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_sub); ?></p>
         </div>
+
+<?php $brand_html = ob_get_clean(); ?>
+    <div class="auth-cards<?php echo $is_mobile_device ? ' is-mobile' : ''; ?>">
+    <?php if ($is_mobile_device): ?>
+    <!-- Phones: logo + Google Play in their own card (side by side with the form in landscape) -->
+    <div class="auth-card brand-card">
+<?php echo $brand_html; ?>
+        <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-play" title="<?php echo htmlspecialchars(t('login.mobile_app_desc')); ?>">
+            <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
+        </a>
+    </div>
+    <?php endif; ?>
+    <div class="auth-card login-card">
+        <?php if (!$is_mobile_device) echo $brand_html; ?>
 
         <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
@@ -70,22 +88,15 @@
         </a>
         <?php endif; ?>
 
-        <?php
-        $login_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $is_mobile_device = (bool) preg_match('/(android|iphone|ipad|ipod|mobile|phone|silk|blackberry|opera mini|windows phone)/i', $login_ua);
-        ?>
-        <div class="mobile-app-download" style="<?php echo $is_mobile_device ? 'margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border-color); text-align: center;' : 'display: none; margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border-color); text-align: center;'; ?>">
-            <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-color);">
-                <i class="fab fa-android" style="color: #3DDC84; font-size: 18px;"></i>
-                <span><?php echo t('login.mobile_app_title'); ?></span>
-            </div>
-            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
-                <?php echo t('login.mobile_app_desc'); ?>
-            </p>
-            <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-outline-primary" style="width: 100%; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 14px; font-size: 13px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">
-                <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
-            </a>
-        </div>
+    </div>
+
+    <?php if (!$is_mobile_device): ?>
+    <div class="auth-card mobile-app-download">
+        <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-play" title="<?php echo htmlspecialchars(t('login.mobile_app_desc')); ?>">
+            <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
+        </a>
+    </div>
+    <?php endif; ?>
     </div>
 
     <div class="footer-toast-container" id="footer-toast-container"></div>

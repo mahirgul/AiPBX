@@ -1377,7 +1377,6 @@ return [
     'login.security_check' => 'Güvenlik Doğrulaması:',
     'login.captcha_placeholder' => 'Sonucu yazın',
     'login.submit_tooltip' => 'Giriş Yap',
-    'login.mobile_app_title' => 'AiPBX Mobil Dahili',
     'login.mobile_app_desc' => 'Dahilinizi cep telefonunuzdan kullanmak için Android uygulamasını indirin.',
     'login.csrf_error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.',
 

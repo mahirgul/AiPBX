@@ -458,6 +458,26 @@
     color: #fff;
 }
 
+/* Outline buttons (used across the pages but were never defined, so they
+   rendered as bare text): coloured border and text, filled on hover. */
+.btn-outline-primary   { --btn-c: var(--primary); }
+.btn-outline-secondary { --btn-c: var(--text-muted); }
+.btn-outline-success   { --btn-c: var(--success); }
+.btn-outline-danger    { --btn-c: var(--danger); }
+.btn-outline-warning   { --btn-c: var(--warning); }
+.btn-outline-info      { --btn-c: var(--info, #0ea5e9); }
+.btn-outline-primary, .btn-outline-secondary, .btn-outline-success,
+.btn-outline-danger, .btn-outline-warning, .btn-outline-info {
+    background: transparent;
+    color: var(--btn-c);
+    border: 1px solid var(--btn-c);
+}
+.btn-outline-primary:hover, .btn-outline-secondary:hover, .btn-outline-success:hover,
+.btn-outline-danger:hover, .btn-outline-warning:hover, .btn-outline-info:hover {
+    background: var(--btn-c);
+    color: #fff;
+}
+
 /* Status Badges */
 .badge {
     display: inline-flex;
@@ -619,14 +639,37 @@
 }
 
 /* Auth Pages (Login & 403) */
+/* The app layout fixes body to the screen height with overflow:hidden (each
+   panel scrolls by itself); the sign-in pages must scroll as a whole — on a
+   phone the card is taller than the screen. margin:auto on the card centres
+   it when it fits and keeps its top visible when it does not (align-items:
+   center pushed the top off-screen). */
 body.auth-body {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
     background: var(--bg-body);
     color: var(--text-main);
     padding: 24px;
+}
+body.auth-body > .auth-card {
+    margin: auto;
+}
+
+@media (max-width: 520px), (max-height: 520px) {
+    body.auth-body {
+        padding: 60px 12px 16px;
+    }
+    body.auth-body > .auth-card {
+        padding: 24px 18px;
+    }
+    body.auth-body .auth-lang-switch {
+        position: absolute;
+    }
 }
 
 /* Language switch in the top-right corner of the sign-in pages */

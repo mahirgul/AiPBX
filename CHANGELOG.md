@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.7
+
+**Sign-in page on phones**
+- The page scrolls; before, a phone showed only part of it and could not
+  scroll, and the logo was cut off at the top.
+- Two cards: logo + a single **Get it on Google Play** button, and the
+  sign-in form. Side by side when the phone is turned sideways.
+- The language switch no longer covers the card on small screens.
+
+**Portal**
+- Outline buttons (e.g. *Sign in with a Passkey*, and buttons on about ten
+  other pages) were never styled and looked like plain text; they now have
+  a coloured border.
+
 ## 1.3.6
 
 - The mobile app download buttons (sign-in page on phones, **My Phone →

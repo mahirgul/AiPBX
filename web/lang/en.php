@@ -1377,7 +1377,6 @@ return [
     'login.security_check' => 'Security Check:',
     'login.captcha_placeholder' => 'Enter the result',
     'login.submit_tooltip' => 'Sign In',
-    'login.mobile_app_title' => 'AiPBX Mobile Phone',
     'login.mobile_app_desc' => 'Download the Android app to use your PBX extension from your mobile device.',
     'login.csrf_error' => 'Security verification (CSRF) failed! Please refresh the page and try again.',
 
