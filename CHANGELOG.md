@@ -5,6 +5,40 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.1.0
+
+Installation fixes and Asterisk sound packs. Supported system: Ubuntu 26.04 LTS.
+
+**Install / update**
+- The installer now stops at the very start, before installing anything, on
+  systems older than Ubuntu 26.04 (the PHP dependencies need PHP 8.4+, the
+  portal targets Asterisk 22). On Ubuntu 24.04 it used to fail half-way.
+- Composer errors are shown and stop the install, instead of a later
+  "vendor/bin/phinx" error.
+- Turkish prompts no longer stop the install silently after
+  "cp: warning: behavior of -n is non-portable" (#1): they are downloaded
+  from the sounds-tr-1.0.0 release and verified; if that fails the install
+  warns and goes on. `AIPBX_TR_SOUNDS=no` skips them.
+- The chat service is built even when the install directory belongs to
+  another user, and a build error is shown instead of a false "started".
+- Release tags deleted on GitHub are pruned on update, so an old tag is never
+  offered as an "update".
+
+**Sounds**
+- New Sounds → Asterisk Sound Packs tab: install or remove Asterisk's official
+  core / extra prompts (en, en_AU, en_GB, en_NZ, es, fr, it, ja, ru, sv), the
+  opsound hold music and AiPBX's Turkish prompts, per language and format
+  (wav, ulaw, alaw, gsm, g722, sln16). Packages are checksum-verified and
+  removing deletes only the files the pack installed.
+
+**Chat**
+- Leaving a direct chat can no longer hand its admin rights to the other
+  person (who could then add a third user and expose the history).
+- Deleted groups are closed: former members can no longer read, post or
+  download attachments.
+- Previews, titles and push texts are cut by characters, not bytes (no broken
+  Turkish characters).
+
 ## 1.0.0
 
 First stable release of AiPBX — an open-source IP PBX management portal for
