@@ -1,8 +1,9 @@
 <?php
 /**
  * English translation strings. Key format: "page.item" (e.g. "dashboard.title").
- * If a translation is missing, t() falls back to showing the key itself
- * (visible fallback instead of a silent failure) — see config.php::t().
+ * The reference language: every other lang/<code>.php uses these keys, and
+ * a key missing there shows this English text (config.php::t()).
+ * Translating: docs/translating.md.
  */
 return [
     // Common
@@ -1477,8 +1478,6 @@ return [
     'sidebar.font_small_tooltip' => 'Small Font Size (13px)',
     'sidebar.font_normal_tooltip' => 'Normal Font Size (14px)',
     'sidebar.font_large_tooltip' => 'Large Font Size (15px)',
-    'sidebar.switch_to_en' => 'Switch to English',
-    'sidebar.switch_to_tr' => 'Türkçeye geç',
     'sidebar.logout_tooltip' => 'Log Out',
     'sidebar.pending_sync_label' => 'Apply',
     'sidebar.pending_sync_tooltip' => 'There are pending PBX changes — click to push them to Asterisk',
@@ -3647,4 +3646,5 @@ Your phone will ring.',
     'force_reset.set_intro' => 'Your administrator asked you to choose a new password before you continue.',
     'force_reset.or_email' => 'Or receive a reset link by e-mail:',
     'common.get_on_google_play' => 'Get it on Google Play',
+    'sidebar.language_tooltip' => 'Interface language',
 ];

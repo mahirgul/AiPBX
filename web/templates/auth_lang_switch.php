@@ -1,14 +1,16 @@
 <?php
-// EN/TR switch of the sign-in pages (auth_header.php; the phone sign-in
-// page prints it inside its brand card with $lang_switch_class).
-$auth_redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/');
+// Language dropdown of the sign-in pages (auth_header.php; the phone sign-in
+// page prints it inside its brand card with $lang_switch_class = 'inline').
+// A plain GET form to /set-language: works without JavaScript (the button in
+// <noscript>), with JavaScript the choice applies on change.
 ?>
-<nav class="auth-lang-switch<?php echo isset($lang_switch_class) ? ' ' . htmlspecialchars($lang_switch_class) : ''; ?>" aria-label="Language">
-    <?php foreach (UI_LANGUAGES as $code => $label): ?>
-        <?php if ($code === getUserLanguage()): ?>
-            <span class="active"><?php echo htmlspecialchars($label); ?></span>
-        <?php else: ?>
-            <a href="/set-language?lang=<?php echo urlencode($code); ?>&amp;redirect=<?php echo $auth_redirect; ?>" hreflang="<?php echo htmlspecialchars($code); ?>"><?php echo htmlspecialchars($label); ?></a>
-        <?php endif; ?>
-    <?php endforeach; ?>
-</nav>
+<form class="auth-lang-switch<?php echo isset($lang_switch_class) ? ' ' . htmlspecialchars($lang_switch_class) : ''; ?>" action="/set-language" method="get">
+    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/'); ?>">
+    <i class="fas fa-globe" aria-hidden="true"></i>
+    <select name="lang" aria-label="Language" onchange="this.form.submit()">
+        <?php foreach (UI_LANGUAGES as $code => $label): ?>
+            <option value="<?php echo htmlspecialchars($code); ?>" lang="<?php echo htmlspecialchars($code); ?>"<?php echo $code === getUserLanguage() ? ' selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+        <?php endforeach; ?>
+    </select>
+    <noscript><button type="submit">OK</button></noscript>
+</form>

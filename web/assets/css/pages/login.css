@@ -76,23 +76,23 @@
     margin-top: 10px;
 }
 .brand-card .auth-lang-switch.inline {
-    position: static;
+    position: relative;
     width: 100%;
-    gap: 10px;
     margin-top: auto;
     padding-top: 18px;
 }
-.brand-card .auth-lang-switch.inline a,
-.brand-card .auth-lang-switch.inline span {
-    flex: 1 1 0;
-    text-align: center;
-    padding: 13px 14px;
+.brand-card .auth-lang-switch.inline .fa-globe {
+    left: 16px;
+    top: auto;
+    bottom: 17px;
+    font-size: 16px;
+}
+.brand-card .auth-lang-switch.inline select {
+    width: 100%;
+    padding: 13px 40px 13px 44px;
     font-size: 15px;
     border-radius: 10px;
-}
-.brand-card .auth-lang-switch.inline .active {
-    border-color: var(--primary);
-    color: var(--primary);
+    background-position: right 16px center;
 }
 body.auth-body:has(.auth-cards.is-mobile) {
     padding-top: 16px;

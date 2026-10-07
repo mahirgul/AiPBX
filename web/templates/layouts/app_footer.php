@@ -126,14 +126,15 @@ if ($is_spa_request) {
                             A
                         </button>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
-                        <?php
-                            $cur_lang = getUserLanguage();
-                            $next_lang = $cur_lang === 'tr' ? 'en' : 'tr';
-                            $lang_redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/');
-                        ?>
-                        <a href="/set-language?lang=<?php echo $next_lang; ?>&redirect=<?php echo $lang_redirect; ?>" data-no-spa="true" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; font-size: 10px; font-weight: 700; border: none; cursor: pointer; background: transparent; text-decoration: none;" title="<?php echo $cur_lang === 'tr' ? t('sidebar.switch_to_en') : t('sidebar.switch_to_tr'); ?>">
-                            <?php echo strtoupper($next_lang); ?>
-                        </a>
+                        <?php // Interface language: a plain GET form, so it also works without the SPA router. ?>
+                        <form action="/set-language" method="get" data-no-spa="true" class="user-lang-form" title="<?php echo t('sidebar.language_tooltip'); ?>">
+                            <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/'); ?>">
+                            <select name="lang" onchange="this.form.submit()" aria-label="<?php echo t('sidebar.language_tooltip'); ?>">
+                                <?php foreach (UI_LANGUAGES as $code => $label): ?>
+                                    <option value="<?php echo htmlspecialchars($code); ?>"<?php echo $code === getUserLanguage() ? ' selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
                         <a href="/security" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent; color: var(--primary); text-align: center; text-decoration: none;" title="<?php echo t('sidebar.security_settings', 'Güvenlik & 2FA'); ?>">
                             <i class="fas fa-shield-alt"></i>

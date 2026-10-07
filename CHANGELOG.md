@@ -5,6 +5,32 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.4.0
+
+**Languages**
+- New interface language: **Croatian (Hrvatski)**, fully translated.
+- The language is now chosen from a **dropdown**: on the sign-in pages and
+  in the user menu (bottom right). New languages appear there by themselves.
+- A partly translated language works: missing texts are shown in English.
+- Translations are open to everyone: `scripts/i18n.py` exports the missing
+  texts, checks a translation (placeholders, HTML) and writes the language
+  file. Guide: [docs/translating.md](docs/translating.md).
+
+**Sign-in page**
+- Animated background: a moving network and falling SIP / Asterisk log
+  lines, in calmer colours in the light theme. It is turned off for users
+  who ask their system for reduced motion.
+
+**Dark mode fixes**
+- The **Active / Passive** buttons, the incoming-call **Answer** button and
+  some other green buttons were almost invisible: the green button style was
+  missing.
+- The **Incoming / Outgoing / Missed** filters on *My Phone* were white with
+  white text.
+- **Extensions**: the Active/Passive button was hidden behind the pinned
+  Actions column when the table was wider than the screen; it now sits next
+  to Edit / Delete.
+
 ## 1.3.9
 
 - Sign-in page: the security question and its answer box are on one row.

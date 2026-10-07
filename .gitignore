@@ -116,3 +116,6 @@ CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
 
 # === Uploads (Appearance → Branding) ===
 web/assets/images/brand/
+
+# === Translation work files (scripts/i18n.py) ===
+.i18n-work/

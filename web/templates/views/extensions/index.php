@@ -43,13 +43,12 @@
                     <th class="col-hide-mobile"><?php echo t('extensions.col_sip_password'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_live_status'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_perm_role', 'Yetki / Grup'); ?></th>
-                    <th><?php echo t('extensions.col_status'); ?></th>
                     <th class="text-right"><?php echo t('extensions.col_actions'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($extensions)): ?>
-                    <?php echo uiTableEmptyRow(10, t('extensions.empty'), 'fa-phone-alt'); ?>
+                    <?php echo uiTableEmptyRow(9, t('extensions.empty'), 'fa-phone-alt'); ?>
                 <?php else: ?>
                     <?php foreach ($extensions as $e): ?>
                         <?php
@@ -126,10 +125,9 @@
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td>
-                                <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
-                            </td>
                             <td class="text-right">
+                                <?php // Status toggle in the pinned actions column: as its own column it ended up under that column whenever the table was wider than the screen. ?>
+                                <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
                                 <?php echo uiRowActions($e, 'openEditExtensionModal', 'user_id', 'remove_extension', sprintf(t('extensions.remove_confirm'), $e['full_name'], $e['extension']), t('extensions.remove_action_title'), 'fa-phone-slash'); ?>
                             </td>
                         </tr>

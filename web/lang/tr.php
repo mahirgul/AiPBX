@@ -1,8 +1,8 @@
 <?php
 /**
  * Türkçe çeviri dizisi. Anahtar biçimi: "sayfa.öğe" (ör. "dashboard.title").
- * Bir çeviri eksikse t() fonksiyonu anahtarın kendisini gösterir (sessiz
- * kırılma yerine görünür fallback) — bkz. config.php::t().
+ * Bir anahtar burada yoksa t() İngilizce metni gösterir (config.php::t()).
+ * Çeviri rehberi: docs/translating.md.
  */
 return [
     // Genel
@@ -1477,8 +1477,6 @@ return [
     'sidebar.font_small_tooltip' => 'Küçük Yazı Boyutu (13px)',
     'sidebar.font_normal_tooltip' => 'Normal Yazı Boyutu (14px)',
     'sidebar.font_large_tooltip' => 'Büyük Yazı Boyutu (15px)',
-    'sidebar.switch_to_en' => 'Switch to English',
-    'sidebar.switch_to_tr' => 'Türkçeye geç',
     'sidebar.logout_tooltip' => 'Çıkış Yap',
     'sidebar.pending_sync_label' => 'Uygula',
     'sidebar.pending_sync_tooltip' => 'Bekleyen PBX değişiklikleri var — Asterisk\'e yansıtmak için tıklayın',
@@ -3647,4 +3645,5 @@ Telefonunuz çaldırılacak.',
     'force_reset.set_intro' => 'Devam etmeden önce yöneticiniz yeni bir şifre belirlemenizi istiyor.',
     'force_reset.or_email' => 'Ya da sıfırlama bağlantısını e-posta ile alın:',
     'common.get_on_google_play' => 'Google Play\'den İndir',
+    'sidebar.language_tooltip' => 'Arayüz dili',
 ];
