@@ -279,54 +279,73 @@ step "3. Installing System Packages"
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -qq
+PACKAGES=(
+  asterisk
+  asterisk-core-sounds-en
+  asterisk-core-sounds-en-wav
+  asterisk-modules
+  mariadb-server
+  mariadb-client
+  xz-utils
+  nginx
+  libnginx-mod-stream
+  apache2
+  libapache2-mod-php
+  php
+  php-mysql
+  php-mbstring
+  php-xml
+  php-curl
+  php-gd
+  php-intl
+  php-bcmath
+  php-zip
+  php-odbc
+  unixodbc
+  odbc-mariadb
+  composer
+  coturn
+  golang-go
+  build-essential
+  libc6-dev
+  git
+  fail2ban
+  firewalld
+  ghostscript
+  lame
+  sox
+  rsync
+  libtiff-tools
+  postfix
+  libsasl2-modules
+  mailutils
+  certbot
+  python3-certbot-apache
+  openssl
+  avahi-daemon
+  avahi-utils
+)
 
-apt-get install -y \
-  asterisk \
-  asterisk-core-sounds-en \
-  asterisk-core-sounds-en-wav \
-  asterisk-modules \
-  mariadb-server \
-  mariadb-client \
-  xz-utils \
-  nginx \
-  libnginx-mod-stream \
-  apache2 \
-  libapache2-mod-php \
-  php \
-  php-mysql \
-  php-mbstring \
-  php-xml \
-  php-curl \
-  php-gd \
-  php-intl \
-  php-bcmath \
-  php-zip \
-  php-odbc \
-  unixodbc \
-  odbc-mariadb \
-  composer \
-  coturn \
-  golang-go \
-  build-essential \
-  libc6-dev \
-  git \
-  fail2ban \
-  firewalld \
-  ghostscript \
-  lame \
-  sox \
-  rsync \
-  libtiff-tools \
-  postfix \
-  libsasl2-modules \
-  mailutils \
-  certbot \
-  python3-certbot-apache \
-  openssl \
-  avahi-daemon \
-  avahi-utils \
-  2>&1 | tail -5
+# An upgrade only installs packages a newer release added: system package
+# updates are the OS's job, and on servers that cannot reach the Ubuntu
+# mirrors (e.g. behind a stalling proxy) apt-get used to hang the update for
+# many minutes. Short timeouts so an unreachable mirror fails fast.
+APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1)
+MISSING=()
+for p in "${PACKAGES[@]}"; do
+    dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || MISSING+=("$p")
+done
+if is_upgrade && [[ ${#MISSING[@]} -eq 0 ]]; then
+    info "All system packages present — apt skipped"
+else
+    is_upgrade && info "Installing new packages: ${MISSING[*]}"
+    apt-get "${APT_NET[@]}" update -qq || warn "apt-get update failed — using the existing package lists"
+    if is_upgrade; then
+        apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" 2>&1 | tail -5
+    else
+        apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" 2>&1 | tail -5
+    fi
+fi
 
 ok "System packages installed"
 
