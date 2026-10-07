@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.8
+
+- Phone sign-in page: the **English / Türkçe** switch and **Sign in with a
+  Passkey** are in the top card, with the Google Play button; the second
+  card holds only the sign-in form.
+
 ## 1.3.7
 
 **Sign-in page on phones**

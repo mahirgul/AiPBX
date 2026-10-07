@@ -437,6 +437,11 @@ function sanitizeDestType($type) {
  */
 const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe'];
 
+/** Phone or tablet browser (sign-in page layout, app download button). */
+function isMobileUserAgent(): bool {
+    return (bool) preg_match('/(android|iphone|ipad|ipod|mobile|phone|silk|blackberry|opera mini|windows phone)/i', $_SERVER['HTTP_USER_AGENT'] ?? '');
+}
+
 // The Android app on Google Play (login page, My Phone, mobile sign-in links).
 const ANDROID_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX';
 // Language of a visitor with no preference yet (login page, new users).

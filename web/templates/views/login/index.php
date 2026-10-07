@@ -2,8 +2,7 @@
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/login.css'); ?>">
 <?php
 // Phones get two cards (logo + Google Play, sign-in form), side by side in landscape — pages/login.css.
-$login_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$is_mobile_device = (bool) preg_match('/(android|iphone|ipad|ipod|mobile|phone|silk|blackberry|opera mini|windows phone)/i', $login_ua);
+$is_mobile_device = isMobileUserAgent();
 ob_start(); ?>
         <div class="u-text-center u-mb-24">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
@@ -22,10 +21,14 @@ ob_start(); ?>
     <?php if ($is_mobile_device): ?>
     <!-- Phones: logo + Google Play in their own card (side by side with the form in landscape) -->
     <div class="auth-card brand-card">
+        <?php $lang_switch_class = 'inline'; require dirname(__DIR__, 2) . '/auth_lang_switch.php'; ?>
 <?php echo $brand_html; ?>
         <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-play" title="<?php echo htmlspecialchars(t('login.mobile_app_desc')); ?>">
             <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
         </a>
+        <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
+            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
+        </button>
     </div>
     <?php endif; ?>
     <div class="auth-card login-card">
@@ -66,6 +69,7 @@ ob_start(); ?>
             </button>
         </form>
 
+<?php if (!$is_mobile_device): ?>
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
             <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider', 'VEYA'); ?></span>
@@ -75,6 +79,13 @@ ob_start(); ?>
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
             <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
         </button>
+<?php elseif (!empty($googleLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled())): ?>
+        <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider', 'VEYA'); ?></span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+<?php endif; ?>
 
         <?php if (!empty($googleLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled())): ?>
         <a href="/auth/google" class="btn" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 10px; border-radius: 10px; margin-top: 10px; background: #ffffff; color: #3c4043; border: 1px solid #dadce0; box-shadow: 0 1px 2px rgba(60,64,67,0.1); text-decoration: none; display: inline-flex; align-items: center; transition: all 0.2s;">

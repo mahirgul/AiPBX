@@ -66,3 +66,16 @@
         top: 16px;
     }
 }
+
+/* Phones: the EN/TR switch and the passkey button live in the brand card. */
+.brand-card .auth-lang-switch.inline {
+    position: static;
+    justify-content: flex-end;
+    margin: -8px -6px 8px 0;
+}
+.brand-card #btnPasskeyLogin {
+    margin-top: 10px;
+}
+body.auth-body:has(.auth-cards.is-mobile) {
+    padding-top: 16px;
+}

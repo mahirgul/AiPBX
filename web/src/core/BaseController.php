@@ -142,12 +142,14 @@ abstract class BaseController
      * Shared layout for pages without a session (login, 2FA, password reset,
      * mobile login).
      *
-     * @param array{title?: string, head?: string} $page head: extra raw HTML for <head>
+     * @param array{title?: string, head?: string, inline_lang_switch?: bool} $page head: extra raw HTML for <head>;
+     *        inline_lang_switch: the page prints the EN/TR switch itself (templates/auth_lang_switch.php)
      */
     protected static function renderAuthPage(string $view, array $data = [], array $page = []): void
     {
         $auth_title = $page['title'] ?? '';
         $auth_head = $page['head'] ?? '';
+        $auth_lang_switch_inline = !empty($page['inline_lang_switch']);
         $layouts = dirname(__DIR__, 2) . '/templates/layouts';
         require $layouts . '/auth_header.php';
         View::render($view, $data);
