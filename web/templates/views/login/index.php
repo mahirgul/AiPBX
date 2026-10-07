@@ -44,7 +44,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('login.submit_tooltip'); ?>">
-                <i class="fas fa-sign-in-alt"></i>
+                <i class="fas fa-sign-in-alt"></i> <?php echo t('login.submit_tooltip'); ?>
             </button>
         </form>
 

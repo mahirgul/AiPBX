@@ -3645,4 +3645,8 @@ Telefonunuz çaldırılacak.',
     'srv_mail.err_sasl_write' => 'SMTP girişi %s dosyasına yazılamadı (dosya izinleri). Çalıştırın: sudo chown root:www-data /etc/postfix/sasl_passwd && sudo chmod 660 /etc/postfix/sasl_passwd',
     'srv_mail.test_delivered' => '%1$s adresine giden test e-postası mail sunucusu tarafından kabul edildi: %2$s',
     'srv_mail.test_failed' => 'Test e-postası teslim edilemedi. Mail sunucusunun yanıtı: %s',
+    'srv_brand.err_write' => 'Dosya kaydedilemedi: web sunucusu %s klasörüne yazamıyor. Çalıştırın: sudo mkdir -p %1$s && sudo chown www-data:www-data %1$s (veya sudo aipbx-update ile güncelleyin).',
+    'srv_asterisk.err_lang' => 'Ses dili asterisk.conf dosyasına yazılamadı: %s',
+    'force_reset.set_intro' => 'Devam etmeden önce yöneticiniz yeni bir şifre belirlemenizi istiyor.',
+    'force_reset.or_email' => 'Ya da sıfırlama bağlantısını e-posta ile alın:',
 ];

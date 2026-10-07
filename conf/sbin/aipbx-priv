@@ -291,6 +291,23 @@ case "$cmd" in
             --description="AiPBX sound pack: $1 $2-$3-$4" /usr/local/sbin/aipbx-sounds "$1" "$2" "$3" "$4"
         ;;
 
+    asterisk-lang)
+        # asterisk-lang LANG — [options] defaultlanguage in asterisk.conf (the
+        # file is asterisk:asterisk 0640, the portal cannot write it). Takes
+        # effect after a full Asterisk restart.
+        [ $# -eq 1 ] || die "usage: asterisk-lang LANG"
+        match "$1" '^[A-Za-z]{2,3}(_[A-Za-z]{2,4})?$'
+        conf=/etc/asterisk/asterisk.conf
+        [ -f "$conf" ] || die "$conf not found"
+        # An active line wins; else uncomment the sample line; else add one.
+        for re in '^defaultlanguage[[:space:]]*=.*' '^;[[:space:]]*defaultlanguage[[:space:]]*=.*'; do
+            if grep -q "$re" "$conf"; then
+                exec sed -i "0,/$re/s//defaultlanguage = $1/" "$conf"
+            fi
+        done
+        exec sed -i "/^\[options\]/a defaultlanguage = $1" "$conf"
+        ;;
+
     *)
         die "unknown command: ${cmd:-<empty>}"
         ;;

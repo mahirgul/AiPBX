@@ -3645,4 +3645,8 @@ Your phone will ring.',
     'srv_mail.err_sasl_write' => 'Could not write the SMTP login to %s (file permissions). Run: sudo chown root:www-data /etc/postfix/sasl_passwd && sudo chmod 660 /etc/postfix/sasl_passwd',
     'srv_mail.test_delivered' => 'The test e-mail to %1$s was accepted by the mail server: %2$s',
     'srv_mail.test_failed' => 'The test e-mail could not be delivered. Mail server answer: %s',
+    'srv_brand.err_write' => 'The file could not be saved: the web server cannot write to %s. Run: sudo mkdir -p %1$s && sudo chown www-data:www-data %1$s (or update with sudo aipbx-update).',
+    'srv_asterisk.err_lang' => 'The prompt language could not be written to asterisk.conf: %s',
+    'force_reset.set_intro' => 'Your administrator asked you to choose a new password before you continue.',
+    'force_reset.or_email' => 'Or receive a reset link by e-mail:',
 ];

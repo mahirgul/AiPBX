@@ -49,8 +49,10 @@ class UserInvitationService
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', time() + (86400 * 2)); // 48 saat
 
-        // Save it to the database and set the must_reset_password flag
-        $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ?, must_reset_password = 1 WHERE id = ?');
+        // The token is stored now (the link needs it); must_reset_password only
+        // once the mail went out — set before, a failed send left the user
+        // forced into a reset whose link never arrived.
+        $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?');
         $upd->execute([$token, $expires, $userId]);
 
         // Build the link URL
@@ -207,6 +209,7 @@ HTML;
         $mailOk = @mail($email, $encodedSubject, $messageBody, $headers, '-f ' . $fromAddress);
 
         if ($mailOk) {
+            $db->prepare('UPDATE sys_users SET must_reset_password = 1 WHERE id = ?')->execute([$userId]);
             writeAuditLog(null, 'system_users', $userId, "Activation/sign-in e-mail sent: {$user['username']} ({$email})", 'mail_sent', $_SESSION['user_id'] ?? null);
             return [
                 'success' => true,

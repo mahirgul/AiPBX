@@ -5,6 +5,32 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.4
+
+Fixes found while going through user feedback (#1).
+
+**Portal**
+- Users without admin rights had no bottom bar on **My Phone** (their start
+  page), so no logout, language or theme buttons: a pop-up on that page was
+  missing a closing tag and swallowed the bar.
+- **My Phone** shows the role name ("User") instead of the internal key
+  ("user").
+- The sign-in pages have an **English / Türkçe** switch in the top-right
+  corner, and the sign-in button has a label.
+- **Password change required:** the user can now set the new password right
+  on that page. Before, the only option was a link by e-mail, which locked
+  out users without an e-mail address or when mail was not working. An
+  invitation now asks for a new password only if the e-mail was really sent.
+- **Appearance → Branding:** uploading a logo failed with "could not be
+  saved" on normal installations: the upload folder was missing. Installs
+  and updates create it.
+
+**Phone prompts**
+- **PBX Settings → System Default Language** never took effect: the portal
+  could not write `asterisk.conf`, failed silently and still asked for an
+  Asterisk restart. It is written correctly now. (Restart Asterisk after
+  changing it.)
+
 ## 1.3.3
 
 **E-mail**

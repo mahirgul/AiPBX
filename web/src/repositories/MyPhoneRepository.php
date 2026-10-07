@@ -10,18 +10,19 @@ class MyPhoneRepository extends BaseRepository
     public static function getUserExtensionDetails(int $userId): ?array
     {
         $stmt = static::db()->prepare(
-            "SELECT id, username, full_name, email, extension, sip_password, sip_auth_digest,
-                    role, allowed_phone_mode, dnd_enabled, call_forward_number,
+            "SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.sip_auth_digest,
+                    u.role, COALESCE(r.role_name, u.role) AS role_name, u.allowed_phone_mode, dnd_enabled, call_forward_number,
                     cf_busy_number, cf_noanswer_number, cf_noanswer_timeout,
                     cid_internal, cid_external, outbound_group, is_active,
                     voicemail_enabled, voicemail_pin, voicemail_email, voicemail_attach_audio,
                     vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always
-             FROM sys_users
-             WHERE id = ?"
+             FROM sys_users u
+             LEFT JOIN sys_roles r ON r.role_key = u.role
+             WHERE u.id = ?"
         );
         $stmt->execute([$userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        return $row ? localizeRole($row) : null;
     }
 
     /**
