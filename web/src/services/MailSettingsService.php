@@ -4,6 +4,11 @@ require_once __DIR__ . '/../priv_helper.php';
 
 class MailSettingsService
 {
+    const SASL_PASSWD = '/etc/postfix/sasl_passwd';
+
+    /** Seconds the test e-mail waits for postfix to report the delivery result. */
+    const TEST_WAIT = 20;
+
     public static function saveSettings(array $data): array
     {
         if (!verifyCSRFToken($data['csrf_token'] ?? '')) {
@@ -93,7 +98,7 @@ class MailSettingsService
         $relay_spec = '[' . $host . ']:' . $port;
         $steps = [
             ['postfix', 'relay', $host, (string) $port],
-            ['postfix', 'tls', ($security === 'tls' || $security === 'ssl') ? 'may' : 'none'],
+            ['postfix', 'tls', $security === 'ssl' ? 'wrapper' : ($security === 'tls' ? 'may' : 'none')],
         ];
 
         if ($auth === 'yes' && !empty($user)) {
@@ -104,8 +109,14 @@ class MailSettingsService
             }
             $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
+                // Written in place: install.sh makes the file root:www-data 0660,
+                // but www-data cannot create files in /etc/postfix, so the atomic
+                // temp-file write of FileHelper always failed — silently, and
+                // postfix relayed without logging in.
                 $line = $relay_spec . ' ' . $user . ':' . $pass . "\n";
-                FileHelper::writeFile('/etc/postfix/sasl_passwd', $line, null, null, 0660);
+                if (@file_put_contents(self::SASL_PASSWD, $line, LOCK_EX) === false) {
+                    return ['success' => false, 'error' => sprintf(t('srv_mail.err_sasl_write'), self::SASL_PASSWD)];
+                }
                 $steps[] = ['postfix', 'postmap'];
             }
         } else {
@@ -135,7 +146,9 @@ class MailSettingsService
         $subject = sprintf(t('srv_mail.test_subject'), date('d.m.Y H:i:s'));
         $body = str_replace('\n', "\n", sprintf(t('srv_mail.test_body'), date('d.m.Y H:i:s'), $fromName, $fromAddress, $toEmail, (gethostname() ?: 'voice')));
 
+        $token = 'aipbx-test-' . bin2hex(random_bytes(8));
         $headers = "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddress}>\r\n"
+                 . "Message-ID: <{$token}@" . (gethostname() ?: 'aipbx') . ">\r\n"
                  . "Reply-To: {$fromAddress}\r\n"
                  . "X-Mailer: AiPBX-Mailer/1.0\r\n"
                  . "MIME-Version: 1.0\r\n"
@@ -145,10 +158,40 @@ class MailSettingsService
         $mailOk = @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers, '-f ' . $fromAddress);
 
         if ($mailOk) {
-            return ['success' => true, 'message' => sprintf(t('srv_mail.test_sent'), $toEmail)];
+            return self::waitForDelivery($token, $toEmail);
         }
 
         $lastError = error_get_last()['message'] ?? t('srv_mail.err_unknown');
         return ['success' => false, 'error' => sprintf(t('srv_mail.err_send'), $lastError)];
+    }
+
+    /**
+     * mail() only hands the message to postfix; whether the relay accepted it
+     * is known seconds later. Follows the message in the postfix log (via
+     * aipbx-priv) so the admin sees the relay's own answer, e.g. "535
+     * authentication failed" or "Sender address rejected".
+     *
+     * @return array{success: bool, message?: string, error?: string}
+     */
+    private static function waitForDelivery(string $token, string $toEmail): array
+    {
+        $deadline = microtime(true) + self::TEST_WAIT;
+        $lines = '';
+        do {
+            usleep(1000000);
+            $res = PrivHelper::run(['postfix', 'trace', $token]);
+            $lines = trim($res['output']);
+            if (preg_match('/status=(sent|bounced|deferred|expired)\b(.*)$/m', $lines, $m)) {
+                $detail = trim($m[2]);
+                if ($m[1] === 'sent') {
+                    return ['success' => true, 'message' => sprintf(t('srv_mail.test_delivered'), $toEmail, $detail)];
+                }
+                return ['success' => false, 'error' => sprintf(t('srv_mail.test_failed'), $detail)];
+            }
+        } while (microtime(true) < $deadline);
+
+        // Still in progress (slow relay) or the log is not readable.
+        $hint = $lines !== '' ? ' ' . $lines : '';
+        return ['success' => true, 'message' => sprintf(t('srv_mail.test_sent'), $toEmail) . $hint];
     }
 }

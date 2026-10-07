@@ -5,6 +5,26 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.3
+
+**E-mail**
+- Sending through a mail server that needs a login (SMTP authentication)
+  never worked: the username and password were not saved for postfix,
+  although the page said "saved". The mail server then refused every
+  message ("Relay access denied"). They are saved now; if that fails, the
+  page shows an error.
+- Port 465 ("SSL") works: postfix now uses TLS from the first byte there.
+- **Send Test E-Mail** waits up to 20 seconds for the real result and shows
+  the mail server's answer, e.g. `535 Authentication credentials invalid`
+  or `Sender address rejected`. Before, it said "queued" even when the
+  message was rejected a second later.
+
+**Music on hold**
+- Callers on hold or waiting in a queue heard silence: the "default" music
+  class pointed to an empty folder, so Asterisk dropped it. Installs and
+  updates now link Ubuntu's stock music into it, as long as the folder has
+  no music of its own.
+
 ## 1.3.2
 
 **Install / update**
