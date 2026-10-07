@@ -25,14 +25,6 @@ $auth_favicon = getSystemSetting('site_favicon_url', '');
 <?php echo jsI18nScript(); ?>
 </head>
 <body class="auth-body">
-<?php // Language switch for visitors (login, 2FA, password reset): before signing in there is no user menu. ?>
-<nav class="auth-lang-switch" aria-label="Language">
-    <?php $auth_redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/'); ?>
-    <?php foreach (UI_LANGUAGES as $code => $label): ?>
-        <?php if ($code === getUserLanguage()): ?>
-            <span class="active"><?php echo htmlspecialchars($label); ?></span>
-        <?php else: ?>
-            <a href="/set-language?lang=<?php echo urlencode($code); ?>&amp;redirect=<?php echo $auth_redirect; ?>" hreflang="<?php echo htmlspecialchars($code); ?>"><?php echo htmlspecialchars($label); ?></a>
-        <?php endif; ?>
-    <?php endforeach; ?>
-</nav>
+<?php // Language switch for visitors (login, 2FA, password reset): before signing in there is no user menu.
+// A page can print it itself (the phone sign-in puts it in its brand card).
+if (empty($auth_lang_switch_inline)) require dirname(__DIR__) . '/auth_lang_switch.php'; ?>
