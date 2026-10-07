@@ -435,7 +435,7 @@ function sanitizeDestType($type) {
  * (pbx_dids/pbx_ivrs/pbx_queues.language, getAvailableLanguages()) — one
  * controls the audio in a phone call, this one the texts in the web panel.
  */
-const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe', 'hr' => 'Hrvatski'];
+const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe', 'hr' => 'Hrvatski', 'de' => 'Deutsch'];
 
 /** Phone or tablet browser (sign-in page layout, app download button). */
 function isMobileUserAgent(): bool {
