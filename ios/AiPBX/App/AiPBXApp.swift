@@ -4,6 +4,7 @@ import SwiftUI
 struct AiPBXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
+    @StateObject private var language = AppLanguage.shared
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,9 @@ struct AiPBXApp: App {
                     LoginView()
                 }
             }
+            // A new language rebuilds every screen with the new texts.
+            .id(language.code)
+            .environment(\.locale, Locale(identifier: language.code))
             .environmentObject(appState)
             .preferredColorScheme(.none) // Supports both Dark and Light mode automatically
             .onOpenURL { url in
@@ -21,11 +25,11 @@ struct AiPBXApp: App {
             }
             .alert(item: $appState.pendingLinkLogin) { pending in
                 Alert(
-                    title: Text("Mobil Giriş"),
-                    message: Text("\"\(pending.host)\" santraline giriş yapılsın mı?\n\nBu bağlantıyı yalnızca kurumunuzdan gelen bir e-postadan veya kendi ekranınızdaki QR koddan açtıysanız onaylayın."
-                                  + (appState.isLoggedIn ? "\n\nAçık olan oturum, giriş başarılı olursa kapatılacak." : "")),
-                    primaryButton: .default(Text("Giriş Yap")) { appState.confirmPendingLinkLogin() },
-                    secondaryButton: .cancel(Text("İptal"))
+                    title: Text(L("Mobile Sign-in")),
+                    message: Text(L("Sign in to the \"%@\" PBX?\n\nOnly confirm if you opened this link from an e-mail sent by your organization or from the QR code on your own screen.", pending.host)
+                                  + (appState.isLoggedIn ? "\n\n" + L("The open session is closed if this sign-in succeeds.") : "")),
+                    primaryButton: .default(Text(L("Sign In"))) { appState.confirmPendingLinkLogin() },
+                    secondaryButton: .cancel(Text(L("Cancel")))
                 )
             }
         }

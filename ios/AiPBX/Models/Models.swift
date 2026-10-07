@@ -117,9 +117,9 @@ public enum ConnectionStatus: String, Codable {
 
     public var localizedText: String {
         switch self {
-        case .disconnected: return "Bağlantı Yok"
-        case .connecting: return "Bağlanıyor..."
-        case .connected: return "Bağlandı"
+        case .disconnected: return L("Not Connected")
+        case .connecting: return L("Connecting...")
+        case .connected: return L("Connected")
         }
     }
 }
@@ -135,13 +135,13 @@ public enum CallStatus: String, Codable {
 
     public var localizedText: String {
         switch self {
-        case .idle: return "Hazır"
-        case .connecting: return "Aranıyor..."
-        case .ringingOutgoing: return "Çalıyor..."
-        case .ringingIncoming: return "Gelen Çağrı..."
-        case .active: return "Görüşmede"
+        case .idle: return L("Ready")
+        case .connecting: return L("Calling...")
+        case .ringingOutgoing: return L("Ringing...")
+        case .ringingIncoming: return L("Incoming Call...")
+        case .active: return L("In Call")
         case .onHold: return "Beklemede"
-        case .ended: return "Görüşme Bitti"
+        case .ended: return L("Call Ended")
         }
     }
 }
@@ -324,7 +324,7 @@ public struct ChatConversation: Codable, Identifiable, Hashable {
         if let tExt = targetExt, !tExt.isEmpty {
             return tExt
         }
-        return title ?? "Sohbet"
+        return title ?? L("Chat")
     }
 
     enum CodingKeys: String, CodingKey {

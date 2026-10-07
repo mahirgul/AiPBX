@@ -23,11 +23,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Kurumsal santral aramaları ve sesli görüşmeler için mikrofon erişimi gereklidir.</string>
+	<string>Microphone access is needed for PBX calls and voice conversations.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Santral QR kodu ile hızlı giriş yapmak ve sohbette fotoğraf göndermek için kamera erişimi gereklidir.</string>
+	<string>Camera access is needed to sign in with the PBX QR code and to send photos in chat.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Sohbette fotoğraf ve dosya paylaşmak için galeri erişimi gereklidir.</string>
+	<string>Photo library access is needed to share photos and files in chat.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

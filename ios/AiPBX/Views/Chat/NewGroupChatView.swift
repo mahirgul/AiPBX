@@ -20,11 +20,11 @@ public struct NewGroupChatView: View {
             VStack(spacing: 0) {
                 // Group Title Input Card
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Grup Başlığı")
+                    Text(L("Group Title"))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    TextField("Örn: Satış ve Pazarlama", text: $groupTitle)
+                    TextField(L("e.g. Sales and Marketing"), text: $groupTitle)
                         .padding(12)
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
@@ -40,7 +40,7 @@ public struct NewGroupChatView: View {
 
                 // Participant Header
                 HStack {
-                    Text("Katılımcılar (\(selectedExtensions.count))")
+                    Text(L("Participants (%@)", "\(selectedExtensions.count)"))
                         .font(.subheadline.bold())
                         .foregroundColor(.secondary)
                     Spacer()
@@ -58,7 +58,7 @@ public struct NewGroupChatView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.name)
                                     .font(.system(size: 15, weight: .medium))
-                                Text("Dahili: \(contact.extensionNumber)")
+                                Text(L("Extension: %@", "\(contact.extensionNumber)"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -81,12 +81,12 @@ public struct NewGroupChatView: View {
                 }
                 .listStyle(PlainListStyle())
             }
-            .navigationBarTitle("Yeni Grup", displayMode: .inline)
+            .navigationBarTitle(L("New Group"), displayMode: .inline)
             .navigationBarItems(
-                leading: Button("İptal") {
+                leading: Button(L("Cancel")) {
                     presentationMode.wrappedValue.dismiss()
                 },
-                trailing: Button("Oluştur") {
+                trailing: Button(L("Create")) {
                     createGroup()
                 }
                 .disabled(groupTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedExtensions.isEmpty || isCreating)

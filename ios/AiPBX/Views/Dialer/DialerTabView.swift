@@ -30,7 +30,7 @@ public struct DialerTabView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "phone.fill")
                                     .font(.caption2)
-                                Text("Dahili: \(ext)")
+                                Text(L("Extension: %@", "\(ext)"))
                                     .font(.footnote.bold())
                             }
                             .padding(.horizontal, 10)
@@ -49,7 +49,7 @@ public struct DialerTabView: View {
                     HStack {
                         Spacer()
 
-                        Text(dialedNumber.isEmpty ? "Numara Çevirin" : dialedNumber)
+                        Text(dialedNumber.isEmpty ? L("Dial a Number") : dialedNumber)
                             .font(.system(size: dialedNumber.isEmpty ? 24 : 36, weight: .semibold, design: .rounded))
                             .foregroundColor(dialedNumber.isEmpty ? .secondary.opacity(0.6) : .primary)
                             .lineLimit(1)
@@ -103,7 +103,7 @@ public struct DialerTabView: View {
                     .padding(.bottom, 24)
                 }
             }
-            .navigationBarTitle("Tuşlar", displayMode: .inline)
+            .navigationBarTitle(L("Keypad"), displayMode: .inline)
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }

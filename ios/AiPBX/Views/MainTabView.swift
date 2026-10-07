@@ -16,7 +16,7 @@ public struct MainTabView: View {
             DialerTabView()
                 .tabItem {
                     Image(systemName: "circle.grid.3x3.fill")
-                    Text("Tuşlar")
+                    Text(L("Keypad"))
                 }
                 .tag(0)
 
@@ -24,7 +24,7 @@ public struct MainTabView: View {
             CallHistoryTabView()
                 .tabItem {
                     Image(systemName: "clock.fill")
-                    Text("Geçmiş")
+                    Text(L("History"))
                 }
                 .tag(1)
 
@@ -32,7 +32,7 @@ public struct MainTabView: View {
             ContactsTabView()
                 .tabItem {
                     Image(systemName: "person.2.fill")
-                    Text("Rehber")
+                    Text(L("Contacts"))
                 }
                 .tag(2)
 
@@ -40,7 +40,7 @@ public struct MainTabView: View {
             ChatTabView()
                 .tabItem {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
-                    Text("Sohbet")
+                    Text(L("Chat"))
                 }
                 .badge(totalUnreadMessages > 0 ? "\(totalUnreadMessages)" : nil)
                 .tag(3)
@@ -49,7 +49,7 @@ public struct MainTabView: View {
             SettingsTabView()
                 .tabItem {
                     Image(systemName: "slider.horizontal.3")
-                    Text("Santral")
+                    Text(L("PBX"))
                 }
                 .tag(4)
         }

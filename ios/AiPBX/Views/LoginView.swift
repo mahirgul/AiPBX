@@ -39,9 +39,11 @@ public struct LoginView: View {
                             Text("AiPBX")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
 
-                            Text("Kurumsal İletişim Platformu")
+                            Text(L("Business Communication Platform"))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+
+                            LanguageMenu()
                         }
 
                         // Error Banner
@@ -64,7 +66,7 @@ public struct LoginView: View {
                         VStack(spacing: 18) {
                             // Server URL Field
                             VStack(alignment: .leading, spacing: 6) {
-                                Label("Santral Sunucu Adresi", systemImage: "server.rack")
+                                Label(L("PBX Server Address"), systemImage: "server.rack")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
 
@@ -96,17 +98,17 @@ public struct LoginView: View {
                                 if let pingStatus = pingStatusText {
                                     Text(pingStatus)
                                         .font(.caption2)
-                                        .foregroundColor(pingStatus.contains("Başarılı") ? .green : .orange)
+                                        .foregroundColor(pingStatus.hasPrefix("✓") ? .green : .orange)
                                 }
                             }
 
                             // Username / Extension Field
                             VStack(alignment: .leading, spacing: 6) {
-                                Label("Dahili veya Kullanıcı Adı", systemImage: "person.fill")
+                                Label(L("Extension or Username"), systemImage: "person.fill")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
 
-                                TextField("Örn: 101", text: $username)
+                                TextField(L("e.g. 101"), text: $username)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                                     .padding(12)
@@ -116,15 +118,15 @@ public struct LoginView: View {
 
                             // Password Field
                             VStack(alignment: .leading, spacing: 6) {
-                                Label("Şifre", systemImage: "lock.fill")
+                                Label(L("Password"), systemImage: "lock.fill")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
 
                                 HStack {
                                     if isSecured {
-                                        SecureField("Şifrenizi girin", text: $password)
+                                        SecureField(L("Enter your password"), text: $password)
                                     } else {
-                                        TextField("Şifrenizi girin", text: $password)
+                                        TextField(L("Enter your password"), text: $password)
                                             .autocapitalization(.none)
                                             .disableAutocorrection(true)
                                     }
@@ -140,7 +142,7 @@ public struct LoginView: View {
                             }
 
                             // Remember Me Toggle
-                            Toggle("Beni Hatırla", isOn: $appState.rememberMe)
+                            Toggle(L("Remember Me"), isOn: $appState.rememberMe)
                                 .font(.subheadline)
                                 .padding(.top, 4)
 
@@ -152,7 +154,7 @@ public struct LoginView: View {
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                             .padding(.trailing, 4)
                                     }
-                                    Text(appState.isLoading ? "Giriş Yapılıyor..." : "Giriş Yap")
+                                    Text(appState.isLoading ? L("Signing in...") : L("Sign In"))
                                         .font(.headline)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -171,7 +173,7 @@ public struct LoginView: View {
                                 Rectangle()
                                     .fill(Color.secondary.opacity(0.3))
                                     .frame(height: 1)
-                                Text("veya")
+                                Text(L("or"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Rectangle()
@@ -186,7 +188,7 @@ public struct LoginView: View {
                                     Image(systemName: "g.circle.fill")
                                         .font(.title3)
                                         .foregroundColor(.red)
-                                    Text("Google ile Giriş Yap")
+                                    Text(L("Sign in with Google"))
                                         .font(.subheadline.bold())
                                         .foregroundColor(.primary)
                                 }
@@ -207,7 +209,7 @@ public struct LoginView: View {
                                     Image(systemName: "qrcode.viewfinder")
                                         .font(.title3)
                                         .foregroundColor(.blue)
-                                    Text("QR Kod ile Giriş Yap")
+                                    Text(L("Sign in with QR Code"))
                                         .font(.subheadline.bold())
                                         .foregroundColor(.blue)
                                 }
@@ -228,7 +230,7 @@ public struct LoginView: View {
                         .padding(.horizontal)
 
                         // Version Footnote
-                        Text("Sürüm: 1.0.34 · Asterisk 22 WebRTC")
+                        Text(L("Version: 1.0.34 · Asterisk 22 WebRTC"))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .padding(.bottom, 30)
@@ -241,11 +243,11 @@ public struct LoginView: View {
                     QRCodeScannerView { scannedCode in
                         handleScannedQrCode(scannedCode)
                     }
-                    .navigationTitle("QR Kod Tara")
+                    .navigationTitle(L("Scan QR Code"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("İptal") {
+                            Button(L("Cancel")) {
                                 isShowingScanner = false
                             }
                         }
@@ -256,20 +258,20 @@ public struct LoginView: View {
                 self.serverUrl = appState.baseUrl
                 self.username = appState.savedUsername
             }
-            .alert("İki adımlı doğrulama", isPresented: Binding(
+            .alert(L("Two-step verification"), isPresented: Binding(
                 get: { appState.otpPromptMessage != nil },
                 set: { if !$0 { appState.otpPromptMessage = nil } }
             )) {
                 TextField("123456", text: $otpCode)
                     .keyboardType(.numberPad)
-                Button("Giriş") {
+                Button(L("Sign in")) {
                     let code = otpCode.trimmingCharacters(in: .whitespacesAndNewlines)
                     otpCode = ""
                     Task {
                         _ = await appState.login(serverUrl: serverUrl, username: username, pass: password, otp: code)
                     }
                 }
-                Button("İptal", role: .cancel) { otpCode = "" }
+                Button(L("Cancel"), role: .cancel) { otpCode = "" }
             } message: {
                 Text(appState.otpPromptMessage ?? "")
             }
@@ -279,7 +281,7 @@ public struct LoginView: View {
 
     private func handleScannedQrCode(_ code: String) {
         guard let data = code.data(using: .utf8) else {
-            appState.errorMessage = "QR kod okunamadı."
+            appState.errorMessage = L("Could not read the QR code.")
             return
         }
 
@@ -299,14 +301,14 @@ public struct LoginView: View {
                 Task {
                     let success = await appState.loginWithQr(serverUrl: server, qrToken: qrToken)
                     if !success && appState.errorMessage == nil {
-                        appState.errorMessage = "QR kod ile giriş başarısız oldu."
+                        appState.errorMessage = L("QR code sign-in failed.")
                     }
                 }
             } else {
-                appState.errorMessage = "Geçersiz veya uyumsuz AiPBX QR kodu."
+                appState.errorMessage = L("Invalid or incompatible AiPBX QR code.")
             }
         } catch {
-            appState.errorMessage = "QR kod çözümlenemedi: \(error.localizedDescription)"
+            appState.errorMessage = L("Could not decode the QR code: %@", "\(error.localizedDescription)")
         }
     }
 
@@ -320,7 +322,7 @@ public struct LoginView: View {
     private func performGoogleLogin() {
         let cleanBase = serverUrl.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !cleanBase.isEmpty, let authUrl = URL(string: "\(cleanBase)/auth/google?mobile=1&platform=ios") else {
-            appState.errorMessage = "Lütfen geçerli bir santral sunucu adresi girin."
+            appState.errorMessage = L("Please enter a valid PBX server address.")
             return
         }
         UIApplication.shared.open(authUrl)
@@ -335,12 +337,12 @@ public struct LoginView: View {
                 let info = try await ApiClient.shared.ping(baseUrl: serverUrl)
                 await MainActor.run {
                     self.isPinging = false
-                    self.pingStatusText = "✓ Bağlantı Başarılı: \(info.service ?? "PBX") \(info.version ?? "")"
+                    self.pingStatusText = "✓ " + L("Connection OK: %@ %@", info.service ?? "PBX", info.version ?? "")
                 }
             } catch {
                 await MainActor.run {
                     self.isPinging = false
-                    self.pingStatusText = "✗ Sunucuya ulaşılamadı"
+                    self.pingStatusText = L("✗ Could not reach the server")
                 }
             }
         }

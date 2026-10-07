@@ -12,7 +12,8 @@ app_dir = os.path.join(root_dir, "AiPBX")
 swift_files = []
 resource_files = []
 
-for dirpath, _, filenames in os.walk(app_dir):
+for dirpath, dirnames, filenames in os.walk(app_dir):
+    dirnames.sort()  # same file order on every machine
     for f in sorted(filenames):
         if f.endswith('.swift'):
             rel = os.path.relpath(os.path.join(dirpath, f), root_dir)
@@ -24,6 +25,18 @@ for dirpath, _, filenames in os.walk(app_dir):
 # Assets.xcassets is treated as a single resource directory
 assets_rel = "AiPBX/Resources/Assets.xcassets"
 resource_files.append(("Assets.xcassets", assets_rel))
+
+# Localized resources (<lang>.lproj/<name>.strings) become variant groups.
+res_dir = os.path.join(app_dir, "Resources")
+variant_groups = []   # (name, [(region, rel)])
+for name in ["Localizable.strings", "InfoPlist.strings"]:
+    regions = []
+    for d in sorted(os.listdir(res_dir)):
+        if d.endswith(".lproj") and os.path.isfile(os.path.join(res_dir, d, name)):
+            regions.append((d[:-len(".lproj")], os.path.join("AiPBX", "Resources", d, name)))
+    if regions:
+        variant_groups.append((name, regions))
+known_regions = sorted({r for _, regs in variant_groups for r, _ in regs} | {"en"})
 
 out = []
 out.append("// !$*UTF8*$!")
@@ -45,6 +58,11 @@ for f, rel in resource_files:
     bid = gen_id("buildfile_" + rel)
     fid = gen_id("fileref_" + rel)
     out.append(f"\t\t{bid} /* {f} in Resources */ = {{isa = PBXBuildFile; fileRef = {fid} /* {f} */; }};")
+
+for name, _ in variant_groups:
+    bid = gen_id("buildfile_variant_" + name)
+    vid = gen_id("variant_" + name)
+    out.append(f"\t\t{bid} /* {name} in Resources */ = {{isa = PBXBuildFile; fileRef = {vid} /* {name} */; }};")
 
 # Framework build files
 frameworks = ["WebKit.framework", "AVFoundation.framework", "CallKit.framework", "UserNotifications.framework"]
@@ -75,6 +93,11 @@ for f, rel in resource_files:
     else:
         ft = "text"
     out.append(f"\t\t{fid} /* {f} */ = {{isa = PBXFileReference; lastKnownFileType = {ft}; path = \"{f}\"; sourceTree = \"<group>\"; }};")
+
+for name, regions in variant_groups:
+    for region, rel in regions:
+        fid = gen_id("fileref_" + rel)
+        out.append(f"\t\t{fid} /* {region} */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = {region}; path = {region}.lproj/{name}; sourceTree = \"<group>\"; }};")
 
 # Info.plist
 info_plist_fid = gen_id("fileref_Info.plist")
@@ -172,6 +195,9 @@ for f, rel in resource_files:
     fid = gen_id("fileref_" + rel)
     groups[subgroup_ids["Resources"]]["children"].append((fid, f))
 
+for name, _ in variant_groups:
+    groups[subgroup_ids["Resources"]]["children"].append((gen_id("variant_" + name), name))
+
 # Add Info.plist to Resources group
 groups[subgroup_ids["Resources"]]["children"].append((info_plist_fid, "Info.plist"))
 
@@ -208,6 +234,21 @@ for gid, g in sorted(groups.items()):
     out.append("\t\t};")
 
 out.append("/* End PBXGroup section */")
+
+# 4b. PBXVariantGroup (localized .strings)
+if variant_groups:
+    out.append("\n/* Begin PBXVariantGroup section */")
+    for name, regions in variant_groups:
+        out.append(f"\t\t{gen_id('variant_' + name)} /* {name} */ = {{")
+        out.append("\t\t\tisa = PBXVariantGroup;")
+        out.append("\t\t\tchildren = (")
+        for region, rel in regions:
+            out.append(f"\t\t\t\t{gen_id('fileref_' + rel)} /* {region} */,")
+        out.append("\t\t\t);")
+        out.append(f"\t\t\tname = {name};")
+        out.append("\t\t\tsourceTree = \"<group>\";")
+        out.append("\t\t};")
+    out.append("/* End PBXVariantGroup section */")
 
 # 5. Native Target
 target_id = gen_id("target_AiPBX")
@@ -256,7 +297,8 @@ out.append("\t\t\tcompatibilityVersion = \"Xcode 14.0\";")
 out.append("\t\t\tdevelopmentRegion = en;")
 out.append("\t\t\thasScannedForEncodings = 0;")
 out.append("\t\t\tknownRegions = (")
-out.append("\t\t\t\ten,")
+for region in known_regions:
+    out.append(f"\t\t\t\t{region},")
 out.append("\t\t\t\tBase,")
 out.append("\t\t\t);")
 out.append(f"\t\t\tmainGroup = {main_group_id};")
@@ -278,6 +320,8 @@ out.append("\t\t\tfiles = (")
 for f, rel in resource_files:
     bid = gen_id("buildfile_" + rel)
     out.append(f"\t\t\t\t{bid} /* {f} in Resources */,")
+for name, _ in variant_groups:
+    out.append(f"\t\t\t\t{gen_id('buildfile_variant_' + name)} /* {name} in Resources */,")
 out.append("\t\t\t);")
 out.append("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
 out.append("\t\t};")

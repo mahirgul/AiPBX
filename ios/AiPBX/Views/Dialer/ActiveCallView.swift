@@ -23,13 +23,13 @@ public struct ActiveCallView: View {
 
                 // Caller Info Header
                 VStack(spacing: 12) {
-                    AvatarView(name: appState.activeCallerName.isEmpty ? "Santral" : appState.activeCallerName, size: 96)
+                    AvatarView(name: appState.activeCallerName.isEmpty ? L("PBX") : appState.activeCallerName, size: 96)
                         .overlay(
                             Circle()
                                 .stroke(Color.white.opacity(0.15), lineWidth: 2)
                         )
 
-                    Text(appState.activeCallerName.isEmpty ? "Santral" : appState.activeCallerName)
+                    Text(appState.activeCallerName.isEmpty ? L("PBX") : appState.activeCallerName)
                         .font(.system(size: 26, weight: .bold))
                         .foregroundColor(.white)
 
@@ -56,7 +56,7 @@ public struct ActiveCallView: View {
                         }
 
                         Button(action: { showDtmfKeypad = false }) {
-                            Text("Klavyeyi Kapat")
+                            Text(L("Hide Keypad"))
                                 .font(.footnote.bold())
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 16)
@@ -72,7 +72,7 @@ public struct ActiveCallView: View {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 24) {
                             CallActionButton(
                                 icon: appState.isMuted ? "mic.slash.fill" : "mic.fill",
-                                title: appState.isMuted ? "Sessiz Açık" : "Sessiz",
+                                title: appState.isMuted ? L("Muted") : L("Mute"),
                                 isActive: appState.isMuted
                             ) {
                                 appState.toggleMute()
@@ -80,7 +80,7 @@ public struct ActiveCallView: View {
 
                             CallActionButton(
                                 icon: "circle.grid.3x3.fill",
-                                title: "Tuş Takımı",
+                                title: L("Keypad"),
                                 isActive: showDtmfKeypad
                             ) {
                                 withAnimation {
@@ -90,7 +90,7 @@ public struct ActiveCallView: View {
 
                             CallActionButton(
                                 icon: appState.isSpeakerOn ? "speaker.wave.3.fill" : "speaker.fill",
-                                title: appState.isSpeakerOn ? "Hoparlör Açık" : "Hoparlör",
+                                title: appState.isSpeakerOn ? L("Speaker On") : L("Speaker"),
                                 isActive: appState.isSpeakerOn
                             ) {
                                 appState.toggleSpeaker()
@@ -126,7 +126,7 @@ public struct ActiveCallView: View {
                                         .font(.title)
                                         .foregroundColor(.white)
                                 }
-                                Text("Reddet")
+                                Text(L("Decline"))
                                     .font(.footnote.bold())
                                     .foregroundColor(.white)
                             }
@@ -145,7 +145,7 @@ public struct ActiveCallView: View {
                                         .font(.title)
                                         .foregroundColor(.white)
                                 }
-                                Text("Cevapla")
+                                Text(L("Answer"))
                                     .font(.footnote.bold())
                                     .foregroundColor(.white)
                             }
@@ -189,12 +189,12 @@ public struct ActiveCallView: View {
 
     private var callStatusDisplay: String {
         switch appState.callStatus {
-        case .idle: return "Görüşme Yok"
-        case .connecting: return "Aranıyor..."
-        case .ringingOutgoing: return "Çalıyor..."
-        case .ringingIncoming: return "Gelen Çağrı..."
+        case .idle: return L("No Call")
+        case .connecting: return L("Calling...")
+        case .ringingOutgoing: return L("Ringing...")
+        case .ringingIncoming: return L("Incoming Call...")
         case .onHold: return "Beklemede"
-        case .ended: return "Görüşme Sonlandı"
+        case .ended: return L("Call Ended")
         case .active:
             let min = callDurationSeconds / 60
             let sec = callDurationSeconds % 60

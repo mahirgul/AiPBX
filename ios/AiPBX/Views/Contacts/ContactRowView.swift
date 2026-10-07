@@ -37,7 +37,7 @@ public struct ContactRowView: View {
                 }
 
                 HStack(spacing: 6) {
-                    Text("Dahili: \(contact.extensionNumber)")
+                    Text(L("Extension: %@", "\(contact.extensionNumber)"))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -45,7 +45,7 @@ public struct ContactRowView: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
 
-                    Text(contact.isOnline ? "Çevrimiçi" : "Çevrimdışı")
+                    Text(contact.isOnline ? L("Online") : L("Offline"))
                         .font(.caption)
                         .foregroundColor(contact.isOnline ? .green : .secondary)
                 }

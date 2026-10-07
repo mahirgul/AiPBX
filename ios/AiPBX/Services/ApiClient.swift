@@ -11,10 +11,10 @@ public enum ApiError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidUrl: return "Geçersiz sunucu adresi."
-        case .serverError(let code, let msg): return "Sunucu hatası (\(code)): \(msg)"
-        case .decodingError(let err): return "Veri işleme hatası: \(err.localizedDescription)"
-        case .networkError(let err): return "Ağ bağlantı hatası: \(err.localizedDescription)"
+        case .invalidUrl: return L("Invalid server address.")
+        case .serverError(let code, let msg): return L("Server error (%@): %@", "\(code)", "\(msg)")
+        case .decodingError(let err): return L("Data processing error: %@", "\(err.localizedDescription)")
+        case .networkError(let err): return L("Network error: %@", "\(err.localizedDescription)")
         case .custom(let msg): return msg
         case .otpRequired(let msg): return msg
         }
@@ -50,7 +50,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Sunucuya erişilemedi")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not reach the server"))
         }
 
         do {
@@ -82,7 +82,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ApiError.custom("Sunucu yanıtı alınamadı")
+            throw ApiError.custom(L("No response from the server"))
         }
 
         // The server's error text (lockout, inactive account, 2FA) is shown to
@@ -93,15 +93,15 @@ public final class ApiClient {
             res = try JSONDecoder().decode(LoginResponse.self, from: data)
         } catch {
             if httpResponse.statusCode == 401 {
-                throw ApiError.custom("Kullanıcı adı veya şifre hatalı")
+                throw ApiError.custom(L("Wrong username or password"))
             }
             throw ApiError.decodingError(error)
         }
         if res.otpRequired == true {
-            throw ApiError.otpRequired(res.error ?? "Doğrulama kodu gerekli.")
+            throw ApiError.otpRequired(res.error ?? L("Verification code required."))
         }
         if !res.success {
-            throw ApiError.custom(res.error ?? "Giriş başarısız")
+            throw ApiError.custom(res.error ?? L("Sign-in failed"))
         }
         return res
     }
@@ -125,18 +125,18 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ApiError.custom("Sunucu yanıtı alınamadı")
+            throw ApiError.custom(L("No response from the server"))
         }
 
         do {
             let res = try JSONDecoder().decode(LoginResponse.self, from: data)
             if !res.success {
-                throw ApiError.custom(res.error ?? "Google ile giriş başarısız")
+                throw ApiError.custom(res.error ?? L("Google sign-in failed"))
             }
             return res
         } catch {
             if httpResponse.statusCode == 401 {
-                throw ApiError.custom("Google hesabı eşleşmedi veya yetkisiz")
+                throw ApiError.custom(L("Google account not matched or not authorized"))
             }
             throw ApiError.decodingError(error)
         }
@@ -161,13 +161,13 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ApiError.custom("Sunucu yanıtı alınamadı")
+            throw ApiError.custom(L("No response from the server"))
         }
 
         do {
             let res = try JSONDecoder().decode(LoginResponse.self, from: data)
             if !res.success {
-                throw ApiError.custom(res.error ?? "QR kod ile giriş başarısız")
+                throw ApiError.custom(res.error ?? L("QR code sign-in failed"))
             }
             return res
         } catch {
@@ -176,7 +176,7 @@ public final class ApiClient {
                 throw ApiError.custom(errMsg)
             }
             if httpResponse.statusCode == 401 {
-                throw ApiError.custom("QR kod geçersiz veya süresi dolmuş")
+                throw ApiError.custom(L("The QR code is invalid or expired"))
             }
             throw ApiError.decodingError(error)
         }
@@ -197,7 +197,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Geçmiş yüklenemedi")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not load history"))
         }
 
         return try JSONDecoder().decode(CallHistoryResponse.self, from: data)
@@ -217,7 +217,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Rehber yüklenemedi")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not load contacts"))
         }
 
         let res = try JSONDecoder().decode(ContactsResponse.self, from: data)
@@ -238,14 +238,14 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Ayarlar alınamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get settings"))
         }
 
         let res = try JSONDecoder().decode(FeaturesResponse.self, from: data)
         if let features = res.features {
             return features
         }
-        throw ApiError.custom(res.message ?? "Santral ayarları okunamadı")
+        throw ApiError.custom(res.message ?? L("Could not read PBX settings"))
     }
 
     public func updateFeatures(baseUrl: String, token: String, settings: FeatureSettings) async throws -> Bool {
@@ -270,7 +270,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Güncelleme başarısız")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Update failed"))
         }
 
         let res = try JSONDecoder().decode(FeaturesResponse.self, from: data)
@@ -291,7 +291,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Sohbetler alınamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get chats"))
         }
 
         let res = try JSONDecoder().decode(ChatConversationsResponse.self, from: data)
@@ -314,7 +314,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Mesajlar alınamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get messages"))
         }
 
         let res = try JSONDecoder().decode(ChatMessagesResponse.self, from: data)
@@ -339,14 +339,14 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Sohbet oluşturulamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not create the chat"))
         }
 
         let res = try JSONDecoder().decode(DirectChatResponse.self, from: data)
         if let conv = res.conversation {
             return conv
         }
-        throw ApiError.custom(res.error ?? "Doğrudan sohbet açılamadı")
+        throw ApiError.custom(res.error ?? L("Could not open the direct chat"))
     }
 
     public func createGroupChat(baseUrl: String, token: String, title: String, members: [String], description: String = "") async throws -> ChatConversation {
@@ -369,14 +369,14 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Grup oluşturulamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not create the group"))
         }
 
         let res = try JSONDecoder().decode(GroupChatResponse.self, from: data)
         if let conv = res.conversation {
             return conv
         }
-        throw ApiError.custom(res.error ?? "Grup sohbeti oluşturulamadı")
+        throw ApiError.custom(res.error ?? L("Could not create the group chat"))
     }
 
     public func leaveGroup(baseUrl: String, token: String, convId: Int) async throws -> Bool {
@@ -395,7 +395,7 @@ public final class ApiClient {
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: "Gruptan çıkılamadı")
+            throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not leave the group"))
         }
 
         let res = try JSONDecoder().decode(GenericActionResponse.self, from: data)

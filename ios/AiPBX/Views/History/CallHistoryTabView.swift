@@ -6,10 +6,10 @@ public struct CallHistoryTabView: View {
     @State private var isRefreshing: Bool = false
 
     private let filters: [(id: String, label: String)] = [
-        ("all", "Tümü"),
-        ("missed", "Cevapsız"),
-        ("in", "Gelen"),
-        ("out", "Giden")
+        ("all", L("All")),
+        ("missed", L("Missed")),
+        ("in", L("Incoming")),
+        ("out", L("Outgoing"))
     ]
 
     public init() {}
@@ -55,7 +55,7 @@ public struct CallHistoryTabView: View {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 48))
                             .foregroundColor(.secondary.opacity(0.6))
-                        Text("Kayıt bulunamadı")
+                        Text(L("No records found"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -74,7 +74,7 @@ public struct CallHistoryTabView: View {
                     }
                 }
             }
-            .navigationBarTitle("Geçmiş", displayMode: .inline)
+            .navigationBarTitle(L("History"), displayMode: .inline)
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
