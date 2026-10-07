@@ -6,7 +6,7 @@
                 <?php echo !empty($service_active) ? t('firewall.service_active') : t('firewall.service_inactive'); ?>
             </span>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('fail2banHelpBox')" title="Modül Rehberi">
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('fail2banHelpBox')" title="<?php echo t('common.module_guide'); ?>">
             <i class="fas fa-question-circle"></i>
         </button>
     </div>

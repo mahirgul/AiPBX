@@ -18,11 +18,11 @@
                 <i class="fas fa-clock u-warning"></i> <?php echo t('tc.header'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                     <i class="fas fa-question-circle"></i>
                 </button>
                 <?php if (hasModulePermission('time_conditions', 'edit')): ?>
-                    <button class="btn btn-primary btn-sm" onclick="openCreateTcModal()" title="Yeni Ekle">
+                    <button class="btn btn-primary btn-sm" onclick="openCreateTcModal()" title="<?php echo t('common.add_new'); ?>">
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 <?php endif; ?>
@@ -122,11 +122,11 @@
                 <i class="fas fa-calendar-alt u-primary"></i> <?php echo t('tc.groups_title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="Modül Rehberi">
+                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                     <i class="fas fa-question-circle"></i>
                 </button>
                 <?php if (hasModulePermission('time_conditions', 'edit')): ?>
-                    <button class="btn btn-primary btn-sm" onclick="openCreateTgModal()" title="Yeni Ekle">
+                    <button class="btn btn-primary btn-sm" onclick="openCreateTgModal()" title="<?php echo t('common.add_new'); ?>">
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 <?php endif; ?>
@@ -206,14 +206,14 @@
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('tc.field_title'); ?></label>
-                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="ör: Ana Hat Zaman Koşulu">
+                    <input type="text" name="title" id="modal_title" class="form-control" required placeholder="<?php echo t('time_conditions.title_ph'); ?>">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('internal_number.field'); ?></label>
                     <input type="text" name="internal_number" id="modal_internal_number"
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
-                           placeholder="ör: 1010">
+                           placeholder="<?php echo t('common.eg'); ?> 1010">
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
@@ -228,7 +228,7 @@
                 <div class="u-mb-20">
                     <div class="u-flex-between u-mb-10">
                         <label class="form-label u-mb-0"><i class="fas fa-list-ol"></i> <?php echo t('tc.rules_label'); ?></label>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="addTcRuleRow()" title="Kural Ekle">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addTcRuleRow()" title="<?php echo t('time_conditions.add_rule'); ?>">
                             <i class="fas fa-plus-circle"></i>
                         </button>
                     </div>
@@ -282,7 +282,7 @@
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('tc.field_group_title'); ?></label>
-                    <input type="text" name="title" id="modal_tg_title" class="form-control" required placeholder="ör: Standart Hafta İçi Mesaisi">
+                    <input type="text" name="title" id="modal_tg_title" class="form-control" required placeholder="<?php echo t('time_conditions.group_title_ph'); ?>">
                 </div>
 
                 <div class="u-grid-2">
@@ -311,7 +311,7 @@
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('tc.field_holidays'); ?></label>
-                    <input type="text" name="holidays" id="modal_tg_holidays" class="form-control" placeholder="ör: 2026-01-01, 2026-04-23, 2026-05-19, 2026-07-15, 2026-08-30, 2026-10-29">
+                    <input type="text" name="holidays" id="modal_tg_holidays" class="form-control" placeholder="<?php echo t('common.eg'); ?> 2026-01-01, 2026-04-23, 2026-05-19, 2026-07-15, 2026-08-30, 2026-10-29">
                     <small class="u-hint"><?php echo t('tc.holidays_help'); ?></small>
                 </div>
 

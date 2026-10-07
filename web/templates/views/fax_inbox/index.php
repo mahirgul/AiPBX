@@ -7,7 +7,7 @@
             <div class="u-fs-13 u-muted">
                 <?php echo t('fax_inbox.total_prefix'); ?> <?php echo $total_count; ?> <?php echo t('fax_inbox.total_suffix'); ?> <?php if ($total_pages > 1): ?>(<?php echo sprintf(t('fax_inbox.page_of'), $page, $total_pages); ?>)<?php endif; ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxInboxHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxInboxHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>

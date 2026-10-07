@@ -4,7 +4,7 @@
         <div class="card-title">
             <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_mail_settings.title'); ?>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxMailHelpBox')" title="Modül Rehberi">
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxMailHelpBox')" title="<?php echo t('common.module_guide'); ?>">
             <i class="fas fa-question-circle"></i>
         </button>
     </div>

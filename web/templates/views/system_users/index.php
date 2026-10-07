@@ -114,7 +114,7 @@
             <i class="fas fa-users-cog u-primary"></i> <?php echo t('system_users.title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('userHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('userHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openRolesModal()" title="<?php echo t('system_users.roles_tooltip'); ?>">
@@ -142,7 +142,7 @@
     <div id="bulkActionBar" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 10px 16px; margin: 12px 16px; align-items: center; justify-content: space-between;">
         <div style="font-size: 13px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 8px;">
             <i class="fas fa-check-square"></i>
-            <span id="bulkSelectedCount">0</span> kullanıcı seçildi
+            <span id="bulkSelectedCount">0</span> <?php echo t('system_users.users_selected'); ?>
         </div>
         <form method="POST" id="bulkMailForm" class="u-m-0" onsubmit="return confirmBulkSendMail();">
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
@@ -159,7 +159,7 @@
             <thead>
                 <tr>
                     <th style="width: 36px; text-align: center;">
-                        <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" style="cursor: pointer; accent-color: var(--primary);" title="Tümünü Seç">
+                        <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" style="cursor: pointer; accent-color: var(--primary);" title="<?php echo t('system_users.select_all'); ?>">
                     </th>
                     <th class="col-hide-mobile u-w-50">#</th>
                     <th class="col-hide-mobile"><?php echo t('system_users.col_user'); ?></th>
@@ -214,11 +214,11 @@
                             <td>
                                 <?php if (!empty($u['two_factor_enabled'])): ?>
                                     <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700; font-size: 11px;" title="<?php echo t('system_users.2fa_active_tooltip', '2FA Aktif'); ?>">
-                                        <i class="fas fa-lock"></i> Aktif
+                                        <i class="fas fa-lock"></i> <?php echo t('common.active'); ?>
                                     </span>
                                 <?php else: ?>
                                     <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-size: 11px;" title="<?php echo t('system_users.2fa_inactive_tooltip', '2FA Kapalı'); ?>">
-                                        <i class="fas fa-unlock-alt"></i> Kapalı
+                                        <i class="fas fa-unlock-alt"></i> <?php echo t('system_users.twofa_off'); ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -300,7 +300,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_email'); ?></label>
-                        <input type="email" name="email" id="modal_email" class="form-control" placeholder="ahmet@example.com">
+                        <input type="email" name="email" id="modal_email" class="form-control" placeholder="name@example.com">
                     </div>
                 </div>
 
@@ -316,7 +316,7 @@
                 <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_extension'); ?></label>
-                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="ör: 3001">
+                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('common.eg'); ?> 3001">
                         <small class="u-muted u-fs-11"><?php echo t('system_users.extension_help'); ?></small>
                     </div>
                     <div class="form-group">
@@ -362,7 +362,7 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_mobil" value="mobil">
-                            <span><i class="fas fa-mobile-alt u-success"></i> Mobil</span>
+                            <span><i class="fas fa-mobile-alt u-success"></i> <?php echo t('my_phone.lbl_mobile'); ?></span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_sip" value="sip">
@@ -370,7 +370,7 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_video" value="video">
-                            <span><i class="fas fa-video" style="color: #8b5cf6;"></i> Görüntü</span>
+                            <span><i class="fas fa-video" style="color: #8b5cf6;"></i> <?php echo t('system_users.video'); ?></span>
                         </label>
                     </div>
                 </div>

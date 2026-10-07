@@ -5,10 +5,10 @@
     </div>
     <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 10px 0;"><?php echo htmlspecialchars($title); ?></h2>
     <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin: 0 0 24px 0;">
-        <?php echo $success ? 'Uygulamaya dönülüyor, lütfen bekleyin...' : htmlspecialchars($error_message); ?>
+        <?php echo $success ? t('google.returning') : htmlspecialchars($error_message); ?>
     </p>
     <a id="btnReturn" href="<?php echo htmlspecialchars($deep_link); ?>" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">
-        <?php echo $success ? 'Uygulamayı Aç' : 'Uygulamaya Geri Dön'; ?>
+        <?php echo $success ? t('google.open_app') : t('google.back_to_app'); ?>
     </a>
 </div>
 <script>

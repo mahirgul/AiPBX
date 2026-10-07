@@ -4,7 +4,7 @@
             <i class="fas fa-shield-alt u-primary"></i> <?php echo t('audit_log.header_title_pbx'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('auditHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('auditHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>

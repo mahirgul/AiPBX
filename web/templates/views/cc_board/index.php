@@ -55,7 +55,7 @@
             </div>
             <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
                 <div class="cc-board-val-compact u-danger" id="board-waiting-calls">0</div>
-                <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Maks: <span id="board-max-wait" style="font-family: monospace; font-weight: 700; color: var(--text-main);">00:00</span></span>
+                <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;"><?php echo t('cc_board.max'); ?>: <span id="board-max-wait" style="font-family: monospace; font-weight: 700; color: var(--text-main);">00:00</span></span>
             </div>
         </div>
 
@@ -82,7 +82,7 @@
                 <span class="cc-board-val-compact u-danger" id="board-missed-calls">0</span>
                 <span class="u-fs-13 u-muted u-fw-700">/</span>
                 <span class="cc-board-val-compact u-warning" id="board-abandoned-calls">0</span>
-                <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">Terk: %<span id="board-abandon-rate">0</span></span>
+                <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;"><?php echo t('cc_board.abandon'); ?>: %<span id="board-abandon-rate">0</span></span>
                 <span id="board-missed-rate" style="display: none;">0</span>
             </div>
         </div>
@@ -110,12 +110,12 @@
                 <div>
                     <span class="cc-board-val-compact u-success" id="board-agents-available">0</span>
                     <span class="u-muted u-fw-600 u-fs-12">/ <span id="board-agents-logged-in">0</span></span>
-                    <span style="font-size: 11px; color: var(--danger); font-weight: 600; margin-left: 4px;">(<span id="board-active-calls">0</span> aktif)</span>
+                    <span style="font-size: 11px; color: var(--danger); font-weight: 600; margin-left: 4px;">(<span id="board-active-calls">0</span> <?php echo t('cc_board.active'); ?>)</span>
                     <span id="board-agents-total" style="display: none;">0</span>
                 </div>
                 <div class="u-text-right">
                     <span style="font-size: 15px; font-weight: 800; color: #6366f1;"><span id="board-sla-pct">0</span>%</span>
-                    <span style="font-size: 10px; color: var(--text-muted); display: block;"><span id="board-sla-threshold">20</span>sn</span>
+                    <span style="font-size: 10px; color: var(--text-muted); display: block;"><span id="board-sla-threshold">20</span><?php echo t('common.sec_short'); ?></span>
                 </div>
             </div>
         </div>
@@ -133,7 +133,7 @@
                     <i class="fas fa-phone-volume u-danger"></i>
                     <span><?php echo t('cc_supervisor.waiting_calls_live'); ?></span>
                 </div>
-                <span class="badge badge-danger" id="waiting-badge">0 Çağrı Bekliyor</span>
+                <span class="badge badge-danger" id="waiting-badge">0 <?php echo t('cc_board.calls_waiting'); ?></span>
             </div>
             <div class="table-responsive" style="flex: 1; max-height: 420px; overflow-y: auto;">
                 <table class="data-table" style="width: 100%; border-collapse: collapse;">
@@ -163,7 +163,7 @@
                     <i class="fas fa-users-cog u-primary"></i>
                     <span><?php echo t('cc_supervisor.agent_status_title'); ?></span>
                 </div>
-                <span class="badge badge-info" id="agents-count-badge">0 Temsilci</span>
+                <span class="badge badge-info" id="agents-count-badge">0 <?php echo t('cc_board.agents'); ?></span>
             </div>
             <div class="table-responsive" style="flex: 1; max-height: 420px; overflow-y: auto;">
                 <table class="data-table" style="width: 100%; border-collapse: collapse;">

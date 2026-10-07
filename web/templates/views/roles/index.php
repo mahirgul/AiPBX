@@ -7,7 +7,7 @@ $group_slugs = RoleRepository::groupSlugs();
             <i class="fas fa-user-shield u-warning"></i> <?php echo t('roles.header_title'); ?>
         </div>
         <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('roleHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('roleHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <button class="btn btn-primary btn-sm" onclick="openCreateRoleModal()" title="<?php echo t('roles.new_tooltip'); ?>">
@@ -139,26 +139,26 @@ $group_slugs = RoleRepository::groupSlugs();
                             <?php 
                             $last_group = null;
                             $group_icons = [
-                                'Genel'            => 'fas fa-layer-group',
-                                'Dış Hat Yönetimi' => 'fas fa-network-wired',
-                                'PBX Yönetimi'     => 'fas fa-server',
-                                'Yönetim'          => 'fas fa-cog',
-                                'Güvenlik'         => 'fas fa-shield-alt',
-                                'Entegrasyonlar'   => 'fas fa-puzzle-piece',
-                                'Yapay Zekâ'       => 'fas fa-wand-magic-sparkles',
-                                'Faks Sistemi'     => 'fas fa-fax',
-                                'Çağrı Merkezi'    => 'fas fa-headset',
+                                'General' => 'fas fa-layer-group',
+                                'Outbound Line Management' => 'fas fa-network-wired',
+                                'PBX Management' => 'fas fa-server',
+                                'Administration' => 'fas fa-cog',
+                                'Security' => 'fas fa-shield-alt',
+                                'Integrations' => 'fas fa-puzzle-piece',
+                                'AI' => 'fas fa-wand-magic-sparkles',
+                                'Fax System' => 'fas fa-fax',
+                                'Call Center' => 'fas fa-headset',
                             ];
                             $group_colors = [
-                                'Genel'            => 'var(--primary)',
-                                'Dış Hat Yönetimi' => 'var(--secondary)',
-                                'PBX Yönetimi'     => '#8b5cf6',
-                                'Yönetim'          => 'var(--warning)',
-                                'Güvenlik'         => 'var(--danger)',
-                                'Entegrasyonlar'   => 'var(--purple)',
-                                'Yapay Zekâ'       => 'var(--purple)',
-                                'Faks Sistemi'     => 'var(--teal)',
-                                'Çağrı Merkezi'    => 'var(--success)',
+                                'General' => 'var(--primary)',
+                                'Outbound Line Management' => 'var(--secondary)',
+                                'PBX Management' => '#8b5cf6',
+                                'Administration' => 'var(--warning)',
+                                'Security' => 'var(--danger)',
+                                'Integrations' => 'var(--purple)',
+                                'AI' => 'var(--purple)',
+                                'Fax System' => 'var(--teal)',
+                                'Call Center' => 'var(--success)',
                             ];
 
                             foreach ($modules_definition as $m_key => $m_info):

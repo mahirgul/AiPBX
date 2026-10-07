@@ -22,7 +22,7 @@
             <div class="card-title">
                 <i class="fas fa-id-card u-primary"></i> <?php echo t('brand_settings.identity_title'); ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('brandHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('brandHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
@@ -43,7 +43,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('brand_settings.field_brand_sub'); ?></label>
-                <input type="text" name="brand_sub" class="form-control" value="<?php echo htmlspecialchars($s['brand_sub']); ?>" required placeholder="Santral & Çağrı Merkezi">
+                <input type="text" name="brand_sub" class="form-control" value="<?php echo htmlspecialchars($s['brand_sub']); ?>" required placeholder="PBX & Call Center">
             </div>
         </div>
     </div>

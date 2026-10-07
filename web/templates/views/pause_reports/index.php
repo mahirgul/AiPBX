@@ -41,7 +41,7 @@
         </div>
         <div class="u-flex-gap">
             <?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="Modül Rehberi">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
