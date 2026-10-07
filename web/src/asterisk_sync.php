@@ -278,13 +278,23 @@ require_once __DIR__ . '/sync/SyncPermissions.php';
  */
 function syncDefaultLanguage($lang) {
     $lang = preg_replace('/[^a-zA-Z_]/', '', $lang) ?: 'en';
-    $content = @file_get_contents(ASTERISK_CONF_DIR . '/asterisk.conf');
-    if ($content !== false && preg_match('/^defaultlanguage\s*=\s*(.*)$/m', $content, $m) && trim($m[1]) === $lang) {
+    $conf_path = ASTERISK_CONF_DIR . '/asterisk.conf';
+    $content = @file_get_contents($conf_path);
+    if ($content === false) return false;
+    if (preg_match('/^defaultlanguage\s*=\s*(.*)$/m', $content, $m) && trim($m[1]) === $lang) {
         return false; // same value already, nothing changed
     }
-    // asterisk.conf is asterisk:asterisk 0640 — the portal cannot write it, so
-    // the old file_put_contents() here failed silently and the language never
-    // changed although the page asked for a restart. Written as root now.
+    if (ASTERISK_CONF_DIR !== '/etc/asterisk') {
+        // Another config directory (tests): written directly.
+        $content = preg_match('/^defaultlanguage\s*=.*$/m', $content)
+            ? preg_replace('/^defaultlanguage\s*=.*$/m', "defaultlanguage = {$lang}", $content, 1)
+            : preg_replace('/(\[options\][^\[]*)/', "$1defaultlanguage = {$lang}\n", $content, 1);
+        return file_put_contents($conf_path, $content) !== false;
+    }
+    // /etc/asterisk/asterisk.conf is asterisk:asterisk 0640 — the portal cannot
+    // write it, so the old file_put_contents() here failed silently and the
+    // language never changed although the page asked for a restart. aipbx-priv
+    // (root, the path is fixed there) writes it now.
     $res = PrivHelper::run(['asterisk-lang', $lang]);
     if (!$res['success']) {
         throw new RuntimeException(sprintf(t('srv_asterisk.err_lang'), $res['output']));

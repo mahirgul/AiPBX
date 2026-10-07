@@ -82,8 +82,8 @@
             <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
                 <?php echo t('login.mobile_app_desc'); ?>
             </p>
-            <a href="/app.apk" download="AiPBX.apk" class="btn btn-outline-primary" style="width: 100%; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 14px; font-size: 13px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">
-                <i class="fas fa-download"></i> <?php echo t('login.download_apk'); ?>
+            <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-outline-primary" style="width: 100%; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 14px; font-size: 13px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center;">
+                <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
             </a>
         </div>
     </div>

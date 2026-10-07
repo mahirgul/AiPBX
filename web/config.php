@@ -436,6 +436,9 @@ function sanitizeDestType($type) {
  * controls the audio in a phone call, this one the texts in the web panel.
  */
 const UI_LANGUAGES = ['en' => 'English', 'tr' => 'Türkçe'];
+
+// The Android app on Google Play (login page, My Phone, mobile sign-in links).
+const ANDROID_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX';
 // Language of a visitor with no preference yet (login page, new users).
 const DEFAULT_UI_LANGUAGE = 'en';
 

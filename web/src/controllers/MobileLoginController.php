@@ -37,7 +37,7 @@ class MobileLoginController extends BaseController
             'site_title' => getSystemSetting('site_title', 'AI PBX Portal'),
             'brand_title' => getSystemSetting('brand_title', 'AI PBX'),
             'brand_sub' => getSystemSetting('brand_sub', 'PBX & Call Center'),
-            'play_url' => 'https://play.google.com/store/apps/details?id=' . QrLoginService::ANDROID_PACKAGE,
+            'play_url' => ANDROID_PLAY_URL,
         ];
 
         if ($info['valid']) {

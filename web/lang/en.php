@@ -1379,7 +1379,6 @@ return [
     'login.submit_tooltip' => 'Sign In',
     'login.mobile_app_title' => 'AiPBX Mobile Phone',
     'login.mobile_app_desc' => 'Download the Android app to use your PBX extension from your mobile device.',
-    'login.download_apk' => 'Download Android App (APK)',
     'login.csrf_error' => 'Security verification (CSRF) failed! Please refresh the page and try again.',
 
     // Force Reset
@@ -3048,7 +3047,6 @@ return [
     'my_phone.show_hide' => 'Show / hide',
     'my_phone.mobile_app_info' => 'Mobile App &amp; Version',
     'my_phone.mobile_qr' => 'Mobile Sign-in QR Code',
-    'my_phone.download_apk' => 'Download APK',
     'my_phone.quick_mobile_login' => 'Quick mobile sign-in (QR code)',
     'my_phone.quick_mobile_login_desc' => 'Scan this QR code from the sign-in screen of the Android or iOS app to sign in with one tap, no password.',
     'my_phone.show_qr' => 'Show QR code',
@@ -3649,4 +3647,5 @@ Your phone will ring.',
     'srv_asterisk.err_lang' => 'The prompt language could not be written to asterisk.conf: %s',
     'force_reset.set_intro' => 'Your administrator asked you to choose a new password before you continue.',
     'force_reset.or_email' => 'Or receive a reset link by e-mail:',
+    'common.get_on_google_play' => 'Get it on Google Play',
 ];
