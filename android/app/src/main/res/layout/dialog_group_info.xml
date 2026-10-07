@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Grup Adı"
+            android:text="@string/ui_group_name"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -48,7 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:gravity="center"
-            android:text="3 üye • 2 çevrimiçi"
+            android:text="@string/ui_sample_members_online"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
-            android:text="Grup Açıklaması"
+            android:text="@string/ui_group_description"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:visibility="gone" />
@@ -81,7 +81,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
-            android:text="Bilgileri Düzenle"
+            android:text="@string/ui_edit_info"
             android:textSize="12sp" />
 
         <Button
@@ -91,7 +91,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:backgroundTint="@color/primary"
-            android:text="+ Üye Ekle"
+            android:text="@string/ui_add_member_plus"
             android:textColor="#FFFFFF"
             android:textSize="12sp" />
     </LinearLayout>
@@ -102,7 +102,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="Katılımcılar:"
+        android:text="@string/ui_participants"
         android:textColor="@color/text_primary"
         android:textSize="13sp"
         android:textStyle="bold" />
@@ -127,7 +127,7 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Gruptan Ayrıl"
+            android:text="@string/ui_leave_group"
             android:textColor="#DC2626" />
 
         <Button
@@ -135,7 +135,7 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Grubu Sil"
+            android:text="@string/ui_delete_group"
             android:textColor="#DC2626"
             android:visibility="gone" />
 
@@ -149,7 +149,7 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kapat"
+            android:text="@string/ui_close"
             android:textColor="@color/text_secondary" />
     </LinearLayout>
 

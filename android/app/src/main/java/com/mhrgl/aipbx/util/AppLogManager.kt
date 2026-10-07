@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.util
 
+import com.mhrgl.aipbx.R
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -170,13 +171,13 @@ object AppLogManager {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(shareIntent, "Logları İndir veya Paylaş").apply {
+            val chooser = Intent.createChooser(shareIntent, context.getString(R.string.logs_share_chooser)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(chooser)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to share logs", e)
-            Toast.makeText(context, "Log dosyası paylaşılamadı: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.logs_share_failed, e.message), Toast.LENGTH_LONG).show()
         }
     }
 }

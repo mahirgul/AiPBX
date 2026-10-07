@@ -45,15 +45,15 @@ class ChatConversationAdapter(
             val isGroup = item.type == "group"
 
             if (isGroup) {
-                val displayName = item.title ?: "Grup Sohbeti"
+                val displayName = item.title ?: itemView.context.getString(R.string.group_chat)
                 tvTargetName.text = displayName
                 tvGroupTag.visibility = View.VISIBLE
                 tvAvatar.text = "👥"
                 tvAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
                 vOnlineDot.visibility = View.GONE
-                tvLastMessage.text = item.lastMessageText ?: "${item.memberCount} üye"
+                tvLastMessage.text = item.lastMessageText ?: itemView.context.getString(R.string.group_members_count, item.memberCount)
             } else {
-                val displayName = item.targetName ?: item.targetExt ?: "Kullanıcı"
+                val displayName = item.targetName ?: item.targetExt ?: itemView.context.getString(R.string.chat_user_fallback)
                 tvTargetName.text = displayName
                 tvGroupTag.visibility = View.GONE
                 tvAvatar.text = displayName.take(1).uppercase()
@@ -62,7 +62,7 @@ class ChatConversationAdapter(
                 vOnlineDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
                     if (item.targetOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
                 )
-                tvLastMessage.text = item.lastMessageText ?: "Sohbet başlatıldı"
+                tvLastMessage.text = item.lastMessageText ?: itemView.context.getString(R.string.chat_started)
             }
 
             tvTime.text = formatChatTime(item.lastMessageAt)

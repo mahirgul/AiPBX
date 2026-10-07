@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.util.L10n
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -70,7 +71,7 @@ class ServerSetupActivity : AppCompatActivity() {
 
         binding.btnQrScan.setOnClickListener {
             val options = ScanOptions().apply {
-                setPrompt("Web sayfasındaki MyPhone QR kodunu kutu içine hizalayın")
+                setPrompt(getString(R.string.qr_prompt_setup))
                 setBeepEnabled(true)
                 setOrientationLocked(false)
                 setBarcodeImageEnabled(false)
@@ -91,7 +92,9 @@ class ServerSetupActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             (pInfo?.versionCode?.toLong() ?: BuildConfig.VERSION_CODE.toLong())
         }
-        binding.tvVersion.text = "AiPBX v$vName (Build $vCode)"
+        binding.tvVersion.text = getString(R.string.app_version_short, vName, vCode)
+        binding.btnLanguage.text = "🌐 " + L10n.displayName()
+        binding.btnLanguage.setOnClickListener { L10n.showPicker(this) }
 
         binding.btnConnect.setOnClickListener {
             val url = binding.etServerUrl.text.toString().trim()
@@ -136,9 +139,9 @@ class ServerSetupActivity : AppCompatActivity() {
                 val report = crashFile.readText()
                 crashFile.delete()
                 androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Hata Raporu (Önceki Çökme)")
+                    .setTitle(getString(R.string.crash_report_title))
                     .setMessage(report)
-                    .setPositiveButton("Kapat", null)
+                    .setPositiveButton(getString(R.string.ui_close), null)
                     .show()
             }
         } catch (e: Exception) {
@@ -156,13 +159,13 @@ class ServerSetupActivity : AppCompatActivity() {
                 if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
                     performQrLogin(serverUrl, qrToken)
                 } else {
-                    showError("QR kod eksik parametre içeriyor.")
+                    showError(getString(R.string.err_qr_missing_params))
                 }
             } else {
-                showError("Geçersiz veya uyumsuz AiPBX QR kodu!")
+                showError(getString(R.string.err_qr_invalid))
             }
         } catch (e: Exception) {
-            showError("QR kod çözümlenemedi: ${e.message}")
+            showError(getString(R.string.err_qr_decode, e.message))
         }
     }
 
@@ -182,7 +185,7 @@ class ServerSetupActivity : AppCompatActivity() {
                 prefs.serverUrl = serverUrl
                 onLoginSuccess(response)
             }.onFailure { error ->
-                showError(error.localizedMessage ?: "QR kod ile giriş başarısız oldu.")
+                showError(error.localizedMessage ?: getString(R.string.err_qr_login))
             }
         }
     }

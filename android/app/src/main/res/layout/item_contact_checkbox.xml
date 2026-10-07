@@ -56,7 +56,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Kullanıcı Adı"
+            android:text="@string/ui_sample_username"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -67,7 +67,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Dahili: 101 • Muhasebe"
+            android:text="@string/ui_sample_extension_dept"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
     </LinearLayout>

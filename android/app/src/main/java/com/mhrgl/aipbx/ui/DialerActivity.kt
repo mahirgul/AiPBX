@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.util.L10n
 import android.Manifest
 import android.content.ComponentName
 import android.content.Context
@@ -98,13 +99,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     // to be granted before the camera app can be opened.
     private val chatCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
-        else Toast.makeText(this, "Fotoğraf çekmek için kamera izni gerekli.", Toast.LENGTH_LONG).show()
+        else Toast.makeText(this, getString(R.string.err_camera_permission), Toast.LENGTH_LONG).show()
     }
 
     private fun showChatPhotoSourceMenu(anchor: View) {
         val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
-        popup.menu.add(0, 1, 0, "Fotoğraf çek")
-        popup.menu.add(0, 2, 1, "Galeriden seç")
+        popup.menu.add(0, 1, 0, getString(R.string.menu_take_photo))
+        popup.menu.add(0, 2, 1, getString(R.string.menu_pick_gallery))
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {
@@ -156,7 +157,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     ) { permissions ->
         val recordAudioGranted = permissions[Manifest.permission.RECORD_AUDIO] ?: false
         if (!recordAudioGranted) {
-            Toast.makeText(this, "Arama yapabilmek için mikrofon izni gereklidir.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.err_mic_permission_call), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -294,12 +295,12 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (prefs.hasSleepingWarning) {
             prefs.hasSleepingWarning = false
             AlertDialog.Builder(this)
-                .setTitle("Arka Plan Çalışması Kısıtlandı!")
-                .setMessage("Cihazınız ekran kapalıyken uygulamanın arka planda çalışmasını uykuya almış olabilir. Gelen aramaları kaçırmamak için lütfen pil ve arka plan kısıtlamalarını kapatın.")
-                .setPositiveButton("Ayarları Düzenle") { _, _ ->
+                .setTitle(getString(R.string.bg_restricted_title))
+                .setMessage(getString(R.string.bg_restricted_msg))
+                .setPositiveButton(getString(R.string.btn_edit_settings)) { _, _ ->
                     SamsungPowerManagerHelper.openBatterySettings(this)
                 }
-                .setNegativeButton("Tamam", null)
+                .setNegativeButton(getString(R.string.btn_ok), null)
                 .show()
         }
     }
@@ -346,20 +347,20 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun setupUserHeader() {
         val ext = prefs.extension ?: "--"
         val name = prefs.fullName ?: (prefs.username ?: "")
-        binding.tvUserExt.text = "Dahili: $ext ($name)"
+        binding.tvUserExt.text = getString(R.string.user_ext_label, ext, name)
 
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Çıkış Yap")
-                .setMessage("Santral oturumunu kapatmak istediğinize emin misiniz?")
-                .setPositiveButton("Çıkış") { _, _ ->
+                .setTitle(getString(R.string.logout_title))
+                .setMessage(getString(R.string.logout_confirm))
+                .setPositiveButton(getString(R.string.btn_logout)) { _, _ ->
                     pbxService?.engine?.destroy()
                     prefs.clearAuth()
                     stopService(Intent(this, PbxForegroundService::class.java))
                     startActivity(Intent(this, ServerSetupActivity::class.java))
                     finish()
                 }
-                .setNegativeButton("İptal", null)
+                .setNegativeButton(getString(R.string.btn_cancel), null)
                 .show()
         }
     }
@@ -523,7 +524,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.btnCall.setOnClickListener {
             val target = binding.tvDigits.text.toString().trim()
             if (target.isEmpty()) {
-                Toast.makeText(this, "Lütfen bir numara girin", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.err_enter_number), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             initiateCall(target)
@@ -542,14 +543,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     private fun initiateCall(targetNumber: String, displayName: String? = null) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Arama yapabilmek için mikrofon izni gereklidir.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.err_mic_permission_call), Toast.LENGTH_LONG).show()
             requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
             return
         }
 
         val service = pbxService
         if (service == null || service.engine.currentConnectionStatus != ConnectionStatus.CONNECTED) {
-            Toast.makeText(this, "Santrale bağlı değilsiniz. Lütfen bekleyin...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.err_not_connected), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -563,7 +564,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         if (cleanNumber.isEmpty()) {
-            Toast.makeText(this, "Lütfen geçerli bir numara girin", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.err_enter_valid_number), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -651,10 +652,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
                 response.stats?.let { s ->
                     val mins = s.totalBillsec / 60
-                    binding.tvHistoryStats.text = "Toplam: ${s.totalCalls} | Cevapsız: ${s.missedCalls} | Konuşma: ${mins} dk"
+                    binding.tvHistoryStats.text = getString(R.string.history_stats, s.totalCalls, s.missedCalls, mins)
                 }
             }.onFailure { err ->
-                Toast.makeText(this@DialerActivity, "Geçmiş yüklenemedi: ${err.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_history_load, err.message), Toast.LENGTH_SHORT).show()
                 binding.tvEmptyHistory.visibility = View.VISIBLE
             }
         }
@@ -695,9 +696,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         contactsAdapter.filterUnified(query, corporateContactsList, deviceContactsList, isDeviceContactsSelected)
         val count = contactsAdapter.itemCount
         val label = if (query.trim().isNotEmpty()) {
-            "sonuç bulundu"
+            getString(R.string.contacts_results_found)
         } else if (isDeviceContactsSelected) {
-            "telefon kişisi listelendi"
+            getString(R.string.contacts_phone_listed)
         } else {
             "dahili listelendi"
         }
@@ -705,11 +706,11 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         if (count == 0) {
             binding.tvEmptyContacts.text = if (query.trim().isNotEmpty()) {
-                "'$query' ile eşleşen kişi bulunamadı."
+                getString(R.string.contacts_no_match, query)
             } else if (isDeviceContactsSelected) {
-                "Telefon rehberinde kişi bulunamadı veya rehber izni verilmedi."
+                getString(R.string.contacts_phone_empty)
             } else {
-                "Kurumsal dahili bulunamadı."
+                getString(R.string.contacts_company_empty)
             }
             binding.tvEmptyContacts.visibility = View.VISIBLE
         } else {
@@ -760,7 +761,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 corporateContactsList = response.contacts ?: emptyList()
                 filterContacts(binding.etContactSearch.text?.toString() ?: "")
             }.onFailure { err ->
-                Toast.makeText(this@DialerActivity, "Rehber yüklenemedi: ${err.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_contacts_load, err.message), Toast.LENGTH_SHORT).show()
                 filterContacts(binding.etContactSearch.text?.toString() ?: "")
             }
         }
@@ -792,7 +793,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                         val nameIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                         val numIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                         while (c.moveToNext()) {
-                            val name = if (nameIdx >= 0) c.getString(nameIdx) ?: "İsimsiz" else "İsimsiz"
+                            val name = if (nameIdx >= 0) c.getString(nameIdx) ?: getString(R.string.contact_unnamed) else getString(R.string.contact_unnamed)
                             val rawNum = if (numIdx >= 0) c.getString(numIdx) ?: "" else ""
                             val cleanNum = rawNum.replace(Regex("[^0-9+]"), "")
                             if (cleanNum.isNotEmpty() && !seenNumbers.contains(cleanNum)) {
@@ -801,7 +802,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                                     ContactItem(
                                         extension = cleanNum,
                                         name = name,
-                                        role = "Cihaz Rehberi",
+                                        role = getString(R.string.contact_role_device),
                                         status = "offline",
                                         sipStatus = null,
                                         webrtcStatus = null
@@ -828,7 +829,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         chatAdapter = ChatConversationAdapter { conv ->
             val isGroup = conv.type == "group"
             val targetExt = if (isGroup) "" else (conv.targetExt ?: "")
-            val displayName = if (isGroup) (conv.title ?: "Grup Sohbeti") else (conv.targetName ?: conv.targetExt ?: "")
+            val displayName = if (isGroup) (conv.title ?: getString(R.string.group_chat)) else (conv.targetName ?: conv.targetExt ?: "")
             openChatRoom(conv.id, targetExt, displayName, isGroup)
         }
         binding.rvChatConversations.layoutManager = LinearLayoutManager(this)
@@ -900,8 +901,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         binding.btnChatCreate.setOnClickListener { anchor ->
             val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
-            popup.menu.add(0, 1, 0, "Bireysel Sohbet")
-            popup.menu.add(0, 2, 1, "Yeni Grup")
+            popup.menu.add(0, 1, 0, getString(R.string.menu_direct_chat))
+            popup.menu.add(0, 2, 1, getString(R.string.menu_new_group))
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     1 -> { showNewChatDialog(); true }
@@ -1027,7 +1028,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                                 directKey = null,
                                 title = null,
                                 createdBy = "",
-                                lastMessageText = "Kişi • Sohbet başlat (#${contact.extension})",
+                                lastMessageText = getString(R.string.chat_start_with_contact, contact.extension),
                                 lastMessageAt = null,
                                 unreadCount = 0,
                                 targetExt = contact.extension,
@@ -1046,13 +1047,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             binding.rvChatConversations.visibility = View.GONE
 
             if (chatFilterMode == ChatFilter.GROUP) {
-                binding.tvChatEmptyTitle.text = "Henüz grup sohbeti yok"
-                binding.tvChatEmptySubtitle.text = "Yeni bir grup oluşturarak ekibinizle anlık mesajlaşabilirsiniz."
+                binding.tvChatEmptyTitle.text = getString(R.string.chat_no_groups)
+                binding.tvChatEmptySubtitle.text = getString(R.string.chat_no_groups_desc)
                 binding.btnChatEmptyNewChat.visibility = View.GONE
                 binding.btnChatEmptyNewGroup.visibility = View.VISIBLE
             } else {
-                binding.tvChatEmptyTitle.text = "Henüz bir sohbetiniz yok"
-                binding.tvChatEmptySubtitle.text = "Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                binding.tvChatEmptyTitle.text = getString(R.string.ui_no_chats_yet)
+                binding.tvChatEmptySubtitle.text = getString(R.string.ui_no_chats_desc)
                 binding.btnChatEmptyNewChat.visibility = View.VISIBLE
                 binding.btnChatEmptyNewGroup.visibility = View.VISIBLE
             }
@@ -1083,9 +1084,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             if (otherContacts.isEmpty()) {
                 AlertDialog.Builder(this@DialerActivity)
-                    .setTitle("Yeni Grup")
-                    .setMessage("Gruba eklenebilecek başka dahili bulunamadı.")
-                    .setPositiveButton("Tamam", null)
+                    .setTitle(getString(R.string.menu_new_group))
+                    .setMessage(getString(R.string.group_no_more_extensions))
+                    .setPositiveButton(getString(R.string.btn_ok), null)
                     .show()
                 return@launch
             }
@@ -1096,7 +1097,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 .create()
 
             val selectionAdapter = ContactSelectionAdapter { selected ->
-                dialogBinding.tvSelectedCount.text = "Üye Seçin (${selected.size} seçildi):"
+                dialogBinding.tvSelectedCount.text = getString(R.string.select_members_count, selected.size)
             }
 
             dialogBinding.rvGroupMembers.layoutManager = LinearLayoutManager(this@DialerActivity)
@@ -1117,17 +1118,17 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 val selectedMembers = selectionAdapter.getSelectedExtensions().toList()
 
                 if (title.isEmpty()) {
-                    Toast.makeText(this@DialerActivity, "Grup adı zorunludur.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.err_group_name_required), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 if (selectedMembers.isEmpty()) {
-                    Toast.makeText(this@DialerActivity, "En az 1 üye seçmelisiniz.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.err_select_one_member), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 dialogBinding.btnSubmitNewGroup.isEnabled = false
-                dialogBinding.btnSubmitNewGroup.text = "Oluşturuluyor..."
+                dialogBinding.btnSubmitNewGroup.text = getString(R.string.msg_creating)
 
                 lifecycleScope.launch {
                     val createRes = apiClient.createGroupChat(
@@ -1149,8 +1150,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                         )
                     }.onFailure { err ->
                         dialogBinding.btnSubmitNewGroup.isEnabled = true
-                        dialogBinding.btnSubmitNewGroup.text = "Grubu Oluştur"
-                        Toast.makeText(this@DialerActivity, "Hata: ${err.message}", Toast.LENGTH_LONG).show()
+                        dialogBinding.btnSubmitNewGroup.text = getString(R.string.ui_create_group)
+                        Toast.makeText(this@DialerActivity, getString(R.string.err_generic, err.message), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -1180,9 +1181,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             if (otherContacts.isEmpty()) {
                 AlertDialog.Builder(this@DialerActivity)
-                    .setTitle("Dahili Rehber")
-                    .setMessage("Sistemde mesajlaşılabilecek başka dahili bulunamadı.")
-                    .setPositiveButton("Tamam", null)
+                    .setTitle(getString(R.string.internal_directory_title))
+                    .setMessage(getString(R.string.no_extensions_to_chat))
+                    .setPositiveButton(getString(R.string.btn_ok), null)
                     .show()
                 return@launch
             }
@@ -1275,10 +1276,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             binding.vChatRoomOnlineDot.visibility = View.GONE
             binding.tvChatRoomAvatar.text = "👥"
             binding.tvChatRoomAvatar.backgroundTintList = ColorStateList.valueOf(0xFF4F46E5.toInt())
-            binding.tvChatRoomTargetName.text = if (currentChatTargetName.isNotEmpty()) currentChatTargetName else "Grup Sohbeti"
+            binding.tvChatRoomTargetName.text = if (currentChatTargetName.isNotEmpty()) currentChatTargetName else getString(R.string.group_chat)
             val grp = currentChatGroupDetails
             binding.tvChatRoomTargetStatus.text = if (grp != null) {
-                "${grp.memberCount} üye, ${grp.onlineCount} çevrimiçi"
+                getString(R.string.group_members_online_grp, grp.memberCount, grp.onlineCount)
             } else {
                 "Grup"
             }
@@ -1300,7 +1301,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     }
 
     private fun applyChatRoomPresence(isOnline: Boolean) {
-        binding.tvChatRoomTargetStatus.text = if (isOnline) "Çevrimiçi" else "Çevrimdışı"
+        binding.tvChatRoomTargetStatus.text = if (isOnline) getString(R.string.status_online) else getString(R.string.ui_offline)
         binding.tvChatRoomTargetStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
         binding.vChatRoomOnlineDot.backgroundTintList = ColorStateList.valueOf(
             if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
@@ -1321,7 +1322,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     nm?.cancel(10000 + (conv.id % 1000))
                     loadChatRoomMessages()
                 }.onFailure {
-                    Toast.makeText(this@DialerActivity, "Sohbet oluşturulamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.err_chat_create, it.message), Toast.LENGTH_SHORT).show()
                 }
             } else if (currentChatConvId > 0) {
                 loadChatRoomMessages()
@@ -1401,7 +1402,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun handleChatPickedUri(uri: Uri, type: String) {
         lifecycleScope.launch {
             binding.llChatUploadPreview.visibility = View.VISIBLE
-            binding.tvChatUploadFilename.text = "Dosya hazırlanıyor ve yükleniyor..."
+            binding.tvChatUploadFilename.text = getString(R.string.msg_uploading_file)
 
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch
@@ -1411,7 +1412,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
 
             if (prepared == null) {
-                Toast.makeText(this@DialerActivity, "Dosya okunamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_file_read), Toast.LENGTH_SHORT).show()
                 binding.llChatUploadPreview.visibility = View.GONE
                 return@launch
             }
@@ -1422,7 +1423,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 chatPendingUpload = res
                 binding.tvChatUploadFilename.text = res.fileName ?: prepared.file.name
             }.onFailure {
-                Toast.makeText(this@DialerActivity, "Yükleme hatası: ${it.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_upload, it.message), Toast.LENGTH_LONG).show()
                 binding.llChatUploadPreview.visibility = View.GONE
             }
         }
@@ -1439,7 +1440,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val res = apiClient.getGroupDetails(sUrl, token, convId)
             val group = res.getOrNull() ?: currentChatGroupDetails
             if (group == null) {
-                Toast.makeText(this@DialerActivity, "Grup detayları yüklenemedi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_group_details), Toast.LENGTH_SHORT).show()
                 return@launch
             }
             currentChatGroupDetails = group
@@ -1454,8 +1455,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             dialogBinding.tvGroupInfoAvatar.text = "👥"
             dialogBinding.tvGroupInfoAvatar.backgroundTintList = ColorStateList.valueOf(0xFF4F46E5.toInt())
-            dialogBinding.tvGroupInfoTitle.text = group.title ?: "Grup Sohbeti"
-            dialogBinding.tvGroupInfoSubtitle.text = "${group.memberCount} üye • ${group.onlineCount} çevrimiçi"
+            dialogBinding.tvGroupInfoTitle.text = group.title ?: getString(R.string.group_chat)
+            dialogBinding.tvGroupInfoSubtitle.text = getString(R.string.group_members_online_info, group.memberCount, group.onlineCount)
             if (!group.description.isNullOrEmpty()) {
                 dialogBinding.tvGroupInfoDesc.visibility = View.VISIBLE
                 dialogBinding.tvGroupInfoDesc.text = group.description
@@ -1483,15 +1484,15 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                             showChatRoomGroupInfoDialog()
                             loadChatRoomGroupDetails()
                         }.onFailure {
-                            Toast.makeText(this@DialerActivity, "Yetki değiştirilemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@DialerActivity, getString(R.string.err_role_change, it.message), Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 onRemoveMember = { participant ->
                     AlertDialog.Builder(this@DialerActivity)
-                        .setTitle("Üyeyi Çıkar")
-                        .setMessage("${participant.name ?: participant.extension} gruptan çıkarılsın mı?")
-                        .setPositiveButton("Çıkar") { _, _ ->
+                        .setTitle(getString(R.string.remove_member_title))
+                        .setMessage(getString(R.string.remove_member_confirm, participant.name ?: participant.extension))
+                        .setPositiveButton(getString(R.string.btn_remove)) { _, _ ->
                             lifecycleScope.launch {
                                 val remRes = apiClient.removeGroupMember(sUrl, token, convId, participant.extension)
                                 remRes.onSuccess {
@@ -1499,11 +1500,11 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                                     showChatRoomGroupInfoDialog()
                                     loadChatRoomGroupDetails()
                                 }.onFailure {
-                                    Toast.makeText(this@DialerActivity, "Üye çıkarılamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@DialerActivity, getString(R.string.err_member_remove, it.message), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
-                        .setNegativeButton("İptal", null)
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
                         .show()
                 }
             )
@@ -1530,41 +1531,41 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             dialogBinding.btnLeaveGroup.setOnClickListener {
                 AlertDialog.Builder(this@DialerActivity)
-                    .setTitle("Gruptan Ayrıl")
-                    .setMessage("Bu gruptan ayrılmak istediğinizden emin misiniz?")
-                    .setPositiveButton("Ayrıl") { _, _ ->
+                    .setTitle(getString(R.string.ui_leave_group))
+                    .setMessage(getString(R.string.leave_group_confirm))
+                    .setPositiveButton(getString(R.string.btn_leave)) { _, _ ->
                         lifecycleScope.launch {
                             val leaveRes = apiClient.leaveGroup(sUrl, token, convId)
                             leaveRes.onSuccess {
-                                Toast.makeText(this@DialerActivity, "Gruptan ayrıldınız.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@DialerActivity, getString(R.string.msg_left_group), Toast.LENGTH_SHORT).show()
                                 dialog.dismiss()
                                 closeChatRoom()
                             }.onFailure {
-                                Toast.makeText(this@DialerActivity, "İşlem başarısız: ${it.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@DialerActivity, getString(R.string.err_action_failed, it.message), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
-                    .setNegativeButton("Vazgeç", null)
+                    .setNegativeButton(getString(R.string.btn_dismiss), null)
                     .show()
             }
 
             dialogBinding.btnDeleteGroup.setOnClickListener {
                 AlertDialog.Builder(this@DialerActivity)
-                    .setTitle("Grubu Sil")
-                    .setMessage("Bu grubu silmek istediğinizden emin misiniz? Tüm üyelerin sohbet listesinden kaldırılacaktır.")
-                    .setPositiveButton("Sil") { _, _ ->
+                    .setTitle(getString(R.string.ui_delete_group))
+                    .setMessage(getString(R.string.delete_group_confirm))
+                    .setPositiveButton(getString(R.string.ui_delete)) { _, _ ->
                         lifecycleScope.launch {
                             val delRes = apiClient.deleteGroup(sUrl, token, convId)
                             delRes.onSuccess {
-                                Toast.makeText(this@DialerActivity, "Grup silindi.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@DialerActivity, getString(R.string.msg_group_deleted), Toast.LENGTH_SHORT).show()
                                 dialog.dismiss()
                                 closeChatRoom()
                             }.onFailure {
-                                Toast.makeText(this@DialerActivity, "Silinemedi: ${it.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@DialerActivity, getString(R.string.err_delete, it.message), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
-                    .setNegativeButton("Vazgeç", null)
+                    .setNegativeButton(getString(R.string.btn_dismiss), null)
                     .show()
             }
 
@@ -1589,13 +1590,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         tvSelected.visibility = View.GONE
         etSearch.visibility = View.GONE
         rvMembers.visibility = View.GONE
-        btnSubmit.text = "Kaydet"
+        btnSubmit.text = getString(R.string.features_btn_save)
 
         etTitle.setText(group.title ?: "")
         etDesc.setText(group.description ?: "")
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Grup Bilgilerini Düzenle")
+            .setTitle(getString(R.string.edit_group_title))
             .setView(view)
             .create()
 
@@ -1606,7 +1607,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val desc = etDesc.text.toString().trim()
 
             if (title.isEmpty()) {
-                Toast.makeText(this, "Grup başlığı boş olamaz.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.err_group_title_empty), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -1628,7 +1629,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     onUpdated()
                 }.onFailure { err ->
                     btnSubmit.isEnabled = true
-                    Toast.makeText(this@DialerActivity, "Güncellenemedi: ${err.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.err_update_err, err.message), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -1648,7 +1649,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             val availableContacts = allContacts.filter { !existingExts.contains(it.extension) }
 
             if (availableContacts.isEmpty()) {
-                Toast.makeText(this@DialerActivity, "Eklenebilecek yeni dahili bulunamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.no_new_extensions), Toast.LENGTH_SHORT).show()
                 return@launch
             }
 
@@ -1663,10 +1664,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             etTitle.visibility = View.GONE
             etDesc.visibility = View.GONE
-            btnSubmit.text = "Üyeleri Ekle"
+            btnSubmit.text = getString(R.string.btn_add_members)
 
             val selectionAdapter = ContactSelectionAdapter { selected ->
-                tvSelected.text = "Üye Seçin (${selected.size} seçildi):"
+                tvSelected.text = getString(R.string.select_members_count, selected.size)
             }
             rvMembers.layoutManager = LinearLayoutManager(this@DialerActivity)
             rvMembers.adapter = selectionAdapter
@@ -1681,7 +1682,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             })
 
             val dialog = AlertDialog.Builder(this@DialerActivity)
-                .setTitle("Gruba Üye Ekle")
+                .setTitle(getString(R.string.add_members_title))
                 .setView(view)
                 .create()
 
@@ -1690,7 +1691,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             btnSubmit.setOnClickListener {
                 val selected = selectionAdapter.getSelectedExtensions().toList()
                 if (selected.isEmpty()) {
-                    Toast.makeText(this@DialerActivity, "Lütfen en az bir üye seçin.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.err_select_member), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
@@ -1702,7 +1703,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                         onAdded()
                     }.onFailure {
                         btnSubmit.isEnabled = true
-                        Toast.makeText(this@DialerActivity, "Üyeler eklenemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@DialerActivity, getString(R.string.err_members_add, it.message), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -1715,10 +1716,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     private fun setupFeaturesTab() {
         // 1. Version and system info
-        binding.tvAppVersion.text = "Uygulama: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})"
-        binding.tvDeviceInfo.text = "Cihaz: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})"
+        binding.tvAppVersion.text = getString(R.string.app_version_info, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+        binding.tvDeviceInfo.text = getString(R.string.device_info, Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE, Build.VERSION.SDK_INT)
         val serverUrl = prefs.serverUrl
-        binding.tvServerVersion.text = "Santral: $serverUrl"
+        binding.tvServerVersion.text = getString(R.string.pbx_info_url, serverUrl)
 
         // FCM Durumu
         updateFcmStatusUI()
@@ -1730,7 +1731,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 pingRes.onSuccess { info ->
                     val brand = info.brandTitle ?: "AI PBX"
                     val ver = info.version ?: "1.0"
-                    binding.tvServerVersion.text = "Santral: $brand v$ver ($serverUrl)"
+                    binding.tvServerVersion.text = getString(R.string.pbx_info_full, brand, ver, serverUrl)
                 }
             }
         }
@@ -1788,24 +1789,26 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             syncDeviceToken()
         }
 
+        binding.btnLanguage.text = getString(R.string.language_current, L10n.displayName())
+        binding.btnLanguage.setOnClickListener { L10n.showPicker(this) }
         binding.btnBatteryOptimization.setOnClickListener {
             if (SamsungPowerManagerHelper.isSamsungDevice) {
                 AlertDialog.Builder(this)
-                    .setTitle(SamsungPowerManagerHelper.SAMSUNG_GUIDE_TITLE)
-                    .setMessage(SamsungPowerManagerHelper.SAMSUNG_GUIDE_MESSAGE)
-                    .setPositiveButton("Ayarları Aç") { _, _ ->
+                    .setTitle(getString(R.string.samsung_guide_title))
+                    .setMessage(getString(R.string.samsung_guide_message))
+                    .setPositiveButton(getString(R.string.btn_open_settings)) { _, _ ->
                         SamsungPowerManagerHelper.openBatterySettings(this)
                     }
-                    .setNegativeButton("Kapat", null)
+                    .setNegativeButton(getString(R.string.ui_close), null)
                     .show()
             } else {
                 AlertDialog.Builder(this)
-                    .setTitle("Pil Optimizasyonu Ayarları")
-                    .setMessage("Ekran kapalıyken arka planda çağrı kaçırmamak için uygulamanın pil tasarrufundan muaf (Kısıtlamasız / Optimize edilmemiş) olduğundan emin olun.")
-                    .setPositiveButton("Ayarları Aç") { _, _ ->
+                    .setTitle(getString(R.string.battery_opt_title))
+                    .setMessage(getString(R.string.battery_opt_msg))
+                    .setPositiveButton(getString(R.string.btn_open_settings)) { _, _ ->
                         SamsungPowerManagerHelper.openBatterySettings(this)
                     }
-                    .setNegativeButton("Kapat", null)
+                    .setNegativeButton(getString(R.string.ui_close), null)
                     .show()
             }
         }
@@ -1826,11 +1829,11 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         binding.btnDownloadShareLogs.setOnClickListener {
             lifecycleScope.launch {
-                Toast.makeText(this@DialerActivity, "Loglar toplanıyor ve hazırlanıyor...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.msg_logs_collecting), Toast.LENGTH_SHORT).show()
                 val uri = com.mhrgl.aipbx.util.AppLogManager.exportLogsToDownloads(this@DialerActivity)
                 val file = com.mhrgl.aipbx.util.AppLogManager.saveLogsToFile(this@DialerActivity)
                 if (uri != null) {
-                    Toast.makeText(this@DialerActivity, "Loglar İndirilenler/AiPBX klasörüne kaydedildi!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.msg_logs_saved), Toast.LENGTH_SHORT).show()
                 }
                 com.mhrgl.aipbx.util.AppLogManager.shareLogs(this@DialerActivity, file)
             }
@@ -1840,10 +1843,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun updateFcmStatusUI() {
         val fcmToken = prefs.fcmToken
         if (!fcmToken.isNullOrEmpty()) {
-            binding.tvFcmStatus.text = "Bildirim: FCM Uyandırma Aktif"
+            binding.tvFcmStatus.text = getString(R.string.fcm_status_active)
             binding.tvFcmStatus.setTextColor(ContextCompat.getColor(this, R.color.status_connected))
         } else {
-            binding.tvFcmStatus.text = "Bildirim: Yerel Servis Modu (FCM Yok)"
+            binding.tvFcmStatus.text = getString(R.string.fcm_status_local)
             binding.tvFcmStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
         }
     }
@@ -1855,10 +1858,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.tvCfBadge.visibility = if (hasAnyCf) View.VISIBLE else View.GONE
         binding.tvCfBadge.text = when {
             currentForwardAlways.isNotEmpty() -> "CF (HER ZAMAN)"
-            currentForwardBusy.isNotEmpty() && currentForwardNoAnswer.isNotEmpty() -> "CF (MEŞGUL/CEVAPSIZ)"
-            currentForwardBusy.isNotEmpty() -> "CF (MEŞGUL)"
+            currentForwardBusy.isNotEmpty() && currentForwardNoAnswer.isNotEmpty() -> getString(R.string.cf_busy_noanswer)
+            currentForwardBusy.isNotEmpty() -> getString(R.string.cf_busy)
             currentForwardNoAnswer.isNotEmpty() -> "CF (CEVAPSIZ)"
-            else -> "CF AKTİF"
+            else -> getString(R.string.ui_cf_active)
         }
     }
 
@@ -1880,7 +1883,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 binding.etForwardAlways.setText(currentForwardAlways)
                 binding.etForwardBusy.setText(currentForwardBusy)
                 binding.etForwardNoAnswer.setText(currentForwardNoAnswer)
-                binding.actvNoAnswerTimeout.setText("$currentNoAnswerTimeout sn", false)
+                binding.actvNoAnswerTimeout.setText(getString(R.string.seconds_short, currentNoAnswerTimeout), false)
 
                 updateHeaderBadges()
             }
@@ -1919,18 +1922,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 binding.etForwardAlways.setText(currentForwardAlways)
                 binding.etForwardBusy.setText(currentForwardBusy)
                 binding.etForwardNoAnswer.setText(currentForwardNoAnswer)
-                binding.actvNoAnswerTimeout.setText("$currentNoAnswerTimeout sn", false)
+                binding.actvNoAnswerTimeout.setText(getString(R.string.seconds_short, currentNoAnswerTimeout), false)
 
                 updateHeaderBadges()
 
                 val msg = if (currentForwardAlways.isEmpty() && currentForwardBusy.isEmpty() && currentForwardNoAnswer.isEmpty()) {
-                    "Santral ayarları güncellendi (Yönlendirmeler kapalı)"
+                    getString(R.string.msg_settings_updated_no_cf)
                 } else {
-                    "Çağrı yönlendirme ayarları başarıyla kaydedildi"
+                    getString(R.string.msg_cf_saved)
                 }
                 Toast.makeText(this@DialerActivity, msg, Toast.LENGTH_SHORT).show()
             }.onFailure { err ->
-                Toast.makeText(this@DialerActivity, "Ayar güncellenemedi: ${err.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_setting_update, err.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1953,16 +1956,16 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             result.onSuccess {
                 updateFcmStatusUI()
                 if (hasRealFcm) {
-                    Toast.makeText(this@DialerActivity, "Cihaz ve bildirim bilgisi güncellendi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.msg_device_updated), Toast.LENGTH_SHORT).show()
                 } else {
-                    binding.tvFcmStatus.text = "Cihaz Kayıtlı (FCM Kapalı)"
+                    binding.tvFcmStatus.text = getString(R.string.fcm_status_registered_off)
                     binding.tvFcmStatus.setTextColor(ContextCompat.getColor(this@DialerActivity, R.color.text_secondary))
-                    Toast.makeText(this@DialerActivity, "Cihaz bilgisi sunucuya iletildi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.msg_device_sent), Toast.LENGTH_SHORT).show()
                 }
             }.onFailure {
-                binding.tvFcmStatus.text = "Cihaz Senkronizasyonu Başarısız"
+                binding.tvFcmStatus.text = getString(R.string.fcm_status_sync_failed)
                 binding.tvFcmStatus.setTextColor(ContextCompat.getColor(this@DialerActivity, R.color.hangup_red))
-                Toast.makeText(this@DialerActivity, "Senkronizasyon hatası: ${it.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.err_sync, it.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -2053,7 +2056,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             runOnUiThread {
                 if (isTyping) {
                     binding.tvChatTyping.visibility = View.VISIBLE
-                    binding.tvChatTyping.text = "$fromName yazıyor..."
+                    binding.tvChatTyping.text = getString(R.string.typing_name, fromName)
                 } else {
                     binding.tvChatTyping.visibility = View.GONE
                 }
@@ -2091,7 +2094,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             if (isChatRoomOpen() && conversationId == currentChatConvId) {
                 val myExt = prefs.extension ?: ""
                 if (extension == myExt) {
-                    Toast.makeText(this@DialerActivity, "Gruptan çıkarıldınız.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@DialerActivity, getString(R.string.msg_removed_from_group), Toast.LENGTH_LONG).show()
                     closeChatRoom()
                 } else {
                     loadChatRoomGroupDetails()
@@ -2114,7 +2117,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     override fun onGroupDeleted(conversationId: Int) {
         runOnUiThread {
             if (isChatRoomOpen() && conversationId == currentChatConvId) {
-                Toast.makeText(this@DialerActivity, "Grup silindi.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@DialerActivity, getString(R.string.msg_group_deleted), Toast.LENGTH_LONG).show()
                 closeChatRoom()
             }
             if (currentTab == Tab.CHAT) loadConversations()

@@ -102,13 +102,13 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     // to be granted before the camera app can be opened.
     private val chatCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) takeChatPhotoLauncher.launch(ChatUploadPrep.cameraUri(this))
-        else Toast.makeText(this, "Fotoğraf çekmek için kamera izni gerekli.", Toast.LENGTH_LONG).show()
+        else Toast.makeText(this, getString(R.string.err_camera_permission), Toast.LENGTH_LONG).show()
     }
 
     private fun showChatPhotoSourceMenu(anchor: View) {
         val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
-        popup.menu.add(0, 1, 0, "Fotoğraf çek")
-        popup.menu.add(0, 2, 1, "Galeriden seç")
+        popup.menu.add(0, 1, 0, getString(R.string.menu_take_photo))
+        popup.menu.add(0, 2, 1, getString(R.string.menu_pick_gallery))
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> {
@@ -272,8 +272,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
 
             tvAvatar.text = "👥"
             tvAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
-            tvName.text = if (targetName.isNotEmpty()) targetName else "Grup Sohbeti"
-            tvStatus.text = "Grup"
+            tvName.text = if (targetName.isNotEmpty()) targetName else getString(R.string.group_chat)
+            tvStatus.text = getString(R.string.ui_group)
 
             btnGroupInfo.setOnClickListener { showGroupInfoDialog() }
             llHeader.setOnClickListener { showGroupInfoDialog() }
@@ -284,7 +284,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             btnGroupInfo.visibility = View.GONE
             vOnlineDot.visibility = View.VISIBLE
 
-            tvName.text = if (targetName.isNotEmpty()) "$targetName (#$targetExt)" else "Dahili #$targetExt"
+            tvName.text = if (targetName.isNotEmpty()) getString(R.string.chat_name_ext_title, targetName, targetExt) else getString(R.string.chat_extension_title, targetExt)
             tvAvatar.text = targetName.take(1).uppercase()
             tvAvatar.backgroundTintList = null
 
@@ -323,9 +323,9 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                     findViewById<ImageButton>(R.id.btnCall).visibility = View.GONE
                     findViewById<ImageButton>(R.id.btnGroupInfo).visibility = View.VISIBLE
                     findViewById<View>(R.id.vTargetOnlineDot).visibility = View.GONE
-                    findViewById<TextView>(R.id.tvTargetName).text = conv.title ?: "Grup Sohbeti"
+                    findViewById<TextView>(R.id.tvTargetName).text = conv.title ?: getString(R.string.group_chat)
                     findViewById<TextView>(R.id.tvTargetStatus).text =
-                        "${conv.memberCount} üye, ${conv.onlineCount} çevrimiçi"
+                        getString(R.string.group_members_online_conv, conv.memberCount, conv.onlineCount)
 
                     val llHeader = findViewById<View>(R.id.llHeaderInfo)
                     val btnGroupInfo = findViewById<ImageButton>(R.id.btnGroupInfo)
@@ -370,7 +370,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                     nm?.cancel(10000 + (convId % 1000))
                     loadMessages()
                 }.onFailure {
-                    Toast.makeText(this@ChatActivity, "Sohbet oluşturulamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatActivity, getString(R.string.err_chat_create, it.message), Toast.LENGTH_SHORT).show()
                 }
             } else if (convId > 0) {
                 loadMessages()
@@ -449,7 +449,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     private fun handlePickedUri(uri: Uri, type: String) {
         lifecycleScope.launch {
             llUploadPreview.visibility = View.VISIBLE
-            tvUploadFilename.text = "Dosya hazırlanıyor ve yükleniyor..."
+            tvUploadFilename.text = getString(R.string.msg_uploading_file)
 
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch
@@ -459,7 +459,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             }
 
             if (prepared == null) {
-                Toast.makeText(this@ChatActivity, "Dosya okunamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ChatActivity, getString(R.string.err_file_read), Toast.LENGTH_SHORT).show()
                 llUploadPreview.visibility = View.GONE
                 return@launch
             }
@@ -470,7 +470,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                 pendingUpload = res
                 tvUploadFilename.text = res.fileName ?: prepared.file.name
             }.onFailure {
-                Toast.makeText(this@ChatActivity, "Yükleme hatası: ${it.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@ChatActivity, getString(R.string.err_upload, it.message), Toast.LENGTH_LONG).show()
                 llUploadPreview.visibility = View.GONE
             }
         }
@@ -488,7 +488,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val res = apiClient.getGroupDetails(sUrl, token, convId)
             val group = res.getOrNull() ?: currentGroupDetails
             if (group == null) {
-                Toast.makeText(this@ChatActivity, "Grup detayları yüklenemedi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ChatActivity, getString(R.string.err_group_details), Toast.LENGTH_SHORT).show()
                 return@launch
             }
             currentGroupDetails = group
@@ -504,8 +504,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             // Populate view
             binding.tvGroupInfoAvatar.text = "👥"
             binding.tvGroupInfoAvatar.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF4F46E5.toInt())
-            binding.tvGroupInfoTitle.text = group.title ?: "Grup Sohbeti"
-            binding.tvGroupInfoSubtitle.text = "${group.memberCount} üye • ${group.onlineCount} çevrimiçi"
+            binding.tvGroupInfoTitle.text = group.title ?: getString(R.string.group_chat)
+            binding.tvGroupInfoSubtitle.text = getString(R.string.group_members_online_info, group.memberCount, group.onlineCount)
             if (!group.description.isNullOrEmpty()) {
                 binding.tvGroupInfoDesc.visibility = View.VISIBLE
                 binding.tvGroupInfoDesc.text = group.description
@@ -534,15 +534,15 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                             showGroupInfoDialog()
                             loadGroupDetails()
                         }.onFailure {
-                            Toast.makeText(this@ChatActivity, "Yetki değiştirilemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@ChatActivity, getString(R.string.err_role_change, it.message), Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 onRemoveMember = { participant ->
                     AlertDialog.Builder(this@ChatActivity)
-                        .setTitle("Üyeyi Çıkar")
-                        .setMessage("${participant.name ?: participant.extension} gruptan çıkarılsın mı?")
-                        .setPositiveButton("Çıkar") { _, _ ->
+                        .setTitle(getString(R.string.remove_member_title))
+                        .setMessage(getString(R.string.remove_member_confirm, participant.name ?: participant.extension))
+                        .setPositiveButton(getString(R.string.btn_remove)) { _, _ ->
                             lifecycleScope.launch {
                                 val remRes = apiClient.removeGroupMember(sUrl, token, convId, participant.extension)
                                 remRes.onSuccess {
@@ -550,11 +550,11 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                                     showGroupInfoDialog()
                                     loadGroupDetails()
                                 }.onFailure {
-                                    Toast.makeText(this@ChatActivity, "Üye çıkarılamadı: ${it.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@ChatActivity, getString(R.string.err_member_remove, it.message), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
-                        .setNegativeButton("İptal", null)
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
                         .show()
                 }
             )
@@ -584,42 +584,42 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             // Leave Group
             binding.btnLeaveGroup.setOnClickListener {
                 AlertDialog.Builder(this@ChatActivity)
-                    .setTitle("Gruptan Ayrıl")
-                    .setMessage("Bu gruptan ayrılmak istediğinizden emin misiniz?")
-                    .setPositiveButton("Ayrıl") { _, _ ->
+                    .setTitle(getString(R.string.ui_leave_group))
+                    .setMessage(getString(R.string.leave_group_confirm))
+                    .setPositiveButton(getString(R.string.btn_leave)) { _, _ ->
                         lifecycleScope.launch {
                             val leaveRes = apiClient.leaveGroup(sUrl, token, convId)
                             leaveRes.onSuccess {
-                                Toast.makeText(this@ChatActivity, "Gruptan ayrıldınız.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@ChatActivity, getString(R.string.msg_left_group), Toast.LENGTH_SHORT).show()
                                 dialog.dismiss()
                                 finish()
                             }.onFailure {
-                                Toast.makeText(this@ChatActivity, "İşlem başarısız: ${it.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@ChatActivity, getString(R.string.err_action_failed, it.message), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
-                    .setNegativeButton("Vazgeç", null)
+                    .setNegativeButton(getString(R.string.btn_dismiss), null)
                     .show()
             }
 
             // Delete Group
             binding.btnDeleteGroup.setOnClickListener {
                 AlertDialog.Builder(this@ChatActivity)
-                    .setTitle("Grubu Sil")
-                    .setMessage("Bu grubu silmek istediğinizden emin misiniz? Tüm üyelerin sohbet listesinden kaldırılacaktır.")
-                    .setPositiveButton("Sil") { _, _ ->
+                    .setTitle(getString(R.string.ui_delete_group))
+                    .setMessage(getString(R.string.delete_group_confirm))
+                    .setPositiveButton(getString(R.string.ui_delete)) { _, _ ->
                         lifecycleScope.launch {
                             val delRes = apiClient.deleteGroup(sUrl, token, convId)
                             delRes.onSuccess {
-                                Toast.makeText(this@ChatActivity, "Grup silindi.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@ChatActivity, getString(R.string.msg_group_deleted), Toast.LENGTH_SHORT).show()
                                 dialog.dismiss()
                                 finish()
                             }.onFailure {
-                                Toast.makeText(this@ChatActivity, "Silinemedi: ${it.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@ChatActivity, getString(R.string.err_delete, it.message), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
-                    .setNegativeButton("Vazgeç", null)
+                    .setNegativeButton(getString(R.string.btn_dismiss), null)
                     .show()
             }
 
@@ -644,13 +644,13 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         tvSelected.visibility = View.GONE
         etSearch.visibility = View.GONE
         rvMembers.visibility = View.GONE
-        btnSubmit.text = "Kaydet"
+        btnSubmit.text = getString(R.string.features_btn_save)
 
         etTitle.setText(group.title ?: "")
         etDesc.setText(group.description ?: "")
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Grup Bilgilerini Düzenle")
+            .setTitle(getString(R.string.edit_group_title))
             .setView(view)
             .create()
 
@@ -660,7 +660,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val newTitle = etTitle.text.toString().trim()
             val newDesc = etDesc.text.toString().trim()
             if (newTitle.isEmpty()) {
-                Toast.makeText(this, "Grup adı zorunludur.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.err_group_name_required), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -681,7 +681,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                     onUpdated()
                 }.onFailure {
                     btnSubmit.isEnabled = true
-                    Toast.makeText(this@ChatActivity, "Güncellenemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatActivity, getString(R.string.err_update_it, it.message), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -701,7 +701,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val availableContacts = contacts.filter { !existingExts.contains(it.extension) }
 
             if (availableContacts.isEmpty()) {
-                Toast.makeText(this@ChatActivity, "Eklenebilecek yeni dahili bulunamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ChatActivity, getString(R.string.no_new_extensions), Toast.LENGTH_SHORT).show()
                 return@launch
             }
 
@@ -716,10 +716,10 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
 
             etTitle.visibility = View.GONE
             etDesc.visibility = View.GONE
-            btnSubmit.text = "Üyeleri Ekle"
+            btnSubmit.text = getString(R.string.btn_add_members)
 
             val selectionAdapter = ContactSelectionAdapter { selected ->
-                tvSelected.text = "Üye Seçin (${selected.size} seçildi):"
+                tvSelected.text = getString(R.string.select_members_count, selected.size)
             }
             rvMembers.layoutManager = LinearLayoutManager(this@ChatActivity)
             rvMembers.adapter = selectionAdapter
@@ -734,7 +734,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             })
 
             val dialog = AlertDialog.Builder(this@ChatActivity)
-                .setTitle("Gruba Üye Ekle")
+                .setTitle(getString(R.string.add_members_title))
                 .setView(view)
                 .create()
 
@@ -743,7 +743,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             btnSubmit.setOnClickListener {
                 val selected = selectionAdapter.getSelectedExtensions().toList()
                 if (selected.isEmpty()) {
-                    Toast.makeText(this@ChatActivity, "Lütfen en az bir üye seçin.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatActivity, getString(R.string.err_select_member), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
@@ -755,7 +755,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                         onAdded()
                     }.onFailure {
                         btnSubmit.isEnabled = true
-                        Toast.makeText(this@ChatActivity, "Üyeler eklenemedi: ${it.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@ChatActivity, getString(R.string.err_members_add, it.message), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -781,7 +781,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             runOnUiThread {
                 if (isTyping) {
                     tvTyping.visibility = View.VISIBLE
-                    tvTyping.text = "$fromName yazıyor..."
+                    tvTyping.text = getString(R.string.typing_name, fromName)
                 } else {
                     tvTyping.visibility = View.GONE
                 }
@@ -790,14 +790,14 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     }
 
     private fun lastSeenText(): String {
-        val iso = ChatWebSocketManager.instance.getLastSeen(targetExt) ?: return "Çevrimdışı"
+        val iso = ChatWebSocketManager.instance.getLastSeen(targetExt) ?: return getString(R.string.ui_offline)
         return try {
             val t = java.time.OffsetDateTime.parse(iso).atZoneSameInstant(java.time.ZoneId.systemDefault())
             val hm = t.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
-            if (t.toLocalDate() == java.time.LocalDate.now()) "Son görülme $hm"
-            else "Son görülme " + t.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm"))
+            if (t.toLocalDate() == java.time.LocalDate.now()) getString(R.string.last_seen, hm)
+            else getString(R.string.last_seen, t.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm")))
         } catch (e: Exception) {
-            "Çevrimdışı"
+            getString(R.string.ui_offline)
         }
     }
 
@@ -810,7 +810,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     private fun applyTargetPresence(isOnline: Boolean) {
         val tvStatus = findViewById<TextView>(R.id.tvTargetStatus)
         val dot = findViewById<View>(R.id.vTargetOnlineDot)
-        tvStatus.text = if (isOnline) "Çevrimiçi" else lastSeenText()
+        tvStatus.text = if (isOnline) getString(R.string.status_online) else lastSeenText()
         tvStatus.setTextColor(if (isOnline) 0xFF10B981.toInt() else 0xFF64748B.toInt())
         dot.backgroundTintList = android.content.res.ColorStateList.valueOf(
             if (isOnline) 0xFF10B981.toInt() else 0xFF9CA3AF.toInt()
@@ -847,7 +847,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             val myExt = prefs.extension ?: ""
             if (extension == myExt) {
                 runOnUiThread {
-                    Toast.makeText(this, "Gruptan çıkarıldınız.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, getString(R.string.msg_removed_from_group), Toast.LENGTH_LONG).show()
                     finish()
                 }
             } else {
@@ -865,7 +865,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     override fun onGroupDeleted(conversationId: Int) {
         if (conversationId == convId) {
             runOnUiThread {
-                Toast.makeText(this, "Grup silindi.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.msg_group_deleted), Toast.LENGTH_LONG).show()
                 finish()
             }
         }

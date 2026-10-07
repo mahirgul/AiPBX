@@ -22,7 +22,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/ui_back"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/text_primary" />
 
@@ -72,7 +72,7 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:singleLine="true"
-                    android:text="Kullanıcı Adı"
+                    android:text="@string/ui_sample_username"
                     android:textColor="@color/text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -81,7 +81,7 @@
                     android:id="@+id/tvTargetStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Çevrimdışı"
+                    android:text="@string/ui_offline"
                     android:textColor="@color/text_secondary"
                     android:textSize="11.5sp" />
             </LinearLayout>
@@ -92,7 +92,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Grup Bilgisi"
+            android:contentDescription="@string/ui_group_info"
             android:src="@drawable/ic_info"
             app:tint="@color/primary"
             android:visibility="gone" />
@@ -102,7 +102,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Ara"
+            android:contentDescription="@string/ui_call"
             android:src="@drawable/ic_phone"
             app:tint="@color/primary" />
     </LinearLayout>
@@ -123,7 +123,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="16dp"
         android:paddingVertical="4dp"
-        android:text="Ahmet yazıyor..."
+        android:text="@string/ui_sample_typing"
         android:textColor="@color/text_secondary"
         android:textSize="12sp"
         android:textStyle="italic"
@@ -162,7 +162,7 @@
 
         <ImageButton
             android:id="@+id/btnCancelUpload"
-            android:contentDescription="Yüklemeyi iptal et"
+            android:contentDescription="@string/ui_cancel_upload"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -186,7 +186,7 @@
             android:layout_width="38dp"
             android:layout_height="38dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Dosya Ekle"
+            android:contentDescription="@string/ui_attach_file"
             android:src="@drawable/ic_attach"
             app:tint="@color/text_secondary" />
 
@@ -195,7 +195,7 @@
             android:layout_width="38dp"
             android:layout_height="38dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Fotoğraf Çek / Gönder"
+            android:contentDescription="@string/ui_take_send_photo"
             android:src="@drawable/ic_photo"
             app:tint="@color/text_secondary" />
 
@@ -206,7 +206,7 @@
             android:layout_marginHorizontal="6dp"
             android:layout_weight="1"
             android:background="@drawable/chip_tab_btn_bg"
-            android:hint="Bir mesaj yazın..."
+            android:hint="@string/ui_type_message"
             android:maxLines="4"
             android:paddingHorizontal="14dp"
             android:paddingVertical="8dp"
@@ -219,7 +219,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/circle_avatar"
-            android:contentDescription="Gönder"
+            android:contentDescription="@string/ui_send"
             android:padding="8dp"
             android:src="@drawable/ic_send"
             app:tint="#FFFFFF" />

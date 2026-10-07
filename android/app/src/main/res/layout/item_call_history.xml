@@ -13,7 +13,7 @@
 
     <ImageView
         android:id="@+id/ivCallDirection"
-        android:contentDescription="Çağrı yönü"
+        android:contentDescription="@string/ui_call_direction"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:background="@drawable/circle_status"
@@ -49,7 +49,7 @@
                 android:id="@+id/tvCallDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bugün 14:30"
+                android:text="@string/ui_sample_today_time"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -76,7 +76,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Ara"
+        android:contentDescription="@string/ui_call"
         android:padding="8dp"
         android:src="@drawable/ic_phone"
         app:tint="@color/call_green" />

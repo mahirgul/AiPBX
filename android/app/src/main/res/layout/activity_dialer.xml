@@ -61,7 +61,7 @@
                     android:backgroundTint="#FEE2E2"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="DND AKTİF"
+                    android:text="@string/ui_dnd_active"
                     android:textColor="#DC2626"
                     android:textSize="10sp"
                     android:textStyle="bold"
@@ -76,7 +76,7 @@
                     android:backgroundTint="#FEF3C7"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="CF AKTİF"
+                    android:text="@string/ui_cf_active"
                     android:textColor="#D97706"
                     android:textSize="10sp"
                     android:textStyle="bold"
@@ -88,7 +88,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Dahili: --"
+                android:text="@string/ui_extension_placeholder"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -157,7 +157,7 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Sil"
+                        android:contentDescription="@string/ui_delete"
                         android:src="@drawable/ic_backspace"
                         android:visibility="invisible" />
                 </RelativeLayout>
@@ -291,7 +291,7 @@
                     android:background="@drawable/chip_tab_btn_bg"
                     android:backgroundTint="@color/primary"
                     android:gravity="center"
-                    android:text="Tümü"
+                    android:text="@string/ui_all"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -304,7 +304,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/chip_tab_btn_bg"
                     android:gravity="center"
-                    android:text="Cevapsız"
+                    android:text="@string/ui_missed"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -317,7 +317,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/chip_tab_btn_bg"
                     android:gravity="center"
-                    android:text="Gelen"
+                    android:text="@string/ui_incoming"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -330,7 +330,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/chip_tab_btn_bg"
                     android:gravity="center"
-                    android:text="Giden"
+                    android:text="@string/ui_outgoing"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -350,13 +350,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Toplam: 0 | Cevapsız: 0"
+                    android:text="@string/ui_history_totals_zero"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
 
                 <ImageButton
                     android:id="@+id/btnRefreshHistory"
-                    android:contentDescription="Arama geçmişini yenile"
+                    android:contentDescription="@string/ui_refresh_call_history"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
@@ -386,7 +386,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="Arama geçmişi bulunamadı."
+                    android:text="@string/ui_no_call_history"
                     android:textColor="@color/text_secondary"
                     android:visibility="gone" />
             </FrameLayout>
@@ -418,7 +418,7 @@
                     android:background="@drawable/chip_tab_btn_bg"
                     android:backgroundTint="@color/primary"
                     android:gravity="center"
-                    android:text="Kurumsal Dahililer"
+                    android:text="@string/ui_company_extensions"
                     android:textColor="#FFFFFF"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -431,7 +431,7 @@
                     android:layout_marginStart="4dp"
                     android:background="@drawable/chip_tab_btn_bg"
                     android:gravity="center"
-                    android:text="Telefon Rehberi"
+                    android:text="@string/ui_phone_contacts"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -453,7 +453,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:background="@drawable/card_rounded_bg"
-                    android:hint="Dahili veya isim ara..."
+                    android:hint="@string/ui_search_extension_or_name"
                     android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:paddingHorizontal="12dp"
@@ -463,7 +463,7 @@
 
                 <ImageButton
                     android:id="@+id/btnRefreshContacts"
-                    android:contentDescription="Rehberi yenile"
+                    android:contentDescription="@string/ui_refresh_contacts"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_marginStart="8dp"
@@ -479,7 +479,7 @@
                 android:background="@color/card_bg_secondary"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="4dp"
-                android:text="0 dahili listelendi"
+                android:text="@string/ui_extensions_listed_zero"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
@@ -505,7 +505,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="Kayıt bulunamadı."
+                    android:text="@string/ui_no_records"
                     android:textColor="@color/text_secondary"
                     android:visibility="gone" />
             </FrameLayout>
@@ -546,7 +546,7 @@
                         android:background="@drawable/card_rounded_bg"
                         android:drawableStart="@drawable/ic_contacts"
                         android:drawablePadding="8dp"
-                        android:hint="Sohbet veya grup ara..."
+                        android:hint="@string/ui_search_chats_hint"
                         android:imeOptions="actionSearch"
                         android:inputType="text"
                         android:paddingHorizontal="12dp"
@@ -565,7 +565,7 @@
                         android:insetBottom="0dp"
                         android:minWidth="0dp"
                         android:paddingHorizontal="12dp"
-                        android:text="Yeni"
+                        android:text="@string/ui_new"
                         android:textAllCaps="false"
                         android:textSize="13sp"
                         app:backgroundTint="@color/primary"
@@ -595,7 +595,7 @@
                         android:background="@drawable/chip_tab_btn_bg"
                         android:backgroundTint="@color/primary"
                         android:gravity="center"
-                        android:text="Tümü"
+                        android:text="@string/ui_all"
                         android:textColor="#FFFFFF"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -608,7 +608,7 @@
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
                         android:gravity="center"
-                        android:text="Bireysel"
+                        android:text="@string/ui_direct"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -621,7 +621,7 @@
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
                         android:gravity="center"
-                        android:text="Gruplar"
+                        android:text="@string/ui_groups"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -668,7 +668,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
-                            android:text="Henüz bir sohbetiniz yok"
+                            android:text="@string/ui_no_chats_yet"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -679,7 +679,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:gravity="center"
-                            android:text="Rehberden bir çalışma arkadaşınızı seçerek veya yeni grup kurarak anlık mesajlaşmaya başlayabilirsiniz."
+                            android:text="@string/ui_no_chats_desc"
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
 
@@ -694,7 +694,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:backgroundTint="@color/primary"
-                                android:text="Yeni Sohbet"
+                                android:text="@string/ui_new_chat"
                                 android:textAllCaps="false"
                                 android:textColor="#FFFFFF" />
 
@@ -704,7 +704,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="10dp"
-                                android:text="+ Yeni Grup"
+                                android:text="@string/ui_new_group_plus"
                                 android:textAllCaps="false"
                                 android:textColor="@color/primary" />
                         </LinearLayout>
@@ -735,7 +735,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Geri"
+                        android:contentDescription="@string/ui_back"
                         android:src="@drawable/ic_arrow_back"
                         app:tint="@color/text_primary" />
 
@@ -785,7 +785,7 @@
                                 android:layout_height="wrap_content"
                                 android:ellipsize="end"
                                 android:singleLine="true"
-                                android:text="Kullanıcı Adı"
+                                android:text="@string/ui_sample_username"
                                 android:textColor="@color/text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -794,7 +794,7 @@
                                 android:id="@+id/tvChatRoomTargetStatus"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Çevrimdışı"
+                                android:text="@string/ui_offline"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="11.5sp" />
                         </LinearLayout>
@@ -805,7 +805,7 @@
                         android:layout_width="38dp"
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Grup Bilgisi"
+                        android:contentDescription="@string/ui_group_info"
                         android:src="@drawable/ic_info"
                         app:tint="@color/primary"
                         android:visibility="gone" />
@@ -815,7 +815,7 @@
                         android:layout_width="38dp"
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Ara"
+                        android:contentDescription="@string/ui_call"
                         android:src="@drawable/ic_phone"
                         app:tint="@color/primary" />
                 </LinearLayout>
@@ -836,7 +836,7 @@
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="4dp"
-                    android:text="yazıyor..."
+                    android:text="@string/ui_typing"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="italic"
@@ -875,7 +875,7 @@
 
                     <ImageButton
                         android:id="@+id/btnChatCancelUpload"
-                        android:contentDescription="Yüklemeyi iptal et"
+                        android:contentDescription="@string/ui_cancel_upload"
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
@@ -899,7 +899,7 @@
                         android:layout_width="38dp"
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Dosya Ekle"
+                        android:contentDescription="@string/ui_attach_file"
                         android:src="@drawable/ic_attach"
                         app:tint="@color/text_secondary" />
 
@@ -908,7 +908,7 @@
                         android:layout_width="38dp"
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Fotoğraf Çek / Gönder"
+                        android:contentDescription="@string/ui_take_send_photo"
                         android:src="@drawable/ic_photo"
                         app:tint="@color/text_secondary" />
 
@@ -919,7 +919,7 @@
                         android:layout_marginHorizontal="6dp"
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
-                        android:hint="Bir mesaj yazın..."
+                        android:hint="@string/ui_type_message"
                         android:maxLines="4"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="8dp"
@@ -932,7 +932,7 @@
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:background="@drawable/circle_avatar"
-                        android:contentDescription="Gönder"
+                        android:contentDescription="@string/ui_send"
                         android:padding="8dp"
                         android:src="@drawable/ic_send"
                         app:tint="#FFFFFF" />
@@ -981,7 +981,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Rahatsız Etme (DND)"
+                                    android:text="@string/ui_dnd"
                                     android:textColor="@color/text_primary"
                                     android:textSize="16sp"
                                     android:textStyle="bold" />
@@ -990,7 +990,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="2dp"
-                                    android:text="Gelen tüm aramalar meşgule düşer"
+                                    android:text="@string/ui_dnd_desc"
                                     android:textColor="@color/text_secondary"
                                     android:textSize="12sp" />
                             </LinearLayout>
@@ -1091,7 +1091,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:hint="Meşgul Hedef No"
+                            android:hint="@string/ui_busy_target"
                             app:boxBackgroundMode="outline"
                             app:boxCornerRadiusBottomEnd="8dp"
                             app:boxCornerRadiusBottomStart="8dp"
@@ -1133,7 +1133,7 @@
                             <com.google.android.material.textfield.TextInputLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:hint="Cevapsız Hedef No"
+                                android:hint="@string/ui_noanswer_target"
                                 app:boxBackgroundMode="outline"
                                 app:boxCornerRadiusBottomEnd="8dp"
                                 app:boxCornerRadiusBottomStart="8dp"
@@ -1165,7 +1165,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="none"
-                                    android:text="20 sn" />
+                                    android:text="@string/ui_sample_20s" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
 
@@ -1227,7 +1227,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Uygulama Sürümü: --"
+                            android:text="@string/ui_app_version_placeholder"
                             android:textColor="@color/text_primary"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -1237,7 +1237,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="Santral: --"
+                            android:text="@string/ui_pbx_placeholder"
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
 
@@ -1246,7 +1246,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="Cihaz: --"
+                            android:text="@string/ui_device_placeholder"
                             android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
 
@@ -1255,7 +1255,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="Bildirim: Kontrol ediliyor..."
+                            android:text="@string/ui_notification_checking"
                             android:textColor="@color/status_connected"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -1266,7 +1266,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="12dp"
-                            android:text="Cihazı Yenile"
+                            android:text="@string/ui_refresh_device"
                             android:textColor="@color/primary"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
@@ -1277,7 +1277,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="8dp"
-                            android:text="Pil Ayarları"
+                            android:text="@string/ui_battery_settings"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="8dp"
+                            app:strokeColor="@color/primary" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLanguage"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="8dp"
                             android:textColor="@color/primary"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
@@ -1288,7 +1298,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="4dp"
-                            android:text="Gizlilik Politikası"
+                            android:text="@string/ui_privacy_policy"
                             android:textColor="@color/text_secondary"
                             app:cornerRadius="8dp" />
                     </LinearLayout>
@@ -1311,7 +1321,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tanı Logları"
+                            android:text="@string/ui_diagnostic_logs"
                             android:textColor="@color/text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -1320,7 +1330,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Santral bağlantısı, SIP/WebRTC olayları ve arama geçmişi kayıtlarını inceleyin veya dosya olarak indirin."
+                            android:text="@string/ui_logs_desc"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
 
@@ -1337,7 +1347,7 @@
                                 android:layout_height="46dp"
                                 android:layout_marginEnd="6dp"
                                 android:layout_weight="1"
-                                android:text="Loglar"
+                                android:text="@string/ui_logs"
                                 android:textColor="@color/primary"
                                 android:textSize="12sp"
                                 app:cornerRadius="8dp"
@@ -1350,7 +1360,7 @@
                                 android:layout_marginStart="6dp"
                                 android:layout_weight="1"
                                 android:backgroundTint="@color/primary"
-                                android:text="Paylaş"
+                                android:text="@string/ui_share"
                                 android:textColor="#FFFFFF"
                                 android:textSize="12sp"
                                 app:cornerRadius="8dp" />
@@ -1394,7 +1404,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Tuşlar"
+                android:text="@string/ui_keypad"
                 android:textColor="@color/primary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
@@ -1424,7 +1434,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Geçmiş"
+                android:text="@string/ui_history"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -1453,7 +1463,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Rehber"
+                android:text="@string/ui_contacts"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -1502,7 +1512,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Sohbet"
+                android:text="@string/ui_chat"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -1531,7 +1541,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Santral"
+                android:text="@string/ui_pbx"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>

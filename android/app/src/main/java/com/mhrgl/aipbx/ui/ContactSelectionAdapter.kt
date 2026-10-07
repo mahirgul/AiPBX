@@ -72,8 +72,8 @@ class ContactSelectionAdapter(
             val displayName = item.name ?: "Dahili ${item.extension}"
             tvName.text = displayName
 
-            val roleStr = if (item.role.isNullOrEmpty()) "Kurumsal" else item.role
-            tvDetail.text = "Dahili: ${item.extension} • $roleStr"
+            val roleStr = if (item.role.isNullOrEmpty()) itemView.context.getString(R.string.contact_role_company) else item.role
+            tvDetail.text = itemView.context.getString(R.string.extension_label_item_role, item.extension, roleStr)
 
             val initial = displayName.take(1).uppercase()
             tvAvatar.text = initial

@@ -11,6 +11,18 @@
         android:layout_height="wrap_content"
         android:padding="24dp">
 
+        <TextView
+            android:id="@+id/btnLanguage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/language_title"
+            android:padding="8dp"
+            android:textColor="@color/primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <LinearLayout
             android:id="@+id/headerLayout"
             android:layout_width="match_parent"
@@ -67,7 +79,7 @@
                     android:id="@+id/btnQrScan"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="QR Kod ile Hızlı Giriş"
+                    android:text="@string/ui_quick_login_qr"
                     android:textAllCaps="false"
                     android:textSize="16sp"
                     android:textStyle="bold"
@@ -79,7 +91,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Web ekranındaki MyPhone QR kodunu okutarak tek adımda bağlanın"
+                    android:text="@string/ui_qr_desc"
                     android:textAlignment="center"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
@@ -103,7 +115,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="12dp"
-                        android:text="VEYA MANUEL SUNUCU"
+                        android:text="@string/ui_or_manual_server"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -121,7 +133,7 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Sunucu URL (örn: https://...)"
+                    android:hint="@string/ui_server_url_hint"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
@@ -176,7 +188,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="16dp"
-            android:text="Sürüm 1.0.38"
+            android:text="@string/ui_sample_version_b"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             app:layout_constraintTop_toBottomOf="@id/cardSetup"

@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.util.L10n
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -62,7 +63,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding.tvCurrentServer.text = prefs.serverUrl
         binding.tvBrandTitle.text = prefs.brandTitle
-        binding.tvBrandSubtitle.text = prefs.brandSubtitle
+        binding.tvBrandSubtitle.text = prefs.brandSubtitle.ifEmpty { getString(R.string.default_brand_sub) }
 
         val pInfo = try {
             packageManager.getPackageInfo(packageName, 0)
@@ -74,8 +75,10 @@ class LoginActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             (pInfo?.versionCode?.toLong() ?: BuildConfig.VERSION_CODE.toLong())
         }
-        binding.tvVersion.text = "AiPBX v$vName (Build $vCode)"
+        binding.tvVersion.text = getString(R.string.app_version_short, vName, vCode)
 
+        binding.btnLanguage.text = "🌐 " + L10n.displayName()
+        binding.btnLanguage.setOnClickListener { L10n.showPicker(this) }
         binding.btnChangeServer.setOnClickListener {
             startActivity(Intent(this, ServerSetupActivity::class.java))
             finish()
@@ -95,7 +98,7 @@ class LoginActivity : AppCompatActivity() {
             val password = binding.etPassword.text.toString().trim()
 
             if (username.isEmpty() || password.isEmpty()) {
-                showError("Lütfen kullanıcı adı ve şifrenizi girin.")
+                showError(getString(R.string.err_enter_credentials))
                 return@setOnClickListener
             }
 
@@ -105,7 +108,7 @@ class LoginActivity : AppCompatActivity() {
         binding.btnGoogleLogin.setOnClickListener {
             val serverUrl = prefs.serverUrl.trim().trimEnd('/')
             if (serverUrl.isEmpty()) {
-                showError("Lütfen önce sunucu adresini belirleyin.")
+                showError(getString(R.string.err_set_server_first))
                 return@setOnClickListener
             }
             try {
@@ -113,13 +116,13 @@ class LoginActivity : AppCompatActivity() {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(googleAuthUrl))
                 startActivity(intent)
             } catch (e: Exception) {
-                showError("Tarayıcı açılamadı: ${e.message}")
+                showError(getString(R.string.err_browser, e.message))
             }
         }
 
         binding.btnQrLogin.setOnClickListener {
             val options = ScanOptions().apply {
-                setPrompt("AiPBX web ekranındaki (Dahilim) QR kodu kameraya hizalayın")
+                setPrompt(getString(R.string.qr_prompt_login))
                 setBeepEnabled(true)
                 setOrientationLocked(false)
                 setBarcodeImageEnabled(false)
@@ -147,13 +150,13 @@ class LoginActivity : AppCompatActivity() {
                         confirmServerThen(serverUrl) { replace -> performQrLogin(serverUrl, qrToken, replace) }
                     }
                 } else {
-                    showError("QR kod eksik parametre içeriyor.")
+                    showError(getString(R.string.err_qr_missing_params))
                 }
             } else {
-                showError("Geçersiz veya uyumsuz AiPBX QR kodu!")
+                showError(getString(R.string.err_qr_invalid))
             }
         } catch (e: Exception) {
-            showError("QR kod çözümlenemedi: ${e.message}")
+            showError(getString(R.string.err_qr_decode, e.message))
         }
     }
 
@@ -179,7 +182,7 @@ class LoginActivity : AppCompatActivity() {
                 binding.tvCurrentServer.text = serverUrl
                 onLoginSuccess(response)
             }.onFailure { error ->
-                showError(error.localizedMessage ?: "QR kod ile giriş başarısız oldu.")
+                showError(error.localizedMessage ?: getString(R.string.err_qr_login))
             }
         }
     }
@@ -203,7 +206,7 @@ class LoginActivity : AppCompatActivity() {
                 val token = uri.getQueryParameter("token")?.trim() ?: ""
                 val validServer = serverUrl.startsWith("https://", true) || serverUrl.startsWith("http://", true)
                 if (!validServer || token.isEmpty()) {
-                    showError("Giriş bağlantısı eksik veya bozuk.")
+                    showError(getString(R.string.err_login_link))
                     return
                 }
                 confirmServerThen(serverUrl) { replace -> performQrLogin(serverUrl, token, replace) }
@@ -218,10 +221,10 @@ class LoginActivity : AppCompatActivity() {
                     if (!code.isNullOrEmpty() && serverUrl.isNotEmpty()) {
                         performQrLogin(serverUrl, code)
                     } else {
-                        showError("Google girişi tamamlanamadı. Lütfen tekrar deneyin.")
+                        showError(getString(R.string.err_google_incomplete))
                     }
                 } else {
-                    showError(uri.getQueryParameter("error") ?: "Google ile giriş başarısız oldu.")
+                    showError(uri.getQueryParameter("error") ?: getString(R.string.err_google_login))
                 }
             }
         }
@@ -235,19 +238,16 @@ class LoginActivity : AppCompatActivity() {
     private fun confirmServerThen(serverUrl: String, onConfirmed: (replaceSession: Boolean) -> Unit) {
         val host = Uri.parse(serverUrl).host ?: serverUrl
         val loggedIn = prefs.isLoggedIn
-        val message = StringBuilder()
-            .append("\"").append(host).append("\" santraline giriş yapılsın mı?\n\n")
-            .append("Bu bağlantıyı yalnızca kurumunuzdan gelen bir e-postadan veya kendi ekranınızdaki QR koddan açtıysanız onaylayın.")
+        val message = StringBuilder(getString(R.string.confirm_server_login, host))
         if (loggedIn) {
-            message.append("\n\nŞu an dahili ").append(prefs.extension ?: "")
-                .append(" ile oturum açık; giriş başarılı olursa bu oturum kapatılacak.")
+            message.append("\n\n").append(getString(R.string.confirm_server_replace_session, prefs.extension ?: ""))
         }
         AlertDialog.Builder(this)
-            .setTitle("Mobil Giriş")
+            .setTitle(getString(R.string.mobile_login_title))
             .setMessage(message.toString())
             .setCancelable(false)
-            .setPositiveButton("Giriş Yap") { _, _ -> onConfirmed(loggedIn) }
-            .setNegativeButton("İptal") { _, _ ->
+            .setPositiveButton(getString(R.string.btn_login)) { _, _ -> onConfirmed(loggedIn) }
+            .setNegativeButton(getString(R.string.btn_cancel)) { _, _ ->
                 // When we came through a link while signed in, do not stay on the login screen.
                 if (loggedIn) {
                     startActivity(Intent(this, DialerActivity::class.java))
@@ -297,7 +297,7 @@ class LoginActivity : AppCompatActivity() {
                 if (error is com.mhrgl.aipbx.model.OtpRequiredException) {
                     askOtp(user, pass, error.message ?: "")
                 } else {
-                    showError(error.localizedMessage ?: "Giriş başarısız oldu.")
+                    showError(error.localizedMessage ?: getString(R.string.err_login_failed))
                 }
             }
         }
@@ -316,14 +316,14 @@ class LoginActivity : AppCompatActivity() {
             addView(input)
         }
         AlertDialog.Builder(this)
-            .setTitle("İki adımlı doğrulama")
+            .setTitle(getString(R.string.otp_title))
             .setMessage(message)
             .setView(container)
-            .setPositiveButton("Giriş") { _, _ ->
+            .setPositiveButton(getString(R.string.btn_login_short)) { _, _ ->
                 val code = input.text.toString().trim()
-                if (code.length == 6) performLogin(user, pass, code) else showError("6 haneli kodu girin.")
+                if (code.length == 6) performLogin(user, pass, code) else showError(getString(R.string.err_otp_6_digits))
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(getString(R.string.btn_cancel), null)
             .show()
         input.requestFocus()
     }

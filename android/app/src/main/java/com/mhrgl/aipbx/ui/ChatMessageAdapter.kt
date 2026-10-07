@@ -170,7 +170,7 @@ class ChatMessageAdapter(
             // File attachment
             if (m.msgType == "file" && !m.attachmentUrl.isNullOrEmpty()) {
                 llFileAttachment.visibility = View.VISIBLE
-                tvFileName.text = m.fileName ?: "Belge"
+                tvFileName.text = m.fileName ?: itemView.context.getString(R.string.chat_document)
                 tvFileSize.text = formatFileSize(m.fileSize)
 
                 llFileAttachment.setOnClickListener {

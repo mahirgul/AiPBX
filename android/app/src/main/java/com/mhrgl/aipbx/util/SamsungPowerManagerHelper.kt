@@ -46,11 +46,5 @@ object SamsungPowerManagerHelper {
         return false
     }
 
-    const val SAMSUNG_GUIDE_TITLE = "Samsung Arka Plan Kısıtlama Uyarısı"
-
-    const val SAMSUNG_GUIDE_MESSAGE = "Samsung cihazlarda ekran kapalıyken arka planda çağrı kaçırmamak için:\n\n" +
-            "1. 'Ayarlar' -> 'Pil ve cihaz bakımı' -> 'Pil' bölümüne gidin.\n" +
-            "2. 'Arka planda kullanım sınırları' seçeneğini açın.\n" +
-            "3. 'Uyuyan uygulamalar' veya 'Derin uyku' listesinde AiPBX varsa kaldırın.\n" +
-            "4. 'Asla otomatik uykuya alınmayacak uygulamalar' listesine AiPBX'i ekleyin."
+    // Guide texts: R.string.samsung_guide_title / samsung_guide_message.
 }

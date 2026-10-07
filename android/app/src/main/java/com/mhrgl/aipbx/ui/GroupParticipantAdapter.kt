@@ -48,8 +48,8 @@ class GroupParticipantAdapter(
 
         fun bind(participant: ChatParticipant) {
             val displayName = participant.name ?: "Dahili ${participant.extension}"
-            tvName.text = if (participant.extension == myExtension) "$displayName (Sen)" else displayName
-            tvExtension.text = "Dahili: ${participant.extension}"
+            tvName.text = if (participant.extension == myExtension) itemView.context.getString(R.string.participant_you, displayName) else displayName
+            tvExtension.text = itemView.context.getString(R.string.extension_label_participant, participant.extension)
 
             val initial = displayName.take(1).uppercase()
             tvAvatar.text = initial
@@ -60,7 +60,7 @@ class GroupParticipantAdapter(
 
             if (participant.role.equals("admin", ignoreCase = true)) {
                 tvRoleBadge.visibility = View.VISIBLE
-                tvRoleBadge.text = "Yönetici"
+                tvRoleBadge.text = itemView.context.getString(R.string.ui_admin)
             } else {
                 tvRoleBadge.visibility = View.GONE
             }
@@ -73,11 +73,11 @@ class GroupParticipantAdapter(
                     val isMemberAdmin = participant.role.equals("admin", ignoreCase = true)
 
                     if (isMemberAdmin) {
-                        popup.menu.add(0, 1, 0, "Yöneticilikten Çıkar")
+                        popup.menu.add(0, 1, 0, itemView.context.getString(R.string.menu_remove_admin))
                     } else {
-                        popup.menu.add(0, 1, 0, "Yönetici Yap")
+                        popup.menu.add(0, 1, 0, itemView.context.getString(R.string.menu_make_admin))
                     }
-                    popup.menu.add(0, 2, 1, "Gruptan Çıkar")
+                    popup.menu.add(0, 2, 1, itemView.context.getString(R.string.menu_remove_from_group))
 
                     popup.setOnMenuItemClickListener { menuItem ->
                         when (menuItem.itemId) {

@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.service
 
+import com.mhrgl.aipbx.util.L10n
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -38,12 +39,12 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
             }
             "test_push" -> {
                 val title = data["title"] ?: getString(R.string.app_name)
-                val body = data["body"] ?: "AI PBX test bildirimi başarıyla alındı."
+                val body = data["body"] ?: L10n.str(R.string.push_test_body)
                 showTestNotification(title, body)
             }
             "new_message", "group_created", "group_member_added" -> {
-                val title = data["title"] ?: "Yeni Mesaj"
-                val body = data["body"] ?: "Yeni bir mesaj aldınız."
+                val title = data["title"] ?: L10n.str(R.string.push_new_message_title)
+                val body = data["body"] ?: L10n.str(R.string.push_new_message)
                 val convId = data["conversation_id"]?.toIntOrNull() ?: 0
                 val convType = data["conversation_type"] ?: "direct"
                 val isGroup = convType == "group"

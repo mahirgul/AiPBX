@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.service
 
+import com.mhrgl.aipbx.util.L10n
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -540,7 +541,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 getString(R.string.notif_channel_service),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Santral arka plan bağlantısını canlı tutar"
+                description = L10n.str(R.string.notif_channel_service_desc)
                 setShowBadge(false)
             }
             nm.createNotificationChannel(serviceChannel)
@@ -551,7 +552,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 getString(R.string.notif_channel_calls),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Gelen çağrı bildirimleri"
+                description = L10n.str(R.string.notif_channel_calls_desc)
                 setSound(null, null) // Audio is handled via MediaPlayer
                 enableVibration(false)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -564,7 +565,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 getString(R.string.notif_channel_chat),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Gelen sohbet ve anlık mesaj bildirimleri"
+                description = L10n.str(R.string.notif_channel_chat_desc)
                 enableVibration(true)
                 setShowBadge(true)
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
@@ -775,11 +776,11 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         }
 
         val body = when (message.msgType) {
-            "image" -> "📷 Fotoğraf"
+            "image" -> L10n.str(R.string.chat_preview_photo)
             "file" -> "📎 Dosya: ${message.fileName ?: "Belge"}"
-            "audio" -> "🎙️ Ses kaydı"
+            "audio" -> L10n.str(R.string.chat_preview_audio)
             "video" -> "🎥 Video"
-            else -> if (!message.message.isNullOrEmpty()) message.message else "Yeni bir mesaj gönderdi."
+            else -> if (!message.message.isNullOrEmpty()) message.message else L10n.str(R.string.chat_preview_new_message)
         }
 
         val intent = Intent(this, com.mhrgl.aipbx.ui.DialerActivity::class.java).apply {
@@ -826,8 +827,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         }
         val pi = PendingIntent.getActivity(this, 9001, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(this, CHANNEL_ID_CHAT)
-            .setContentTitle("AiPBX oturumu sona erdi")
-            .setContentText("Şifreniz değişmiş veya oturum süresi dolmuş olabilir. Tekrar giriş yapın.")
+            .setContentTitle(L10n.str(R.string.session_expired_title))
+            .setContentText(L10n.str(R.string.session_expired_text))
             .setSmallIcon(R.drawable.ic_chat)
             .setContentIntent(pi)
             .setAutoCancel(true)

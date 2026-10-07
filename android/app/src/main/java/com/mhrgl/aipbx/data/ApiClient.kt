@@ -1,5 +1,7 @@
 package com.mhrgl.aipbx.data
 
+import com.mhrgl.aipbx.R
+import com.mhrgl.aipbx.util.L10n
 import android.util.Log
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -111,13 +113,13 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
                 if (!response.isSuccessful) {
-                    return@withContext Result.failure(Exception("HTTP ${response.code}: Sunucu yanıt vermedi"))
+                    return@withContext Result.failure(Exception(L10n.str(R.string.api_no_response, response.code)))
                 }
                 val info = gson.fromJson(body, ServerInfo::class.java)
                 if (info.success) {
                     Result.success(info)
                 } else {
-                    Result.failure(Exception("Geçersiz sunucu yanıtı"))
+                    Result.failure(Exception(L10n.str(R.string.api_invalid_response)))
                 }
             }
         } catch (e: Exception) {
@@ -149,9 +151,9 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && result != null && result.success) {
                         Result.success(result)
                     } else if (result?.otpRequired == true) {
-                        Result.failure(com.mhrgl.aipbx.model.OtpRequiredException(result.error ?: "Doğrulama kodu gerekli."))
+                        Result.failure(com.mhrgl.aipbx.model.OtpRequiredException(result.error ?: L10n.str(R.string.api_otp_required)))
                     } else {
-                        val errMsg = result?.error ?: "Giriş başarısız (HTTP ${response.code})"
+                        val errMsg = result?.error ?: L10n.str(R.string.api_login_failed, response.code)
                         Result.failure(Exception(errMsg))
                     }
                 }
@@ -182,7 +184,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && result != null && result.success) {
                         Result.success(result)
                     } else {
-                        val errMsg = result?.error ?: "Google ile giriş başarısız (HTTP ${response.code})"
+                        val errMsg = result?.error ?: L10n.str(R.string.api_google_failed, response.code)
                         Result.failure(Exception(errMsg))
                     }
                 }
@@ -213,7 +215,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && result != null && result.success) {
                         Result.success(result)
                     } else {
-                        val errMsg = result?.error ?: "QR kod ile giriş başarısız (HTTP ${response.code})"
+                        val errMsg = result?.error ?: L10n.str(R.string.api_qr_failed, response.code)
                         Result.failure(Exception(errMsg))
                     }
                 }
@@ -249,7 +251,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                 if (response.isSuccessful && result != null && result.success) {
                     Result.success(result)
                 } else {
-                    Result.failure(Exception("Arama geçmişi alınamadı (HTTP ${response.code})"))
+                    Result.failure(Exception(L10n.str(R.string.api_history_failed, response.code)))
                 }
             }
         } catch (e: Exception) {
@@ -276,7 +278,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                 if (response.isSuccessful && result != null && result.success) {
                     Result.success(result)
                 } else {
-                    Result.failure(Exception("Rehber listesi alınamadı (HTTP ${response.code})"))
+                    Result.failure(Exception(L10n.str(R.string.api_contacts_failed, response.code)))
                 }
             }
         } catch (e: Exception) {
@@ -303,7 +305,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                 if (response.isSuccessful && result != null && result.success) {
                     Result.success(result)
                 } else {
-                    Result.failure(Exception("Özellikler alınamadı (HTTP ${response.code})"))
+                    Result.failure(Exception(L10n.str(R.string.api_features_failed, response.code)))
                 }
             }
         } catch (e: Exception) {
@@ -346,7 +348,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                 if (response.isSuccessful && result != null && result.success) {
                     Result.success(result)
                 } else {
-                    Result.failure(Exception(result?.message ?: "Ayarlar güncellenemedi (HTTP ${response.code})"))
+                    Result.failure(Exception(result?.message ?: L10n.str(R.string.api_settings_failed, response.code)))
                 }
             }
         } catch (e: Exception) {
@@ -411,7 +413,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && result != null && result.success) {
                         Result.success(result)
                     } else {
-                        val errMsg = result?.error ?: "Token yenileme başarısız (HTTP ${response.code})"
+                        val errMsg = result?.error ?: L10n.str(R.string.api_token_failed, response.code)
                         if (response.code == 401 || response.code == 403) {
                             Result.failure(com.mhrgl.aipbx.model.SessionExpiredException(errMsg))
                         } else {
@@ -444,7 +446,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(res.conversations ?: emptyList())
                     } else {
-                        Result.failure(Exception("Sohbetler alınamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(L10n.str(R.string.api_chats_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -473,7 +475,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(res.messages ?: emptyList())
                     } else {
-                        Result.failure(Exception("Mesajlar alınamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(L10n.str(R.string.api_messages_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -500,7 +502,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success && res.conversation != null) {
                         Result.success(res.conversation)
                     } else {
-                        Result.failure(Exception("Sohbet oluşturulamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(L10n.str(R.string.api_chat_create_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -532,7 +534,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(res)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Dosya yüklenemedi (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_upload_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -574,7 +576,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success && res.conversation != null) {
                         Result.success(res.conversation)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Grup oluşturulamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_group_create_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -600,7 +602,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success && res.conversation != null) {
                         Result.success(res.conversation)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Grup detayları alınamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_group_details_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -640,7 +642,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success && res.conversation != null) {
                         Result.success(res.conversation)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Grup güncellenemedi (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_group_update_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -678,7 +680,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(res.added ?: emptyList())
                     } else {
-                        Result.failure(Exception(res?.error ?: "Üyeler eklenemedi (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_members_add_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -709,7 +711,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(true)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Üye çıkarılamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_member_remove_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -741,7 +743,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(true)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Yetki değiştirilemedi (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_role_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
@@ -771,7 +773,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(true)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Gruptan ayrılınamadı (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_leave_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {
