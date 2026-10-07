@@ -85,7 +85,7 @@
         toastItem.innerHTML = `
             <i class="fas ${icon} toast-icon"></i>
             <span class="toast-text">${escapeHtml(msg)}</span>
-            <button type="button" class="toast-close-btn" title="Kapat">&times;</button>
+            <button type="button" class="toast-close-btn" title="${__('js.common.close')}">&times;</button>
         `;
 
         // Close button event

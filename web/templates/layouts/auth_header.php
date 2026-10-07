@@ -22,5 +22,6 @@ $auth_favicon = getSystemSetting('site_favicon_url', '');
     <link rel="stylesheet" href="<?php echo asset('/assets/css/fontawesome.min.css'); ?>">
     <link rel="stylesheet" href="<?php echo asset('/assets/css/style.css'); ?>">
     <?php echo $auth_head; ?>
+<?php echo jsI18nScript(); ?>
 </head>
 <body class="auth-body">

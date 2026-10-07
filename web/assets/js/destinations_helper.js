@@ -7,10 +7,10 @@ function loadDestinationOptions(typeSelectId, idSelectId, selectedValue = '') {
     if (!typeEl || !idEl) return;
 
     const moduleKey = typeEl.value;
-    idEl.innerHTML = '<option value="">Yükleniyor...</option>';
+    idEl.innerHTML = '<option value="">' + __('js.common.loading') + '</option>';
 
     if (!moduleKey) {
-        idEl.innerHTML = '<option value="">-- Hedef Yok --</option>';
+        idEl.innerHTML = '<option value="">' + __('js.common.no_destination_dash') + '</option>';
         return;
     }
 
@@ -20,7 +20,7 @@ function loadDestinationOptions(typeSelectId, idSelectId, selectedValue = '') {
             if (data.success && Array.isArray(data.options)) {
                 idEl.innerHTML = '';
                 if (data.options.length === 0) {
-                    idEl.innerHTML = '<option value="">(Tanımlı Seçenek Yok)</option>';
+                    idEl.innerHTML = '<option value="">' + __('js.common.no_options') + '</option>';
                 } else {
                     data.options.forEach(item => {
                         const opt = document.createElement('option');
@@ -33,12 +33,12 @@ function loadDestinationOptions(typeSelectId, idSelectId, selectedValue = '') {
                     });
                 }
             } else {
-                idEl.innerHTML = '<option value="">Yükleme Hatası</option>';
+                idEl.innerHTML = '<option value="">' + __('js.common.load_error') + '</option>';
             }
         })
         .catch(err => {
             console.error('Destination load error:', err);
-            idEl.innerHTML = '<option value="">Baglanti Hatasi</option>';
+            idEl.innerHTML = '<option value="">' + __('js.common.connection_error') + '</option>';
         });
 }
 

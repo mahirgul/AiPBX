@@ -22,7 +22,7 @@ function switchSoundTab(tabName) {
 }
 
 function openUploadSoundModal() {
-    document.getElementById('soundModalTitle').innerHTML = '<i class="fas fa-file-audio" style="color: var(--primary);"></i> Yeni Ses Dosyası Yükle';
+    document.getElementById('soundModalTitle').innerHTML = '<i class="fas fa-file-audio" style="color: var(--primary);"></i> ' + __('js.sounds.new_title') + '';
     document.getElementById('modal_action_upload').value = '1';
     document.getElementById('modal_action_upload').disabled = false;
     document.getElementById('modal_action_save').value = '0';
@@ -37,12 +37,12 @@ function openUploadSoundModal() {
     if (inEl) inEl.value = '';
 
 
-    document.getElementById('audio_file_label').innerText = 'Ses Dosyası (.wav / .gsm / .alaw) *';
+    document.getElementById('audio_file_label').innerText = __('js.sounds.file_label');
     document.getElementById('modal_audio_file').required = true;
     document.getElementById('modal_audio_file').value = '';
     document.getElementById('audio_file_help').style.display = 'none';
 
-    document.getElementById('modal_sound_submit').innerHTML = '<i class="fas fa-upload"></i> Yükle';
+    document.getElementById('modal_sound_submit').innerHTML = '<i class="fas fa-upload"></i> ' + __('js.sounds.upload') + '';
 
     const modal = document.getElementById('uploadSoundModal');
     if (modal) {
@@ -54,7 +54,7 @@ function openUploadSoundModal() {
 function openEditSoundModal(anc) {
     if (!anc) return;
 
-    document.getElementById('soundModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Anons Düzenle #' + anc.id;
+    document.getElementById('soundModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.sounds.edit_title') + '' + anc.id;
     document.getElementById('modal_action_upload').value = '0';
     document.getElementById('modal_action_upload').disabled = true;
     document.getElementById('modal_action_save').value = '1';
@@ -69,12 +69,12 @@ function openEditSoundModal(anc) {
     if (inEl) inEl.value = (anc.internal_number || '');
 
 
-    document.getElementById('audio_file_label').innerText = 'Yeni Ses Dosyası Değiştir (Opsiyonel)';
+    document.getElementById('audio_file_label').innerText = __('js.sounds.replace_label');
     document.getElementById('modal_audio_file').required = false;
     document.getElementById('modal_audio_file').value = '';
     document.getElementById('audio_file_help').style.display = 'block';
 
-    document.getElementById('modal_sound_submit').innerHTML = '<i class="fas fa-save"></i> Güncelle';
+    document.getElementById('modal_sound_submit').innerHTML = '<i class="fas fa-save"></i> ' + __('js.common.update') + '';
 
     const modal = document.getElementById('uploadSoundModal');
     if (modal) {
@@ -196,7 +196,7 @@ function playAnnouncement(soundFile, title) {
             console.error('WaveSurfer Load Error:', err);
             if (loader) loader.style.display = 'none';
             if (window.notify && window.notify.error) {
-                window.notify.error('Ses dalga formu oluşturulamadı: ' + err);
+                window.notify.error(__('js.sounds.waveform_failed') + err);
             }
         });
     } else {

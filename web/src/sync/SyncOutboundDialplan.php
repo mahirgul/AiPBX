@@ -153,7 +153,7 @@ function __syncOutboundDialplanBody() {
                 $conf .= " same => n,Dial(PJSIP/{$dial_num}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limit > 0) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";
-                    $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} kanal siniri dolu: {$limit})\n";
+                    $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} channel limit reached: {$limit})\n";
                     $conf .= " same => n,Set(DIALSTATUS=CONGESTION)\n";
                     $conf .= " same => n(afterdial{$step}),NoOp()\n";
                 }

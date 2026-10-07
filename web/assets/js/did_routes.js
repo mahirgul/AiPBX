@@ -6,7 +6,7 @@ bindDestinationSelector('modal_dest_type', 'modal_dest_id');
 
 function openCreateDidModal() {
     bindDestinationSelector('modal_dest_type', 'modal_dest_id');
-    document.getElementById('didModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Gelen Rota Ekle';
+    document.getElementById('didModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.did.new_title') + '';
     document.getElementById('modal_route_id').value = '0';
     document.getElementById('modal_did_number').value = '';
     document.getElementById('modal_title').value = '';
@@ -27,7 +27,7 @@ function openEditDidModal(route) {
     if (!route) return;
 
     bindDestinationSelector('modal_dest_type', 'modal_dest_id');
-    document.getElementById('didModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Gelen Rota Düzenle #' + route.id;
+    document.getElementById('didModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.did.edit_title') + '' + route.id;
     document.getElementById('modal_route_id').value = route.id;
     document.getElementById('modal_did_number').value = route.did_number || '';
     document.getElementById('modal_title').value = route.title || '';

@@ -62,16 +62,16 @@
         controlsBar.innerHTML = `
             <div class="dt-search-box" style="position: relative; flex: 1; max-width: 340px; min-width: 200px;">
                 <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none;"></i>
-                <input type="text" class="form-control dt-search-input" placeholder="Tabloda Arama Yap (Canlı Filtre)..." style="padding-left: 36px !important; height: 36px; font-size: 13px; border-radius: 8px; width: 100%;" value="">
+                <input type="text" class="form-control dt-search-input" placeholder="${__('js.dt.search')}" style="padding-left: 36px !important; height: 36px; font-size: 13px; border-radius: 8px; width: 100%;" value="">
             </div>
             <div class="dt-length-box" style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); font-weight: 600;">
-                <span>Göster:</span>
+                <span>${__('js.dt.show')}</span>
                 <select class="form-control dt-length-select" style="height: 36px; padding: 4px 10px; font-size: 12.5px; border-radius: 8px; cursor: pointer;">
-                    <option value="10">10 Kayıt</option>
-                    <option value="25" selected>25 Kayıt</option>
-                    <option value="50">50 Kayıt</option>
-                    <option value="100">100 Kayıt</option>
-                    <option value="-1">Tümü</option>
+                    <option value="10">${__('js.dt.n_rows', 10)}</option>
+                    <option value="25" selected>${__('js.dt.n_rows', 25)}</option>
+                    <option value="50">${__('js.dt.n_rows', 50)}</option>
+                    <option value="100">${__('js.dt.n_rows', 100)}</option>
+                    <option value="-1">${__('js.dt.all')}</option>
                 </select>
             </div>
         `;
@@ -188,7 +188,7 @@
                 if (typeof valA === 'number' && typeof valB === 'number') {
                     comp = valA - valB;
                 } else {
-                    comp = String(valA).localeCompare(String(valB), 'tr', { numeric: true, sensitivity: 'base' });
+                    comp = String(valA).localeCompare(String(valB), document.documentElement.lang || undefined, { numeric: true, sensitivity: 'base' });
                 }
                 return (currentSortDir === 'asc') ? comp : -comp;
             });
@@ -219,11 +219,11 @@
                     emptyMsgRow = document.createElement('tr');
                     emptyMsgRow.className = 'dt-no-match-row';
                     const colSpan = headerCells.length || 6;
-                    emptyMsgRow.innerHTML = `<td colspan="${colSpan}" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;"><i class="fas fa-search" style="margin-right: 6px; opacity: 0.6;"></i> Arama kriterlerine uygun kayıt bulunamadı.</td>`;
+                    emptyMsgRow.innerHTML = `<td colspan="${colSpan}" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;"><i class="fas fa-search" style="margin-right: 6px; opacity: 0.6;"></i> ${__('js.dt.no_match')}</td>`;
                     tbody.appendChild(emptyMsgRow);
                 }
                 emptyMsgRow.style.display = '';
-                infoEl.innerHTML = 'Sonuç bulunamadı';
+                infoEl.innerHTML = __('js.dt.no_results');
                 navEl.innerHTML = '';
                 return;
             } else if (emptyMsgRow) {
@@ -248,9 +248,9 @@
 
             // Info Text
             if (currentSearchQuery.trim() !== '') {
-                infoEl.innerHTML = `Toplam <strong>${allRowData.length}</strong> kayıttan süzülen <strong>${total}</strong> sonuç (${startIndex + 1} - ${endIndex} arası)`;
+                infoEl.innerHTML = __('js.dt.info_filtered', allRowData.length, total, startIndex + 1, endIndex);
             } else {
-                infoEl.innerHTML = `Toplam <strong>${total}</strong> kayıttan <strong>${startIndex + 1} - ${endIndex}</strong> arası gösteriliyor`;
+                infoEl.innerHTML = __('js.dt.info', total, startIndex + 1, endIndex);
             }
 
             // Render Pagination Buttons

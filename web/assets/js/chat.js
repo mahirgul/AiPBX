@@ -67,7 +67,7 @@ function initChatWebSocket() {
     if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
         ws = state.ws;
         if (state.ws.readyState === WebSocket.OPEN) {
-            badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: #10b981;"></i> Bağlandı';
+            badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: #10b981;"></i> ' + __('js.chat.connected');
             badge.style.color = '#10b981';
         }
         return;
@@ -96,15 +96,15 @@ function initChatWebSocket() {
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProto}//${window.location.host}/chat/ws?token=${encodeURIComponent(window.CHAT_TOKEN)}&active=${document.hidden ? 0 : 1}`;
 
-    badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> Bağlanıyor...';
+    badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--warning);"></i> ' + __('js.chat.connecting');
     badge.style.color = 'var(--text-muted)';
 
     try {
         state.ws = new WebSocket(wsUrl);
         ws = state.ws;
     } catch(err) {
-        console.error('[Chat WS] WebSocket oluşturma hatası:', err);
-        badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--danger);"></i> Bağlantı hatası';
+        console.error('[Chat WS] WebSocket create error:', err);
+        badge.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--danger);"></i> ' + __('js.chat.conn_error');
         badge.style.color = 'var(--danger)';
         scheduleChatReconnect();
         return;
@@ -119,7 +119,7 @@ function initChatWebSocket() {
         }
         const b = document.getElementById('chat-ws-status-badge');
         if (b) {
-            b.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: #10b981;"></i> Bağlandı';
+            b.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: #10b981;"></i> ' + __('js.chat.connected');
             b.style.color = '#10b981';
         }
     };
@@ -131,14 +131,14 @@ function initChatWebSocket() {
         }
         const b = document.getElementById('chat-ws-status-badge');
         if (b) {
-            b.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--danger);"></i> Yeniden bağlanıyor...';
+            b.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; margin-right: 4px; color: var(--danger);"></i> ' + __('js.chat.reconnecting');
             b.style.color = 'var(--danger)';
         }
         scheduleChatReconnect();
     };
 
     state.ws.onerror = function(err) {
-        console.warn('[Chat WS] Soket uyarısı/hatası:', err);
+        console.warn('[Chat WS] socket warning/error:', err);
     };
 
     state.ws.onmessage = function(e) {
@@ -151,7 +151,7 @@ function initChatWebSocket() {
                 }
             }
         } catch (ex) {
-            console.error('[Chat WS] JSON ayrıştırma hatası:', ex);
+            console.error('[Chat WS] JSON parse error:', ex);
         }
     };
 }
@@ -266,7 +266,7 @@ function handleWsEvent(evt) {
         if (data.extension === window.MY_EXT) {
             if (currentConv && currentConv.id === data.conversation_id) {
                 closeActiveConversation();
-                alert('Bu gruptan çıkarıldınız veya ayrıldınız.');
+                alert(__('js.chat.removed'));
             }
         } else if (currentConv && currentConv.id === data.conversation_id) {
             fetchGroupDetails(data.conversation_id);
@@ -277,7 +277,7 @@ function handleWsEvent(evt) {
         const data = evt.data || {};
         if (currentConv && currentConv.id === data.conversation_id) {
             closeActiveConversation();
-            alert('Bu grup yönetici tarafından silindi.');
+            alert(__('js.chat.group_deleted'));
         }
         loadConversations();
     }
@@ -295,7 +295,7 @@ async function loadConversations() {
             renderConversationsList();
         }
     } catch (e) {
-        console.error('Konuşmalar çekilemedi:', e);
+        console.error('Could not fetch conversations:', e);
     } finally {
         document.getElementById('chat-list-loading').style.display = 'none';
     }
@@ -312,7 +312,7 @@ async function loadContacts() {
             renderContactsList();
         }
     } catch (e) {
-        console.error('Kişiler çekilemedi:', e);
+        console.error('Could not fetch contacts:', e);
     }
 }
 
@@ -322,7 +322,7 @@ function renderConversationsList() {
     listEl.innerHTML = '';
 
     if (conversations.length === 0) {
-        listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">Henüz bir sohbetiniz yok.<br>Rehberden bir dahili seçip mesajlaşabilir veya Yeni Grup oluşturabilirsiniz.</div>';
+        listEl.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">' + __('js.chat.no_chats') + '</div>';
         return;
     }
 
@@ -361,8 +361,8 @@ function renderConversationsList() {
             `;
         }
 
-        const titleText = isGroup ? (c.title || 'Grup') : (c.target_name || c.target_ext);
-        const subtitleText = c.last_message_text || (isGroup ? `${c.member_count || 0} üye` : 'Sohbet başlatıldı');
+        const titleText = isGroup ? (c.title || __('js.chat.group')) : (c.target_name || c.target_ext);
+        const subtitleText = c.last_message_text || (isGroup ? `${c.member_count || 0} ${__('js.chat.members')}` : __('js.chat.started'));
 
         item.innerHTML = `
             ${avatarHtml}
@@ -471,7 +471,7 @@ async function startDirectChatWith(targetExt, targetName) {
             loadConversations();
         }
     } catch (e) {
-        alert('Sohbet başlatılamadı: ' + e.message);
+        alert(__('js.chat.err_start', e.message));
     }
 }
 
@@ -518,11 +518,11 @@ async function openConversation(conv, pushHistory = true) {
             avatarBox.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
         }
         statusDot.style.display = 'none';
-        nameEl.textContent = conv.title || 'Grup';
-        extEl.textContent = `${conv.member_count || 0} üye`;
+        nameEl.textContent = conv.title || __('js.chat.group');
+        extEl.textContent = `${conv.member_count || 0} ${__('js.chat.members')}`;
         extEl.style.background = 'rgba(99, 102, 241, 0.12)';
         extEl.style.color = '#6366f1';
-        statusText.textContent = 'Grup bilgisi için tıklayın';
+        statusText.textContent = __('js.chat.click_group_info');
         statusText.style.color = 'var(--text-muted)';
         callBtn.style.display = 'none';
         groupInfoBtn.style.display = 'inline-flex';
@@ -539,7 +539,7 @@ async function openConversation(conv, pushHistory = true) {
         extEl.textContent = '#' + conv.target_ext;
         extEl.style.background = 'rgba(0,0,0,0.06)';
         extEl.style.color = 'var(--text-muted)';
-        statusText.textContent = conv.target_online ? 'Çevrimiçi' : 'Çevrimdışı';
+        statusText.textContent = conv.target_online ? __('js.chat.online') : __('js.chat.offline');
         statusText.style.color = conv.target_online ? '#10b981' : 'var(--text-muted)';
         callBtn.style.display = 'inline-flex';
         groupInfoBtn.style.display = 'none';
@@ -589,7 +589,7 @@ window.addEventListener('popstate', (e) => {
 
 async function loadMessages(convId) {
     const scrollEl = document.getElementById('chat-messages-scroll');
-    scrollEl.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Mesajlar yükleniyor...</div>';
+    scrollEl.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> ' + __('js.chat.loading_messages') + '</div>';
 
     try {
         const res = await fetch(`/chat/api/messages?conversation_id=${convId}&limit=50`, {
@@ -599,14 +599,14 @@ async function loadMessages(convId) {
         scrollEl.innerHTML = '';
         if (json.success && json.messages) {
             if (json.messages.length === 0) {
-                scrollEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">Bu sohbette henüz mesaj yok.<br>İlk mesajı siz gönderin!</div>';
+                scrollEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">' + __('js.chat.no_messages') + '</div>';
             } else {
                 json.messages.forEach(m => appendMessageToUI(m));
             }
             scrollToBottom();
         }
     } catch (e) {
-        scrollEl.innerHTML = '<div style="text-align: center; color: var(--danger); padding: 20px;">Mesajlar yüklenirken hata oluştu.</div>';
+        scrollEl.innerHTML = '<div style="text-align: center; color: var(--danger); padding: 20px;">' + __('js.chat.err_messages') + '</div>';
     }
 }
 
@@ -655,14 +655,14 @@ function appendMessageToUI(msg) {
         const safeUrl = sanitizeAttachmentUrl(msg.attachment_url);
         contentHtml = `
             <div style="cursor: pointer;" onclick="openSafeLightbox(this)" data-url="${escapeHtml(safeUrl)}">
-                <img src="${escapeHtml(safeUrl)}" alt="Fotoğraf" style="max-width: min(260px, 75vw); max-height: 260px; border-radius: 8px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <img src="${escapeHtml(safeUrl)}" alt="${__('js.chat.photo')}" style="max-width: min(260px, 75vw); max-height: 260px; border-radius: 8px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             </div>
             ${msg.message ? `<div style="margin-top: 6px; font-size: 13.5px;">${escapeHtml(msg.message)}</div>` : ''}
         `;
     } else if (msg.msg_type === 'file') {
         const fileSizeStr = formatFileSize(msg.file_size);
         const safeUrl = sanitizeAttachmentUrl(msg.attachment_url);
-        const safeName = escapeHtml(msg.file_name || 'Belge');
+        const safeName = escapeHtml(msg.file_name || __('js.chat.document'));
         contentHtml = `
             <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px;">
                 <i class="fas fa-file-alt" style="font-size: 24px; color: var(--primary);"></i>
@@ -751,7 +751,7 @@ async function sendMessage() {
             });
             loadMessages(currentConvId);
         } catch (e) {
-            alert('Mesaj gönderilemedi: ' + e.message);
+            alert(__('js.chat.err_send', e.message));
         }
     }
 }
@@ -763,7 +763,7 @@ async function handleFileSelected(event, type) {
 
     // Size check (max 25MB)
     if (file.size > 25 * 1024 * 1024) {
-        alert('Dosya boyutu çok büyük (Maksimum 25 MB).');
+        alert(__('js.chat.too_big'));
         event.target.value = '';
         return;
     }
@@ -776,7 +776,7 @@ async function handleFileSelected(event, type) {
     const filesizeEl = document.getElementById('chat-upload-filesize');
 
     previewBar.style.display = 'flex';
-    filenameEl.textContent = 'Yükleniyor: ' + file.name + '...';
+    filenameEl.textContent = __('js.chat.uploading', file.name);
     filesizeEl.textContent = '(' + formatFileSize(file.size) + ')';
 
     try {
@@ -790,11 +790,11 @@ async function handleFileSelected(event, type) {
             pendingUpload = json;
             filenameEl.textContent = file.name;
         } else {
-            alert('Yükleme hatası: ' + (json.error || 'Bilinmeyen hata'));
+            alert(__('js.chat.err_upload', json.error || __('js.chat.unknown_error')));
             cancelUploadPreview();
         }
     } catch (e) {
-        alert('Dosya yüklenirken hata oluştu: ' + e.message);
+        alert(__('js.chat.err_file', e.message));
         cancelUploadPreview();
     } finally {
         event.target.value = '';
@@ -836,7 +836,7 @@ function showTypingIndicator(name, isTyping) {
     const el = document.getElementById('chat-typing-indicator');
     const textEl = document.getElementById('chat-typing-text');
     if (isTyping) {
-        textEl.textContent = `${name} yazıyor...`;
+        textEl.textContent = __('js.chat.typing', name);
         el.style.display = 'block';
     } else {
         el.style.display = 'none';
@@ -866,9 +866,9 @@ function statusFromReceipts(id) {
 }
 
 function tickHtml(status) {
-    if (status === 'read') return '<i class="fas fa-check-double u-fs-10" style="color: #7dd3fc;" title="Okundu"></i>';
-    if (status === 'delivered') return '<i class="fas fa-check-double u-fs-10" title="İletildi"></i>';
-    return '<i class="fas fa-check u-fs-10" title="Gönderildi"></i>';
+    if (status === 'read') return '<i class="fas fa-check-double u-fs-10" style="color: #7dd3fc;" title="' + __('js.chat.read') + '"></i>';
+    if (status === 'delivered') return '<i class="fas fa-check-double u-fs-10" title="' + __('js.chat.delivered') + '"></i>';
+    return '<i class="fas fa-check u-fs-10" title="' + __('js.chat.sent') + '"></i>';
 }
 
 function applyReceipts(readUpto, deliveredUpto) {
@@ -887,11 +887,11 @@ window.chatLastSeen = window.chatLastSeen || {};
 
 function lastSeenText(extension) {
     const iso = chatLastSeen[extension];
-    if (!iso) return 'Çevrimdışı';
+    if (!iso) return __('js.chat.offline');
     const d = new Date(iso);
     const sameDay = d.toDateString() === new Date().toDateString();
-    const hm = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-    return 'Son görülme ' + (sameDay ? hm : d.toLocaleDateString('tr-TR') + ' ' + hm);
+    const hm = d.toLocaleTimeString(document.documentElement.lang || undefined, { hour: '2-digit', minute: '2-digit' });
+    return __('js.chat.last_seen', sameDay ? hm : d.toLocaleDateString(document.documentElement.lang || undefined) + ' ' + hm);
 }
 
 function updateUserPresence(extension, isOnline) {
@@ -903,7 +903,7 @@ function updateUserPresence(extension, isOnline) {
     // If it is the conversation open right now
     if (currentTargetExt === extension) {
         document.getElementById('active-target-status-dot').style.background = isOnline ? '#10b981' : '#9ca3af';
-        document.getElementById('active-target-status-text').textContent = isOnline ? 'Çevrimiçi' : lastSeenText(extension);
+        document.getElementById('active-target-status-text').textContent = isOnline ? __('js.chat.online') : lastSeenText(extension);
         document.getElementById('active-target-status-text').style.color = isOnline ? '#10b981' : 'var(--text-muted)';
     }
 }
@@ -1086,7 +1086,7 @@ function openNewGroupModal() {
     listEl.innerHTML = '';
 
     if (contacts.length === 0) {
-        listEl.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px;">Rehberde kullanıcı bulunamadı.</div>';
+        listEl.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px;">' + __('js.chat.no_contacts') + '</div>';
     } else {
         contacts.forEach(u => {
             const row = document.createElement('label');
@@ -1144,10 +1144,10 @@ async function handleNewGroupAvatarSelect(event) {
             const safe = sanitizeAttachmentUrl(json.attachment_url);
             document.getElementById('new-group-avatar-preview').innerHTML = `<img src="${escapeHtml(safe)}" style="width: 100%; height: 100%; object-fit: cover;">`;
         } else {
-            alert('Grup resmi yüklenemedi: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_avatar', json.error || __('js.chat.error')));
         }
     } catch (e) {
-        alert('Resim yükleme hatası: ' + e.message);
+        alert(__('js.chat.err_image', e.message));
     } finally {
         event.target.value = '';
     }
@@ -1157,7 +1157,7 @@ async function submitCreateGroup() {
     const title = document.getElementById('new-group-title').value.trim();
     const desc = document.getElementById('new-group-desc').value.trim();
     if (!title) {
-        alert('Lütfen bir grup adı girin.');
+        alert(__('js.chat.need_name'));
         document.getElementById('new-group-title').focus();
         return;
     }
@@ -1168,7 +1168,7 @@ async function submitCreateGroup() {
 
     const submitBtn = document.getElementById('new-group-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Oluşturuluyor...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.chat.creating');
 
     try {
         const res = await fetch('/chat/api/conversations/group', {
@@ -1191,13 +1191,13 @@ async function submitCreateGroup() {
             openConversation(json.conversation);
             loadConversations();
         } else {
-            alert('Grup oluşturulamadı: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_create', json.error || __('js.chat.error')));
         }
     } catch (e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-check"></i> Grubu Oluştur';
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> ' + __('js.chat.create_group');
     }
 }
 
@@ -1211,7 +1211,7 @@ async function fetchGroupDetails(convId) {
             if (currentConv && currentConv.id === convId) {
                 currentConv = Object.assign(currentConv, json.conversation);
                 const count = currentConv.member_count || (currentConv.participants ? currentConv.participants.length : 0);
-                document.getElementById('active-target-ext').textContent = `${count} üye`;
+                document.getElementById('active-target-ext').textContent = `${count} ${__('js.chat.members')}`;
             }
             return json.conversation;
         }
@@ -1243,9 +1243,9 @@ function renderGroupInfo(conv) {
         avatarBox.innerHTML = '<i class="fas fa-users"></i>';
     }
 
-    document.getElementById('group-info-title').textContent = conv.title || 'Grup';
-    document.getElementById('group-info-desc').textContent = conv.description || 'Açıklama belirtilmemiş.';
-    document.getElementById('group-info-meta').textContent = `Oluşturan: #${conv.created_by || ''} • ${conv.created_at ? formatTime(conv.created_at) : ''}`;
+    document.getElementById('group-info-title').textContent = conv.title || __('js.chat.group');
+    document.getElementById('group-info-desc').textContent = conv.description || __('js.chat.no_desc');
+    document.getElementById('group-info-meta').textContent = `${__('js.chat.created_by')}: #${conv.created_by || ''} • ${conv.created_at ? formatTime(conv.created_at) : ''}`;
 
     const isAdmin = conv.my_role === 'admin';
     document.getElementById('group-info-edit-btn').style.display = isAdmin ? 'inline-block' : 'none';
@@ -1267,19 +1267,19 @@ function renderGroupInfo(conv) {
         const isMe = p.extension === window.MY_EXT;
         const onlineColor = p.is_online ? '#10b981' : '#9ca3af';
         const roleBadge = p.role === 'admin' 
-            ? '<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 10.5px; padding: 2px 6px; border-radius: 6px;">Yönetici</span>'
+            ? '<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 10.5px; padding: 2px 6px; border-radius: 6px;">' + __('js.chat.admin') + '</span>'
             : '';
 
         let actionsHtml = '';
         if (isAdmin && !isMe) {
             const toggleRoleAction = p.role === 'admin'
-                ? `<button class="btn btn-sm btn-outline-secondary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'member')" title="Yöneticiliği Kaldır"><i class="fas fa-user-minus"></i></button>`
-                : `<button class="btn btn-sm btn-outline-primary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'admin')" title="Yönetici Yap"><i class="fas fa-user-shield"></i></button>`;
+                ? `<button class="btn btn-sm btn-outline-secondary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'member')" title="${__('js.chat.remove_admin')}"><i class="fas fa-user-minus"></i></button>`
+                : `<button class="btn btn-sm btn-outline-primary" style="padding: 1px 6px; font-size: 11px;" onclick="updateMemberRole('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}', 'admin')" title="${__('js.chat.make_admin')}"><i class="fas fa-user-shield"></i></button>`;
 
             actionsHtml = `
                 <div style="display: flex; align-items: center; gap: 4px;">
                     ${toggleRoleAction}
-                    <button class="btn btn-sm btn-outline-danger" style="padding: 1px 6px; font-size: 11px;" onclick="removeMemberFromGroup('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}')" title="Gruptan Çıkar">
+                    <button class="btn btn-sm btn-outline-danger" style="padding: 1px 6px; font-size: 11px;" onclick="removeMemberFromGroup('${escapeHtml(p.extension)}', '${escapeHtml(p.full_name)}')" title="${__('js.chat.remove_member')}">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1312,14 +1312,14 @@ function renderGroupInfo(conv) {
 
 async function promptEditGroupInfo() {
     if (!currentConv) return;
-    const newTitle = prompt('Grup Adı:', currentConv.title || '');
+    const newTitle = prompt(__('js.chat.prompt_name'), currentConv.title || '');
     if (newTitle === null) return;
     const trimmedTitle = newTitle.trim();
     if (!trimmedTitle) {
-        alert('Grup adı boş olamaz.');
+        alert(__('js.chat.name_empty'));
         return;
     }
-    const newDesc = prompt('Grup Açıklaması:', currentConv.description || '') || '';
+    const newDesc = prompt(__('js.chat.prompt_desc'), currentConv.description || '') || '';
 
     try {
         const res = await fetch('/chat/api/conversations/group/update', {
@@ -1343,10 +1343,10 @@ async function promptEditGroupInfo() {
             renderGroupInfo(currentConv);
             loadConversations();
         } else {
-            alert('Güncelleme hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_update', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     }
 }
 
@@ -1361,7 +1361,7 @@ function openAddMembersModal() {
     const availableContacts = contacts.filter(u => !currentMemberExts.has(u.extension));
 
     if (availableContacts.length === 0) {
-        listEl.innerHTML = '<div style="padding: 14px; text-align: center; color: var(--text-muted); font-size: 12px;">Eklenebilecek başka kullanıcı bulunmuyor.</div>';
+        listEl.innerHTML = '<div style="padding: 14px; text-align: center; color: var(--text-muted); font-size: 12px;">' + __('js.chat.no_more_users') + '</div>';
     } else {
         availableContacts.forEach(u => {
             const row = document.createElement('label');
@@ -1403,13 +1403,13 @@ async function submitAddMembers() {
     checked.forEach(cb => exts.push(cb.value));
 
     if (exts.length === 0) {
-        alert('Lütfen en az bir kişi seçin.');
+        alert(__('js.chat.select_one'));
         return;
     }
 
     const btn = document.getElementById('add-members-submit-btn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ekleniyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.chat.adding') + '';
 
     try {
         const res = await fetch('/chat/api/conversations/group/members/add', {
@@ -1430,19 +1430,19 @@ async function submitAddMembers() {
             if (updated) renderGroupInfo(updated);
             loadConversations();
         } else {
-            alert('Üye ekleme hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_add', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-user-plus"></i> Ekle';
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> ' + __('js.chat.add') + '';
     }
 }
 
 async function removeMemberFromGroup(targetExt, targetName) {
     if (!currentConv) return;
-    if (!confirm(`${targetName || ('#' + targetExt)} kullanıcısını gruptan çıkarmak istediğinize emin misiniz?`)) {
+    if (!confirm(__('js.chat.confirm_remove', targetName || ('#' + targetExt)))) {
         return;
     }
 
@@ -1464,17 +1464,17 @@ async function removeMemberFromGroup(targetExt, targetName) {
             if (updated) renderGroupInfo(updated);
             loadConversations();
         } else {
-            alert('Çıkarma hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_remove', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     }
 }
 
 async function updateMemberRole(targetExt, targetName, newRole) {
     if (!currentConv) return;
-    const roleText = newRole === 'admin' ? 'yönetici' : 'üye';
-    if (!confirm(`${targetName || ('#' + targetExt)} kullanıcısını ${roleText} yapmak istediğinize emin misiniz?`)) {
+    const roleText = newRole === 'admin' ? __('js.chat.role_admin') : __('js.chat.role_member');
+    if (!confirm(__('js.chat.confirm_role', targetName || ('#' + targetExt), roleText))) {
         return;
     }
 
@@ -1496,16 +1496,16 @@ async function updateMemberRole(targetExt, targetName, newRole) {
             const updated = await fetchGroupDetails(currentConv.id);
             if (updated) renderGroupInfo(updated);
         } else {
-            alert('Yetki değiştirme hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_role', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     }
 }
 
 async function confirmLeaveGroup() {
     if (!currentConv) return;
-    if (!confirm(`"${currentConv.title}" grubundan ayrılmak istediğinize emin misiniz?`)) {
+    if (!confirm(__('js.chat.confirm_leave', currentConv.title))) {
         return;
     }
 
@@ -1523,16 +1523,16 @@ async function confirmLeaveGroup() {
             closeActiveConversation();
             loadConversations();
         } else {
-            alert('Gruptan ayrılma hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_leave', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     }
 }
 
 async function confirmDeleteGroup() {
     if (!currentConv) return;
-    if (!confirm(`"${currentConv.title}" grubunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+    if (!confirm(__('js.chat.confirm_delete', currentConv.title))) {
         return;
     }
 
@@ -1550,9 +1550,9 @@ async function confirmDeleteGroup() {
             closeActiveConversation();
             loadConversations();
         } else {
-            alert('Grup silme hatası: ' + (json.error || 'Hata'));
+            alert(__('js.chat.err_delete', json.error || __('js.chat.error')));
         }
     } catch(e) {
-        alert('İstek hatası: ' + e.message);
+        alert(__('js.chat.err_request', e.message));
     }
 }

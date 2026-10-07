@@ -115,7 +115,7 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
         exit;
     }
     ?><!DOCTYPE html>
-<html lang="tr">
+<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -490,6 +490,24 @@ function localizeRole(array $row): array {
 
 function localizeRoles(array $rows): array {
     return array_map('localizeRole', $rows);
+}
+
+/**
+ * Translations for the page scripts: every "js.*" key of the active language
+ * as window.I18N, and window.__(key, ...args) filling %s placeholders in order.
+ * Printed in the <head> of every layout (app and auth pages), before any
+ * page script runs.
+ */
+function jsI18nScript(): string {
+    static $lang = [];
+    $code = getUserLanguage();
+    if (!isset($lang[$code])) {
+        $all = require __DIR__ . '/lang/' . $code . '.php';
+        $lang[$code] = array_filter($all, fn($k) => str_starts_with($k, 'js.'), ARRAY_FILTER_USE_KEY);
+    }
+    return '<script>window.I18N = ' . json_encode((object) $lang[$code], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) . ';'
+        . 'window.__ = function (k) { var s = (window.I18N && window.I18N[k]) || k, a = arguments, i = 1;'
+        . ' return String(s).replace(/%(?:(\\d+)\\$)?s/g, function (m, n) { var j = n ? +n : i++; return j < a.length ? a[j] : ""; }); };</script>';
 }
 
 // Audit log (writeAuditLog) — needed by services called from API endpoints too.

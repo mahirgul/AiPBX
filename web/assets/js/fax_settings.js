@@ -3,7 +3,7 @@
  */
 function openCreateFaxDidModal() {
     const title = document.getElementById('didModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Faks Birimi Tanımla';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.fax.new_title') + '';
 
     const idEl = document.getElementById('modal_did_id');
     const deptEl = document.getElementById('modal_department_name');
@@ -30,7 +30,7 @@ function openEditFaxDidModal(item) {
     if (!item) return;
 
     const title = document.getElementById('didModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Faks Birimi Düzenle: ' + escapeHtml(item.department_name || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.fax.edit_title') + '' + escapeHtml(item.department_name || '');
 
     const idEl = document.getElementById('modal_did_id');
     const deptEl = document.getElementById('modal_department_name');

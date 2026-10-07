@@ -241,14 +241,14 @@ class MsTeamsService
         $output[] = "";
         $output[] = "# 1. Install and connect the Microsoft Teams PowerShell module (if needed)";
         $output[] = "if (-not (Get-Module -ListAvailable -Name MicrosoftTeams)) {";
-        $output[] = "    Write-Host 'MicrosoftTeams modulu yukleniyor...' -ForegroundColor Cyan";
+        $output[] = "    Write-Host 'Installing the MicrosoftTeams module...' -ForegroundColor Cyan";
         $output[] = "    Install-Module -Name MicrosoftTeams -Scope CurrentUser -Force -AllowClobber";
         $output[] = "}";
-        $output[] = "Write-Host 'Microsoft 365 hesabina baglaniliyor...' -ForegroundColor Cyan";
+        $output[] = "Write-Host 'Connecting to Microsoft 365...' -ForegroundColor Cyan";
         $output[] = "Connect-MicrosoftTeams";
         $output[] = "";
         $output[] = "# 2. AiPBX SBC Gateway Tanimlama";
-        $output[] = "Write-Host 'SBC PSTN Gateway tanimlaniyor: {$domain}:{$port}' -ForegroundColor Cyan";
+        $output[] = "Write-Host 'Defining SBC PSTN gateway: {$domain}:{$port}' -ForegroundColor Cyan";
         $output[] = "\$existingSbc = Get-CsOnlinePSTNGateway -Identity '{$domain}' -ErrorAction SilentlyContinue";
         $output[] = "if (\$null -eq \$existingSbc) {";
         $output[] = "    New-CsOnlinePSTNGateway -Fqdn '{$domain}' `";
@@ -264,7 +264,7 @@ class MsTeamsService
         $output[] = "}";
         $output[] = "";
         $output[] = "# 3. PSTN usage and voice routing policies";
-        $output[] = "Write-Host 'Ses Yonlendirme Politikasi olusturuluyor...' -ForegroundColor Cyan";
+        $output[] = "Write-Host 'Creating the voice routing policy...' -ForegroundColor Cyan";
         $output[] = "Set-CsOnlinePstnUsage -Identity Global -Usage @{Add='{$pstnUsage}'} -ErrorAction SilentlyContinue";
         $output[] = "";
         $output[] = "\$existingRoute = Get-CsOnlineVoiceRoute -Identity '{$voiceRoute}' -ErrorAction SilentlyContinue";
@@ -280,7 +280,7 @@ class MsTeamsService
         $output[] = "if (\$null -eq \$existingPolicy) {";
         $output[] = "    New-CsOnlineVoiceRoutingPolicy -Identity '{$voicePolicy}' `";
         $output[] = "        -OnlinePstnUsages '{$pstnUsage}' `";
-        $output[] = "        -Description 'AiPBX Direct Routing Santral Politikasi'";
+        $output[] = "        -Description 'AiPBX Direct Routing PBX Policy'";
         $output[] = "}";
         $output[] = "";
         $output[] = "# 4. User and extension mappings";

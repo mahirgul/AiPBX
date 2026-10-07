@@ -41,7 +41,7 @@ function __syncInboundDialplanBody() {
 
             if ($trim_digits > 0) {
                 $conf .= " same => n,Set(NORMALIZED_DID=\${IF(\$[\${LEN(\${EXTEN})} >= {$trim_digits}]?\${EXTEN:-{$trim_digits}}:\${EXTEN})})\n";
-                $conf .= " same => n,NoOp(DID Kirpma uygulandi ({$trim_digits} hane): \${EXTEN} -> \${NORMALIZED_DID})\n";
+                $conf .= " same => n,NoOp(DID trim applied ({$trim_digits} digits): \${EXTEN} -> \${NORMALIZED_DID})\n";
             } else {
                 $conf .= " same => n,Set(NORMALIZED_DID=\${EXTEN})\n";
             }
@@ -50,7 +50,7 @@ function __syncInboundDialplanBody() {
             $conf .= " same => n,Goto(from-trunk-{$t_name}-route,\${NORMALIZED_DID},1)\n\n";
 
             // For calls arriving without a DID (s)
-            $conf .= "exten => s,1,NoOp(DID olmadan gelen cagri [{$t_name}] - Arayan: \${CALLERID(num)})\n";
+            $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
             if ($is_kapanma_tonu) {
@@ -112,12 +112,12 @@ function __syncInboundDialplanBody() {
     // Closing context for unmatched calls
     // ------------------------------------------------------------------
     $conf .= "[from-trunk-notfound]\n";
-    $conf .= "exten => _.,1,NoOp(Eslesen gelen rota bulunamadi - DID: \${EXTEN})\n";
+    $conf .= "exten => _.,1,NoOp(No matching inbound route - DID: \${EXTEN})\n";
     $conf .= " same => n,Playtones(congestion)\n";
     $conf .= " same => n,Congestion(10)\n";
     $conf .= " same => n,Hangup(1)\n\n";
 
-    $conf .= "exten => s,1,NoOp(Eslesen gelen rota bulunamadi - DID: s)\n";
+    $conf .= "exten => s,1,NoOp(No matching inbound route - DID: s)\n";
     $conf .= " same => n,Playtones(congestion)\n";
     $conf .= " same => n,Congestion(10)\n";
     $conf .= " same => n,Hangup(1)\n\n";
@@ -127,12 +127,12 @@ function __syncInboundDialplanBody() {
     // ------------------------------------------------------------------
     $conf .= "; --- Inbound route wrapper with hang-up tone detection ---\n";
     $conf .= "[from-trunk-kapanma-tonu]\n";
-    $conf .= "exten => _X.,1,NoOp(Kapanma tonu algilayicisi devrede - DID \${EXTEN})\n";
+    $conf .= "exten => _X.,1,NoOp(Hangup tone detector active - DID \${EXTEN})\n";
     $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
     $conf .= " same => n,Goto(from-trunk-inbound,\${EXTEN},1)\n\n";
 
     $conf .= "[kapanma-tonu]\n";
-    $conf .= "exten => s,1,NoOp(Kapanma tonu algilandi - cagri kapatiliyor)\n";
+    $conf .= "exten => s,1,NoOp(Hangup tone detected - ending the call)\n";
     $conf .= " same => n,Hangup()\n\n";
 
     return writeConfWithRollback('extensions_inbound.conf', $conf, function() {

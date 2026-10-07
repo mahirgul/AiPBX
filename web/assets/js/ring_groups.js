@@ -5,7 +5,7 @@ let currentRgDestId = '';
 function loadRgDestOptions(callback) {
     const type = document.getElementById('modal_rg_dest_type').value;
     const destSelect = document.getElementById('modal_rg_dest_id');
-    destSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+    destSelect.innerHTML = '<option value="">' + __('js.common.loading') + '</option>';
 
     fetch('/api/destinations.php?module=' + encodeURIComponent(type))
         .then(r => r.json())
@@ -20,17 +20,17 @@ function loadRgDestOptions(callback) {
                     destSelect.appendChild(el);
                 });
             } else {
-                destSelect.innerHTML = '<option value="">(Hedef bulunamadı)</option>';
+                destSelect.innerHTML = '<option value="">' + __('js.common.no_destination') + '</option>';
             }
             if (callback) callback();
         })
         .catch(() => {
-            destSelect.innerHTML = '<option value="">(Hata)</option>';
+            destSelect.innerHTML = '<option value="">' + __('js.common.error_paren') + '</option>';
         });
 }
 
 function openCreateRgModal() {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Çalma Grubu';
+    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> ' + __('js.rg.new_title') + '';
     document.getElementById('modal_rg_id').value = '0';
     document.getElementById('modal_rg_number').value = '';
     document.getElementById('modal_rg_name').value = '';
@@ -48,7 +48,7 @@ function openCreateRgModal() {
 }
 
 function openEditRgModal(rg) {
-    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Çalma Grubu Düzenle: ' + escapeHtml(rg.name || '');
+    document.getElementById('rgModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> ' + __('js.rg.edit_title') + '' + escapeHtml(rg.name || '');
     document.getElementById('modal_rg_id').value = rg.id || '0';
     document.getElementById('modal_rg_number').value = rg.group_number || '';
     document.getElementById('modal_rg_name').value = rg.name || '';

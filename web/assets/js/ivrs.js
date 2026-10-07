@@ -18,7 +18,7 @@ function toggleDirectDialTimeout() {
 
 function openCreateIvrModal() {
     bindIvrDestinationSelectors();
-    document.getElementById('ivrModalTitle').innerHTML = '<i class="fas fa-microphone-alt" style="color: var(--primary);"></i> Yeni IVR Karşılama Menüsü Ekle';
+    document.getElementById('ivrModalTitle').innerHTML = '<i class="fas fa-microphone-alt" style="color: var(--primary);"></i> ' + __('js.ivr.new_title') + '';
     document.getElementById('modal_ivr_id').value = '0';
     document.getElementById('modal_title').value = '';
     var inEl = document.getElementById('modal_internal_number');
@@ -52,7 +52,7 @@ function openCreateIvrModal() {
 function openEditIvrModal(ivr) {
     if (!ivr) return;
 
-    document.getElementById('ivrModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> IVR Menüsü Düzenle #' + ivr.id;
+    document.getElementById('ivrModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.ivr.edit_title') + '' + ivr.id;
     document.getElementById('modal_ivr_id').value = ivr.id;
     document.getElementById('modal_title').value = ivr.title || '';
     var inEl = document.getElementById('modal_internal_number');

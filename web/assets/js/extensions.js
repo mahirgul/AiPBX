@@ -44,7 +44,7 @@ function toggleAuthDigestFields() {
 
 function openCreateExtensionModal() {
     const title = document.getElementById('extensionModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Dahili Abone Tanımla';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.ext.new_title') + '';
 
     document.getElementById('modal_user_id').value = '';
     document.getElementById('modal_full_name').value = '';
@@ -91,7 +91,7 @@ function openEditExtensionModal(item) {
     if (!item) return;
 
     const title = document.getElementById('extensionModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Dahili Düzenle: ' + escapeHtml(item.extension || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.ext.edit_title') + '' + escapeHtml(item.extension || '');
 
     document.getElementById('modal_user_id').value = item.id || '';
     document.getElementById('modal_full_name').value = item.full_name || '';

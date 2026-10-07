@@ -22,12 +22,12 @@ function sendTestPush() {
     var btn = document.getElementById('btnTestPush');
 
     if (!target) {
-        alert('Lütfen test bildirimi gönderilecek bir dahili/cihaz seçin.');
+        alert(__('js.push.select_target'));
         return;
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.common.sending') + '';
     resultBox.style.display = 'none';
 
     var formData = new FormData();
@@ -42,18 +42,18 @@ function sendTestPush() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Bildirimi Gönder';
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + __('js.push.send_test') + '';
         resultBox.style.display = 'block';
         if (data.success) {
-            resultBox.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + (data.message || 'Başarılı') + '</div>';
+            resultBox.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + (data.message || __('js.common.success')) + '</div>';
         } else {
-            resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'Gönderim başarısız') + '</div>';
+            resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + (data.message || __('js.push.send_failed')) + '</div>';
         }
     })
     .catch(function(err) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test Bildirimi Gönder';
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + __('js.push.send_test') + '';
         resultBox.style.display = 'block';
-        resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> İstek başarısız: ' + err + '</div>';
+        resultBox.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ' + __('js.common.request_failed_colon') + '' + err + '</div>';
     });
 }

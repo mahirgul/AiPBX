@@ -57,9 +57,9 @@
                 if (quill && quill.getText().trim() === '') {
                     e.preventDefault();
                     if (typeof showFooterToast === 'function') {
-                        showFooterToast('Lütfen gönderilecek metni yazın!', 'warning');
+                        showFooterToast(__('js.fax.enter_text'), 'warning');
                     } else {
-                        alert('Lütfen gönderilecek metni yazın!');
+                        alert(__('js.fax.enter_text'));
                     }
                     return;
                 }
@@ -70,9 +70,9 @@
                 if (fileInput && fileInput.files.length === 0) {
                     e.preventDefault();
                     if (typeof showFooterToast === 'function') {
-                        showFooterToast('Lütfen bir PDF dosyası seçin!', 'warning');
+                        showFooterToast(__('js.fax.select_pdf'), 'warning');
                     } else {
-                        alert('Lütfen bir PDF dosyası seçin!');
+                        alert(__('js.fax.select_pdf'));
                     }
                 }
             }

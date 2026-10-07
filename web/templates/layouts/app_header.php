@@ -59,6 +59,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
 <!DOCTYPE html>
 <html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="<?php echo htmlspecialchars($theme); ?>">
 <head>
+<?php echo jsI18nScript(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? htmlspecialchars($page_title) . ' - ' : ''; ?><?php echo htmlspecialchars($site_title); ?></title>

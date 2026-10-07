@@ -13,7 +13,7 @@ function applyAdminOnlyModuleLock(roleKey) {
             if (!isAdmin) {
                 el.checked = false;
                 el.disabled = true;
-                el.title = 'Bu işlem yalnızca "admin" rolüne açıktır (sistem tarafından kilitli)';
+                el.title = __('js.roles.admin_only');
             } else {
                 el.disabled = false;
                 el.title = '';
@@ -23,7 +23,7 @@ function applyAdminOnlyModuleLock(roleKey) {
 }
 
 function openCreateRoleModal() {
-    document.getElementById('roleModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Kullanıcı Rolü Oluştur';
+    document.getElementById('roleModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.roles.new_title') + '';
     document.getElementById('modal_role_id').value = '';
     document.getElementById('modal_role_key').value = '';
     document.getElementById('modal_role_key').readOnly = false;
@@ -39,7 +39,7 @@ function openCreateRoleModal() {
 }
 
 function openEditRoleModal(role) {
-    document.getElementById('roleModalTitle').innerHTML = '<i class="fas fa-user-shield" style="color: var(--warning);"></i> Rol İzin Matrisi: ' + escapeHtml(role.role_name || '');
+    document.getElementById('roleModalTitle').innerHTML = '<i class="fas fa-user-shield" style="color: var(--warning);"></i> ' + __('js.roles.edit_title') + '' + escapeHtml(role.role_name || '');
     document.getElementById('modal_role_id').value = role.id;
     document.getElementById('modal_role_key').value = role.role_key;
     document.getElementById('modal_role_key').readOnly = (role.is_system == 1);

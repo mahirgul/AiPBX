@@ -32,7 +32,7 @@ function setTheme(theme) {
     }
     const textEl = document.getElementById('theme-text');
     if (textEl) {
-        textEl.textContent = theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod';
+        textEl.textContent = theme === 'dark' ? __('js.theme.light') : __('js.theme.dark');
     }
 }
 
@@ -43,8 +43,8 @@ function setFontSizePref(size, showToast = true) {
     localStorage.setItem('font_size_pref', size);
     updateFontSizeUI(size);
     if (showToast && window.notify) {
-        const labels = { small: 'Küçük (-%4)', normal: 'Normal (Standart)', large: 'Büyük (+%4)' };
-        window.notify.success('Yazı boyutu güncellendi: ' + labels[size]);
+        const labels = { small: __('js.theme.small') + ' (-4%)', normal: __('js.theme.normal') + ' (' + __('js.theme.standard') + ')', large: __('js.theme.large') + ' (+4%)' };
+        window.notify.success(__('js.theme.font_updated') + labels[size]);
     }
 }
 
@@ -55,8 +55,8 @@ function updateFontSizeUI(size) {
     const btnL = document.getElementById('btn-font-large');
     const label = document.getElementById('font-size-label');
 
-    const labels = { small: 'Küçük', normal: 'Normal', large: 'Büyük' };
-    if (label) label.innerText = labels[size] || 'Normal';
+    const labels = { small: __('js.theme.small'), normal: __('js.theme.normal'), large: __('js.theme.large') };
+    if (label) label.innerText = labels[size] || labels.normal;
 
     [btnS, btnN, btnL].forEach(btn => {
         if (btn) {

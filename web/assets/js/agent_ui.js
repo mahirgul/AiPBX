@@ -21,7 +21,7 @@ function loadAgentQueues() {
     UIHelper.ccGet('get_queues')
         .then(data => {
             if (!data.success || !data.queues) {
-                container.innerHTML = '<div class="text-muted" style="padding:4px; font-size:12px;">Kuyruk verisi yok.</div>';
+                container.innerHTML = '<div class="text-muted" style="padding:4px; font-size:12px;">' + __('js.agent.no_queue_data') + '</div>';
                 return;
             }
 
@@ -33,12 +33,12 @@ function loadAgentQueues() {
                 // Membership (in_queue) and device state (device_offline) are shown separately.
                 // Even if the WebRTC registration drops briefly after F5, the agent stays a MEMBER of the queue.
                 const statusTag = !q.in_queue
-                    ? '<span class="badge badge-secondary">⭕ Pasif</span>'
+                    ? '<span class="badge badge-secondary">' + __('js.agent.inactive') + '</span>'
                     : (q.is_paused
-                        ? '<span class="badge badge-warning">Molada</span>'
+                        ? '<span class="badge badge-warning">' + __('js.cc.paused') + '</span>'
                         : (q.device_offline
-                            ? '<span class="badge badge-info">⚪ Cihaz Çevrimdışı</span>'
-                            : '<span class="badge badge-success">🟢 Aktif</span>'));
+                            ? '<span class="badge badge-info">' + __('js.agent.device_offline') + '</span>'
+                            : '<span class="badge badge-success">' + __('js.agent.active') + '</span>'));
 
                 // queue_name is currently limited to [a-zA-Z0-9_-] in QueueService
                 // (not exploitable), but for the JS-string context inside onclick
@@ -47,10 +47,10 @@ function loadAgentQueues() {
                 // 2026-08-21 audit).
                 const safeQueueName = escapeJsAttr(q.queue_name);
                 const btnAction = q.is_static
-                    ? `<span class="badge badge-info" title="Statik temsilci: kuyruktan çıkılamaz, sadece mola verilebilir"><i class="fas fa-thumbtack"></i> Statik</span>`
+                    ? `<span class="badge badge-info" title="${__('js.agent.static_title')}"><i class="fas fa-thumbtack"></i> ${__('js.agent.static')}</span>`
                     : q.in_queue
-                    ? `<button class="btn btn-danger btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 0)" title="Kuyruktan Çık"><i class="fas fa-sign-out-alt"></i> Çık</button>`
-                    : `<button class="btn btn-success btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 1)" title="Kuyruğa Gir"><i class="fas fa-sign-in-alt"></i> Gir</button>`;
+                    ? `<button class="btn btn-danger btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 0)" title="${__('js.agent.leave_title')}"><i class="fas fa-sign-out-alt"></i> ${__('js.agent.leave')}</button>`
+                    : `<button class="btn btn-success btn-xs" onclick="toggleQueueStatus('${safeQueueName}', 1)" title="${__('js.agent.join_title')}"><i class="fas fa-sign-in-alt"></i> ${__('js.agent.join')}</button>`;
 
                 html += `
                     <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color); min-width: 180px; font-size: 11px;">
@@ -68,14 +68,14 @@ function loadAgentQueues() {
             });
 
             if (!html) {
-                container.innerHTML = '<div class="text-muted" style="padding:4px; font-size:12px;">Atanmış kuyruk yok.</div>';
+                container.innerHTML = '<div class="text-muted" style="padding:4px; font-size:12px;">' + __('js.agent.no_queues') + '</div>';
             } else {
                 container.innerHTML = html;
             }
         })
         .catch(err => {
             console.error("loadAgentQueues error:", err);
-            container.innerHTML = '<div class="text-danger text-center" style="padding:8px; grid-column:1/-1;">Kuyruk verisi yüklenemedi.</div>';
+            container.innerHTML = '<div class="text-danger text-center" style="padding:8px; grid-column:1/-1;">' + __('js.agent.queue_load_failed') + '</div>';
         })
         .finally(() => { _loadAgentQueuesInFlight = false; });
 }
@@ -89,14 +89,14 @@ function toggleQueueStatus(qName, doLogin) {
     UIHelper.ccPost('toggle_queue', { queue_name: qName, login: doLogin })
     .then(data => {
         if (data.success) {
-            if (window.notify) window.notify.success(data.message || (doLogin ? 'Kuyruğa girildi' : 'Kuyruktan çıkıldı'));
+            if (window.notify) window.notify.success(data.message || (doLogin ? __('js.agent.joined') : __('js.agent.left')));
             loadAgentQueues();
         } else {
-            if (window.notify) window.notify.error(data.error || 'Kuyruk işlemi başarısız');
+            if (window.notify) window.notify.error(data.error || __('js.agent.queue_action_failed'));
         }
     })
     .catch(e => {
-        if (window.notify) window.notify.error('Kuyruk isteği başarısız!');
+        if (window.notify) window.notify.error(__('js.agent.queue_request_failed'));
     });
 }
 
@@ -117,20 +117,20 @@ function loadLiveCalls() {
 
             if (wTbody) {
                 if (waiting.length === 0) {
-                    wTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 12px;"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Bekleyen çağrı yok</td></tr>';
+                    wTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 12px;"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> ' + __('js.agent.no_waiting') + '</td></tr>';
                 } else {
                     let wHtml = '';
                     waiting.forEach(c => {
-                        const callerNum = c.caller || c.caller_num || 'Bilinmeyen';
-                        const queueTitle = c.queue_title || c.queue_name || c.queue || 'Kuyruk';
+                        const callerNum = c.caller || c.caller_num || __('js.common.unknown');
+                        const queueTitle = c.queue_title || c.queue_name || c.queue || __('js.agent.queue');
                         wHtml += `
                             <tr>
                                 <td><span class="badge badge-info">${escapeHtml(queueTitle)}</span></td>
                                 <td style="font-weight: 700; color: var(--text-main);">${escapeHtml(callerNum)}</td>
-                                <td style="font-weight: 700; color: var(--warning);">${escapeHtml(c.wait_time)} sn</td>
+                                <td style="font-weight: 700; color: var(--warning);">${escapeHtml(c.wait_time)} ${__('js.common.sec')}</td>
                                 <td style="text-align: right;">
                                     <button class="btn btn-success btn-xs" onclick="pickupCall('${escapeJsAttr(c.channel)}')" style="font-weight: 600;">
-                                        <i class="fas fa-phone-alt"></i> Al
+                                        <i class="fas fa-phone-alt"></i> ${__('js.agent.pickup')}
                                     </button>
                                 </td>
                             </tr>
@@ -149,23 +149,23 @@ function loadLiveCalls() {
 
             if (aTbody) {
                 if (active.length === 0) {
-                    aTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 12px;">Aktif çağrı yok</td></tr>';
+                    aTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 12px;">' + __('js.agent.no_active') + '</td></tr>';
                 } else {
                     let aHtml = '';
                     active.forEach(ac => {
-                        const callerNum = ac.caller || ac.caller_num || 'Bilinmeyen';
+                        const callerNum = ac.caller || ac.caller_num || __('js.common.unknown');
                         // The note button is shown only on the own call of the agent owning this screen
                         // (the active calls table lists every call in the system).
                         const isMine = window.AGENT_EXT && String(ac.exten || '') === String(window.AGENT_EXT);
                         const noteBtn = isMine
-                            ? `<button class="btn btn-secondary btn-xs" onclick="openNoteModal(null, true)" title="Çağrı Notu (görüşme sırasında)"><i class="fas fa-sticky-note"></i></button>`
+                            ? `<button class="btn btn-secondary btn-xs" onclick="openNoteModal(null, true)" title="${__('js.agent.note_title_live')}"><i class="fas fa-sticky-note"></i></button>`
                             : '<span class="text-muted" style="font-size: 11px;">-</span>';
                         aHtml += `
                             <tr>
                                 <td style="font-weight: 700;">${escapeHtml(ac.channel)}</td>
                                 <td>${escapeHtml(callerNum)}</td>
-                                <td>${escapeHtml(ac.duration)} sn</td>
-                                <td><span class="badge badge-success">Görüşülüyor</span></td>
+                                <td>${escapeHtml(ac.duration)} ${__('js.common.sec')}</td>
+                                <td><span class="badge badge-success">${__('js.agent.talking')}</span></td>
                                 <td style="text-align: right;">${noteBtn}</td>
                             </tr>
                         `;
@@ -184,10 +184,10 @@ function pickupCall(channel) {
     UIHelper.ccPost('pickup_call', { channel: channel })
     .then(data => {
         if (data.success) {
-            if (window.notify) window.notify.success(data.message || 'Çağrı telefonunuza aktarıldı');
+            if (window.notify) window.notify.success(data.message || __('js.agent.picked_up'));
             loadLiveCalls();
         } else {
-            if (window.notify) window.notify.error(data.error || 'Çağrı alınamadı');
+            if (window.notify) window.notify.error(data.error || __('js.cc.pickup_failed'));
         }
     });
 }
@@ -199,7 +199,7 @@ function loadCdrs() {
     UIHelper.ccGet('my_cdrs')
         .then(data => {
             if (!data.success || !data.cdrs || data.cdrs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Çağrı kaydı bulunmuyor.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">' + __('js.agent.no_cdr') + '</td></tr>';
                 return;
             }
 
@@ -207,24 +207,24 @@ function loadCdrs() {
             data.cdrs.forEach(cdr => {
                 const isAnswered = cdr.status === 'ANSWERED';
                 const statusBadge = isAnswered
-                    ? '<span class="badge badge-success">Cevaplandı</span>'
-                    : '<span class="badge badge-danger">Cevapsız</span>';
+                    ? '<span class="badge badge-success">' + __('js.agent.answered') + '</span>'
+                    : '<span class="badge badge-danger">' + __('js.agent.missed') + '</span>';
 
-                let audioBtn = '<span class="text-muted" style="font-size: 11px;">Yok</span>';
+                let audioBtn = '<span class="text-muted" style="font-size: 11px;">' + __('js.agent.none') + '</span>';
                 if (cdr.has_recording && cdr.can_listen) {
-                    audioBtn = `<button class="btn btn-secondary btn-xs" onclick="playAudio('${escapeJsAttr(cdr.audio_url)}')"><i class="fas fa-play"></i> Dinle</button>`;
+                    audioBtn = `<button class="btn btn-secondary btn-xs" onclick="playAudio('${escapeJsAttr(cdr.audio_url)}')"><i class="fas fa-play"></i> ${__('js.cc.spy')}</button>`;
                 }
 
                 let noteBtn = '<span class="text-muted" style="font-size: 11px;">-</span>';
                 if (cdr.call_id) {
-                    noteBtn = `<button class="btn btn-secondary btn-xs" onclick="openNoteModal('${escapeJsAttr(cdr.call_id)}')" title="Çağrı Notu"><i class="fas fa-sticky-note"></i></button>`;
+                    noteBtn = `<button class="btn btn-secondary btn-xs" onclick="openNoteModal('${escapeJsAttr(cdr.call_id)}')" title="${__('js.agent.note_title')}"><i class="fas fa-sticky-note"></i></button>`;
                 }
 
                 html += `
                     <tr>
                         <td style="font-size: 12px;">${escapeHtml(cdr.start_time)}</td>
                         <td style="font-weight: 700; color: var(--text-main);">${escapeHtml(cdr.caller_num)}</td>
-                        <td>${escapeHtml(cdr.duration)} sn</td>
+                        <td>${escapeHtml(cdr.duration)} ${__('js.common.sec')}</td>
                         <td>${statusBadge}</td>
                         <td style="text-align: right;">${audioBtn}</td>
                         <td style="text-align: right;">${noteBtn}</td>
@@ -234,7 +234,7 @@ function loadCdrs() {
             tbody.innerHTML = html;
         })
         .catch(e => {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">CDR verileri yüklenemedi.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">' + __('js.agent.cdr_load_failed') + '</td></tr>';
         });
 }
 
@@ -294,14 +294,14 @@ function submitCallNote() {
     })
         .then(data => {
             if (data.success) {
-                if (window.notify) window.notify.success(data.message || 'Not kaydedildi');
+                if (window.notify) window.notify.success(data.message || __('js.agent.note_saved'));
                 closeNoteModal();
             } else {
-                if (window.notify) window.notify.error(data.error || 'Not kaydedilemedi');
+                if (window.notify) window.notify.error(data.error || __('js.agent.note_failed'));
             }
         })
         .catch(() => {
-            if (window.notify) window.notify.error('Not kaydedilemedi');
+            if (window.notify) window.notify.error(__('js.agent.note_failed'));
         });
 }
 
