@@ -4,7 +4,7 @@
     <string name="action_answer">Answer</string>
     <string name="action_decline">Decline</string>
     <string name="action_hangup">Hang up</string>
-    <string name="app_name">AiPBX</string>
+    <string name="app_name" translatable="false">AiPBX</string>
     <string name="battery_optimization_desc">Turn off battery saving restrictions so incoming calls ring without delay.</string>
     <string name="battery_optimization_title">Battery Saver</string>
     <string name="btn_answer">Answer</string>
@@ -69,7 +69,7 @@
     <string name="notif_service_text">Extension: %1$s (%2$s) - waiting for calls</string>
     <string name="notif_service_title">PBX Connection Active</string>
     <string name="password_hint">Password</string>
-    <string name="privacy_policy_url">https://www.mhrgl.com/privacy</string>
+    <string name="privacy_policy_url" translatable="false">https://www.mhrgl.com/privacy</string>
     <string name="server_setup_subtitle">Enter the address of the AI PBX server you want to connect to.</string>
     <string name="server_setup_title">Server Address</string>
     <string name="server_url_hint">e.g. https://pbx.example.com</string>

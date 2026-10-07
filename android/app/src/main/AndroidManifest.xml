@@ -125,6 +125,13 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
+        <!-- QR scanner: the library declares it sensorLandscape, which turns the
+             screen sideways on phones; follow the device like the rest of the app. -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation" />
+
         <!-- FileProvider for Sharing / Downloading Log Files -->
         <provider
             android:name="androidx.core.content.FileProvider"
