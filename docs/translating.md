@@ -1,6 +1,6 @@
 # Translating AiPBX
 
-The web portal speaks English (`en`), Turkish (`tr`) and Croatian (`hr`).
+The web portal speaks English (`en`), Turkish (`tr`), Croatian (`hr`) and German (`de`).
 Every user picks a language from the **language dropdown**: on the sign-in
 page, and in the user menu (bottom right) after signing in. Corrections and
 new languages are welcome as pull requests.
