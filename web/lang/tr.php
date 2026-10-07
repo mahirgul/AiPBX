@@ -1379,7 +1379,6 @@ return [
     'login.submit_tooltip' => 'Giriş Yap',
     'login.mobile_app_title' => 'AiPBX Mobil Dahili',
     'login.mobile_app_desc' => 'Dahilinizi cep telefonunuzdan kullanmak için Android uygulamasını indirin.',
-    'login.download_apk' => 'Android Uygulamasını İndir (APK)',
     'login.csrf_error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.',
 
     // Force Reset (Zorunlu Şifre Sıfırlama)
@@ -3048,7 +3047,6 @@ return [
     'my_phone.show_hide' => 'Göster / Gizle',
     'my_phone.mobile_app_info' => 'Mobil Uygulama &amp; Sürüm Bilgisi',
     'my_phone.mobile_qr' => 'Mobil Giriş QR Kodu',
-    'my_phone.download_apk' => 'APK İndir',
     'my_phone.quick_mobile_login' => 'Hızlı Mobil Giriş (Barkod / QR Kod)',
     'my_phone.quick_mobile_login_desc' => 'Android ve iOS uygulamanızın giriş ekranından bu QR kodu okutarak şifresiz, tek dokunuşla giriş yapın.',
     'my_phone.show_qr' => 'QR Kod Göster',
@@ -3649,4 +3647,5 @@ Telefonunuz çaldırılacak.',
     'srv_asterisk.err_lang' => 'Ses dili asterisk.conf dosyasına yazılamadı: %s',
     'force_reset.set_intro' => 'Devam etmeden önce yöneticiniz yeni bir şifre belirlemenizi istiyor.',
     'force_reset.or_email' => 'Ya da sıfırlama bağlantısını e-posta ile alın:',
+    'common.get_on_google_play' => 'Google Play\'den İndir',
 ];

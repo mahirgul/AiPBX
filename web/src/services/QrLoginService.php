@@ -134,7 +134,7 @@ class QrLoginService
      */
     public static function androidIntentLink(string $serverUrl, string $token): string
     {
-        $fallback = 'https://play.google.com/store/apps/details?id=' . self::ANDROID_PACKAGE;
+        $fallback = ANDROID_PLAY_URL;
         return 'intent://login?server=' . rawurlencode($serverUrl) . '&token=' . rawurlencode($token)
             . '#Intent;scheme=aipbx;package=' . self::ANDROID_PACKAGE
             . ';S.browser_fallback_url=' . rawurlencode($fallback) . ';end';

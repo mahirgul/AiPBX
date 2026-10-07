@@ -667,8 +667,8 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         <button type="button" class="btn btn-xs btn-success" onclick="openQrLoginModal()" style="font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
                             <i class="fas fa-qrcode"></i> <?php echo t('my_phone.mobile_qr'); ?>
                         </button>
-                        <a href="/app.apk" class="btn btn-xs btn-primary" download style="font-size: 11px; padding: 4px 10px;">
-                            <i class="fas fa-download"></i> <?php echo t('my_phone.download_apk'); ?>
+                        <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary" style="font-size: 11px; padding: 4px 10px;">
+                            <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
                         </a>
                     </div>
                 </h3>

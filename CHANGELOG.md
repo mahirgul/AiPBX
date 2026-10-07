@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.3.6
+
+- The mobile app download buttons (sign-in page on phones, **My Phone →
+  Settings**) open the app on **Google Play**. They pointed to `/app.apk`,
+  a file that does not exist on new installations.
+- Fix for the unit tests of 1.3.4 (the prompt-language change tried to
+  edit the real `/etc/asterisk` during tests); no change on servers.
+
 ## 1.3.5
 
 **Install / update**
