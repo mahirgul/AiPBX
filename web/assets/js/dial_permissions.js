@@ -1,7 +1,7 @@
 /* Page script of templates/views/dial_permissions/index.php */
 
 function openCreateGroupModal() {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Grubu Ekle';
+    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> ' + __('js.dp.new_group_title') + '';
     document.getElementById('modal_group_id').value = '0';
     document.getElementById('modal_group_name').value = '';
     document.getElementById('modal_group_desc').value = '';
@@ -11,7 +11,7 @@ function openCreateGroupModal() {
 }
 
 function openEditGroupModal(g) {
-    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Yetki Grubu Düzenle: ' + escapeHtml(g.group_name || '');
+    document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> ' + __('js.dp.edit_group_title') + '' + escapeHtml(g.group_name || '');
     document.getElementById('modal_group_id').value = g.id || '0';
     document.getElementById('modal_group_name').value = g.group_name || '';
     document.getElementById('modal_group_desc').value = g.description || '';
@@ -21,7 +21,7 @@ function openEditGroupModal(g) {
 }
 
 function openCreateRuleModal(groupId) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Yetki Kuralı Ekle';
+    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> ' + __('js.dp.new_rule_title') + '';
     document.getElementById('modal_rule_id').value = '0';
     document.getElementById('modal_rule_group_id').value = groupId;
     document.getElementById('modal_rule_pattern').value = '';
@@ -33,7 +33,7 @@ function openCreateRuleModal(groupId) {
 }
 
 function openEditRuleModal(r) {
-    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Kural Düzenle: ' + escapeHtml(r.pattern || '');
+    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> ' + __('js.dp.edit_rule_title') + '' + escapeHtml(r.pattern || '');
     document.getElementById('modal_rule_id').value = r.id || '0';
     document.getElementById('modal_rule_group_id').value = r.group_id;
     document.getElementById('modal_rule_pattern').value = r.pattern || '';

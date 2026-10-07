@@ -2,7 +2,7 @@
  * System Users Client Module
  */
 function openCreateUserModal() {
-    document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: var(--primary);"></i> Yeni Sistem Kullanıcısı Ekle';
+    document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: var(--primary);"></i> ' + __('js.users.new_title') + '';
     document.getElementById('modal_user_id').value = '0';
     document.getElementById('modal_username').value = '';
     document.getElementById('modal_username').readOnly = false;
@@ -37,7 +37,7 @@ function openCreateUserModal() {
 function openEditUserModal(u) {
     if (!u) return;
 
-    document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-edit" style="color: var(--primary);"></i> Kullanıcı Düzenle: ' + escapeHtml(u.username || '');
+    document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-edit" style="color: var(--primary);"></i> ' + __('js.users.edit_title') + '' + escapeHtml(u.username || '');
     document.getElementById('modal_user_id').value = u.id;
     document.getElementById('modal_username').value = u.username || '';
     // Enable editing username for normal accounts; keep read-only for master admin account
@@ -177,10 +177,10 @@ function updateBulkActionState() {
 function confirmBulkSendMail() {
     const checkboxes = document.querySelectorAll('.user-select-cb:checked');
     if (checkboxes.length === 0) {
-        alert('Lütfen en az bir kullanıcı seçin.');
+        alert(__('js.users.select_one'));
         return false;
     }
-    return confirm(`Seçilen ${checkboxes.length} kullanıcıya giriş ve şifre belirleme bağlantısı e-posta ile gönderilecektir. Onaylıyor musunuz?`);
+    return confirm(__('js.users.invite_confirm', checkboxes.length));
 }
 
 

@@ -11,7 +11,7 @@
     const $ = id => document.getElementById(id);
     const langName = code => {
         if (code === '*') return T.text.all_voices;
-        try { return new Intl.DisplayNames([T.lang || 'tr'], { type: 'language' }).of(code) + ' (' + code + ')'; } catch (e) { return code; }
+        try { return new Intl.DisplayNames([T.lang || 'en'], { type: 'language' }).of(code) + ' (' + code + ')'; } catch (e) { return code; }
     };
     const status = (msg, kind) => {
         const el = $('ttsStatus');
@@ -26,7 +26,7 @@
 
     function fillLanguages() {
         const sel = $('ttsLanguage');
-        const prev = sel.value || localStorage.getItem('ttsLanguage') || 'tr-TR';
+        const prev = sel.value || localStorage.getItem('ttsLanguage') || 'en-US';
         const langs = [...new Set(voices.filter(v => v.language !== '*').map(v => v.language))].sort((a, b) => langName(a).localeCompare(langName(b)));
         const multi = voices.some(v => v.language === '*');
         sel.innerHTML = '';

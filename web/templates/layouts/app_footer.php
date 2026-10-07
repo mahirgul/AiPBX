@@ -103,7 +103,7 @@ if ($is_spa_request) {
                     <div class="user-badge-text">
                         <span class="user-badge-name"><?php echo htmlspecialchars($user['full_name']); ?></span>
                         <span class="user-badge-role">
-                            <?php echo htmlspecialchars($user['role_display_name'] ?? $user['role']); ?>
+                            <?php echo htmlspecialchars(localizeRole(['role' => $user['role'], 'role_name' => $user['role_display_name'] ?? $user['role']])['role_name']); ?>
                         </span>
                     </div>
                     <i class="fas fa-chevron-up user-badge-arrow" id="user-dropdown-arrow"></i>

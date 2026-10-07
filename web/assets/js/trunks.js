@@ -31,7 +31,7 @@ function switchTrunkTab(tabKey, btn) {
 
 function openCreateTrunkModal() {
     const title = document.getElementById('trunkModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni SIP Dış Hat Tanımla';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.trunks.new_title') + '';
 
     document.getElementById('modal_trunk_id').value = '';
     const nameEl = document.getElementById('modal_trunk_name');
@@ -109,7 +109,7 @@ function openEditTrunkModal(item) {
     if (!item) return;
 
     const title = document.getElementById('trunkModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Dış Hat Düzenle: ' + escapeHtml(item.title || item.trunk_name || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.trunks.edit_title') + '' + escapeHtml(item.title || item.trunk_name || '');
 
     document.getElementById('modal_trunk_id').value = item.id || '';
     const nameEl = document.getElementById('modal_trunk_name');
@@ -208,7 +208,7 @@ function openCopyTrunkModal(item) {
     nameEl.value = (item.trunk_name || 'trunk') + '_copy';
     document.getElementById('modal_title').value = (item.title || item.trunk_name || '') + ' (kopya)';
     const title = document.getElementById('trunkModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> Dış Hat Kopyala: ' + escapeHtml(item.title || item.trunk_name || '');
+    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> ' + __('js.trunks.copy_title') + '' + escapeHtml(item.title || item.trunk_name || '');
     nameEl.focus();
     nameEl.select();
 }

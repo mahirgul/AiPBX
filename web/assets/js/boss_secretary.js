@@ -5,7 +5,7 @@ let currentBsDestId = '';
 function loadBsDestOptions(callback) {
     const type = document.getElementById('modal_bs_dest_type').value;
     const destSelect = document.getElementById('modal_bs_dest_id');
-    destSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+    destSelect.innerHTML = '<option value="">' + __('js.common.loading') + '</option>';
 
     fetch('/api/destinations.php?module=' + encodeURIComponent(type))
         .then(r => r.json())
@@ -20,17 +20,17 @@ function loadBsDestOptions(callback) {
                     destSelect.appendChild(el);
                 });
             } else {
-                destSelect.innerHTML = '<option value="">(Hedef bulunamadı)</option>';
+                destSelect.innerHTML = '<option value="">' + __('js.common.no_destination') + '</option>';
             }
             if (callback) callback();
         })
         .catch(() => {
-            destSelect.innerHTML = '<option value="">(Hata)</option>';
+            destSelect.innerHTML = '<option value="">' + __('js.common.error_paren') + '</option>';
         });
 }
 
 function openCreateBsModal() {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> Yeni Şef - Sekreter Grubu';
+    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> ' + __('js.bs.new_title') + '';
     document.getElementById('modal_bs_id').value = '0';
     document.getElementById('modal_bs_group_number').value = String(window.BOSS_SECRETARY_NEXT_NUMBER);
     document.getElementById('modal_bs_group_name').value = '';
@@ -47,7 +47,7 @@ function openCreateBsModal() {
 }
 
 function openEditBsModal(g) {
-    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> Grup Düzenle: ' + escapeHtml(g.group_name || '');
+    document.getElementById('bsModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> ' + __('js.bs.edit_title') + '' + escapeHtml(g.group_name || '');
     document.getElementById('modal_bs_id').value = g.id || '0';
     document.getElementById('modal_bs_group_number').value = g.group_number || 1;
     document.getElementById('modal_bs_group_name').value = g.group_name || '';

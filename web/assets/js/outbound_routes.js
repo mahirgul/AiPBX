@@ -25,7 +25,7 @@ function clearRouteTrunkRows() {
 
 function openCreateRouteModal() {
     const title = document.getElementById('routeModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Giden Rota Ekle';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.out.new_title') + '';
 
     document.getElementById('modal_route_id').value = '';
     document.getElementById('modal_route_name').value = '';
@@ -52,7 +52,7 @@ function openEditRouteModal(item) {
     if (!item) return;
 
     const title = document.getElementById('routeModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Giden Rota Düzenle: ' + escapeHtml(item.route_name || item.match_pattern || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.out.edit_title') + '' + escapeHtml(item.route_name || item.match_pattern || '');
 
     document.getElementById('modal_route_id').value = item.id || '';
     document.getElementById('modal_route_name').value = item.route_name || '';
@@ -97,7 +97,7 @@ function openCopyRouteModal(item) {
     document.getElementById('modal_route_id').value = '';
     document.getElementById('modal_route_name').value = (item.route_name || '') + ' (kopya)';
     const title = document.getElementById('routeModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> Giden Rota Kopyala: ' + escapeHtml(item.route_name || item.match_pattern || '');
+    if (title) title.innerHTML = '<i class="fas fa-copy" style="color: var(--primary);"></i> ' + __('js.out.copy_title') + '' + escapeHtml(item.route_name || item.match_pattern || '');
     const pat = document.getElementById('modal_match_pattern');
     pat.focus();
     pat.select();

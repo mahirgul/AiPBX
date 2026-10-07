@@ -5,7 +5,7 @@ function openEditFeatureCodeModal(item) {
     if (!item) return;
 
     const title = document.getElementById('featureCodeModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Feature Code Düzenle: ' + escapeHtml(item.title || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.fc.edit_title') + '' + escapeHtml(item.title || '');
 
     document.getElementById('modal_feature_id').value = item.id || '';
     document.getElementById('modal_title').value = item.title || '';

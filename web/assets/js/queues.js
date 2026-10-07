@@ -3,7 +3,7 @@
  */
 function openCreateQueueModal() {
     const title = document.getElementById('queueModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Çağrı Merkezi Kuyruğu Tanımla';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.queues.new_title') + '';
 
     const idEl = document.getElementById('modal_queue_id');
     const nameEl = document.getElementById('modal_queue_name');
@@ -71,7 +71,7 @@ function openEditQueueModal(item) {
     if (!item) return;
 
     const title = document.getElementById('queueModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Kuyruk Düzenle: ' + escapeHtml(item.title || item.queue_name || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.queues.edit_title') + '' + escapeHtml(item.title || item.queue_name || '');
 
     const idEl = document.getElementById('modal_queue_id');
     const nameEl = document.getElementById('modal_queue_name');

@@ -99,7 +99,7 @@ function __syncGeneralDialplanBody() {
                 $conf .= " same => n,NoOp(Secretary did not answer -> fallback)\n";
                 $conf .= buildDestinationLines($bg['fallback_dest_type'] ?? 'hangup', $bg['fallback_dest_id'] ?? 'busy') . "\n";
                 $conf .= " same => n(sec_ans_{$ext}),Hangup()\n";
-                $conf .= " same => n(allow_boss_{$ext}),NoOp(Sefe erisim yetkili)\n";
+                $conf .= " same => n(allow_boss_{$ext}),NoOp(Caller allowed to reach the boss)\n";
             }
 
             $extDial = buildExtensionDialLines($ext, $db, 'direct');

@@ -46,7 +46,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
-                $conf .= " same => n(allowed_{$key}_base),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+                $conf .= " same => n(allowed_{$key}_base),NoOp(Permission verified: \${USER_ROLE})\n";
             }
             $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} all &)\n";
             $conf .= " same => n,Answer()\n";
@@ -75,7 +75,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Wait(2)\n";
                 $conf .= " same => n,Hangup()\n";
-                $conf .= " same => n(allowed_{$key}_pat),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+                $conf .= " same => n(allowed_{$key}_pat),NoOp(Permission verified: \${USER_ROLE})\n";
             }
             $conf .= " same => n,Set(QID=\${EXTEN:{$prefix_len}})\n";
             $conf .= " same => n,GotoIf(\$[\"\${QID}\" = \"\"]?{$key}_empty)\n";
@@ -115,7 +115,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
-                $conf .= " same => n(allowed_{$key}_base),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+                $conf .= " same => n(allowed_{$key}_base),NoOp(Permission verified: \${USER_ROLE})\n";
             }
             $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} 1 &)\n";
             $conf .= " same => n,Answer()\n";
@@ -135,7 +135,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
-                $conf .= " same => n(allowed_{$key}_pat),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+                $conf .= " same => n(allowed_{$key}_pat),NoOp(Permission verified: \${USER_ROLE})\n";
             }
             $conf .= " same => n,Set(REASON_ID=\${EXTEN:{$prefix_len}})\n";
             $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} \${REASON_ID} &)\n";
@@ -158,7 +158,7 @@ function __syncFeatureCodesBody() {
             $conf .= " same => n,Answer()\n";
             $conf .= " same => n,Playback(beep)\n";
             $conf .= " same => n,Hangup()\n";
-            $conf .= " same => n(allowed_{$key}),NoOp(Yetki dogrulandi: \${USER_ROLE})\n";
+            $conf .= " same => n(allowed_{$key}),NoOp(Permission verified: \${USER_ROLE})\n";
         }
 
         switch ($key) {

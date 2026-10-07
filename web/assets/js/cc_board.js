@@ -105,10 +105,10 @@ function renderWaitingCalls(calls, queueFilter) {
         filtered = calls.filter(c => c.queue === queueFilter);
     }
 
-    if (badge) badge.innerText = filtered.length + ' Çağrı Bekliyor';
+    if (badge) badge.innerText = __('js.cc.waiting_count', filtered.length);
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> Kuyruklarda bekleyen çağrı bulunmuyor.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted u-p-24"><i class="fas fa-check-circle" style="color: var(--success); margin-right: 6px;"></i> ' + __('js.cc.no_waiting_queues') + '</td></tr>';
         return;
     }
 
@@ -120,10 +120,10 @@ function renderWaitingCalls(calls, queueFilter) {
                     <i class="fas fa-phone-alt" style="color: var(--danger); margin-right: 6px;"></i> ${escapeHtml(c.caller)}
                 </td>
                 <td><span class="badge badge-info">${escapeHtml(c.queue_title || c.queue)}</span></td>
-                <td style="font-weight: 700; color: var(--warning); font-family: monospace;">${escapeHtml(c.wait_time)} sn</td>
+                <td style="font-weight: 700; color: var(--warning); font-family: monospace;">${escapeHtml(c.wait_time)} ${__('js.common.sec')}</td>
                 <td class="text-right">
                     <button class="btn btn-success btn-sm" onclick="pickupCall('${escapeHtml(c.channel)}')" style="font-weight: 600; padding: 4px 8px; font-size: 12px;">
-                        <i class="fas fa-hand-holding-medical"></i> Çağrıyı Al
+                        <i class="fas fa-hand-holding-medical"></i> ${__('js.cc.pickup')}
                     </button>
                 </td>
             </tr>
@@ -145,31 +145,31 @@ function renderAgentsStatus(agents, queueFilter) {
     if (countBadge) countBadge.innerText = filtered.length + ' Temsilci';
 
     if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="' + (CAN_SPY ? 5 : 4) + '" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> Tanımlı kuyruk temsilcisi bulunamadı.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + (CAN_SPY ? 5 : 4) + '" class="text-center text-muted u-p-24"><i class="fas fa-info-circle" style="margin-right: 6px;"></i> ' + __('js.cc.no_agents') + '</td></tr>';
         return;
     }
 
     let html = '';
     filtered.forEach(a => {
-        let statusBadge = '<span class="badge badge-secondary">Çevrimdışı</span>';
+        let statusBadge = '<span class="badge badge-secondary">' + __('js.cc.offline') + '</span>';
         let detail = '-';
 
         if (a.is_in_call) {
-            statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone"></i> Görüşmede</span>';
+            statusBadge = '<span class="badge badge-danger"><i class="fas fa-phone"></i> ' + __('js.cc.in_call') + '</span>';
             const partner = a.connected_number || a.call_partner;
             const dur = a.duration_formatted ? ` <span class="badge badge-secondary" style="font-family: monospace; font-size: 10px; margin-left: 4px;">${escapeHtml(a.duration_formatted)}</span>` : '';
-            detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : 'Görüşmede';
+            detail = partner ? `<span style="color: var(--danger); font-weight: 700;"><i class="fas fa-phone-volume"></i> ${escapeHtml(partner)}</span>${dur}` : __('js.cc.in_call');
         } else if (a.is_ringing) {
             // The phone is ringing: the call has not started yet, no listen buttons.
-            statusBadge = '<span class="badge badge-info"><i class="fas fa-bell"></i> Çalıyor</span>';
-            detail = '<span style="color: var(--info, #0ea5e9); font-weight: 600;">Çağrı çalıyor</span>';
+            statusBadge = '<span class="badge badge-info"><i class="fas fa-bell"></i> ' + __('js.cc.ringing') + '</span>';
+            detail = '<span style="color: var(--info, #0ea5e9); font-weight: 600;">' + __('js.cc.call_ringing') + '</span>';
         } else if (a.is_paused) {
-            statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> Molada</span>';
-            detail = `<span class="u-warning u-fw-600">${escapeHtml(a.pause_reason || 'Mola')}</span>`;
+            statusBadge = '<span class="badge badge-warning"><i class="fas fa-pause"></i> ' + __('js.cc.paused') + '</span>';
+            detail = `<span class="u-warning u-fw-600">${escapeHtml(a.pause_reason || __('js.cc.break'))}</span>`;
             if (a.pause_duration) detail += ` (${escapeHtml(a.pause_duration)})`;
         } else if (a.is_logged_in) {
-            statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> Boşta</span>';
-            detail = '<span style="color: var(--success); font-weight: 500;">Çağrı Bekliyor</span>';
+            statusBadge = '<span class="badge badge-success"><i class="fas fa-check"></i> ' + __('js.cc.idle') + '</span>';
+            detail = '<span style="color: var(--success); font-weight: 500;">' + __('js.cc.waiting_for_call') + '</span>';
         }
 
         let actions = '';
@@ -177,9 +177,9 @@ function renderAgentsStatus(agents, queueFilter) {
             const ext = escapeHtml(a.extension);
             actions = `
                 <div style="display: inline-flex; gap: 4px;">
-                    <button class="btn btn-outline-info btn-sm" onclick="spyCall('${ext}', 'spy')" title="Gizli dinle (yalnızca siz duyarsınız)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-headphones"></i> Dinle</button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="spyCall('${ext}', 'whisper')" title="Fısılda (yalnızca temsilci duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-comment-dots"></i> Fısılda</button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="spyCall('${ext}', 'barge')" title="Dahil ol (iki taraf da duyar)" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-users"></i> Dahil Ol</button>
+                    <button class="btn btn-outline-info btn-sm" onclick="spyCall('${ext}', 'spy')" title="${__('js.cc.spy_title')}" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-headphones"></i> ${__('js.cc.spy')}</button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="spyCall('${ext}', 'whisper')" title="${__('js.cc.whisper_title')}" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-comment-dots"></i> ${__('js.cc.whisper')}</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="spyCall('${ext}', 'barge')" title="${__('js.cc.barge_title')}" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-users"></i> ${__('js.cc.barge')}</button>
                 </div>`;
         }
 
@@ -197,8 +197,8 @@ function renderAgentsStatus(agents, queueFilter) {
 }
 
 function spyCall(targetExt, mode) {
-    const modeNames = { spy: 'Gizli Dinleme', whisper: 'Fısıldama', barge: 'Araya Girme' };
-    if (!confirm(`${targetExt} numaralı temsilcinin görüşmesine ${modeNames[mode] || 'Dinleme'} modunda bağlanılsın mı?\nTelefonunuz çaldırılacak.`)) return;
+    const modeNames = { spy: __('js.cc.mode_spy'), whisper: __('js.cc.mode_whisper'), barge: __('js.cc.mode_barge') };
+    if (!confirm(__('js.cc.spy_confirm', targetExt, modeNames[mode] || mode))) return;
 
     fetch('/api/cc.php?action=spy_call', {
         method: 'POST',
@@ -207,13 +207,13 @@ function spyCall(targetExt, mode) {
     })
     .then(res => res.json())
     .then(data => {
-        if (window.showFooterToast) window.showFooterToast(data.success ? data.message : (data.error || 'İşlem başlatılamadı'), data.success ? 'success' : 'error');
+        if (window.showFooterToast) window.showFooterToast(data.success ? data.message : (data.error || __('js.cc.action_failed')), data.success ? 'success' : 'error');
     })
-    .catch(e => { if (window.showFooterToast) window.showFooterToast('İstek gönderilemedi: ' + e, 'error'); });
+    .catch(e => { if (window.showFooterToast) window.showFooterToast('' + __('js.cc.request_failed') + '' + e, 'error'); });
 }
 
 function pickupCall(channel) {
-    if (!confirm('Bu çağrıyı kendi telefonunuza çekmek/almak istediğinize emin misiniz?')) return;
+    if (!confirm(__('js.cc.pickup_confirm'))) return;
 
     fetch('/api/cc.php?action=pickup_call', {
         method: 'POST',
@@ -226,7 +226,7 @@ function pickupCall(channel) {
             if (window.showFooterToast) window.showFooterToast(data.message, 'success');
             loadAllBoardData();
         } else {
-            if (window.showFooterToast) window.showFooterToast(data.error || 'Çağrı alınamadı', 'error');
+            if (window.showFooterToast) window.showFooterToast(data.error || __('js.cc.pickup_failed'), 'error');
         }
     });
 }
@@ -241,8 +241,7 @@ function updateBoardClock() {
         clockEl.innerText = hh + ':' + mm;
     }
     if (dayEl) {
-        const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-        dayEl.innerText = days[now.getDay()];
+        dayEl.innerText = now.toLocaleDateString(document.documentElement.lang || undefined, { weekday: 'short' });
     }
 }
 

@@ -3,7 +3,7 @@
  */
 function openCreateHangupModal() {
     const title = document.getElementById('hangupModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Çağrı Sonlandırma Seçeneği Ekle';
+    if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.end_call.new_title') + '';
 
     document.getElementById('modal_hangup_id').value = '';
     const keyEl = document.getElementById('modal_action_key');
@@ -28,7 +28,7 @@ function openEditHangupModal(item) {
     if (!item) return;
 
     const title = document.getElementById('hangupModalTitle');
-    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Sonlandırma Seçeneği Düzenle: ' + escapeHtml(item.title || '');
+    if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.end_call.edit_title') + '' + escapeHtml(item.title || '');
 
     document.getElementById('modal_hangup_id').value = item.id || '';
     const keyEl = document.getElementById('modal_action_key');

@@ -87,7 +87,7 @@ const UIHelper = {
             }).then(r => r.json()).then(res => {
                 if (!res.success) throw new Error(res.error || 'save failed');
             }).catch(err => {
-                alert('Sıralama kaydedilemedi: ' + err.message);
+                alert(__('js.ui.order_save_failed') + err.message);
                 location.reload();
             });
         });
@@ -137,7 +137,7 @@ const UIHelper = {
     /**
      * Standardized Delete Confirmation
      */
-    confirmDelete(msg = 'Bu kaydi silmek istediginize emin misiniz?', onConfirm) {
+    confirmDelete(msg = __('js.ui.delete_confirm'), onConfirm) {
         if (confirm(msg)) {
             if (typeof onConfirm === 'function') onConfirm();
         }
@@ -284,7 +284,7 @@ function executeDirectPendingSync(event) {
 
     const originalContent = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">' + (window.LANG_APPLYING || 'Uygulanıyor...') + '</span>';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">' + (window.LANG_APPLYING || __('js.ui.applying')) + '</span>';
 
     fetch('/api/pending_sync.php', {
         method: 'POST',
@@ -301,7 +301,7 @@ function executeDirectPendingSync(event) {
 
         if (data.success) {
             if (typeof showFooterToast === 'function') {
-                showFooterToast(data.message || 'Değişiklikler başarıyla Asterisk\'e uygulandı.', 'success');
+                showFooterToast(data.message || __('js.ui.applied'), 'success');
             }
             // Success: hide the badges in the header and sidebar, reset the counters
             const headerContainer = document.getElementById('header-pending-sync-container');
@@ -330,7 +330,7 @@ function executeDirectPendingSync(event) {
             }
         } else {
             if (typeof showFooterToast === 'function') {
-                showFooterToast(data.error || 'Uygulama sırasında hata oluştu.', 'danger');
+                showFooterToast(data.error || __('js.ui.apply_failed'), 'danger');
             }
         }
     })
@@ -339,7 +339,7 @@ function executeDirectPendingSync(event) {
         btn.innerHTML = originalContent;
         console.error('Pending sync apply error:', err);
         if (typeof showFooterToast === 'function') {
-            showFooterToast('Bağlantı hatası: ' + err.message, 'danger');
+            showFooterToast('' + __('js.common.connection_error_colon') + '' + err.message, 'danger');
         }
     });
 }

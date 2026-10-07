@@ -121,7 +121,7 @@ function buildDndCfCheckLines($ext, $db) {
         return [
             'terminal' => true,
             'lines' => [
-                " same => n,NoOp(DND aktif - {$ext})",
+                " same => n,NoOp(DND on - {$ext})",
                 " same => n,Hangup(17)"
             ]
         ];
@@ -132,7 +132,7 @@ function buildDndCfCheckLines($ext, $db) {
         return [
             'terminal' => true,
             'lines' => [
-                " same => n,NoOp(Cagri Yonlendirme aktif - {$ext} -> {$cf_target})",
+                " same => n,NoOp(Call forwarding on - {$ext} -> {$cf_target})",
                 " same => n,Goto(from-internal-pbx,{$cf_target},1)"
             ]
         ];
@@ -186,7 +186,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         return [
             'terminal' => true,
             'lines' => [
-                " same => n,NoOp(DND aktif - {$ext})",
+                " same => n,NoOp(DND on - {$ext})",
                 " same => n,Hangup(17)"
             ]
         ];
@@ -213,10 +213,10 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     // 3. Always (unconditional) forwarding
     if ($cfAlways !== '') {
-        $lines[] = " same => n,NoOp(Her Zaman Yonlendirme aktif - {$ext} -> {$cfAlways})";
+        $lines[] = " same => n,NoOp(Unconditional forwarding on - {$ext} -> {$cfAlways})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfAlways},1)";
-        $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Cagri Yonlendirme Dongusu Engellendi - {$ext})";
+        $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Call forwarding loop blocked - {$ext})";
         $lines[] = " same => n,Hangup(17)";
         return [
             'terminal' => true,
@@ -277,7 +277,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,GotoIf(\$[\"\${C_MOB}\" != \"\"]?lbl_has_mob_{$lbl})";
         $lines[] = " same => n,Set(PUSH_WAIT=\$[0\${PUSH_WAIT} - 1])";
         $lines[] = " same => n,Goto(push_loop_{$lbl})";
-        $lines[] = " same => n(lbl_has_mob_{$lbl}),NoOp(Mobil cihaz kontrolu tamamlandi)";
+        $lines[] = " same => n(lbl_has_mob_{$lbl}),NoOp(Mobile device check done)";
     }
 
     $lines[] = " same => n,Set(DIAL_CONTACTS=\${C_SIP}\${IF(\$[\"\${C_SIP}\" != \"\" & \"\${C_WEB}\" != \"\"]?&)}\${C_WEB})";
@@ -296,7 +296,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     // 6. Busy
     $lines[] = " same => n(lbl_busy_{$lbl}),NoOp(Extension {$ext} busy - DIALSTATUS=\${DIALSTATUS})";
     if ($cfBusy !== '') {
-        $lines[] = " same => n,NoOp(Mesgulken Yonlendirme aktif - {$ext} -> {$cfBusy})";
+        $lines[] = " same => n,NoOp(Forward on busy on - {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_busy'])) {
@@ -310,7 +310,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     // 7. No answer
     $lines[] = " same => n(lbl_noans_{$lbl}),NoOp(Extension {$ext} no answer - DIALSTATUS=\${DIALSTATUS})";
     if ($cfNoAnswer !== '') {
-        $lines[] = " same => n,NoOp(Cevapsizken Yonlendirme aktif - {$ext} -> {$cfNoAnswer})";
+        $lines[] = " same => n,NoOp(Forward on no answer on - {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_noanswer'])) {
@@ -324,11 +324,11 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     // 8. Unreachable / offline
     $lines[] = " same => n(lbl_unavail_{$lbl}),NoOp(Extension {$ext} has no registered device or is unreachable)";
     if ($cfNoAnswer !== '') {
-        $lines[] = " same => n,NoOp(Ulasilamadi -> Cevapsizken Yonlendirme: {$ext} -> {$cfNoAnswer})";
+        $lines[] = " same => n,NoOp(Unreachable -> forward on no answer: {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
     } elseif ($cfBusy !== '') {
-        $lines[] = " same => n,NoOp(Ulasilamadi -> Mesgulken Yonlendirme: {$ext} -> {$cfBusy})";
+        $lines[] = " same => n,NoOp(Unreachable -> forward on busy: {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
         $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && (!empty($u['vm_on_unavail']) || !empty($u['vm_on_noanswer']))) {
@@ -341,7 +341,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     // 9. Loop-prevention exit
     if ($hasAnyCf) {
-        $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Cagri Yonlendirme Dongusu Engellendi - {$ext})";
+        $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Call forwarding loop blocked - {$ext})";
         $lines[] = " same => n,Hangup(17)";
     }
 

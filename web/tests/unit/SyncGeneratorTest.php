@@ -232,7 +232,7 @@ final class SyncGeneratorTest extends TestCase
             $this->assertStringContainsString('Dial(${DIAL_CONTACTS},15,tTb(sub-callee-jb^s^1))', $conf);
             $this->assertStringContainsString('Goto(from-internal-pbx,7004,1)', $conf);
             $this->assertStringContainsString('Goto(from-internal-pbx,05551234567,1)', $conf);
-            $this->assertStringContainsString('Cagri Yonlendirme Dongusu Engellendi - 7003', $conf);
+            $this->assertStringContainsString('Call forwarding loop blocked - 7003', $conf);
         } finally {
             $db->prepare("DELETE FROM sys_users WHERE extension = '7003'")->execute();
         }

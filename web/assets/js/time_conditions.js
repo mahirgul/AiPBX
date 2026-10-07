@@ -22,7 +22,7 @@ function switchTcTab(tabName) {
 }
 
 function openCreateTcModal() {
-    document.getElementById('tcModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Zaman Koşulu Ekle';
+    document.getElementById('tcModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.tc.new_title') + '';
     document.getElementById('modal_tc_id').value = '0';
     document.getElementById('modal_title').value = '';
     var inEl = document.getElementById('modal_internal_number');
@@ -51,7 +51,7 @@ function openCreateTcModal() {
 function openEditTcModal(tc) {
     if (!tc) return;
 
-    document.getElementById('tcModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Zaman Koşulu Düzenle #' + tc.id;
+    document.getElementById('tcModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.tc.edit_title') + '' + tc.id;
     document.getElementById('modal_tc_id').value = tc.id;
     document.getElementById('modal_title').value = tc.title || '';
     var inEl = document.getElementById('modal_internal_number');
@@ -145,11 +145,11 @@ function addTcRuleRow(ruleData = null) {
 
             <div style="flex: 1.5;">
                 <select name="rules[${idx}][match_dest_id]" id="rule_m_id_${idx}" class="form-control" style="font-size: 13px; padding: 5px 10px; height: 36px;">
-                    <option value="">Yükleniyor...</option>
+                    <option value="">${__('js.common.loading')}</option>
                 </select>
             </div>
 
-            <button type="button" class="btn btn-danger btn-sm" onclick="removeTcRuleRow(${idx})" title="Kuralı Sil" style="padding: 6px 12px; height: 36px;">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeTcRuleRow(${idx})" title="${__('js.tc.delete_rule')}" style="padding: 6px 12px; height: 36px;">
                 <i class="fas fa-trash-alt"></i>
             </button>
         </div>
@@ -166,7 +166,7 @@ function addTcRuleRow(ruleData = null) {
 function removeTcRuleRow(idx) {
     const rows = document.querySelectorAll('.tc-rule-card');
     if (rows.length <= 1) {
-        alert('En az bir zaman grubu kuralı olmak zorundadır!');
+        alert(__('js.tc.need_rule'));
         return;
     }
     const row = document.getElementById('rule_row_' + idx);
@@ -179,7 +179,7 @@ function closeTcModal() {
 
 /* Time Group Modal Handlers */
 function openCreateTgModal() {
-    document.getElementById('tgModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> Yeni Zaman Grubu Ekle';
+    document.getElementById('tgModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.tc.new_group_title') + '';
     document.getElementById('modal_tg_id').value = '0';
     document.getElementById('modal_tg_title').value = '';
     document.getElementById('modal_tg_time_start').value = '08:30';
@@ -203,7 +203,7 @@ function openCreateTgModal() {
 function openEditTgModal(tg) {
     if (!tg) return;
 
-    document.getElementById('tgModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> Zaman Grubu Düzenle #' + tg.id;
+    document.getElementById('tgModalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.tc.edit_group_title') + '' + tg.id;
     document.getElementById('modal_tg_id').value = tg.id;
     document.getElementById('modal_tg_title').value = tg.title || '';
     document.getElementById('modal_tg_time_start').value = (tg.time_start || '08:30:00').substring(0, 5);

@@ -28,7 +28,7 @@ function switchMyPhoneTab(tabName) {
 }
 
 function deleteVoicemailMessage(msgId) {
-    if (!confirm('Bu sesli mesajı silmek istediğinizden emin misiniz?')) return;
+    if (!confirm(__('js.my_phone.vm_delete_confirm'))) return;
     const form = new FormData();
     form.append('csrf_token', window.CSRF_TOKEN);
     form.append('action', 'delete');
@@ -41,10 +41,10 @@ function deleteVoicemailMessage(msgId) {
             if (data.success) {
                 location.reload();
             } else {
-                alert(data.error || 'Silinemedi');
+                alert(data.error || __('js.common.delete_failed'));
             }
         })
-        .catch(() => alert('Bağlantı hatası'));
+        .catch(() => alert(__('js.common.connection_error')));
 }
 
 function setMyPhoneFilter(filterVal) {
@@ -65,7 +65,7 @@ function callTargetNumber(number) {
     if (typeof headerPhoneMakeCall === "function") {
         headerPhoneMakeCall();
     } else {
-        alert("WebRTC Softphone başlatılamadı.");
+        alert(__('js.my_phone.webrtc_failed'));
     }
 }
 
@@ -87,7 +87,7 @@ function copySipPassword() {
     if (!passInput || !passInput.value) return;
     navigator.clipboard.writeText(passInput.value).then(function() {
         if (window.showFooterToast) {
-            showFooterToast("SIP parolası panoya kopyalandı!", "success");
+            showFooterToast(__('js.my_phone.sip_copied'), "success");
         }
     });
 }
@@ -138,7 +138,7 @@ function generateNewQrCode() {
     const successAlert = document.getElementById("qrSuccessAlert");
 
     if (spinner) {
-        spinner.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i> QR Kod üretiliyor...';
+        spinner.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i> ' + __('js.my_phone.qr_generating') + '';
         spinner.style.display = "block";
     }
     if (svgWrapper) {
@@ -165,18 +165,18 @@ function generateNewQrCode() {
             _qrToken = data.qr_token;
             if (spinner) spinner.style.display = "none";
             if (svgWrapper) {
-                svgWrapper.innerHTML = '<img src="' + data.qr_data_uri + '" alt="QR Kodu" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
+                svgWrapper.innerHTML = '<img src="' + data.qr_data_uri + '" alt="' + __('js.my_phone.qr_alt') + '" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
                 svgWrapper.style.display = "block";
             }
             _qrSecondsLeft = data.expires_in || 600;
             startQrCountdown();
             startQrPolling();
         } else {
-            if (spinner) spinner.innerHTML = '<span class="u-danger">' + (data.error || "QR kod üretilemedi") + '</span>';
+            if (spinner) spinner.innerHTML = '<span class="u-danger">' + (data.error || __('js.my_phone.qr_failed')) + '</span>';
         }
     })
     .catch(err => {
-        if (spinner) spinner.innerHTML = '<span class="u-danger">Bağlantı hatası: ' + err.message + '</span>';
+        if (spinner) spinner.innerHTML = '<span class="u-danger">' + __('js.common.connection_error_colon') + '' + err.message + '</span>';
     });
 }
 
@@ -187,7 +187,7 @@ function startQrCountdown() {
     function update() {
         if (_qrSecondsLeft <= 0) {
             clearInterval(_qrTimer);
-            if (el) el.textContent = "Süresi doldu";
+            if (el) el.textContent = __('js.my_phone.expired');
             const svgWrapper = document.getElementById("qrSvgWrapper");
             if (svgWrapper) svgWrapper.style.opacity = "0.25";
             return;
@@ -213,12 +213,12 @@ function startQrPolling() {
                 clearInterval(_qrTimer);
                 const alertEl = document.getElementById("qrSuccessAlert");
                 const devEl = document.getElementById("qrPairedDevice");
-                if (devEl) devEl.textContent = res.data.device_name || "Mobil Cihaz";
+                if (devEl) devEl.textContent = res.data.device_name || __('js.my_phone.mobile_device');
                 if (alertEl) alertEl.style.display = "block";
                 const svgWrapper = document.getElementById("qrSvgWrapper");
                 if (svgWrapper) svgWrapper.style.opacity = "0.35";
                 if (window.showFooterToast) {
-                    showFooterToast("Mobil cihaz başarıyla eşleştirildi!", "success");
+                    showFooterToast(__('js.my_phone.paired'), "success");
                 }
             }
         })
@@ -244,7 +244,7 @@ function initMyPhone() {
         const txt = document.getElementById("my-phone-webrtc-text");
         if (!txt) return;
         if (typeof headerSipRegistered !== "undefined" && headerSipRegistered) {
-            txt.textContent = "Çevrimiçi";
+            txt.textContent = __('js.my_phone.online');
             txt.style.color = "var(--success)";
         }
     }

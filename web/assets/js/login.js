@@ -34,9 +34,9 @@ function arrayBufferToBase64(buffer) {
 async function loginWithPasskey() {
     if (!window.PublicKeyCredential) {
         if (window.notify) {
-            window.notify.warning("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
+            window.notify.warning(__('js.login.passkey_unsupported'));
         } else {
-            alert("Tarayıcınız Passkey (WebAuthn) standardını desteklemiyor.");
+            alert(__('js.login.passkey_unsupported'));
         }
         return;
     }
@@ -44,13 +44,13 @@ async function loginWithPasskey() {
     const btn = document.getElementById('btnPasskeyLogin');
     const origHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Doğrulanıyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.login.verifying') + '';
 
     try {
         const optRes = await fetch('/api/passkey.php?action=auth-options');
         const optData = await optRes.json();
         if (!optData.success) {
-            throw new Error(optData.error || 'Passkey seçenekleri alınamadı.');
+            throw new Error(optData.error || __('js.login.passkey_options_failed'));
         }
 
         const getArgs = optData.options;
@@ -70,7 +70,7 @@ async function loginWithPasskey() {
 
         const assertion = await navigator.credentials.get({ publicKey: getArgs });
         if (!assertion) {
-            throw new Error('Passkey doğrulaması iptal edildi.');
+            throw new Error(__('js.login.passkey_cancelled'));
         }
 
         const payload = {
@@ -91,24 +91,24 @@ async function loginWithPasskey() {
 
         if (verifyData.success) {
             try {
-                if (window.notify) window.notify.success("Passkey doğrulandı! Giriş yapılıyor...");
+                if (window.notify) window.notify.success(__('js.login.passkey_ok'));
             } catch (e) {
                 console.warn(e);
             }
             window.location.href = verifyData.redirect || '/dashboard';
         } else {
-            throw new Error(verifyData.error || 'Passkey doğrulanamadı.');
+            throw new Error(verifyData.error || __('js.login.passkey_not_verified'));
         }
     } catch (err) {
         console.error(err);
         try {
             if (window.notify) {
-                window.notify.error(err.message || 'Passkey doğrulaması başarısız.');
+                window.notify.error(err.message || __('js.login.passkey_failed'));
             } else {
-                alert(err.message || 'Passkey doğrulaması başarısız.');
+                alert(err.message || __('js.login.passkey_failed'));
             }
         } catch (e) {
-            alert(err.message || 'Passkey doğrulaması başarısız.');
+            alert(err.message || __('js.login.passkey_failed'));
         }
     } finally {
         btn.disabled = false;

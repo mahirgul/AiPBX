@@ -20,8 +20,8 @@ function playCdrAudio(cdrId, callerNum, dateTime) {
     const modalEl = document.getElementById('cdrAudioModal');
     const loadingEl = document.getElementById('cdrWaveformLoading');
 
-    if (titleEl) titleEl.innerText = 'Görüşme Kaydı #' + cdrId;
-    if (infoEl) infoEl.innerText = 'Arayan: ' + callerNum + ' | ' + dateTime;
+    if (titleEl) titleEl.innerText = __('js.cdr.recording_title') + cdrId;
+    if (infoEl) infoEl.innerText = __('js.cdr.caller') + callerNum + ' | ' + dateTime;
     if (dlLink) dlLink.href = '/api/cc_audio.php?id=' + cdrId + '&download=1';
     
     if (modalEl) modalEl.classList.add('active');

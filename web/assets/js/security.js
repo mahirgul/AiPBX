@@ -12,7 +12,7 @@ function copySecretKey() {
 
 function copyRecoveryCodes() {
     if (!RECOVERY_CODES || !RECOVERY_CODES.length) return;
-    const text = "AiPBX Yedek Kurtarma Kodları:\n" + RECOVERY_CODES.join("\n");
+    const text = __('js.sec.codes_title') + ":\n" + RECOVERY_CODES.join("\n");
     navigator.clipboard.writeText(text).then(() => {
         if (window.notify) window.notify.success(window.SECURITY_PAGE.i18n.codes_copied);
     });
@@ -20,9 +20,9 @@ function copyRecoveryCodes() {
 
 function downloadRecoveryCodes() {
     if (!RECOVERY_CODES || !RECOVERY_CODES.length) return;
-    const content = "AiPBX Yedek Kurtarma Kodları (" + new Date().toLocaleString() + ")\n"
+    const content = __('js.sec.codes_title') + " (" + new Date().toLocaleString() + ")\n"
                   + "====================================================\n"
-                  + "Her kod yalnızca BİR KEZ kullanılabilir:\n\n"
+                  + __('js.sec.codes_once') + ":\n\n"
                   + RECOVERY_CODES.map((c, i) => (i + 1) + ". " + c).join("\n") + "\n";
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
@@ -87,7 +87,7 @@ async function registerNewPasskey() {
 
     const deviceName = prompt(
         window.SECURITY_PAGE.i18n.prompt_device_name,
-        "Passkey (" + (navigator.platform || 'Cihaz') + ")"
+        "Passkey (" + (navigator.platform || __('js.sec.device')) + ")"
     );
     if (deviceName === null) return; // cancelled
 
@@ -96,7 +96,7 @@ async function registerNewPasskey() {
         const optRes = await fetch('/api/passkey.php?action=register-options');
         const optData = await optRes.json();
         if (!optData.success) {
-            alert("Hata: " + (optData.error || "Seçenekler alınamadı"));
+            alert(__('js.common.error_colon') + (optData.error || __('js.sec.options_failed')));
             return;
         }
 
@@ -119,7 +119,7 @@ async function registerNewPasskey() {
         // 2. Create the biometric / security key in the browser
         const credential = await navigator.credentials.create({ publicKey: makeArgs });
         if (!credential) {
-            alert("Passkey oluşturulamadı.");
+            alert(__('js.sec.passkey_create_failed'));
             return;
         }
 
@@ -143,11 +143,11 @@ async function registerNewPasskey() {
             if (window.notify) window.notify.success(window.SECURITY_PAGE.i18n.passkey_added_success);
             setTimeout(() => window.location.reload(), 800);
         } else {
-            alert("Hata: " + (verifyData.error || "Passkey doğrulanamadı."));
+            alert(__('js.common.error_colon') + (verifyData.error || __('js.login.passkey_not_verified')));
         }
     } catch (err) {
         console.error(err);
-        alert("Passkey işlemi iptal edildi veya bir hata oluştu: " + err.message);
+        alert(__('js.sec.passkey_aborted') + err.message);
     }
 }
 
@@ -171,10 +171,10 @@ async function deletePasskey(passkeyId, deviceName) {
             if (window.notify) window.notify.success(window.SECURITY_PAGE.i18n.passkey_deleted_success);
             setTimeout(() => window.location.reload(), 800);
         } else {
-            alert("Hata: " + (data.error || "Passkey silinemedi."));
+            alert(__('js.common.error_colon') + (data.error || __('js.sec.passkey_delete_failed')));
         }
     } catch (err) {
         console.error(err);
-        alert("Bir hata oluştu: " + err.message);
+        alert(__('js.common.error_occurred') + err.message);
     }
 }
