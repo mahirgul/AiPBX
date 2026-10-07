@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.2.0
+
+Mobile apps in English by default, with Turkish selectable.
+
+**Android and iOS apps**
+- The apps open in English by default — also on a Turkish phone — until
+  Turkish is picked. Pick the language on the server / login screen
+  (🌐 English / Türkçe) or in Settings; it is kept after signing out.
+- Android: switching applies at once; Android 13+ also lists English and
+  Turkish in the phone's per-app language settings. Every text of the app
+  (about 380) is translated, including notifications and error messages.
+- iOS: switching rebuilds the screens at once, no restart. Permission texts
+  (microphone, camera, photos) follow the phone's language, as iOS requires.
+- Error messages that come from the server are shown as the server sends
+  them.
+
 ## 1.1.0
 
 Installation fixes and Asterisk sound packs. Supported system: Ubuntu 26.04 LTS.
