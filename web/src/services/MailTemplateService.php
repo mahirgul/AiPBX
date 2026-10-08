@@ -226,6 +226,9 @@ class MailTemplateService
         foreach ($root->childNodes as $child) {
             $out .= $doc->saveHTML($child);
         }
+        // Some libxml/PHP versions (PHP 8.4 in CI) write href="{reset_link}"
+        // as href="%7Breset_link%7D", and the value was then never filled in.
+        $out = preg_replace('/href="%7B([a-z_]+)%7D"/i', 'href="{$1}"', $out);
         return trim($out);
     }
 
