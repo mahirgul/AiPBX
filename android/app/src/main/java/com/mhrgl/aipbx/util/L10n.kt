@@ -37,6 +37,7 @@ object L10n {
         "es" to "Español",
         "fi" to "Suomi",
         "fr" to "Français",
+        "hr" to "Hrvatski",
         "hu" to "Magyar",
         "it" to "Italiano",
         "nb" to "Norsk bokmål",

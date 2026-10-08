@@ -12,6 +12,7 @@
     <locale android:name="es" />
     <locale android:name="fi" />
     <locale android:name="fr" />
+    <locale android:name="hr" />
     <locale android:name="hu" />
     <locale android:name="it" />
     <locale android:name="nb" />
