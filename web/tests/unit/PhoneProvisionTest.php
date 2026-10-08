@@ -158,6 +158,144 @@ final class PhoneProvisionTest extends TestCase
         $this->assertStringContainsString('Fkey3 Type :0', $out);
     }
 
+    /** A display name that tries to break out of the XML value. */
+    private const HOSTILE_NAME = "Ali\" x=\"1\"<b>&\nx";
+
+    /** Keys used by the phase 2 vendor tests: line, BLF, speed dial, DND and a module key. */
+    private function phase2Keys(): array
+    {
+        return [
+            ['page' => 0, 'position' => 1, 'type' => 'line', 'target' => '', 'label' => ''],
+            ['page' => 0, 'position' => 2, 'type' => 'blf', 'target' => '1002', 'label' => 'Mehmet'],
+            ['page' => 0, 'position' => 3, 'type' => 'dnd', 'target' => '', 'label' => 'DND'],
+            ['page' => 1, 'position' => 1, 'type' => 'speeddial', 'target' => '05551234567', 'label' => 'Mobile'],
+        ];
+    }
+
+    private function hostileContext(string $model): array
+    {
+        $ctx = $this->context($model, $this->phase2Keys());
+        $ctx['display_name'] = self::HOSTILE_NAME;
+        return $ctx;
+    }
+
+    public function testSnomRendersXmlAccountAndKeys(): void
+    {
+        $out = (new SnomTemplate())->render($this->hostileContext('snom-d785'));
+        $xml = simplexml_load_string($out);
+        $this->assertNotFalse($xml, 'valid XML');
+        $ps = $xml->{'phone-settings'};
+        $this->assertSame(self::EXT, (string) $ps->user_name);
+        $this->assertSame(self::$sipPassword, (string) $ps->user_pass);
+        $this->assertSame('pbx.test.example', (string) $ps->user_host);
+        $this->assertSame('*97', (string) $ps->user_mailbox);
+        $this->assertSame('optional', (string) $ps->user_savp);
+        $this->assertSame('10800', (string) $ps->utc_offset);
+        $this->assertSame(self::$adminPassword, (string) $ps->admin_mode_password);
+        // The hostile name stays one value (quotes, tags, & and the line break do nothing).
+        $this->assertSame('Ali" x="1"<b>&x', (string) $ps->user_realname);
+
+        $keys = [];
+        foreach ($xml->functionKeys->fkey as $k) {
+            $keys[(int) $k['idx']] = ['label' => (string) $k['label'], 'value' => (string) $k];
+        }
+        $this->assertSame('line', $keys[0]['value']);
+        $this->assertSame('blf <sip:1002@pbx.test.example>|*21', $keys[1]['value']);
+        $this->assertSame('Mehmet', $keys[1]['label']);
+        $this->assertSame('keyevent F_DND', $keys[2]['value']);
+        $this->assertSame('none', $keys[3]['value']);
+        // D785: 24 phone keys, the first D7 module key is idx 24.
+        $this->assertSame('speed 05551234567', $keys[24]['value']);
+        $this->assertCount(24 + 18 * 3, $keys);
+    }
+
+    public function testCiscoSpaRendersFlatProfile(): void
+    {
+        $ctx = $this->hostileContext('cisco-spa508g');
+        $ctx['keys'][] = ['page' => 0, 'position' => 4, 'type' => 'blf', 'target' => '1003', 'label' => 'a;fnc=dnd'];
+        $out = (new CiscoSpaTemplate())->render($ctx);
+        $xml = simplexml_load_string($out);
+        $this->assertNotFalse($xml, 'valid XML');
+        $this->assertSame(self::EXT, (string) $xml->User_ID_1_);
+        $this->assertSame(self::$sipPassword, (string) $xml->Password_1_);
+        $this->assertSame('pbx.test.example:5060', (string) $xml->Proxy_1_);
+        $this->assertSame('UDP', (string) $xml->SIP_Transport_1_);
+        $this->assertSame('*97', (string) $xml->Voice_Mail_Number);
+        $this->assertSame('*21', (string) $xml->Call_Pickup_Code);
+        $this->assertSame('GMT+03:00', (string) $xml->Time_Zone);
+        $this->assertSame('G722', (string) $xml->Preferred_Codec_1_);
+        $this->assertSame('G711a', (string) $xml->Second_Preferred_Codec_1_);
+        $this->assertSame(self::$adminPassword, (string) $xml->Admin_Passwd);
+        $this->assertSame('Ali" x="1"<b>&x', (string) $xml->Display_Name_1_);
+        $this->assertSame('1', (string) $xml->Extension_1_);
+        $this->assertSame('Disabled', (string) $xml->Extension_2_);
+        $this->assertSame('fnc=blf+sd+cp;sub=1002@$PROXY;ext=1002@$PROXY;nme=Mehmet', (string) $xml->Extended_Function_2_);
+        $this->assertSame('fnc=dnd', (string) $xml->Extended_Function_3_);
+        // A label cannot add fields to the function string.
+        $this->assertSame('fnc=blf+sd+cp;sub=1003@$PROXY;ext=1003@$PROXY;nme=afncdnd', (string) $xml->Extended_Function_4_);
+        $this->assertSame('fnc=sd;ext=05551234567@$PROXY;nme=Mobile', (string) $xml->Unit_1_Key_1_);
+        $this->assertSame('', (string) $xml->Unit_2_Key_32_);
+    }
+
+    public function testPolyRendersMasterAndSettingsFile(): void
+    {
+        $tpl = new PolyTemplate();
+        $ctx = $this->hostileContext('poly-vvx450');
+        $ctx['mac'] = '0004f2aabbcc';
+
+        $master = simplexml_load_string($tpl->renderFile('0004f2aabbcc.cfg', $ctx));
+        $this->assertNotFalse($master);
+        $this->assertSame('phone0004f2aabbcc.cfg', (string) $master['CONFIG_FILES']);
+        $this->assertStringNotContainsString(self::$sipPassword, $tpl->renderFile('0004f2aabbcc.cfg', $ctx));
+
+        $xml = simplexml_load_string($tpl->renderFile('phone0004f2aabbcc.cfg', $ctx));
+        $this->assertNotFalse($xml, 'valid XML');
+        $a = $xml->children()[0]->attributes();
+        $this->assertSame(self::EXT, (string) $a['reg.1.auth.userId']);
+        $this->assertSame(self::$sipPassword, (string) $a['reg.1.auth.password']);
+        $this->assertSame('pbx.test.example', (string) $a['reg.1.server.1.address']);
+        $this->assertSame('UDPOnly', (string) $a['reg.1.server.1.transport']);
+        $this->assertSame('*97', (string) $a['msg.mwi.1.callBack']);
+        $this->assertSame('*21', (string) $a['call.directedCallPickupString']);
+        $this->assertSame('10800', (string) $a['tcpIpApp.sntp.gmtOffset']);
+        $this->assertSame('1', (string) $a['voice.codecPref.G722']);
+        $this->assertSame('0', (string) $a['voice.codecPref.G729_AB']);
+        $this->assertSame(self::$adminPassword, (string) $a['device.auth.localAdminPassword']);
+        $this->assertSame('Ali" x="1"<b>&x', (string) $a['reg.1.displayName']);
+        $this->assertNull($a['x'], 'no attribute injected');
+        $this->assertSame('Line', (string) $a['lineKey.1.category']);
+        $this->assertSame('BLF', (string) $a['lineKey.2.category']);
+        $this->assertSame('1002', (string) $a['attendant.resourceList.1.address']);
+        $this->assertSame('normal', (string) $a['attendant.resourceList.1.type']);
+        $this->assertSame('DND', (string) $a['lineKey.3.category']);
+        $this->assertSame('Unassigned', (string) $a['lineKey.4.category']);
+        // VVX 450: 12 phone keys, the first module key is line key 13.
+        $this->assertSame('BLF', (string) $a['lineKey.13.category']);
+        $this->assertSame('05551234567', (string) $a['attendant.resourceList.2.address']);
+        $this->assertSame('automata', (string) $a['attendant.resourceList.2.type']);
+    }
+
+    public function testPolyServesBothFilesForItsToken(): void
+    {
+        $phone = $this->addPhone('0004f2aabbcc', 'poly-vvx450');
+        $master = PhoneProvisionService::handleRequest($phone['token'], '0004f2aabbcc.cfg', '192.0.2.10', 'PolycomVVX-VVX_450-UA/6.4');
+        $this->assertSame(200, $master['status']);
+        $this->assertStringContainsString('CONFIG_FILES="phone0004f2aabbcc.cfg"', $master['body']);
+        $settings = PhoneProvisionService::handleRequest($phone['token'], 'phone0004f2aabbcc.cfg', '192.0.2.10', 'PolycomVVX-VVX_450-UA/6.4');
+        $this->assertSame(200, $settings['status']);
+        $this->assertStringContainsString('reg.1.auth.password="' . self::$sipPassword . '"', $settings['body']);
+        $this->assertSame(404, PhoneProvisionService::handleRequest($phone['token'], '000000000000.cfg', '192.0.2.10', '')['status']);
+    }
+
+    public function testPhase2VendorsAreGuessedFromUserAgentAndMac(): void
+    {
+        $this->assertSame('snom', PhoneModels::guessVendor('000413aabbcc', ''));
+        $this->assertSame('snom', PhoneModels::guessVendor('aabbccddeeff', 'snomD785/10.1.159.12'));
+        $this->assertSame('cisco', PhoneModels::guessVendor('aabbccddeeff', 'Cisco/SPA504G-7.6.2'));
+        $this->assertSame('poly', PhoneModels::guessVendor('aabbccddeeff', 'PolycomVVX-VVX_450-UA/6.4.0'));
+        $this->assertSame('poly', PhoneModels::guessVendor('0004f2aabbcc', ''));
+    }
+
     public static function fileNames(): array
     {
         return [
@@ -170,6 +308,15 @@ final class PhoneProvisionTest extends TestCase
             ['grandstream', 'cfg.xml', ''],
             ['fanvil', '0c383e445566.cfg', '0c383e445566'],
             ['fanvil', 'f0X4U000.cfg', ''],
+            ['snom', 'snomD785-000413AABBCC.htm', '000413aabbcc'],
+            ['snom', 'snom-000413aabbcc.xml', '000413aabbcc'],
+            ['snom', 'snomD785.htm', ''],
+            ['cisco', 'spa001122334455.xml', '001122334455'],
+            ['cisco', 'spa504G.cfg', ''],
+            ['poly', '0004f2aabbcc.cfg', '0004f2aabbcc'],
+            ['poly', 'phone0004f2aabbcc.cfg', '0004f2aabbcc'],
+            ['poly', '000000000000.cfg', ''],
+            ['poly', '0004f2aabbcc-phone.cfg', ''],
         ];
     }
 
@@ -358,6 +505,17 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('pjsip send notify grandstream-check-cfg endpoint ' . self::EXT2 . '-sip', PhoneProvisionService::notifyCommand((int) $g['id'], false));
         $this->assertFalse(PhoneProvisionService::resync((int) $g['id'], true, 'phones-test-csrf')['success']);
         $this->assertTrue(PhoneProvisionService::resync((int) $y['id'], false, 'phones-test-csrf')['success']);
+
+        $sn = $this->addPhone('000413aabbcc', 'snom-d785');
+        $ci = $this->addPhone('001122334455', 'cisco-spa504g');
+        $po = $this->addPhone('0004f2aabbcc', 'poly-vvx450');
+        $ep = ' endpoint ' . self::EXT . '-sip';
+        $this->assertSame('pjsip send notify snom-check-cfg' . $ep, PhoneProvisionService::notifyCommand((int) $sn['id'], false));
+        $this->assertSame('pjsip send notify snom-reboot' . $ep, PhoneProvisionService::notifyCommand((int) $sn['id'], true));
+        $this->assertSame('pjsip send notify sipura-check-cfg' . $ep, PhoneProvisionService::notifyCommand((int) $ci['id'], false));
+        $this->assertSame('pjsip send notify linksys-cold-restart' . $ep, PhoneProvisionService::notifyCommand((int) $ci['id'], true));
+        $this->assertSame('pjsip send notify polycom-check-cfg' . $ep, PhoneProvisionService::notifyCommand((int) $po['id'], false));
+        $this->assertFalse(PhoneProvisionService::resync((int) $po['id'], true, 'phones-test-csrf')['success']);
 
         // Every notify section the templates use exists in pjsip_notify.conf.
         $conf = (string) file_get_contents(dirname(__DIR__, 3) . '/asterisk-config/pjsip_notify.conf');
