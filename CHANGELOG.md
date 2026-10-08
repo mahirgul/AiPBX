@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.4
+
+- **Translations:** the texts added in 1.6.x (e-mail templates and their
+  editor, voicemail e-mail settings, "Forgot your password?", show/hide
+  password, the sign-in help contact) are in all 23 portal languages (#18).
+  The translations are machine-made; corrections are welcome.
+- E-mail templates: a link to a `{value}` in a template could be saved as
+  `%7Bvalue%7D` with some PHP/libxml versions and was then not filled in.
+
 ## 1.6.3
 
 - **Help contact on the sign-in page** (#13): *Brand settings* has an
