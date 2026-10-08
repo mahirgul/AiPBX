@@ -97,4 +97,28 @@ final class GoogleAuthTest extends TestCase
         $this->assertArrayHasKey('sip', $response);
         $this->assertArrayHasKey('push_config', $response);
     }
+
+    /** #9: the settings were never saved, the query wrote a column sys_settings does not have. */
+    public function testSaveSettingsStoresValues(): void
+    {
+        $db = getDB();
+        $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'google_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        try {
+            $res = GoogleAuthService::saveSettings([
+                'google_oauth_enabled' => '1',
+                'google_client_id' => 'test-client.apps.googleusercontent.com',
+                'google_client_secret' => 'test-secret',
+            ]);
+            $this->assertTrue($res['success'], $res['error'] ?? '');
+            $saved = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'google_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+            $this->assertSame('1', $saved['google_oauth_enabled']);
+            $this->assertSame('test-client.apps.googleusercontent.com', $saved['google_client_id']);
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'google_%'");
+            $ins = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
+            foreach ($before as $k => $v) {
+                $ins->execute([$k, $v]);
+            }
+        }
+    }
 }

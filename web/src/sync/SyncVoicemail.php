@@ -10,7 +10,7 @@ function syncVoicemail() {
 function __syncVoicemailBody() {
     $db = getDB();
     $users = $db->query(
-        "SELECT extension, full_name, email, voicemail_enabled, voicemail_pin, voicemail_email, voicemail_attach_audio 
+        "SELECT extension, full_name, email, voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify, voicemail_attach_audio 
          FROM sys_users 
          WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip'
          ORDER BY extension ASC"
@@ -47,6 +47,10 @@ function __syncVoicemailBody() {
 
         $name = toCleanAscii($u['full_name']);
         $email = trim($u['voicemail_email'] ?? '') ?: trim($u['email'] ?? '');
+        // E-mail notification switched off: no address, Asterisk sends no mail.
+        if (isset($u['voicemail_email_notify']) && intval($u['voicemail_email_notify']) === 0) {
+            $email = '';
+        }
         $attach = (isset($u['voicemail_attach_audio']) && intval($u['voicemail_attach_audio']) === 0) ? 'no' : 'yes';
 
         $conf .= "{$ext} => {$pin},{$name},{$email},,attach={$attach}|saycid=yes|envelope=yes\n";

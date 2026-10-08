@@ -332,7 +332,8 @@ class GoogleAuthService
 
         try {
             $db = getDB();
-            $stmt = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()');
+            // sys_settings has no updated_at column: writing one failed every save (#9).
+            $stmt = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
 
             $stmt->execute(['google_oauth_enabled', $enabled]);
             $stmt->execute(['google_client_id', $clientId]);

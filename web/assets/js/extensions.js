@@ -66,6 +66,10 @@ function openCreateExtensionModal() {
 
     const vmEn = document.getElementById('modal_voicemail_enabled');
     if (vmEn) vmEn.checked = true;
+    const vmNotify = document.getElementById('modal_voicemail_email_notify');
+    if (vmNotify) vmNotify.checked = true;
+    const vmAttach = document.getElementById('modal_voicemail_attach_audio');
+    if (vmAttach) vmAttach.checked = true;
     const vmPin = document.getElementById('modal_voicemail_pin');
     if (vmPin) vmPin.value = '';
     const vmEmail = document.getElementById('modal_voicemail_email');
@@ -115,6 +119,10 @@ function openEditExtensionModal(item) {
 
     const vmEn = document.getElementById('modal_voicemail_enabled');
     if (vmEn) vmEn.checked = (item.voicemail_enabled == 1 || item.voicemail_enabled === undefined);
+    const vmNotify = document.getElementById('modal_voicemail_email_notify');
+    if (vmNotify) vmNotify.checked = (item.voicemail_email_notify === undefined || item.voicemail_email_notify == 1);
+    const vmAttach = document.getElementById('modal_voicemail_attach_audio');
+    if (vmAttach) vmAttach.checked = (item.voicemail_attach_audio === undefined || item.voicemail_attach_audio == 1);
     const vmPin = document.getElementById('modal_voicemail_pin');
     if (vmPin) vmPin.value = item.voicemail_pin || '';
     const vmEmail = document.getElementById('modal_voicemail_email');

@@ -149,4 +149,35 @@ final class MyPhoneCallHistoryTest extends TestCase
         // Each route is also reachable directly (destination "outbound route").
         $this->assertStringContainsString("[outbound-route-{$routeId}]", $content);
     }
+
+    /** #10: a user hides calls from their own list; the CDR rows stay. */
+    public function testHiddenAndClearedCallsLeaveTheListButNotTheCdr(): void
+    {
+        $db = getDB();
+        $ins = $db->prepare("INSERT INTO asteriskcdr
+            (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid, userfield)
+            VALUES (NOW() - INTERVAL ? MINUTE, '\"Alice Temsilci\" <3002>', '3002', '3001', 'from-internal-pbx', 'PJSIP/3002-sip-0003', 'PJSIP/3001-sip-0004', 'Dial', 'PJSIP/3001-sip', 5, 8, 'ANSWERED', ?, ?, '')");
+        foreach ([3 => 'a', 2 => 'b'] as $ago => $k) {
+            $ins->execute([$ago, "test-myphone-hide-$k", "test-myphone-hide-$k"]);
+        }
+        $uid = self::$user1Id;
+        $keys = fn() => array_column(MyPhoneRepository::getRecentCalls('3002', null, null, 50, $uid), 'call_key');
+        try {
+            $this->assertContains('test-myphone-hide-a', $keys());
+
+            $this->assertSame(1, MyPhoneRepository::hideCalls($uid, ['test-myphone-hide-a', "' ;", str_repeat('k', 80)]));
+            $this->assertNotContains('test-myphone-hide-a', $keys());
+            $this->assertContains('test-myphone-hide-b', $keys());
+            // Another user (and the list without a user) still sees everything
+            $this->assertContains('test-myphone-hide-a', array_column(MyPhoneRepository::getRecentCalls('3002', null, null, 50), 'call_key'));
+
+            sleep(1);
+            MyPhoneRepository::clearCallHistory($uid);
+            $this->assertNotContains('test-myphone-hide-b', $keys());
+            $this->assertSame(2, (int)$db->query("SELECT COUNT(*) FROM asteriskcdr WHERE linkedid LIKE 'test-myphone-hide-%'")->fetchColumn());
+        } finally {
+            $db->exec("DELETE FROM sys_call_history_hidden WHERE user_id = $uid");
+            $db->exec("UPDATE sys_users SET call_history_cleared_at = NULL WHERE id = $uid");
+        }
+    }
 }

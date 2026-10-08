@@ -25,6 +25,8 @@ $vmMessages = $voicemailMessages ?? [];
 $vmEnabled = (int)($details['voicemail_enabled'] ?? 1);
 $vmPin = $details['voicemail_pin'] ?? '';
 $vmEmail = $details['voicemail_email'] ?? '';
+$vmNotify = (int)($details['voicemail_email_notify'] ?? 1);
+$vmAccountEmail = trim((string)($details['email'] ?? ''));
 $vmAttach = (int)($details['voicemail_attach_audio'] ?? 1);
 $vmNa = (int)($details['vm_on_noanswer'] ?? 0);
 $vmBusy = (int)($details['vm_on_busy'] ?? 0);
@@ -519,63 +521,6 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <?php endif; ?>
             </div>
 
-            <?php if (!$isFaxUser): ?>
-            <!-- Kart: Sesli Posta -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                    <!-- Sesli Posta (Voicemail) Tercihleri -->
-                    <div class="u-mb-20">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?>
-                            </div>
-                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 12px;">
-                                <input type="checkbox" name="voicemail_enabled" value="1" <?php echo $vmEnabled ? 'checked' : ''; ?> class="u-accent">
-                                <span><?php echo t('my_phone.enabled'); ?></span>
-                            </label>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                            <div class="form-group u-mb-0">
-                                <label class="form-label u-fs-11 u-mb-4"><?php echo t('my_phone.vm_pin'); ?></label>
-                                <input type="password" name="voicemail_pin" value="<?php echo htmlspecialchars($vmPin); ?>" class="form-control form-control-sm u-fs-12" placeholder="<?php echo t('my_phone.vm_pin_placeholder'); ?>">
-                            </div>
-                            <div class="form-group u-mb-0">
-                                <label class="form-label u-fs-11 u-mb-4"><?php echo t('my_phone.vm_email'); ?></label>
-                                <input type="email" name="voicemail_email" value="<?php echo htmlspecialchars($vmEmail); ?>" class="form-control form-control-sm u-fs-12" placeholder="<?php echo t('my_phone.email_placeholder'); ?>">
-                            </div>
-                        </div>
-
-                        <div style="font-size: 11.5px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;"><?php echo t('my_phone.vm_forward_title'); ?></div>
-                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
-                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-                                <input type="checkbox" name="vm_on_noanswer" value="1" <?php echo $vmNa ? 'checked' : ''; ?> class="u-accent">
-                                <span><?php echo t('my_phone.vm_on_noanswer'); ?></span>
-                            </label>
-                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-                                <input type="checkbox" name="vm_on_busy" value="1" <?php echo $vmBusy ? 'checked' : ''; ?> class="u-accent">
-                                <span><?php echo t('my_phone.vm_on_busy'); ?></span>
-                            </label>
-                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-                                <input type="checkbox" name="vm_on_unavail" value="1" <?php echo $vmUnavail ? 'checked' : ''; ?> class="u-accent">
-                                <span><?php echo t('my_phone.vm_on_unavail'); ?></span>
-                            </label>
-                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-                                <input type="checkbox" name="vm_always" value="1" <?php echo $vmAlways ? 'checked' : ''; ?> class="u-accent">
-                                <span><?php echo t('my_phone.vm_always'); ?></span>
-                            </label>
-                        </div>
-                    </div>
-                    <?php if (hasModulePermission('my_phone', 'edit')): ?>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
-                            <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
-                        </button>
-                    <?php else: ?>
-                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
-                            <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
-                        </button>
-                    <?php endif; ?>
-            </div>
-            <?php endif; ?>
             </form>
 
         </div>
@@ -738,15 +683,73 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
+            <!-- Voicemail settings: own form, so saving it never touches the call settings (and back) -->
+            <form method="POST" action="/my-phone" class="card" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                <input type="hidden" name="action" value="save_voicemail">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+                <div class="u-flex-between u-mb-10" style="flex-wrap: wrap; gap: 8px;">
+                    <div class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-sliders-h u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?></div>
+                    <label class="u-flex-center u-fs-12" style="gap: 6px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="voicemail_enabled" value="1" <?php echo $vmEnabled ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.enabled'); ?></span>
+                    </label>
+                </div>
+                <div class="my-phone-vm-grid">
+                    <div class="form-group u-mb-0">
+                        <label class="form-label u-fs-11 u-mb-4"><?php echo t('my_phone.vm_pin'); ?></label>
+                        <input type="password" name="voicemail_pin" value="" autocomplete="new-password" inputmode="numeric" class="form-control form-control-sm u-fs-12" placeholder="<?php echo t('my_phone.vm_pin_keep'); ?>">
+                    </div>
+                    <div class="form-group u-mb-0">
+                        <label class="form-label u-fs-11 u-mb-4"><?php echo t('my_phone.vm_email'); ?></label>
+                        <input type="email" name="voicemail_email" value="<?php echo htmlspecialchars($vmEmail); ?>" class="form-control form-control-sm u-fs-12" placeholder="<?php echo htmlspecialchars($vmAccountEmail !== '' ? $vmAccountEmail : t('my_phone.email_placeholder')); ?>">
+                        <small class="u-fs-11" style="color: var(--text-muted);"><?php echo t('my_phone.vm_email_help'); ?></small>
+                    </div>
+                </div>
+                <div class="my-phone-vm-grid u-fs-12" style="margin-top: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="u-fw-700 u-fs-11"><?php echo t('my_phone.vm_notify_title'); ?></div>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="voicemail_email_notify" value="1" <?php echo $vmNotify ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_email_notify'); ?></span>
+                    </label>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="voicemail_attach_audio" value="1" <?php echo $vmAttach ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_attach'); ?></span>
+                    </label>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="u-fw-700 u-fs-11"><?php echo t('my_phone.vm_forward_title'); ?></div>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="vm_on_noanswer" value="1" <?php echo $vmNa ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_on_noanswer'); ?></span>
+                    </label>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="vm_on_busy" value="1" <?php echo $vmBusy ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_on_busy'); ?></span>
+                    </label>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="vm_on_unavail" value="1" <?php echo $vmUnavail ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_on_unavail'); ?></span>
+                    </label>
+                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="vm_always" value="1" <?php echo $vmAlways ? 'checked' : ''; ?> class="u-accent">
+                        <span><?php echo t('my_phone.vm_always'); ?></span>
+                    </label>
+                    </div>
+                </div>
+                <?php if (hasModulePermission('my_phone', 'edit')): ?>
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 14px; border-radius: 8px; font-weight: 700;">
+                        <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
+                    </button>
+                <?php endif; ?>
+            </form>
+
             <!-- Info card -->
             <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-info-circle text-primary" style="font-size: 18px;"></i>
                     <span><?php echo t('my_phone.vm_desc'); ?></span>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('calls')" style="font-size: 11.5px;">
-                    <i class="fas fa-cog"></i> <?php echo t('my_phone.vm_settings'); ?>
-                </button>
             </div>
 
             <div class="table-responsive">

@@ -33,18 +33,7 @@ class MyPhoneController extends BaseController
                     $mode = 'web';
                 }
 
-                $vmSettings = [
-                    'voicemail_enabled' => isset($_POST['voicemail_enabled']) ? 1 : 0,
-                    'voicemail_pin' => trim($_POST['voicemail_pin'] ?? ''),
-                    'voicemail_email' => trim($_POST['voicemail_email'] ?? ''),
-                    'voicemail_attach_audio' => isset($_POST['voicemail_attach_audio']) ? 1 : 0,
-                    'vm_on_noanswer' => isset($_POST['vm_on_noanswer']) ? 1 : 0,
-                    'vm_on_busy' => isset($_POST['vm_on_busy']) ? 1 : 0,
-                    'vm_on_unavail' => isset($_POST['vm_on_unavail']) ? 1 : 0,
-                    'vm_always' => isset($_POST['vm_always']) ? 1 : 0,
-                ];
-
-                MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout, $vmSettings);
+                MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout);
 
                 // Update session state for current user
                 $_SESSION['allowed_phone_mode'] = $mode;
@@ -67,6 +56,37 @@ class MyPhoneController extends BaseController
             return;
         }
 
+        if (static::isPost() && ($_POST['action'] ?? '') === 'save_voicemail') {
+            if (!static::verifyCsrf()) {
+                static::notifyError(t('my_phone.msg_csrf_error'));
+            } elseif (!hasModulePermission('my_phone', 'edit')) {
+                static::notifyError(t('roles.read_only_badge'));
+            } else {
+                $vm = ['voicemail_pin' => $_POST['voicemail_pin'] ?? '', 'voicemail_email' => $_POST['voicemail_email'] ?? ''];
+                foreach (['voicemail_enabled', 'voicemail_email_notify', 'voicemail_attach_audio', 'vm_on_noanswer', 'vm_on_busy', 'vm_on_unavail', 'vm_always'] as $k) {
+                    $vm[$k] = isset($_POST[$k]) ? 1 : 0;
+                }
+                try {
+                    MyPhoneRepository::updateVoicemailSettings($userId, $vm);
+                    try {
+                        require_once dirname(__DIR__) . '/sync/SyncGeneralDialplan.php';
+                        syncGeneralDialplan();
+                        require_once dirname(__DIR__) . '/sync/SyncVoicemail.php';
+                        syncVoicemail();
+                    } catch (\Throwable $e) {
+                        // Non-fatal if reload fails; pending sync will catch it
+                    }
+                    writeAuditLog(null, 'user_settings', 'voicemail',
+                        "Voicemail: {$vm['voicemail_enabled']}, mail: {$vm['voicemail_email_notify']}, attach: {$vm['voicemail_attach_audio']}", 'update', $userId);
+                    static::notifySuccess(t('my_phone.msg_settings_saved'));
+                } catch (\InvalidArgumentException $e) {
+                    static::notifyError($e->getMessage());
+                }
+            }
+            static::redirect('/my-phone?tab=voicemail');
+            return;
+        }
+
         $extDetails = MyPhoneRepository::getUserExtensionDetails($userId);
         $ext = trim($extDetails['extension'] ?? '');
 
@@ -85,8 +105,8 @@ class MyPhoneController extends BaseController
 
         $search = trim($_GET['q'] ?? '');
 
-        $stats = MyPhoneRepository::getCallStats($ext);
-        $calls = MyPhoneRepository::getRecentCalls($ext, $filter === 'all' ? null : $filter, $search, 100);
+        $stats = MyPhoneRepository::getCallStats($ext, $userId);
+        $calls = MyPhoneRepository::getRecentCalls($ext, $filter === 'all' ? null : $filter, $search, 100, $userId);
         $directory = MyPhoneRepository::getInternalDirectory();
 
         $pjsipStatuses = AsteriskHelper::getPJSIPStatuses();
