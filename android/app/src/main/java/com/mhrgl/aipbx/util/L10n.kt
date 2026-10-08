@@ -13,8 +13,8 @@ import com.mhrgl.aipbx.data.AppPreferences
 import java.util.Locale
 
 /**
- * App language: English by default, Turkish when the user picks it (login /
- * server screen or Settings). Activities follow it through AppCompat's
+ * App language: English by default, or another supported language the user
+ * picks (login / server screen or Settings). Activities follow it through AppCompat's
  * per-app locales; code without an Activity (ApiClient, services,
  * notifications) uses [str], because before Android 13 the application
  * context keeps the system language.
@@ -22,10 +22,33 @@ import java.util.Locale
 object L10n {
     const val EN = "en"
     const val TR = "tr"
-    private val SUPPORTED = listOf(EN, TR)
 
     /** Language names in their own language, so they are found whatever is active. */
-    private val NAMES = mapOf(EN to "English", TR to "Türkçe")
+    private val NAMES = linkedMapOf(
+        EN to "English",
+        TR to "Türkçe",
+        "az" to "Azərbaycan dili",
+        "bg" to "Български",
+        "cs" to "Čeština",
+        "da" to "Dansk",
+        "de" to "Deutsch",
+        "el" to "Ελληνικά",
+        "es" to "Español",
+        "fi" to "Suomi",
+        "fr" to "Français",
+        "hu" to "Magyar",
+        "it" to "Italiano",
+        "nb" to "Norsk bokmål",
+        "nl" to "Nederlands",
+        "pl" to "Polski",
+        "pt" to "Português",
+        "ro" to "Română",
+        "ru" to "Русский",
+        "sr" to "Srpski",
+        "sv" to "Svenska",
+        "uk" to "Українська",
+    )
+    private val SUPPORTED = NAMES.keys.toList()
 
     private lateinit var app: Context
     private var cachedLang: String? = null
@@ -66,7 +89,7 @@ object L10n {
         return app.createConfigurationContext(cfg).also { cachedContext = it; cachedLang = lang }
     }
 
-    /** English / Türkçe chooser used on the login, server and settings screens. */
+    /** Language chooser used on the login, server and settings screens. */
     fun showPicker(activity: AppCompatActivity) {
         val idx = SUPPORTED.indexOf(current()).coerceAtLeast(0)
         AlertDialog.Builder(activity)
@@ -83,5 +106,10 @@ object L10n {
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
     }
 
-    private fun normalize(lang: String?): String = if (lang?.lowercase()?.startsWith(TR) == true) TR else EN
+    /** "tr-TR" -> "tr"; Norwegian "no"/"nn" -> "nb"; anything unsupported -> English. */
+    private fun normalize(lang: String?): String {
+        val base = lang?.lowercase()?.substringBefore('-')?.substringBefore('_') ?: return EN
+        val code = if (base == "no" || base == "nn") "nb" else base
+        return if (code in SUPPORTED) code else EN
+    }
 }

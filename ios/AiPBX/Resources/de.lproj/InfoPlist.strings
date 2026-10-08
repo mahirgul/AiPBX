@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Der Mikrofonzugriff wird für Anrufe über die TK-Anlage und Sprachgespräche benötigt.";
+"NSCameraUsageDescription" = "Der Kamerazugriff wird für die Anmeldung mit dem QR-Code der TK-Anlage und zum Senden von Fotos im Chat benötigt.";
+"NSPhotoLibraryUsageDescription" = "Der Zugriff auf die Fotomediathek wird zum Teilen von Fotos und Dateien im Chat benötigt.";

@@ -1,6 +1,10 @@
 # Translating AiPBX
 
-The web portal speaks English (`en`), Turkish (`tr`) and Croatian (`hr`).
+The web portal speaks English (`en`), Turkish (`tr`), Azerbaijani (`az`), Bulgarian (`bg`),
+Czech (`cs`), Danish (`da`), German (`de`), Greek (`el`), Spanish (`es`), Finnish (`fi`),
+French (`fr`), Croatian (`hr`), Hungarian (`hu`), Italian (`it`), Norwegian Bokmål (`nb`),
+Dutch (`nl`), Polish (`pl`), Portuguese (`pt`), Romanian (`ro`), Russian (`ru`),
+Serbian in Latin script (`sr`), Swedish (`sv`) and Ukrainian (`uk`).
 Every user picks a language from the **language dropdown**: on the sign-in
 page, and in the user menu (bottom right) after signing in. Corrections and
 new languages are welcome as pull requests.
@@ -79,7 +83,10 @@ result before it is merged.
 
 ## Mobile apps
 
-The Android and iOS apps have their own texts (English and Turkish so far):
+The Android and iOS apps have their own texts (the same languages as the portal,
+except Croatian so far); a new app language is also added to `L10n.kt` (Android),
+`locales_config.xml` and `AppLanguage` in `Localization.swift` (iOS), and the iOS
+project is regenerated with `python3 ios/generate_project.py`:
 
 - Android: `android/app/src/main/res/values/strings.xml` (English) and
   `values-<code>/strings.xml` per language.

@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "PBX zəngləri və səsli danışıqlar üçün mikrofona giriş lazımdır.";
+"NSCameraUsageDescription" = "PBX QR kodu ilə daxil olmaq və söhbətdə foto göndərmək üçün kameraya giriş lazımdır.";
+"NSPhotoLibraryUsageDescription" = "Söhbətdə foto və fayl paylaşmaq üçün foto kitabxanasına giriş lazımdır.";

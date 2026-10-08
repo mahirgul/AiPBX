@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Der kræves mikrofonadgang til PBX-opkald og samtaler.";
+"NSCameraUsageDescription" = "Der kræves kameraadgang for at logge ind med PBX-QR-koden og sende fotos i chatten.";
+"NSPhotoLibraryUsageDescription" = "Der kræves adgang til fotobiblioteket for at dele fotos og filer i chatten.";

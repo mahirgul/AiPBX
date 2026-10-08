@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Mikrofonåtkomst krävs för samtal via växeln och röstkonversationer.";
+"NSCameraUsageDescription" = "Kameraåtkomst krävs för att logga in med växelns QR-kod och för att skicka foton i chatten.";
+"NSPhotoLibraryUsageDescription" = "Åtkomst till bildbiblioteket krävs för att dela foton och filer i chatten.";
