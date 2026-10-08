@@ -58,14 +58,6 @@ EOF
 log "Updated DB record #$FAX_ID: status=$ST"
 
 # 2. Fetch dynamic mail configuration from sys_settings
-FROM_ADDR=$($MYSQL_QUERY -e \
-  "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_from_address' LIMIT 1;" 2>/dev/null)
-if [ -z "$FROM_ADDR" ]; then FROM_ADDR="${MAIL_FROM_ADDRESS:-}"; fi
-
-FROM_NAME_RAW=$($MYSQL_QUERY -e \
-  "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_from_name' LIMIT 1;" 2>/dev/null)
-if [ -z "$FROM_NAME_RAW" ]; then FROM_NAME_RAW="${MAIL_FROM_NAME:-}"; fi
-
 TX_ENABLED=$($MYSQL_QUERY -e \
   "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_tx_enabled' LIMIT 1;" 2>/dev/null)
 if [ -z "$TX_ENABLED" ]; then TX_ENABLED="yes"; fi
@@ -88,47 +80,21 @@ if [ -n "$FAX_INFO" ]; then
     # 3. Send email notification to sender if enabled
     if [ "$TX_ENABLED" = "yes" ] && [ -n "$SENDER_EMAIL" ] && [[ "$SENDER_EMAIL" =~ @ ]]; then
         TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S')
-        FROM_NAME="=?UTF-8?B?$(echo -n "$FROM_NAME_RAW" | base64)?="
-        
-        if [ "$ST" = "SUCCESS" ]; then
-            SUBJECT="=?UTF-8?B?$(echo -n "Faks İletildi - Alıcı: $DEST_NUM (#$FAX_ID)" | base64)?="
-            STATUS_BG="#10b981"
-            STATUS_TXT="Başarıyla İletildi"
-            BODY_MSG="Gönderdiğiniz faks alıcıya sorunsuz bir şekilde iletilmiştir."
-        else
-            SUBJECT="=?UTF-8?B?$(echo -n "Faks İletilemedi - Alıcı: $DEST_NUM (#$FAX_ID)" | base64)?="
-            STATUS_BG="#ef4444"
-            STATUS_TXT="Başarısız / İletilemedi"
-            BODY_MSG="Gönderdiğiniz faks iletilemedi.<br><strong>Hata Detayı:</strong> ${ERROR_MSG:-Hata belirtilmedi}"
+        _db_portal_domain=$($MYSQL_QUERY -e \
+          "SELECT setting_value FROM sys_settings WHERE setting_key = 'pjsip_external_domain' LIMIT 1;" 2>/dev/null)
+        if [ -n "$_db_portal_domain" ]; then
+            PORTAL_DOMAIN="$_db_portal_domain"
         fi
-        
-        {
-            echo "From: $FROM_NAME <$FROM_ADDR>"
-            echo "To: $SENDER_EMAIL"
-            echo "Subject: $SUBJECT"
-            echo "MIME-Version: 1.0"
-            echo "Content-Type: text/html; charset=UTF-8"
-            echo "Content-Transfer-Encoding: base64"
-            echo ""
-            cat <<HTMLBODY | base64
-<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: ${STATUS_BG}; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h2 style="color: #fff; margin: 0;">📠 Giden Faks Durumu: ${STATUS_TXT}</h2>
-  </div>
-  <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
-    <p style="font-size: 14px; color: #334155;">${BODY_MSG}</p>
-    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 16px;">
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">İşlem ID:</td><td style="padding: 8px;">#${FAX_ID}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Gönderen Dahili:</td><td style="padding: 8px;">${SENDER_EXT}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Alıcı Numara:</td><td style="padding: 8px;">${DEST_NUM}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Sayfa Sayısı:</td><td style="padding: 8px;">${PAGES} sayfa</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Tarih:</td><td style="padding: 8px;">${TIMESTAMP}</td></tr>
-    </table>
-  </div>
-</div>
-HTMLBODY
-        } | /usr/sbin/sendmail -f "$FROM_ADDR" "$SENDER_EMAIL"
-        
+        # "fax_sent" / "fax_failed" e-mail templates (Admin → E-Mail → Templates), in the sender's language.
+        TEMPLATE="fax_sent"
+        if [ "$ST" != "SUCCESS" ]; then
+            TEMPLATE="fax_failed"
+        fi
+        /usr/bin/php "$(dirname "$(readlink -f "$0")")/send_template_mail.php" "$TEMPLATE" "$SENDER_EMAIL" --sender=fax \
+            "destination=$DEST_NUM" "fax_id=$FAX_ID" "pages=$PAGES" "date=$TIMESTAMP" "error=${ERROR_MSG:--}" \
+            "portal_link=https://${PORTAL_DOMAIN}/fax-sent" >>"$LOGFILE" 2>&1 \
+            || log "ERROR: status e-mail for FAX #$FAX_ID could not be sent"
+
         log "Sent status notification email to $SENDER_EMAIL for FAX #$FAX_ID"
     fi
 fi

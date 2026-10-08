@@ -1,0 +1,24 @@
+/* Admin → E-Mail → Templates */
+a.settings-tab-btn { text-decoration: none; }
+.mail-tpl-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.mail-tpl-list { display: flex; flex-direction: column; gap: 4px; padding: 10px; }
+.mail-tpl-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px; color: var(--text-main); text-decoration: none; font-size: 13px; font-weight: 600; }
+.mail-tpl-item:hover { background: var(--bg-input); }
+.mail-tpl-item.active { background: var(--primary); color: #fff; }
+.mail-tpl-item.active .badge { background: rgba(255, 255, 255, .25); color: #fff; }
+.mail-tpl-toolbar { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+.mail-tpl-body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; min-height: 260px; }
+.mail-tpl-vars { display: flex; flex-wrap: wrap; gap: 6px; }
+.mail-tpl-var { border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-main); border-radius: 14px; padding: 3px 10px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; cursor: pointer; }
+.mail-tpl-var:hover { border-color: var(--primary); color: var(--primary); }
+.mail-tpl-var.block { border-style: dashed; }
+.mail-tpl-preview-subject { font-weight: 700; font-size: 13.5px; margin: 8px 0 10px 0; color: var(--text-main); word-break: break-word; }
+.mail-tpl-preview { width: 100%; height: 640px; border: 1px solid var(--border-color); border-radius: 10px; background: #f1f5f9; }
+@media (max-width: 1400px) {
+    .mail-tpl-layout { grid-template-columns: 220px minmax(0, 1fr); }
+    .mail-tpl-preview-card { grid-column: 1 / -1; }
+}
+@media (max-width: 800px) {
+    .mail-tpl-layout { grid-template-columns: 1fr; }
+    .mail-tpl-list { flex-direction: row; flex-wrap: wrap; }
+}

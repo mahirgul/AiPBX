@@ -140,29 +140,23 @@ class MailSettingsService
             return ['success' => false, 'error' => t('srv_mail.err_to')];
         }
 
-        $fromAddress = getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com'));
-        $fromName = getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AI PBX'));
-
-        $subject = sprintf(t('srv_mail.test_subject'), date('d.m.Y H:i:s'));
-        $body = str_replace('\n', "\n", sprintf(t('srv_mail.test_body'), date('d.m.Y H:i:s'), $fromName, $fromAddress, $toEmail, (gethostname() ?: 'voice')));
-
+        [$fromAddress, $fromName] = MailTemplateService::sender('portal');
+        // The test mail uses the "test" template, so it also shows how mails look.
         $token = 'aipbx-test-' . bin2hex(random_bytes(8));
-        $headers = "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromAddress}>\r\n"
-                 . "Message-ID: <{$token}@" . (gethostname() ?: 'aipbx') . ">\r\n"
-                 . "Reply-To: {$fromAddress}\r\n"
-                 . "X-Mailer: AiPBX-Mailer/1.0\r\n"
-                 . "MIME-Version: 1.0\r\n"
-                 . "Content-Type: text/plain; charset=UTF-8\r\n"
-                 . "Content-Transfer-Encoding: 8bit\r\n";
-
-        $mailOk = @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers, '-f ' . $fromAddress);
+        $res = MailTemplateService::send('test', $toEmail, MailTemplateService::languageFor($toEmail), [
+            'date' => date('d.m.Y H:i:s'),
+            'from_name' => $fromName,
+            'from_address' => $fromAddress,
+            'to' => $toEmail,
+            'host' => gethostname() ?: 'voice',
+        ], [], [], 'portal', ['Message-ID' => '<' . $token . '@' . (gethostname() ?: 'aipbx') . '>']);
+        $mailOk = $res['success'];
 
         if ($mailOk) {
             return self::waitForDelivery($token, $toEmail);
         }
 
-        $lastError = error_get_last()['message'] ?? t('srv_mail.err_unknown');
-        return ['success' => false, 'error' => sprintf(t('srv_mail.err_send'), $lastError)];
+        return ['success' => false, 'error' => $res['error'] ?? t('srv_mail.err_unknown')];
     }
 
     /**

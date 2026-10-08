@@ -38,17 +38,15 @@ class ForceResetService {
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
 
-        $fromAddress = preg_replace('/[\r\n]+/', '', getSystemSetting('portal_email_from_address', 'no-reply@example.com'));
-        $fromName = preg_replace('/[\r\n]+/', '', getSystemSetting('portal_email_from_name', 'AI PBX Portal'));
-        $brandTitle = getSystemSetting('brand_title', 'AI PBX');
-
-        $subject = t('srv_reset.mail_subject');
-        $body = str_replace('\n', "\r\n", sprintf(t('srv_reset.mail_body'), $user['username'], $brandTitle, $resetUrl));
-
-        $headers = "From: " . $fromName . " <" . $fromAddress . ">\r\n"
-            . "Content-Type: text/plain; charset=UTF-8\r\n";
-
-        $mailOk = @mail($user['email'], '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers, '-f ' . $fromAddress);
+        $lang = MailTemplateService::languageFor(null, $user_id);
+        $res = MailTemplateService::send('password_reset', $user['email'], $lang, [
+            'name' => (string) (($user['full_name'] ?? '') ?: $user['username']),
+            'username' => (string) $user['username'],
+            'reset_link' => $resetUrl,
+        ], [
+            'reset_button' => MailTemplateService::inLanguage($lang, fn() => MailTemplateService::buttonBlock($resetUrl, t('mail_templates.btn_reset'))),
+        ]);
+        $mailOk = $res['success'];
 
         if ($mailOk) {
             return ['sent' => true];

@@ -5,6 +5,32 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.0
+
+- **E-mail templates** (*Admin → E-Mail → Templates*): the texts of the
+  invitation, sign-in link, password reset, voicemail, fax received / delivered
+  / not delivered and test e-mails can be edited, per language, with a live
+  preview, value buttons (`{name}`, `{caller}` …) and a test send. Every
+  e-mail now uses one frame with the logo, name and colour from Brand
+  settings. See [E-mail](docs/mail.md#templates).
+- **E-mails in the recipient's language.** Portal users get them in their own
+  language; fax unit addresses and other recipients without an account in the
+  language set on the Templates page (default: the first administrator's).
+  The fax e-mails used to be Turkish only, the invitation was in the language
+  of the administrator who sent it.
+- **Voicemail e-mails** are HTML with the logo, show the caller, time and
+  length, and keep the recording as an attachment. If building them ever
+  fails, Asterisk's own message is delivered instead.
+- **Android app 1.0.54:**
+  - *Full-screen incoming calls* (#7): Android 14 and later can switch off
+    full-screen notifications for an app, and then a call on a locked phone
+    only shows a small notification. The app explains this once and links to
+    the setting; *Settings* shows whether it is on.
+  - *Remove calls from the call history* (#10): swipe a call away (with
+    Undo) or clear the whole history. Only your own list changes; the call
+    records on the server, reports and recordings stay.
+  - *Reply from a chat notification* (#8) without opening the app.
+
 ## 1.5.3
 
 - **Google sign-in settings could not be saved** ("Unknown column
