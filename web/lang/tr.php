@@ -3714,4 +3714,6 @@ Telefonunuz çaldırılacak.',
     'mail_templates.link_prompt' => 'Bağlantı adresi (https://… veya bir {değer})',
     'mail_templates.html_note' => 'İzin verilenler: paragraf, kalın, italik, bağlantı ve liste. Diğer biçimler kaydederken kaldırılır.',
     'mail_templates.unknown_caller' => 'Bilinmeyen arayan',
+    'login.show_password' => 'Şifreyi göster',
+    'login.hide_password' => 'Şifreyi gizle',
 ];

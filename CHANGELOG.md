@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.1
+
+- **Show the password while typing** (#11): the password fields of the
+  sign-in, password reset and password change pages have an eye button.
+
 ## 1.6.0
 
 - **E-mail templates** (*Admin → E-Mail → Templates*): the texts of the
