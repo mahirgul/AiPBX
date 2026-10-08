@@ -337,5 +337,9 @@ function syncEverything() {
 
 if (php_sapi_name() === 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__) {
     syncEverything();
+    // Install / update: send every BLF lamp once (Asterisk's own store may be
+    // new or older than pbx_lamp_states).
+    require_once __DIR__ . '/services/LampService.php';
+    LampService::refresh(true);
 }
 

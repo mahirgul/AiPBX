@@ -3,6 +3,7 @@
  * Sync General Dialplan (/etc/asterisk/pbx/extensions_general.conf)
  */
 require_once __DIR__ . '/DialplanBuilders.php';
+require_once dirname(__DIR__) . '/services/LampService.php';
 
 function syncGeneralDialplan() {
     return withSyncLock('general_dialplan', '__syncGeneralDialplanBody');
@@ -48,6 +49,15 @@ function __syncGeneralDialplanBody() {
             // state unless the target extension has a hint. Result: an
             // extension with its phone off/unregistered kept looking "online"
             // in the queue and on the supervisor screen.
+            // BLF lamps for do-not-disturb, call forwarding and queue login
+            // (LampService sets the custom device states). A desk phone key
+            // with the value DND1001 / CF1001 / QUEUE1001 shows the lamp;
+            // pressing it toggles (only the extension's own phone may).
+            foreach (LampService::KINDS as $kind) {
+                $conf .= "exten => {$kind}{$ext},hint,Custom:{$kind}{$ext}\n";
+                $conf .= "exten => {$kind}{$ext},1,Gosub(aipbx-lamp-toggle,s,1(" . strtolower($kind) . ",{$ext}))\n";
+                $conf .= " same => n,Hangup()\n";
+            }
             $conf .= "exten => {$ext},hint,PJSIP/{$ext}-sip&PJSIP/{$ext}-webrtc&PJSIP/{$ext}-mob-webrtc\n";
             $conf .= "exten => {$ext},1,NoOp(Direct Call to Extension {$ext} - {$name})\n";
             $conf .= " same => n,Set(CDR(direction)=internal)\n";
@@ -218,6 +228,32 @@ function __syncGeneralDialplanBody() {
     $conf .= "exten => h,1,NoOp(Outbound FAX Completed. Status=\${FAXOPT(status)})\n";
     $conf .= " same => n,System(/usr/local/bin/process_outgoing_fax_result.sh \"\${FAX_ID}\" \"\${FAXOPT(status)}\" \"\${FAXOPT(error)}\" \"\${FAXOPT(pages)}\")\n\n";
 
+    // Pressing a DND / CF / QUEUE lamp key (see the hints above). ARG1 = kind,
+    // ARG2 = extension. Only the extension's own devices may switch it.
+    $conf .= "; BLF lamp keys: toggle do-not-disturb, cancel call forwarding, queue login/logout\n";
+    $conf .= "[aipbx-lamp-toggle]\n";
+    $conf .= "exten => s,1,NoOp(Lamp key \${ARG1} for \${ARG2} pressed on \${CHANNEL(endpoint)})\n";
+    $conf .= " same => n,Answer()\n";
+    $conf .= " same => n,GotoIf(\$[\"\${CUT(CHANNEL(endpoint),-,1)}\" != \"\${ARG2}\"]?deny)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${ARG1}\" = \"dnd\"]?dnd)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${ARG1}\" = \"cf\"]?cf)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${DEVICE_STATE(Custom:QUEUE\${ARG2})}\" = \"INUSE\"]?qout)\n";
+    $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_login \${ARG2} all &)\n";
+    $conf .= " same => n,Goto(done)\n";
+    $conf .= " same => n(qout),System(/usr/local/bin/feature_code_action.php queue_logout \${ARG2} all &)\n";
+    $conf .= " same => n,Goto(done)\n";
+    $conf .= " same => n(dnd),System(/usr/local/bin/feature_code_action.php dnd_toggle \${ARG2} &)\n";
+    $conf .= " same => n,Goto(done)\n";
+    // Forwarding needs a number, so the key can only cancel it (set it with *72 or in My Phone).
+    $conf .= " same => n(cf),GotoIf(\$[\"\${DEVICE_STATE(Custom:CF\${ARG2})}\" != \"INUSE\"]?deny)\n";
+    $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_cancel \${ARG2} &)\n";
+    $conf .= " same => n(done),Playback(beep)\n";
+    $conf .= " same => n,Return()\n";
+    $conf .= " same => n(deny),Playback(beep)\n";
+    $conf .= " same => n,Wait(0.2)\n";
+    $conf .= " same => n,Playback(beep)\n";
+    $conf .= " same => n,Return()\n\n";
+
     // Enterprise Adaptive Jitter Buffer (AJB) Subroutine for Callee Channels
     $conf .= "; Enterprise Adaptive Jitter Buffer (AJB) Subroutine for Callee Channels\n";
     $conf .= "[sub-callee-jb]\n";
@@ -225,7 +261,10 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Set(JITTERBUFFER(adaptive)=default)\n";
     $conf .= " same => n,Return()\n\n";
 
-    return writeConfWithRollback('extensions_general.conf', $conf, function() {
+    $ok = writeConfWithRollback('extensions_general.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_general'));
     }, t('sync.ctx_general'));
+    // DND / forwarding may have changed (My Phone, mobile app, feature codes).
+    LampService::refresh();
+    return $ok;
 }

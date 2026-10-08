@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.6
+
+- **More busy lamps for desk phones:** a BLF key with the value `DND1001`,
+  `CF1001` or `QUEUE1001` shows whether 1001 has do-not-disturb on, forwards
+  all calls, or is logged in to a queue (and not on a break). On the user's
+  own phone the key switches do-not-disturb, cancels the forwarding, or logs
+  in to / out of the queues. See [Busy lamps](docs/blf.md) for setting the
+  keys on Yealink, Grandstream and Fanvil phones.
+
 ## 1.6.5
 
 - **Feature codes missing on new installations:** do-not-disturb (`*78`),

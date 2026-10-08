@@ -34,6 +34,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Users & roles](users-and-roles.md) | Built-in roles, landing pages, permissions, *My Phone* |
 | [Security](security.md) | Firewall, fail2ban, the `aipbx-priv` root helper, Apache sandbox |
 | [Certificates](certificates.md) | One certificate for portal, TURNS and SIP-TLS; Let's Encrypt, upload, renewals |
+| [Busy lamps (BLF)](blf.md) | Desk phone keys for colleagues, do-not-disturb, forwarding and queue login; pickup; voicemail lamp |
 | [E-mail](mail.md) | Mail relay and e-mail templates (fax, voicemail, invitations, password e-mails) |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 
