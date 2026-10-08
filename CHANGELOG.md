@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.1
+
+- **Phone provisioning: Snom, Cisco SPA and Poly** (#27) next to Yealink,
+  Grandstream and Fanvil: Snom D3xx/D7xx, Cisco SPA303/50x/525G2 and Poly VVX /
+  Edge E, with their key layouts and expansion modules, re-provision and
+  (Snom, Cisco) reboot. See [Phones](docs/phones.md); not yet tried on real
+  devices of these brands.
+- **iOS app** (#26): remove calls from the call history (swipe with Undo,
+  clear all), reply to a chat message from its notification, and delete your
+  own chat messages, as on Android. iOS shows chat notifications only while
+  the app's chat connection is alive (no push for iOS yet).
+- **Translations:** the texts added in 1.6.6–1.7.0 (phones, key layouts,
+  chat message deletion …) are in all 23 portal languages (#25).
+
 ## 1.7.0
 
 - **Phone provisioning** (*PBX → Phones*, #19): add desk phones by MAC
