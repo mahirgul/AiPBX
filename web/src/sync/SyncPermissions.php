@@ -60,11 +60,8 @@ function __syncPermissionsBody() {
         }
 
         // Default action for un-matched numbers
-        if ($default_action === 'allow') {
-            $conf .= "exten => _.,1,Return()\n\n";
-        } else {
-            $conf .= "exten => _.,1,Goto(sub-permission-denied,s,1)\n\n";
-        }
+        $default_app = ($default_action === 'allow') ? 'Return()' : 'Goto(sub-permission-denied,s,1)';
+        $conf .= buildCatchAllExtensions($default_app) . "\n";
     }
 
     return writeConfWithRollback('extensions_permissions.conf', $conf, function() {
