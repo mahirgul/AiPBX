@@ -37,6 +37,8 @@ return [
     '/time-conditions' => ['controller' => TimeConditionController::class, 'action' => 'index', 'module' => 'time_conditions.php'],
     '/ivrs'            => ['controller' => IvrController::class, 'action' => 'index', 'module' => 'ivrs.php'],
     '/extensions'      => ['controller' => ExtensionController::class, 'action' => 'index', 'module' => 'extensions.php'],
+    '/phones'          => ['controller' => PhoneController::class, 'action' => 'index', 'module' => 'phones.php'],
+    '/phone-keys'      => ['controller' => PhoneKeysController::class, 'action' => 'index', 'module' => 'phone_keys.php'],
     '/ring-groups'      => ['controller' => RingGroupController::class, 'action' => 'index', 'module' => 'ring_groups.php'],
     '/conferences'      => ['controller' => ConferenceController::class, 'action' => 'index', 'module' => 'conferences.php'],
     '/boss-secretary'   => ['controller' => BossSecretaryController::class, 'action' => 'index', 'module' => 'boss_secretary.php'],

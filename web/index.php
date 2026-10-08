@@ -44,6 +44,13 @@ if ($path === '/set-language') {
     exit;
 }
 
+// 0b. Desk phone configuration files (/provision/<token>/<file> and
+//     /provision/<file>): anonymous, prefix-matched, outside the page table.
+if ($path === '/provision' || str_starts_with($path, '/provision/')) {
+    require_once __DIR__ . '/src/controllers/ProvisionController.php';
+    ProvisionController::serve($path);
+}
+
 // 1. Old URLs → permanent redirect (exact-match whitelist)
 $LEGACY = [
     '/admin'                   => '/',
