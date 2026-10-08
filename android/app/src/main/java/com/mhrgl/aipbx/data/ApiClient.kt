@@ -871,6 +871,33 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
             }
         }
 
+    /**
+     * Deletes your own chat message (REST, so the reason of a refusal comes
+     * back). A message that is already deleted counts as success.
+     */
+    suspend fun deleteChatMessage(baseUrl: String, token: String, messageId: Long): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val jsonBody = JSONObject().apply { put("message_id", messageId) }.toString()
+                val request = Request.Builder()
+                    .url("$cleanUrl/chat/api/messages/delete")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(jsonBody.toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    when {
+                        response.isSuccessful || response.code == 409 -> Result.success(true)
+                        response.code == 403 -> Result.failure(Exception(L10n.str(R.string.err_message_delete_not_allowed)))
+                        else -> Result.failure(Exception(L10n.str(R.string.api_message_delete_failed, response.code)))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
     suspend fun deleteGroup(baseUrl: String, token: String, convId: Int): Result<Boolean> =
         withContext(Dispatchers.IO) {
             try {

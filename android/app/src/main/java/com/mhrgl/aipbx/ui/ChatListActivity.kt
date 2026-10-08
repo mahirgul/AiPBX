@@ -524,6 +524,13 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
         }
     }
 
+    /** The preview of a deleted last message is cleared on the server. */
+    override fun onMessageDeleted(conversationId: Int, messageId: Long) {
+        runOnUiThread {
+            loadConversations()
+        }
+    }
+
     override fun onConnectionStateChanged(isConnected: Boolean) {
         runOnUiThread {
             if (isConnected) {

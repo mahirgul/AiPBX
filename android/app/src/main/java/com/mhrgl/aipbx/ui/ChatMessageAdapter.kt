@@ -18,7 +18,9 @@ class ChatMessageAdapter(
     private val baseUrl: String,
     private var isGroup: Boolean = false,
     /** The current session token — for downloading/opening media (a provider, since the token can be refreshed). */
-    private val tokenProvider: () -> String? = { null }
+    private val tokenProvider: () -> String? = { null },
+    /** Long press on one of your own messages (offers to delete it). */
+    private val onOwnMessageLongPress: ((ChatMessage) -> Unit)? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val messages = mutableListOf<ChatMessage>()
@@ -65,6 +67,14 @@ class ChatMessageAdapter(
     }
 
     private fun rank(status: String?): Int = when (status) { "read" -> 2; "delivered" -> 1; else -> 0 }
+
+    /** Shows a message as deleted (after your delete or a "message_deleted" event). */
+    fun markDeleted(messageId: Long) {
+        val i = messages.indexOfFirst { it.id == messageId }
+        if (i < 0 || messages[i].isDeleted) return
+        messages[i] = messages[i].copy(isDeleted = true, message = "", attachmentUrl = null, fileName = null, fileSize = 0)
+        notifyItemChanged(i)
+    }
 
     fun addMessage(msg: ChatMessage) {
         if (msg.id > 0 && messages.any { it.id == msg.id }) return
@@ -142,6 +152,31 @@ class ChatMessageAdapter(
                     tvSenderName.visibility = View.GONE
                 }
             }
+
+            // Long press on your own message offers to delete it.
+            if (isMe && !m.isDeleted && m.id > 0 && onOwnMessageLongPress != null) {
+                itemView.setOnLongClickListener { onOwnMessageLongPress?.invoke(m); true }
+            } else {
+                itemView.setOnLongClickListener(null)
+                itemView.isLongClickable = false
+            }
+
+            if (m.isDeleted) {
+                tvMessage.visibility = View.VISIBLE
+                tvMessage.text = ctx.getString(R.string.chat_message_deleted)
+                tvMessage.setTypeface(null, android.graphics.Typeface.ITALIC)
+                tvMessage.alpha = 0.75f
+                ivImage.visibility = View.GONE
+                ivImage.setOnClickListener(null)
+                llFileAttachment.visibility = View.GONE
+                llFileAttachment.setOnClickListener(null)
+                tvTime.text = formatTime(m.createdAt)
+                tvStatus?.visibility = View.GONE
+                return
+            }
+            tvMessage.setTypeface(null, android.graphics.Typeface.NORMAL)
+            tvMessage.alpha = 1f
+            tvStatus?.visibility = View.VISIBLE
 
             // Text message
             if (m.message.isNullOrEmpty()) {

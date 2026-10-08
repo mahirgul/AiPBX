@@ -340,7 +340,7 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         val myExt = prefs.extension ?: ""
         val baseUrl = prefs.serverUrl ?: ""
 
-        adapter = ChatMessageAdapter(myExt, baseUrl, isGroup) { prefs.token }
+        adapter = ChatMessageAdapter(myExt, baseUrl, isGroup, { prefs.token }) { msg -> confirmDeleteMessage(msg) }
         val lm = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -354,6 +354,26 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
                 }
             }
         }
+    }
+
+    /** Long press on your own message: delete it for everyone after a confirmation. */
+    private fun confirmDeleteMessage(msg: ChatMessage) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.chat_delete_message))
+            .setMessage(getString(R.string.chat_delete_message_confirm))
+            .setPositiveButton(getString(R.string.ui_delete)) { _, _ ->
+                val url = prefs.serverUrl ?: return@setPositiveButton
+                val token = prefs.token ?: return@setPositiveButton
+                lifecycleScope.launch {
+                    apiClient.deleteChatMessage(url, token, msg.id)
+                        .onSuccess { adapter.markDeleted(msg.id) }
+                        .onFailure {
+                            Toast.makeText(this@ChatActivity, it.message, Toast.LENGTH_LONG).show()
+                        }
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_dismiss), null)
+            .show()
     }
 
     private fun ensureConversationAndLoadMessages() {
@@ -798,6 +818,12 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
             else getString(R.string.last_seen, t.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM HH:mm")))
         } catch (e: Exception) {
             getString(R.string.ui_offline)
+        }
+    }
+
+    override fun onMessageDeleted(conversationId: Int, messageId: Long) {
+        if (conversationId == convId) {
+            runOnUiThread { if (::adapter.isInitialized) adapter.markDeleted(messageId) }
         }
     }
 

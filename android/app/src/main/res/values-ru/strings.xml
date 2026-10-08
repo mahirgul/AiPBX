@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Внутренний #%1$s</string>
     <string name="chat_preview_file">📎 Файл: %1$s</string>
     <string name="chat_preview_document">Документ</string>
+    <string name="chat_message_deleted">🚫 Это сообщение удалено</string>
+    <string name="chat_delete_message">Удалить сообщение</string>
+    <string name="chat_delete_message_confirm">Удалить это сообщение для всех в чате?</string>
+    <string name="err_message_delete_not_allowed">Это сообщение больше нельзя удалить.</string>
+    <string name="api_message_delete_failed">Не удалось удалить сообщение (HTTP %1$s)</string>
 </resources>

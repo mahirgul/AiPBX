@@ -17,6 +17,8 @@ interface ChatEventListener {
     fun onMessagesRead(conversationId: Int, readerExt: String, lastMessageId: Long) {}
     /** Own messages up to readUpto are read, up to deliveredUpto delivered (by every other participant). */
     fun onReceipts(conversationId: Int, readUpto: Long, deliveredUpto: Long) {}
+    /** A participant deleted their message: show it as deleted. */
+    fun onMessageDeleted(conversationId: Int, messageId: Long) {}
     fun onGroupCreated(conversation: ChatConversation) {}
     fun onGroupUpdated(conversationId: Int, title: String?, avatarUrl: String?, description: String?) {}
     fun onGroupMemberAdded(conversationId: Int, members: List<String>, actor: String) {}
@@ -289,6 +291,14 @@ class ChatWebSocketManager private constructor() {
                             val role = dataObj.optString("role")
                             val actor = dataObj.optString("actor")
                             for (l in listeners) l.onGroupRoleUpdated(convId, ext, role, actor)
+                        }
+                        "message_deleted" -> {
+                            val dataObj = root.optJSONObject("data") ?: return
+                            val convId = dataObj.optInt("conversation_id")
+                            val msgId = dataObj.optLong("message_id")
+                            if (convId > 0 && msgId > 0) {
+                                for (l in listeners) l.onMessageDeleted(convId, msgId)
+                            }
                         }
                         "group_deleted" -> {
                             val dataObj = root.optJSONObject("data") ?: return

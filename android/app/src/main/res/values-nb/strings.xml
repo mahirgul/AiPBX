@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Internnummer #%1$s</string>
     <string name="chat_preview_file">📎 Fil: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Denne meldingen er slettet</string>
+    <string name="chat_delete_message">Slett melding</string>
+    <string name="chat_delete_message_confirm">Slette denne meldingen for alle i chatten?</string>
+    <string name="err_message_delete_not_allowed">Denne meldingen kan ikke lenger slettes.</string>
+    <string name="api_message_delete_failed">Kunne ikke slette meldingen (HTTP %1$s)</string>
 </resources>

@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Toestel #%1$s</string>
     <string name="chat_preview_file">📎 Bestand: %1$s</string>
     <string name="chat_preview_document">Document</string>
+    <string name="chat_message_deleted">🚫 Dit bericht is verwijderd</string>
+    <string name="chat_delete_message">Bericht verwijderen</string>
+    <string name="chat_delete_message_confirm">Dit bericht voor iedereen in de chat verwijderen?</string>
+    <string name="err_message_delete_not_allowed">Dit bericht kan niet meer worden verwijderd.</string>
+    <string name="api_message_delete_failed">Kan het bericht niet verwijderen (HTTP %1$s)</string>
 </resources>

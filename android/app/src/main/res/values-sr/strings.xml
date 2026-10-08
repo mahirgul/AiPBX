@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Lokal #%1$s</string>
     <string name="chat_preview_file">📎 Datoteka: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Ova poruka je obrisana</string>
+    <string name="chat_delete_message">Obriši poruku</string>
+    <string name="chat_delete_message_confirm">Obrisati ovu poruku za sve u četu?</string>
+    <string name="err_message_delete_not_allowed">Ova poruka više ne može da se obriše.</string>
+    <string name="api_message_delete_failed">Poruka nije mogla da se obriše (HTTP %1$s)</string>
 </resources>

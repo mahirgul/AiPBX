@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Numer wewnętrzny #%1$s</string>
     <string name="chat_preview_file">📎 Plik: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Ta wiadomość została usunięta</string>
+    <string name="chat_delete_message">Usuń wiadomość</string>
+    <string name="chat_delete_message_confirm">Usunąć tę wiadomość dla wszystkich w czacie?</string>
+    <string name="err_message_delete_not_allowed">Tej wiadomości nie można już usunąć.</string>
+    <string name="api_message_delete_failed">Nie udało się usunąć wiadomości (HTTP %1$s)</string>
 </resources>
