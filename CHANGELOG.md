@@ -5,6 +5,25 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.5.0
+
+**20 new languages** (#3, #4): German, Russian, French, Spanish,
+Azerbaijani, Serbian (Latin), Italian, Portuguese, Dutch, Polish, Ukrainian,
+Romanian, Greek, Czech, Hungarian, Bulgarian, Swedish, Danish, Norwegian
+Bokmål and Finnish.
+- **Web portal:** 23 languages in total, picked from the language dropdown.
+- **Android and iOS apps:** the same 20 languages (Croatian follows).
+- These are machine translations: corrections from native speakers are very
+  welcome, see [docs/translating.md](docs/translating.md).
+
+**Android app 1.0.51**
+- A language chosen in Android's own per-app language settings is now picked
+  up everywhere: the language button and notifications used to stay in the
+  previous language.
+
+**Fixes**
+- Phone sign-in page: the language dropdown was 16 px off to the left.
+
 ## 1.4.0
 
 **Languages**
