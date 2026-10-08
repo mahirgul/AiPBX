@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.5.1
+
+- **Croatian (Hrvatski) in the Android and iOS apps** (#5). Android app
+  1.0.52.
+- **Sign-in page:** the language dropdown sits at the bottom of the sign-in
+  card on computers too, as on phones, instead of in the page corner.
+- App translations are checked automatically on every change (missing
+  texts, placeholders, apostrophes).
+
 ## 1.5.0
 
 **20 new languages** (#3, #4): German, Russian, French, Spanish,
