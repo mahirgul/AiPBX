@@ -20,6 +20,10 @@ struct AiPBXApp: App {
             .environment(\.locale, Locale(identifier: language.code))
             .environmentObject(appState)
             .preferredColorScheme(.none) // Supports both Dark and Light mode automatically
+            .onChange(of: language.code) { _ in
+                // The Reply action's titles follow the app language.
+                ChatNotifications.shared.registerCategory()
+            }
             .onOpenURL { url in
                 appState.handleDeepLinkUrl(url)
             }

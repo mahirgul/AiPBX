@@ -4,6 +4,7 @@ import Combine
 public protocol ChatWebSocketDelegate: AnyObject {
     func webSocketDidUpdateConnectionState(_ isConnected: Bool)
     func webSocketDidReceiveNewMessage(_ message: ChatMessage)
+    func webSocketDidReceiveMessageDeleted(conversationId: Int, messageId: Int64)
     func webSocketDidReceivePresence(extensionNumber: String, isOnline: Bool)
     func webSocketDidReceiveTyping(conversationId: Int, senderName: String, isTyping: Bool)
 }
@@ -173,6 +174,17 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
                let msg = try? JSONDecoder().decode(ChatMessage.self, from: msgData) {
                 DispatchQueue.main.async {
                     self.delegate?.webSocketDidReceiveNewMessage(msg)
+                }
+            }
+
+        case "message_deleted":
+            // {"conversation_id", "message_id", "deleted_at"}: the sender
+            // deleted a message (on any of their devices).
+            if let d = json["data"] as? [String: Any],
+               let convId = (d["conversation_id"] as? NSNumber)?.intValue,
+               let msgId = (d["message_id"] as? NSNumber)?.int64Value {
+                DispatchQueue.main.async {
+                    self.delegate?.webSocketDidReceiveMessageDeleted(conversationId: convId, messageId: msgId)
                 }
             }
 

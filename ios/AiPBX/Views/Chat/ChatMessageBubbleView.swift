@@ -3,10 +3,17 @@ import SwiftUI
 public struct ChatMessageBubbleView: View {
     public let message: ChatMessage
     public let isGroup: Bool
+    /// Set for the user's own messages that can be deleted.
+    public let onDelete: (() -> Void)?
 
-    public init(message: ChatMessage, isGroup: Bool = false) {
+    public init(message: ChatMessage, isGroup: Bool = false, onDelete: (() -> Void)? = nil) {
         self.message = message
         self.isGroup = isGroup
+        self.onDelete = onDelete
+    }
+
+    private var isDeleted: Bool {
+        return message.isDeleted ?? false
     }
 
     private var isMe: Bool {
@@ -50,14 +57,19 @@ public struct ChatMessageBubbleView: View {
 
                     // Message Content Container
                     VStack(alignment: .leading, spacing: 4) {
-                        if let text = message.message, !text.isEmpty {
+                        if isDeleted {
+                            Text(L("🚫 This message was deleted"))
+                                .font(.system(size: 14))
+                                .italic()
+                                .foregroundColor(.secondary)
+                        } else if let text = message.message, !text.isEmpty {
                             Text(text)
                                 .font(.system(size: 15))
                                 .foregroundColor(isMe ? .white : .primary)
                         }
 
                         // Attachment preview if present
-                        if let fileName = message.fileName {
+                        if !isDeleted, let fileName = message.fileName {
                             HStack(spacing: 6) {
                                 Image(systemName: "doc.fill")
                                 Text(fileName)
@@ -70,8 +82,9 @@ public struct ChatMessageBubbleView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(isMe ? Color.blue : Color(.systemGray6))
+                    .background(isDeleted ? Color(.systemGray5) : (isMe ? Color.blue : Color(.systemGray6)))
                     .cornerRadius(16)
+                    .modifier(DeleteMessageMenu(onDelete: isDeleted ? nil : onDelete))
 
                     // Timestamp
                     Text(formatTime(message.createdAt))
@@ -96,5 +109,23 @@ public struct ChatMessageBubbleView: View {
             }
         }
         return rawDate
+    }
+}
+
+/// Long press on an own message: "Delete message". No menu otherwise.
+private struct DeleteMessageMenu: ViewModifier {
+    let onDelete: (() -> Void)?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let onDelete = onDelete {
+            content.contextMenu {
+                Button(role: .destructive, action: onDelete) {
+                    Label(L("Delete message"), systemImage: "trash")
+                }
+            }
+        } else {
+            content
+        }
     }
 }
