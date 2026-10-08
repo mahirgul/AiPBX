@@ -160,7 +160,7 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_BRAND_SUB, DEFAULT_BRAND_SUB) ?: DEFAULT_BRAND_SUB
         set(value) = prefs.edit().putString(KEY_BRAND_SUB, value).apply()
 
-    /** App language ("en" or "tr"); English unless the user picks Turkish. Kept on logout. */
+    /** App language code (see L10n); English unless the user picks another. Kept on logout. */
     var appLanguage: String
         get() = prefs.getString(KEY_APP_LANGUAGE, "en") ?: "en"
         set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()

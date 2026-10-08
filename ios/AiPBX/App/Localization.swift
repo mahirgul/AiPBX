@@ -1,15 +1,22 @@
 import Foundation
 import SwiftUI
 
-/// App language: English by default, Turkish when the user picks it (login
-/// screen or Settings). English text is the key; tr.lproj/Localizable.strings
-/// holds the Turkish. Changing it rebuilds the screens (AiPBXApp uses the code
+/// App language: English by default, or another supported language the user
+/// picks (login screen or Settings). English text is the key; each
+/// <code>.lproj/Localizable.strings holds a translation. Changing it rebuilds the screens (AiPBXApp uses the code
 /// as the root view's id), no restart needed.
 final class AppLanguage: ObservableObject {
     static let shared = AppLanguage()
-    static let supported = ["en", "tr"]
+    static let supported = ["en", "tr", "az", "bg", "cs", "da", "de", "el", "es", "fi", "fr",
+                             "hu", "it", "nb", "nl", "pl", "pt", "ro", "ru", "sr", "sv", "uk"]
     /// Names in their own language, so they are recognisable whatever is active.
-    static let names = ["en": "English", "tr": "Türkçe"]
+    static let names = [
+        "en": "English", "tr": "Türkçe", "az": "Azərbaycan dili", "bg": "Български",
+        "cs": "Čeština", "da": "Dansk", "de": "Deutsch", "el": "Ελληνικά", "es": "Español",
+        "fi": "Suomi", "fr": "Français", "hu": "Magyar", "it": "Italiano", "nb": "Norsk bokmål",
+        "nl": "Nederlands", "pl": "Polski", "pt": "Português", "ro": "Română", "ru": "Русский",
+        "sr": "Srpski", "sv": "Svenska", "uk": "Українська",
+    ]
     private static let storeKey = "app_language"
 
     @Published private(set) var code: String
@@ -42,7 +49,7 @@ public func L(_ key: String, _ args: CVarArg...) -> String {
     return args.isEmpty ? text : String(format: text, arguments: args)
 }
 
-/// English / Türkçe menu used on the login screen.
+/// Language menu used on the login screen.
 struct LanguageMenu: View {
     @ObservedObject private var language = AppLanguage.shared
 
