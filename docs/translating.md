@@ -83,8 +83,8 @@ result before it is merged.
 
 ## Mobile apps
 
-The Android and iOS apps have their own texts (the same languages as the portal,
-except Croatian so far); a new app language is also added to `L10n.kt` (Android),
+The Android and iOS apps have their own texts, in the same languages as the portal;
+a new app language is also added to `L10n.kt` (Android),
 `locales_config.xml` and `AppLanguage` in `Localization.swift` (iOS), and the iOS
 project is regenerated with `python3 ios/generate_project.py`:
 
@@ -92,6 +92,12 @@ project is regenerated with `python3 ios/generate_project.py`:
   `values-<code>/strings.xml` per language.
 - iOS: `ios/AiPBX/Resources/<code>.lproj/Localizable.strings` and
   `InfoPlist.strings`.
+
+Check them with `python3 scripts/check_mobile_lang.py` (all languages, or name
+one: `... check_mobile_lang.py de`). It lists missing or extra strings, broken
+placeholders and unescaped apostrophes; CI runs it on every change to the app
+texts. When you add a text to the app, add it to every language (or at least
+expect this check to name the languages that still show it in English).
 
 The server sends its messages to the apps in the app's language when the
 portal has that language too.

@@ -1,0 +1,30 @@
+name: Mobile Translations
+
+# Every app language must have every Android string and every iOS L("...") key,
+# with the same placeholders as English. A text added to the app but not to the
+# translations shows in English; this check names the missing ones.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android/app/src/main/res/values*/strings.xml'
+      - 'ios/AiPBX/**'
+      - 'scripts/check_mobile_lang.py'
+      - '.github/workflows/mobile-lang.yml'
+  pull_request:
+    paths:
+      - 'android/app/src/main/res/values*/strings.xml'
+      - 'ios/AiPBX/**'
+      - 'scripts/check_mobile_lang.py'
+      - '.github/workflows/mobile-lang.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Android & iOS translations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every app language against English
+        run: python3 scripts/check_mobile_lang.py
