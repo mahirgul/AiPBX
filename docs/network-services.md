@@ -1,6 +1,6 @@
 # Network services (DHCP and TFTP for desk phones)
 
-**Admin → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
+**PBX → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
 the provisioning address (option 66), and TFTP serves boot files or firmware to phones that need
 them. The configuration of each phone (with its SIP password) is always fetched over HTTPS from
 `/provision/` (see [Desk phones](phones.md)), never over TFTP.

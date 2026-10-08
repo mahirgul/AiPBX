@@ -50,6 +50,7 @@ return [
             ['href' => '/ivrs', 'icon' => 'fas fa-microphone-alt', 'label' => 'sidebar.item_ivrs', 'show' => $can('ivrs'), 'pages' => ['ivrs.php']],
             ['href' => '/extensions', 'icon' => 'fas fa-phone-square-alt', 'label' => 'sidebar.item_extensions', 'show' => $can('extensions'), 'pages' => ['extensions.php', 'users.php']],
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
+            ['href' => '/network-services', 'icon' => 'fas fa-ethernet', 'label' => 'sidebar.item_network_services', 'show' => $isAdmin, 'pages' => ['network_services.php']],
             ['href' => '/ring-groups', 'icon' => 'fas fa-users', 'label' => ['sidebar.item_ring_groups', 'Çalma Grupları'], 'show' => $can('ring_groups'), 'pages' => ['ring_groups.php'], 'uri' => '/ring-groups'],
             ['href' => '/boss-secretary', 'icon' => 'fas fa-user-tie', 'label' => ['sidebar.item_boss_secretary', 'Şef - Sekreter'], 'show' => $can('boss_secretary'), 'pages' => ['boss_secretary.php'], 'uri' => '/boss-secretary'],
             ['href' => '/conferences', 'icon' => 'fas fa-users-rectangle', 'label' => ['sidebar.item_conferences', 'Konferans Odaları'], 'show' => $can('conferences'), 'pages' => ['conferences.php'], 'uri' => '/conferences'],
@@ -74,7 +75,6 @@ return [
             ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
             ['href' => '/audit-log', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_audit_log', 'show' => $can('audit_log'), 'pages' => ['audit_log.php']],
             ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],
-            ['href' => '/network-services', 'icon' => 'fas fa-ethernet', 'label' => 'sidebar.item_network_services', 'show' => $isAdmin, 'pages' => ['network_services.php']],
         ],
     ],
     [
