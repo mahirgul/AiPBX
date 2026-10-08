@@ -2,6 +2,9 @@
 require_once __DIR__ . '/YealinkTemplate.php';
 require_once __DIR__ . '/GrandstreamTemplate.php';
 require_once __DIR__ . '/FanvilTemplate.php';
+require_once __DIR__ . '/SnomTemplate.php';
+require_once __DIR__ . '/CiscoSpaTemplate.php';
+require_once __DIR__ . '/PolyTemplate.php';
 
 /** The template of each vendor. */
 final class PhoneTemplates
@@ -12,6 +15,9 @@ final class PhoneTemplates
             'yealink' => new YealinkTemplate(),
             'grandstream' => new GrandstreamTemplate(),
             'fanvil' => new FanvilTemplate(),
+            'snom' => new SnomTemplate(),
+            'cisco' => new CiscoSpaTemplate(),
+            'poly' => new PolyTemplate(),
             default => null,
         };
     }

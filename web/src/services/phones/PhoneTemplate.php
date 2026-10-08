@@ -15,7 +15,7 @@ require_once __DIR__ . '/PhoneModels.php';
  *         (page 0 = the phone, 1..n = expansion modules; type blf,
  *         speeddial, park, dnd or line).
  *
- * To add a vendor (Snom, Cisco SPA, Poly …): a subclass here, its models in
+ * To add a vendor: a subclass here, its models in
  * PhoneModels::MODELS, its notify events in asterisk-config/pjsip_notify.conf
  * and a case in PhoneTemplates::forVendor().
  */
@@ -33,6 +33,15 @@ abstract class PhoneTemplate
 
     abstract public function render(array $ctx): string;
 
+    /**
+     * The answer to one per-phone file name. Most vendors have a single file;
+     * a vendor with several (Poly: master file + settings file) overrides this.
+     */
+    public function renderFile(string $file, array $ctx): string
+    {
+        return $this->render($ctx);
+    }
+
     /** pjsip_notify.conf section that makes the phone fetch its configuration again. */
     abstract public function notifyResync(): string;
 
@@ -47,6 +56,38 @@ abstract class PhoneTemplate
     {
         $value = (string) preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
         return mb_substr(trim($value), 0, $max);
+    }
+
+    /** A value for an XML element or attribute: cleaned like clean(), then escaped. */
+    protected static function xml(string $value, int $max = 64): string
+    {
+        return htmlspecialchars(self::clean($value, $max), ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Keys numbered across the phone and its expansion modules (1-based):
+     * page 0 keeps its positions, module n follows the phone's keys and the
+     * modules before it. For vendors that number all keys in one list.
+     */
+    protected static function keysFlat(array $keys, string $model): array
+    {
+        $m = PhoneModels::get($model) ?? ['keys' => 0, 'exp_keys' => 0];
+        $out = [];
+        foreach ($keys as $k) {
+            $page = (int) $k['page'];
+            $pos = (int) $k['position'];
+            $n = $page === 0 ? $pos : $m['keys'] + ($page - 1) * $m['exp_keys'] + $pos;
+            $out[$n] = $k;
+        }
+        ksort($out);
+        return $out;
+    }
+
+    /** Number of keys on the phone plus all its expansion modules. */
+    protected static function totalKeys(string $model): int
+    {
+        $m = PhoneModels::get($model) ?? ['keys' => 0, 'exp_keys' => 0, 'exp_max' => 0];
+        return $m['keys'] + $m['exp_keys'] * $m['exp_max'];
     }
 
     /** Keys of one page, indexed by position. */

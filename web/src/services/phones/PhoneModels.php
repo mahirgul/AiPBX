@@ -32,15 +32,39 @@ final class PhoneModels
         'fanvil-x4u' => ['vendor' => 'fanvil', 'label' => 'Fanvil X4U', 'keys' => 30, 'exp_keys' => 0, 'exp_max' => 0],
         'fanvil-x5u' => ['vendor' => 'fanvil', 'label' => 'Fanvil X5U', 'keys' => 48, 'exp_keys' => 0, 'exp_max' => 0],
         'fanvil-x6u' => ['vendor' => 'fanvil', 'label' => 'Fanvil X6U', 'keys' => 60, 'exp_keys' => 0, 'exp_max' => 0],
+        // Snom (D7 module: 18 keys, numbered after the phone's keys)
+        'snom-d315' => ['vendor' => 'snom', 'label' => 'Snom D315', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
+        'snom-d385' => ['vendor' => 'snom', 'label' => 'Snom D385', 'keys' => 12, 'exp_keys' => 18, 'exp_max' => 3],
+        'snom-d715' => ['vendor' => 'snom', 'label' => 'Snom D715', 'keys' => 5, 'exp_keys' => 18, 'exp_max' => 3],
+        'snom-d735' => ['vendor' => 'snom', 'label' => 'Snom D735', 'keys' => 32, 'exp_keys' => 18, 'exp_max' => 3],
+        'snom-d785' => ['vendor' => 'snom', 'label' => 'Snom D785', 'keys' => 24, 'exp_keys' => 18, 'exp_max' => 3],
+        // Cisco SPA (Linksys-style XML; SPA500S: 32 keys per module)
+        'cisco-spa303' => ['vendor' => 'cisco', 'label' => 'Cisco SPA303', 'keys' => 3, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-spa504g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA504G', 'keys' => 4, 'exp_keys' => 32, 'exp_max' => 2],
+        'cisco-spa508g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA508G', 'keys' => 8, 'exp_keys' => 32, 'exp_max' => 2],
+        'cisco-spa509g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA509G', 'keys' => 12, 'exp_keys' => 32, 'exp_max' => 2],
+        'cisco-spa525g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA525G2', 'keys' => 5, 'exp_keys' => 32, 'exp_max' => 2],
+        // Poly (VVX Color Expansion Module: 28 keys x 3 pages, numbered after the phone's keys)
+        'poly-vvx250' => ['vendor' => 'poly', 'label' => 'Poly VVX 250', 'keys' => 4, 'exp_keys' => 0, 'exp_max' => 0],
+        'poly-vvx350' => ['vendor' => 'poly', 'label' => 'Poly VVX 350', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
+        'poly-vvx450' => ['vendor' => 'poly', 'label' => 'Poly VVX 450', 'keys' => 12, 'exp_keys' => 84, 'exp_max' => 3],
+        'poly-edge-e350' => ['vendor' => 'poly', 'label' => 'Poly Edge E350', 'keys' => 8, 'exp_keys' => 0, 'exp_max' => 0],
+        'poly-edge-e450' => ['vendor' => 'poly', 'label' => 'Poly Edge E450', 'keys' => 12, 'exp_keys' => 0, 'exp_max' => 0],
+        'poly-edge-e550' => ['vendor' => 'poly', 'label' => 'Poly Edge E550', 'keys' => 16, 'exp_keys' => 0, 'exp_max' => 0],
     ];
 
-    public const VENDORS = ['yealink' => 'Yealink', 'grandstream' => 'Grandstream', 'fanvil' => 'Fanvil'];
+    public const VENDORS = [
+        'yealink' => 'Yealink', 'grandstream' => 'Grandstream', 'fanvil' => 'Fanvil',
+        'snom' => 'Snom', 'cisco' => 'Cisco SPA', 'poly' => 'Poly',
+    ];
 
     /** MAC prefixes (OUI) per vendor, for phones that ask without a useful User-Agent. */
     private const OUI = [
         'yealink' => ['001565', '805ec0', '249ad8', '44dbd2', '805e0c', 'c4fc22'],
         'grandstream' => ['000b82', 'c074ad', 'ec74d7'],
         'fanvil' => ['0c383e', '7c2f80', '0c1105'],
+        'snom' => ['000413'],
+        'poly' => ['0004f2', '64167f', '482567'],
     ];
 
     public static function get(string $model): ?array
