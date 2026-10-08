@@ -9,6 +9,8 @@ public struct ChatRoomView: View {
     @State private var isLoadingMessages: Bool = false
     @State private var typingUser: String? = nil
     @State private var showGroupDetails: Bool = false
+    @State private var messageToDelete: ChatMessage? = nil
+    @State private var deleteError: String? = nil
 
     public init(conversation: ChatConversation) {
         self.conversation = conversation
@@ -21,8 +23,12 @@ public struct ChatRoomView: View {
                 ScrollView {
                     LazyVStack(spacing: 6) {
                         ForEach(messages) { msg in
-                            ChatMessageBubbleView(message: msg, isGroup: conversation.isGroup)
-                                .id(msg.id)
+                            ChatMessageBubbleView(
+                                message: msg,
+                                isGroup: conversation.isGroup,
+                                onDelete: canDelete(msg) ? { messageToDelete = msg } : nil
+                            )
+                            .id(msg.id)
                         }
                     }
                     .padding(.horizontal, 12)
@@ -89,6 +95,71 @@ public struct ChatRoomView: View {
             GroupDetailsView(conversation: conversation)
                 .environmentObject(appState)
         }
+        .onReceive(appState.chatMessageReceived) { msg in
+            receive(msg)
+        }
+        .onReceive(appState.chatMessageDeleted) { event in
+            guard event.conversationId == conversation.id else { return }
+            markDeleted(event.messageId)
+        }
+        .alert(L("Delete message"), isPresented: Binding(
+            get: { messageToDelete != nil },
+            set: { if !$0 { messageToDelete = nil } }
+        ), presenting: messageToDelete) { msg in
+            Button(L("Delete"), role: .destructive) { deleteMessage(msg) }
+            Button(L("Cancel"), role: .cancel) {}
+        } message: { _ in
+            Text(L("Delete this message for everyone in the chat?"))
+        }
+        .alert(L("Error"), isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button(L("OK"), role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "")
+        }
+    }
+
+    /// Only the sender can delete a message, and only one the server has stored.
+    private func canDelete(_ msg: ChatMessage) -> Bool {
+        return (msg.isMe ?? false) && !msg.isSystem && !(msg.isDeleted ?? false) && !msg.isLocal
+    }
+
+    private func deleteMessage(_ msg: ChatMessage) {
+        guard let token = appState.token else { return }
+        let baseUrl = appState.baseUrl
+        Task { @MainActor in
+            do {
+                try await ApiClient.shared.deleteChatMessage(baseUrl: baseUrl, token: token, messageId: msg.id)
+                // The "message_deleted" event follows; do not wait for it.
+                markDeleted(msg.id)
+            } catch {
+                deleteError = error.localizedDescription
+            }
+        }
+    }
+
+    private func markDeleted(_ messageId: Int64) {
+        if let idx = messages.firstIndex(where: { $0.id == messageId }) {
+            messages[idx] = messages[idx].markedDeleted()
+        }
+    }
+
+    /// A live message: the server's copy of one just sent here replaces the
+    /// local one (it carries the real id, so it can be deleted).
+    private func receive(_ msg: ChatMessage) {
+        guard msg.conversationId == conversation.id,
+              !messages.contains(where: { $0.id == msg.id }) else { return }
+        if (msg.isMe ?? false),
+           let idx = messages.firstIndex(where: { $0.isLocal && $0.message == msg.message }) {
+            messages[idx] = msg
+            return
+        }
+        messages.append(msg)
+        if !(msg.isMe ?? false) {
+            ChatWebSocketManager.shared.markAsRead(conversationId: conversation.id, lastMessageId: msg.id)
+        }
     }
 
     @ViewBuilder
@@ -147,7 +218,8 @@ public struct ChatRoomView: View {
             createdAt: nowStr,
             isMe: true,
             systemEvent: nil,
-            systemMeta: nil
+            systemMeta: nil,
+            isLocal: true
         )
         messages.append(optimisticMsg)
     }

@@ -192,6 +192,9 @@ public struct CallRecord: Codable, Identifiable, Equatable {
     public let billsec: Int
     public let disposition: String?
     public let channel: String?
+    /// Identifies the call for hiding it from the user's own history; older
+    /// servers do not send it, then calls cannot be removed.
+    public let callKey: String?
 
     public var formattedDuration: String {
         let minutes = billsec / 60
@@ -216,6 +219,7 @@ public struct CallRecord: Codable, Identifiable, Equatable {
         case billsec
         case disposition
         case channel
+        case callKey = "call_key"
     }
 }
 
@@ -397,6 +401,11 @@ public struct ChatMessage: Codable, Identifiable, Hashable {
     public var isMe: Bool?
     public let systemEvent: String?
     public let systemMeta: String?
+    /// The sender deleted it: the server keeps the row with its text cleared.
+    public var isDeleted: Bool?
+    /// Shown right after sending, before the server echoes the stored copy
+    /// (its id is not a server id yet). Not part of the JSON.
+    public var isLocal: Bool = false
 
     public var isSystem: Bool {
         return msgType.lowercased() == "system"
@@ -417,7 +426,25 @@ public struct ChatMessage: Codable, Identifiable, Hashable {
         case isMe = "is_me"
         case systemEvent = "system_event"
         case systemMeta = "system_meta"
+        case isDeleted = "is_deleted"
     }
+
+    /// The same message after the sender deleted it.
+    public func markedDeleted() -> ChatMessage {
+        var m = ChatMessage(
+            id: id, conversationId: conversationId, senderExt: senderExt, senderName: senderName,
+            msgType: msgType, message: nil, attachmentUrl: nil, fileName: nil, fileSize: nil,
+            mimeType: nil, createdAt: createdAt, isMe: isMe, systemEvent: systemEvent, systemMeta: systemMeta
+        )
+        m.isDeleted = true
+        return m
+    }
+}
+
+/// A "message_deleted" event from the chat service.
+public struct ChatMessageDeletion {
+    public let conversationId: Int
+    public let messageId: Int64
 }
 
 public struct ChatUploadResponse: Codable {

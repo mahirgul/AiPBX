@@ -7,6 +7,9 @@ public class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        Task { @MainActor in
+            ChatNotifications.shared.registerCategory()
+        }
 
         // Request Push Notification Authorization
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
@@ -45,5 +48,22 @@ public class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound, .badge])
+    }
+
+    /// The Reply field of a chat notification: sent without opening the app.
+    public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        guard response.actionIdentifier == ChatNotifications.replyActionId,
+              let textResponse = response as? UNTextInputNotificationResponse else {
+            completionHandler()
+            return
+        }
+        Task { @MainActor in
+            await ChatNotifications.shared.handleReply(textResponse)
+            completionHandler()
+        }
     }
 }

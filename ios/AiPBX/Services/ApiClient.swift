@@ -408,4 +408,109 @@ public final class ApiClient {
         let res = try JSONDecoder().decode(GenericActionResponse.self, from: data)
         return res.success
     }
+
+    // MARK: - Removing calls from the history
+
+    /// Hides calls from the user's own call history; nil clears all of it.
+    /// The call records on the server are kept.
+    public func hideCalls(baseUrl: String, token: String, callKeys: [String]?) async throws {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/call_history.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        var body: [String: Any] = ["action": "clear"]
+        if let keys = callKeys {
+            body = ["action": "hide", "call_keys": keys]
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        guard (200...299).contains(status) else {
+            throw ApiError.serverError(statusCode: status, message: L("Could not update the call history"))
+        }
+    }
+
+    // MARK: - Chat over REST (notification reply, deleting)
+
+    /// Sends a text message and returns its id (0 when the server did not say).
+    public func sendChatText(baseUrl: String, token: String, convId: Int, text: String) async throws -> Int64 {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/messages") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = ["conversation_id": convId, "msg_type": "text", "message": text]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        guard (200...299).contains(status), json?["success"] as? Bool == true else {
+            let serverMsg = (json?["error"] as? String) ?? ""
+            throw ApiError.serverError(statusCode: status, message: serverMsg.isEmpty ? L("Could not send the message") : serverMsg)
+        }
+        let saved = json?["message"] as? [String: Any]
+        return (saved?["id"] as? NSNumber)?.int64Value ?? 0
+    }
+
+    /// Marks a conversation read up to lastMessageId.
+    public func markChatRead(baseUrl: String, token: String, convId: Int, lastMessageId: Int64) async throws {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/read") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = ["conversation_id": convId, "last_message_id": lastMessageId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        guard (200...299).contains(status) else {
+            throw ApiError.serverError(statusCode: status, message: L("Could not get messages"))
+        }
+    }
+
+    /// Deletes the user's own message for everyone in the chat. Already
+    /// deleted (409) counts as done.
+    public func deleteChatMessage(baseUrl: String, token: String, messageId: Int64) async throws {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/messages/delete") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = ["message_id": messageId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        if (200...299).contains(status) || status == 409 {
+            return
+        }
+        if status == 403 {
+            throw ApiError.custom(L("This message can no longer be deleted."))
+        }
+        throw ApiError.custom(L("Could not delete the message (HTTP %@)", "\(status)"))
+    }
 }
