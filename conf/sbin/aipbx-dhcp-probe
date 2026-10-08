@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -I
 """aipbx-dhcp-probe IFACE — lists the DHCP servers that answer on IFACE.
 
-Admin -> Network services runs it (through `aipbx-priv netsvc probe`) before
+PBX -> Network services runs it (through `aipbx-priv netsvc probe`) before
 AiPBX's own DHCP server is switched on: a second DHCP server on a network
 breaks it. Sends one DHCPDISCOVER (broadcast, the interface's own MAC) and
 prints one line per DHCPOFFER received within a few seconds:

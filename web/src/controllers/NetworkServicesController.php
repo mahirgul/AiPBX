@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/NetworkServicesService.php';
 
-/** Admin → Network services: DHCP and TFTP for desk phones (roadmap item 10). */
+/** PBX → Network services: DHCP and TFTP for desk phones (roadmap item 10). */
 class NetworkServicesController extends BaseController
 {
     public static function index(): void

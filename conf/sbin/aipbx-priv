@@ -310,7 +310,7 @@ case "$cmd" in
         ;;
 
     netsvc)
-        # Admin → Network services (roadmap 10): dnsmasq as a DHCP server for a
+        # PBX → Network services (roadmap 10): dnsmasq as a DHCP server for a
         # phone network and/or a TFTP server, in its own unit (aipbx-dnsmasq).
         # The configuration is written HERE from validated KEY=VALUE arguments,
         # into a root-owned folder: a dnsmasq file can run commands as root
@@ -409,7 +409,7 @@ case "$cmd" in
                 tmp="$(mktemp "$NETSVC_DIR/.dnsmasq.XXXXXX")" || exit 1
                 trap 'rm -f "$tmp"' EXIT
                 {
-                    echo "# Written by aipbx-priv (Admin -> Network services). Do not edit: the next apply replaces it."
+                    echo "# Written by aipbx-priv (PBX -> Network services). Do not edit: the next apply replaces it."
                     echo "port=0"
                     echo "user=$user"
                     if [ "$mode" = dhcp ]; then

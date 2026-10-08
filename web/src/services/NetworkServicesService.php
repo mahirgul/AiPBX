@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin → Network services (roadmap item 10): DHCP and TFTP for desk phones,
+ * PBX → Network services (roadmap item 10): DHCP and TFTP for desk phones,
  * so they find the provisioning server by themselves.
  *
  * Modes (sys_settings netsvc_mode):

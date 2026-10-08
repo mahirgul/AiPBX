@@ -957,10 +957,10 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
 
-# DHCP check for Admin → Network services; the portal calls it through aipbx-priv.
+# DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
 
-# Admin → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
+# PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
 # off until the page writes a configuration. aipbx-priv writes it into this
 # root-owned folder (a dnsmasq file can run commands as root, so the portal
 # must not be able to write it); TFTP serves only the uploads in
@@ -969,7 +969,7 @@ install -d -o root -g root -m 0755 /var/lib/aipbx-netsvc
 install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
 cat > /etc/systemd/system/aipbx-dnsmasq.service << 'NETSVC'
 [Unit]
-Description=AiPBX DHCP/TFTP for desk phones (Admin -> Network services)
+Description=AiPBX DHCP/TFTP for desk phones (PBX -> Network services)
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/var/lib/aipbx-netsvc/dnsmasq.conf

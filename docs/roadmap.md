@@ -229,7 +229,7 @@ needed.
 **Goal.** Phones find the provisioning server by themselves: the DHCP server tells them its
 address (option 66), and TFTP serves the files of phones that need it.
 
-**Admin page** (*Admin → Network services*):
+**Admin page** (*PBX → Network services*):
 
 - **Off by default.** A second DHCP server on a network breaks it, so it has to be switched on
   deliberately, with a clear warning and a check for another DHCP server already answering.
