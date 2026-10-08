@@ -35,6 +35,7 @@ class RoleRepository extends BaseRepository
             'time_conditions'    => ['title' => 'Time Conditions', 'group' => 'PBX Management', 'actions' => $all],
             'ivrs'               => ['title' => 'IVR Menus', 'group' => 'PBX Management', 'actions' => $all],
             'extensions'         => ['title' => 'Extensions', 'group' => 'PBX Management', 'actions' => $all],
+            'phones'             => ['title' => 'Phones', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
             'ring_groups'        => ['title' => 'Ring Groups', 'group' => 'PBX Management', 'actions' => $all],
             'boss_secretary'     => ['title' => 'Boss - Secretary', 'group' => 'PBX Management', 'actions' => $all],
             'conferences'        => ['title' => 'Conference Rooms', 'group' => 'PBX Management', 'actions' => $all],

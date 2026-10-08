@@ -166,7 +166,7 @@ if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
  */
 function check_rbac(): void
 {
-    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings'];
+    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings', '/phones', '/phone-keys'];
     $n = 0;
 
     // Told apart purely by size. Measured live (2026-09-01): a blocked request
@@ -353,6 +353,9 @@ function check_conventions(): void
         'ForgotPasswordController.php',
         'MobileLoginController.php',
         'GoogleAuthController.php',
+        // Desk phones fetch their configuration without a session; the token,
+        // allowed networks and rate limit guard it (PhoneProvisionService).
+        'ProvisionController.php',
     ];
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/controllers/*.php') as $f) {
