@@ -16,6 +16,7 @@
 		70504C0F206DA0DFB5647983 /* AppLogManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17ADC0798840A8FE676162E /* AppLogManager.swift */; };
 		580B1D3E40B8F3BECF57FAAB /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D6649B35B116A4B1278AF7 /* AudioSessionManager.swift */; };
 		C8777D46963BDCECBF209BD6 /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A77994681DA0EDCDF61232E /* CallKitManager.swift */; };
+		9EBA9B34A06B515DD8C9C2E9 /* ChatNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */; };
 		4B16CDA02548F8EEF7FD69DF /* ChatWebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */; };
 		8B45160736852F208D3482B7 /* SipWebRtcEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */; };
 		717B8C257284D81C99783EB3 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC11A680C272C2DB0BEB5C71 /* LoginView.swift */; };
@@ -60,6 +61,7 @@
 		D17ADC0798840A8FE676162E /* AppLogManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppLogManager.swift"; sourceTree = "<group>"; };
 		81D6649B35B116A4B1278AF7 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioSessionManager.swift"; sourceTree = "<group>"; };
 		0A77994681DA0EDCDF61232E /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallKitManager.swift"; sourceTree = "<group>"; };
+		6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatNotifications.swift"; sourceTree = "<group>"; };
 		9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatWebSocketManager.swift"; sourceTree = "<group>"; };
 		4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SipWebRtcEngine.swift"; sourceTree = "<group>"; };
 		EC11A680C272C2DB0BEB5C71 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoginView.swift"; sourceTree = "<group>"; };
@@ -294,6 +296,7 @@
 				D17ADC0798840A8FE676162E /* AppLogManager.swift */,
 				81D6649B35B116A4B1278AF7 /* AudioSessionManager.swift */,
 				0A77994681DA0EDCDF61232E /* CallKitManager.swift */,
+				6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */,
 				9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */,
 				4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */,
 			);
@@ -491,6 +494,7 @@
 				70504C0F206DA0DFB5647983 /* AppLogManager.swift in Sources */,
 				580B1D3E40B8F3BECF57FAAB /* AudioSessionManager.swift in Sources */,
 				C8777D46963BDCECBF209BD6 /* CallKitManager.swift in Sources */,
+				9EBA9B34A06B515DD8C9C2E9 /* ChatNotifications.swift in Sources */,
 				4B16CDA02548F8EEF7FD69DF /* ChatWebSocketManager.swift in Sources */,
 				8B45160736852F208D3482B7 /* SipWebRtcEngine.swift in Sources */,
 				717B8C257284D81C99783EB3 /* LoginView.swift in Sources */,
