@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Přístup k mikrofonu je potřeba pro hovory přes ústřednu a hlasové konverzace.";
+"NSCameraUsageDescription" = "Přístup ke kameře je potřeba pro přihlášení QR kódem ústředny a pro odesílání fotografií v chatu.";
+"NSPhotoLibraryUsageDescription" = "Přístup ke knihovně fotografií je potřeba pro sdílení fotografií a souborů v chatu.";
