@@ -13,6 +13,9 @@ welcome there.
 | 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning) | | large, in steps |
 | 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
+| 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones) | | medium |
+| 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
+| 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management) | | medium |
 
 Done recently: e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
@@ -145,3 +148,88 @@ The generated inbound dialplan uses the pattern `_.`, which Asterisk warns about
 ("The use of '_.' for an extension is strongly discouraged"). Replacing it with `_X.` (or a
 pattern that also accepts `+`) removes the warnings from the log; it has to be checked against
 DIDs that start with `+` before the change.
+
+## 8. Busy lamps (BLF) and voicemail lamp on desk phones
+
+**Goal.** A key on a SIP desk phone lights up when a colleague is on the phone (busy lamp field),
+blinks while their phone rings (press it to pick up the call), and the message lamp shows new
+voicemail.
+
+**Today.** Every extension already has an Asterisk *hint* (desk phone, web phone and app together)
+in `from-internal-pbx`. Desk phones, however, use the context of their dial permission group, and
+whether their subscriptions (SUBSCRIBE) reach those hints has to be tested with a real phone. Desk
+phones also get no voicemail lamp: their endpoints have no `mailboxes=`.
+
+**Plan.**
+
+- Set `subscribe_context` (or include `from-internal-pbx`) on desk phone endpoints so a key for
+  extension 1001 always finds its hint; test BLF with Yealink, Grandstream and Fanvil and with a
+  softphone in CI.
+- Ringing state with the caller's name, and pickup by pressing the blinking key (directed pickup,
+  `*21` + extension, already exists).
+- Message lamp: `mailboxes=<ext>@default` on desk phone endpoints, so the phone shows new voicemail
+  and the count.
+- Lamps for more than extensions: queue login (`*95`), do-not-disturb, call forwarding, a
+  day/night (time condition) switch and conference rooms, through custom device states.
+- A **BLF keys** list per user (*Extensions*): which keys show whom. Provisioning (item 9) writes
+  them to the phone, so nobody configures keys by hand.
+- Later: the same busy status in the web phone's and the apps' contact lists.
+
+## 9. Phone provisioning page
+
+**Goal.** A new desk phone works within a minute: plug it in, it fetches its configuration from
+AiPBX and registers with the right extension, keys and settings, without anyone typing on it.
+
+**Admin page** (*PBX → Phones*):
+
+- **Phone list:** MAC address, model, assigned extension, IP, firmware, last configuration
+  download, registration state.
+- **Add a phone:** type (or scan) the MAC, pick the model and the extension, done. **CSV import**
+  for many phones at once (MAC, model, extension).
+- **Waiting phones:** a phone that asks for a configuration but is not known yet appears here with
+  its MAC, model and IP; one click assigns an extension.
+- **Model templates** for the common vendors: Yealink, Grandstream, Fanvil, Snom, Cisco SPA,
+  Poly. They hold server and transport (UDP or TLS), SRTP, codecs, time zone and NTP, language,
+  display name, the voicemail key (`*97`), BLF keys (item 8), a dial plan and the phone's own web
+  admin password (generated and kept per phone). An administrator can override settings per model
+  or per phone.
+- **Actions:** re-provision (a SIP NOTIFY `check-sync`, so the phone reloads its configuration at
+  once), reboot, firmware upload per model.
+
+**Delivery and security.** Configurations are served over **HTTPS** by the portal, one URL per
+phone with a random token (`/provision/<token>/<file>`), never readable from outside the allowed
+networks. They contain the SIP password, so every phone gets its own random password and every
+download is logged. Plain TFTP and HTTP serve only the first step for phones that cannot start
+with HTTPS (see item 10).
+
+**Later:** SIP plug-and-play (Yealink/Fanvil/Snom phones ask the network for their provisioning
+server by multicast; a small listener answers with AiPBX's URL), so even the DHCP option is not
+needed.
+
+## 10. DHCP and TFTP management
+
+**Goal.** Phones find the provisioning server by themselves: the DHCP server tells them its
+address (option 66), and TFTP serves the files of phones that need it.
+
+**Admin page** (*Admin → Network services*):
+
+- **Off by default.** A second DHCP server on a network breaks it, so it has to be switched on
+  deliberately, with a clear warning and a check for another DHCP server already answering.
+- **Three modes:**
+  1. *TFTP only*: the company's existing DHCP server keeps handing out addresses, and the page
+     shows exactly which option to set there (66, 150 for Cisco, 160 for Poly, 43 where needed)
+     with the right value.
+  2. *DHCP for a phone network*: an interface or VLAN, address range, gateway, DNS, lease time,
+     NTP (option 42) and the provisioning URL (option 66).
+  3. *Off*.
+- **Leases:** MAC, IP, host name and vendor (from the MAC) of every device that got an address.
+  Phones among them appear on the provisioning page as waiting phones (item 9).
+- Implemented with **dnsmasq** (DHCP and TFTP in one small service), written and restarted through
+  the `aipbx-priv` root helper like the other system settings. The firewall opens UDP 67/69 only on
+  the chosen interface.
+- TFTP serves only the files that need it (boot pointers, firmware), never the per-phone
+  configuration with passwords, and only to the configured local networks.
+
+**Order.** Item 9 (provisioning over HTTPS) first, because it is useful on its own with the
+company's existing DHCP server; item 10 then makes the start automatic.
+

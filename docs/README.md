@@ -46,5 +46,5 @@ link in their invitation e-mail.
 
 ## Roadmap
 
-Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models
-…) with a short explanation of each: [Roadmap](roadmap.md).
+Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models,
+busy lamps on desk phones, phone provisioning, DHCP/TFTP …) with a short explanation of each: [Roadmap](roadmap.md).
