@@ -1738,3 +1738,7 @@ tr.row-dragging { opacity: 0.45; }
     background: var(--bg-input);
     outline: none;
 }
+
+/* Show / hide password (password_reveal.js) */
+.password-reveal-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.password-reveal-btn:hover, .password-reveal-btn:focus-visible { color: var(--primary); background: var(--bg-input); }

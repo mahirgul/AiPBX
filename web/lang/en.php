@@ -3715,4 +3715,6 @@ Your phone will ring.',
     'mail_templates.link_prompt' => 'Link address (https://… or a {value})',
     'mail_templates.html_note' => 'Allowed: paragraphs, bold, italic, links and lists. Other markup is removed when you save.',
     'mail_templates.unknown_caller' => 'Unknown caller',
+    'login.show_password' => 'Show password',
+    'login.hide_password' => 'Hide password',
 ];
