@@ -347,7 +347,7 @@ class PhoneProvisionService
                 continue;
             }
             $cols = array_map('trim', str_getcsv($line, self::csvSeparator($line), '"', ''));
-            if ($i === 0 && PhoneModels::normalizeMac($cols[0] ?? '') === '' && stripos($line, 'mac') !== false) {
+            if ($i === 0 && PhoneModels::normalizeMac($cols[0]) === '' && stripos($line, 'mac') !== false) {
                 continue; // header
             }
             [$rawMac, $rawModel, $ext] = array_pad($cols, 3, '');

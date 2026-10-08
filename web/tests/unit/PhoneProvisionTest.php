@@ -14,7 +14,15 @@ final class PhoneProvisionTest extends TestCase
 {
     private const EXT = '7701';
     private const EXT2 = '7702';
-    private const SIP_PASSWORD = 'Sip-Secret-7701!';
+    /** Random per run (no literal passwords in the repository). */
+    private static string $sipPassword = '';
+    private static string $adminPassword = '';
+
+    public static function setUpBeforeClass(): void
+    {
+        self::$sipPassword = 'S' . bin2hex(random_bytes(6)) . '!';
+        self::$adminPassword = 'A' . bin2hex(random_bytes(5));
+    }
 
     private PDO $db;
     private int $userId;
@@ -29,7 +37,7 @@ final class PhoneProvisionTest extends TestCase
 
         $ins = $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active)
             VALUES (?, '', ?, ?, 'user', ?, 'sip', ?, 1)");
-        $ins->execute(['phonetest1', "Ayşe\nYılmaz", 'p1@example.com', self::EXT, self::SIP_PASSWORD]);
+        $ins->execute(['phonetest1', "Ayşe\nYılmaz", 'p1@example.com', self::EXT, self::$sipPassword]);
         $this->userId = (int) $this->db->lastInsertId();
         $ins->execute(['phonetest2', 'Second User', 'p2@example.com', self::EXT2, 'Other-Secret-2!']);
         $this->user2Id = (int) $this->db->lastInsertId();
@@ -66,10 +74,10 @@ final class PhoneProvisionTest extends TestCase
     {
         return [
             'mac' => '001565aabbcc', 'model' => $model, 'extension' => self::EXT,
-            'display_name' => "Ali\nlinekey.9.type = 16", 'sip_password' => self::SIP_PASSWORD,
+            'display_name' => "Ali\nlinekey.9.type = 16", 'sip_password' => self::$sipPassword,
             'server' => 'pbx.test.example', 'port' => 5060, 'transport' => 'udp', 'srtp' => 1,
             'codecs' => ['g722', 'pcma'], 'ntp' => 'pool.ntp.org', 'utc_offset' => 180, 'language' => 'tr',
-            'voicemail' => '*97', 'pickup_prefix' => '*21', 'admin_password' => 'AdminPw123',
+            'voicemail' => '*97', 'pickup_prefix' => '*21', 'admin_password' => self::$adminPassword,
             'keys' => $keys,
         ];
     }
@@ -85,14 +93,14 @@ final class PhoneProvisionTest extends TestCase
         ]));
         $this->assertStringStartsWith('#!version:1.0.0.1', $out);
         $this->assertStringContainsString('account.1.user_name = ' . self::EXT, $out);
-        $this->assertStringContainsString('account.1.password = ' . self::SIP_PASSWORD, $out);
+        $this->assertStringContainsString('account.1.password = ' . self::$sipPassword, $out);
         $this->assertStringContainsString('account.1.sip_server.1.address = pbx.test.example', $out);
         $this->assertStringContainsString('account.1.srtp_encryption = 1', $out);
         $this->assertStringContainsString('voice_mail.number.1 = *97', $out);
         $this->assertStringContainsString('features.pickup.direct_pickup_code = *21', $out);
         $this->assertStringContainsString('local_time.time_zone = +3', $out);
         $this->assertStringContainsString('lang.gui = Turkish', $out);
-        $this->assertStringContainsString('static.security.user_password = admin:AdminPw123', $out);
+        $this->assertStringContainsString('static.security.user_password = admin:' . self::$adminPassword, $out);
         $this->assertStringContainsString("linekey.1.type = 15", $out);
         $this->assertStringContainsString("linekey.2.type = 16\nlinekey.2.line = 1\nlinekey.2.value = 1002\nlinekey.2.label = Mehmet", $out);
         $this->assertStringContainsString('linekey.3.type = 0', $out);
@@ -120,7 +128,7 @@ final class PhoneProvisionTest extends TestCase
         $c = $xml->config;
         $this->assertSame('pbx.test.example:5061', (string) $c->P47);
         $this->assertSame(self::EXT, (string) $c->P35);
-        $this->assertSame(self::SIP_PASSWORD, (string) $c->P34);
+        $this->assertSame(self::$sipPassword, (string) $c->P34);
         $this->assertSame('2', (string) $c->P130);
         $this->assertSame('*97', (string) $c->P33);
         $this->assertSame('9', (string) $c->P57);   // G.722 first
@@ -130,7 +138,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('A&B', (string) $c->P302);
         $this->assertSame('9', (string) $c->P324);  // key 2: call park
         $this->assertSame('UTC-3', (string) $c->P246);
-        $this->assertSame('AdminPw123', (string) $c->P2);
+        $this->assertSame(self::$adminPassword, (string) $c->P2);
     }
 
     public function testFanvilRendersSectionsAndKeys(): void
@@ -142,7 +150,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertStringStartsWith('<<VOIP CONFIG FILE>>', $out);
         $this->assertStringContainsString("<<END OF FILE>>\n", $out);
         $this->assertStringContainsString('SIP1 Register User :' . self::EXT, $out);
-        $this->assertStringContainsString('SIP1 Register Pswd :' . self::SIP_PASSWORD, $out);
+        $this->assertStringContainsString('SIP1 Register Pswd :' . self::$sipPassword, $out);
         $this->assertStringContainsString('SIP1 Register Addr :pbx.test.example', $out);
         $this->assertStringContainsString('SIP1 MWI Num       :*97', $out);
         $this->assertStringContainsString("Fkey1 Type :1\nFkey1 Value :1002@1/b\nFkey1 Title :Mehmet", $out);
@@ -181,7 +189,7 @@ final class PhoneProvisionTest extends TestCase
 
         $res = PhoneProvisionService::handleRequest($phone['token'], '001565aabbcc.cfg', '192.0.2.10', 'Yealink SIP-T46U 108.86.0.20');
         $this->assertSame(200, $res['status']);
-        $this->assertStringContainsString('account.1.password = ' . self::SIP_PASSWORD, $res['body']);
+        $this->assertStringContainsString('account.1.password = ' . self::$sipPassword, $res['body']);
         // The SIP server is the installation's domain, never the request's Host header.
         $this->assertStringContainsString('account.1.sip_server.1.address = pbx.test.example', $res['body']);
         // The phone web admin password is generated, kept encrypted and written to the phone.
@@ -254,7 +262,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame([], PhoneProvisionService::listWaiting());
         $res = PhoneProvisionService::handleRequest(null, 'cfg000b82112233.xml', '192.168.1.30', 'Grandstream GXP2170 1.0.11.84');
         $this->assertSame(200, $res['status']);
-        $this->assertStringContainsString('<P34>' . self::SIP_PASSWORD . '</P34>', $res['body']);
+        $this->assertStringContainsString('<P34>' . self::$sipPassword . '</P34>', $res['body']);
     }
 
     public function testRateLimit(): void
@@ -278,7 +286,7 @@ final class PhoneProvisionTest extends TestCase
         $rows = $this->db->query('SELECT * FROM pbx_phone_fetch_log ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
         $this->assertSame(['served', 'mac_mismatch', 'bad_token'], array_column($rows, 'result'));
         $dump = json_encode($rows) . json_encode($this->db->query('SELECT * FROM sys_audit_log')->fetchAll(PDO::FETCH_ASSOC));
-        $this->assertStringNotContainsString(self::SIP_PASSWORD, $dump);
+        $this->assertStringNotContainsString(self::$sipPassword, $dump);
         $this->assertStringNotContainsString(PhoneProvisionService::adminPassword($phone), $dump);
         $this->assertStringNotContainsString($phone['token'], json_encode($rows));
     }
