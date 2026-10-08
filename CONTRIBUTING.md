@@ -127,7 +127,7 @@ Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/
 
 ## 🌍 Translations
 
-The portal is available in English, Turkish, Croatian and German, and new languages
+The portal is available in 23 languages (see [docs/translating.md](docs/translating.md)), and new languages
 or corrections are very welcome — no PHP knowledge needed. The texts live in
 `web/lang/<code>.php`; `scripts/i18n.py` exports the missing strings, checks
 your translation (placeholders, HTML tags) and writes the file. Step-by-step

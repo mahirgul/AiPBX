@@ -1,0 +1,4 @@
+/* Permission descriptions: iOS shows these in the phone's language, not the in-app language choice. */
+"NSMicrophoneUsageDescription" = "É necessário acesso ao microfone para chamadas do PBX e conversas de voz.";
+"NSCameraUsageDescription" = "É necessário acesso à câmara para iniciar sessão com o código QR do PBX e enviar fotografias no chat.";
+"NSPhotoLibraryUsageDescription" = "É necessário acesso à fototeca para partilhar fotografias e ficheiros no chat.";

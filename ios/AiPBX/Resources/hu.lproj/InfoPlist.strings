@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "A mikrofonhoz való hozzáférés az alközponti hívásokhoz és a hangbeszélgetésekhez szükséges.";
+"NSCameraUsageDescription" = "A kamerához való hozzáférés az alközponti QR-kóddal történő bejelentkezéshez és a fényképek csevegésben való küldéséhez szükséges.";
+"NSPhotoLibraryUsageDescription" = "A fotókönyvtárhoz való hozzáférés a fényképek és fájlok csevegésben való megosztásához szükséges.";
