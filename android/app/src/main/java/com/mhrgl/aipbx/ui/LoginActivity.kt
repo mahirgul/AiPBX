@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.util.BatteryPrompt
 import com.mhrgl.aipbx.util.L10n
 import android.annotation.SuppressLint
 import android.content.Context
@@ -271,7 +272,7 @@ class LoginActivity : AppCompatActivity() {
         FcmHelper.initIfConfigured(this, response.pushConfig)
 
         // Request ignore battery optimizations so the app is never killed when screen is off
-        requestBatteryExemption()
+        BatteryPrompt.askOnce(this)
 
         // Start Foreground Service
         PbxForegroundService.start(this)
@@ -328,22 +329,6 @@ class LoginActivity : AppCompatActivity() {
         input.requestFocus()
     }
 
-    @SuppressLint("BatteryLife")
-    private fun requestBatteryExemption() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                try {
-                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:$packageName")
-                    }
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    // Ignored if device does not support intent
-                }
-            }
-        }
-    }
 
     private fun showError(msg: String) {
         binding.tvError.text = msg

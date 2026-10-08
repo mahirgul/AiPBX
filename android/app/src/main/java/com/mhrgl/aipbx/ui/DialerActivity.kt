@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.ui
 
+import com.mhrgl.aipbx.util.BatteryPrompt
 import com.mhrgl.aipbx.util.L10n
 import android.Manifest
 import android.content.ComponentName
@@ -212,7 +213,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         setupChatTab()
         setupFeaturesTab()
         checkPermissions()
-        checkBatteryOptimization()
+        BatteryPrompt.askOnce(this)
 
         // Background initial sync
         syncFeatures()
@@ -245,22 +246,6 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
-    @android.annotation.SuppressLint("BatteryLife")
-    private fun checkBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val pm = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
-            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
-                try {
-                    val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = android.net.Uri.parse("package:$packageName")
-                    }
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    // Skip silently if the device does not support the intent
-                }
-            }
-        }
-    }
 
     override fun onStart() {
         super.onStart()
