@@ -1,0 +1,109 @@
+#!/usr/bin/python3 -I
+"""aipbx-dhcp-probe IFACE — lists the DHCP servers that answer on IFACE.
+
+Admin -> Network services runs it (through `aipbx-priv netsvc probe`) before
+AiPBX's own DHCP server is switched on: a second DHCP server on a network
+breaks it. Sends one DHCPDISCOVER (broadcast, the interface's own MAC) and
+prints one line per DHCPOFFER received within a few seconds:
+
+    offer server=192.168.10.1 address=192.168.10.57
+
+No line means nobody answered. Nothing is ever requested or leased: an offer
+that is not followed by a DHCPREQUEST expires on the server by itself.
+
+install.sh COPIES this file to /usr/local/sbin as root:root 0755.
+"""
+import os
+import random
+import re
+import select
+import socket
+import struct
+import sys
+import time
+
+WAIT_SECONDS = 4
+SO_BINDTODEVICE = getattr(socket, "SO_BINDTODEVICE", 25)
+
+
+def iface_mac(iface: str) -> bytes:
+    with open(f"/sys/class/net/{iface}/address", encoding="ascii") as f:
+        text = f.read().strip()
+    if not re.fullmatch(r"[0-9a-f]{2}(:[0-9a-f]{2}){5}", text):
+        raise ValueError(f"no Ethernet address on {iface}")
+    return bytes.fromhex(text.replace(":", ""))
+
+
+def discover(xid: int, mac: bytes) -> bytes:
+    # op, htype (Ethernet), hlen, hops, xid, secs, flags (broadcast reply)
+    pkt = struct.pack("!BBBBIHH", 1, 1, 6, 0, xid, 0, 0x8000)
+    pkt += b"\x00" * 16                 # ciaddr, yiaddr, siaddr, giaddr
+    pkt += mac + b"\x00" * 10           # chaddr (16 bytes)
+    pkt += b"\x00" * 192                # sname, file
+    pkt += b"\x63\x82\x53\x63"          # magic cookie
+    pkt += b"\x35\x01\x01"              # 53: DHCPDISCOVER
+    pkt += b"\x37\x03\x01\x03\x06"      # 55: subnet mask, router, DNS
+    pkt += b"\xff"
+    return pkt
+
+
+def parse_offer(data: bytes, xid: int):
+    if len(data) < 240 or data[0] != 2 or struct.unpack("!I", data[4:8])[0] != xid:
+        return None
+    if data[236:240] != b"\x63\x82\x53\x63":
+        return None
+    yiaddr = socket.inet_ntoa(data[16:20])
+    options, i = {}, 240
+    while i < len(data) and data[i] != 255:
+        if data[i] == 0:
+            i += 1
+            continue
+        if i + 1 >= len(data):
+            break
+        code, length = data[i], data[i + 1]
+        options[code] = data[i + 2:i + 2 + length]
+        i += 2 + length
+    if options.get(53) != b"\x02":
+        return None
+    server = options.get(54)
+    return (socket.inet_ntoa(server) if server and len(server) == 4 else None), yiaddr
+
+
+def main() -> int:
+    if len(sys.argv) != 2 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,14}", sys.argv[1]):
+        print("usage: aipbx-dhcp-probe IFACE", file=sys.stderr)
+        return 64
+    iface = sys.argv[1]
+    try:
+        mac = iface_mac(iface)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.setsockopt(socket.SOL_SOCKET, SO_BINDTODEVICE, iface.encode() + b"\x00")
+        sock.bind(("", 68))
+    except (OSError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    xid = random.getrandbits(32)
+    sock.sendto(discover(xid, mac), ("255.255.255.255", 67))
+    seen = set()
+    deadline = time.monotonic() + WAIT_SECONDS
+    while (left := deadline - time.monotonic()) > 0:
+        ready, _, _ = select.select([sock], [], [], left)
+        if not ready:
+            break
+        data, (src, _port) = sock.recvfrom(4096)
+        offer = parse_offer(data, xid)
+        if offer is None:
+            continue
+        server = offer[0] or src
+        if server not in seen:
+            seen.add(server)
+            print(f"offer server={server} address={offer[1]}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    os.umask(0o077)
+    sys.exit(main())

@@ -309,6 +309,157 @@ case "$cmd" in
         exec sed -i "/^\[options\]/a defaultlanguage = $1" "$conf"
         ;;
 
+    netsvc)
+        # Admin → Network services (roadmap 10): dnsmasq as a DHCP server for a
+        # phone network and/or a TFTP server, in its own unit (aipbx-dnsmasq).
+        # The configuration is written HERE from validated KEY=VALUE arguments,
+        # into a root-owned folder: a dnsmasq file can run commands as root
+        # (dhcp-script), so the portal must never be able to write one.
+        NETSVC_DIR=/var/lib/aipbx-netsvc
+        NETSVC_CONF="$NETSVC_DIR/dnsmasq.conf"
+        NETSVC_FW="$NETSVC_DIR/firewall.state"
+        RE_IPV4='^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$'
+        RE_IFACE='^[A-Za-z0-9][A-Za-z0-9._-]{0,14}$'
+        RE_ZONE='^[A-Za-z0-9_-]{1,32}$'
+        RE_PROV_URL='^https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$'
+
+        fw_running() { firewall-cmd --state >/dev/null 2>&1; }
+        tftp_rule() { echo "rule family=\"ipv4\" source address=\"$1\" service name=\"tftp\" accept"; }
+
+        # Removes the firewall openings of the last apply (listed in the state file).
+        netsvc_fw_clear() {
+            [ -f "$NETSVC_FW" ] || return 0
+            if fw_running; then
+                while read -r kind value; do
+                    case "$kind" in
+                        tftp) [[ "$value" =~ $RE_IPV4_CIDR ]] || continue
+                            for p in "" --permanent; do firewall-cmd $p --remove-rich-rule="$(tftp_rule "$value")" >/dev/null 2>&1; done ;;
+                        dhcp) [[ "$value" =~ $RE_ZONE ]] || continue
+                            for p in "" --permanent; do firewall-cmd $p --zone="$value" --remove-service=dhcp >/dev/null 2>&1; done ;;
+                    esac
+                done < "$NETSVC_FW"
+            fi
+            rm -f "$NETSVC_FW"
+        }
+
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            status)
+                [ $# -eq 0 ] || die "usage: netsvc status"
+                systemctl is-active aipbx-dnsmasq.service 2>/dev/null
+                exit 0
+                ;;
+            probe)
+                # netsvc probe IFACE — DHCP servers answering on IFACE (DHCPDISCOVER).
+                [ $# -eq 1 ] || die "usage: netsvc probe IFACE"
+                match "$1" "$RE_IFACE"
+                [ -e "/sys/class/net/$1" ] || die "no such interface: $1"
+                exec /usr/local/sbin/aipbx-dhcp-probe "$1"
+                ;;
+            off)
+                [ $# -eq 0 ] || die "usage: netsvc off"
+                systemctl stop aipbx-dnsmasq.service >/dev/null 2>&1
+                rm -f "$NETSVC_CONF"
+                netsvc_fw_clear
+                exit 0
+                ;;
+            apply)
+                # netsvc apply mode=tftp|dhcp [iface=] [start= end= mask= gw= lease=HOURS]
+                #   [dns=IP,IP] [ntp=IP,IP] [url=https://HOST/provision/] [tftp=0|1] [net=CIDR]...
+                mode=""; iface=""; start=""; end=""; mask=""; gw=""; lease=""; dns=""; ntp=""; url=""; tftp=1
+                nets=()
+                for kv in "$@"; do
+                    k="${kv%%=*}"; v="${kv#*=}"
+                    [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
+                    case "$k" in
+                        mode) case "$v" in tftp|dhcp) mode="$v" ;; *) die "invalid mode: $v" ;; esac ;;
+                        iface) match "$v" "$RE_IFACE"; iface="$v" ;;
+                        start) match "$v" "$RE_IPV4"; start="$v" ;;
+                        end) match "$v" "$RE_IPV4"; end="$v" ;;
+                        mask) match "$v" "$RE_IPV4"; mask="$v" ;;
+                        gw) match "$v" "$RE_IPV4"; gw="$v" ;;
+                        lease) match "$v" '^([1-9]|[1-9][0-9]|1[0-6][0-9])$'; lease="$v" ;;
+                        dns|ntp)
+                            IFS=',' read -r -a list <<< "$v"
+                            [ "${#list[@]}" -ge 1 ] && [ "${#list[@]}" -le 3 ] || die "invalid $k list"
+                            for ip in "${list[@]}"; do match "$ip" "$RE_IPV4"; done
+                            [ "$k" = dns ] && dns="$v" || ntp="$v" ;;
+                        url) match "$v" "$RE_PROV_URL"; url="$v" ;;
+                        tftp) case "$v" in 0|1) tftp="$v" ;; *) die "invalid tftp: $v" ;; esac ;;
+                        net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
+                        *) die "unknown key: $k" ;;
+                    esac
+                done
+                [ -n "$mode" ] || die "mode= is required"
+                if [ "$mode" = tftp ]; then
+                    tftp=1
+                else
+                    [ -n "$iface" ] && [ -n "$start" ] && [ -n "$end" ] && [ -n "$mask" ] && [ -n "$lease" ] \
+                        || die "dhcp needs iface, start, end, mask and lease"
+                    [ -e "/sys/class/net/$iface" ] || die "no such interface: $iface"
+                fi
+                # TFTP answers only the configured local networks (firewall).
+                [ "$tftp" = 0 ] || [ "${#nets[@]}" -gt 0 ] || die "tftp needs at least one net="
+
+                user=nobody
+                id -u dnsmasq >/dev/null 2>&1 && user=dnsmasq
+                mkdir -p "$NETSVC_DIR"
+                [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
+                chown root:root "$NETSVC_DIR"; chmod 0755 "$NETSVC_DIR"
+                tmp="$(mktemp "$NETSVC_DIR/.dnsmasq.XXXXXX")" || exit 1
+                trap 'rm -f "$tmp"' EXIT
+                {
+                    echo "# Written by aipbx-priv (Admin -> Network services). Do not edit: the next apply replaces it."
+                    echo "port=0"
+                    echo "user=$user"
+                    if [ "$mode" = dhcp ]; then
+                        echo "interface=$iface"
+                        echo "bind-dynamic"
+                        echo "dhcp-range=$start,$end,$mask,${lease}h"
+                        echo "dhcp-leasefile=$NETSVC_DIR/dnsmasq.leases"
+                        [ -n "$gw" ] && echo "dhcp-option=option:router,$gw"
+                        [ -n "$dns" ] && echo "dhcp-option=option:dns-server,$dns"
+                        [ -n "$ntp" ] && echo "dhcp-option=option:ntp-server,$ntp"
+                        if [ -n "$url" ]; then
+                            # 66: Yealink, Grandstream, Fanvil, Snom, Cisco; 160: Poly.
+                            echo "dhcp-option=66,\"$url\""
+                            echo "dhcp-option=160,\"$url\""
+                        fi
+                        # 150: Cisco TFTP server; 0.0.0.0 = this server.
+                        [ "$tftp" = 1 ] && echo "dhcp-option=150,0.0.0.0"
+                    fi
+                    if [ "$tftp" = 1 ]; then
+                        echo "enable-tftp"
+                        echo "tftp-root=/var/lib/aipbx/tftp"
+                    fi
+                } > "$tmp"
+                dnsmasq --test --conf-file="$tmp" >/dev/null 2>&1 || die "dnsmasq rejected the configuration"
+                install -o root -g root -m 0644 "$tmp" "$NETSVC_CONF"
+
+                netsvc_fw_clear
+                if fw_running; then
+                    : > "$NETSVC_FW"
+                    if [ "$tftp" = 1 ]; then
+                        for n in "${nets[@]}"; do
+                            for p in "" --permanent; do firewall-cmd $p --add-rich-rule="$(tftp_rule "$n")" >/dev/null || die "firewall: tftp $n"; done
+                            echo "tftp $n" >> "$NETSVC_FW"
+                        done
+                    fi
+                    if [ "$mode" = dhcp ]; then
+                        # UDP 67 in the zone of the chosen interface only.
+                        zone="$(firewall-cmd --get-zone-of-interface="$iface" 2>/dev/null || firewall-cmd --get-default-zone)"
+                        match "$zone" "$RE_ZONE"
+                        for p in "" --permanent; do firewall-cmd $p --zone="$zone" --add-service=dhcp >/dev/null || die "firewall: dhcp $zone"; done
+                        echo "dhcp $zone" >> "$NETSVC_FW"
+                    fi
+                fi
+                rm -f "$tmp"
+                exec systemctl restart aipbx-dnsmasq.service
+                ;;
+            *) die "unknown netsvc command: $sub" ;;
+        esac
+        ;;
+
     *)
         die "unknown command: ${cmd:-<empty>}"
         ;;

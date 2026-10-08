@@ -15,7 +15,7 @@ welcome there.
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
 | 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
-| 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management) | | medium |
+| 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](network-services.md) | | medium |
 
 Done recently: phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
