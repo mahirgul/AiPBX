@@ -154,6 +154,13 @@ class QueueHelper {
         return $result;
     }
 
+    /** Queue login lamp of desk phones (QUEUE<ext>, see LampService). */
+    private static function refreshLamps(): void
+    {
+        require_once __DIR__ . '/services/LampService.php';
+        LampService::refresh();
+    }
+
     /**
      * Adds/removes an extension to/from a queue live (asterisk -rx "queue
      * add/remove member ..."). Both the "Join/Leave queue" button in the web
@@ -172,6 +179,7 @@ class QueueHelper {
         if (self::isStaticMember($ext, $queue_name)) {
             if (!$join) return false;
             @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
+            self::refreshLamps();
             return true;
         }
 
@@ -182,6 +190,7 @@ class QueueHelper {
             @exec("asterisk -rx " . escapeshellarg("queue remove member Local/$ext@from-internal-pbx/n from $queue_name"));
             @exec("asterisk -rx " . escapeshellarg("queue remove member PJSIP/$ext from $queue_name"));
         }
+        self::refreshLamps();
         return true;
     }
 
@@ -215,6 +224,7 @@ class QueueHelper {
         $stmt_insert = $db->prepare("INSERT INTO cc_pause_logs (agent_extension, agent_name, pause_reason, start_time, status) VALUES (?, ?, ?, NOW(), 'PAUSED')");
         $stmt_insert->execute([$ext, $agent_name, $reason_cli]);
 
+        self::refreshLamps();
         return true;
     }
 
@@ -279,6 +289,7 @@ class QueueHelper {
         $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt_close->execute([$ext]);
 
+        self::refreshLamps();
         return true;
     }
 }
