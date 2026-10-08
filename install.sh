@@ -375,10 +375,11 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 
 # Symlink helper binaries and dialplan scripts to /usr/local/bin.
 # web/bin must stay traversable (755, root-owned): Asterisk runs these scripts
-# as the asterisk user through the symlinks (feature codes, fax processing).
+# as the asterisk user through the symlinks (feature codes, web widget calls,
+# fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
+for script in feature_code_action.php widget_claim.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"

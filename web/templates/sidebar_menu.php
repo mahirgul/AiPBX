@@ -91,6 +91,7 @@ return [
         'items' => [
             ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => ['sidebar.item_google_integration', 'Google ile Giriş'], 'show' => $isAdmin, 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],
             ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => ['sidebar.item_ms_teams', 'Teams'], 'show' => $can('ms_teams'), 'pages' => ['ms_teams.php']],
+            ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets'), 'pages' => ['web_widgets.php']],
         ],
     ],
     [

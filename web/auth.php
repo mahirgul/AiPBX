@@ -161,6 +161,7 @@ function getModuleKeyForPage($page = null) {
         'system_update.php'         => 'system_update',
         'push_settings.php'         => 'push_settings',
         'ms_teams.php'              => 'ms_teams',
+        'web_widgets.php'           => 'web_widgets',
         'ai_tts.php'                => 'ai_tts',
         'mail_settings.php'         => 'mail_settings',
     ];
@@ -221,8 +222,9 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'system_update' too: it updates the system and restarts services.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
     // 'phones': the provisioning URLs it shows hand out SIP passwords.
+    // 'web_widgets': an external destination or the call-back form can cost money.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration', 'phones'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration', 'phones', 'web_widgets'], true)) {
         return $role === 'admin';
     }
 
