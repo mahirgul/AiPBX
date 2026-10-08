@@ -127,6 +127,9 @@
                             </td>
                             <td class="text-right">
                                 <?php // Status toggle in the pinned actions column: as its own column it ended up under that column whenever the table was wider than the screen. ?>
+                                <?php if (($e['extension_type'] ?? 'sip') === 'sip' && hasModulePermission('phones', 'view')): ?>
+                                    <a class="btn btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $e['id']; ?>" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
+                                <?php endif; ?>
                                 <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
                                 <?php echo uiRowActions($e, 'openEditExtensionModal', 'user_id', 'remove_extension', sprintf(t('extensions.remove_confirm'), $e['full_name'], $e['extension']), t('extensions.remove_action_title'), 'fa-phone-slash'); ?>
                             </td>
