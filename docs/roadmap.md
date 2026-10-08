@@ -13,7 +13,7 @@ welcome there.
 | 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning) | | large, in steps |
 | 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
-| 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones) | | medium |
+| 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
 | 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management) | | medium |
 
@@ -151,9 +151,18 @@ DIDs that start with `+` before the change.
 
 ## 8. Busy lamps (BLF) and voicemail lamp on desk phones
 
-**Goal.** A key on a SIP desk phone lights up when a colleague is on the phone (busy lamp field),
-blinks while their phone rings (press it to pick up the call), and the message lamp shows new
-voicemail.
+**Goal.** Multi-key SIP phones (and their expansion modules) show the state of many colleagues at
+once: a receptionist or a manager typically watches 10–15 people, an operator console 40–100. Each
+key has the colleague's name and a lamp:
+
+| Lamp | Meaning | Pressing the key |
+|------|---------|------------------|
+| off / green | free | calls them |
+| red | on the phone | calls them (or transfers the current call to them) |
+| blinking | their phone rings | picks up that call |
+| (optional) | do not disturb / not registered | — |
+
+The message lamp shows new voicemail.
 
 **Today.** Every extension already has an Asterisk *hint* (desk phone, web phone and app together)
 in `from-internal-pbx`. Desk phones, however, use the context of their dial permission group, and
@@ -163,16 +172,25 @@ phones also get no voicemail lamp: their endpoints have no `mailboxes=`.
 **Plan.**
 
 - Set `subscribe_context` (or include `from-internal-pbx`) on desk phone endpoints so a key for
-  extension 1001 always finds its hint; test BLF with Yealink, Grandstream and Fanvil and with a
-  softphone in CI.
+  extension 1001 always finds its hint; test with Yealink, Grandstream and Fanvil (including an
+  expansion module) and with a softphone in CI.
 - Ringing state with the caller's name, and pickup by pressing the blinking key (directed pickup,
-  `*21` + extension, already exists).
+  `*21` + extension, already exists); transfer the current call by pressing a busy or free key.
+- Many keys at scale: a phone may watch 100 extensions, and 100 phones × 15 keys means 1,500
+  subscriptions. Check the subscription expiry and NOTIFY load and set `device_state_busy_at` so a
+  user with several devices shows busy correctly.
 - Message lamp: `mailboxes=<ext>@default` on desk phone endpoints, so the phone shows new voicemail
   and the count.
 - Lamps for more than extensions: queue login (`*95`), do-not-disturb, call forwarding, a
-  day/night (time condition) switch and conference rooms, through custom device states.
-- A **BLF keys** list per user (*Extensions*): which keys show whom. Provisioning (item 9) writes
-  them to the phone, so nobody configures keys by hand.
+  day/night (time condition) switch, conference rooms and parked calls, through custom device
+  states.
+- **Key layout page** per user (*Extensions → keys*): the phone's keys and expansion module pages
+  drawn as on the device (by model, item 9), each key with a type (BLF, speed dial, park, line,
+  DND …), a target and a label. A layout can be copied to other users or a whole group ("the same
+  15 keys for the sales team"). Provisioning (item 9) writes it to the phone, so nobody programs
+  keys on the device.
+- Until provisioning exists: a short guide for setting a BLF key by hand on the common models
+  (e.g. Yealink: *DSS Key → Type BLF → Value 1001*).
 - Later: the same busy status in the web phone's and the apps' contact lists.
 
 ## 9. Phone provisioning page
