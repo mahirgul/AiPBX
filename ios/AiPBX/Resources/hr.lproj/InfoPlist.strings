@@ -1,0 +1,4 @@
+/* Permission texts: iOS shows these in the phone's language, not the in-app choice. */
+"NSMicrophoneUsageDescription" = "Pristup mikrofonu potreban je za pozive putem centrale i glasovne razgovore.";
+"NSCameraUsageDescription" = "Pristup kameri potreban je za prijavu QR kodom centrale i slanje fotografija u chatu.";
+"NSPhotoLibraryUsageDescription" = "Pristup galeriji potreban je za dijeljenje fotografija i datoteka u chatu.";

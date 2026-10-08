@@ -83,8 +83,8 @@ result before it is merged.
 
 ## Mobile apps
 
-The Android and iOS apps have their own texts (the same languages as the portal,
-except Croatian so far); a new app language is also added to `L10n.kt` (Android),
+The Android and iOS apps have their own texts, in the same languages as the portal;
+a new app language is also added to `L10n.kt` (Android),
 `locales_config.xml` and `AppLanguage` in `Localization.swift` (iOS), and the iOS
 project is regenerated with `python3 ios/generate_project.py`:
 

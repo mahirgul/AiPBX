@@ -8,12 +8,12 @@ import SwiftUI
 final class AppLanguage: ObservableObject {
     static let shared = AppLanguage()
     static let supported = ["en", "tr", "az", "bg", "cs", "da", "de", "el", "es", "fi", "fr",
-                             "hu", "it", "nb", "nl", "pl", "pt", "ro", "ru", "sr", "sv", "uk"]
+                             "hr", "hu", "it", "nb", "nl", "pl", "pt", "ro", "ru", "sr", "sv", "uk"]
     /// Names in their own language, so they are recognisable whatever is active.
     static let names = [
         "en": "English", "tr": "Türkçe", "az": "Azərbaycan dili", "bg": "Български",
         "cs": "Čeština", "da": "Dansk", "de": "Deutsch", "el": "Ελληνικά", "es": "Español",
-        "fi": "Suomi", "fr": "Français", "hu": "Magyar", "it": "Italiano", "nb": "Norsk bokmål",
+        "fi": "Suomi", "fr": "Français", "hr": "Hrvatski", "hu": "Magyar", "it": "Italiano", "nb": "Norsk bokmål",
         "nl": "Nederlands", "pl": "Polski", "pt": "Português", "ro": "Română", "ru": "Русский",
         "sr": "Srpski", "sv": "Svenska", "uk": "Українська",
     ]
