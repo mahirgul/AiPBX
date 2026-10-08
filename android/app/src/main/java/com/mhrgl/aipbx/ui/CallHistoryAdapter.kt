@@ -20,6 +20,22 @@ class CallHistoryAdapter(
         notifyDataSetChanged()
     }
 
+    fun itemAt(position: Int): CallRecord? = items.getOrNull(position)
+
+    /** Removes the row at [position] (swipe, #10) and returns it for "Undo". */
+    fun removeAt(position: Int): CallRecord? {
+        if (position !in items.indices) return null
+        val item = items.removeAt(position)
+        notifyItemRemoved(position)
+        return item
+    }
+
+    fun insertAt(position: Int, item: CallRecord) {
+        val pos = position.coerceIn(0, items.size)
+        items.add(pos, item)
+        notifyItemInserted(pos)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemCallHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)

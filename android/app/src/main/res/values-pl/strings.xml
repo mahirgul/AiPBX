@@ -380,4 +380,22 @@
     <string name="ui_type_message">Napisz wiadomość...</string>
     <string name="ui_typing">pisze...</string>
     <string name="user_ext_label">Numer wewnętrzny: %1$s (%2$s)</string>
+    <string name="full_screen_title">Połączenia przychodzące na pełnym ekranie</string>
+    <string name="full_screen_msg">Android wyłączył dla AiPBX powiadomienia pełnoekranowe, więc na zablokowanym telefonie połączenie pojawia się tylko jako małe powiadomienie. Na następnym ekranie zezwól AiPBX na „Powiadomienia pełnoekranowe”.</string>
+    <string name="full_screen_status_on">Połączenia na pełnym ekranie: dozwolone</string>
+    <string name="full_screen_status_off">Połączenia na pełnym ekranie: wyłączone. Dotknij, aby zezwolić</string>
+    <string name="history_clear">Wyczyść historię połączeń</string>
+    <string name="history_clear_msg">Usunąć wszystkie połączenia z historii? Rekordy połączeń na serwerze zostaną zachowane.</string>
+    <string name="history_clear_btn">Wyczyść</string>
+    <string name="history_cleared">Historia połączeń wyczyszczona</string>
+    <string name="history_removed">Połączenie usunięte z historii</string>
+    <string name="history_undo">Cofnij</string>
+    <string name="history_remove_failed">Nie udało się usunąć: %1$s</string>
+    <string name="chat_reply_action">Odpowiedz</string>
+    <string name="chat_reply_hint">Wiadomość</string>
+    <string name="chat_reply_you">Ty</string>
+    <string name="chat_reply_failed">Nie wysłano: %1$s</string>
+    <string name="chat_sender_extension">Numer wewnętrzny #%1$s</string>
+    <string name="chat_preview_file">📎 Plik: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

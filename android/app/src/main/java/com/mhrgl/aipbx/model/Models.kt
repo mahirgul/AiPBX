@@ -96,6 +96,8 @@ data class CallStats(
 
 data class CallRecord(
     @SerializedName("id") val id: Long,
+    /** Key for hiding the call from the own history (server 1.5.3+); null on older servers. */
+    @SerializedName("call_key") val callKey: String? = null,
     @SerializedName("calldate") val calldate: String,
     @SerializedName("direction") val direction: String, // "in", "out", "missed"
     @SerializedName("party") val party: String,

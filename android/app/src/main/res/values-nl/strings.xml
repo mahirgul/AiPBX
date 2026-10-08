@@ -380,4 +380,22 @@
     <string name="ui_type_message">Typ een bericht...</string>
     <string name="ui_typing">typt...</string>
     <string name="user_ext_label">Toestel: %1$s (%2$s)</string>
+    <string name="full_screen_title">Inkomende oproepen op volledig scherm</string>
+    <string name="full_screen_msg">Android heeft meldingen op volledig scherm voor AiPBX uitgeschakeld, waardoor een oproep op een vergrendelde telefoon alleen als kleine melding verschijnt. Sta op het volgende scherm \"Meldingen op volledig scherm\" toe voor AiPBX.</string>
+    <string name="full_screen_status_on">Oproepen op volledig scherm: toegestaan</string>
+    <string name="full_screen_status_off">Oproepen op volledig scherm: uit. Tik om toe te staan</string>
+    <string name="history_clear">Oproepgeschiedenis wissen</string>
+    <string name="history_clear_msg">Alle oproepen uit uw oproepgeschiedenis verwijderen? De oproepgegevens op de server blijven bewaard.</string>
+    <string name="history_clear_btn">Wissen</string>
+    <string name="history_cleared">Oproepgeschiedenis gewist</string>
+    <string name="history_removed">Oproep verwijderd uit uw geschiedenis</string>
+    <string name="history_undo">Ongedaan maken</string>
+    <string name="history_remove_failed">Verwijderen mislukt: %1$s</string>
+    <string name="chat_reply_action">Beantwoorden</string>
+    <string name="chat_reply_hint">Bericht</string>
+    <string name="chat_reply_you">U</string>
+    <string name="chat_reply_failed">Niet verzonden: %1$s</string>
+    <string name="chat_sender_extension">Toestel #%1$s</string>
+    <string name="chat_preview_file">📎 Bestand: %1$s</string>
+    <string name="chat_preview_document">Document</string>
 </resources>

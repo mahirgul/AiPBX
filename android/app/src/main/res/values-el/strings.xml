@@ -380,4 +380,22 @@
     <string name="ui_type_message">Πληκτρολογήστε ένα μήνυμα...</string>
     <string name="ui_typing">πληκτρολογεί...</string>
     <string name="user_ext_label">Εσωτερικό: %1$s (%2$s)</string>
+    <string name="full_screen_title">Εισερχόμενες κλήσεις σε πλήρη οθόνη</string>
+    <string name="full_screen_msg">Το Android απενεργοποίησε τις ειδοποιήσεις πλήρους οθόνης για το AiPBX, γι\' αυτό σε κλειδωμένο τηλέφωνο μια κλήση εμφανίζεται μόνο ως μικρή ειδοποίηση. Επιτρέψτε τις «Ειδοποιήσεις πλήρους οθόνης» για το AiPBX στην επόμενη οθόνη.</string>
+    <string name="full_screen_status_on">Κλήσεις σε πλήρη οθόνη: επιτρέπονται</string>
+    <string name="full_screen_status_off">Κλήσεις σε πλήρη οθόνη: ανενεργές. Πατήστε για να επιτρέψετε</string>
+    <string name="history_clear">Εκκαθάριση ιστορικού κλήσεων</string>
+    <string name="history_clear_msg">Να αφαιρεθούν όλες οι κλήσεις από το ιστορικό σας; Οι εγγραφές κλήσεων στον διακομιστή διατηρούνται.</string>
+    <string name="history_clear_btn">Εκκαθάριση</string>
+    <string name="history_cleared">Το ιστορικό κλήσεων εκκαθαρίστηκε</string>
+    <string name="history_removed">Η κλήση αφαιρέθηκε από το ιστορικό σας</string>
+    <string name="history_undo">Αναίρεση</string>
+    <string name="history_remove_failed">Δεν ήταν δυνατή η αφαίρεση: %1$s</string>
+    <string name="chat_reply_action">Απάντηση</string>
+    <string name="chat_reply_hint">Μήνυμα</string>
+    <string name="chat_reply_you">Εσείς</string>
+    <string name="chat_reply_failed">Δεν στάλθηκε: %1$s</string>
+    <string name="chat_sender_extension">Εσωτερικό #%1$s</string>
+    <string name="chat_preview_file">📎 Αρχείο: %1$s</string>
+    <string name="chat_preview_document">Έγγραφο</string>
 </resources>

@@ -380,4 +380,22 @@
     <string name="ui_type_message">Saisissez un message...</string>
     <string name="ui_typing">écrit...</string>
     <string name="user_ext_label">Poste : %1$s (%2$s)</string>
+    <string name="full_screen_title">Appels entrants en plein écran</string>
+    <string name="full_screen_msg">Android a désactivé les notifications en plein écran pour AiPBX : sur un téléphone verrouillé, un appel n’apparaît que sous forme de petite notification. Autorisez les « Notifications plein écran » pour AiPBX sur l’écran suivant.</string>
+    <string name="full_screen_status_on">Appels en plein écran : autorisés</string>
+    <string name="full_screen_status_off">Appels en plein écran : désactivés. Touchez pour autoriser</string>
+    <string name="history_clear">Effacer l’historique des appels</string>
+    <string name="history_clear_msg">Retirer tous les appels de votre historique ? Les enregistrements d’appels du serveur sont conservés.</string>
+    <string name="history_clear_btn">Effacer</string>
+    <string name="history_cleared">Historique des appels effacé</string>
+    <string name="history_removed">Appel retiré de votre historique</string>
+    <string name="history_undo">Annuler</string>
+    <string name="history_remove_failed">Impossible de retirer : %1$s</string>
+    <string name="chat_reply_action">Répondre</string>
+    <string name="chat_reply_hint">Message</string>
+    <string name="chat_reply_you">Vous</string>
+    <string name="chat_reply_failed">Non envoyé : %1$s</string>
+    <string name="chat_sender_extension">Poste #%1$s</string>
+    <string name="chat_preview_file">📎 Fichier : %1$s</string>
+    <string name="chat_preview_document">Document</string>
 </resources>

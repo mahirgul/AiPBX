@@ -380,4 +380,22 @@
     <string name="ui_type_message">Scriva un messaggio...</string>
     <string name="ui_typing">sta scrivendo...</string>
     <string name="user_ext_label">Interno: %1$s (%2$s)</string>
+    <string name="full_screen_title">Chiamate in arrivo a schermo intero</string>
+    <string name="full_screen_msg">Android ha disattivato le notifiche a schermo intero per AiPBX, quindi a telefono bloccato una chiamata appare solo come piccola notifica. Consenti le \"Notifiche a schermo intero\" per AiPBX nella schermata successiva.</string>
+    <string name="full_screen_status_on">Chiamate a schermo intero: consentite</string>
+    <string name="full_screen_status_off">Chiamate a schermo intero: disattivate. Tocca per consentire</string>
+    <string name="history_clear">Cancella cronologia chiamate</string>
+    <string name="history_clear_msg">Rimuovere tutte le chiamate dalla cronologia? I record delle chiamate sul server vengono conservati.</string>
+    <string name="history_clear_btn">Cancella</string>
+    <string name="history_cleared">Cronologia chiamate cancellata</string>
+    <string name="history_removed">Chiamata rimossa dalla cronologia</string>
+    <string name="history_undo">Annulla</string>
+    <string name="history_remove_failed">Impossibile rimuovere: %1$s</string>
+    <string name="chat_reply_action">Rispondi</string>
+    <string name="chat_reply_hint">Messaggio</string>
+    <string name="chat_reply_you">Tu</string>
+    <string name="chat_reply_failed">Non inviato: %1$s</string>
+    <string name="chat_sender_extension">Interno #%1$s</string>
+    <string name="chat_preview_file">📎 File: %1$s</string>
+    <string name="chat_preview_document">Documento</string>
 </resources>

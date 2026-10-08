@@ -380,4 +380,22 @@
     <string name="ui_type_message">Scrieți un mesaj...</string>
     <string name="ui_typing">scrie...</string>
     <string name="user_ext_label">Interior: %1$s (%2$s)</string>
+    <string name="full_screen_title">Apeluri primite pe tot ecranul</string>
+    <string name="full_screen_msg">Android a dezactivat notificările pe tot ecranul pentru AiPBX, așa că pe un telefon blocat un apel apare doar ca o notificare mică. Permiteți „Notificări pe tot ecranul” pentru AiPBX pe ecranul următor.</string>
+    <string name="full_screen_status_on">Apeluri pe tot ecranul: permise</string>
+    <string name="full_screen_status_off">Apeluri pe tot ecranul: dezactivate. Atingeți pentru a permite</string>
+    <string name="history_clear">Șterge istoricul apelurilor</string>
+    <string name="history_clear_msg">Eliminați toate apelurile din istoric? Înregistrările apelurilor de pe server se păstrează.</string>
+    <string name="history_clear_btn">Șterge</string>
+    <string name="history_cleared">Istoricul apelurilor a fost șters</string>
+    <string name="history_removed">Apel eliminat din istoric</string>
+    <string name="history_undo">Anulează</string>
+    <string name="history_remove_failed">Nu s-a putut elimina: %1$s</string>
+    <string name="chat_reply_action">Răspunde</string>
+    <string name="chat_reply_hint">Mesaj</string>
+    <string name="chat_reply_you">Dvs.</string>
+    <string name="chat_reply_failed">Netrimis: %1$s</string>
+    <string name="chat_sender_extension">Interior #%1$s</string>
+    <string name="chat_preview_file">📎 Fișier: %1$s</string>
+    <string name="chat_preview_document">Document</string>
 </resources>

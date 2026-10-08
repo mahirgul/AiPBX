@@ -380,4 +380,22 @@
     <string name="ui_type_message">Напишете съобщение...</string>
     <string name="ui_typing">пише...</string>
     <string name="user_ext_label">Вътрешен номер: %1$s (%2$s)</string>
+    <string name="full_screen_title">Входящи обаждания на цял екран</string>
+    <string name="full_screen_msg">Android е изключил известията на цял екран за AiPBX, затова на заключен телефон входящото обаждане се показва само като малко известие. Разрешете „Известия на цял екран“ за AiPBX на следващия екран.</string>
+    <string name="full_screen_status_on">Обаждания на цял екран: разрешени</string>
+    <string name="full_screen_status_off">Обаждания на цял екран: изключени. Докоснете, за да разрешите</string>
+    <string name="history_clear">Изчистване на историята</string>
+    <string name="history_clear_msg">Да се премахнат ли всички обаждания от историята ви? Записите на сървъра се запазват.</string>
+    <string name="history_clear_btn">Изчисти</string>
+    <string name="history_cleared">Историята е изчистена</string>
+    <string name="history_removed">Обаждането е премахнато от историята</string>
+    <string name="history_undo">Отмяна</string>
+    <string name="history_remove_failed">Неуспешно премахване: %1$s</string>
+    <string name="chat_reply_action">Отговор</string>
+    <string name="chat_reply_hint">Съобщение</string>
+    <string name="chat_reply_you">Вие</string>
+    <string name="chat_reply_failed">Не е изпратено: %1$s</string>
+    <string name="chat_sender_extension">Вътрешен #%1$s</string>
+    <string name="chat_preview_file">📎 Файл: %1$s</string>
+    <string name="chat_preview_document">Документ</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.mhrgl.aipbx.ui
 
 import com.mhrgl.aipbx.util.BatteryPrompt
+import com.mhrgl.aipbx.util.FullScreenCallPrompt
+import com.google.android.material.snackbar.Snackbar
+import androidx.recyclerview.widget.ItemTouchHelper
 import com.mhrgl.aipbx.util.L10n
 import android.Manifest
 import android.content.ComponentName
@@ -213,7 +216,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         setupChatTab()
         setupFeaturesTab()
         checkPermissions()
-        BatteryPrompt.askOnce(this)
+        // One system request per start: the full-screen explanation waits for the next one.
+        if (!BatteryPrompt.askOnce(this)) {
+            FullScreenCallPrompt.askOnce(this)
+        }
 
         // Background initial sync
         syncFeatures()
@@ -256,6 +262,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     override fun onResume() {
         super.onResume()
         ChatWebSocketManager.instance.addListener(this)
+        updateFullScreenCallButton()
 
         if (currentTab == Tab.HISTORY) {
             loadCallHistory(currentFilter)
@@ -585,6 +592,45 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             loadCallHistory(currentFilter)
         }
 
+        // #10: swipe a call away / clear the list. Only the user's own list
+        // changes; the server keeps the call records. Older servers send no
+        // call_key: then rows cannot be swiped and the button stays hidden.
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) = false
+
+            override fun getSwipeDirs(rv: RecyclerView, vh: RecyclerView.ViewHolder): Int =
+                if (historyAdapter.itemAt(vh.adapterPosition)?.callKey.isNullOrEmpty()) 0
+                else super.getSwipeDirs(rv, vh)
+
+            override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {
+                val pos = vh.adapterPosition
+                val item = historyAdapter.removeAt(pos) ?: return
+                val key = item.callKey ?: return
+                if (historyAdapter.itemCount == 0) binding.tvEmptyHistory.visibility = View.VISIBLE
+                Snackbar.make(binding.rvCallHistory, getString(R.string.history_removed), Snackbar.LENGTH_LONG)
+                    .setAction(getString(R.string.history_undo)) {
+                        historyAdapter.insertAt(pos, item)
+                        binding.tvEmptyHistory.visibility = View.GONE
+                    }
+                    .addCallback(object : Snackbar.Callback() {
+                        override fun onDismissed(bar: Snackbar?, event: Int) {
+                            if (event == DISMISS_EVENT_ACTION) return
+                            hideCallsOnServer(listOf(key))
+                        }
+                    })
+                    .show()
+            }
+        }).attachToRecyclerView(binding.rvCallHistory)
+
+        binding.btnClearHistory.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.history_clear))
+                .setMessage(getString(R.string.history_clear_msg))
+                .setPositiveButton(getString(R.string.history_clear_btn)) { _, _ -> hideCallsOnServer(null) }
+                .setNegativeButton(getString(R.string.ui_cancel), null)
+                .show()
+        }
+
         binding.btnFilterAll.setOnClickListener { setHistoryFilter("all") }
         binding.btnFilterMissed.setOnClickListener { setHistoryFilter("missed") }
         binding.btnFilterIn.setOnClickListener { setHistoryFilter("in") }
@@ -614,6 +660,24 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         loadCallHistory(filter)
     }
 
+    /** [callKeys] = null clears the whole history. */
+    private fun hideCallsOnServer(callKeys: List<String>?) {
+        val token = prefs.token ?: return
+        lifecycleScope.launch {
+            apiClient.hideCalls(prefs.serverUrl, token, callKeys)
+                .onSuccess {
+                    if (callKeys == null) {
+                        Toast.makeText(this@DialerActivity, getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
+                    }
+                    loadCallHistory(currentFilter)
+                }
+                .onFailure { err ->
+                    Toast.makeText(this@DialerActivity, getString(R.string.history_remove_failed, err.message ?: ""), Toast.LENGTH_SHORT).show()
+                    loadCallHistory(currentFilter)
+                }
+        }
+    }
+
     private fun loadCallHistory(filter: String) {
         val token = prefs.token ?: return
         val baseUrl = prefs.serverUrl
@@ -628,6 +692,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             result.onSuccess { response ->
                 val list = response.calls ?: emptyList()
                 historyAdapter.submitList(list)
+                // Hiding needs server 1.5.3+ (call_key); the filter view may be empty, so keep it once known.
+                if (list.any { !it.callKey.isNullOrEmpty() }) {
+                    binding.btnClearHistory.visibility = View.VISIBLE
+                }
 
                 if (list.isEmpty()) {
                     binding.tvEmptyHistory.visibility = View.VISIBLE
@@ -1798,6 +1866,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
 
+        binding.btnFullScreenCalls.setOnClickListener {
+            if (FullScreenCallPrompt.isAllowed(this)) {
+                FullScreenCallPrompt.openSettings(this)
+            } else {
+                FullScreenCallPrompt.showExplanation(this)
+            }
+        }
+
         binding.btnPrivacyPolicy.setOnClickListener {
             try {
                 val url = getString(R.string.privacy_policy_url)
@@ -1823,6 +1899,20 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 com.mhrgl.aipbx.util.AppLogManager.shareLogs(this@DialerActivity, file)
             }
         }
+    }
+
+    /** Settings: full-screen incoming calls status (Android 14+ only, see #7). */
+    private fun updateFullScreenCallButton() {
+        if (!FullScreenCallPrompt.isRelevant) {
+            binding.btnFullScreenCalls.visibility = View.GONE
+            return
+        }
+        val allowed = FullScreenCallPrompt.isAllowed(this)
+        binding.btnFullScreenCalls.visibility = View.VISIBLE
+        binding.btnFullScreenCalls.text = getString(if (allowed) R.string.full_screen_status_on else R.string.full_screen_status_off)
+        val color = ContextCompat.getColor(this, if (allowed) R.color.primary else R.color.status_disconnected)
+        binding.btnFullScreenCalls.setTextColor(color)
+        binding.btnFullScreenCalls.strokeColor = android.content.res.ColorStateList.valueOf(color)
     }
 
     private fun updateFcmStatusUI() {

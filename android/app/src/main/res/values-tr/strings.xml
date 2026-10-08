@@ -380,4 +380,22 @@
     <string name="ui_type_message">Bir mesaj yazın...</string>
     <string name="ui_typing">yazıyor...</string>
     <string name="user_ext_label">Dahili: %1$s (%2$s)</string>
+    <string name="full_screen_title">Tam ekran gelen çağrılar</string>
+    <string name="full_screen_msg">Android, AiPBX için tam ekran bildirimleri kapattı; bu yüzden kilitli telefonda gelen çağrı yalnızca küçük bir bildirim olarak görünür. Sonraki ekranda AiPBX için \"Tam ekran bildirimler\" iznini verin.</string>
+    <string name="full_screen_status_on">Tam ekran çağrı: izinli</string>
+    <string name="full_screen_status_off">Tam ekran çağrı: kapalı. İzin vermek için dokunun</string>
+    <string name="history_clear">Arama geçmişini temizle</string>
+    <string name="history_clear_msg">Tüm aramalar arama geçmişinizden kaldırılsın mı? Sunucudaki arama kayıtları saklanır.</string>
+    <string name="history_clear_btn">Temizle</string>
+    <string name="history_cleared">Arama geçmişi temizlendi</string>
+    <string name="history_removed">Arama geçmişinizden kaldırıldı</string>
+    <string name="history_undo">Geri al</string>
+    <string name="history_remove_failed">Kaldırılamadı: %1$s</string>
+    <string name="chat_reply_action">Yanıtla</string>
+    <string name="chat_reply_hint">Mesaj</string>
+    <string name="chat_reply_you">Siz</string>
+    <string name="chat_reply_failed">Gönderilemedi: %1$s</string>
+    <string name="chat_sender_extension">Dahili #%1$s</string>
+    <string name="chat_preview_file">📎 Dosya: %1$s</string>
+    <string name="chat_preview_document">Belge</string>
 </resources>

@@ -380,4 +380,22 @@
     <string name="ui_type_message">Napište zprávu...</string>
     <string name="ui_typing">píše...</string>
     <string name="user_ext_label">Linka: %1$s (%2$s)</string>
+    <string name="full_screen_title">Příchozí hovory na celou obrazovku</string>
+    <string name="full_screen_msg">Android vypnul pro AiPBX oznámení na celou obrazovku, takže na zamčeném telefonu se příchozí hovor zobrazí jen jako malé oznámení. Na další obrazovce povolte pro AiPBX „Oznámení na celou obrazovku“.</string>
+    <string name="full_screen_status_on">Hovory na celou obrazovku: povoleny</string>
+    <string name="full_screen_status_off">Hovory na celou obrazovku: vypnuty. Klepnutím povolíte</string>
+    <string name="history_clear">Vymazat historii hovorů</string>
+    <string name="history_clear_msg">Odebrat všechny hovory z historie? Záznamy hovorů na serveru zůstanou zachovány.</string>
+    <string name="history_clear_btn">Vymazat</string>
+    <string name="history_cleared">Historie hovorů vymazána</string>
+    <string name="history_removed">Hovor odebrán z historie</string>
+    <string name="history_undo">Zpět</string>
+    <string name="history_remove_failed">Nelze odebrat: %1$s</string>
+    <string name="chat_reply_action">Odpovědět</string>
+    <string name="chat_reply_hint">Zpráva</string>
+    <string name="chat_reply_you">Vy</string>
+    <string name="chat_reply_failed">Neodesláno: %1$s</string>
+    <string name="chat_sender_extension">Linka #%1$s</string>
+    <string name="chat_preview_file">📎 Soubor: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

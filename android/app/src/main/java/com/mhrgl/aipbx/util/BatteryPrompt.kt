@@ -20,20 +20,23 @@ import com.mhrgl.aipbx.data.AppPreferences
 object BatteryPrompt {
 
     @SuppressLint("BatteryLife")
-    fun askOnce(activity: Activity) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+    /** Returns true when the system request was opened now. */
+    fun askOnce(activity: Activity): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false
         val prefs = AppPreferences.getInstance(activity)
-        if (prefs.batteryPromptShown) return
-        val pm = activity.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
-        if (pm.isIgnoringBatteryOptimizations(activity.packageName)) return
+        if (prefs.batteryPromptShown) return false
+        val pm = activity.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
+        if (pm.isIgnoringBatteryOptimizations(activity.packageName)) return false
         prefs.batteryPromptShown = true
         try {
             activity.startActivity(
                 Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                     .setData(Uri.parse("package:${activity.packageName}"))
             )
+            return true
         } catch (e: Exception) {
             // The device has no such screen; the Settings button remains.
+            return false
         }
     }
 }

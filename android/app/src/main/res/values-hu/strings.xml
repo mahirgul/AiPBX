@@ -380,4 +380,22 @@
     <string name="ui_type_message">Írjon üzenetet...</string>
     <string name="ui_typing">gépel...</string>
     <string name="user_ext_label">Mellék: %1$s (%2$s)</string>
+    <string name="full_screen_title">Bejövő hívások teljes képernyőn</string>
+    <string name="full_screen_msg">Az Android kikapcsolta az AiPBX teljes képernyős értesítéseit, ezért zárolt telefonon a bejövő hívás csak kis értesítésként jelenik meg. A következő képernyőn engedélyezze az AiPBX számára a „Teljes képernyős értesítéseket”.</string>
+    <string name="full_screen_status_on">Teljes képernyős hívás: engedélyezve</string>
+    <string name="full_screen_status_off">Teljes képernyős hívás: kikapcsolva. Koppintson az engedélyezéshez</string>
+    <string name="history_clear">Híváselőzmények törlése</string>
+    <string name="history_clear_msg">Eltávolítja az összes hívást az előzményekből? A szerveren lévő hívásrekordok megmaradnak.</string>
+    <string name="history_clear_btn">Törlés</string>
+    <string name="history_cleared">Híváselőzmények törölve</string>
+    <string name="history_removed">Hívás eltávolítva az előzményekből</string>
+    <string name="history_undo">Visszavonás</string>
+    <string name="history_remove_failed">Nem sikerült eltávolítani: %1$s</string>
+    <string name="chat_reply_action">Válasz</string>
+    <string name="chat_reply_hint">Üzenet</string>
+    <string name="chat_reply_you">Ön</string>
+    <string name="chat_reply_failed">Nem lett elküldve: %1$s</string>
+    <string name="chat_sender_extension">Mellék #%1$s</string>
+    <string name="chat_preview_file">📎 Fájl: %1$s</string>
+    <string name="chat_preview_document">Dokumentum</string>
 </resources>

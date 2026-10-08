@@ -380,4 +380,22 @@
     <string name="ui_type_message">Skriv en besked...</string>
     <string name="ui_typing">skriver...</string>
     <string name="user_ext_label">Lokalnummer: %1$s (%2$s)</string>
+    <string name="full_screen_title">Indgående opkald i fuld skærm</string>
+    <string name="full_screen_msg">Android har slået fuldskærmsnotifikationer fra for AiPBX, så på en låst telefon vises et indgående opkald kun som en lille notifikation. Tillad \"Fuldskærmsnotifikationer\" for AiPBX på næste skærm.</string>
+    <string name="full_screen_status_on">Opkald i fuld skærm: tilladt</string>
+    <string name="full_screen_status_off">Opkald i fuld skærm: slået fra. Tryk for at tillade</string>
+    <string name="history_clear">Ryd opkaldshistorik</string>
+    <string name="history_clear_msg">Vil du fjerne alle opkald fra din opkaldshistorik? Opkaldsposterne på serveren bevares.</string>
+    <string name="history_clear_btn">Ryd</string>
+    <string name="history_cleared">Opkaldshistorikken er ryddet</string>
+    <string name="history_removed">Opkaldet er fjernet fra din historik</string>
+    <string name="history_undo">Fortryd</string>
+    <string name="history_remove_failed">Kunne ikke fjerne: %1$s</string>
+    <string name="chat_reply_action">Svar</string>
+    <string name="chat_reply_hint">Besked</string>
+    <string name="chat_reply_you">Dig</string>
+    <string name="chat_reply_failed">Ikke sendt: %1$s</string>
+    <string name="chat_sender_extension">Lokalnummer #%1$s</string>
+    <string name="chat_preview_file">📎 Fil: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

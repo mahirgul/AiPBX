@@ -264,6 +264,40 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
         }
     }
 
+    /**
+     * Removes calls from the user's own call history (#10), or all of them
+     * with [callKeys] = null. Only the list changes: the server keeps the
+     * call records (reports, recordings).
+     */
+    suspend fun hideCalls(
+        baseUrl: String,
+        token: String,
+        callKeys: List<String>?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val cleanUrl = baseUrl.trim().trimEnd('/')
+            val payload = JSONObject().apply {
+                if (callKeys == null) {
+                    put("action", "clear")
+                } else {
+                    put("action", "hide")
+                    put("call_keys", JSONArray(callKeys))
+                }
+            }.toString()
+            val request = Request.Builder()
+                .url("$cleanUrl/api/mobile/call_history.php")
+                .addHeader("Authorization", "Bearer $token")
+                .post(payload.toRequestBody(jsonMediaType))
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) Result.success(Unit)
+                else Result.failure(Exception("HTTP ${response.code}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getContacts(
         baseUrl: String,
         token: String
@@ -453,6 +487,57 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     } else {
                         Result.failure(Exception(L10n.str(R.string.api_chats_failed, response.code)))
                     }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /** Sends a text message over the chat REST API (no WebSocket needed); returns the saved message id. */
+    suspend fun sendChatText(baseUrl: String, token: String, convId: Int, text: String): Result<Long> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val payload = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("msg_type", "text")
+                    put("message", text)
+                }.toString()
+                val request = Request.Builder()
+                    .url("$cleanUrl/chat/api/messages")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(payload.toRequestBody(jsonMediaType))
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    val json = try { JSONObject(body) } catch (e: Exception) { null }
+                    if (response.isSuccessful && json?.optBoolean("success") == true) {
+                        Result.success(json.optJSONObject("message")?.optLong("id") ?: 0L)
+                    } else {
+                        Result.failure(Exception(json?.optString("error")?.takeIf { it.isNotBlank() } ?: "HTTP ${response.code}"))
+                    }
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /** Marks a conversation read up to [lastMessageId] over the chat REST API. */
+    suspend fun markChatRead(baseUrl: String, token: String, convId: Int, lastMessageId: Long): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = baseUrl.trim().trimEnd('/')
+                val payload = JSONObject().apply {
+                    put("conversation_id", convId)
+                    put("last_message_id", lastMessageId)
+                }.toString()
+                val request = Request.Builder()
+                    .url("$cleanUrl/chat/api/read")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(payload.toRequestBody(jsonMediaType))
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("HTTP ${response.code}"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)
