@@ -380,4 +380,22 @@
     <string name="ui_type_message">Nachricht eingeben...</string>
     <string name="ui_typing">schreibt...</string>
     <string name="user_ext_label">Nebenstelle: %1$s (%2$s)</string>
+    <string name="full_screen_title">Eingehende Anrufe im Vollbild</string>
+    <string name="full_screen_msg">Android hat Vollbild-Benachrichtigungen für AiPBX abgeschaltet, deshalb erscheint ein Anruf bei gesperrtem Telefon nur als kleine Benachrichtigung. Erlauben Sie auf der nächsten Seite „Vollbild-Benachrichtigungen“ für AiPBX.</string>
+    <string name="full_screen_status_on">Anrufe im Vollbild: erlaubt</string>
+    <string name="full_screen_status_off">Anrufe im Vollbild: aus. Zum Erlauben tippen</string>
+    <string name="history_clear">Anrufliste leeren</string>
+    <string name="history_clear_msg">Alle Anrufe aus Ihrer Anrufliste entfernen? Die Anrufdaten auf dem Server bleiben erhalten.</string>
+    <string name="history_clear_btn">Leeren</string>
+    <string name="history_cleared">Anrufliste geleert</string>
+    <string name="history_removed">Anruf aus Ihrer Liste entfernt</string>
+    <string name="history_undo">Rückgängig</string>
+    <string name="history_remove_failed">Entfernen fehlgeschlagen: %1$s</string>
+    <string name="chat_reply_action">Antworten</string>
+    <string name="chat_reply_hint">Nachricht</string>
+    <string name="chat_reply_you">Sie</string>
+    <string name="chat_reply_failed">Nicht gesendet: %1$s</string>
+    <string name="chat_sender_extension">Nebenstelle #%1$s</string>
+    <string name="chat_preview_file">📎 Datei: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

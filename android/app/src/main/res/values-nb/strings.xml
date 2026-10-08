@@ -380,4 +380,22 @@
     <string name="ui_type_message">Skriv en melding...</string>
     <string name="ui_typing">skriver...</string>
     <string name="user_ext_label">Internnummer: %1$s (%2$s)</string>
+    <string name="full_screen_title">Innkommende anrop i fullskjerm</string>
+    <string name="full_screen_msg">Android har slått av fullskjermvarsler for AiPBX, så på en låst telefon vises et innkommende anrop bare som et lite varsel. Tillat «Fullskjermvarsler» for AiPBX på neste skjerm.</string>
+    <string name="full_screen_status_on">Anrop i fullskjerm: tillatt</string>
+    <string name="full_screen_status_off">Anrop i fullskjerm: av. Trykk for å tillate</string>
+    <string name="history_clear">Tøm anropsloggen</string>
+    <string name="history_clear_msg">Vil du fjerne alle anrop fra anropsloggen? Anropsdataene på serveren beholdes.</string>
+    <string name="history_clear_btn">Tøm</string>
+    <string name="history_cleared">Anropsloggen er tømt</string>
+    <string name="history_removed">Anropet er fjernet fra loggen</string>
+    <string name="history_undo">Angre</string>
+    <string name="history_remove_failed">Kunne ikke fjerne: %1$s</string>
+    <string name="chat_reply_action">Svar</string>
+    <string name="chat_reply_hint">Melding</string>
+    <string name="chat_reply_you">Du</string>
+    <string name="chat_reply_failed">Ikke sendt: %1$s</string>
+    <string name="chat_sender_extension">Internnummer #%1$s</string>
+    <string name="chat_preview_file">📎 Fil: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

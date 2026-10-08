@@ -380,4 +380,22 @@
     <string name="ui_type_message">Введите сообщение...</string>
     <string name="ui_typing">печатает...</string>
     <string name="user_ext_label">Добавочный: %1$s (%2$s)</string>
+    <string name="full_screen_title">Входящие звонки на весь экран</string>
+    <string name="full_screen_msg">Android отключил полноэкранные уведомления для AiPBX, поэтому на заблокированном телефоне входящий звонок показывается только маленьким уведомлением. На следующем экране разрешите AiPBX «Полноэкранные уведомления».</string>
+    <string name="full_screen_status_on">Звонки на весь экран: разрешены</string>
+    <string name="full_screen_status_off">Звонки на весь экран: выключены. Нажмите, чтобы разрешить</string>
+    <string name="history_clear">Очистить историю звонков</string>
+    <string name="history_clear_msg">Удалить все звонки из вашей истории? Записи звонков на сервере сохраняются.</string>
+    <string name="history_clear_btn">Очистить</string>
+    <string name="history_cleared">История звонков очищена</string>
+    <string name="history_removed">Звонок удалён из вашей истории</string>
+    <string name="history_undo">Отменить</string>
+    <string name="history_remove_failed">Не удалось удалить: %1$s</string>
+    <string name="chat_reply_action">Ответить</string>
+    <string name="chat_reply_hint">Сообщение</string>
+    <string name="chat_reply_you">Вы</string>
+    <string name="chat_reply_failed">Не отправлено: %1$s</string>
+    <string name="chat_sender_extension">Внутренний #%1$s</string>
+    <string name="chat_preview_file">📎 Файл: %1$s</string>
+    <string name="chat_preview_document">Документ</string>
 </resources>

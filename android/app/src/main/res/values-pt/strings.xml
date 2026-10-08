@@ -380,4 +380,22 @@
     <string name="ui_type_message">Escreva uma mensagem...</string>
     <string name="ui_typing">a escrever...</string>
     <string name="user_ext_label">Extensão: %1$s (%2$s)</string>
+    <string name="full_screen_title">Chamadas recebidas em ecrã inteiro</string>
+    <string name="full_screen_msg">O Android desativou as notificações em ecrã inteiro para o AiPBX, por isso, com o telefone bloqueado, uma chamada aparece apenas como uma pequena notificação. Permita \"Notificações em ecrã inteiro\" para o AiPBX no ecrã seguinte.</string>
+    <string name="full_screen_status_on">Chamadas em ecrã inteiro: permitidas</string>
+    <string name="full_screen_status_off">Chamadas em ecrã inteiro: desativadas. Toque para permitir</string>
+    <string name="history_clear">Limpar histórico de chamadas</string>
+    <string name="history_clear_msg">Remover todas as chamadas do seu histórico? Os registos de chamadas no servidor são mantidos.</string>
+    <string name="history_clear_btn">Limpar</string>
+    <string name="history_cleared">Histórico de chamadas limpo</string>
+    <string name="history_removed">Chamada removida do seu histórico</string>
+    <string name="history_undo">Anular</string>
+    <string name="history_remove_failed">Não foi possível remover: %1$s</string>
+    <string name="chat_reply_action">Responder</string>
+    <string name="chat_reply_hint">Mensagem</string>
+    <string name="chat_reply_you">Você</string>
+    <string name="chat_reply_failed">Não enviado: %1$s</string>
+    <string name="chat_sender_extension">Extensão #%1$s</string>
+    <string name="chat_preview_file">📎 Ficheiro: %1$s</string>
+    <string name="chat_preview_document">Documento</string>
 </resources>

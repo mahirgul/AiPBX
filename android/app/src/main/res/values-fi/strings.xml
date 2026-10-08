@@ -380,4 +380,22 @@
     <string name="ui_type_message">Kirjoita viesti...</string>
     <string name="ui_typing">kirjoittaa...</string>
     <string name="user_ext_label">Alanumero: %1$s (%2$s)</string>
+    <string name="full_screen_title">Saapuvat puhelut koko näytöllä</string>
+    <string name="full_screen_msg">Android on poistanut AiPBX:n koko näytön ilmoitukset käytöstä, joten lukitussa puhelimessa saapuva puhelu näkyy vain pienenä ilmoituksena. Salli AiPBX:lle \"Koko näytön ilmoitukset\" seuraavassa näkymässä.</string>
+    <string name="full_screen_status_on">Puhelut koko näytöllä: sallittu</string>
+    <string name="full_screen_status_off">Puhelut koko näytöllä: pois. Salli napauttamalla</string>
+    <string name="history_clear">Tyhjennä puheluhistoria</string>
+    <string name="history_clear_msg">Poistetaanko kaikki puhelut puheluhistoriastasi? Palvelimen puhelutiedot säilyvät.</string>
+    <string name="history_clear_btn">Tyhjennä</string>
+    <string name="history_cleared">Puheluhistoria tyhjennetty</string>
+    <string name="history_removed">Puhelu poistettu historiastasi</string>
+    <string name="history_undo">Kumoa</string>
+    <string name="history_remove_failed">Poisto epäonnistui: %1$s</string>
+    <string name="chat_reply_action">Vastaa</string>
+    <string name="chat_reply_hint">Viesti</string>
+    <string name="chat_reply_you">Sinä</string>
+    <string name="chat_reply_failed">Ei lähetetty: %1$s</string>
+    <string name="chat_sender_extension">Alanumero #%1$s</string>
+    <string name="chat_preview_file">📎 Tiedosto: %1$s</string>
+    <string name="chat_preview_document">Asiakirja</string>
 </resources>

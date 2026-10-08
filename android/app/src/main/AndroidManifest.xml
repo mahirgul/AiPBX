@@ -164,6 +164,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- "Reply" field of chat notifications (sends without opening the app) -->
+        <receiver
+            android:name=".service.ChatReplyReceiver"
+            android:exported="false" />
+
         <!-- Boot Receiver for Auto-Start on Phone Reboot -->
         <receiver
             android:name=".service.BootReceiver"

@@ -62,35 +62,7 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun showChatNotification(title: String, body: String, convId: Int, targetExt: String, targetName: String, isGroup: Boolean) {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
-
-        val intent = Intent(this, com.mhrgl.aipbx.ui.DialerActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_CONV_ID, convId)
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_EXT, targetExt)
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_TARGET_NAME, targetName)
-            putExtra(com.mhrgl.aipbx.ui.ChatActivity.EXTRA_IS_GROUP, isGroup)
-        }
-        val pendingIntent = android.app.PendingIntent.getActivity(
-            this,
-            convId,
-            intent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notif = NotificationCompat.Builder(this, PbxForegroundService.CHANNEL_ID_CHAT)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setSmallIcon(R.drawable.ic_chat)
-            .setContentIntent(pendingIntent)
-            .setGroup("conv_$convId")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setAutoCancel(true)
-            .build()
-
-        nm.notify(10000 + (convId % 1000), notif)
+        ChatNotifications.show(this, title, body, convId, targetExt, targetName, isGroup)
     }
 
     private fun showTestNotification(title: String, body: String) {

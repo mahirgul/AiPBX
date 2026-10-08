@@ -380,4 +380,22 @@
     <string name="ui_type_message">Skriv ett meddelande...</string>
     <string name="ui_typing">skriver...</string>
     <string name="user_ext_label">Anknytning: %1$s (%2$s)</string>
+    <string name="full_screen_title">Inkommande samtal i helskärm</string>
+    <string name="full_screen_msg">Android har stängt av helskärmsaviseringar för AiPBX, så på en låst telefon visas ett inkommande samtal bara som en liten avisering. Tillåt ”Helskärmsaviseringar” för AiPBX på nästa skärm.</string>
+    <string name="full_screen_status_on">Samtal i helskärm: tillåtet</string>
+    <string name="full_screen_status_off">Samtal i helskärm: av. Tryck för att tillåta</string>
+    <string name="history_clear">Rensa samtalshistorik</string>
+    <string name="history_clear_msg">Ta bort alla samtal från din samtalshistorik? Samtalsposterna på servern finns kvar.</string>
+    <string name="history_clear_btn">Rensa</string>
+    <string name="history_cleared">Samtalshistoriken har rensats</string>
+    <string name="history_removed">Samtalet har tagits bort från historiken</string>
+    <string name="history_undo">Ångra</string>
+    <string name="history_remove_failed">Kunde inte ta bort: %1$s</string>
+    <string name="chat_reply_action">Svara</string>
+    <string name="chat_reply_hint">Meddelande</string>
+    <string name="chat_reply_you">Du</string>
+    <string name="chat_reply_failed">Inte skickat: %1$s</string>
+    <string name="chat_sender_extension">Anknytning #%1$s</string>
+    <string name="chat_preview_file">📎 Fil: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

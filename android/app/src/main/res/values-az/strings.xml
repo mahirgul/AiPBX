@@ -380,4 +380,22 @@
     <string name="ui_type_message">Mesaj yazın...</string>
     <string name="ui_typing">yazır...</string>
     <string name="user_ext_label">Daxili nömrə: %1$s (%2$s)</string>
+    <string name="full_screen_title">Tam ekran gələn zənglər</string>
+    <string name="full_screen_msg">Android AiPBX üçün tam ekran bildirişləri söndürüb, buna görə kilidli telefonda gələn zəng yalnız kiçik bildiriş kimi görünür. Növbəti ekranda AiPBX üçün \"Tam ekran bildirişlər\" icazəsini verin.</string>
+    <string name="full_screen_status_on">Tam ekran zəng: icazəli</string>
+    <string name="full_screen_status_off">Tam ekran zəng: söndürülüb. İcazə üçün toxunun</string>
+    <string name="history_clear">Zəng tarixçəsini təmizlə</string>
+    <string name="history_clear_msg">Bütün zənglər zəng tarixçənizdən silinsin? Serverdəki zəng qeydləri saxlanılır.</string>
+    <string name="history_clear_btn">Təmizlə</string>
+    <string name="history_cleared">Zəng tarixçəsi təmizləndi</string>
+    <string name="history_removed">Zəng tarixçənizdən silindi</string>
+    <string name="history_undo">Geri qaytar</string>
+    <string name="history_remove_failed">Silinmədi: %1$s</string>
+    <string name="chat_reply_action">Cavab ver</string>
+    <string name="chat_reply_hint">Mesaj</string>
+    <string name="chat_reply_you">Siz</string>
+    <string name="chat_reply_failed">Göndərilmədi: %1$s</string>
+    <string name="chat_sender_extension">Daxili #%1$s</string>
+    <string name="chat_preview_file">📎 Fayl: %1$s</string>
+    <string name="chat_preview_document">Sənəd</string>
 </resources>

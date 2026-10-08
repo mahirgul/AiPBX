@@ -380,4 +380,22 @@
     <string name="ui_type_message">Unesite poruku...</string>
     <string name="ui_typing">kuca...</string>
     <string name="user_ext_label">Lokal: %1$s (%2$s)</string>
+    <string name="full_screen_title">Dolazni pozivi preko celog ekrana</string>
+    <string name="full_screen_msg">Android je isključio obaveštenja preko celog ekrana za AiPBX, pa se na zaključanom telefonu dolazni poziv prikazuje samo kao malo obaveštenje. Na sledećem ekranu dozvolite \"Obaveštenja preko celog ekrana\" za AiPBX.</string>
+    <string name="full_screen_status_on">Pozivi preko celog ekrana: dozvoljeni</string>
+    <string name="full_screen_status_off">Pozivi preko celog ekrana: isključeni. Dodirnite da dozvolite</string>
+    <string name="history_clear">Obriši istoriju poziva</string>
+    <string name="history_clear_msg">Ukloniti sve pozive iz istorije? Zapisi poziva na serveru ostaju sačuvani.</string>
+    <string name="history_clear_btn">Obriši</string>
+    <string name="history_cleared">Istorija poziva obrisana</string>
+    <string name="history_removed">Poziv uklonjen iz istorije</string>
+    <string name="history_undo">Opozovi</string>
+    <string name="history_remove_failed">Uklanjanje nije uspelo: %1$s</string>
+    <string name="chat_reply_action">Odgovori</string>
+    <string name="chat_reply_hint">Poruka</string>
+    <string name="chat_reply_you">Vi</string>
+    <string name="chat_reply_failed">Nije poslato: %1$s</string>
+    <string name="chat_sender_extension">Lokal #%1$s</string>
+    <string name="chat_preview_file">📎 Datoteka: %1$s</string>
+    <string name="chat_preview_document">Dokument</string>
 </resources>

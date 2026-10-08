@@ -767,47 +767,21 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     }
 
     private fun showChatMessageNotification(message: ChatMessage) {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
-
         val title = if (!message.senderName.isNullOrEmpty() && message.senderName != message.senderExt) {
             "${message.senderName} (#${message.senderExt})"
         } else {
-            "Dahili #${message.senderExt}"
+            L10n.str(R.string.chat_sender_extension, message.senderExt)
         }
 
         val body = when (message.msgType) {
             "image" -> L10n.str(R.string.chat_preview_photo)
-            "file" -> "📎 Dosya: ${message.fileName ?: "Belge"}"
+            "file" -> L10n.str(R.string.chat_preview_file, message.fileName ?: L10n.str(R.string.chat_preview_document))
             "audio" -> L10n.str(R.string.chat_preview_audio)
             "video" -> "🎥 Video"
             else -> if (!message.message.isNullOrEmpty()) message.message else L10n.str(R.string.chat_preview_new_message)
         }
 
-        val intent = Intent(this, com.mhrgl.aipbx.ui.DialerActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra(ChatActivity.EXTRA_CONV_ID, message.conversationId)
-            putExtra(ChatActivity.EXTRA_TARGET_EXT, message.senderExt)
-            putExtra(ChatActivity.EXTRA_TARGET_NAME, message.senderName)
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            message.conversationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID_CHAT)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setSmallIcon(R.drawable.ic_chat)
-            .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setAutoCancel(true)
-            .build()
-
-        nm.notify(10000 + (message.conversationId % 1000), notification)
+        ChatNotifications.show(this, title, body, message.conversationId, message.senderExt, message.senderName, isGroup = false)
     }
 
     /**
