@@ -91,3 +91,7 @@
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Voicemail settings card in the Voicemail tab: two columns, one on phones */
+.my-phone-vm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .my-phone-vm-grid { grid-template-columns: 1fr; } }

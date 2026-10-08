@@ -14,7 +14,7 @@ class MyPhoneRepository extends BaseRepository
                     u.role, COALESCE(r.role_name, u.role) AS role_name, u.allowed_phone_mode, dnd_enabled, call_forward_number,
                     cf_busy_number, cf_noanswer_number, cf_noanswer_timeout,
                     cid_internal, cid_external, outbound_group, is_active,
-                    voicemail_enabled, voicemail_pin, voicemail_email, voicemail_attach_audio,
+                    voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify, voicemail_attach_audio,
                     vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always
              FROM sys_users u
              LEFT JOIN sys_roles r ON r.role_key = u.role
@@ -28,7 +28,7 @@ class MyPhoneRepository extends BaseRepository
     /**
      * Get call statistics for a specific extension
      */
-    public static function getCallStats(string $ext): array
+    public static function getCallStats(string $ext, ?int $userId = null): array
     {
         if ($ext === '') {
             return [
@@ -40,7 +40,7 @@ class MyPhoneRepository extends BaseRepository
             ];
         }
 
-        $allCalls = static::getRecentCalls($ext, null, null, 500);
+        $allCalls = static::getRecentCalls($ext, null, null, 500, $userId);
         $total = count($allCalls);
         $in = 0;
         $out = 0;
@@ -71,7 +71,7 @@ class MyPhoneRepository extends BaseRepository
     /**
      * Get recent calls for a specific extension with filtering
      */
-    public static function getRecentCalls(string $ext, ?string $filter = null, ?string $search = null, int $limit = 50): array
+    public static function getRecentCalls(string $ext, ?string $filter = null, ?string $search = null, int $limit = 50, ?int $userId = null): array
     {
         if ($ext === '') {
             return [];
@@ -124,9 +124,23 @@ class MyPhoneRepository extends BaseRepository
                 AND channel NOT LIKE 'Local/%'
                 AND channel NOT LIKE 'CLIEval/%'
                 AND dst != 's'
+                %CLEARED%
                 ORDER BY calldate DESC, id DESC LIMIT " . (int)$fetchLimit;
 
         $params = array_merge($extList, $extList, ["PJSIP/{$extPrimary}-%", "PJSIP/{$extPrimary}-%"]);
+
+        // Calls the user removed from their history (#10): the CDR stays, they are only left out here.
+        $hidden = [];
+        $clearedAt = $userId ? static::callHistoryClearedAt($userId) : null;
+        if ($clearedAt !== null) {
+            $params[] = $clearedAt;
+        }
+        $sql = str_replace('%CLEARED%', $clearedAt !== null ? 'AND calldate > ?' : '', $sql);
+        if ($userId) {
+            $st = static::db()->prepare('SELECT call_key FROM sys_call_history_hidden WHERE user_id = ?');
+            $st->execute([$userId]);
+            $hidden = array_flip($st->fetchAll(PDO::FETCH_COLUMN));
+        }
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -204,7 +218,10 @@ class MyPhoneRepository extends BaseRepository
         }
 
         $calls = [];
-        foreach ($dedup as $row) {
+        foreach ($dedup as $callKey => $row) {
+            if (isset($hidden[(string)$callKey])) {
+                continue;
+            }
             $isOutgoing = (
                 in_array($row['src'], $extList, true)
                 || (isset($row['channel']) && strpos($row['channel'], "PJSIP/{$extPrimary}-") === 0)
@@ -313,6 +330,7 @@ class MyPhoneRepository extends BaseRepository
 
             $calls[] = [
                 'id' => (int)$row['id'],
+                'call_key' => (string)$callKey,
                 'calldate' => $row['calldate'],
                 'direction' => $dir,
                 'party' => $party,
@@ -336,8 +354,48 @@ class MyPhoneRepository extends BaseRepository
         return $calls;
     }
 
+    /** Time of the user's last "clear call history", or null. */
+    public static function callHistoryClearedAt(int $userId): ?string
+    {
+        $st = static::db()->prepare('SELECT call_history_cleared_at FROM sys_users WHERE id = ?');
+        $st->execute([$userId]);
+        $v = $st->fetchColumn();
+        return $v ? (string)$v : null;
+    }
+
     /**
-     * Update user phone preferences
+     * Remove calls from the user's own history (#10). Only the list changes:
+     * the CDR, reports and recordings are not touched. Keys are the
+     * call_key values of getRecentCalls().
+     */
+    public static function hideCalls(int $userId, array $callKeys): int
+    {
+        $keys = array_values(array_unique(array_filter(array_map(
+            fn($k) => preg_replace('/[^A-Za-z0-9._-]/', '', (string)$k), $callKeys
+        ), fn($k) => $k !== '' && strlen($k) <= 64)));
+        if (!$keys) {
+            return 0;
+        }
+        $st = static::db()->prepare('INSERT IGNORE INTO sys_call_history_hidden (user_id, call_key) VALUES (?, ?)');
+        $n = 0;
+        foreach (array_slice($keys, 0, 500) as $k) {
+            $st->execute([$userId, $k]);
+            $n += $st->rowCount();
+        }
+        return $n;
+    }
+
+    /** "Clear call history": everything up to now is left out of the user's list. */
+    public static function clearCallHistory(int $userId): void
+    {
+        static::db()->prepare('UPDATE sys_users SET call_history_cleared_at = NOW() WHERE id = ?')->execute([$userId]);
+        // Single hidden calls are older than the clear time now and no longer needed.
+        static::db()->prepare('DELETE FROM sys_call_history_hidden WHERE user_id = ?')->execute([$userId]);
+    }
+
+    /**
+     * Update the user's call settings (DND, forwarding, phone modes).
+     * Voicemail has its own form and method: updateVoicemailSettings().
      */
     public static function updatePhoneSettings(
         int $userId,
@@ -346,18 +404,8 @@ class MyPhoneRepository extends BaseRepository
         string $mode,
         string $forwardBusy = '',
         string $forwardNoAnswer = '',
-        int $noAnswerTimeout = 20,
-        array $voicemailSettings = []
+        int $noAnswerTimeout = 20
     ): bool {
-        $vmEnabled = isset($voicemailSettings['voicemail_enabled']) ? intval($voicemailSettings['voicemail_enabled']) : 1;
-        $vmPin = preg_replace('/[^0-9]/', '', (string)($voicemailSettings['voicemail_pin'] ?? ''));
-        $vmEmail = trim((string)($voicemailSettings['voicemail_email'] ?? ''));
-        $vmAttach = isset($voicemailSettings['voicemail_attach_audio']) ? intval($voicemailSettings['voicemail_attach_audio']) : 1;
-        $vmNa = isset($voicemailSettings['vm_on_noanswer']) ? intval($voicemailSettings['vm_on_noanswer']) : 0;
-        $vmBusy = isset($voicemailSettings['vm_on_busy']) ? intval($voicemailSettings['vm_on_busy']) : 0;
-        $vmUnavail = isset($voicemailSettings['vm_on_unavail']) ? intval($voicemailSettings['vm_on_unavail']) : 0;
-        $vmAlways = isset($voicemailSettings['vm_always']) ? intval($voicemailSettings['vm_always']) : 0;
-
         $stmt = static::db()->prepare(
             "UPDATE sys_users
              SET dnd_enabled = ?,
@@ -365,15 +413,7 @@ class MyPhoneRepository extends BaseRepository
                  cf_busy_number = ?,
                  cf_noanswer_number = ?,
                  cf_noanswer_timeout = ?,
-                 allowed_phone_mode = ?,
-                 voicemail_enabled = ?,
-                 voicemail_pin = CASE WHEN ? != '' THEN ? ELSE voicemail_pin END,
-                 voicemail_email = ?,
-                 voicemail_attach_audio = ?,
-                 vm_on_noanswer = ?,
-                 vm_on_busy = ?,
-                 vm_on_unavail = ?,
-                 vm_always = ?
+                 allowed_phone_mode = ?
              WHERE id = ?"
         );
         return $stmt->execute([
@@ -383,15 +423,48 @@ class MyPhoneRepository extends BaseRepository
             $forwardNoAnswer !== '' ? $forwardNoAnswer : null,
             max(5, min(120, $noAnswerTimeout)),
             $mode,
-            $vmEnabled,
-            $vmPin,
-            $vmPin,
-            $vmEmail,
-            $vmAttach,
-            $vmNa,
-            $vmBusy,
-            $vmUnavail,
-            $vmAlways,
+            $userId
+        ]);
+    }
+
+    /**
+     * Update the user's voicemail settings. Every switch must be given: the
+     * form sends a box only when it is ticked, the controller turns a missing
+     * one into 0. An empty PIN keeps the current PIN.
+     */
+    public static function updateVoicemailSettings(int $userId, array $vm): bool
+    {
+        $flag = fn(string $k): int => !empty($vm[$k]) ? 1 : 0;
+        $pin = preg_replace('/[^0-9]/', '', (string)($vm['voicemail_pin'] ?? ''));
+        $email = trim((string)($vm['voicemail_email'] ?? ''));
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException(t('my_phone.vm_email_invalid'));
+        }
+
+        $stmt = static::db()->prepare(
+            "UPDATE sys_users
+             SET voicemail_enabled = ?,
+                 voicemail_pin = CASE WHEN ? != '' THEN ? ELSE voicemail_pin END,
+                 voicemail_email = ?,
+                 voicemail_email_notify = ?,
+                 voicemail_attach_audio = ?,
+                 vm_on_noanswer = ?,
+                 vm_on_busy = ?,
+                 vm_on_unavail = ?,
+                 vm_always = ?
+             WHERE id = ?"
+        );
+        return $stmt->execute([
+            $flag('voicemail_enabled'),
+            $pin,
+            $pin,
+            $email,
+            $flag('voicemail_email_notify'),
+            $flag('voicemail_attach_audio'),
+            $flag('vm_on_noanswer'),
+            $flag('vm_on_busy'),
+            $flag('vm_on_unavail'),
+            $flag('vm_always'),
             $userId
         ]);
     }

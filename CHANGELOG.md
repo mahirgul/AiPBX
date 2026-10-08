@@ -5,6 +5,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.5.3
+
+- **Google sign-in settings could not be saved** ("Unknown column
+  'updated_at'"), so Google Workspace sign-in could not be set up (#9).
+- **Voicemail could not be switched off for an extension** (#2): after
+  unticking *Voicemail box enabled* and saving, the box was ticked again.
+  The same happened to *Attach recording*.
+- **Voicemail settings moved to My Phone → Voicemail**, next to the
+  messages, with their own Save button. Saving call forwarding or DND (in the
+  portal or the mobile app) used to reset them: the recording attachment
+  was switched off and the forward-to-voicemail options were cleared.
+- **E-mail notification switch for voicemail**, per user and on the
+  extension form. It is on for existing users, so nothing changes until
+  someone turns it off.
+- **Mobile API: remove calls from your own call history** (one call or all).
+  The call records themselves are not deleted: reports, call journeys and
+  recordings stay. Used by the next Android app version (#10).
+
 ## 1.5.2
 
 - **Updating from the portal failed** (*Admin → System Update*) with "The

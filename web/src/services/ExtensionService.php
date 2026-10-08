@@ -47,13 +47,22 @@ class ExtensionService {
             if (!in_array($boss_secretary_role, ['none', 'boss', 'secretary'], true)) {
                 $boss_secretary_role = 'none';
             }
-            $voicemail_enabled = isset($data['voicemail_enabled']) ? intval($data['voicemail_enabled']) : 1;
+            // The form sends a hidden 0 before each voicemail switch, because an
+            // unticked box is not posted at all: reading a missing box as 1
+            // made it impossible to turn the box off (#2). A caller that does
+            // not send a switch keeps the stored value (new extension: on).
+            $current = $user_id > 0
+                ? ($db->query('SELECT voicemail_enabled, voicemail_email_notify, voicemail_attach_audio FROM sys_users WHERE id = ' . $user_id)->fetch(PDO::FETCH_ASSOC) ?: [])
+                : [];
+            $vmSwitch = fn(string $k): int => isset($data[$k]) ? (intval($data[$k]) ? 1 : 0) : (int)($current[$k] ?? 1);
+            $voicemail_enabled = $vmSwitch('voicemail_enabled');
+            $voicemail_email_notify = $vmSwitch('voicemail_email_notify');
             $voicemail_pin = preg_replace('/[^0-9]/', '', trim($data['voicemail_pin'] ?? ''));
             if (empty($voicemail_pin)) {
                 $voicemail_pin = $extension;
             }
             $voicemail_email = trim($data['voicemail_email'] ?? '');
-            $voicemail_attach_audio = isset($data['voicemail_attach_audio']) ? intval($data['voicemail_attach_audio']) : 1;
+            $voicemail_attach_audio = $vmSwitch('voicemail_attach_audio');
             $vm_on_noanswer = isset($data['vm_on_noanswer']) ? intval($data['vm_on_noanswer']) : 0;
             $vm_on_busy = isset($data['vm_on_busy']) ? intval($data['vm_on_busy']) : 0;
             // The "when unreachable" box on the form was never read: the
@@ -91,6 +100,7 @@ class ExtensionService {
                     'voicemail_enabled' => $voicemail_enabled,
                     'voicemail_pin' => $voicemail_pin,
                     'voicemail_email' => $voicemail_email,
+                    'voicemail_email_notify' => $voicemail_email_notify,
                     'voicemail_attach_audio' => $voicemail_attach_audio,
                     'vm_on_noanswer' => $vm_on_noanswer,
                     'vm_on_busy' => $vm_on_busy,
@@ -136,6 +146,7 @@ class ExtensionService {
                     'voicemail_enabled' => $voicemail_enabled,
                     'voicemail_pin' => $voicemail_pin,
                     'voicemail_email' => $voicemail_email,
+                    'voicemail_email_notify' => $voicemail_email_notify,
                     'voicemail_attach_audio' => $voicemail_attach_audio,
                     'vm_on_noanswer' => $vm_on_noanswer,
                     'vm_on_busy' => $vm_on_busy,

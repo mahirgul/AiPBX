@@ -244,6 +244,7 @@
                     <div class="u-flex-between u-mb-10">
                         <span class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?></span>
                         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
+                            <input type="hidden" name="voicemail_enabled" value="0">
                             <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked class="u-accent">
                             <span><?php echo t('extensions.vm_enabled'); ?></span>
                         </label>
@@ -257,6 +258,18 @@
                             <label class="form-label u-fs-11"><?php echo t('my_phone.vm_email'); ?></label>
                             <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="name@example.com">
                         </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
+                        <input type="hidden" name="voicemail_email_notify" value="0">
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="voicemail_email_notify" id="modal_voicemail_email_notify" value="1" checked class="u-accent">
+                            <span><?php echo t('extensions.vm_email_notify'); ?></span>
+                        </label>
+                        <input type="hidden" name="voicemail_attach_audio" value="0">
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="voicemail_attach_audio" id="modal_voicemail_attach_audio" value="1" checked class="u-accent">
+                            <span><?php echo t('extensions.vm_attach'); ?></span>
+                        </label>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
                         <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
