@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Alanumero #%1$s</string>
     <string name="chat_preview_file">📎 Tiedosto: %1$s</string>
     <string name="chat_preview_document">Asiakirja</string>
+    <string name="chat_message_deleted">🚫 Tämä viesti on poistettu</string>
+    <string name="chat_delete_message">Poista viesti</string>
+    <string name="chat_delete_message_confirm">Poistetaanko tämä viesti kaikilta keskustelussa?</string>
+    <string name="err_message_delete_not_allowed">Tätä viestiä ei voi enää poistaa.</string>
+    <string name="api_message_delete_failed">Viestin poistaminen epäonnistui (HTTP %1$s)</string>
 </resources>

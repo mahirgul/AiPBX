@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Mellék #%1$s</string>
     <string name="chat_preview_file">📎 Fájl: %1$s</string>
     <string name="chat_preview_document">Dokumentum</string>
+    <string name="chat_message_deleted">🚫 Ezt az üzenetet törölték</string>
+    <string name="chat_delete_message">Üzenet törlése</string>
+    <string name="chat_delete_message_confirm">Törli ezt az üzenetet mindenkinél a csevegésben?</string>
+    <string name="err_message_delete_not_allowed">Ez az üzenet már nem törölhető.</string>
+    <string name="api_message_delete_failed">Az üzenetet nem sikerült törölni (HTTP %1$s)</string>
 </resources>

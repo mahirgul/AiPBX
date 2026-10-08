@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Вътрешен #%1$s</string>
     <string name="chat_preview_file">📎 Файл: %1$s</string>
     <string name="chat_preview_document">Документ</string>
+    <string name="chat_message_deleted">🚫 Това съобщение е изтрито</string>
+    <string name="chat_delete_message">Изтриване на съобщението</string>
+    <string name="chat_delete_message_confirm">Да се изтрие ли това съобщение за всички в чата?</string>
+    <string name="err_message_delete_not_allowed">Това съобщение вече не може да бъде изтрито.</string>
+    <string name="api_message_delete_failed">Съобщението не можа да бъде изтрито (HTTP %1$s)</string>
 </resources>

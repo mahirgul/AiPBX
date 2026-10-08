@@ -30,6 +30,7 @@ func main() {
 
 	hub := NewHub()
 	hub.secretKey = cfg.SecretKey
+	hub.uploadDir = cfg.UploadDir
 	go hub.Run()
 
 	server := NewServer(cfg, hub)
@@ -66,6 +67,7 @@ func main() {
 				server.HandleGetMessages(w, r, user)
 			}
 		}))
+		mux.HandleFunc(prefix+"/api/messages/delete", server.authMiddleware(server.HandleDeleteMessage))
 		mux.HandleFunc(prefix+"/api/read", server.authMiddleware(server.HandleMarkRead))
 		mux.HandleFunc(prefix+"/api/upload", server.authMiddleware(server.HandleUpload))
 		mux.HandleFunc(prefix+"/media/", server.authMiddleware(server.HandleMedia))
