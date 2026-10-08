@@ -23,6 +23,11 @@
 #   - Displays and saves all credentials at the end
 # ============================================================================
 set -euo pipefail
+# The portal's System Update page runs this as a systemd unit, which has no
+# HOME: Composer then stops with "The HOME or COMPOSER_HOME environment variable
+# must be set" and the update rolls back (an update over SSH worked).
+export HOME="${HOME:-/root}"
+export COMPOSER_HOME="${COMPOSER_HOME:-$HOME/.config/composer}"
 
 # --- Color codes ---
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'

@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.5.2
+
+- **Updating from the portal failed** (*Admin → System Update*) with "The
+  HOME or COMPOSER_HOME environment variable must be set" and rolled back,
+  while `sudo aipbx-update` over SSH worked (#3). The update runs as a
+  background service that had no HOME; it is set now. Older installations
+  can update from the portal again, because the fix is in the new
+  version's installer.
+- **Android app 1.0.53:** the battery-optimisation request no longer opens
+  every time the app starts (#6). It is shown once; later it is under
+  *Settings → Battery optimisation*.
+
 ## 1.5.1
 
 - **Croatian (Hrvatski) in the Android and iOS apps** (#5). Android app

@@ -14,8 +14,8 @@ android {
         applicationId = "com.mhrgl.AiPBX"
         minSdk = 26
         targetSdk = 36
-        versionCode = 52
-        versionName = "1.0.52"
+        versionCode = 53
+        versionName = "1.0.53"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

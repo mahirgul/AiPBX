@@ -268,6 +268,7 @@ case "$cmd" in
                 fi
                 systemctl reset-failed aipbx-update.service >/dev/null 2>&1 || true
                 exec systemd-run --quiet --collect --unit=aipbx-update \
+                    --setenv=HOME=/root \
                     --description="AiPBX update" /usr/local/sbin/aipbx-update --yes $extra
                 ;;
             *) die "unknown update command: $sub" ;;

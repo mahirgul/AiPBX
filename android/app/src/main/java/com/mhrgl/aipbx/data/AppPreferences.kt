@@ -165,6 +165,11 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_APP_LANGUAGE, "en") ?: "en"
         set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
 
+    /** The automatic battery-optimisation request was shown once (see BatteryPrompt). */
+    var batteryPromptShown: Boolean
+        get() = prefs.getBoolean(KEY_BATTERY_PROMPT_SHOWN, false)
+        set(value) = prefs.edit().putBoolean(KEY_BATTERY_PROMPT_SHOWN, value).apply()
+
     var hasSleepingWarning: Boolean
         get() = prefs.getBoolean(KEY_SLEEPING_WARNING, false)
         set(value) = prefs.edit().putBoolean(KEY_SLEEPING_WARNING, value).apply()
@@ -269,6 +274,7 @@ class AppPreferences(context: Context) {
         private const val KEY_FCM_SENDER_ID = "fcm_sender_id"
         private const val KEY_SLEEPING_WARNING = "has_sleeping_warning"
         private const val KEY_APP_LANGUAGE = "app_language"
+        private const val KEY_BATTERY_PROMPT_SHOWN = "battery_prompt_shown"
         private const val KEY_LAST_RESURRECTION_TS = "last_resurrection_ts"
         private const val KEY_DEVICE_UUID = "device_uuid"
         private const val KEY_LAST_TOKEN_REFRESH_TIME = "last_token_refresh_time"
