@@ -105,6 +105,7 @@ ob_start(); ?>
         <?php if (!$is_mobile_device): ?>
             <?php $lang_switch_class = 'inline'; require dirname(__DIR__, 2) . '/auth_lang_switch.php'; ?>
         <?php endif; ?>
+        <?php require dirname(__DIR__, 2) . '/auth_support_contact.php'; ?>
     </div>
 
     <?php if (!$is_mobile_device): ?>

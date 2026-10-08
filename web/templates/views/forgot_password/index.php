@@ -40,4 +40,5 @@
         <a href="/login" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 12px;">
             <i class="fas fa-arrow-left"></i> <?php echo t('reset_password.back_to_login'); ?>
         </a>
+        <?php require dirname(__DIR__, 2) . '/auth_support_contact.php'; ?>
     </div>

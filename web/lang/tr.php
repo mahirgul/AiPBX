@@ -3726,4 +3726,8 @@ Telefonunuz çaldırılacak.',
     'forgot.err_identifier' => 'Kullanıcı adınızı veya e-posta adresinizi girin.',
     'forgot.err_too_many' => 'Bu ağdan çok fazla istek geldi. Bir saat sonra tekrar deneyin.',
     'audit_log.login_reset_request' => 'Şifre sıfırlama isteği',
+    'brand_settings.support_title' => 'Yardım iletişimi (giriş sayfası)',
+    'brand_settings.support_name_ph' => 'örn. Bilgi İşlem destek',
+    'brand_settings.support_help' => 'İsteğe bağlı. Doldurulursa giriş sayfasında bu ad, e-posta ve telefonla "Yardım mı lazım?" satırı görünür; giriş yapamayan kullanıcı kime başvuracağını bilir.',
+    'login.support_label' => 'Yardım mı lazım?',
 ];
