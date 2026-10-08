@@ -32,6 +32,7 @@
   <a href="docs/README.md">Documentation</a> •
   <a href="#architecture">Architecture</a> •
   <a href="CHANGELOG.md">Changelog</a> •
+  <a href="docs/roadmap.md">Roadmap</a> •
   <a href="#contributing">Contributing</a>
 </p>
 

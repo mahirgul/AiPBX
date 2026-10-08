@@ -43,3 +43,8 @@ The Android and iOS apps are built by GitHub Actions and attached to each
 [GitHub Release](https://github.com/mahirgul/AiPBX/releases). Users sign in with their portal
 username and password (plus 2FA when enabled), by scanning the QR code on *My Phone*, or with the
 link in their invitation e-mail.
+
+## Roadmap
+
+Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models
+…) with a short explanation of each: [Roadmap](roadmap.md).
