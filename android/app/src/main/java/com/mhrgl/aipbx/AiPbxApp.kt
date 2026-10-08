@@ -5,8 +5,10 @@ import android.app.Application
 import android.os.Bundle
 import com.mhrgl.aipbx.data.ChatWebSocketManager
 import android.util.Log
+import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.service.PbxForegroundService
+import com.mhrgl.aipbx.service.SessionExpiry
 import com.mhrgl.aipbx.util.L10n
 import java.io.File
 import java.io.PrintWriter
@@ -25,9 +27,11 @@ class AiPbxApp : Application() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityStarted(activity: Activity) {
                 if (startedActivities++ == 0) ChatWebSocketManager.instance.setActive(true)
+                isInForeground = startedActivities > 0
             }
             override fun onActivityStopped(activity: Activity) {
                 if (startedActivities > 0 && --startedActivities == 0) ChatWebSocketManager.instance.setActive(false)
+                isInForeground = startedActivities > 0
             }
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityResumed(activity: Activity) {}
@@ -35,6 +39,9 @@ class AiPbxApp : Application() {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}
         })
+
+        // A session the server no longer accepts signs the app out (#17).
+        ApiClient.onSessionRejected = { reason -> SessionExpiry.signOut(this, reason) }
 
         // Global Uncaught Exception Crash Logger
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -62,5 +69,12 @@ class AiPbxApp : Application() {
         } catch (e: Exception) {
             Log.e("AiPbxApp", "Service start error in onCreate", e)
         }
+    }
+
+    companion object {
+        /** True while one of the app's screens is visible. */
+        @Volatile
+        var isInForeground: Boolean = false
+            private set
     }
 }
