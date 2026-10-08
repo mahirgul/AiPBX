@@ -83,6 +83,8 @@ public final class ChatNotifications {
         let title = info[Self.keyTitle] as? String ?? response.notification.request.content.title
 
         let appState = AppState.shared
+        // iOS may have launched the app just for this Reply: sign back in first.
+        await appState.restoreSessionIfNeeded()
         guard let token = appState.token, !token.isEmpty else {
             post(convId: convId, title: title, body: L("Not sent: %@", L("AiPBX session ended")), silent: true)
             return

@@ -68,6 +68,7 @@ class FcmPushProvider implements PushProviderInterface
         $stmt = $db->prepare("SELECT id, fcm_token, device_id, platform 
                               FROM sys_mobile_devices 
                               WHERE extension = ? AND is_active = 1 
+                                AND (push_type IS NULL OR push_type <> 'apns')
                               ORDER BY updated_at DESC");
         $stmt->execute([$cleanExt]);
         $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
