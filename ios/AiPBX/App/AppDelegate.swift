@@ -11,6 +11,13 @@ public class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
             ChatNotifications.shared.registerCategory()
         }
 
+        // PushKit first: a VoIP push that launched the app is delivered only
+        // after the registry exists. Then sign back in with the saved session.
+        PushRegistrationManager.shared.start()
+        Task { @MainActor in
+            await AppState.shared.restoreSessionIfNeeded()
+        }
+
         // Request Push Notification Authorization
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if granted {
@@ -30,9 +37,7 @@ public class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
-        let token = tokenParts.joined()
-        AppLogManager.shared.info("AppDelegate", "APNS Device Token: \(token)")
+        PushRegistrationManager.shared.didReceiveApnsToken(deviceToken)
     }
 
     public func application(
@@ -47,6 +52,16 @@ public class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        // While the app is open the live chat connection already posts the
+        // message notification; the server's push for it would be a duplicate.
+        let info = notification.request.content.userInfo
+        let isRemote = notification.request.trigger is UNPushNotificationTrigger
+        let action = info["action"] as? String ?? ""
+        if isRemote, ["new_message", "group_created", "group_member_added"].contains(action),
+           ChatWebSocketManager.shared.isConnected {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .badge])
     }
 

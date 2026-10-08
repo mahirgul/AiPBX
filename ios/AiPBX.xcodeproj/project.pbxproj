@@ -18,6 +18,8 @@
 		C8777D46963BDCECBF209BD6 /* CallKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A77994681DA0EDCDF61232E /* CallKitManager.swift */; };
 		9EBA9B34A06B515DD8C9C2E9 /* ChatNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */; };
 		4B16CDA02548F8EEF7FD69DF /* ChatWebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */; };
+		A7F0D6FA8221005BA2C5A16D /* PushRegistrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E2B4DB054883CAABB01507 /* PushRegistrationManager.swift */; };
+		73CA5DEA788E5867628B8486 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C746BCEDC7423390B96C829 /* SessionStore.swift */; };
 		8B45160736852F208D3482B7 /* SipWebRtcEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */; };
 		717B8C257284D81C99783EB3 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC11A680C272C2DB0BEB5C71 /* LoginView.swift */; };
 		41F42F3B98CB3B2F065AA541 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F330F822DBEAD8A58BFE132 /* MainTabView.swift */; };
@@ -48,6 +50,7 @@
 		211AFB54F3A25C24570BBC93 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A45BCB41ECD5F9E55BAD985 /* AVFoundation.framework */; };
 		B8B0CDF4356F893045A1D2A4 /* CallKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C39F096DEEE9B42B7C3E818 /* CallKit.framework */; };
 		4D14AC601153E1A1D87E0B40 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 602629BA42C04261D49BDC7C /* UserNotifications.framework */; };
+		1F8858D2505DEF55F295F4A1 /* PushKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C522EE7D6CBC79F9B6FA537B /* PushKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +66,8 @@
 		0A77994681DA0EDCDF61232E /* CallKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallKitManager.swift"; sourceTree = "<group>"; };
 		6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatNotifications.swift"; sourceTree = "<group>"; };
 		9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatWebSocketManager.swift"; sourceTree = "<group>"; };
+		03E2B4DB054883CAABB01507 /* PushRegistrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PushRegistrationManager.swift"; sourceTree = "<group>"; };
+		3C746BCEDC7423390B96C829 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionStore.swift"; sourceTree = "<group>"; };
 		4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SipWebRtcEngine.swift"; sourceTree = "<group>"; };
 		EC11A680C272C2DB0BEB5C71 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LoginView.swift"; sourceTree = "<group>"; };
 		7F330F822DBEAD8A58BFE132 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MainTabView.swift"; sourceTree = "<group>"; };
@@ -138,6 +143,7 @@
 		9A45BCB41ECD5F9E55BAD985 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		8C39F096DEEE9B42B7C3E818 /* CallKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CallKit.framework; path = System/Library/Frameworks/CallKit.framework; sourceTree = SDKROOT; };
 		602629BA42C04261D49BDC7C /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		C522EE7D6CBC79F9B6FA537B /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = System/Library/Frameworks/PushKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -149,6 +155,7 @@
 				211AFB54F3A25C24570BBC93 /* AVFoundation.framework in Frameworks */,
 				B8B0CDF4356F893045A1D2A4 /* CallKit.framework in Frameworks */,
 				4D14AC601153E1A1D87E0B40 /* UserNotifications.framework in Frameworks */,
+				1F8858D2505DEF55F295F4A1 /* PushKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -162,6 +169,7 @@
 				9A45BCB41ECD5F9E55BAD985 /* AVFoundation.framework */,
 				8C39F096DEEE9B42B7C3E818 /* CallKit.framework */,
 				602629BA42C04261D49BDC7C /* UserNotifications.framework */,
+				C522EE7D6CBC79F9B6FA537B /* PushKit.framework */,
 			);
 			name = "Frameworks";
 			sourceTree = "<group>";
@@ -298,6 +306,8 @@
 				0A77994681DA0EDCDF61232E /* CallKitManager.swift */,
 				6293B3F4EC1C67BDD2F9471B /* ChatNotifications.swift */,
 				9F184B76DD84727DCE0CD52C /* ChatWebSocketManager.swift */,
+				03E2B4DB054883CAABB01507 /* PushRegistrationManager.swift */,
+				3C746BCEDC7423390B96C829 /* SessionStore.swift */,
 				4E8F61E83C177CC9ED7C24FA /* SipWebRtcEngine.swift */,
 			);
 			name = "Services";
@@ -496,6 +506,8 @@
 				C8777D46963BDCECBF209BD6 /* CallKitManager.swift in Sources */,
 				9EBA9B34A06B515DD8C9C2E9 /* ChatNotifications.swift in Sources */,
 				4B16CDA02548F8EEF7FD69DF /* ChatWebSocketManager.swift in Sources */,
+				A7F0D6FA8221005BA2C5A16D /* PushRegistrationManager.swift in Sources */,
+				73CA5DEA788E5867628B8486 /* SessionStore.swift in Sources */,
 				8B45160736852F208D3482B7 /* SipWebRtcEngine.swift in Sources */,
 				717B8C257284D81C99783EB3 /* LoginView.swift in Sources */,
 				41F42F3B98CB3B2F065AA541 /* MainTabView.swift in Sources */,
@@ -577,6 +589,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AiPBX/Resources/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = AiPBX/Resources/AiPBX.entitlements;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -600,6 +613,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AiPBX/Resources/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = AiPBX/Resources/AiPBX.entitlements;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

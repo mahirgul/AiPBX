@@ -118,6 +118,10 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         self.isLoading = false
 
         UserDefaults.standard.set(serverUrl, forKey: "aipbx_base_url")
+        if let tok = res.token, !tok.isEmpty {
+            SessionStore.save(baseUrl: serverUrl, token: tok)
+        }
+        PushRegistrationManager.shared.uploadIfPossible()
 
         // Register SIP WebRTC
         if let sip = res.sip {
@@ -227,6 +231,10 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     }
 
     public func logout() {
+        if let tok = token, !tok.isEmpty {
+            PushRegistrationManager.shared.unregister(baseUrl: baseUrl, token: tok)
+        }
+        SessionStore.clear()
         SipWebRtcEngine.shared.unregister()
         ChatWebSocketManager.shared.disconnect()
 
@@ -240,6 +248,57 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         features = nil
         callStatus = .idle
         isCallSheetPresented = false
+    }
+
+    // MARK: - Session restore & push wake-up
+
+    private var restoreTask: Task<Bool, Never>?
+
+    /// Signs back in with the token kept in the Keychain (app relaunched by
+    /// iOS or by the user). A rejected token (expired, account disabled) is
+    /// forgotten; a network error keeps it for the next try.
+    @discardableResult
+    public func restoreSessionIfNeeded() async -> Bool {
+        if isLoggedIn { return true }
+        if let running = restoreTask { return await running.value }
+        guard let saved = SessionStore.load() else { return false }
+
+        let task = Task<Bool, Never> { @MainActor in
+            self.isLoading = true
+            defer { if !self.isLoggedIn { self.isLoading = false } }
+            do {
+                let res = try await ApiClient.shared.refreshSession(baseUrl: saved.baseUrl, token: saved.token)
+                await self.handleLoginSuccess(res: res, serverUrl: saved.baseUrl)
+                AppLogManager.shared.info("AppState", "Session restored")
+                return true
+            } catch ApiError.serverError(let code, _) where code == 401 || code == 403 {
+                SessionStore.clear()
+                AppLogManager.shared.warn("AppState", "Saved session rejected (\(code)); sign-in needed")
+                return false
+            } catch {
+                AppLogManager.shared.warn("AppState", "Session restore failed: \(error.localizedDescription)")
+                return false
+            }
+        }
+        restoreTask = task
+        let ok = await task.value
+        restoreTask = nil
+        return ok
+    }
+
+    /// A VoIP push announced a call: make sure the SIP account is registered
+    /// so the PBX can deliver the INVITE (it waits for the mobile contact).
+    public func wakeForIncomingCall() async {
+        if !isLoggedIn {
+            if !(await restoreSessionIfNeeded()) {
+                CallKitManager.shared.failPushedCall()
+            }
+            return
+        }
+        if let sip = sipCredentials {
+            let dName = userProfile?.fullName ?? userProfile?.username ?? sip.sipUsername
+            SipWebRtcEngine.shared.register(sip: sip, displayName: dName)
+        }
     }
 
     // MARK: - Data Synchronization

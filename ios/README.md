@@ -42,6 +42,25 @@ Bu proje, kurum içi **Asterisk 22 Web PBX** santral sistemiyle tam entegre çal
 
 ---
 
+## 🔔 Push Bildirimleri (APNs + PushKit VoIP)
+
+Android'deki FCM katmanının iOS karşılığı. Uygulama giriş yapınca iki token'ı `/api/mobile/fcm_token.php` ile santrale kaydeder (`push_type = apns`):
+
+* **APNs token'ı:** sohbet mesajları, gruba eklenme ve test bildirimi. Bildirimdeki **Yanıtla** alanı uygulamayı açmadan çalışır.
+* **PushKit VoIP token'ı:** gelen arama. Push gelince arama hemen CallKit ekranında çalar, uygulama arka planda oturumu yeniler ve SIP kaydını yapar; santral mobil kaydı görünce INVITE'ı gönderir. INVITE gelmeden "Cevapla" denirse arama gelir gelmez açılır.
+
+Oturum (sunucu + 30 günlük token) Keychain'de tutulur; iOS uygulamayı push için kapalıyken başlatsa da `/api/mobile/refresh.php` ile yeniden giriş yapılır. Çıkışta token'lar sunucudan silinir.
+
+**Apple tarafında gerekenler (tahmin edilemez, portalda girilir — Mobil Bildirim → APNs):**
+
+1. Apple Developer → Keys → "Apple Push Notifications service (APNs)" seçili bir **.p8 anahtarı**; **Key ID** ve **Team ID**.
+2. Uygulamanın imzalandığı **bundle ID** (varsayılan `com.mhrgl.AiPBX`); App ID'de *Push Notifications* yeteneği açık olmalı.
+3. **Ortam:** geliştirme profiliyle imzalı derlemeler için *Sandbox*, App Store / TestFlight / ad hoc / kurumsal için *Production*.
+
+CI'daki imzasız IPA'da `aps-environment` yetkisi yoktur; push almak için uygulama, push yeteneği olan bir profille yeniden imzalanmalıdır (ücretsiz hesaplı AltStore/Sideloadly imzaları bunu genellikle desteklemez).
+
+---
+
 ## 🛠️ GitHub Actions ile Otomatik Derleme (CI/CD)
 
 Uygulama, `.github/workflows/ios-build.yml` iş akışı sayesinde doğrudan GitHub üzerinde **macOS M1/M2 (macos-14)** koşucuları üzerinde derlenir:
