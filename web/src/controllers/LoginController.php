@@ -53,6 +53,6 @@ class LoginController extends BaseController
             'site_logo_image' => $site_logo_image,
             'site_favicon_url' => $site_favicon_url,
             'googleLoginEnabled' => $googleLoginEnabled,
-        ], ['title' => t('login.page_title'), 'inline_lang_switch' => isMobileUserAgent()]);
+        ], ['title' => t('login.page_title'), 'inline_lang_switch' => true]);
     }
 }

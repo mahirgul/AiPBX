@@ -75,7 +75,7 @@
 .brand-card #btnPasskeyLogin {
     margin-top: 10px;
 }
-.brand-card .auth-lang-switch.inline {
+.auth-cards .auth-lang-switch.inline {
     position: relative;
     top: auto;
     right: auto; /* the floating variant's offsets would shift it 16px left */
@@ -83,20 +83,20 @@
     margin-top: auto;
     padding-top: 18px;
 }
-.brand-card .auth-lang-switch.inline .fa-globe {
+.auth-cards .auth-lang-switch.inline .fa-globe {
     left: 16px;
     top: auto;
     bottom: 17px;
     font-size: 16px;
 }
-.brand-card .auth-lang-switch.inline select {
+.auth-cards .auth-lang-switch.inline select {
     width: 100%;
     padding: 13px 40px 13px 44px;
     font-size: 15px;
     border-radius: 10px;
     background-position: right 16px center;
 }
-body.auth-body:has(.auth-cards.is-mobile) {
+body.auth-body:has(.auth-cards) {
     padding-top: 16px;
 }
 
