@@ -30,24 +30,28 @@ function __syncInboundDialplanBody() {
 
             $conf .= "; --- Trunk inbound: {$t_name} ({$title}) ---\n";
             $conf .= "[from-trunk-{$t_name}]\n";
-            $conf .= "exten => _.,1,NoOp(Inbound trunk call [{$t_name}] - caller: \${CALLERID(num)} - target: \${EXTEN})\n";
-            $conf .= " same => n,Set(CDR(direction)=inbound)\n";
-            $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
+            // Any DID: plain digits or +E.164 (see CATCH_ALL_EXTEN_PATTERNS).
+            $same = " same => n,Set(CDR(direction)=inbound)\n";
+            $same .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
 
             if ($is_kapanma_tonu) {
                 // Hang-up tone detector (in-band disconnect supervision)
-                $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
+                $same .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
 
             if ($trim_digits > 0) {
-                $conf .= " same => n,Set(NORMALIZED_DID=\${IF(\$[\${LEN(\${EXTEN})} >= {$trim_digits}]?\${EXTEN:-{$trim_digits}}:\${EXTEN})})\n";
-                $conf .= " same => n,NoOp(DID trim applied ({$trim_digits} digits): \${EXTEN} -> \${NORMALIZED_DID})\n";
+                $same .= " same => n,Set(NORMALIZED_DID=\${IF(\$[\${LEN(\${EXTEN})} >= {$trim_digits}]?\${EXTEN:-{$trim_digits}}:\${EXTEN})})\n";
+                $same .= " same => n,NoOp(DID trim applied ({$trim_digits} digits): \${EXTEN} -> \${NORMALIZED_DID})\n";
             } else {
-                $conf .= " same => n,Set(NORMALIZED_DID=\${EXTEN})\n";
+                $same .= " same => n,Set(NORMALIZED_DID=\${EXTEN})\n";
             }
 
-            $conf .= " same => n,Set(CDR(did)=\${NORMALIZED_DID})\n";
-            $conf .= " same => n,Goto(from-trunk-{$t_name}-route,\${NORMALIZED_DID},1)\n\n";
+            $same .= " same => n,Set(CDR(did)=\${NORMALIZED_DID})\n";
+            $same .= " same => n,Goto(from-trunk-{$t_name}-route,\${NORMALIZED_DID},1)\n";
+            $conf .= buildCatchAllExtensions(
+                "NoOp(Inbound trunk call [{$t_name}] - caller: \${CALLERID(num)} - target: \${EXTEN})",
+                $same
+            ) . "\n";
 
             // For calls arriving without a DID (s)
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
@@ -112,10 +116,10 @@ function __syncInboundDialplanBody() {
     // Closing context for unmatched calls
     // ------------------------------------------------------------------
     $conf .= "[from-trunk-notfound]\n";
-    $conf .= "exten => _.,1,NoOp(No matching inbound route - DID: \${EXTEN})\n";
-    $conf .= " same => n,Playtones(congestion)\n";
-    $conf .= " same => n,Congestion(10)\n";
-    $conf .= " same => n,Hangup(1)\n\n";
+    $conf .= buildCatchAllExtensions(
+        "NoOp(No matching inbound route - DID: \${EXTEN})",
+        " same => n,Playtones(congestion)\n same => n,Congestion(10)\n same => n,Hangup(1)\n"
+    ) . "\n";
 
     $conf .= "exten => s,1,NoOp(No matching inbound route - DID: s)\n";
     $conf .= " same => n,Playtones(congestion)\n";
