@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Linka #%1$s</string>
     <string name="chat_preview_file">📎 Soubor: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Tato zpráva byla smazána</string>
+    <string name="chat_delete_message">Smazat zprávu</string>
+    <string name="chat_delete_message_confirm">Smazat tuto zprávu pro všechny v chatu?</string>
+    <string name="err_message_delete_not_allowed">Tuto zprávu už nelze smazat.</string>
+    <string name="api_message_delete_failed">Zprávu se nepodařilo smazat (HTTP %1$s)</string>
 </resources>

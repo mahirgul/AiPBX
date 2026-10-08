@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Εσωτερικό #%1$s</string>
     <string name="chat_preview_file">📎 Αρχείο: %1$s</string>
     <string name="chat_preview_document">Έγγραφο</string>
+    <string name="chat_message_deleted">🚫 Αυτό το μήνυμα διαγράφηκε</string>
+    <string name="chat_delete_message">Διαγραφή μηνύματος</string>
+    <string name="chat_delete_message_confirm">Διαγραφή αυτού του μηνύματος για όλους στη συνομιλία;</string>
+    <string name="err_message_delete_not_allowed">Αυτό το μήνυμα δεν μπορεί πλέον να διαγραφεί.</string>
+    <string name="api_message_delete_failed">Δεν ήταν δυνατή η διαγραφή του μηνύματος (HTTP %1$s)</string>
 </resources>

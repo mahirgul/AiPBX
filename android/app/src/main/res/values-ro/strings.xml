@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Interior #%1$s</string>
     <string name="chat_preview_file">📎 Fișier: %1$s</string>
     <string name="chat_preview_document">Document</string>
+    <string name="chat_message_deleted">🚫 Acest mesaj a fost șters</string>
+    <string name="chat_delete_message">Șterge mesajul</string>
+    <string name="chat_delete_message_confirm">Ștergeți acest mesaj pentru toți participanții?</string>
+    <string name="err_message_delete_not_allowed">Acest mesaj nu mai poate fi șters.</string>
+    <string name="api_message_delete_failed">Mesajul nu a putut fi șters (HTTP %1$s)</string>
 </resources>

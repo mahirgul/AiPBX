@@ -273,6 +273,13 @@ function handleWsEvent(evt) {
         }
         loadConversations();
 
+    } else if (evt.event === 'message_deleted') {
+        const data = evt.data || {};
+        if (currentConvId && data.conversation_id === currentConvId) {
+            showMessageDeleted(data.message_id);
+        }
+        loadConversations();
+
     } else if (evt.event === 'group_deleted') {
         const data = evt.data || {};
         if (currentConv && currentConv.id === data.conversation_id) {
@@ -597,6 +604,7 @@ async function loadMessages(convId) {
         });
         const json = await res.json();
         scrollEl.innerHTML = '';
+        window.chatMessagesById = {};
         if (json.success && json.messages) {
             if (json.messages.length === 0) {
                 scrollEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">' + __('js.chat.no_messages') + '</div>';
@@ -622,8 +630,9 @@ if (!window.__chatVisibilityHooked) {
     document.addEventListener('visibilitychange', function () { sendChatActive(); });
 }
 
-function appendMessageToUI(msg) {
+function appendMessageToUI(msg, replaceEl) {
     const scrollEl = document.getElementById('chat-messages-scroll');
+    chatMessagesById[msg.id] = msg;
 
     // System message view
     if (msg.msg_type === 'system') {
@@ -651,7 +660,9 @@ function appendMessageToUI(msg) {
     `;
 
     let contentHtml = '';
-    if (msg.msg_type === 'image') {
+    if (msg.is_deleted) {
+        contentHtml = `<div class="chat-msg-deleted"><i class="fas fa-ban"></i> ${escapeHtml(__('js.chat.msg_deleted'))}</div>`;
+    } else if (msg.msg_type === 'image') {
         const safeUrl = sanitizeAttachmentUrl(msg.attachment_url);
         contentHtml = `
             <div style="cursor: pointer;" onclick="openSafeLightbox(this)" data-url="${escapeHtml(safeUrl)}">
@@ -695,13 +706,56 @@ function appendMessageToUI(msg) {
             ${senderHeader}
             ${contentHtml}
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10.5px; opacity: 0.8;">
+                ${isMe && !msg.is_deleted && msg.id ? `<button type="button" class="chat-msg-delete" title="${escapeHtml(__('js.chat.delete_msg'))}" aria-label="${escapeHtml(__('js.chat.delete_msg'))}" onclick="deleteChatMessage(${Number(msg.id)})"><i class="fas fa-trash-alt"></i></button>` : ''}
                 <span>${formatTime(msg.created_at)}</span>
-                ${isMe ? `<span class="msg-tick" data-msg-id="${msg.id}">${tickHtml(msg.status || statusFromReceipts(msg.id))}</span>` : ''}
+                ${isMe && !msg.is_deleted ? `<span class="msg-tick" data-msg-id="${msg.id}">${tickHtml(msg.status || statusFromReceipts(msg.id))}</span>` : ''}
             </div>
         </div>
     `;
 
-    scrollEl.appendChild(msgRow);
+    if (replaceEl) {
+        replaceEl.replaceWith(msgRow);
+    } else {
+        scrollEl.appendChild(msgRow);
+    }
+}
+
+// 8b. Deleting a message: only your own; everyone then sees "message deleted".
+window.chatMessagesById = window.chatMessagesById || {};
+
+async function deleteChatMessage(msgId) {
+    if (!msgId || !confirm(__('js.chat.confirm_delete_msg'))) return;
+    try {
+        const res = await fetch('/chat/api/messages/delete', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + window.CHAT_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message_id: msgId })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) {
+            const key = res.status === 403 && window.CHAT_DELETE_WINDOW > 0 ? 'js.chat.err_delete_too_late' : 'js.chat.err_delete_msg';
+            alert(__(key, window.CHAT_DELETE_WINDOW));
+            return;
+        }
+        // The message_deleted event updates every open screen; this one at once.
+        showMessageDeleted(msgId);
+    } catch (e) {
+        alert(__('js.chat.err_delete_msg', window.CHAT_DELETE_WINDOW));
+    }
+}
+
+function showMessageDeleted(msgId) {
+    const el = document.getElementById(`chat-msg-${msgId}`);
+    const msg = chatMessagesById[msgId];
+    if (!el || !msg || msg.is_deleted) return;
+    msg.is_deleted = true;
+    msg.message = '';
+    msg.attachment_url = '';
+    msg.file_name = '';
+    appendMessageToUI(msg, el);
 }
 
 // 9. Send a message

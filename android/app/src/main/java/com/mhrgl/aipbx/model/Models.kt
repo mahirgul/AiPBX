@@ -206,7 +206,9 @@ data class ChatMessage(
     @SerializedName("system_event") val systemEvent: String? = null,
     @SerializedName("system_meta") val systemMeta: String? = null,
     /** Own messages: "sent", "delivered" or "read". */
-    @SerializedName("status") var status: String? = null
+    @SerializedName("status") var status: String? = null,
+    /** Deleted by its sender: text and attachment are cleared on the server. */
+    @SerializedName("is_deleted") val isDeleted: Boolean = false
 )
 
 data class ChatUploadResponse(

@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Anknytning #%1$s</string>
     <string name="chat_preview_file">📎 Fil: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Det här meddelandet har raderats</string>
+    <string name="chat_delete_message">Radera meddelande</string>
+    <string name="chat_delete_message_confirm">Radera meddelandet för alla i chatten?</string>
+    <string name="err_message_delete_not_allowed">Meddelandet kan inte längre raderas.</string>
+    <string name="api_message_delete_failed">Det gick inte att radera meddelandet (HTTP %1$s)</string>
 </resources>
