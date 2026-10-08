@@ -21,6 +21,10 @@ class BrandSettingsService {
             'site_favicon_url' => '',
             'brand_color_primary' => '',
             'brand_color_secondary' => '',
+            // Shown on the sign-in page when filled (#13): whom to contact.
+            'support_name' => '',
+            'support_email' => '',
+            'support_phone' => '',
         ];
     }
 
@@ -143,6 +147,9 @@ class BrandSettingsService {
                 'site_favicon_url' => $current['site_favicon_url'],
                 'brand_color_primary' => $primary,
                 'brand_color_secondary' => $secondary,
+                'support_name' => mb_substr(trim((string) ($post['support_name'] ?? '')), 0, 80),
+                'support_email' => filter_var(trim((string) ($post['support_email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '',
+                'support_phone' => mb_substr(preg_replace('/[^0-9+()\/ .-]/', '', (string) ($post['support_phone'] ?? '')), 0, 40),
             ];
 
             if (!empty($post['remove_logo_image'])) {

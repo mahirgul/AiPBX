@@ -3727,4 +3727,8 @@ Your phone will ring.',
     'forgot.err_identifier' => 'Enter your username or e-mail address.',
     'forgot.err_too_many' => 'Too many requests from this network. Try again in an hour.',
     'audit_log.login_reset_request' => 'Password reset request',
+    'brand_settings.support_title' => 'Help contact (sign-in page)',
+    'brand_settings.support_name_ph' => 'e.g. IT help desk',
+    'brand_settings.support_help' => 'Optional. When filled, the sign-in page shows "Need help?" with this name, e-mail and phone, so users who cannot sign in know whom to contact.',
+    'login.support_label' => 'Need help?',
 ];

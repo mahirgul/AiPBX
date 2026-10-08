@@ -1742,3 +1742,8 @@ tr.row-dragging { opacity: 0.45; }
 /* Show / hide password (password_reveal.js) */
 .password-reveal-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
 .password-reveal-btn:hover, .password-reveal-btn:focus-visible { color: var(--primary); background: var(--bg-input); }
+
+/* "Need help?" contact on the sign-in pages (templates/auth_support_contact.php) */
+.auth-support-contact { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 12.5px; line-height: 1.7; text-align: center; color: var(--text-main); word-break: break-word; }
+.auth-support-contact a { color: var(--primary); text-decoration: none; white-space: nowrap; }
+.auth-support-contact a:hover { text-decoration: underline; }

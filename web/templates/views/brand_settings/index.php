@@ -45,6 +45,15 @@
                 <label class="form-label"><?php echo t('brand_settings.field_brand_sub'); ?></label>
                 <input type="text" name="brand_sub" class="form-control" value="<?php echo htmlspecialchars($s['brand_sub']); ?>" required placeholder="PBX & Call Center">
             </div>
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-life-ring"></i> <?php echo t('brand_settings.support_title'); ?></label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <input type="text" name="support_name" class="form-control" maxlength="80" value="<?php echo htmlspecialchars($s['support_name'] ?? ''); ?>" placeholder="<?php echo htmlspecialchars(t('brand_settings.support_name_ph')); ?>">
+                    <input type="email" name="support_email" class="form-control" value="<?php echo htmlspecialchars($s['support_email'] ?? ''); ?>" placeholder="it@example.com">
+                    <input type="text" name="support_phone" class="form-control" maxlength="40" value="<?php echo htmlspecialchars($s['support_phone'] ?? ''); ?>" placeholder="+90 212 000 00 00">
+                </div>
+                <small class="u-hint"><?php echo t('brand_settings.support_help'); ?></small>
+            </div>
         </div>
     </div>
     </div>

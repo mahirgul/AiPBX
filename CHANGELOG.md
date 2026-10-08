@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.3
+
+- **Help contact on the sign-in page** (#13): *Brand settings* has an
+  optional contact name, e-mail and phone. When set, the sign-in and
+  "Forgot your password?" pages show "Need help?" with them.
+
 ## 1.6.2
 
 - **Google sign-in returned to the sign-in page** (#9). The session cookie was
