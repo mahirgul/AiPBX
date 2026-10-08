@@ -193,13 +193,21 @@ function __syncFeatureCodesBody() {
                 break;
 
             case 'pickup_directed':
+                // <code><extension> in one go (e.g. *211001) is what a desk
+                // phone's BLF key dials to pick up the call ringing there;
+                // that path arrives with PICKTARGET set and skips the prompt.
+                $conf .= " same => n,GotoIf(\$[\"\${PICKTARGET}\" != \"\"]?pickdir_go)\n";
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Read(PICKTARGET,,10,,3,10)\n";
                 $conf .= " same => n,GotoIf(\$[\"\${PICKTARGET}\" = \"\"]?pickdir_empty)\n";
-                $conf .= " same => n,PickupChan(PJSIP/\${PICKTARGET}-sip&PJSIP/\${PICKTARGET}-webrtc&PJSIP/\${PICKTARGET}-mob-webrtc)\n";
+                $conf .= " same => n(pickdir_go),PickupChan(PJSIP/\${PICKTARGET}-sip&PJSIP/\${PICKTARGET}-webrtc&PJSIP/\${PICKTARGET}-mob-webrtc)\n";
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(pickdir_empty),Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
+                $codeLen = strlen($code);
+                $conf .= "exten => _{$code}X.,1,NoOp(Directed pickup of \${EXTEN:{$codeLen}} by \${CALLERID(num)} (BLF key))\n";
+                $conf .= " same => n,Set(PICKTARGET=\${FILTER(0123456789,\${EXTEN:{$codeLen}})})\n";
+                $conf .= " same => n,Goto({$code},1)\n";
                 break;
 
 
