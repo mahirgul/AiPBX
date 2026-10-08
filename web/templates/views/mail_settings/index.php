@@ -22,6 +22,9 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
         <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.tab_test', 'Test & Durum'); ?>
     </button>
+    <a class="settings-tab-btn" href="/mail-templates" style="text-decoration: none;">
+        <i class="fas fa-envelope-open-text"></i> <?php echo t('mail_templates.tab'); ?>
+    </a>
 </div>
 
 <!-- Ana Ayarlar Formu -->
@@ -206,6 +209,12 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 </div>
 
 <script>
+// /mail-settings#sender or #test (links from the Templates page) opens that tab.
+(function () {
+    var key = (location.hash || '').replace('#', '');
+    var btn = key && document.querySelector('.settings-tab-btn[data-tab="' + key + '"]');
+    if (btn) switchSettingsTab(key, btn);
+})();
 function toggleAuthFields(val) {
     var el = document.getElementById('auth_fields');
     if (el) {

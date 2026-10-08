@@ -92,14 +92,6 @@ FAX_DB_ID=$($MYSQL_QUERY -e \
 log "DB Record ID: #$FAX_DB_ID"
 
 # 4. Fetch dynamic mail configuration from sys_settings
-FROM_ADDR=$($MYSQL_QUERY -e \
-  "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_from_address' LIMIT 1;" 2>/dev/null)
-if [ -z "$FROM_ADDR" ]; then FROM_ADDR="${MAIL_FROM_ADDRESS:-}"; fi
-
-FROM_NAME_RAW=$($MYSQL_QUERY -e \
-  "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_from_name' LIMIT 1;" 2>/dev/null)
-if [ -z "$FROM_NAME_RAW" ]; then FROM_NAME_RAW="${MAIL_FROM_NAME:-}"; fi
-
 RX_ENABLED=$($MYSQL_QUERY -e \
   "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_rx_enabled' LIMIT 1;" 2>/dev/null)
 if [ -z "$RX_ENABLED" ]; then RX_ENABLED="yes"; fi
@@ -146,7 +138,7 @@ if [ -z "$NOTIFY_EMAIL" ] || [ -z "$DEPT_NAME" ]; then
 fi
 
 if [ -z "$DEPT_NAME" ]; then
-    DEPT_NAME="Dahili $EXTEN"
+    DEPT_NAME="$EXTEN"
 fi
 
 log "Department: $DEPT_NAME | Email: ${NOTIFY_EMAIL:-NONE} | RX_Enabled: $RX_ENABLED"
@@ -155,11 +147,7 @@ log "Department: $DEPT_NAME | Email: ${NOTIFY_EMAIL:-NONE} | RX_Enabled: $RX_ENA
 if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ @ ]]; then
 
     TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S')
-    BOUNDARY="----FaxBoundary$(date +%s%N)"
-    ATTACH_FILE="$ARCHIVE_PDF"
     ATTACH_NAME="fax_${EXTEN}_$(date +%Y%m%d_%H%M%S).pdf"
-    FROM_NAME="=?UTF-8?B?$(echo -n "$FROM_NAME_RAW" | base64)?="
-    SUBJECT="=?UTF-8?B?$(echo -n "Yeni Faks Alindi - $DEPT_NAME ($EXTEN)" | base64)?="
 
     # PORTAL_DOMAIN: sys_settings pjsip_external_domain → the env fallback sourced above
     # (the query returns empty if the key is not in the DB; override the env value ONLY when filled, so the link does not break)
@@ -169,53 +157,16 @@ if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ 
         PORTAL_DOMAIN="$_db_portal_domain"
     fi
 
-    # Build MIME email with optional PDF attachment
-    {
-        echo "From: $FROM_NAME <$FROM_ADDR>"
-        echo "To: $NOTIFY_EMAIL"
-        echo "Subject: $SUBJECT"
-        echo "MIME-Version: 1.0"
-        echo "Content-Type: multipart/mixed; boundary=\"$BOUNDARY\""
-        echo ""
-        echo "--$BOUNDARY"
-        echo "Content-Type: text/html; charset=UTF-8"
-        echo "Content-Transfer-Encoding: base64"
-        echo ""
-        # Base64 encode HTML body
-        cat <<HTMLBODY | base64
-<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: linear-gradient(135deg, #0284c7, #3b82f6); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h2 style="color: #fff; margin: 0;">&#128224; Yeni Faks Al&#305;nd&#305;</h2>
-  </div>
-  <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
-    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Birim / B&#246;l&#252;m:</td><td style="padding: 8px;">${DEPT_NAME}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Dahili Numara:</td><td style="padding: 8px;">${EXTEN}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">G&#246;nderen Numara:</td><td style="padding: 8px;">${CALLERID}</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Sayfa Say&#305;s&#305;:</td><td style="padding: 8px;">${PAGES} sayfa</td></tr>
-      <tr><td style="padding: 8px; font-weight: 600; color: #64748b;">Al&#305;nma Zaman&#305;:</td><td style="padding: 8px;">${TIMESTAMP}</td></tr>
-    </table>
-    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">
-    <p style="font-size: 13px; color: #64748b;">Faks kayd&#305;n&#305; <a href="https://${PORTAL_DOMAIN}/fax-inbox" style="color: #0284c7;">Faks Portal&#305;</a> &#252;zerinden g&#246;r&#252;nt&#252;leyebilirsiniz.</p>
-  </div>
-</div>
-HTMLBODY
-
-        # Attach PDF file if enabled
-        if [ "$ATTACH_PDF_ENABLED" = "yes" ] && [ -f "$ATTACH_FILE" ]; then
-            echo ""
-            echo "--$BOUNDARY"
-            echo "Content-Type: application/pdf; name=\"$ATTACH_NAME\""
-            echo "Content-Disposition: attachment; filename=\"$ATTACH_NAME\""
-            echo "Content-Transfer-Encoding: base64"
-            echo ""
-            base64 "$ATTACH_FILE"
-        fi
-
-        echo ""
-        echo "--${BOUNDARY}--"
-
-    } | /usr/sbin/sendmail -f "$FROM_ADDR" "$NOTIFY_EMAIL"
+    # The text is the "fax_received" e-mail template (Admin → E-Mail →
+    # Templates), in the recipient's language, with the PDF attached when enabled.
+    ATTACH_ARG=()
+    if [ "$ATTACH_PDF_ENABLED" = "yes" ] && [ -f "$ARCHIVE_PDF" ]; then
+        ATTACH_ARG=("--attach=$ARCHIVE_PDF|$ATTACH_NAME|application/pdf")
+    fi
+    /usr/bin/php "$(dirname "$(readlink -f "$0")")/send_template_mail.php" fax_received "$NOTIFY_EMAIL" --sender=fax \
+        "${ATTACH_ARG[@]}" \
+        "department=$DEPT_NAME" "did=$EXTEN" "caller=$CALLERID" "pages=$PAGES" "date=$TIMESTAMP" \
+        "portal_link=https://${PORTAL_DOMAIN}/fax-inbox" >>"$LOGFILE" 2>&1
 
     MAIL_STATUS=$?
 
