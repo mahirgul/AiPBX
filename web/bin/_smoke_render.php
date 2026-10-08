@@ -127,7 +127,7 @@ if (is_file($SMOKE_ROOT . '/vendor/autoload.php')) {
 if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
 // Anonymous routes (login / password reset) are rendered without a session.
-$ANON = ['/login', '/force-reset', '/reset-password'];
+$ANON = ['/login', '/force-reset', '/reset-password', '/forgot-password'];
 if (!in_array($path, $ANON, true)) {
     $_SESSION['user_id']       = 1;
     $_SESSION['user_role']     = $role;

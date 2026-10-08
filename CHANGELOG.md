@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.2
+
+- **Google sign-in returned to the sign-in page** (#9). The session cookie was
+  `SameSite=Strict`, so the browser did not send it when Google sent the user
+  back: the portal could not check the request and signed nobody in. It is
+  `Lax` now (changes still need POST and a CSRF token).
+- **"Forgot your password?"** on the sign-in page (#13): a user enters their
+  username or e-mail address and gets the *Password reset* e-mail (valid 30
+  minutes). The answer is the same whether the account exists or not; at most
+  5 requests an hour per network and one e-mail per account every 10 minutes.
+  The link always uses the installation's own address. Requests show in the
+  audit log (*Sign-in attempts*).
+- E-mail templates: in the plain-text version a button's link stands on its
+  own line.
+
 ## 1.6.1
 
 - **Show the password while typing** (#11): the password fields of the

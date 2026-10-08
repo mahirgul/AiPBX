@@ -17,7 +17,7 @@ final class RoleMatrixTest extends TestCase
     private const ROOT = __DIR__ . '/../..';
 
     /** Pages that are not permission-controlled modules (login flow, own account, OAuth). */
-    private const NOT_MODULES = ['login', 'login_2fa', 'logout', 'force_reset', 'reset_password', 'mobile_login', 'security', 'google_auth', 'google_auth_callback'];
+    private const NOT_MODULES = ['login', 'login_2fa', 'logout', 'force_reset', 'reset_password', 'forgot_password', 'mobile_login', 'security', 'google_auth', 'google_auth_callback'];
 
     /** Sidebar group id => matrix group. */
     private const SIDEBAR_GROUPS = [

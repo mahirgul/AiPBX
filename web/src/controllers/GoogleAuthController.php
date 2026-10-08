@@ -21,6 +21,12 @@ class GoogleAuthController extends BaseController
         }
 
         $isMobile = !empty($_GET['mobile']) || (isset($_GET['platform']) && in_array($_GET['platform'], ['android', 'ios']));
+        // A new session id re-sends the session cookie with the current
+        // attributes (SameSite=Lax): a cookie the browser got while it was
+        // still Strict would otherwise be withheld on Google's redirect back (#9).
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
         $authUrl = GoogleAuthService::getAuthUrl($isMobile);
 
         header('Location: ' . $authUrl);

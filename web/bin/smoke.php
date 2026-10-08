@@ -350,6 +350,7 @@ function check_conventions(): void
         'LogoutController.php',
         'ForceResetController.php',
         'ResetPasswordController.php',
+        'ForgotPasswordController.php',
         'MobileLoginController.php',
         'GoogleAuthController.php',
     ];

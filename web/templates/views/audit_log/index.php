@@ -140,6 +140,7 @@
             <option value=""><?php echo t('audit_log.all_statuses'); ?></option>
             <option value="SUCCESS" <?php echo $login_status_filter === 'SUCCESS' ? 'selected' : ''; ?>><?php echo t('audit_log.login_success'); ?></option>
             <option value="FAILED" <?php echo $login_status_filter === 'FAILED' ? 'selected' : ''; ?>><?php echo t('audit_log.login_failed'); ?></option>
+            <option value="RESET_REQ" <?php echo $login_status_filter === 'RESET_REQ' ? 'selected' : ''; ?>><?php echo t('audit_log.login_reset_request'); ?></option>
         </select>
 
         <div class="u-relative u-maxw-220">
@@ -170,12 +171,12 @@
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php $loginBadgeMap = ['SUCCESS' => 'success', 'FAILED' => 'danger']; ?>
+                    <?php $loginBadgeMap = ['SUCCESS' => 'success', 'FAILED' => 'danger', 'RESET_REQ' => 'info']; ?>
                     <?php foreach ($login_attempts as $la): ?>
                         <tr>
                             <td class="u-nowrap u-fs-12 u-muted"><?php echo htmlspecialchars($la['created_at']); ?></td>
                             <td><?php echo htmlspecialchars($la['username']); ?></td>
-                            <td><?php echo uiStatusBadge($la['status'], $loginBadgeMap, 'info', $la['status'] === 'SUCCESS' ? t('audit_log.login_success') : t('audit_log.login_failed')); ?></td>
+                            <td><?php echo uiStatusBadge($la['status'], $loginBadgeMap, 'info', ['SUCCESS' => t('audit_log.login_success'), 'RESET_REQ' => t('audit_log.login_reset_request')][$la['status']] ?? t('audit_log.login_failed')); ?></td>
                             <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($la['ip_address']); ?></td>
                             <td class="col-hide-mobile" style="font-size: 11px; color: var(--text-muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($la['user_agent'] ?? ''); ?>"><?php echo htmlspecialchars($la['user_agent'] ?? '—'); ?></td>
                         </tr>

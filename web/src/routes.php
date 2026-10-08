@@ -24,6 +24,7 @@ return [
     '/logout'          => ['controller' => LogoutController::class, 'action' => 'index', 'module' => 'logout.php'],
     '/force-reset'     => ['controller' => ForceResetController::class, 'action' => 'index', 'module' => 'force_reset.php'],
     '/reset-password'  => ['controller' => ResetPasswordController::class, 'action' => 'index', 'module' => 'reset_password.php'],
+    '/forgot-password' => ['controller' => ForgotPasswordController::class, 'action' => 'index', 'module' => 'forgot_password.php'],
     '/mobile-login'    => ['controller' => MobileLoginController::class, 'action' => 'index', 'module' => 'mobile_login.php'],
     '/security'        => ['controller' => SecurityController::class, 'action' => 'index', 'module' => 'security.php'],
     '/dashboard'       => ['controller' => DashboardController::class, 'action' => 'index', 'module' => 'dashboard.php'],

@@ -84,7 +84,12 @@ define('TURNS_PORT', portalEnv('TURNS_PORT', '443'));
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_secure', '1');
-    ini_set('session.cookie_samesite', 'Strict');
+    // Lax, not Strict: the browser must send the session cookie when Google
+    // sends the user back (Google sign-in, #9). With Strict the callback saw no
+    // session (state check failed) and neither did the page after it, so the
+    // user landed on the sign-in page again. Lax still withholds the cookie on
+    // cross-site POSTs; changes need POST + CSRF token everywhere.
+    ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_strict_mode', '1');
     session_start();
 }
