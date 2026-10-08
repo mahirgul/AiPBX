@@ -1,5 +1,6 @@
 package com.mhrgl.aipbx.util
 
+import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
@@ -56,18 +57,29 @@ object L10n {
 
     fun init(context: Context) {
         app = context.applicationContext
-        val prefs = AppPreferences.getInstance(app)
-        // Android 13+: the language may also have been changed in the system's
-        // per-app language settings; that choice wins.
-        val system = AppCompatDelegate.getApplicationLocales()
-        if (Build.VERSION.SDK_INT >= 33 && !system.isEmpty) {
-            val lang = normalize(system[0]?.language)
-            if (lang != prefs.appLanguage) prefs.appLanguage = lang
-        }
-        apply(prefs.appLanguage)
+        apply(current())
     }
 
-    fun current(): String = normalize(AppPreferences.getInstance(app).appLanguage)
+    /**
+     * The app language. On Android 13+ it can also be changed in the system's
+     * per-app language settings, and that choice wins. It is read from
+     * LocaleManager: AppCompatDelegate.getApplicationLocales() is still empty
+     * in Application.onCreate (no Activity yet), so the system choice used to
+     * be missed — the screens followed it but the language chip and texts made
+     * without an Activity (notifications, services) stayed in the old language.
+     */
+    fun current(): String {
+        val prefs = AppPreferences.getInstance(app)
+        if (Build.VERSION.SDK_INT >= 33) {
+            val system = app.getSystemService(LocaleManager::class.java)?.applicationLocales
+            if (system != null && !system.isEmpty) {
+                val lang = normalize(system[0]?.language)
+                if (lang != prefs.appLanguage) prefs.appLanguage = lang
+                return lang
+            }
+        }
+        return normalize(prefs.appLanguage)
+    }
 
     fun displayName(lang: String = current()): String = NAMES[lang] ?: lang
 

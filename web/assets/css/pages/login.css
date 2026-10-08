@@ -77,6 +77,8 @@
 }
 .brand-card .auth-lang-switch.inline {
     position: relative;
+    top: auto;
+    right: auto; /* the floating variant's offsets would shift it 16px left */
     width: 100%;
     margin-top: auto;
     padding-top: 18px;
