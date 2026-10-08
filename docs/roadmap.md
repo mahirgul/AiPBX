@@ -17,7 +17,7 @@ welcome there.
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
 | 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management) | | medium |
 
-Done recently: busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
+Done recently: phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
 (1.6.2), help contact on the sign-in page (1.6.3), 23 languages for all new texts (1.6.4). See the
 [CHANGELOG](../CHANGELOG.md).

@@ -5,6 +5,30 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.0
+
+- **Phone provisioning** (*PBX → Phones*, #19): add desk phones by MAC
+  address or CSV, and they fetch their configuration over HTTPS from a
+  per-phone URL: SIP account, server, transport and SRTP, codecs, time and
+  language, voicemail key and pickup code, and the **key layout**. The key
+  layout of each user (*Extensions → keys*) is drawn like the phone and its
+  expansion modules (BLF, speed dial, park, DND …) and can be copied to other
+  users. Unknown phones that ask for a configuration appear as *waiting
+  phones* and are assigned with one click. *Re-provision* and *reboot* reach
+  the phone at once. Yealink, Grandstream and Fanvil for now; every download
+  is logged; optional allowed networks and rate limit. See
+  [Phones](docs/phones.md). Grandstream and Fanvil settings still need a check
+  on real devices: reports are welcome.
+- **Delete chat messages** (#15, #21): your own messages, in the web chat and
+  the Android app (long press). Everyone sees "This message was deleted", and
+  an attached file is removed from the server. An administrator can limit
+  deleting to the first N minutes (*Chat → Chat settings*). Android app 1.0.55.
+- **Dialplan:** no more "The use of '_.' … is strongly discouraged" warnings
+  on every reload (#20).
+- **Buttons that did nothing:** in the portal, a form whose action is its
+  button (AI TTS *Clear provider*, the new phone and chat buttons) lost that
+  button on the way to the server.
+
 ## 1.6.6
 
 - **More busy lamps for desk phones:** a BLF key with the value `DND1001`,
