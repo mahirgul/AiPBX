@@ -126,6 +126,8 @@ function getModuleKeyForPage($page = null) {
         'time_conditions.php'   => 'time_conditions',
         'ivrs.php'              => 'ivrs',
         'extensions.php'        => 'extensions',
+        'phones.php'            => 'phones',
+        'phone_keys.php'        => 'phones',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',
         'boss_secretary.php'    => 'boss_secretary',
@@ -218,8 +220,9 @@ function hasModulePermission($module_key, $action = 'access') {
     // RbacTest): these pages run real sudo, they can NEVER open for a non-admin role.
     // 'system_update' too: it updates the system and restarts services.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
+    // 'phones': the provisioning URLs it shows hand out SIP passwords.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration', 'phones'], true)) {
         return $role === 'admin';
     }
 
