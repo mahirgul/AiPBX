@@ -649,7 +649,7 @@ class PhoneProvisionService
             self::log((int) $phone['id'], $phone['mac'], $file, 'unassigned', $ip, $ua);
             return self::answer(404, 'unassigned');
         }
-        $body = $tpl->render(self::buildContext($phone, $user));
+        $body = $tpl->renderFile($file, self::buildContext($phone, $user));
         getDB()->prepare('UPDATE pbx_phones SET last_fetch_at = NOW(), last_ip = ?, last_user_agent = ? WHERE id = ?')
             ->execute([$ip, $ua, $phone['id']]);
         self::log((int) $phone['id'], $phone['mac'], $file, 'served', $ip, $ua);
