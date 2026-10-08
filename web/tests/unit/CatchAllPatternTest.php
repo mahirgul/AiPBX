@@ -62,7 +62,7 @@ final class CatchAllPatternTest extends TestCase
     public function testCatchAllPatternsMatchWhatUnderscoreDotMatched(): void
     {
         foreach (self::NUMBERS as $number) {
-            $this->assertTrue(self::matches('_.', $number), "'_.' should match {$number}");
+            $this->assertTrue(self::patternMatches('_.', $number), "'_.' should match {$number}");
             $this->assertTrue(self::matchesAny(CATCH_ALL_EXTEN_PATTERNS, $number),
                 "the catch-all patterns no longer match {$number}");
         }
@@ -159,7 +159,7 @@ final class CatchAllPatternTest extends TestCase
             }
         }
         foreach ($m as [$block, $ext]) {
-            if (str_starts_with($ext, '_') && self::matches($ext, $number)) {
+            if (str_starts_with($ext, '_') && self::patternMatches($ext, $number)) {
                 return $block;
             }
         }
@@ -169,7 +169,7 @@ final class CatchAllPatternTest extends TestCase
     private static function matchesAny(array $patterns, string $number): bool
     {
         foreach ($patterns as $p) {
-            if (self::matches($p, $number)) {
+            if (self::patternMatches($p, $number)) {
                 return true;
             }
         }
@@ -177,7 +177,7 @@ final class CatchAllPatternTest extends TestCase
     }
 
     /** Asterisk extension pattern match for X Z N [set] . ! and literals. */
-    private static function matches(string $pattern, string $number): bool
+    private static function patternMatches(string $pattern, string $number): bool
     {
         if (!str_starts_with($pattern, '_')) {
             return $pattern === $number;
