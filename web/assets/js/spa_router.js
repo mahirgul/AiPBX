@@ -116,6 +116,14 @@
 
             const method = (form.method || 'GET').toUpperCase();
             const formData = new FormData(form);
+            // The clicked button's name/value: a plain submit sends it, FormData(form)
+            // alone does not, so forms with several named buttons (Phones:
+            // resync / reboot / new URL, Certificates, AI TTS…) reached the
+            // server without telling which action was meant.
+            const submitter = e.submitter;
+            if (submitter && submitter.name && !submitter.disabled && submitter.form === form) {
+                formData.append(submitter.name, submitter.value || '');
+            }
 
             if (method === 'GET') {
                 const actionAttr = form.getAttribute('action');
