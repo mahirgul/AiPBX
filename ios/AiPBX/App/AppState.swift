@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UIKit
 import SwiftUI
 
 @MainActor
@@ -45,6 +46,10 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     }
     @Published public var pendingLinkLogin: PendingLinkLogin? = nil
     @Published public var activeConversationId: Int? = nil
+
+    /// Live chat events for the open conversation screen.
+    public let chatMessageReceived = PassthroughSubject<ChatMessage, Never>()
+    public let chatMessageDeleted = PassthroughSubject<ChatMessageDeletion, Never>()
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -261,6 +266,13 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         }
     }
 
+    public func refreshCallHistory() async {
+        guard let token = token else { return }
+        if let historyRes = try? await ApiClient.shared.getCallHistory(baseUrl: baseUrl, token: token) {
+            self.callHistory = historyRes.calls ?? []
+        }
+    }
+
     public func updateFeatures(_ settings: FeatureSettings) async {
         guard let token = token else { return }
         do {
@@ -352,13 +364,28 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
     nonisolated public func webSocketDidReceiveNewMessage(_ message: ChatMessage) {
         Task { @MainActor in
+            let isMine = message.isMe ?? false
+            let isOpen = self.activeConversationId == message.conversationId
+            var conversation: ChatConversation? = nil
             if let index = self.conversations.firstIndex(where: { $0.id == message.conversationId }) {
                 self.conversations[index].lastMessageText = message.message
                 self.conversations[index].lastMessageAt = message.createdAt
-                if self.activeConversationId != message.conversationId && !(message.isMe ?? false) {
+                if !isOpen && !isMine {
                     self.conversations[index].unreadCount += 1
                 }
+                conversation = self.conversations[index]
             }
+            self.chatMessageReceived.send(message)
+
+            if !isMine && !message.isSystem && !(isOpen && UIApplication.shared.applicationState == .active) {
+                ChatNotifications.shared.show(message: message, conversation: conversation)
+            }
+        }
+    }
+
+    nonisolated public func webSocketDidReceiveMessageDeleted(conversationId: Int, messageId: Int64) {
+        Task { @MainActor in
+            self.chatMessageDeleted.send(ChatMessageDeletion(conversationId: conversationId, messageId: messageId))
         }
     }
 
