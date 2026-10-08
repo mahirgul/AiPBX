@@ -46,6 +46,8 @@ type Hub struct {
 	mu         sync.RWMutex
 	// For upload signature verification (uploads.go); set by main.go.
 	secretKey string
+	// Where the uploaded files are, to remove a deleted message's attachment; set by main.go.
+	uploadDir string
 	// When each extension last went offline (in memory, reset on restart).
 	lastSeen map[string]time.Time
 }
@@ -296,6 +298,7 @@ type InMessage struct {
 	FileSize       int    `json:"file_size"`
 	MimeType       string `json:"mime_type"`
 	LastMessageID  int64  `json:"last_message_id"`
+	MessageID      int64  `json:"message_id"`
 	IsTyping       bool   `json:"is_typing"`
 	TargetExt      string `json:"target_ext"`
 	Active         *bool  `json:"active"`
@@ -341,6 +344,9 @@ func (c *Client) readPump() {
 
 		case "mark_read":
 			c.handleMarkRead(&in)
+
+		case "delete_message":
+			c.handleDeleteMessage(&in)
 
 		case "set_active":
 			if in.Active != nil {

@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Dahili #%1$s</string>
     <string name="chat_preview_file">📎 Dosya: %1$s</string>
     <string name="chat_preview_document">Belge</string>
+    <string name="chat_message_deleted">🚫 Bu mesaj silindi</string>
+    <string name="chat_delete_message">Mesajı sil</string>
+    <string name="chat_delete_message_confirm">Bu mesaj sohbetteki herkes için silinsin mi?</string>
+    <string name="err_message_delete_not_allowed">Bu mesaj artık silinemez.</string>
+    <string name="api_message_delete_failed">Mesaj silinemedi (HTTP %1$s)</string>
 </resources>

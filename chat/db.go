@@ -71,6 +71,8 @@ type Message struct {
 	IsMe           bool   `json:"is_me,omitempty"`
 	// Own messages only: "sent", "delivered" or "read" (see GetReceipts).
 	Status string `json:"status,omitempty"`
+	// Deleted by its sender: text and attachment are cleared (message_delete.go).
+	IsDeleted bool `json:"is_deleted,omitempty"`
 }
 
 type Contact struct {
@@ -372,7 +374,7 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			SELECT m.id, m.conversation_id, m.sender_ext, COALESCE(u.full_name, u.username, m.sender_ext) AS sender_name,
 			       m.msg_type, COALESCE(m.message, ''), COALESCE(m.attachment_url, ''),
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
-			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at
+			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
 			LEFT JOIN sys_users u ON u.extension = m.sender_ext
 			WHERE m.conversation_id = ? AND m.id < ?
@@ -385,7 +387,7 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			SELECT m.id, m.conversation_id, m.sender_ext, COALESCE(u.full_name, u.username, m.sender_ext) AS sender_name,
 			       m.msg_type, COALESCE(m.message, ''), COALESCE(m.attachment_url, ''),
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
-			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at
+			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
 			LEFT JOIN sys_users u ON u.extension = m.sender_ext
 			WHERE m.conversation_id = ?
@@ -408,7 +410,7 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			&m.ID, &m.ConversationID, &m.SenderExt, &m.SenderName,
 			&m.MsgType, &m.Message, &m.AttachmentURL,
 			&m.FileName, &m.FileSize, &m.MimeType,
-			&m.SystemEvent, &m.SystemMeta, &createdAt,
+			&m.SystemEvent, &m.SystemMeta, &createdAt, &m.IsDeleted,
 		)
 		if err == nil {
 			m.CreatedAt = fmtTime(createdAt)

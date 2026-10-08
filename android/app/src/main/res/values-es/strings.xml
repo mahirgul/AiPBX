@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Extensión #%1$s</string>
     <string name="chat_preview_file">📎 Archivo: %1$s</string>
     <string name="chat_preview_document">Documento</string>
+    <string name="chat_message_deleted">🚫 Este mensaje se ha eliminado</string>
+    <string name="chat_delete_message">Eliminar mensaje</string>
+    <string name="chat_delete_message_confirm">¿Eliminar este mensaje para todos en el chat?</string>
+    <string name="err_message_delete_not_allowed">Este mensaje ya no se puede eliminar.</string>
+    <string name="api_message_delete_failed">No se pudo eliminar el mensaje (HTTP %1$s)</string>
 </resources>

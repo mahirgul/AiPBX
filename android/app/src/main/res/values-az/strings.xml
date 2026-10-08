@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Daxili #%1$s</string>
     <string name="chat_preview_file">📎 Fayl: %1$s</string>
     <string name="chat_preview_document">Sənəd</string>
+    <string name="chat_message_deleted">🚫 Bu mesaj silindi</string>
+    <string name="chat_delete_message">Mesajı sil</string>
+    <string name="chat_delete_message_confirm">Bu mesaj söhbətdəki hər kəs üçün silinsin?</string>
+    <string name="err_message_delete_not_allowed">Bu mesaj artıq silinə bilməz.</string>
+    <string name="api_message_delete_failed">Mesaj silinmədi (HTTP %1$s)</string>
 </resources>

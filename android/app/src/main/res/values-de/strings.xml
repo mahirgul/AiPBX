@@ -398,4 +398,9 @@
     <string name="chat_sender_extension">Nebenstelle #%1$s</string>
     <string name="chat_preview_file">📎 Datei: %1$s</string>
     <string name="chat_preview_document">Dokument</string>
+    <string name="chat_message_deleted">🚫 Diese Nachricht wurde gelöscht</string>
+    <string name="chat_delete_message">Nachricht löschen</string>
+    <string name="chat_delete_message_confirm">Diese Nachricht für alle im Chat löschen?</string>
+    <string name="err_message_delete_not_allowed">Diese Nachricht kann nicht mehr gelöscht werden.</string>
+    <string name="api_message_delete_failed">Die Nachricht konnte nicht gelöscht werden (HTTP %1$s)</string>
 </resources>

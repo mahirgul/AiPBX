@@ -5,6 +5,8 @@
 $ext = $ext ?? '';
 $user = $user ?? [];
 $token = $token ?? '';
+$is_admin = !empty($is_admin);
+$delete_window = (int) ($delete_window ?? 0);
 ?>
 
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/chat.css'); ?>">
@@ -43,6 +45,18 @@ $token = $token ?? '';
                 </button>
             </div>
         </div>
+        <?php if ($is_admin): ?>
+            <details class="chat-settings-panel">
+                <summary><i class="fas fa-cog"></i> <?php echo t('chat.settings_title'); ?></summary>
+                <form method="post" action="/chat" class="chat-settings-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                    <label for="chat-delete-window"><?php echo t('chat.settings_delete_window'); ?></label>
+                    <input type="number" id="chat-delete-window" name="chat_delete_window_minutes" class="form-control" min="0" max="<?php echo ChatSettingsService::DELETE_WINDOW_MAX; ?>" step="1" value="<?php echo $delete_window; ?>" required>
+                    <span class="u-muted"><?php echo t('chat.settings_delete_window_help'); ?></span>
+                    <button type="submit" name="save_chat_settings" value="1" class="btn btn-primary btn-sm"><?php echo t('common.save'); ?></button>
+                </form>
+            </details>
+        <?php endif; ?>
     </div>
 
     <!-- Chat Card Container -->
@@ -360,5 +374,7 @@ $token = $token ?? '';
 window.CHAT_TOKEN = <?= json_encode($token, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 window.MY_EXT = <?= json_encode($ext, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 window.MY_NAME = <?= json_encode($user['full_name'] ?? $user['username'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+// Minutes after sending a message can be deleted (0 = always); the chat service enforces it.
+window.CHAT_DELETE_WINDOW = <?= $delete_window ?>;
 </script>
 <script src="<?php echo asset('/assets/js/chat.js'); ?>"></script>
