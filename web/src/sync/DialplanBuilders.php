@@ -10,6 +10,32 @@
 
 require_once __DIR__ . '/../file_helper.php';
 require_once __DIR__ . '/../asterisk_helper.php';
+
+/**
+ * Catch-all patterns used instead of '_.'.
+ *
+ * Asterisk warns about '_.' on every reload: it also matches the special
+ * extensions (h, i, t, ...), so a hangup could run a catch-all block. These
+ * two match every number '_.' was meant for: anything starting with a digit,
+ * '+', '*' or '#' (a DID like +4930..., a dialled 0090..., a *code), with
+ * one character ('.' needs at least one more, hence the first pattern) or more.
+ */
+const CATCH_ALL_EXTEN_PATTERNS = ['_[0-9+*#]', '_[0-9+*#].'];
+
+/**
+ * One catch-all block per pattern in CATCH_ALL_EXTEN_PATTERNS.
+ *
+ * @param string $first     application of priority 1, e.g. "NoOp(...)"
+ * @param string $sameLines further " same => n,..." lines (newline-terminated)
+ */
+function buildCatchAllExtensions(string $first, string $sameLines = ''): string {
+    $out = '';
+    foreach (CATCH_ALL_EXTEN_PATTERNS as $pattern) {
+        $out .= "exten => {$pattern},1,{$first}\n" . $sameLines;
+    }
+    return $out;
+}
+
 /**
  * Behaviour after a queue timeout/failure (cc_fallback_action)
  */
