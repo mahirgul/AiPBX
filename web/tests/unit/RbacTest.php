@@ -23,7 +23,7 @@ require_once dirname(__DIR__, 2) . '/auth.php';
  */
 final class RbacTest extends TestCase
 {
-    private const KILITLI = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings'];
+    private const KILITLI = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'phones'];
 
     protected function setUp(): void
     {
@@ -54,7 +54,7 @@ final class RbacTest extends TestCase
 
     public static function kilitliModuller(): array
     {
-        return [['roles'], ['system_users'], ['firewall'], ['fail2ban'], ['mail_settings']];
+        return [['roles'], ['system_users'], ['firewall'], ['fail2ban'], ['mail_settings'], ['phones']];
     }
 
     #[DataProvider('kilitliModuller')]
