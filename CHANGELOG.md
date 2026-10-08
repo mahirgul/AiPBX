@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.6.5
+
+- **Feature codes missing on new installations:** do-not-disturb (`*78`),
+  call forwarding (`*72`/`*73`), group and directed pickup (`*20`/`*21`) and
+  call listening (`*90`) were not created on a fresh install (the seed data
+  collided with rows the migrations had already written). They are added on
+  the next update; existing codes and their settings are not changed.
+- **Desk phones: pick up a ringing colleague with the BLF key.** A busy-lamp
+  key dials the pickup code and the extension in one go (`*211001`); this
+  now picks up the call instead of asking for the number.
+- **Desk phones: voicemail lamp.** Phones of users with a voicemail box get
+  the message-waiting indication (lamp and count).
+- Busy lamps (BLF) were tested end to end: a phone watching an extension
+  gets ringing, talking and free states.
+
 ## 1.6.4
 
 - **Translations:** the texts added in 1.6.x (e-mail templates and their

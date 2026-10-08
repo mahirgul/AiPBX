@@ -166,6 +166,49 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    /** A BLF key dials <pickup code><extension> (e.g. *211001) to take the call ringing there. */
+    public function testDirectedPickupAcceptsCodePlusExtension(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/SyncFeatureCodes.php';
+        $db = getDB();
+        $had = (bool) $db->query("SELECT COUNT(*) FROM pbx_feature_codes WHERE feature_key = 'pickup_directed'")->fetchColumn();
+        try {
+            if (!$had) {
+                $db->exec("INSERT INTO pbx_feature_codes (feature_key, title, code, allowed_roles, is_active) VALUES ('pickup_directed', 'Directed call pickup', '*21', NULL, 1)");
+            }
+            syncFeatureCodes();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_featurecodes.conf');
+            $this->assertStringContainsString('exten => _*21X.,1,', $conf);
+            $this->assertStringContainsString('Set(PICKTARGET=${FILTER(0123456789,${EXTEN:3})})', $conf);
+            $this->assertStringContainsString('GotoIf($["${PICKTARGET}" != ""]?pickdir_go)', $conf);
+        } finally {
+            if (!$had) {
+                $db->exec("DELETE FROM pbx_feature_codes WHERE feature_key = 'pickup_directed'");
+            }
+        }
+    }
+
+    /** Desk phones get the voicemail lamp (MWI) when the box is enabled, only on the -sip endpoint. */
+    public function testDeskPhoneEndpointHasVoicemailLamp(): void
+    {
+        $db = getDB();
+        try {
+            $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
+            $ins = $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role, voicemail_enabled) VALUES (?, '', ?, ?, ?, 1, 'sip', 1, 'user', ?)");
+            $ins->execute(['testmwi1', 'MWI On', '7011', 'S' . bin2hex(random_bytes(8)), 1]);
+            $ins->execute(['testmwi2', 'MWI Off', '7012', 'S' . bin2hex(random_bytes(8)), 0]);
+            syncAllExtensions();
+            $conf = $this->endpointsConf();
+            $section = fn(string $name) => preg_match('/^\[' . preg_quote($name, '/') . '\][^\n]*\n(.*?)(?=^\[|\z)/ms', $conf, $m) ? $m[1] : '';
+
+            $this->assertStringContainsString('mailboxes=7011@default', $section('7011-sip'));
+            $this->assertStringNotContainsString('mailboxes=', $section('7011-webrtc'));
+            $this->assertStringNotContainsString('mailboxes=', $section('7012-sip'));
+        } finally {
+            $db->exec("DELETE FROM sys_users WHERE extension IN ('7011', '7012')");
+        }
+    }
+
     public function testExtensionAuthDigestKapaliysaIdentifyUretilir(): void
     {
         $db = getDB();

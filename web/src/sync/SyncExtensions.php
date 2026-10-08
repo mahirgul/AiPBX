@@ -77,7 +77,7 @@ function __syncAllExtensionsBody() {
     // Fax users (extension_type='fax') never register over SIP (an incoming
     // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
-    $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     $webrtc_codecs = getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722');
     $wired_codecs = getSystemSetting('pjsip_wired_codecs', 'alaw,ulaw,g729');
@@ -230,6 +230,11 @@ function __syncAllExtensionsBody() {
         $conf .= "callerid={$callerid}\n";
         $conf .= $set_vars;
         $conf .= $pickup_lines;
+        // Voicemail lamp on desk phones (MWI): new messages are signalled to
+        // the phone. A mailboxes value set by hand in the `sip` table wins.
+        if (!empty($u['voicemail_enabled']) && empty($sip_map['mailboxes'])) {
+            $conf .= "mailboxes={$ext}@default\n";
+        }
 
         if ($transport !== 'transport-wss') {
             $conf .= "transport={$transport}\n";
