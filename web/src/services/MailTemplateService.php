@@ -172,7 +172,10 @@ class MailTemplateService
             $html = self::frame($subject, $bodyHtml, $brand, $lang);
 
             $text = self::htmlToText(self::fill(self::sanitize($tpl['body']), $vars, array_map(fn($b) => '[[BLOCK:' . base64_encode($b['text']) . ']]', $blocks), true));
-            $text = preg_replace_callback('/\[\[BLOCK:([A-Za-z0-9+\/=]*)\]\]/', fn($m) => base64_decode($m[1]), $text);
+            // A block (button, box) stands on its own lines in the text version.
+            $text = preg_replace_callback('/\[\[BLOCK:([A-Za-z0-9+\/=]*)\]\]/', fn($m) => ($m[1] === '' ? '' : "\n\n" . base64_decode($m[1]) . "\n\n"), $text);
+            $text = preg_replace("/[ \t]+\n/", "\n", $text);
+            $text = preg_replace("/\n{3,}/", "\n\n", $text);
             $text = trim($text) . "\n\n-- \n" . $brand['title'] . "\n";
 
             return ['subject' => $subject, 'html' => $html, 'text' => $text, 'lang' => $lang];

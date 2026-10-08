@@ -53,6 +53,9 @@ ob_start(); ?>
                     <i class="fas fa-lock" style="position: absolute; left: 16px; top: 15px; color: var(--text-muted);"></i>
                     <input type="password" name="password" class="form-control" style="padding-left: 44px;" required>
                 </div>
+                <div style="text-align: right; margin-top: 6px;">
+                    <a href="/forgot-password" class="u-fs-12" style="color: var(--primary); text-decoration: none;"><?php echo t('forgot.link'); ?></a>
+                </div>
             </div>
 
             <!-- Dynamic Math Security Challenge -->

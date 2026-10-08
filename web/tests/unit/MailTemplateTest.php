@@ -60,6 +60,7 @@ final class MailTemplateTest extends TestCase
         $m = MailTemplateService::render('password_reset', 'en', ['name' => 'N', 'username' => 'u', 'reset_link' => 'https://pbx.test/r?t=1'], ['reset_button' => $btn]);
         $this->assertStringContainsString('href="https://pbx.test/r?t=1"', $m['html']);
         $this->assertStringContainsString('Go: https://pbx.test/r?t=1', $m['text']);
+        $this->assertMatchesRegularExpression('/\nGo: https:\/\/pbx\.test\/r\?t=1\n\n/', $m['text'], 'the button line stands alone');
         $this->assertStringNotContainsString('{reset_button}', $m['html']);
     }
 
