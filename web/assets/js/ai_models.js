@@ -5,6 +5,7 @@
     const T = PAGE.text;
     let timer = null;
     let lastStatus = PAGE.status;
+    let expectUntil = 0;   // after an action: keep polling until its state shows up
     const bench = {};      // id -> result text (kept across re-renders)
 
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -82,7 +83,10 @@
         }
         document.getElementById('aim-models').innerHTML = html;
 
-        const moving = busy || (rt.state === 'installed' && (!svc || models.some(m => ['downloading', 'loading'].includes(m.state))));
+        // The runtime setup starts in its own unit and writes its state a moment
+        // later; a model download may also take a moment to show up.
+        const moving = busy || Date.now() < expectUntil
+            || (rt.state === 'installed' && (!svc || models.some(m => ['downloading', 'loading'].includes(m.state))));
         clearTimeout(timer);
         if (moving) timer = setTimeout(refresh, 3000);
     }
@@ -93,6 +97,7 @@
 
     function done(d) {
         if (!d || !d.success) { toast((d && d.error) || 'Error', 'error'); } else if (d.message) { toast(d.message, 'success'); }
+        if (d && d.success) expectUntil = Date.now() + 30000;
         refresh();
     }
 
