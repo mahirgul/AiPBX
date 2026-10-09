@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.8.1
+
+- **Admin menu:** *System Update*, the last item of the Admin group, was cut
+  off since *File storage* was added (an open group was limited in height).
+- **Network services:** DHCP and TFTP are now two separate switches, so
+  either one can run alone (DHCP without TFTP, TFTP without DHCP) or both.
+  Existing settings are kept.
+- **Audit log:** changes to the chat settings and the MS Teams settings, and
+  showing a desk phone's admin password, are now recorded. All entries show
+  a readable action name (sign-in, reboot, e-mail sent …) instead of an
+  internal code.
+- **Roles:** the File storage module has its name in the permission list.
+
 ## 1.8.0
 
 - **Chat files in S3-compatible storage** (*Admin → File storage*, admin
