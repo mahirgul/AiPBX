@@ -63,6 +63,7 @@ return [
     '/fax-mail-settings' => ['controller' => FaxMailSettingsController::class, 'action' => 'index', 'module' => 'fax_mail_settings.php'],
     '/mail-settings'   => ['controller' => MailSettingsController::class, 'action' => 'index', 'module' => 'mail_settings.php'],
     '/mail-templates'  => ['controller' => MailTemplatesController::class, 'action' => 'index', 'module' => 'mail_settings.php'],
+    '/file-storage'    => ['controller' => FileStorageController::class, 'action' => 'index', 'module' => 'file_storage.php'],
     '/cdr-reports'     => ['controller' => CdrReportController::class, 'action' => 'index', 'module' => 'cdr_reports.php'],
     '/queue-reports'   => ['controller' => QueueReportController::class, 'action' => 'index', 'module' => 'queue_reports.php'],
     '/pause-reports'   => ['controller' => PauseReportController::class, 'action' => 'index', 'module' => 'pause_reports.php'],
