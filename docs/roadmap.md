@@ -10,7 +10,7 @@ welcome there.
 | 2 | [Delete chat messages and attachments](#2-delete-chat-messages-and-attachments) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
 | 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): first version in [File storage](file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
 | 4 | [Video calls](#4-video-calls) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
-| 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning) | | large, in steps |
+| 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning): steps 0–1 in [Local AI models](local-ai.md) | | large, in steps |
 | 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
 | 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
@@ -112,12 +112,17 @@ Before building, check each model's **licence** (commercial use), its **speed on
 PBX servers have no GPU) and its quality on 8 kHz telephone audio. The published figures (for
 example the first audio after ~4 ms) have to be measured on our own servers.
 
+**Checked (2026-10-09).** Both models are Apache-2.0 (commercial use allowed; weights not gated).
+EMA Lightning on a 2-core i7-7700 without GPU: 3.4–4.5× faster than real time, first audio after
+0.4–0.5 s, model load 1.5 s (first time ~35 s), about 1 GB of memory for the service with torch,
+direct 8 kHz output. EmbeddingGemma 2 (740M parameters) still has to be measured.
+
 **Steps.**
 
-0. **Local AI service.** An `aipbx-ai` service reachable only from the server itself. An
+0. **Local AI service** *(done in 1.9.0)*. An `aipbx-ai` service reachable only from the server itself. An
    *AI → Local models* page downloads and removes models, shows their size, asks to accept the
    licence, and shows status, RAM/CPU use and a speed test ("does this run in real time here?").
-1. **EMA Lightning as a TTS provider.** "Local: EMA Lightning (Turkish)" next to the cloud
+1. **EMA Lightning as a TTS provider** *(done in 1.9.0)*. "Local: EMA Lightning (Turkish)" next to the cloud
    providers on the *Cloud TTS* page. Listening, MP3 download and saving as an announcement work
    as they do today, with no API key and no cost.
 2. **Answering machine detection (EmbeddingGemma 2).** On outgoing calls the first 2–3 seconds

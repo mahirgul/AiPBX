@@ -1,0 +1,135 @@
+/* Page script of templates/views/ai_models/index.php */
+(function () {
+    const PAGE = window.AI_MODELS_PAGE;
+    if (!PAGE) return;
+    const T = PAGE.text;
+    let timer = null;
+    let lastStatus = PAGE.status;
+    const bench = {};      // id -> result text (kept across re-renders)
+
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const toast = (msg, type) => { if (window.showFooterToast) window.showFooterToast(msg, type); };
+    const fmt = (s, ...a) => { let i = 0; return String(s).replace(/%[sd]/g, () => a[i++]); };
+
+    function post(action, extra) {
+        const body = new URLSearchParams(Object.assign({ action: action, csrf_token: window.CSRF_TOKEN || '' }, extra || {}));
+        return fetch('/api/ai_models.php', { method: 'POST', body: body }).then(r => r.json());
+    }
+
+    function badge(cls, text) { return '<span class="badge ' + cls + ' u-fs-11">' + esc(text) + '</span>'; }
+
+    function render(s) {
+        lastStatus = s;
+        const rt = s.runtime || { state: 'absent' };
+        const svc = s.service;
+        const rtCls = { installed: 'badge-success', installing: 'badge-info', removing: 'badge-info', failed: 'badge-danger' }[rt.state] || 'badge-secondary';
+        let rtHtml = badge(rtCls, T['rt_' + rt.state] || rt.state);
+        if (rt.step && (rt.state === 'installing' || rt.state === 'removing')) rtHtml += ' <span class="u-muted">' + esc(rt.step) + '</span>';
+        if (rt.state === 'failed' && rt.error) rtHtml += ' <span class="u-danger">' + esc(rt.error) + '</span>';
+        document.getElementById('aim-runtime').innerHTML = rtHtml;
+
+        const busy = rt.state === 'installing' || rt.state === 'removing';
+        document.getElementById('aim-rt-install').style.display = (rt.state === 'absent' || rt.state === 'failed') ? '' : 'none';
+        document.getElementById('aim-rt-remove').style.display = (rt.state === 'installed' || rt.state === 'failed') ? '' : 'none';
+        document.getElementById('aim-rt-install').disabled = busy;
+
+        let svcHtml = '';
+        if (rt.state === 'installed') {
+            if (!svc) {
+                svcHtml = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.svc_starting);
+            } else {
+                const cpu = svc.cpu || {}, ram = svc.ram || {}, pr = svc.process || {};
+                svcHtml = '<i class="fas fa-circle u-success" style="font-size: 9px;"></i> '
+                    + esc(T.cpu) + ': ' + esc(cpu.model || '?') + ' · ' + esc(fmt(T.cores, cpu.cores || '?')) + ' · '
+                    + esc(T.ram) + ': ' + esc(ram.available_mb) + ' / ' + esc(ram.total_mb) + ' MB · '
+                    + esc(T.process) + ': ' + esc(pr.rss_mb) + ' MB, ' + esc(pr.cpu_percent) + '% CPU';
+            }
+        }
+        document.getElementById('aim-service').innerHTML = svcHtml;
+
+        const card = document.getElementById('aim-models-card');
+        card.style.display = rt.state === 'installed' ? '' : 'none';
+        const models = s.models || [];
+        let html = '';
+        if (rt.state === 'installed' && svc && !models.length) html = '<p class="u-muted">' + esc(T.no_models) + '</p>';
+        if (models.length) {
+            html += '<div class="table-responsive"><table class="table"><tbody>';
+            models.forEach(m => {
+                const stCls = { ready: 'badge-success', installed: 'badge-info', downloading: 'badge-info', loading: 'badge-info', error: 'badge-danger' }[m.state] || 'badge-secondary';
+                let st = badge(stCls, (T['st_' + m.state] || m.state) + (m.state === 'downloading' && m.progress ? ' ' + m.progress + '%' : ''));
+                if (m.state === 'error' && m.error) st += '<div class="u-danger u-fs-11">' + esc(m.error) + '</div>';
+                let actions = '';
+                if (m.state === 'absent' || m.state === 'error') {
+                    actions = '<label class="u-check-label u-fs-12" style="display: block; margin-bottom: 6px;"><input type="checkbox" class="u-accent" id="aim-lic-' + esc(m.id) + '"> '
+                        + fmt(esc(T.accept_license), '<a href="' + esc(m.license_url) + '" target="_blank" rel="noopener">' + esc(m.license) + '</a>') + '</label>'
+                        + '<button type="button" class="btn btn-primary btn-sm" data-act="install" data-id="' + esc(m.id) + '"><i class="fas fa-download"></i> ' + esc(T.btn_download) + ' (' + esc(m.download_mb) + ' MB)</button>';
+                }
+                if (m.state === 'ready') {
+                    actions += '<button type="button" class="btn btn-secondary btn-sm" data-act="benchmark" data-id="' + esc(m.id) + '"><i class="fas fa-gauge-high"></i> ' + esc(T.btn_benchmark) + '</button> ';
+                }
+                if (m.state === 'ready' || m.state === 'installed' || m.state === 'error') {
+                    actions += '<button type="button" class="btn btn-danger btn-sm" data-act="remove" data-id="' + esc(m.id) + '"><i class="fas fa-trash-alt"></i> ' + esc(T.btn_remove) + '</button>';
+                }
+                html += '<tr><td style="min-width: 220px;"><div class="u-strong">' + esc(m.title) + '</div>'
+                    + '<div class="u-muted u-fs-11">' + esc(T['kind_' + m.kind] || m.kind) + ' · ' + esc((m.languages || []).join(', ')) + ' · '
+                    + esc(T.license) + ': <a href="' + esc(m.license_url) + '" target="_blank" rel="noopener">' + esc(m.license) + '</a>'
+                    + (m.homepage ? ' · <a href="' + esc(m.homepage) + '" target="_blank" rel="noopener">' + esc(T.homepage) + '</a>' : '')
+                    + (m.disk_mb ? ' · ' + esc(m.disk_mb) + ' MB' : '') + '</div></td>'
+                    + '<td>' + st + '</td>'
+                    + '<td style="text-align: right;">' + actions + (bench[m.id] ? '<div class="u-fs-12 u-mt-6">' + bench[m.id] + '</div>' : '') + '</td></tr>';
+            });
+            html += '</tbody></table></div>';
+        }
+        document.getElementById('aim-models').innerHTML = html;
+
+        const moving = busy || (rt.state === 'installed' && (!svc || models.some(m => ['downloading', 'loading'].includes(m.state))));
+        clearTimeout(timer);
+        if (moving) timer = setTimeout(refresh, 3000);
+    }
+
+    function refresh() {
+        fetch('/api/ai_models.php?action=status', { cache: 'no-store' }).then(r => r.json()).then(d => { if (d && d.success) render(d); }).catch(() => { timer = setTimeout(refresh, 5000); });
+    }
+
+    function done(d) {
+        if (!d || !d.success) { toast((d && d.error) || 'Error', 'error'); } else if (d.message) { toast(d.message, 'success'); }
+        refresh();
+    }
+
+    window.aimRuntime = function (action) {
+        if (!confirm(action === 'runtime_install' ? T.confirm_runtime_install : T.confirm_runtime_remove)) return;
+        post(action).then(done);
+    };
+
+    document.getElementById('aim-models').addEventListener('click', e => {
+        const btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.act === 'install') {
+            const lic = document.getElementById('aim-lic-' + id);
+            if (!lic || !lic.checked) { toast(T.need_license, 'error'); return; }
+            btn.disabled = true;
+            post('model_install', { id: id, accept_license: 1 }).then(done);
+        } else if (btn.dataset.act === 'remove') {
+            if (!confirm(T.confirm_model_remove)) return;
+            btn.disabled = true;
+            post('model_remove', { id: id }).then(done);
+        } else if (btn.dataset.act === 'benchmark') {
+            btn.disabled = true;
+            bench[id] = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.measuring);
+            render(lastStatus);
+            post('benchmark', { id: id }).then(d => {
+                if (d && d.success) {
+                    const b = d.benchmark;
+                    bench[id] = esc(fmt(T.bench_result, b.realtime_factor, b.first_audio_ms, b.audio_seconds, b.seconds))
+                        + '<div class="' + (b.realtime_factor >= 2 ? 'u-success' : 'u-warning') + '">' + esc(b.realtime_factor >= 2 ? T.bench_live_ok : T.bench_live_slow) + '</div>';
+                } else {
+                    bench[id] = '<span class="u-danger">' + esc((d && d.error) || 'Error') + '</span>';
+                }
+                render(lastStatus);
+            });
+        }
+    });
+
+    render(PAGE.status);
+})();

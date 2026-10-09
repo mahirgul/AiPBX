@@ -460,6 +460,40 @@ case "$cmd" in
         esac
         ;;
 
+    ai)
+        # AI → Local models (roadmap 5): the runtime of the local AI service
+        # (Python venv with torch, about 1 GB) and its unit. Installing
+        # takes minutes, so it runs detached in its own unit; progress is read
+        # with `ai runtime-status` (/var/lib/aipbx-ai/runtime.json). Models
+        # themselves are managed over the service's own API (127.0.0.1:8790).
+        sub="${1:-}"; [ $# -gt 0 ] && shift
+        [ $# -eq 0 ] || die "usage: ai runtime-install|runtime-remove|runtime-status|restart"
+        case "$sub" in
+            runtime-install|runtime-remove)
+                if systemctl is-active --quiet aipbx-ai-setup.service; then
+                    die "an AI runtime operation is already running"
+                fi
+                systemctl reset-failed aipbx-ai-setup.service >/dev/null 2>&1 || true
+                if [ "$sub" = runtime-install ]; then
+                    exec systemd-run --quiet --collect --unit=aipbx-ai-setup \
+                        --description="AiPBX AI runtime: install" /usr/local/sbin/aipbx-ai-setup install
+                fi
+                # Seconds only, but outside Apache's sandbox like everything
+                # that deletes under /opt; --wait returns its result.
+                exec systemd-run --quiet --wait --pipe --collect --unit=aipbx-ai-setup \
+                    --description="AiPBX AI runtime: remove" /usr/local/sbin/aipbx-ai-setup remove
+                ;;
+            runtime-status)
+                exec /usr/local/sbin/aipbx-ai-setup status
+                ;;
+            restart)
+                [ -x /opt/aipbx-ai/venv/bin/python ] || die "the AI runtime is not installed"
+                exec systemctl restart aipbx-ai.service
+                ;;
+            *) die "unknown ai command: $sub" ;;
+        esac
+        ;;
+
     *)
         die "unknown command: ${cmd:-<empty>}"
         ;;

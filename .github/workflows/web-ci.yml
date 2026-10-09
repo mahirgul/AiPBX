@@ -1,6 +1,7 @@
 name: Web & Chat CI
 
-# Checks that run on every push for the web portal (PHP) and the chat service (Go).
+# Checks that run on every push for the web portal (PHP), the chat service (Go)
+# and the local AI service (Python).
 # Until 2026-09-27 only Android/iOS were built; that is why bugs breaking the
 # conference/ring group saves and the push settings went unnoticed.
 
@@ -10,12 +11,14 @@ on:
     paths:
       - 'web/**'
       - 'chat/**'
+      - 'ai/**'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
       - 'web/**'
       - 'chat/**'
+      - 'ai/**'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   workflow_dispatch:
@@ -125,3 +128,15 @@ jobs:
         run: go test ./...
       - name: Static build (CGO off — also runs on older glibc, e.g. Rocky 8)
         run: CGO_ENABLED=0 go build -o /dev/null .
+
+  ai:
+    name: Python — local AI service tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Fake model backend: no torch or model download needed.
+      - name: Unit tests
+        run: python -m unittest discover -v ai/tests
