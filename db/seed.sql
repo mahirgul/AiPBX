@@ -332,7 +332,8 @@ INSERT IGNORE INTO `sys_role_permissions` (`role_key`, `module_key`, `can_view`,
 ('read_only_admin','queue_reports',1,1,0,0,'2026-10-04 00:00:00'),
 ('cc_manager','queue_reports',1,1,0,0,'2026-10-04 00:00:00'),
 ('admin','ai_tts',1,1,1,1,'2026-10-04 00:00:00'),
-('admin','phones',1,1,1,1,'2026-10-09 00:00:00');
+('admin','phones',1,1,1,1,'2026-10-09 00:00:00'),
+('admin','web_widgets',1,1,1,1,'2026-10-10 00:00:00');
 /*!40000 ALTER TABLE `sys_role_permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

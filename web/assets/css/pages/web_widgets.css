@@ -1,0 +1,4 @@
+/* Page styles of templates/views/web_widgets */
+
+.web-widgets-section { margin: 18px 0 8px; font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.web-widgets-limits { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
