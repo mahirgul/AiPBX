@@ -7,7 +7,6 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.mhrgl.aipbx.AiPbxApp
 import com.mhrgl.aipbx.R
@@ -25,6 +24,9 @@ import com.mhrgl.aipbx.util.L10n
 object SessionExpiry {
     private const val TAG = "SessionExpiry"
     private const val NOTIFICATION_ID = 9001
+
+    /** LoginActivity shows the "session expired" message when this extra is set. */
+    const val EXTRA_SESSION_EXPIRED = "session_expired"
 
     fun signOut(context: Context, reason: String?) {
         val appContext = context.applicationContext
@@ -44,12 +46,12 @@ object SessionExpiry {
 
         val intent = Intent(appContext, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(EXTRA_SESSION_EXPIRED, true)
         }
         if (AiPbxApp.isInForeground) {
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(appContext, L10n.str(R.string.session_expired_text), Toast.LENGTH_LONG).show()
-                appContext.startActivity(intent)
-            }
+            // The message is shown on the sign-in screen itself: a toast here was
+            // replaced by the failing screen's own error toast.
+            Handler(Looper.getMainLooper()).post { appContext.startActivity(intent) }
             return
         }
 

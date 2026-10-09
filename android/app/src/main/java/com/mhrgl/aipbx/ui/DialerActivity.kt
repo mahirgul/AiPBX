@@ -708,6 +708,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     binding.tvHistoryStats.text = getString(R.string.history_stats, s.totalCalls, s.missedCalls, mins)
                 }
             }.onFailure { err ->
+                // Signed out meanwhile (session rejected): the sign-in screen explains it.
+                if (!prefs.isLoggedIn) return@onFailure
                 Toast.makeText(this@DialerActivity, getString(R.string.err_history_load, err.message), Toast.LENGTH_SHORT).show()
                 binding.tvEmptyHistory.visibility = View.VISIBLE
             }
