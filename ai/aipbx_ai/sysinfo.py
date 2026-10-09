@@ -42,10 +42,10 @@ def rss_mb():
     return 0
 
 
-def torch_version():
-    """The installed torch version without importing torch (slow, large)."""
+def runtime_version():
+    """The installed ONNX Runtime version without importing it."""
     try:
-        return metadata.version("torch")
+        return metadata.version("onnxruntime")
     except metadata.PackageNotFoundError:
         return None
 

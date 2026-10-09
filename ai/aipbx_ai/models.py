@@ -54,9 +54,9 @@ REGISTRY = (
         kind="tts",
         languages=("tr",),
         license="Apache-2.0",
-        license_url="https://huggingface.co/canberkkkkkk/ema-lightning",
+        license_url="https://github.com/mahirgul/AiPBX/releases/tag/models-ema-lightning-1",
         homepage="https://github.com/canberk7/ema-lightning",
-        download_mb=36,
+        download_mb=34,
         backend=EmaLightningBackend,
     ),
 )
@@ -148,8 +148,17 @@ class ModelManager:
     # ---- lifecycle -------------------------------------------------------
 
     def start(self):
-        """Loads every installed model in the background (service start)."""
+        """Loads every installed model in the background (service start).
+
+        A model whose earlier format is still on disk (its licence accepted
+        then) is downloaded again in the current format.
+        """
         for entry in self._entries.values():
+            pending = getattr(entry.backend, "migration_pending", None)
+            if pending is not None and pending():
+                log.info("%s: earlier model format found, downloading the current one", entry.spec.id)
+                self.install(entry.spec.id)
+                continue
             with self._mu:
                 if self._state(entry) != INSTALLED:
                     continue
