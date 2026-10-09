@@ -333,7 +333,7 @@ class MailTemplateService
     /* Frame                                                               */
     /* ------------------------------------------------------------------ */
 
-    /** @return array{title: string, sub: string, color: string, logo: ?string} */
+    /** @return array{title: string, sub: string, color: string, logo: ?string, show_title: bool} */
     public static function brand(): array
     {
         static $brand = null;
@@ -344,6 +344,12 @@ class MailTemplateService
         $logo = null;
         if (getSystemSetting('site_logo_type', 'image') === 'image') {
             $url = (string) getSystemSetting('site_logo_image', '') ?: BRAND_DEFAULT_LOGO_URL;
+            // The header is the brand colour: the dark-theme logo (light
+            // lettering) often reads better on it — the admin chooses.
+            $darkUrl = (string) getSystemSetting('site_logo_image_dark', '');
+            if ($darkUrl !== '' && getSystemSetting('mail_logo_variant', 'light') === 'dark') {
+                $url = $darkUrl;
+            }
             $path = realpath(dirname(__DIR__, 2) . parse_url($url, PHP_URL_PATH));
             // Mail clients show png/jpg/gif; an svg or webp logo is left out.
             if ($path && is_file($path) && preg_match('/\.(png|jpe?g|gif)$/i', $path)) {
@@ -355,6 +361,8 @@ class MailTemplateService
             'sub' => (string) getSystemSetting('brand_sub', ''),
             'color' => preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? $color : self::DEFAULT_COLOR,
             'logo' => $logo,
+            // Off when the logo already spells the name; without a logo the name always shows.
+            'show_title' => $logo === null || getSystemSetting('mail_show_brand_title', '1') !== '0',
         ];
     }
 
@@ -374,7 +382,7 @@ class MailTemplateService
             . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;"><tr><td align="center" style="padding:24px 12px;">'
             . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">'
             . '<tr><td style="background:' . $brand['color'] . ';padding:26px 24px;text-align:center;color:#ffffff;">' . $logo
-            . '<div style="font-size:22px;font-weight:700;">' . $e($brand['title']) . '</div>' . $sub . '</td></tr>'
+            . ($brand['show_title'] ? '<div style="font-size:22px;font-weight:700;">' . $e($brand['title']) . '</div>' : '') . $sub . '</td></tr>'
             . '<tr><td style="padding:28px 28px 12px 28px;font-size:15px;line-height:1.6;">' . $bodyHtml . '</td></tr>'
             . '<tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px;text-align:center;font-size:12px;color:#94a3b8;">' . $footer . '</td></tr>'
             . '</table></td></tr></table></body></html>';

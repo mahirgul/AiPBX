@@ -148,6 +148,11 @@ body {
     display: block;
 }
 
+/* Brand settings: optional dark-theme logo (dark is the default theme). */
+.brand-logo-dark { display: none !important; }
+html:not([data-theme="light"]) .brand-logo-light { display: none !important; }
+html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
+
 .brand-title {
     font-size: 14px;
     font-weight: 700;

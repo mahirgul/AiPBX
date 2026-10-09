@@ -23,6 +23,7 @@ $brand_sub = getSystemSetting('brand_sub', 'PBX & Call Center');
 $site_logo_type = getSystemSetting('site_logo_type', 'image');
 $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
 $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
+$site_logo_image_dark = getSystemSetting('site_logo_image_dark', '');
 $site_favicon_url = getSystemSetting('site_favicon_url', '');
 
 // SPA Single-Page App AJAX Buffer Interceptor

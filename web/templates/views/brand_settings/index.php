@@ -94,6 +94,29 @@
                     <?php endif; ?>
                 </div>
 
+                <div class="form-group" id="logo_dark_image_field" style="<?php echo $s['site_logo_type'] !== 'image' ? 'display:none;' : ''; ?>">
+                    <label class="form-label"><?php echo t('brand_settings.field_logo_dark_file'); ?></label>
+                    <input type="file" name="logo_dark_file" class="form-control" accept=".png,.jpg,.jpeg,.svg,.webp" onchange="previewFileInput(this, 'logo_dark_preview_img')">
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.logo_dark_file_help'); ?></small>
+                    <?php if ($s['site_logo_image_dark']): ?>
+                        <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--danger); cursor: pointer;">
+                            <input type="checkbox" name="remove_logo_image_dark" value="1"> <?php echo t('brand_settings.remove_logo_dark'); ?>
+                        </label>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label"><i class="fas fa-envelope"></i> <?php echo t('brand_settings.mail_logo_title'); ?></label>
+                    <select name="mail_logo_variant" class="form-control">
+                        <option value="light" <?php echo ($s['mail_logo_variant'] ?? 'light') !== 'dark' ? 'selected' : ''; ?>><?php echo t('brand_settings.mail_logo_light'); ?></option>
+                        <option value="dark" <?php echo ($s['mail_logo_variant'] ?? '') === 'dark' ? 'selected' : ''; ?>><?php echo t('brand_settings.mail_logo_dark'); ?></option>
+                    </select>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.mail_logo_help'); ?></small>
+                    <label style="display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; cursor: pointer;">
+                        <input type="checkbox" name="mail_show_brand_title" value="1" <?php echo ($s['mail_show_brand_title'] ?? '1') !== '0' ? 'checked' : ''; ?>> <?php echo t('brand_settings.mail_show_title'); ?>
+                    </label>
+                </div>
+
                 <div class="form-group" style="margin-top: 20px;">
                     <label class="form-label"><?php echo t('brand_settings.field_favicon_file'); ?></label>
                     <input type="file" name="favicon_file" class="form-control" accept=".ico,.png" onchange="previewFileInput(this, 'favicon_preview_img')">
@@ -118,6 +141,16 @@
                             <?php endif; ?>
                         </div>
                         <div class="u-fs-11 u-muted u-text-center u-mt-6"><?php echo t('brand_settings.logo_label'); ?></div>
+                    </div>
+                    <div>
+                        <div style="width: 64px; height: 64px; border-radius: 12px; background: #1e293b; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px; box-sizing: border-box;">
+                            <?php if ($logo_dark_preview_url): ?>
+                                <img id="logo_dark_preview_img" src="<?php echo htmlspecialchars($logo_dark_preview_url); ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <i class="fas fa-moon" id="logo_dark_preview_img" style="font-size: 20px; color: #94a3b8;"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="u-fs-11 u-muted u-text-center u-mt-6"><?php echo t('brand_settings.logo_dark_label'); ?></div>
                     </div>
                     <div>
                         <div style="width: 48px; height: 48px; border-radius: 8px; background: var(--bg-sidebar); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden;">
