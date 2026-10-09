@@ -15,8 +15,8 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import __version__, sysinfo
-from .models import (ModelBusy, NotReady, ServiceBusy, UnknownModel,
-                     WrongKind)
+from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
+                     NotReady, ServiceBusy, UnknownModel, WrongKind)
 from .wav import wav_bytes
 
 log = logging.getLogger("aipbx_ai.server")
@@ -30,7 +30,7 @@ BENCHMARK_TEXT = ("Merhaba, bizi aradığınız için teşekkür ederiz. Görü�
                   "standartları gereği kayıt altına alınabilir. Lütfen hatta kalın, "
                   "ilk uygun temsilcimiz size yardımcı olacaktır.")
 
-_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark)$")
+_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop)$")
 
 
 class ApiError(Exception):
@@ -117,7 +117,8 @@ class Handler(BaseHTTPRequestHandler):
             if method == "GET" and path == "/v1/health":
                 return self._json(HTTPStatus.OK, self._health())
             if method == "GET" and path == "/v1/models":
-                return self._json(HTTPStatus.OK, {"models": self.server.manager.describe_all()})
+                return self._json(HTTPStatus.OK, {"models": self.server.manager.describe_all(),
+                                                  "disk": self.server.manager.disk()})
             if method == "POST" and path == "/v1/tts":
                 return self._tts(self._body())
             m = _MODEL_ACTION.match(path)
@@ -165,8 +166,23 @@ class Handler(BaseHTTPRequestHandler):
         if action == "install":
             if body.get("accept_license") is not True:
                 raise ApiError(HTTPStatus.BAD_REQUEST, "the model license must be accepted (accept_license: true)")
-            state = manager.install(model_id)
+            try:
+                state = manager.install(model_id)
+            except DiskLimit:
+                raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded") from None
             return self._json(HTTPStatus.ACCEPTED, {"state": state})
+        if action == "run":
+            if manager.state(model_id) not in (INSTALLED, READY, LOADING, ERROR):
+                raise ApiError(HTTPStatus.CONFLICT, "the model is not downloaded")
+            if manager.state(model_id) == ERROR and not manager.files_present(model_id):
+                raise ApiError(HTTPStatus.CONFLICT, "the model is not downloaded")
+            return self._json(HTTPStatus.ACCEPTED, {"state": manager.install(model_id)})
+        if action == "stop":
+            try:
+                state = manager.stop(model_id)
+            except ModelBusy:
+                raise ApiError(HTTPStatus.CONFLICT, "model is busy downloading or loading") from None
+            return self._json(HTTPStatus.OK, {"state": state})
         if action == "remove":
             try:
                 state = manager.remove(model_id)

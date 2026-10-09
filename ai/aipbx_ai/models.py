@@ -15,15 +15,23 @@ the same methods as ema.EmaLightningBackend:
                                  (kind "tts" only) 16-bit LE mono PCM
 
 States: absent -> downloading -> loading -> ready. "installed" = files on
-disk, not in memory; "error" keeps the last failure until the next install.
+disk, not in memory (stopped); "error" keeps the last failure until the next
+install. An administrator runs (load) and stops (unload) installed models;
+the choice is kept in $AIPBX_AI_DATA/state.json, so a restart brings back the
+models that were running. Downloads stop at the disk limit
+(AIPBX_AI_DISK_LIMIT_MB, default 5120).
 Each model runs one job at a time (its lock); at most MAX_WAITING requests
 may wait for it, more get ServiceBusy (HTTP 503).
 """
+import json
 import logging
+import os
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
+from . import sysinfo
 from .ema import EmaLightningBackend
 
 log = logging.getLogger("aipbx_ai.models")
@@ -45,6 +53,10 @@ class ModelSpec:
     homepage: str
     download_mb: int
     backend: type
+    engine: str = "ema"
+    commercial: bool = True     # the licence allows commercial use
+    # Our own measurement on a 2-core server (shown as the recommendation).
+    measured: dict = field(default_factory=dict)
 
 
 REGISTRY = (
@@ -58,6 +70,8 @@ REGISTRY = (
         homepage="https://github.com/canberk7/ema-lightning",
         download_mb=34,
         backend=EmaLightningBackend,
+        engine="ema",
+        measured={"realtime_factor": 11, "memory_mb": 250, "load_s": 1.3},
     ),
 )
 
@@ -82,6 +96,10 @@ class WrongKind(Exception):
     pass
 
 
+class DiskLimit(Exception):
+    """Downloading the model would exceed the disk limit for models."""
+
+
 class _Entry:
     def __init__(self, spec, backend):
         self.spec = spec
@@ -91,13 +109,45 @@ class _Entry:
         self.error = None
         self.job_lock = threading.Lock()   # one synthesis/benchmark at a time
         self.pending = 0                   # running + waiting jobs
+        self.memory_mb = 0                 # growth of the process when it was loaded
 
 
 class ModelManager:
-    def __init__(self, specs, data_dir, backend_factory=None):
+    def __init__(self, specs, data_dir, backend_factory=None, disk_limit_mb=None):
         make = backend_factory or (lambda spec: spec.backend(spec, data_dir))
         self._mu = threading.Lock()
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
+        self._state_file = Path(data_dir) / "state.json"
+        self._stopped = self._read_stopped()
+        if disk_limit_mb is None:
+            disk_limit_mb = int(os.environ.get("AIPBX_AI_DISK_LIMIT_MB", "5120") or 5120)
+        self.disk_limit_mb = disk_limit_mb
+
+    # ---- run/stop choice (survives restarts) -----------------------------
+
+    def _read_stopped(self):
+        try:
+            data = json.loads(self._state_file.read_text())
+            return set(x for x in data.get("stopped", []) if isinstance(x, str))
+        except (OSError, ValueError, AttributeError):
+            return set()
+
+    def _write_stopped(self):
+        try:
+            tmp = self._state_file.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"stopped": sorted(self._stopped)}))
+            os.replace(tmp, self._state_file)
+        except OSError:
+            log.warning("could not save %s", self._state_file)
+
+    def _set_stopped(self, model_id, stopped):
+        changed = (model_id in self._stopped) != stopped
+        if stopped:
+            self._stopped.add(model_id)
+        else:
+            self._stopped.discard(model_id)
+        if changed:
+            self._write_stopped()
 
     # ---- queries ---------------------------------------------------------
 
@@ -140,10 +190,24 @@ class ModelManager:
             "download_mb": spec.download_mb, "state": state,
             "progress": int(progress), "disk_mb": disk_mb,
             "error": error if state == ERROR else None,
+            "engine": spec.engine, "commercial": spec.commercial, "measured": dict(spec.measured),
+            "memory_mb": entry.memory_mb if state == READY else 0,
         }
 
     def describe_all(self):
         return [self.describe(i) for i in self._entries]
+
+    def files_present(self, model_id):
+        return self._entry(model_id).backend.installed()
+
+    def disk(self):
+        used = 0
+        for entry in self._entries.values():
+            try:
+                used += entry.backend.disk_bytes()
+            except OSError:
+                pass
+        return {"used_mb": round(used / (1024 * 1024)), "limit_mb": self.disk_limit_mb}
 
     # ---- lifecycle -------------------------------------------------------
 
@@ -160,7 +224,7 @@ class ModelManager:
                 self.install(entry.spec.id)
                 continue
             with self._mu:
-                if self._state(entry) != INSTALLED:
+                if self._state(entry) != INSTALLED or entry.spec.id in self._stopped:
                     continue
                 entry.state, entry.error = LOADING, None
             self._spawn(entry, download=False)
@@ -173,11 +237,35 @@ class ModelManager:
             if state in (DOWNLOADING, LOADING, READY):
                 return state
             download = not entry.backend.installed()
+        if download and self.disk()["used_mb"] + entry.spec.download_mb > self.disk_limit_mb:
+            raise DiskLimit(model_id)
+        self._set_stopped(model_id, False)
+        with self._mu:
+            state = self._state(entry)
+            if state in (DOWNLOADING, LOADING, READY):
+                return state
             entry.state = DOWNLOADING if download else LOADING
             entry.progress, entry.error = 0, None
             state = entry.state
         self._spawn(entry, download)
         return state
+
+    def stop(self, model_id):
+        """Unloads a running model (files stay); it stays stopped after restarts."""
+        entry = self._entry(model_id)
+        with self._mu:
+            state = self._state(entry)
+            if state in (DOWNLOADING, LOADING):
+                raise ModelBusy(model_id)
+            self._set_stopped(model_id, True)
+            if state != READY:
+                return state
+            entry.state = LOADING   # no new jobs while it unloads
+        with entry.job_lock:        # a running synthesis finishes first
+            entry.backend.unload()
+        with self._mu:
+            entry.state, entry.memory_mb = None, 0
+            return self._state(entry)
 
     def remove(self, model_id):
         entry = self._entry(model_id)
@@ -190,7 +278,8 @@ class ModelManager:
             entry.backend.delete_files()
         finally:
             with self._mu:
-                entry.state, entry.progress, entry.error = None, 0, None
+                entry.state, entry.progress, entry.error, entry.memory_mb = None, 0, None, 0
+            self._set_stopped(model_id, False)
         return self.state(model_id)
 
     def _spawn(self, entry, download):
@@ -211,9 +300,12 @@ class ModelManager:
                     entry.state, entry.progress = LOADING, 100
             log.info("%s: loading", spec_id)
             started = time.monotonic()
+            before = sysinfo.rss_mb()
             entry.backend.load()
             with self._mu:
                 entry.state = READY
+                # Approximate: other models loading at the same time count too.
+                entry.memory_mb = max(0, sysinfo.rss_mb() - before)
             log.info("%s: ready in %.1f s", spec_id, time.monotonic() - started)
         except Exception as e:  # noqa: BLE001 - any failure becomes the "error" state
             log.exception("%s: install/load failed", spec_id)

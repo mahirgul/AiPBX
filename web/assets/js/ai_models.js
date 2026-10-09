@@ -50,14 +50,18 @@
 
         const card = document.getElementById('aim-models-card');
         card.style.display = rt.state === 'installed' ? '' : 'none';
+        const disk = s.disk;
+        document.getElementById('aim-disk').textContent = disk ? fmt(T.disk_used, disk.used_mb, disk.limit_mb) : '';
         const models = s.models || [];
         let html = '';
         if (rt.state === 'installed' && svc && !models.length) html = '<p class="u-muted">' + esc(T.no_models) + '</p>';
         if (models.length) {
             html += '<div class="table-responsive"><table class="table"><tbody>';
             models.forEach(m => {
-                const stCls = { ready: 'badge-success', installed: 'badge-info', downloading: 'badge-info', loading: 'badge-info', error: 'badge-danger' }[m.state] || 'badge-secondary';
-                let st = badge(stCls, (T['st_' + m.state] || m.state) + (m.state === 'downloading' && m.progress ? ' ' + m.progress + '%' : ''));
+                const stCls = { ready: 'badge-success', installed: 'badge-secondary', downloading: 'badge-info', loading: 'badge-info', error: 'badge-danger' }[m.state] || 'badge-secondary';
+                const stText = m.state === 'installed' ? T.st_stopped : (T['st_' + m.state] || m.state);
+                let st = badge(stCls, stText + (m.state === 'downloading' && m.progress ? ' ' + m.progress + '%' : ''));
+                if (m.state === 'ready' && m.memory_mb) st += '<div class="u-muted u-fs-11">' + esc(fmt(T.memory, m.memory_mb)) + '</div>';
                 if (m.state === 'error' && m.error) st += '<div class="u-danger u-fs-11">' + esc(m.error) + '</div>';
                 let actions = '';
                 if (m.state === 'absent' || m.state === 'error') {
@@ -67,6 +71,10 @@
                 }
                 if (m.state === 'ready') {
                     actions += '<button type="button" class="btn btn-secondary btn-sm" data-act="benchmark" data-id="' + esc(m.id) + '"><i class="fas fa-gauge-high"></i> ' + esc(T.btn_benchmark) + '</button> ';
+                    actions += '<button type="button" class="btn btn-secondary btn-sm" data-act="stop" data-id="' + esc(m.id) + '"><i class="fas fa-stop"></i> ' + esc(T.btn_stop) + '</button> ';
+                }
+                if (m.state === 'installed') {
+                    actions += '<button type="button" class="btn btn-primary btn-sm" data-act="run" data-id="' + esc(m.id) + '"><i class="fas fa-play"></i> ' + esc(T.btn_run) + '</button> ';
                 }
                 if (m.state === 'ready' || m.state === 'installed' || m.state === 'error') {
                     actions += '<button type="button" class="btn btn-danger btn-sm" data-act="remove" data-id="' + esc(m.id) + '"><i class="fas fa-trash-alt"></i> ' + esc(T.btn_remove) + '</button>';
@@ -75,13 +83,17 @@
                     + '<div class="u-muted u-fs-11">' + esc(T['kind_' + m.kind] || m.kind) + ' · ' + esc((m.languages || []).join(', ')) + ' · '
                     + esc(T.license) + ': <a href="' + esc(m.license_url) + '" target="_blank" rel="noopener">' + esc(m.license) + '</a>'
                     + (m.homepage ? ' · <a href="' + esc(m.homepage) + '" target="_blank" rel="noopener">' + esc(T.homepage) + '</a>' : '')
-                    + (m.disk_mb ? ' · ' + esc(m.disk_mb) + ' MB' : '') + '</div></td>'
+                    + (m.disk_mb ? ' · ' + esc(m.disk_mb) + ' MB' : '') + '</div>'
+                    + (m.measured && m.measured.realtime_factor ? '<div class="u-muted u-fs-11"><i class="fas fa-gauge-high"></i> ' + esc(fmt(T.measured, m.measured.realtime_factor, m.measured.memory_mb || '?')) + '</div>' : '')
+                    + (m.commercial === false ? '<div class="u-danger u-fs-11"><i class="fas fa-triangle-exclamation"></i> ' + esc(T.noncommercial) + '</div>' : '')
+                    + '</td>'
                     + '<td>' + st + '</td>'
                     + '<td style="text-align: right;">' + actions + (bench[m.id] ? '<div class="u-fs-12 u-mt-6">' + bench[m.id] + '</div>' : '') + '</td></tr>';
             });
             html += '</tbody></table></div>';
         }
         document.getElementById('aim-models').innerHTML = html;
+        fillTry(models.filter(m => m.kind === 'tts' && m.state === 'ready'));
 
         // The runtime setup starts in its own unit and writes its state a moment
         // later; a model download may also take a moment to show up.
@@ -90,6 +102,43 @@
         clearTimeout(timer);
         if (moving) timer = setTimeout(refresh, 3000);
     }
+
+    function fillTry(voices) {
+        const card = document.getElementById('aim-try-card');
+        const sel = document.getElementById('aim-try-model');
+        card.style.display = voices.length ? '' : 'none';
+        const keep = sel.value;
+        const ids = voices.map(v => v.id).join(',');
+        if (sel.dataset.ids === ids) return;
+        sel.dataset.ids = ids;
+        sel.innerHTML = voices.map(v => '<option value="' + esc(v.id) + '">' + esc(v.title) + ' (' + esc((v.languages || []).join(', ')) + ')</option>').join('');
+        if (ids.split(',').includes(keep)) sel.value = keep;
+    }
+
+    document.getElementById('aim-try-go').addEventListener('click', () => {
+        const btn = document.getElementById('aim-try-go');
+        const sel = document.getElementById('aim-try-model');
+        const text = document.getElementById('aim-try-text').value.trim();
+        if (!sel.value || !text) return;
+        btn.disabled = true;
+        const title = sel.selectedOptions[0].text;
+        const body = new URLSearchParams({ action: 'try', id: sel.value, text: text, speed: document.getElementById('aim-try-speed').value, csrf_token: window.CSRF_TOKEN || '' });
+        fetch('/api/ai_models.php', { method: 'POST', body: body }).then(r => {
+            const ms = r.headers.get('X-Synthesis-Ms');
+            if ((r.headers.get('Content-Type') || '').startsWith('audio/')) return r.blob().then(b => ({ b: b, ms: ms }));
+            return r.json().then(d => { throw new Error((d && d.error) || T.msg_try_error); });
+        }).then(({ b, ms }) => {
+            const url = URL.createObjectURL(b);
+            const row = document.createElement('div');
+            row.className = 'u-flex-gap u-mt-6';
+            row.style.alignItems = 'center';
+            row.innerHTML = '<audio controls src="' + url + '" style="height: 32px;"></audio><span class="u-fs-12">' + esc(fmt(T.try_result, title, ms)) + '</span>';
+            const box = document.getElementById('aim-try-results');
+            box.prepend(row);
+            row.querySelector('audio').play().catch(() => {});
+            while (box.children.length > 6) box.lastChild.remove();
+        }).catch(e => toast(e.message, 'error')).finally(() => { btn.disabled = false; });
+    });
 
     function refresh() {
         fetch('/api/ai_models.php?action=status', { cache: 'no-store' }).then(r => r.json()).then(d => { if (d && d.success) render(d); }).catch(() => { timer = setTimeout(refresh, 5000); });
@@ -115,6 +164,9 @@
             if (!lic || !lic.checked) { toast(T.need_license, 'error'); return; }
             btn.disabled = true;
             post('model_install', { id: id, accept_license: 1 }).then(done);
+        } else if (btn.dataset.act === 'run' || btn.dataset.act === 'stop') {
+            btn.disabled = true;
+            post('model_' + btn.dataset.act, { id: id }).then(done);
         } else if (btn.dataset.act === 'remove') {
             if (!confirm(T.confirm_model_remove)) return;
             btn.disabled = true;
