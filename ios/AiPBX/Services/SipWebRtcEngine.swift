@@ -282,9 +282,20 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
                 self.delegate?.engineDidReceiveIncomingCall(callerName: name, callerNumber: number)
                 self.delegate?.engineDidUpdateCallStatus(.ringingIncoming)
             }
-            let callUUID = UUID()
-            CallKitManager.shared.reportIncomingCall(uuid: callUUID, callerName: name, callerNumber: number)
             AppLogManager.shared.info("SipEngine", "Incoming call: \(name) (\(number))")
+            switch CallKitManager.shared.handleIncomingInvite(callerName: name, callerNumber: number) {
+            case .ring:
+                break
+            case .answer:
+                // Answered on the CallKit screen while the INVITE was on its way.
+                answerCall()
+            case .reject:
+                evaluateJs("terminateCall();")
+                DispatchQueue.main.async {
+                    self.callStatus = .idle
+                    self.delegate?.engineDidUpdateCallStatus(.idle)
+                }
+            }
 
         case "onRemoteAudioPlaying":
             AppLogManager.shared.info("SipEngine", "Remote audio playback confirmed active")

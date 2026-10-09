@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
+require_once __DIR__ . '/../services/IvrCallFlowService.php';
 
 use PBX\Destinations\DestinationRegistry;
 
@@ -22,12 +23,23 @@ class IvrController extends BaseController
         $modules = DestinationRegistry::getModuleList();
         $announcements = IvrRepository::activeAnnouncements();
 
+        // Call flow diagram per IVR (#16), drawn on the server like the key lists.
+        $flowData = IvrCallFlowService::loadData();
+        $labeler = IvrCallFlowService::registryLabeler();
+        $call_flows = [];
+        foreach ($ivrs as $ivr) {
+            $call_flows[$ivr['id']] = IvrCallFlowService::render(
+                IvrCallFlowService::build('ivr', (string) $ivr['id'], $flowData, $labeler)
+            );
+        }
+
         $page_title = t('ivr.title');
         static::renderPage('ivrs/index', [
             'ivrs' => $ivrs,
             'entries_by_ivr' => $entries_by_ivr,
             'modules' => $modules,
             'announcements' => $announcements,
+            'call_flows' => $call_flows,
         ], ['title' => $page_title] + $notices);
     }
 }

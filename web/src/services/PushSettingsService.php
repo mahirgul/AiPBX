@@ -48,6 +48,43 @@ class PushSettingsService
             $serviceAccount = $current['push_fcm_service_account'] ?? '';
         }
 
+        // Apple Push Notification service (iOS app). The .p8 key, like the
+        // service account, is kept when the field is left empty.
+        $apnsEnabled = (string)($post['push_apns_enabled'] ?? '0') === '1' ? '1' : '0';
+        $apnsKeyId = strtoupper(trim($post['push_apns_key_id'] ?? ''));
+        $apnsTeamId = strtoupper(trim($post['push_apns_team_id'] ?? ''));
+        $apnsBundleId = trim($post['push_apns_bundle_id'] ?? '') ?: 'com.mhrgl.AiPBX';
+        $apnsEnvironment = ($post['push_apns_environment'] ?? '') === 'sandbox' ? 'sandbox' : 'production';
+        $apnsKeyInput = trim($post['push_apns_key'] ?? '');
+        if ($apnsKeyInput !== '') {
+            $pkey = @openssl_pkey_get_private($apnsKeyInput);
+            $details = $pkey ? openssl_pkey_get_details($pkey) : false;
+            if (!$details || ($details['type'] ?? null) !== OPENSSL_KEYTYPE_EC) {
+                return [
+                    'success' => false,
+                    'error' => t('srv_push.err_apns_key')
+                ];
+            }
+            $apnsKey = $apnsKeyInput;
+        } else {
+            $apnsKey = $current['push_apns_key'] ?? '';
+        }
+
+        if ($enabled === '1' && $apnsEnabled === '1') {
+            if (!preg_match('/^[A-Z0-9]{10}$/', $apnsKeyId) || !preg_match('/^[A-Z0-9]{10}$/', $apnsTeamId)) {
+                return [
+                    'success' => false,
+                    'error' => t('srv_push.err_apns_ids')
+                ];
+            }
+            if ($apnsKey === '') {
+                return [
+                    'success' => false,
+                    'error' => t('srv_push.err_apns_key')
+                ];
+            }
+        }
+
         if ($enabled === '1' && $provider === 'fcm') {
             if (empty($projectId)) {
                 return [
@@ -72,6 +109,12 @@ class PushSettingsService
             'push_fcm_api_key' => $apiKey,
             'push_fcm_sender_id' => $senderId,
             'push_wait_seconds' => (string)$waitSeconds,
+            'push_apns_enabled' => $apnsEnabled,
+            'push_apns_key_id' => $apnsKeyId,
+            'push_apns_team_id' => $apnsTeamId,
+            'push_apns_bundle_id' => $apnsBundleId,
+            'push_apns_key' => $apnsKey,
+            'push_apns_environment' => $apnsEnvironment,
         ];
 
         $changed = false;

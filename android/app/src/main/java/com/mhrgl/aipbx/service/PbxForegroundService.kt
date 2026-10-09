@@ -787,28 +787,10 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     /**
      * The server revoked the session (password reset, account inactive, not renewed for 30 days).
      * The refresh used to fail and be logged every time, and while the app looked "signed in"
-     * the chat/API did not work. The session is closed and the user is told.
+     * the chat/API did not work. The session is closed and the user is told (see SessionExpiry).
      */
     private fun handleSessionExpired(reason: String?) {
-        if (!prefs.isLoggedIn) return
-        Log.w(TAG, "Session rejected by server, signing out: $reason")
-        ChatWebSocketManager.instance.disconnect()
-        prefs.clearAuth()
-
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val intent = Intent(this, com.mhrgl.aipbx.ui.LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pi = PendingIntent.getActivity(this, 9001, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID_CHAT)
-            .setContentTitle(L10n.str(R.string.session_expired_title))
-            .setContentText(L10n.str(R.string.session_expired_text))
-            .setSmallIcon(R.drawable.ic_chat)
-            .setContentIntent(pi)
-            .setAutoCancel(true)
-            .build()
-        nm.notify(9001, notification)
-
+        SessionExpiry.signOut(this, reason)
         stopSelf()
     }
 

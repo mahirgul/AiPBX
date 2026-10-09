@@ -50,6 +50,7 @@ return [
             ['href' => '/ivrs', 'icon' => 'fas fa-microphone-alt', 'label' => 'sidebar.item_ivrs', 'show' => $can('ivrs'), 'pages' => ['ivrs.php']],
             ['href' => '/extensions', 'icon' => 'fas fa-phone-square-alt', 'label' => 'sidebar.item_extensions', 'show' => $can('extensions'), 'pages' => ['extensions.php', 'users.php']],
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
+            ['href' => '/network-services', 'icon' => 'fas fa-ethernet', 'label' => 'sidebar.item_network_services', 'show' => $isAdmin, 'pages' => ['network_services.php']],
             ['href' => '/ring-groups', 'icon' => 'fas fa-users', 'label' => ['sidebar.item_ring_groups', 'Çalma Grupları'], 'show' => $can('ring_groups'), 'pages' => ['ring_groups.php'], 'uri' => '/ring-groups'],
             ['href' => '/boss-secretary', 'icon' => 'fas fa-user-tie', 'label' => ['sidebar.item_boss_secretary', 'Şef - Sekreter'], 'show' => $can('boss_secretary'), 'pages' => ['boss_secretary.php'], 'uri' => '/boss-secretary'],
             ['href' => '/conferences', 'icon' => 'fas fa-users-rectangle', 'label' => ['sidebar.item_conferences', 'Konferans Odaları'], 'show' => $can('conferences'), 'pages' => ['conferences.php'], 'uri' => '/conferences'],
@@ -92,6 +93,7 @@ return [
         'items' => [
             ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => ['sidebar.item_google_integration', 'Google ile Giriş'], 'show' => $isAdmin, 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],
             ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => ['sidebar.item_ms_teams', 'Teams'], 'show' => $can('ms_teams'), 'pages' => ['ms_teams.php']],
+            ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets'), 'pages' => ['web_widgets.php']],
         ],
     ],
     [

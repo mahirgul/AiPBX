@@ -60,6 +60,7 @@ class RoleRepository extends BaseRepository
             'certificates'       => ['title' => 'Certificates', 'group' => 'Security', 'actions' => self::VAE, 'admin_only' => true],
             'google_integration' => ['title' => 'Google Sign-in', 'group' => 'Integrations', 'actions' => self::VAE, 'admin_only' => true],
             'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Integrations', 'actions' => $all],
+            'web_widgets'        => ['title' => 'Web Widgets', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all],
             'fax_inbox'          => ['title' => 'Incoming Faxes', 'group' => 'Fax System', 'actions' => $all],
             'fax_send'           => ['title' => 'Send Fax', 'group' => 'Fax System', 'actions' => self::VAE],

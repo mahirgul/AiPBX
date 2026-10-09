@@ -128,3 +128,31 @@ function openIvrEntriesModal(ivrId, title) {
 function closeIvrEntriesModal() {
     UIHelper.closeOverlayModal('ivrEntriesModal');
 }
+
+/* Call flow diagram (#16): the trees are printed on the server; show one. */
+function openIvrFlowModal(ivrId, title) {
+    document.getElementById('flow_title_label').innerText = title;
+    document.querySelectorAll('.ivr-flow-wrap').forEach(function (el) {
+        el.style.display = 'none';
+    });
+    const wrap = document.getElementById('flow_' + ivrId);
+    if (wrap) { wrap.style.display = 'block'; }
+
+    const editBtn = document.getElementById('flow_edit_keys_btn');
+    if (editBtn) {
+        editBtn.onclick = function () {
+            closeIvrFlowModal();
+            openIvrEntriesModal(ivrId, title);
+        };
+    }
+
+    const modal = document.getElementById('ivrFlowModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+
+function closeIvrFlowModal() {
+    UIHelper.closeOverlayModal('ivrFlowModal');
+}

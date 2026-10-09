@@ -5,6 +5,49 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.5
+
+- **Website call widget** (*Integrations → Web widgets*, admin only): a
+  "Call us" button for any website. Visitors call the company from the
+  browser over WebRTC, without a phone or an app, or leave a number for a
+  call-back. Each widget works like a trunk with its own number as the DID,
+  so routing, queues, time conditions and reports apply; the destination is
+  fixed by the administrator. Calls need a one-time token, and allowed
+  websites and rate limits are set per widget. The site needs one line of
+  code; a WordPress plugin is in `integrations/wordpress`. See
+  [Website call widget](docs/web-widgets.md).
+
+## 1.7.4
+
+- **DHCP and TFTP for desk phones** (*PBX → Network services*, roadmap 10):
+  *TFTP only* (the page lists the options 66/160/150/42 to set on your own
+  DHCP server) or *DHCP for a phone network* on one interface or VLAN, with
+  the provisioning URL handed to the phones (option 66/160). Off by default;
+  a check for other DHCP servers runs before DHCP is switched on. Leases are
+  listed, unknown phones among them appear as waiting phones on *PBX →
+  Phones*. TFTP answers only the provisioning *allowed networks* and never
+  serves the per-phone configuration. See
+  [Network services](docs/network-services.md). The update installs
+  `dnsmasq-base` (the service stays off until it is switched on).
+
+## 1.7.3
+
+- **iOS push notifications (APNs):** iPhones now get incoming calls and chat
+  messages while the app is closed, like Android with FCM. A call arrives as
+  a VoIP push and rings on the CallKit screen; chat messages can be answered
+  from the lock screen. Set it up on *Admin → Push* (new APNs section: the
+  Apple `.p8` key, Key ID, Team ID, bundle ID, sandbox or production). Android
+  (FCM) and iOS (APNs) can be on at the same time. The iOS app has to be
+  signed with a push-capable profile; see `ios/README.md`.
+
+## 1.7.2
+
+- **Android app 1.0.56: empty call history and settings after an update**
+  (#17). When the server no longer accepts the saved sign-in (expired after a
+  long time, password reset, or a server change), the app looked signed in
+  but every list stayed empty until it was reinstalled. It now signs out and
+  opens the sign-in screen.
+
 ## 1.7.1
 
 - **Phone provisioning: Snom, Cisco SPA and Poly** (#27) next to Yealink,

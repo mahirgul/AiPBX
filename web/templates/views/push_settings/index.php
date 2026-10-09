@@ -1,5 +1,7 @@
 <?php
 $has_service_account = !empty($settings['push_fcm_service_account']);
+$has_apns_key = !empty($settings['push_apns_key']);
+$apns_on = ($settings['push_apns_enabled'] ?? '0') === '1';
 ?>
 
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/push_settings.css'); ?>">
@@ -123,6 +125,63 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
             </div>
         </div>
 
+        <div style="background: var(--bg-surface-secondary, rgba(0,0,0,0.02)); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color, #e0e0e0);">
+            <h4 style="margin-top: 0; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                <i class="fab fa-apple"></i> <?php echo t('push.apns_title'); ?>
+            </h4>
+
+            <div class="form-group u-mb-16">
+                <label class="form-label u-fw-600"><?php echo t('push.apns_enabled'); ?></label>
+                <select name="push_apns_enabled" class="form-control" id="pushApnsEnabledSelect" onchange="togglePushFields()">
+                    <option value="0" <?php echo $apns_on ? '' : 'selected'; ?>><?php echo t('push.apns_off'); ?></option>
+                    <option value="1" <?php echo $apns_on ? 'selected' : ''; ?>><?php echo t('push.apns_on'); ?></option>
+                </select>
+                <small class="u-hint"><?php echo t('push.apns_hint'); ?></small>
+            </div>
+
+            <div id="apnsConfigSection" style="<?php echo $apns_on ? '' : 'display: none;'; ?>">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('push.apns_key_id'); ?> <span class="u-danger">*</span></label>
+                        <input type="text" name="push_apns_key_id" class="form-control" maxlength="10" value="<?php echo htmlspecialchars($settings['push_apns_key_id'] ?? ''); ?>" placeholder="ABC123DEFG">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('push.apns_team_id'); ?> <span class="u-danger">*</span></label>
+                        <input type="text" name="push_apns_team_id" class="form-control" maxlength="10" value="<?php echo htmlspecialchars($settings['push_apns_team_id'] ?? ''); ?>" placeholder="DEF123GHIJ">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('push.apns_bundle_id'); ?></label>
+                        <input type="text" name="push_apns_bundle_id" class="form-control" value="<?php echo htmlspecialchars($settings['push_apns_bundle_id'] ?? 'com.mhrgl.AiPBX'); ?>" placeholder="com.mhrgl.AiPBX">
+                        <small class="u-hint"><?php echo t('push.apns_bundle_hint'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('push.apns_environment'); ?></label>
+                        <select name="push_apns_environment" class="form-control">
+                            <option value="production" <?php echo (($settings['push_apns_environment'] ?? 'production') !== 'sandbox') ? 'selected' : ''; ?>><?php echo t('push.apns_env_production'); ?></option>
+                            <option value="sandbox" <?php echo (($settings['push_apns_environment'] ?? '') === 'sandbox') ? 'selected' : ''; ?>><?php echo t('push.apns_env_sandbox'); ?></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group u-mb-0">
+                    <label class="form-label u-flex-between">
+                        <span><?php echo t('push.apns_key'); ?> <span class="u-danger">*</span></span>
+                        <?php if ($has_apns_key): ?>
+                            <span class="badge" style="background: #28a745; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px;">
+                                <i class="fas fa-check-circle"></i> <?php echo t('push.apns_key_set'); ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="badge" style="background: #ffc107; color: #212529; font-size: 11px; padding: 4px 8px; border-radius: 4px;">
+                                <i class="fas fa-exclamation-circle"></i> <?php echo t('push.sa_not_set'); ?>
+                            </span>
+                        <?php endif; ?>
+                    </label>
+                    <textarea name="push_apns_key" class="form-control" rows="4" style="font-family: monospace; font-size: 12px;" placeholder="<?php echo htmlspecialchars($has_apns_key ? t('push.apns_key_ph_set') : t('push.apns_key_ph_new')); ?>"></textarea>
+                    <small class="u-hint"><?php echo t('push.apns_key_hint'); ?></small>
+                </div>
+            </div>
+        </div>
+
         <?php if (hasModulePermission('push_settings', 'edit')): ?>
         <div class="push-save-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
             <button type="submit" name="save_push_settings" class="btn btn-primary">
@@ -160,7 +219,7 @@ $has_service_account = !empty($settings['push_fcm_service_account']);
                             <option value="<?php echo htmlspecialchars($d['extension']); ?>">
                                 <?php echo t('my_phone.lbl_extension'); ?>: <?php echo htmlspecialchars($d['extension']); ?>
                                 <?php if (!empty($d['full_name'])) echo ' (' . htmlspecialchars($d['full_name']) . ')'; ?>
-                                - <?php echo htmlspecialchars($d['device_name'] ?: 'Android Cihaz'); ?>
+                                - <?php echo htmlspecialchars($d['device_name'] ?: (($d['platform'] ?? '') === 'ios' ? 'iPhone' : 'Android')); ?>
                                 [v<?php echo htmlspecialchars($d['app_version'] ?: '1.0'); ?>]
                             </option>
                         <?php endforeach; ?>

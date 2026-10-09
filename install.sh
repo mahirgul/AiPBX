@@ -330,6 +330,7 @@ PACKAGES=(
   openssl
   avahi-daemon
   avahi-utils
+  dnsmasq-base
 )
 
 # An upgrade only installs packages a newer release added: system package
@@ -375,10 +376,11 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 
 # Symlink helper binaries and dialplan scripts to /usr/local/bin.
 # web/bin must stay traversable (755, root-owned): Asterisk runs these scripts
-# as the asterisk user through the symlinks (feature codes, fax processing).
+# as the asterisk user through the symlinks (feature codes, web widget calls,
+# fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
+for script in feature_code_action.php widget_claim.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -955,6 +957,35 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local/sbin/aipbx-backup
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
+
+# DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+
+# PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
+# off until the page writes a configuration. aipbx-priv writes it into this
+# root-owned folder (a dnsmasq file can run commands as root, so the portal
+# must not be able to write it); TFTP serves only the uploads in
+# /var/lib/aipbx/tftp, never the per-phone configuration.
+install -d -o root -g root -m 0755 /var/lib/aipbx-netsvc
+install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
+cat > /etc/systemd/system/aipbx-dnsmasq.service << 'NETSVC'
+[Unit]
+Description=AiPBX DHCP/TFTP for desk phones (PBX -> Network services)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/aipbx-netsvc/dnsmasq.conf
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/var/lib/aipbx-netsvc/dnsmasq.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+NETSVC
+systemctl daemon-reload
+systemctl enable aipbx-dnsmasq.service >/dev/null 2>&1 || true
+systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
