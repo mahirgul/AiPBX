@@ -18,6 +18,12 @@ class PushSettingsRepository extends BaseRepository
             'push_fcm_api_key' => '',
             'push_fcm_sender_id' => '',
             'push_wait_seconds' => '8',
+            'push_apns_enabled' => '0',
+            'push_apns_key_id' => '',
+            'push_apns_team_id' => '',
+            'push_apns_bundle_id' => 'com.mhrgl.AiPBX',
+            'push_apns_key' => '',
+            'push_apns_environment' => 'production',
         ];
 
         $placeholders = implode(',', array_fill(0, count($keys), '?'));

@@ -513,4 +513,81 @@ public final class ApiClient {
         }
         throw ApiError.custom(L("Could not delete the message (HTTP %@)", "\(status)"))
     }
+
+    // MARK: - Session refresh & push registration
+
+    /// Exchanges a stored bearer token for a fresh sign-in package (new token,
+    /// SIP and TURN credentials). Used to restore the session at launch.
+    public func refreshSession(baseUrl: String, token: String) async throws -> LoginResponse {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/refresh.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        guard (200...299).contains(status) else {
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            throw ApiError.serverError(statusCode: status, message: (json?["error"] as? String) ?? "")
+        }
+        let res = try JSONDecoder().decode(LoginResponse.self, from: data)
+        if !res.success {
+            throw ApiError.custom(res.error ?? L("Sign-in failed"))
+        }
+        return res
+    }
+
+    /// Registers this iPhone for push: the APNs token (chat, test) and the
+    /// PushKit VoIP token (incoming calls). Same endpoint as Android's FCM token.
+    public func registerPushDevice(baseUrl: String, token: String, deviceId: String, apnsToken: String?,
+                                   voipToken: String?, deviceName: String, appVersion: String) async throws {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/fcm_token.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+
+        var body: [String: Any] = [
+            "device_id": deviceId,
+            "device_name": deviceName,
+            "platform": "ios",
+            "push_type": "apns",
+            "app_version": appVersion,
+            "fcm_token": apnsToken ?? ""
+        ]
+        if let voip = voipToken {
+            body["voip_token"] = voip
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (_, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        guard (200...299).contains(status) else {
+            throw ApiError.serverError(statusCode: status, message: "")
+        }
+    }
+
+    /// Stops pushes to this iPhone (sign-out).
+    public func unregisterPushDevice(baseUrl: String, token: String, deviceId: String) async throws {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/fcm_token.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["device_id": deviceId])
+
+        _ = try await session.data(for: request)
+    }
 }

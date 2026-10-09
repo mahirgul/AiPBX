@@ -65,7 +65,7 @@ for name, _ in variant_groups:
     out.append(f"\t\t{bid} /* {name} in Resources */ = {{isa = PBXBuildFile; fileRef = {vid} /* {name} */; }};")
 
 # Framework build files
-frameworks = ["WebKit.framework", "AVFoundation.framework", "CallKit.framework", "UserNotifications.framework"]
+frameworks = ["WebKit.framework", "AVFoundation.framework", "CallKit.framework", "UserNotifications.framework", "PushKit.framework"]
 for fw in frameworks:
     bid = gen_id("buildfile_fw_" + fw)
     fid = gen_id("fileref_fw_" + fw)
@@ -407,6 +407,7 @@ out.append("\t\t\t\tCURRENT_PROJECT_VERSION = 1;")
 out.append("\t\t\t\tENABLE_PREVIEWS = YES;")
 out.append("\t\t\t\tGENERATE_INFOPLIST_FILE = NO;")
 out.append("\t\t\t\tINFOPLIST_FILE = AiPBX/Resources/Info.plist;")
+out.append("\t\t\t\tCODE_SIGN_ENTITLEMENTS = AiPBX/Resources/AiPBX.entitlements;")
 out.append("\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (")
 out.append("\t\t\t\t\t\"$(inherited)\",")
 out.append("\t\t\t\t\t\"@executable_path/Frameworks\",")
@@ -432,6 +433,7 @@ out.append("\t\t\t\tCURRENT_PROJECT_VERSION = 1;")
 out.append("\t\t\t\tENABLE_PREVIEWS = YES;")
 out.append("\t\t\t\tGENERATE_INFOPLIST_FILE = NO;")
 out.append("\t\t\t\tINFOPLIST_FILE = AiPBX/Resources/Info.plist;")
+out.append("\t\t\t\tCODE_SIGN_ENTITLEMENTS = AiPBX/Resources/AiPBX.entitlements;")
 out.append("\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (")
 out.append("\t\t\t\t\t\"$(inherited)\",")
 out.append("\t\t\t\t\t\"@executable_path/Frameworks\",")
