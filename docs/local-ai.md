@@ -98,6 +98,28 @@ the catalogue has only English ones so far.
 - **Numbers**: write amounts out for the best result. espeak-ng reads "$1,234.50" as
   "dollar one thousand two hundred thirty four point five zero".
 
+### Speech to text (Vosk)
+
+| Model | Language | Size | Licence | Our measurement |
+|-------|----------|------|---------|-----------------|
+| Vosk small | Turkish | 36 MB | Apache-2.0 | 5× real time, ~120–180 MB; about 1 word in 4 wrong on 8 kHz telephone audio |
+| Vosk small | German | 45 MB | Apache-2.0 | |
+| Vosk small | English (US) | 40 MB | Apache-2.0 | |
+
+The zip files come from alphacephei.com, pinned by SHA-256, and are unpacked into the model's folder
+(paths leaving it are refused). `POST /v1/stt?model=<id>` takes a WAV file (8–48 kHz, up to 60 s);
+the page's *Try: speech to text* panel records from the microphone (up to 15 s) or takes a WAV file.
+
+### Adding voices from the Piper voice list
+
+*Add a voice* lists every voice of [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices)
+(about 180 voices in 58 languages), filtered by language and quality. Adding one pins the list's
+current revision, takes the model's SHA-256 from Hugging Face and checks the config against the
+list's MD5. The licence line of the voice's model card is shown; voices under a non-commercial
+licence, or fine-tuned from another voice, are marked as not cleared for commercial use. Added voices
+are kept in `/var/lib/aipbx-ai/models/<id>/manifest.json` and come back after a restart; *Remove*
+deletes them completely.
+
 ## Steps
 
 1. **Install the runtime** (once): creates `/opt/aipbx-ai/venv` and starts the `aipbx-ai`
