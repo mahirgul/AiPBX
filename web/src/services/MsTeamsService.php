@@ -142,7 +142,6 @@ class MsTeamsService
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($curlError) {
             return ['success' => false, 'error' => t('ms_teams.msg_err_curl') . $curlError];
