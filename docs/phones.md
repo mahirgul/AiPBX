@@ -57,6 +57,8 @@ Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, 
 phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision/` as option 66.
 Phones inside these networks then ask for their MAC-based file directly; a known MAC gets its
 configuration, an unknown one appears under *Waiting phones*.
+AiPBX can also be that DHCP server for a phone network or VLAN, or serve TFTP next to your own
+DHCP server: see [Network services](network-services.md).
 
 ## What is written to the phone
 

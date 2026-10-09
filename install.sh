@@ -330,6 +330,7 @@ PACKAGES=(
   openssl
   avahi-daemon
   avahi-utils
+  dnsmasq-base
 )
 
 # An upgrade only installs packages a newer release added: system package
@@ -955,6 +956,35 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local/sbin/aipbx-backup
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
+
+# DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+
+# PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
+# off until the page writes a configuration. aipbx-priv writes it into this
+# root-owned folder (a dnsmasq file can run commands as root, so the portal
+# must not be able to write it); TFTP serves only the uploads in
+# /var/lib/aipbx/tftp, never the per-phone configuration.
+install -d -o root -g root -m 0755 /var/lib/aipbx-netsvc
+install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
+cat > /etc/systemd/system/aipbx-dnsmasq.service << 'NETSVC'
+[Unit]
+Description=AiPBX DHCP/TFTP for desk phones (PBX -> Network services)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/aipbx-netsvc/dnsmasq.conf
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/var/lib/aipbx-netsvc/dnsmasq.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+NETSVC
+systemctl daemon-reload
+systemctl enable aipbx-dnsmasq.service >/dev/null 2>&1 || true
+systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
