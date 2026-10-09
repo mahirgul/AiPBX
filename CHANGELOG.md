@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.4
+
+- **DHCP and TFTP for desk phones** (*PBX → Network services*, roadmap 10):
+  *TFTP only* (the page lists the options 66/160/150/42 to set on your own
+  DHCP server) or *DHCP for a phone network* on one interface or VLAN, with
+  the provisioning URL handed to the phones (option 66/160). Off by default;
+  a check for other DHCP servers runs before DHCP is switched on. Leases are
+  listed, unknown phones among them appear as waiting phones on *PBX →
+  Phones*. TFTP answers only the provisioning *allowed networks* and never
+  serves the per-phone configuration. See
+  [Network services](docs/network-services.md). The update installs
+  `dnsmasq-base` (the service stays off until it is switched on).
+
 ## 1.7.3
 
 - **iOS push notifications (APNs):** iPhones now get incoming calls and chat
