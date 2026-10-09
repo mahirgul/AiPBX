@@ -232,6 +232,31 @@ class LocalAiService
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
     }
 
+    /**
+     * Every Piper voice of the public voice list (cached by the service for a day).
+     * @return list<array<string, mixed>>
+     */
+    public static function piperCatalog(): array
+    {
+        $d = self::callJson('GET', '/v1/catalog/piper', null, 30);
+        return array_values(array_filter((array) ($d['voices'] ?? []), 'is_array'));
+    }
+
+    /** Adds a Piper voice from the list (licence accepted) and starts its download. */
+    public static function addPiperVoice(string $key, bool $acceptLicense): string
+    {
+        if (!preg_match('/^[A-Za-z]{2,3}_[A-Za-z]{2}-[A-Za-z0-9_]+-(x_low|low|medium|high)$/', $key)) {
+            throw new LocalAiException(t('ai_models.err_model'));
+        }
+        if (!$acceptLicense) {
+            throw new LocalAiException(t('ai_models.err_license'));
+        }
+        $d = self::callJson('POST', '/v1/models/add', ['engine' => 'piper', 'key' => $key, 'accept_license' => true], 60);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $key, 'Piper voice ' . $key . ' added (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
+        return (string) ($d['id'] ?? '');
+    }
+
     /** Loads a downloaded model into memory (it stays running after restarts). */
     public static function runModel(string $id): void
     {

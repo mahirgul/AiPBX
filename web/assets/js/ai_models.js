@@ -50,6 +50,7 @@
 
         const card = document.getElementById('aim-models-card');
         card.style.display = rt.state === 'installed' ? '' : 'none';
+        document.getElementById('aim-add-card').style.display = (rt.state === 'installed' && svc) ? '' : 'none';
         const disk = s.disk;
         document.getElementById('aim-disk').textContent = disk ? fmt(T.disk_used, disk.used_mb, disk.limit_mb) : '';
         const models = s.models || [];
@@ -139,6 +140,63 @@
             row.querySelector('audio').play().catch(() => {});
             while (box.children.length > 6) box.lastChild.remove();
         }).catch(e => toast(e.message, 'error')).finally(() => { btn.disabled = false; });
+    });
+
+    // ---- adding voices from the Piper voice list -------------------------
+    let catalog = null;
+
+    function renderCatalog() {
+        const list = document.getElementById('aim-add-list');
+        if (!catalog) return;
+        const lang = document.getElementById('aim-add-lang').value;
+        const q = document.getElementById('aim-add-quality').value;
+        const rows = catalog.filter(v => (!lang || v.language === lang) && (!q || v.quality === q));
+        if (!rows.length) { list.innerHTML = '<p class="u-muted">' + esc(T.add_none) + '</p>'; return; }
+        list.innerHTML = '<div class="table-responsive"><table class="table"><tbody>' + rows.map(v => {
+            const act = v.registered
+                ? '<span class="badge badge-secondary u-fs-11">' + esc(T.add_in_list) + '</span>'
+                : '<label class="u-check-label u-fs-12" style="display: block; margin-bottom: 6px;"><input type="checkbox" class="u-accent" data-lic="' + esc(v.key) + '"> '
+                  + fmt(esc(T.accept_license), '<a href="' + esc(v.card_url) + '" target="_blank" rel="noopener">' + esc(T.add_card) + '</a>') + '</label>'
+                  + '<button type="button" class="btn btn-primary btn-sm" data-add="' + esc(v.key) + '"><i class="fas fa-download"></i> ' + esc(T.add_btn) + ' (' + esc(v.size_mb) + ' MB)</button>';
+            return '<tr><td><div class="u-strong">' + esc(v.name) + ' <span class="u-muted u-fs-11">' + esc(v.quality) + '</span></div>'
+                + '<div class="u-muted u-fs-11">' + esc(v.language_name) + ' (' + esc(v.country) + ') · ' + esc(v.language)
+                + (v.speakers > 1 ? ' · ' + esc(fmt(T.add_speakers, v.speakers)) : '') + '</div></td>'
+                + '<td style="text-align: right;">' + act + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+
+    document.getElementById('aim-add-open').addEventListener('click', () => {
+        const body = document.getElementById('aim-add-body');
+        body.style.display = body.style.display === 'none' ? '' : 'none';
+        if (catalog || body.style.display === 'none') return;
+        document.getElementById('aim-add-list').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.add_loading);
+        fetch('/api/ai_models.php?action=piper_catalog', { cache: 'no-store' }).then(r => r.json()).then(d => {
+            if (!d.success) { document.getElementById('aim-add-list').innerHTML = '<span class="u-danger">' + esc(d.error) + '</span>'; return; }
+            catalog = d.voices;
+            const langs = {};
+            catalog.forEach(v => { langs[v.language] = v.language_name + ' (' + v.country + ')'; });
+            const sel = document.getElementById('aim-add-lang');
+            const pageLang = (document.documentElement.lang || 'en').slice(0, 2);
+            sel.innerHTML = '<option value="">' + esc(T.add_all_languages) + '</option>' + Object.keys(langs).sort((a, b) => langs[a].localeCompare(langs[b]))
+                .map(c => '<option value="' + esc(c) + '">' + esc(langs[c]) + '</option>').join('');
+            const guess = Object.keys(langs).find(c => c.startsWith(pageLang + '_'));
+            if (guess) sel.value = guess;
+            renderCatalog();
+        });
+    });
+    document.getElementById('aim-add-lang').addEventListener('change', renderCatalog);
+    document.getElementById('aim-add-quality').addEventListener('change', renderCatalog);
+    document.getElementById('aim-add-list').addEventListener('click', e => {
+        const btn = e.target.closest('button[data-add]');
+        if (!btn) return;
+        const key = btn.dataset.add;
+        const lic = document.querySelector('input[data-lic="' + CSS.escape(key) + '"]');
+        if (!lic || !lic.checked) { toast(T.need_license, 'error'); return; }
+        btn.disabled = true;
+        post('add_piper', { key: key, accept_license: 1 }).then(d => {
+            if (d && d.success) { const v = catalog.find(x => x.key === key); if (v) { v.registered = true; v.model_id = d.id; } renderCatalog(); }
+            done(d);
+        });
     });
 
     function refresh() {

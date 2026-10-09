@@ -9,6 +9,7 @@ foreach ([
     'bench_result', 'bench_live_ok', 'bench_live_slow', 'measuring', 'cpu', 'cores', 'ram', 'process', 'kind_tts', 'kind_embedding',
     'no_models', 'btn_run', 'btn_stop', 'st_stopped', 'memory', 'disk_used', 'measured', 'noncommercial',
     'try_title', 'try_play', 'try_none', 'try_result', 'msg_try_error', 'gender_female', 'gender_male',
+    'add_in_list', 'add_btn', 'add_card', 'add_speakers', 'add_loading', 'add_none', 'add_all_languages',
 ] as $k) {
     $texts[$k] = t('ai_models.' . $k);
 }
@@ -50,6 +51,26 @@ foreach ([
         <div class="u-muted u-fs-12" id="aim-disk"></div>
     </div>
     <div style="padding: 0 20px 20px;" id="aim-models"></div>
+</div>
+
+<div class="card" id="aim-add-card" style="display: none;">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-magnifying-glass u-primary"></i> <?php echo t('ai_models.add_title'); ?></div>
+        <button type="button" class="btn btn-secondary btn-sm" id="aim-add-open"><i class="fas fa-list"></i> <?php echo t('ai_models.add_open'); ?></button>
+    </div>
+    <div style="padding: 0 20px 20px;">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.add_help'); ?></p>
+        <div id="aim-add-body" style="display: none;">
+            <div class="u-flex-gap" style="flex-wrap: wrap;">
+                <select id="aim-add-lang" class="form-control" style="max-width: 260px;"></select>
+                <select id="aim-add-quality" class="form-control" style="max-width: 180px;">
+                    <option value=""><?php echo t('ai_models.add_all_qualities'); ?></option>
+                    <option value="x_low">x_low</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option>
+                </select>
+            </div>
+            <div id="aim-add-list" class="u-mt-10"></div>
+        </div>
+    </div>
 </div>
 
 <div class="card" id="aim-try-card" style="display: none;">

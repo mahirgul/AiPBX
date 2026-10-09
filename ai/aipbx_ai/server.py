@@ -17,6 +17,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import __version__, sysinfo
 from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
                      NotReady, ServiceBusy, UnknownModel, WrongKind)
+from .custom import CatalogError
+from .custom import model_id_for as catalog_model_id
 from .wav import wav_bytes
 
 log = logging.getLogger("aipbx_ai.server")
@@ -62,11 +64,12 @@ class AiServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, token, manager):
+    def __init__(self, address, token, manager, catalog=None):
         if not token:
             raise ValueError("empty token")
         self.token = token.encode() if isinstance(token, str) else bytes(token)
         self.manager = manager
+        self.catalog = catalog
         self.cpu = sysinfo.CpuMeter()
         super().__init__(address, Handler)
 
@@ -139,6 +142,10 @@ class Handler(BaseHTTPRequestHandler):
                                                   "disk": self.server.manager.disk()})
             if method == "POST" and path == "/v1/tts":
                 return self._tts(self._body())
+            if method == "GET" and path == "/v1/catalog/piper":
+                return self._piper_catalog()
+            if method == "POST" and path == "/v1/models/add":
+                return self._add_model(self._body())
             m = _MODEL_ACTION.match(path)
             if m and method == "POST":
                 return self._model_action(m.group(1), m.group(2), self._body())
@@ -178,6 +185,51 @@ class Handler(BaseHTTPRequestHandler):
             "ram": {"total_mb": total, "available_mb": available},
             "process": {"rss_mb": sysinfo.rss_mb(), "cpu_percent": self.server.cpu.percent()},
         }
+
+    def _known_files(self):
+        known = {}
+        for m in self.server.manager.describe_all():
+            for path in self.server.manager.source_files(m["id"]):
+                known[path] = m["id"]
+        return known
+
+    def _piper_catalog(self):
+        catalog = self.server.catalog
+        if catalog is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "not found")
+        try:
+            voices = catalog.piper_voices(self._known_files())
+        except CatalogError as e:
+            raise ApiError(HTTPStatus.BAD_GATEWAY, str(e)) from None
+        return self._json(HTTPStatus.OK, {"voices": voices})
+
+    def _add_model(self, body):
+        catalog, manager = self.server.catalog, self.server.manager
+        if catalog is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "not found")
+        if body.get("engine") != "piper":
+            raise ApiError(HTTPStatus.BAD_REQUEST, "engine must be piper")
+        if body.get("accept_license") is not True:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "the model license must be accepted (accept_license: true)")
+        key = body.get("key")
+        if isinstance(key, str) and catalog_model_id(key) in self._known_files().values():
+            raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
+        try:
+            spec = catalog.piper_spec(key)
+        except CatalogError as e:
+            raise ApiError(HTTPStatus.BAD_REQUEST if str(e) == "unknown voice" else HTTPStatus.BAD_GATEWAY, str(e)) from None
+        known = self._known_files()
+        if any(path in known for path in spec.source["files"]) or manager.has(spec.id):
+            raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
+        if manager.disk()["used_mb"] + spec.download_mb > manager.disk_limit_mb:
+            raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded")
+        catalog.save(spec)
+        manager.add(spec)
+        try:
+            state = manager.install(spec.id)
+        except DiskLimit:
+            raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded") from None
+        return self._json(HTTPStatus.ACCEPTED, {"id": spec.id, "state": state})
 
     def _model_action(self, model_id, action, body):
         manager = self.server.manager

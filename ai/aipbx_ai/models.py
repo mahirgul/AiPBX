@@ -61,6 +61,7 @@ class ModelSpec:
     note: str = ""              # licence or quality remark shown with the model
     gender: str = ""            # voice models: "female" / "male" / ""
     source: dict = field(default_factory=dict)   # backend-specific download details
+    custom: bool = False        # added by the administrator (custom.py), not in REGISTRY
 
 
 # Piper voices: rhasspy/piper-voices at a pinned revision. Licences differ per
@@ -165,6 +166,7 @@ class _Entry:
 class ModelManager:
     def __init__(self, specs, data_dir, backend_factory=None, disk_limit_mb=None):
         make = backend_factory or (lambda spec: spec.backend(spec, data_dir))
+        self._make = make
         self._mu = threading.Lock()
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
@@ -242,7 +244,7 @@ class ModelManager:
             "error": error if state == ERROR else None,
             "engine": spec.engine, "commercial": spec.commercial, "measured": dict(spec.measured),
             "memory_mb": entry.memory_mb if state == READY else 0,
-            "note": spec.note, "gender": spec.gender,
+            "note": spec.note, "gender": spec.gender, "custom": spec.custom,
         }
 
     def describe_all(self):
@@ -318,6 +320,20 @@ class ModelManager:
             entry.state, entry.memory_mb = None, 0
             return self._state(entry)
 
+    def add(self, spec):
+        """Registers a model added by the administrator (catalogue search)."""
+        with self._mu:
+            if spec.id in self._entries:
+                raise ValueError(f"model {spec.id} exists")
+            self._entries[spec.id] = _Entry(spec, self._make(spec))
+
+    def has(self, model_id):
+        return model_id in self._entries
+
+    def source_files(self, model_id):
+        """Paths of the model's files in its source repository (to spot duplicates)."""
+        return list((self._entry(model_id).spec.source or {}).get("files", {}))
+
     def remove(self, model_id):
         entry = self._entry(model_id)
         with self._mu:
@@ -330,8 +346,10 @@ class ModelManager:
         finally:
             with self._mu:
                 entry.state, entry.progress, entry.error, entry.memory_mb = None, 0, None, 0
+                if entry.spec.custom:       # its manifest went with its folder
+                    del self._entries[model_id]
             self._set_stopped(model_id, False)
-        return self.state(model_id)
+        return ABSENT if entry.spec.custom else self.state(model_id)
 
     def _spawn(self, entry, download):
         threading.Thread(target=self._install_job, args=(entry, download),
