@@ -5,6 +5,33 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.8.0
+
+- **Chat files in S3-compatible storage** (*Admin → File storage*, admin
+  only): chat attachments, thumbnails and group pictures can be kept in an
+  S3 bucket (AWS S3, MinIO, Wasabi, Backblaze B2, Cloudflare R2 …) instead of
+  the local disk, which stays the default. The page tests the connection and
+  can move the files already on the disk into the bucket. Downloads still go
+  through the portal with the same checks, so the bucket can stay private;
+  files keep opening after switching in either direction. Recordings,
+  voicemail and faxes stay on the local disk. See
+  [File storage](docs/file-storage.md).
+- **IVR call flow:** a new button on each IVR shows the whole path of a
+  caller as a tree: every key, no input and invalid key, with sub-menus,
+  time conditions and announcements opened up in place. Loops and missing
+  targets are marked.
+- **Brand settings:** an optional dark theme logo, the choice of logo for
+  e-mails, and an option to leave the brand name out of the e-mail header
+  when the logo already contains it.
+- **Voicemail e-mails:** the notification is delivered even when the mail
+  script stops early (database unreachable, PHP error), and every
+  notification leaves a line in `journalctl -t aipbx-voicemail`.
+- **Translations:** ready for Hosted Weblate (see
+  [Translating](docs/translating.md)); CI now checks every portal language
+  for unknown keys, placeholders and HTML tags.
+- **Android app 1.0.57:** after the session is rejected, the sign-in screen
+  says why ("session expired") instead of a call history error.
+
 ## 1.7.5
 
 - **Website call widget** (*Integrations → Web widgets*, admin only): a
