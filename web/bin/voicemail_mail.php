@@ -15,18 +15,37 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $raw = (string) stream_get_contents(STDIN);
+$handled = false;
+openlog('aipbx-voicemail', LOG_PID, LOG_MAIL);
 
-/** Hands Asterisk's own message to sendmail (the old behaviour) and ends. */
-$fallback = function (string $why) use ($raw): never {
-    openlog('aipbx-voicemail', LOG_PID, LOG_MAIL);
+/** Hands Asterisk's own message to sendmail (the old behaviour); true when sendmail took it. */
+$deliverOriginal = function (string $why) use ($raw, &$handled): bool {
+    $handled = true;
     syslog(LOG_WARNING, 'template mail not sent, original message delivered: ' . $why);
     $p = popen('/usr/sbin/sendmail -t', 'w');
-    if ($p) {
-        fwrite($p, $raw);
-        exit(pclose($p) === 0 ? 0 : 1);
+    if (!$p) {
+        syslog(LOG_ERR, 'sendmail could not be started, voicemail notification lost');
+        return false;
     }
-    exit(1);
+    fwrite($p, $raw);
+    return pclose($p) === 0;
 };
+
+/** Delivers the original message and ends. */
+$fallback = function (string $why) use ($deliverOriginal): never {
+    exit($deliverOriginal($why) ? 0 : 1);
+};
+
+// Some failures end the script without reaching a catch: config.php prints its
+// error page and exits when the database is unreachable, and a PHP fatal error
+// is no Throwable. Registered before config.php, so this runs before config.php's
+// own shutdown handler (which exits) and the notification is still delivered.
+register_shutdown_function(function () use (&$handled, $deliverOriginal) {
+    if (!$handled) {
+        $err = error_get_last();
+        $deliverOriginal('script ended early' . ($err ? ': ' . $err['message'] : ''));
+    }
+});
 
 try {
     require_once dirname(__DIR__) . '/config.php';
@@ -68,6 +87,8 @@ try {
     if (!$res['success']) {
         $fallback($res['error'] ?? 'send failed');
     }
+    $handled = true;
+    syslog(LOG_INFO, 'voicemail e-mail for mailbox ' . ($info['mailbox'] ?? '?') . ' handed to sendmail');
     exit(0);
 } catch (\Throwable $e) {
     $fallback($e->getMessage());
