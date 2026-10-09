@@ -213,15 +213,20 @@ class FileStorageService
         if (!ctype_digit($port)) {
             $port = '8086';
         }
-        $headers = "X-AiPBX-Internal: " . self::internalToken() . "\r\nContent-Type: application/json\r\n";
-        $ctx = stream_context_create(['http' => [
-            'method' => $method,
-            'header' => $headers,
-            'content' => $body === null ? '' : json_encode($body),
-            'timeout' => 30,
-            'ignore_errors' => true,
-        ]]);
-        $resp = @file_get_contents('http://127.0.0.1:' . $port . '/api/internal/storage/' . $action, false, $ctx);
+        // curl, not file_get_contents: a stopped chat service must not raise a PHP warning.
+        $ch = curl_init('http://127.0.0.1:' . $port . '/api/internal/storage/' . $action);
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_HTTPHEADER => ['X-AiPBX-Internal: ' . self::internalToken(), 'Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_PROXY => '',
+        ]);
+        if ($body !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, (string) json_encode($body));
+        }
+        $resp = curl_exec($ch);
         $json = is_string($resp) ? json_decode($resp, true) : null;
         if (!is_array($json)) {
             return ['success' => false, 'error' => t('storage.err_chat_down')];
