@@ -41,12 +41,10 @@ final class TtsHttp
         $resp = curl_exec($ch);
         if ($resp === false) {
             $err = curl_error($ch);
-            curl_close($ch);
             throw new TtsException('connection failed: ' . $err);
         }
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $type = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-        curl_close($ch);
         return ['status' => $status, 'body' => (string) $resp, 'type' => $type];
     }
 

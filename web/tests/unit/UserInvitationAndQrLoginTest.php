@@ -41,7 +41,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
     public function testSendInvitationEmailGeneratesValidTokenAndSetsFlag(): void
     {
         $res = UserInvitationService::sendInvitationEmail($this->testUserId, true);
-        $this->assertTrue($res['success'], 'Invitation email should succeed');
+        $this->assertTrue($res['success'], 'Invitation email should succeed: ' . ($res['error'] ?? ''));
         $this->assertNotEmpty($res['token'], 'Token should be returned');
 
         // sys_users tablosunu kontrol et
@@ -73,7 +73,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
     public function testSendBulkInvitations(): void
     {
         $res = UserInvitationService::sendBulkInvitations([$this->testUserId, 999999]);
-        $this->assertTrue($res['success']);
+        $this->assertTrue($res['success'], json_encode($res));
         $this->assertSame(1, $res['sent_count']);
         $this->assertGreaterThanOrEqual(1, $res['failed_count']);
     }
@@ -194,7 +194,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
     public function testInvitationEmailCreatesMobileLinkForUsersWithExtension(): void
     {
         $res = UserInvitationService::sendInvitationEmail($this->testUserId, true);
-        $this->assertTrue($res['success']);
+        $this->assertTrue($res['success'], $res['error'] ?? '');
         $cnt = $this->db->prepare("SELECT COUNT(*) FROM sys_user_qr_tokens WHERE user_id = ? AND purpose = 'email' AND used_at IS NULL");
         $cnt->execute([$this->testUserId]);
         $this->assertSame(1, (int)$cnt->fetchColumn());

@@ -178,7 +178,6 @@ class FcmPushProvider implements PushProviderInterface
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlErr = curl_error($ch);
-        curl_close($ch);
 
         if ($response === false) {
             return [
@@ -297,7 +296,6 @@ class FcmPushProvider implements PushProviderInterface
         $tokenResponse = curl_exec($ch);
         $tokenHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $tokenErr = curl_error($ch);
-        curl_close($ch);
 
         if ($tokenResponse === false) {
             throw new Exception('OAuth token curl failed: ' . $tokenErr);

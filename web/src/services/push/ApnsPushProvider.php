@@ -243,7 +243,6 @@ class ApnsPushProvider implements PushProviderInterface
         $response = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlErr = curl_error($ch);
-        curl_close($ch);
 
         if ($response === false) {
             return ['success' => false, 'message' => 'CURL network error: ' . $curlErr, 'error' => 'NETWORK_ERROR'];
