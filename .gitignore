@@ -46,6 +46,7 @@ android/*.jks
 android/keystore.properties
 android/hosting-*.json
 android/__pycache__/
+ai/**/__pycache__/
 android/app.aab
 android/app.apk
 

@@ -958,6 +958,10 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
 
+# Runtime of the local AI service (AI → Local models, step 11); the portal
+# calls it through aipbx-priv.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ai-setup" /usr/local/sbin/aipbx-ai-setup
+
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
 
@@ -1253,9 +1257,109 @@ EOF
 fi
 
 # ============================================================================
-# STEP 11: COTURN (WebRTC TURN)
+# STEP 11: LOCAL AI SERVICE (aipbx-ai)
 # ============================================================================
-step "11. Configuring coturn"
+step "11. Local AI Service"
+
+# AI → Local models (roadmap 5): AI models that run on this server, served by
+# aipbx-ai on 127.0.0.1:8790. Only the code and the unit are installed here;
+# the Python runtime with torch (large, and most PBXs never use it) is created
+# by `aipbx-ai-setup install` when the admin asks for it, and only then is the
+# service enabled.
+AI_BASE=/opt/aipbx-ai
+AI_VENV="$AI_BASE/venv"
+if ! id -u aipbx-ai >/dev/null 2>&1; then
+    useradd --system --home-dir /var/lib/aipbx-ai --no-create-home \
+        --shell /usr/sbin/nologin --user-group aipbx-ai
+fi
+install -d -o aipbx-ai -g aipbx-ai -m 0755 /var/lib/aipbx-ai
+install -d -o root -g root -m 0755 "$AI_BASE"
+# Code: replaced on every install/upgrade (root-owned; the service only reads it).
+rm -rf "$AI_BASE/app.new"
+mkdir -p "$AI_BASE/app.new"
+cp -a "$INSTALL_DIR/ai/requirements.txt" "$INSTALL_DIR/ai/aipbx_ai" "$AI_BASE/app.new/"
+find "$AI_BASE/app.new" -name __pycache__ -prune -exec rm -rf {} +
+chown -R root:root "$AI_BASE/app.new"; chmod -R u=rwX,go=rX "$AI_BASE/app.new"
+rm -rf "$AI_BASE/app"; mv "$AI_BASE/app.new" "$AI_BASE/app"
+
+# Shared secret of the portal and the service; created once, never rotated.
+# The service reads it through LoadCredential (as root), so aipbx-ai needs no
+# access to the file itself.
+install -d -o root -g root -m 0755 /etc/aipbx
+if [[ ! -s /etc/aipbx/ai.token ]]; then
+    (umask 077; openssl rand -hex 32 > /etc/aipbx/ai.token)
+fi
+chown root:www-data /etc/aipbx/ai.token
+chmod 640 /etc/aipbx/ai.token
+
+cat > /etc/systemd/system/aipbx-ai.service << 'AIUNIT'
+[Unit]
+Description=AiPBX local AI models (AI -> Local models)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/aipbx-ai/venv/bin/python
+
+[Service]
+Type=simple
+User=aipbx-ai
+Group=aipbx-ai
+WorkingDirectory=/opt/aipbx-ai/app
+ExecStart=/opt/aipbx-ai/venv/bin/python -m aipbx_ai
+LoadCredential=token:/etc/aipbx/ai.token
+Environment=HOME=/var/lib/aipbx-ai AIPBX_AI_DATA=/var/lib/aipbx-ai
+Environment=HF_HOME=/var/lib/aipbx-ai/hf XDG_CACHE_HOME=/var/lib/aipbx-ai/cache
+Environment=HF_HUB_DISABLE_TELEMETRY=1 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+Restart=on-failure
+RestartSec=5
+# Calls come first: Asterisk keeps the CPU when both want it.
+Nice=5
+CPUWeight=50
+MemoryMax=2G
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/aipbx-ai
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target
+AIUNIT
+systemctl daemon-reload
+
+# READY_MARK: written by aipbx-ai-setup once the venv is complete.
+AI_READY_MARK="$AI_VENV/.aipbx-requirements"
+if [[ -f "$AI_READY_MARK" ]]; then
+    if [[ "$(cat "$AI_READY_MARK")" != "$(sha256sum "$AI_BASE/app/requirements.txt" | cut -d' ' -f1)" ]] \
+       && ! systemctl is-active --quiet aipbx-ai-setup.service; then
+        # This release needs other packages: refresh the venv in the background
+        # (downloads; it restarts the service when done).
+        systemctl reset-failed aipbx-ai-setup.service >/dev/null 2>&1 || true
+        systemd-run --quiet --collect --unit=aipbx-ai-setup \
+            --description="AiPBX AI runtime: install" /usr/local/sbin/aipbx-ai-setup install \
+            && info "Local AI runtime is being updated in the background (/var/log/aipbx-ai-setup.log)"
+    elif ! is_upgrade || systemctl is-enabled --quiet aipbx-ai.service; then
+        # Upgrade: only a service the admin had running is restarted.
+        systemctl enable aipbx-ai.service >/dev/null 2>&1 || true
+        systemctl restart aipbx-ai.service 2>/dev/null || warn "Local AI service does not start — check: journalctl -u aipbx-ai"
+    fi
+    ok "Local AI service updated"
+else
+    ok "Local AI service installed (off — install the runtime on AI → Local models)"
+fi
+
+# ============================================================================
+# STEP 12: COTURN (WebRTC TURN)
+# ============================================================================
+step "12. Configuring coturn"
 
 cat > /etc/turnserver.conf << TURNCONF
 listening-port=3478
@@ -1303,7 +1407,7 @@ systemctl enable coturn 2>/dev/null || true
 ok "coturn configured"
 
 # ============================================================================
-# STEP 12: SECURITY (FIREWALLD & FAIL2BAN)
+# STEP 13: SECURITY (FIREWALLD & FAIL2BAN)
 # ============================================================================
 # Time sync: CDRs, TLS, chat tokens and TOTP (30 s window) all need a correct
 # clock. Ubuntu's default chrony sources are NTS-only; where TCP 4460 (NTS-KE)
@@ -1323,9 +1427,9 @@ NTPCONF
     systemctl restart chrony 2>/dev/null || true
 fi
 
-step "12. Configuring Firewall (firewalld) & Fail2ban"
+step "13. Configuring Firewall (firewalld) & Fail2ban"
 
-# 12a. Firewalld configuration
+# 13a. Firewalld configuration
 # The portal's Firewall page manages firewalld. Ubuntu also ships ufw; with
 # both enabled one closes what the other opens.
 if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
@@ -1361,11 +1465,11 @@ if firewall-cmd --permanent --query-port=8089/tcp >/dev/null 2>&1; then
     firewall-cmd --reload >/dev/null 2>&1 || true
 fi
 
-# 12b. Asterisk security logging
+# 13b. Asterisk security logging
 sed -i "s/^;security\.log => security/security.log => security/" /etc/asterisk/logger.conf 2>/dev/null || true
 asterisk -rx "logger reload" 2>/dev/null || true
 
-# 12c. Fail2ban configuration
+# 13c. Fail2ban configuration
 cat > /etc/fail2ban/jail.d/asterisk.local << 'JAIL'
 [asterisk]
 enabled  = true
@@ -1424,7 +1528,7 @@ if is_upgrade; then
 fi
 
 # ============================================================================
-# STEP 13: SAVE CREDENTIALS TO FILE
+# STEP 14: SAVE CREDENTIALS TO FILE
 # ============================================================================
 CREDS_FILE="/root/aipbx-credentials.txt"
 
