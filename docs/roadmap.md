@@ -115,7 +115,7 @@ example the first audio after ~4 ms) have to be measured on our own servers.
 **Checked (2026-10-09).** Both models are Apache-2.0 (commercial use allowed; weights not gated).
 EMA Lightning on a 2-core i7-7700 without GPU, on ONNX Runtime (since 1.9.2): 8.6–11× faster
 than real time, a 6.4 s sentence in 0.55 s, model load 1.3–2.4 s, about 150–250 MB of memory,
-160 MB of runtime (PyTorch in 1.9.0–1.9.1: 3.4–4.5×, up to 1 GB of memory, 1.1 GB of runtime). EmbeddingGemma 2 (740M parameters) still has to be measured.
+160 MB of runtime (PyTorch in 1.9.0–1.9.1: 3.4–4.5×, up to 1 GB of memory, 1.1 GB of runtime). EmbeddingGemma 2 (740M parameters) still has to be measured (step 2).
 
 **Steps.**
 
@@ -125,21 +125,61 @@ than real time, a 6.4 s sentence in 0.55 s, model load 1.3–2.4 s, about 150–
 1. **EMA Lightning as a TTS provider** *(done in 1.9.0)*. "Local: EMA Lightning (Turkish)" next to the cloud
    providers on the *Cloud TTS* page. Listening, MP3 download and saving as an announcement work
    as they do today, with no API key and no cost.
-2. **Answering machine detection (EmbeddingGemma 2).** On outgoing calls the first 2–3 seconds
-   decide between a person and a machine, and the result goes back to the dialplan as a variable.
-   Threshold and length are settings; without the local model Asterisk's own AMD is used.
-3. **Announcements with values (EMA Lightning).** A dialplan command reads text with values in
-   it ("your balance is {amount}") on the fly; the audio reaches Asterisk over AudioSocket. IVRs
-   and time conditions get a "read text" option.
-4. **Routing by speech (EmbeddingGemma 2).** A new IVR option type. The administrator names
-   intentions and example sentences for each queue ("invoice" → Accounting). The caller's words go
-   to the closest intention; when the match is uncertain, the caller gets the keypad menu.
-5. **Call analysis and search (EmbeddingGemma 2).** After a call its recording is tagged (anger,
-   noise, tones); the tags appear as columns and filters in CDR and queue reports, and supervisors
-   can be alerted. Recording vectors are stored (the MariaDB of Ubuntu 26.04 has a vector type),
-   and the *Recordings* page can then be searched with text ("customers asking for a refund").
-6. **Voice bot.** EMA Lightning is only the voice. A bot also needs speech recognition (STT) and
-   a language model that decides what to say, so it comes last.
+2. **Measure EmbeddingGemma 2** on the same server: CPU speed and memory for 2–3 s of audio,
+   and how well it tells apart a person from an answering machine and Turkish requests from
+   each other on 8 kHz telephone audio (own recordings, voicemail greetings, sample sentences).
+   Steps 4–6 and 8 depend on the result.
+3. **Audio bridge (AudioSocket).** `aipbx-ai` receives and sends a call's audio live through
+   Asterisk's AudioSocket (already loaded on the servers); the result (chosen destination,
+   person/machine, recognised request) goes back to the dialplan as channel variables.
+4. **AI applications with their own numbers.** A new page *AI → Applications*. Each application
+   has a type, its settings and an internal number; it is a destination like an IVR or a queue
+   (DIDs, IVR keys, time conditions) and can be dialled directly. Several applications of the
+   same type work side by side, each with its own settings, for example:
+
+   | Number | Application | What it does |
+   |--------|-------------|--------------|
+   | 7101 | Routing by speech: sales line | asks "how can I help?" and sends the caller to Sales, Accounts or Support |
+   | 7102 | Routing by speech: support line | the same model, other requests and queues |
+   | 7201 | Announcement with values: balance | "Dear {name}, your balance is {amount}", read on the fly, then a destination |
+   | 7202 | Announcement with values: appointment | another template, the same model |
+   | 7300 | Voice requests: hotel reception | see step 6 |
+   | 7901 | AI test line | speak and hear what was recognised (request, emotion, person/machine) |
+
+   Every application has a limit of simultaneous calls; above it, or when the model is not
+   ready, the caller goes to the normal (keypad) flow. The first type is **announcement with
+   values** (EMA Lightning only, possible today); its values come from dialplan variables (e.g.
+   the caller's number) or from a web address of the customer's own system.
+5. **Routing by speech (EmbeddingGemma 2).** Application type, also usable as an IVR option. The
+   administrator names requests with a few example sentences each and a destination ("invoice" →
+   Accounting). The caller's words go to the closest request; when the match is uncertain, the
+   caller gets the keypad menu or the operator.
+6. **Voice requests with a scenario (EmbeddingGemma 2 + EMA Lightning).** Application type for
+   requests that do not need a person on the line. Example, hotel: the guest calls 7300 from the
+   room phone and says "could I get two more towels?". The request is recognised as *towels*; the
+   room comes from the calling extension (no need to say it). The scenario of that request runs:
+   - an e-mail to housekeeping ("Room 312 — towels, 14:32") with the guest's recording attached,
+     so details such as "two" can be heard,
+   - and/or a chat message to a staff group (AiPBX app notification), a web request (webhook) to
+     the hotel's own system, a transfer to an extension,
+   - and a spoken confirmation by EMA ("Your request has been received").
+
+   Unrecognised requests go to reception. Every request is logged (room, request, time, handled).
+   The same type serves other places: a clinic (cancelling an appointment), a service desk
+   (fault report), a residential site (calling security). Reading details out of the speech
+   (quantity, time) needs speech recognition, see step 9.
+7. **Answering machine detection (EmbeddingGemma 2).** On outgoing calls (website call-back,
+   later campaigns) the first 2–3 seconds decide between a person and a machine; the result goes
+   to the dialplan as a variable. Threshold and length are settings; without the local model
+   Asterisk's own AMD is used.
+8. **Call analysis and search (EmbeddingGemma 2).** After a call its recording is tagged (anger,
+   noise); the tags appear as columns and filters in CDR and queue reports, and supervisors can
+   be alerted. Recording vectors are stored (MariaDB 11.8 on Ubuntu 26.04 has the VECTOR type,
+   checked on the demo), and the *Recordings* page can be searched with text ("customers asking
+   for a refund"). Busy and fax tones need no model: Asterisk detects them.
+9. **Speech recognition and voice bot.** A local speech-to-text model (e.g. a small Whisper)
+   fills in details of requests (quantity, time, wake-up calls) and, with a language model that
+   decides what to say, makes a voice bot possible. EMA Lightning is its voice. Comes last.
 
 ## 6. iOS app: same features as Android 1.0.54
 
