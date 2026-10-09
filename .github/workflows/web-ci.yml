@@ -66,8 +66,6 @@ jobs:
           php-version: '8.5'   # what the servers run (Ubuntu 26.04)
           extensions: pdo_mysql, mbstring, intl, gd, curl, dom, xml, zip
           coverage: none
-          # mail() needs a sendmail; the tests check what is sent, not delivery.
-          ini-values: sendmail_path=/usr/bin/true
           tools: composer:v2
 
       - name: Composer install
@@ -102,7 +100,11 @@ jobs:
       - name: Unit tests
         # mail() must not send real email (no MTA in CI); the invitation tests only
         # expect the sending to count as successful.
-        run: php -d "sendmail_path=cat > /dev/null" vendor/bin/phpunit --no-coverage
+        # Fake sendmail: reads the message (PHP 8.5 reports a broken pipe
+        # otherwise) and accepts mail()'s "-f sender" argument.
+        run: |
+          printf '#!/bin/sh\ncat > /dev/null\n' > /tmp/fake-sendmail && chmod +x /tmp/fake-sendmail
+          php -d sendmail_path=/tmp/fake-sendmail vendor/bin/phpunit --no-coverage
 
       - name: Smoke (every route in tr/en, RBAC, conventions, lint)
         run: |
