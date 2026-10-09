@@ -111,7 +111,7 @@
                                     <span class="u-muted">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo uiStatusBadge($log['action'], $auditActionBadgeMap, 'info', $auditActionLabelMap[$log['action']] ?? $log['action']); ?></td>
+                            <td><?php echo uiStatusBadge($log['action'], $auditActionBadgeMap, 'info', $auditActionLabelMap[$log['action']] ?? t('audit_log.action_' . $log['action'], $log['action'])); ?></td>
                             <td><?php echo htmlspecialchars($log['entity_label']); ?></td>
                             <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($log['ip_address'] ?? '—'); ?></td>
                         </tr>
