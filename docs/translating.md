@@ -61,8 +61,9 @@ python3 scripts/i18n.py status de
 # 4. Write web/lang/de.php (English key order; works with a partial set)
 python3 scripts/i18n.py build de "German (Deutsch)"
 
-# 5. Check all languages: same keys as English, same placeholders
+# 5. Check all languages: same keys as English, same placeholders and HTML tags
 php web/bin/lint_lang.php
+python3 scripts/i18n.py check        # or: check de
 ```
 
 Then add the language to `UI_LANGUAGES` in `web/config.php` and open the
@@ -80,6 +81,53 @@ at a time, and ask for one output line per input line in the
 `<index> TAB <JSON string>` form. Always run `import` (it rejects broken
 placeholders or tags) and `lint_lang.php`, and have a native speaker read the
 result before it is merged.
+
+## Translating on Weblate
+
+Translators who prefer a web page to files can work on
+[Hosted Weblate](https://hosted.weblate.org/) (free for open-source projects),
+once the project is set up there (see below). Weblate shows each English text
+next to its translation, keeps the placeholders visible and saves the work into
+this repository: it opens a pull request, CI checks it (`scripts/i18n.py check`
+for the portal, `check_mobile_lang.py` for the apps) and a maintainer merges it.
+Texts translated there and fixes sent as pull requests end up in the same files.
+
+### Setting up the Weblate project (maintainers)
+
+Nothing in the repository needs a Weblate token: Weblate reads the public
+repository and sends its work as pull requests from its own account.
+
+1. Sign in to hosted.weblate.org with GitHub and ask for **libre hosting** for
+   a project named *AiPBX* (the form asks for the repository and the licence).
+2. Add a **Language alias** in the project settings: `sr` → *Serbian (latin)*.
+   Our `sr` files are in Latin script; Weblate's `sr` means Cyrillic.
+3. Add the components below. They all use **Repository**
+   `https://github.com/mahirgul/AiPBX.git`, **Repository branch** `main`,
+   **Version control** *GitHub pull request* (push branch `weblate`),
+   source language English.
+
+   | Component | File mask | Monolingual base / template | File format | Translation flags |
+   |-----------|-----------|-----------------------------|-------------|-------------------|
+   | Portal | `web/lang/*.php` | `web/lang/en.php` | Laravel PHP strings | `php-format` |
+   | Android app | `android/app/src/main/res/values-*/strings.xml` | `android/app/src/main/res/values/strings.xml` | Android String Resource | |
+   | iOS app | `ios/AiPBX/Resources/*.lproj/Localizable.strings` | (none: the key is the English text) | iOS strings (UTF-8) | `objc-format` |
+   | iOS app name | `ios/AiPBX/Resources/*.lproj/InfoPlist.strings` | `ios/AiPBX/Resources/en.lproj/InfoPlist.strings` | iOS strings (UTF-8) | |
+
+   For the portal, set **Language filter** to `^(?!en$).*` (English is the
+   source, not a translation). For the Android app, set it to `^(?!night$).*`,
+   so `values-night` (dark theme colours) is not taken for a language.
+4. In the repository on GitHub, **Settings → Webhooks → Add webhook**:
+   payload URL `https://hosted.weblate.org/hooks/github/`, content type
+   `application/json`, just the push event. Weblate then picks up new English
+   texts right after each push to `main`.
+5. In the Weblate project, turn on the add-on **Squash Git commits**
+   (per language), so a pull request has one commit per language.
+
+Weblate rewrites a portal file in its own layout the first time it saves it
+(the header comment moves inside `return [`, `\\n` becomes `\n`). The texts
+stay the same; that first pull request just looks larger than it is. A new
+language added on Weblate still needs the steps under *Workflow* (the
+`UI_LANGUAGES` entry for the portal, the app language lists for the apps).
 
 ## Mobile apps
 
