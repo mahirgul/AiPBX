@@ -135,6 +135,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'conferences'       => 'syncConferences',
     'voicemail'         => 'syncVoicemail',
     'permissions'       => 'syncPermissions',
+    'widgets'           => 'syncWidgets',
 ];
 
 /**
@@ -266,6 +267,7 @@ require_once __DIR__ . '/sync/SyncRingGroups.php';
 require_once __DIR__ . '/sync/SyncConferences.php';
 require_once __DIR__ . '/sync/SyncVoicemail.php';
 require_once __DIR__ . '/sync/SyncPermissions.php';
+require_once __DIR__ . '/sync/SyncWidgets.php';
 
 /**
  * Updates the system default language (/etc/asterisk/asterisk.conf [options]
@@ -322,6 +324,9 @@ function syncEverything() {
     syncVoicemail();
     syncInboundDialplan();
     syncOutboundDialplan();
+    // After the outbound routes: a widget's external destination and its
+    // call-back jump into [outbound-route-<id>].
+    syncWidgets();
     syncFeatureCodes();
     // The number context must be generated BEFORE the general dialplan that
     // includes it; otherwise on a fresh install Asterisk includes a context

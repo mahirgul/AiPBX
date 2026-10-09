@@ -51,6 +51,13 @@ if ($path === '/provision' || str_starts_with($path, '/provision/')) {
     ProvisionController::serve($path);
 }
 
+// 0c. Website call widget API (/widget-api/config|call|callback): anonymous,
+//     called from other websites (CORS), see WidgetApiController.
+if ($path === '/widget-api' || str_starts_with($path, '/widget-api/')) {
+    require_once __DIR__ . '/src/controllers/WidgetApiController.php';
+    WidgetApiController::serve($path);
+}
+
 // 1. Old URLs → permanent redirect (exact-match whitelist)
 $LEGACY = [
     '/admin'                   => '/',
