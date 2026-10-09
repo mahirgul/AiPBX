@@ -106,7 +106,7 @@ class ApiTest(unittest.TestCase):
         data = None
         if body is not None:
             data = body if isinstance(body, bytes) else json.dumps(body).encode()
-            h["Content-Type"] = "application/json"
+            h.setdefault("Content-Type", "application/json")
         conn.request(method, path, body=data, headers=h)
         resp = conn.getresponse()
         raw = resp.read()
@@ -249,6 +249,14 @@ class ApiTest(unittest.TestCase):
         status, body, _ = self.request("POST", "/v1/models/ema-lightning/install", {"accept_license": True})
         self.assertEqual(status, 507)
         self.assertEqual(self.manager.state("ema-lightning"), "absent")
+
+    def test_stt_endpoint(self):
+        status, body, _ = self.request("POST", "/v1/stt?model=ema-lightning", b"RIFF....", headers={"Content-Type": "audio/wav"})
+        self.assertEqual((status, body["error"]), (400, "model is not a speech-to-text model"))
+        status, body, _ = self.request("POST", "/v1/stt", b"x", headers={"Content-Type": "audio/wav"})
+        self.assertEqual(status, 400)
+        status, body, _ = self.request("POST", "/v1/stt?model=ema-lightning", b"x", headers={"Content-Type": "text/plain"})
+        self.assertEqual((status, body["error"]), (400, "send the audio as audio/wav"))
 
     def test_start_loads_installed_models(self):
         self.fake.files = True

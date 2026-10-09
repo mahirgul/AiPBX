@@ -37,11 +37,16 @@ def main():
         return 1
     port = int(os.environ.get("AIPBX_AI_PORT", "8790"))
 
+    from .custom import Catalog
     from .models import REGISTRY, ModelManager
     from .server import AiServer
 
-    manager = ModelManager(REGISTRY, data_dir)
-    server = AiServer((HOST, port), token, manager)
+    catalog = Catalog(data_dir)
+    # Built-in models first; voices the administrator added come from their manifests.
+    builtin = {s.id for s in REGISTRY}
+    added = [s for s in catalog.load_saved() if s.id not in builtin]
+    manager = ModelManager(tuple(REGISTRY) + tuple(added), data_dir)
+    server = AiServer((HOST, port), token, manager, catalog)
     manager.start()
     logging.info("listening on %s:%d", HOST, port)
     try:

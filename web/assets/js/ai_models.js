@@ -50,6 +50,7 @@
 
         const card = document.getElementById('aim-models-card');
         card.style.display = rt.state === 'installed' ? '' : 'none';
+        document.getElementById('aim-add-card').style.display = (rt.state === 'installed' && svc) ? '' : 'none';
         const disk = s.disk;
         document.getElementById('aim-disk').textContent = disk ? fmt(T.disk_used, disk.used_mb, disk.limit_mb) : '';
         const models = s.models || [];
@@ -95,6 +96,7 @@
         }
         document.getElementById('aim-models').innerHTML = html;
         fillTry(models.filter(m => m.kind === 'tts' && m.state === 'ready'));
+        fillStt(models.filter(m => m.kind === 'stt' && m.state === 'ready'));
 
         // The runtime setup starts in its own unit and writes its state a moment
         // later; a model download may also take a moment to show up.
@@ -139,6 +141,150 @@
             row.querySelector('audio').play().catch(() => {});
             while (box.children.length > 6) box.lastChild.remove();
         }).catch(e => toast(e.message, 'error')).finally(() => { btn.disabled = false; });
+    });
+
+    // ---- adding voices from the Piper voice list -------------------------
+    let catalog = null;
+
+    function renderCatalog() {
+        const list = document.getElementById('aim-add-list');
+        if (!catalog) return;
+        const lang = document.getElementById('aim-add-lang').value;
+        const q = document.getElementById('aim-add-quality').value;
+        const rows = catalog.filter(v => (!lang || v.language === lang) && (!q || v.quality === q));
+        if (!rows.length) { list.innerHTML = '<p class="u-muted">' + esc(T.add_none) + '</p>'; return; }
+        list.innerHTML = '<div class="table-responsive"><table class="table"><tbody>' + rows.map(v => {
+            const act = v.registered
+                ? '<span class="badge badge-secondary u-fs-11">' + esc(T.add_in_list) + '</span>'
+                : '<label class="u-check-label u-fs-12" style="display: block; margin-bottom: 6px;"><input type="checkbox" class="u-accent" data-lic="' + esc(v.key) + '"> '
+                  + fmt(esc(T.accept_license), '<a href="' + esc(v.card_url) + '" target="_blank" rel="noopener">' + esc(T.add_card) + '</a>') + '</label>'
+                  + '<button type="button" class="btn btn-primary btn-sm" data-add="' + esc(v.key) + '"><i class="fas fa-download"></i> ' + esc(T.add_btn) + ' (' + esc(v.size_mb) + ' MB)</button>';
+            return '<tr><td><div class="u-strong">' + esc(v.name) + ' <span class="u-muted u-fs-11">' + esc(v.quality) + '</span></div>'
+                + '<div class="u-muted u-fs-11">' + esc(v.language_name) + ' (' + esc(v.country) + ') · ' + esc(v.language)
+                + (v.speakers > 1 ? ' · ' + esc(fmt(T.add_speakers, v.speakers)) : '') + '</div></td>'
+                + '<td style="text-align: right;">' + act + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+
+    document.getElementById('aim-add-open').addEventListener('click', () => {
+        const body = document.getElementById('aim-add-body');
+        body.style.display = body.style.display === 'none' ? '' : 'none';
+        if (catalog || body.style.display === 'none') return;
+        document.getElementById('aim-add-list').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.add_loading);
+        fetch('/api/ai_models.php?action=piper_catalog', { cache: 'no-store' }).then(r => r.json()).then(d => {
+            if (!d.success) { document.getElementById('aim-add-list').innerHTML = '<span class="u-danger">' + esc(d.error) + '</span>'; return; }
+            catalog = d.voices;
+            const langs = {};
+            catalog.forEach(v => { langs[v.language] = v.language_name + ' (' + v.country + ')'; });
+            const sel = document.getElementById('aim-add-lang');
+            const pageLang = (document.documentElement.lang || 'en').slice(0, 2);
+            sel.innerHTML = '<option value="">' + esc(T.add_all_languages) + '</option>' + Object.keys(langs).sort((a, b) => langs[a].localeCompare(langs[b]))
+                .map(c => '<option value="' + esc(c) + '">' + esc(langs[c]) + '</option>').join('');
+            const guess = Object.keys(langs).find(c => c.startsWith(pageLang + '_'));
+            if (guess) sel.value = guess;
+            renderCatalog();
+        });
+    });
+    document.getElementById('aim-add-lang').addEventListener('change', renderCatalog);
+    document.getElementById('aim-add-quality').addEventListener('change', renderCatalog);
+    document.getElementById('aim-add-list').addEventListener('click', e => {
+        const btn = e.target.closest('button[data-add]');
+        if (!btn) return;
+        const key = btn.dataset.add;
+        const lic = document.querySelector('input[data-lic="' + CSS.escape(key) + '"]');
+        if (!lic || !lic.checked) { toast(T.need_license, 'error'); return; }
+        btn.disabled = true;
+        post('add_piper', { key: key, accept_license: 1 }).then(d => {
+            if (d && d.success) { const v = catalog.find(x => x.key === key); if (v) { v.registered = true; v.model_id = d.id; } renderCatalog(); }
+            done(d);
+        });
+    });
+
+    // ---- speech to text: microphone (WAV made in the browser) or a WAV file ----
+    function fillStt(models) {
+        const card = document.getElementById('aim-stt-card');
+        const sel = document.getElementById('aim-stt-model');
+        card.style.display = models.length ? '' : 'none';
+        const ids = models.map(m => m.id).join(',');
+        if (sel.dataset.ids === ids) return;
+        const keep = sel.value;
+        sel.dataset.ids = ids;
+        sel.innerHTML = models.map(m => '<option value="' + esc(m.id) + '">' + esc(m.title) + '</option>').join('');
+        if (ids.split(',').includes(keep)) sel.value = keep;
+    }
+
+    function wavFromFloat(samples, rate) {
+        const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+        const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+        str(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); str(8, 'WAVEfmt ');
+        v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+        v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, samples.length * 2, true);
+        for (let i = 0; i < samples.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 32767, true);
+        return new Blob([buf], { type: 'audio/wav' });
+    }
+
+    function downsample(chunks, from, to) {
+        const total = chunks.reduce((n, c) => n + c.length, 0), all = new Float32Array(total);
+        let o = 0; chunks.forEach(c => { all.set(c, o); o += c.length; });
+        if (from === to) return all;
+        const ratio = from / to, out = new Float32Array(Math.floor(total / ratio));
+        for (let i = 0; i < out.length; i++) {          // average over each output step: a simple low-pass
+            const a = Math.floor(i * ratio), b = Math.min(total, Math.floor((i + 1) * ratio));
+            let sum = 0; for (let j = a; j < b; j++) sum += all[j];
+            out[i] = sum / Math.max(1, b - a);
+        }
+        return out;
+    }
+
+    function sendStt(blob, label) {
+        const id = document.getElementById('aim-stt-model').value;
+        if (!id) return;
+        const box = document.getElementById('aim-stt-results');
+        const row = document.createElement('div');
+        row.className = 'u-mt-6';
+        row.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.stt_working);
+        box.prepend(row);
+        const fd = new FormData();
+        fd.append('action', 'try_stt'); fd.append('id', id); fd.append('csrf_token', window.CSRF_TOKEN || ''); fd.append('audio', blob, 'speech.wav');
+        fetch('/api/ai_models.php', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (!d.success) { row.innerHTML = '<span class="u-danger">' + esc(d.error) + '</span>'; return; }
+            const r = d.result;
+            row.innerHTML = '<audio controls src="' + URL.createObjectURL(blob) + '" style="height: 28px; vertical-align: middle;"></audio> '
+                + '<strong>' + esc(r.text || T.stt_empty) + '</strong> <span class="u-muted u-fs-11">' + esc(fmt(T.stt_result, label, r.seconds, r.ms)) + '</span>';
+            while (box.children.length > 6) box.lastChild.remove();
+        }).catch(() => { row.innerHTML = '<span class="u-danger">' + esc(T.msg_try_error) + '</span>'; });
+    }
+
+    let rec = null;
+    document.getElementById('aim-stt-rec').addEventListener('click', async () => {
+        const btn = document.getElementById('aim-stt-rec');
+        if (rec) { rec.stop(); return; }
+        let stream;
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }); }
+        catch (e) { toast(T.stt_no_mic, 'error'); return; }
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = ctx.createMediaStreamSource(stream);
+        const node = ctx.createScriptProcessor(4096, 1, 1);
+        const chunks = [];
+        node.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+        src.connect(node); node.connect(ctx.destination);
+        const label = btn.querySelector('span').textContent;
+        btn.classList.replace('btn-primary', 'btn-danger');
+        btn.querySelector('span').textContent = T.stt_stop;
+        const timer = setTimeout(() => rec && rec.stop(), 15000);
+        rec = { stop: () => {
+            clearTimeout(timer); rec = null;
+            node.disconnect(); src.disconnect(); stream.getTracks().forEach(t => t.stop());
+            const rate = ctx.sampleRate; ctx.close();
+            btn.classList.replace('btn-danger', 'btn-primary');
+            btn.querySelector('span').textContent = label;
+            sendStt(wavFromFloat(downsample(chunks, rate, 16000), 16000), T.stt_record);
+        } };
+    });
+    document.getElementById('aim-stt-file').addEventListener('change', e => {
+        const f = e.target.files[0];
+        if (f) sendStt(f, f.name);
+        e.target.value = '';
     });
 
     function refresh() {

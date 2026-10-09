@@ -174,9 +174,10 @@ def split_clauses(text):
     return clauses
 
 
-def _run_espeak(lines, voice):
+def _run_espeak(lines, voice, ipa="--ipa"):
+    """Phoneme lines of espeak-ng; `ipa` is its IPA option ("--ipa=2": ties)."""
     proc = subprocess.run(
-        [ESPEAK, "-q", "-b", "1", "--ipa", "-v", voice, "--stdin"],
+        [ESPEAK, "-q", "-b", "1", ipa, "-v", voice, "--stdin"],
         input="".join(line + "\n" for line in lines).encode("utf-8"),
         capture_output=True, timeout=60, check=False,
     )
@@ -186,7 +187,7 @@ def _run_espeak(lines, voice):
     return [ln.strip() for ln in proc.stdout.decode("utf-8", "replace").splitlines() if ln.strip()]
 
 
-def espeak_clauses(text, clauses, voice):
+def espeak_clauses(text, clauses, voice, ipa="--ipa"):
     """IPA phoneme string per clause, from the espeak-ng program.
 
     espeak-ng reads the whole text in one call, so abbreviations and numbers
@@ -197,10 +198,10 @@ def espeak_clauses(text, clauses, voice):
     """
     if not clauses:
         return []
-    out = _run_espeak([text], voice)
+    out = _run_espeak([text], voice, ipa)
     if len(out) == len(clauses):
         return out
-    return [" ".join(_run_espeak([clause], voice)) for clause, _ in clauses]
+    return [" ".join(_run_espeak([clause], voice, ipa)) for clause, _ in clauses]
 
 
 # Compensation for espeak-ng versions that differ from the one Piper voices

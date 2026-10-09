@@ -232,6 +232,31 @@ class LocalAiService
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
     }
 
+    /**
+     * Every Piper voice of the public voice list (cached by the service for a day).
+     * @return list<array<string, mixed>>
+     */
+    public static function piperCatalog(): array
+    {
+        $d = self::callJson('GET', '/v1/catalog/piper', null, 30);
+        return array_values(array_filter((array) ($d['voices'] ?? []), 'is_array'));
+    }
+
+    /** Adds a Piper voice from the list (licence accepted) and starts its download. */
+    public static function addPiperVoice(string $key, bool $acceptLicense): string
+    {
+        if (!preg_match('/^[A-Za-z]{2,3}_[A-Za-z]{2}-[A-Za-z0-9_]+-(x_low|low|medium|high)$/', $key)) {
+            throw new LocalAiException(t('ai_models.err_model'));
+        }
+        if (!$acceptLicense) {
+            throw new LocalAiException(t('ai_models.err_license'));
+        }
+        $d = self::callJson('POST', '/v1/models/add', ['engine' => 'piper', 'key' => $key, 'accept_license' => true], 60);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $key, 'Piper voice ' . $key . ' added (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
+        return (string) ($d['id'] ?? '');
+    }
+
     /** Loads a downloaded model into memory (it stays running after restarts). */
     public static function runModel(string $id): void
     {
@@ -284,6 +309,29 @@ class LocalAiService
             throw new LocalAiException(is_array($data) && is_string($data['error'] ?? null) ? mb_substr($data['error'], 0, 300) : 'HTTP ' . $r['status']);
         }
         return $r['body'];
+    }
+
+    /**
+     * Speech to text with a running speech-to-text model.
+     * @return array{text: string, seconds: float, ms: int}
+     */
+    public static function stt(string $model, string $wav): array
+    {
+        self::requireId($model);
+        if (strlen($wav) < 44 || strlen($wav) > 4 * 1024 * 1024 || !str_starts_with($wav, 'RIFF')) {
+            throw new LocalAiException(t('ai_models.err_stt_audio'));
+        }
+        $headers = ['Authorization' => 'Bearer ' . self::token(), 'Content-Type' => 'audio/wav'];
+        try {
+            $r = TtsHttp::request('POST', self::BASE_URL . '/v1/stt?model=' . rawurlencode($model), $headers, $wav, 120);
+        } catch (TtsException $e) {
+            throw new LocalAiException(t('ai_models.err_no_service'));
+        }
+        $d = json_decode($r['body'], true);
+        if ($r['status'] !== 200 || !is_array($d)) {
+            throw new LocalAiException(is_array($d) && is_string($d['error'] ?? null) ? mb_substr($d['error'], 0, 300) : 'HTTP ' . $r['status']);
+        }
+        return ['text' => (string) ($d['text'] ?? ''), 'seconds' => (float) ($d['seconds'] ?? 0), 'ms' => (int) ($d['ms'] ?? 0)];
     }
 
     /** WAV → MP3 (what Cloud TTS keeps and plays), with lame. */

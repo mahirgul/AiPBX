@@ -33,7 +33,9 @@ from pathlib import Path
 
 from . import sysinfo
 from .ema import EmaLightningBackend
+from .kokoro_backend import KokoroBackend
 from .piper_backend import PiperBackend
+from .vosk_backend import VoskBackend
 
 log = logging.getLogger("aipbx_ai.models")
 
@@ -61,6 +63,7 @@ class ModelSpec:
     note: str = ""              # licence or quality remark shown with the model
     gender: str = ""            # voice models: "female" / "male" / ""
     source: dict = field(default_factory=dict)   # backend-specific download details
+    custom: bool = False        # added by the administrator (custom.py), not in REGISTRY
 
 
 # Piper voices: rhasspy/piper-voices at a pinned revision. Licences differ per
@@ -83,6 +86,40 @@ def _piper(id, title, path, onnx_sha, json_sha, mb, languages, license, commerci
                      homepage="https://github.com/rhasspy/piper", download_mb=mb, backend=PiperBackend,
                      engine="piper", commercial=commercial, measured=measured or {}, note=note,
                      gender=gender, source=source)
+
+
+def _vosk(id, title, file, sha, mb, languages, measured=None, note=""):
+    return ModelSpec(id=id, title=title, kind="stt", languages=languages, license="Apache-2.0",
+                     license_url="https://alphacephei.com/vosk/models", homepage="https://alphacephei.com/vosk/",
+                     download_mb=mb, backend=VoskBackend, engine="vosk", measured=measured or {}, note=note,
+                     source={"file": file, "sha256": sha})
+
+# Kokoro-82M voices: onnx-community/Kokoro-82M-v1.0-ONNX at a pinned revision.
+# Model and voices are Apache-2.0 (hexgrad/Kokoro-82M; only the Japanese and
+# French voices were trained with CC BY audio, VOICES.md). Every voice uses the
+# same model file, stored once (kokoro_backend.py), so download_mb is the size
+# for the first Kokoro voice; further voices add about half a megabyte.
+KOKORO_REVISION = "1939ad2a8e416c0acfeecc08a694d14ef25f2231"
+# fp32: on a 2-core CPU the quantized exports are no faster and differ audibly
+# from it (docs/local-ai.md); fp16 gives NaN on the CPU.
+KOKORO_MODEL = {"path": "onnx/model.onnx",
+                "sha256": "8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb", "bytes": 325532232}
+KOKORO_CONFIG = {"path": "tokenizer.json",
+                 "sha256": "77a02c8e164413299b4b4c403b14f8e0e1c1b727db4d46a09d6327b861060a34", "bytes": 3497}
+KOKORO_LICENSE_URL = "https://huggingface.co/hexgrad/Kokoro-82M/blob/f3ff3571791e39611d31c381e3a41a3af07b4987/README.md"
+KOKORO_SHARED_NOTE = ("Shares one model file and its memory with the other Kokoro voices. "
+                      "Natural, but slow on a small server: fine for announcements, not for live calls.")
+
+
+def _kokoro(id, title, voice, voice_sha, languages, gender, grade, measured=None):
+    source = {"revision": KOKORO_REVISION, "voice_name": voice, "model": KOKORO_MODEL,
+              "config": KOKORO_CONFIG, "voice": {"path": f"voices/{voice}.bin", "sha256": voice_sha, "bytes": 522240}}
+    mb = -(-(KOKORO_MODEL["bytes"] + 522240 + KOKORO_CONFIG["bytes"]) // (1024 * 1024))
+    return ModelSpec(id=id, title=title, kind="tts", languages=languages, license="Apache-2.0",
+                     license_url=KOKORO_LICENSE_URL,
+                     homepage="https://huggingface.co/hexgrad/Kokoro-82M", download_mb=mb, backend=KokoroBackend,
+                     engine="kokoro", commercial=True, measured=measured or {},
+                     note=f"Voice grade {grade} (VOICES.md). {KOKORO_SHARED_NOTE}", gender=gender, source=source)
 
 
 REGISTRY = (
@@ -123,6 +160,27 @@ REGISTRY = (
            "Public domain", True, gender="female",
            note="Slow on a small server (high quality): fine for announcements, not for live calls.",
            measured={"realtime_factor": 2.1, "memory_mb": 228, "load_s": 2.5}),
+    _vosk("vosk-tr-small", "Vosk small (Turkish)", "vosk-model-small-tr-0.3.zip",
+          "8c8d07cec1bce31add14967c16891c84152cdf76d391e33c08278119b9ea96e5", 36, ("tr-TR",),
+          measured={"realtime_factor": 5, "memory_mb": 120, "load_s": 0.4},
+          note="Fast and small; on 8 kHz telephone audio about 1 word in 4 is wrong. Best with short requests."),
+    _vosk("vosk-de-small", "Vosk small (German)", "vosk-model-small-de-0.15.zip",
+          "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43", 45, ("de-DE",)),
+    _vosk("vosk-en-small", "Vosk small (English, US)", "vosk-model-small-en-us-0.15.zip",
+          "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498", 40, ("en-US",)),
+    # memory_mb: the shared model; further running Kokoro voices add almost nothing.
+    _kokoro("kokoro-en-heart", "Kokoro Heart (English, US)", "af_heart",
+            "d583ccff3cdca2f7fae535cb998ac07e9fcb90f09737b9a41fa2734ec44a8f0b", ("en-US",), "female", "A",
+            measured={"realtime_factor": 1.7, "memory_mb": 460, "load_s": 1.6}),
+    _kokoro("kokoro-en-michael", "Kokoro Michael (English, US)", "am_michael",
+            "1d1f21dd8da39c30705cd4c75d039d265e9bc4a2a93ed09bc9e1b1225eb95ba1", ("en-US",), "male", "C+",
+            measured={"realtime_factor": 1.75, "memory_mb": 460, "load_s": 1.6}),
+    _kokoro("kokoro-en-emma", "Kokoro Emma (English, UK)", "bf_emma",
+            "669fe0647f9dd04fcab92f1439a40eeb4c8b4ab1f82e4996fe3d918ce4a63b73", ("en-GB",), "female", "B-",
+            measured={"realtime_factor": 1.65, "memory_mb": 460, "load_s": 1.6}),
+    _kokoro("kokoro-en-george", "Kokoro George (English, UK)", "bm_george",
+            "c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc", ("en-GB",), "male", "C",
+            measured={"realtime_factor": 1.65, "memory_mb": 460, "load_s": 1.6}),
 )
 
 
@@ -165,6 +223,7 @@ class _Entry:
 class ModelManager:
     def __init__(self, specs, data_dir, backend_factory=None, disk_limit_mb=None):
         make = backend_factory or (lambda spec: spec.backend(spec, data_dir))
+        self._make = make
         self._mu = threading.Lock()
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
@@ -242,7 +301,7 @@ class ModelManager:
             "error": error if state == ERROR else None,
             "engine": spec.engine, "commercial": spec.commercial, "measured": dict(spec.measured),
             "memory_mb": entry.memory_mb if state == READY else 0,
-            "note": spec.note, "gender": spec.gender,
+            "note": spec.note, "gender": spec.gender, "custom": spec.custom,
         }
 
     def describe_all(self):
@@ -318,6 +377,20 @@ class ModelManager:
             entry.state, entry.memory_mb = None, 0
             return self._state(entry)
 
+    def add(self, spec):
+        """Registers a model added by the administrator (catalogue search)."""
+        with self._mu:
+            if spec.id in self._entries:
+                raise ValueError(f"model {spec.id} exists")
+            self._entries[spec.id] = _Entry(spec, self._make(spec))
+
+    def has(self, model_id):
+        return model_id in self._entries
+
+    def source_files(self, model_id):
+        """Paths of the model's files in its source repository (to spot duplicates)."""
+        return list((self._entry(model_id).spec.source or {}).get("files", {}))
+
     def remove(self, model_id):
         entry = self._entry(model_id)
         with self._mu:
@@ -330,8 +403,10 @@ class ModelManager:
         finally:
             with self._mu:
                 entry.state, entry.progress, entry.error, entry.memory_mb = None, 0, None, 0
+                if entry.spec.custom:       # its manifest went with its folder
+                    del self._entries[model_id]
             self._set_stopped(model_id, False)
-        return self.state(model_id)
+        return ABSENT if entry.spec.custom else self.state(model_id)
 
     def _spawn(self, entry, download):
         threading.Thread(target=self._install_job, args=(entry, download),
@@ -388,6 +463,9 @@ class ModelManager:
         finally:
             with self._mu:
                 entry.pending -= 1
+
+    def transcribe(self, model_id, wav):
+        return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))
 
     def synthesize(self, model_id, text, speed, sample_rate):
         return self._run_job(model_id, "tts",

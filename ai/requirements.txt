@@ -6,3 +6,5 @@ onnxruntime>=1.20,<2
 numpy>=2,<3
 # Turkish text normaliser of EMA Lightning: numbers, dates, money read aloud.
 normalizer-tr>=0.5,<1
+# Speech-to-text (Kaldi based, Apache-2.0): small models for Turkish, German, English.
+vosk>=0.3.45,<0.4

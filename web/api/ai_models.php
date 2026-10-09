@@ -9,6 +9,9 @@
  *   POST action=benchmark id=           → speed of the model on this server
  *   POST action=model_run id= / model_stop id=   → load into memory / unload (files stay)
  *   POST action=try id= text= speed=    → audio/wav of a voice model (the page's try panel)
+ *   POST action=try_stt id= audio=<WAV file> → text of a speech-to-text model (the try panel)
+ *   GET  ?action=piper_catalog          → every voice of the Piper voice list
+ *   POST action=add_piper key= accept_license=1 → add one of them and download it
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/LocalAiService.php';
@@ -26,6 +29,14 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 if ($action === 'status') {
     echo json_encode(['success' => true] + LocalAiService::status(), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+if ($action === 'piper_catalog') {
+    try {
+        echo json_encode(['success' => true, 'voices' => LocalAiService::piperCatalog()], JSON_UNESCAPED_UNICODE);
+    } catch (LocalAiException $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
     exit;
 }
 
@@ -64,6 +75,17 @@ try {
             break;
         case 'benchmark':
             $out['benchmark'] = LocalAiService::benchmark($id);
+            break;
+        case 'add_piper':
+            $out['id'] = LocalAiService::addPiperVoice((string) ($_POST['key'] ?? ''), !empty($_POST['accept_license']));
+            $out['message'] = t('ai_models.msg_downloading');
+            break;
+        case 'try_stt':
+            $up = $_FILES['audio'] ?? null;
+            if (!$up || ($up['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($up['tmp_name']) || $up['size'] > 4 * 1024 * 1024) {
+                throw new LocalAiException(t('ai_models.err_stt_audio'));
+            }
+            $out['result'] = LocalAiService::stt($id, (string) file_get_contents($up['tmp_name']));
             break;
         case 'model_run':
             LocalAiService::runModel($id);
