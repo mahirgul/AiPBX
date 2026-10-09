@@ -7,8 +7,6 @@ Environment:
                            (default /etc/aipbx/ai.token)
     AIPBX_AI_PORT          TCP port on 127.0.0.1 (default 8790)
     AIPBX_AI_DATA          data directory (default /var/lib/aipbx-ai)
-    HF_HOME                model files (default $AIPBX_AI_DATA/hf)
-    XDG_CACHE_HOME         caches (default $AIPBX_AI_DATA/cache)
 """
 import logging
 import os
@@ -31,13 +29,6 @@ def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stderr,
                         format="%(levelname)s %(name)s: %(message)s")
     data_dir = Path(os.environ.get("AIPBX_AI_DATA", "/var/lib/aipbx-ai"))
-    # Before anything imports huggingface_hub: it reads these at import time.
-    os.environ.setdefault("HF_HOME", str(data_dir / "hf"))
-    os.environ.setdefault("XDG_CACHE_HOME", str(data_dir / "cache"))
-    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
-    # One line per HTTP request of a download is noise in the journal.
-    for name in ("httpx", "httpx2", "httpcore"):
-        logging.getLogger(name).setLevel(logging.WARNING)
 
     try:
         token = read_token()

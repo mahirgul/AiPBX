@@ -5,7 +5,7 @@
  * itself so text and audio never leave the server.
  *
  * Two parts, both admin only:
- *  - the runtime (Python venv with torch, ~1 GB): installed and removed by
+ *  - the runtime (Python venv with ONNX Runtime, ~160 MB): installed and removed by
  *    `aipbx-priv ai runtime-install|runtime-remove`, which runs as root in the
  *    background; its progress is read with `aipbx-priv ai runtime-status`.
  *  - the models: downloaded, removed, measured and used through the service's

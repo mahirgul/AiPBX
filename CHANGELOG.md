@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.2
+
+- **Local AI models are much lighter:** the runtime now uses ONNX Runtime
+  instead of PyTorch — about 160 MB instead of 1.1 GB to download, about
+  150–250 MB of memory instead of up to 1 GB, installed in about a minute.
+  EMA Lightning speaks about 9–11× faster than real time on a 2-core server
+  (3–4× before), with the same voice. The model files come from AiPBX's own
+  release `models-ema-lightning-1` and are checked by SHA-256 before use.
+  Servers that installed the runtime with 1.9.0–1.9.1 are moved over by the
+  update: the runtime is rebuilt and the model downloaded again by itself.
+- **AI → Local models:** the page now follows the runtime installation by
+  itself; before, it could keep showing "Not installed" until reloaded.
+
 ## 1.9.1
 
 - **Fix:** the update to 1.9.0 failed its page check and rolled back on

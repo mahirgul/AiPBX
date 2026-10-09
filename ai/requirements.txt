@@ -1,9 +1,8 @@
 # aipbx-ai runtime (installed by conf/sbin/aipbx-ai-setup into /opt/aipbx-ai/venv).
-# torch is installed first from the CPU-only index
-# (pip install --index-url https://download.pytorch.org/whl/cpu torch): the
-# default PyPI wheel brings several GB of CUDA libraries a PBX does not use.
-# The service itself needs only the standard library; these are the models.
-torch>=2.6,<3
+# The service itself needs only the standard library; these run the models.
+# ONNX Runtime instead of PyTorch: ~160 MB instead of ~1.1 GB, less memory,
+# and about 3x faster on a CPU for EMA Lightning (see docs/local-ai.md).
+onnxruntime>=1.20,<2
 numpy>=2,<3
-huggingface_hub>=0.30,<3
-ema-lightning>=1.0.4,<2
+# Turkish text normaliser of EMA Lightning: numbers, dates, money read aloud.
+normalizer-tr>=0.5,<1
