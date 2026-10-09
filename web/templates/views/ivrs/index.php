@@ -1,4 +1,5 @@
 <?php $destResolveCache = []; ?>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/ivr_flow.css'); ?>">
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -80,6 +81,9 @@
                             <?php echo uiStatusToggleForm($ivr['id'], $ivr['is_active'], 'ivr_id'); ?>
                         </td>
                         <td style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
+                            <button class="btn btn-secondary btn-sm" onclick='openIvrFlowModal(<?php echo (int) $ivr['id']; ?>, "<?php echo htmlspecialchars($ivr['title'], ENT_QUOTES); ?>")' title="<?php echo htmlspecialchars(t('ivr_flow.title')); ?>">
+                                <i class="fas fa-project-diagram"></i>
+                            </button>
                             <button class="btn btn-secondary btn-sm" onclick='openIvrEntriesModal(<?php echo $ivr['id']; ?>, "<?php echo htmlspecialchars($ivr['title'], ENT_QUOTES); ?>")' title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>">
                                 <i class="fas fa-th"></i>
                             </button>
@@ -319,6 +323,29 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- IVR Call Flow Modal (#16): read-only diagram, drawn on the server -->
+<div class="modal-overlay" id="ivrFlowModal">
+    <div class="modal-card" style="max-width: 960px; width: 96%;">
+        <div class="modal-header">
+            <h3 class="u-title"><i class="fas fa-project-diagram u-primary"></i> <?php echo t('ivr_flow.title'); ?>: <span id="flow_title_label"></span></h3>
+            <div class="u-flex-gap">
+                <?php if (hasModulePermission('ivrs', 'edit')): ?>
+                    <button type="button" class="btn btn-secondary btn-sm" id="flow_edit_keys_btn" title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>"><i class="fas fa-th"></i></button>
+                <?php endif; ?>
+                <button class="btn btn-secondary u-btn-pad" onclick="closeIvrFlowModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ivr_flow.help'); ?></p>
+            <?php foreach ($ivrs as $ivr_f): ?>
+                <div class="ivr-flow-wrap" id="flow_<?php echo (int) $ivr_f['id']; ?>" style="display: none;">
+                    <?php echo $call_flows[$ivr_f['id']] ?? ''; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </div>
