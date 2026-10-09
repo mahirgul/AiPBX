@@ -26,6 +26,18 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
     <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_tts.providers_text'); ?></p>
     <div class="u-grid-2" style="gap: 16px;">
     <?php foreach ($providers as $p): ?>
+        <?php if (!empty($p['local'])): ?>
+        <div class="card u-mb-0" style="padding: 16px;">
+            <div class="u-flex-between u-mb-10">
+                <div class="u-strong"><i class="fas fa-server u-primary"></i> <?php echo $h($p['title']); ?></div>
+                <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.local_ready' : 'ai_tts.not_configured'); ?></span>
+            </div>
+            <div class="u-muted u-fs-12 u-mb-10"><?php echo t('ai_tts.local_hint'); ?></div>
+            <?php if (hasModulePermission('ai_models', 'view')): ?>
+                <a href="/ai-models" class="btn btn-secondary btn-sm"><i class="fas fa-microchip"></i> <?php echo t('sidebar.item_ai_models'); ?></a>
+            <?php endif; ?>
+        </div>
+        <?php continue; endif; ?>
         <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0" style="padding: 16px;">
             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
             <input type="hidden" name="save_provider" value="<?php echo $h($p['id']); ?>">

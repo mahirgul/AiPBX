@@ -100,6 +100,7 @@ return [
         'id' => 'ai', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => 'sidebar.group_ai',
         'items' => [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts'), 'pages' => ['ai_tts.php']],
+            ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin, 'pages' => ['ai_models.php']],
         ],
     ],
     [

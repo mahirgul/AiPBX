@@ -1,0 +1,157 @@
+#!/bin/bash
+# aipbx-ai-setup — installs / removes the runtime of the local AI service
+# (roadmap 5, AI -> Local models): a Python venv with torch (CPU) and the model
+# packages, which most PBXs never need. install.sh only copies the service code
+# and writes the unit; the large runtime comes from here, on request.
+#
+#   aipbx-ai-setup install   create/refresh /opt/aipbx-ai/venv, then enable
+#                            and (re)start aipbx-ai.service
+#   aipbx-ai-setup remove    stop and disable the service, delete the venv and
+#                            every downloaded model (the API token is kept)
+#   aipbx-ai-setup status    print /var/lib/aipbx-ai/runtime.json
+#
+# Progress goes to /var/lib/aipbx-ai/runtime.json:
+#   {"state":"installing|installed|failed|absent","step":"...",
+#    "started":UNIX,"finished":UNIX|null,"error":null|"..."}
+# and the pip output to /var/log/aipbx-ai-setup.log. The portal starts this
+# through `aipbx-priv ai runtime-install|runtime-remove` in its own systemd
+# unit (aipbx-ai-setup.service).
+#
+# install.sh COPIES this file to /usr/local/sbin as root:root 0755.
+
+set -uo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C.UTF-8
+
+BASE=/opt/aipbx-ai
+APP_DIR="$BASE/app"
+VENV="$BASE/venv"
+READY_MARK="$VENV/.aipbx-requirements"   # sha256 of requirements.txt; install.sh reads it
+DATA_DIR=/var/lib/aipbx-ai
+STATE_FILE="$DATA_DIR/runtime.json"
+LOG_FILE=/var/log/aipbx-ai-setup.log
+TORCH_INDEX=https://download.pytorch.org/whl/cpu
+UNIT=aipbx-ai.service
+
+die() { echo "aipbx-ai-setup: $*" >&2; exit 64; }
+
+[[ $EUID -eq 0 ]] || die "run as root"
+[[ $# -eq 1 ]] || die "usage: aipbx-ai-setup install|remove|status"
+ACTION="$1"
+case "$ACTION" in install|remove|status) ;; *) die "invalid action: $ACTION" ;; esac
+
+# status: STATE_FILE as is; "installing" without a running setup unit means
+# the setup was killed (reboot, OOM) and is reported as failed.
+if [[ "$ACTION" == status ]]; then
+    running=0
+    systemctl is-active --quiet aipbx-ai-setup.service && running=1
+    exec python3 - "$STATE_FILE" "$running" "$VENV" <<'PY'
+import json, os, sys
+path, running, venv = sys.argv[1], sys.argv[2] == "1", sys.argv[3]
+try:
+    with open(path) as f:
+        st = json.load(f)
+    if not isinstance(st, dict):
+        raise ValueError
+except (OSError, ValueError):
+    st = {"state": "installed" if os.path.exists(os.path.join(venv, ".aipbx-requirements")) else "absent",
+          "step": "", "started": None, "finished": None, "error": None}
+if st.get("state") == "installing" and not running:
+    st.update(state="failed", error="the setup was interrupted")
+print(json.dumps(st, ensure_ascii=False))
+PY
+fi
+
+mkdir -p "$DATA_DIR"
+touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+
+exec 9>/run/aipbx-ai-setup.lock
+flock -n 9 || die "another aipbx-ai-setup is running"
+
+STARTED="$(date +%s)"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"; }
+
+# runtime STATE STEP [ERROR] — rewritten atomically, readable by the portal.
+runtime() {
+    local tmpf finished=""
+    [[ "$1" == installing ]] || finished="$(date +%s)"
+    tmpf="$(mktemp "$DATA_DIR/.runtime.XXXXXX")" || return 1
+    python3 - "$1" "$2" "$STARTED" "$finished" "${3:-}" > "$tmpf" <<'PY'
+import json, sys
+state, step, started, finished, error = sys.argv[1:6]
+print(json.dumps({"state": state, "step": step, "started": int(started),
+                  "finished": int(finished) if finished else None,
+                  "error": error or None}, ensure_ascii=False))
+PY
+    chmod 644 "$tmpf"; mv -f "$tmpf" "$STATE_FILE"
+}
+
+FRESH_VENV=0
+fail() {
+    log "ERROR: $1"
+    # A venv this run created and could not finish is removed: install.sh
+    # must never enable the service on a half-built one.
+    if [[ "$FRESH_VENV" == 1 ]]; then rm -rf "$VENV"; fi
+    runtime failed "$STEP" "$1"
+    exit 1
+}
+
+STEP=""
+step() { STEP="$1"; log "== $1"; runtime installing "$1"; }
+
+if [[ "$ACTION" == remove ]]; then
+    log "== remove"
+    runtime installing remove
+    systemctl disable --now "$UNIT" >>"$LOG_FILE" 2>&1 || true
+    rm -rf "$VENV" "$DATA_DIR/hf" "$DATA_DIR/cache" "$DATA_DIR/models"
+    runtime absent ""
+    log "runtime removed"
+    exit 0
+fi
+
+# ---- install ----------------------------------------------------------------
+log "== install"
+[[ -f "$APP_DIR/requirements.txt" && -d "$APP_DIR/aipbx_ai" ]] \
+    || { STEP=check; fail "$APP_DIR is missing — run install.sh --upgrade first"; }
+[[ -r /etc/aipbx/ai.token ]] || { STEP=check; fail "/etc/aipbx/ai.token is missing — run install.sh --upgrade first"; }
+
+step packages
+# Ubuntu's python3 has no ensurepip without python3-venv.
+if ! python3 -c 'import ensurepip, venv' >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv >>"$LOG_FILE" 2>&1 \
+        || fail "apt-get install python3-venv failed"
+fi
+
+step venv
+if [[ ! -x "$VENV/bin/python" ]]; then
+    FRESH_VENV=1
+    mkdir -p "$BASE"
+    python3 -m venv "$VENV" >>"$LOG_FILE" 2>&1 || fail "python3 -m venv failed"
+fi
+PIP=("$VENV/bin/python" -m pip --disable-pip-version-check --no-input --no-cache-dir)
+"${PIP[@]}" install --upgrade pip >>"$LOG_FILE" 2>&1 || fail "pip upgrade failed"
+
+# CPU-only torch first: the PyPI wheel pulls several GB of CUDA libraries.
+step torch
+"${PIP[@]}" install --index-url "$TORCH_INDEX" 'torch>=2.6,<3' >>"$LOG_FILE" 2>&1 \
+    || fail "torch (CPU) could not be installed — see $LOG_FILE"
+
+step models
+"${PIP[@]}" install -r "$APP_DIR/requirements.txt" >>"$LOG_FILE" 2>&1 \
+    || fail "the model packages could not be installed — see $LOG_FILE"
+
+step check
+"$VENV/bin/python" -c 'import torch, numpy, huggingface_hub, ema_lightning' >>"$LOG_FILE" 2>&1 \
+    || fail "the installed packages do not import — see $LOG_FILE"
+sha256sum "$APP_DIR/requirements.txt" | cut -d' ' -f1 > "$READY_MARK"
+chmod -R go-w "$VENV"
+
+step service
+install -d -o aipbx-ai -g aipbx-ai -m 0755 "$DATA_DIR"
+systemctl daemon-reload
+systemctl enable "$UNIT" >>"$LOG_FILE" 2>&1 || fail "systemctl enable $UNIT failed"
+systemctl restart "$UNIT" >>"$LOG_FILE" 2>&1 || fail "$UNIT does not start — see journalctl -u aipbx-ai"
+
+runtime installed ""
+log "runtime installed ($("$VENV/bin/python" -c 'import torch; print("torch", torch.__version__)' 2>/dev/null))"
+exit 0

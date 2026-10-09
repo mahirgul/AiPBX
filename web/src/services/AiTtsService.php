@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../asterisk_sync.php';   // writeAuditLog, markPendingSync
 require_once __DIR__ . '/../secret_box.php';
 require_once __DIR__ . '/tts/TtsProviders.php';
+require_once __DIR__ . '/tts/LocalEmaTts.php';
 require_once __DIR__ . '/SoundService.php';
 
 /**
@@ -17,7 +18,7 @@ class AiTtsService
     public const AUDIO_DIR = '/var/lib/aipbx/tts';
     public const MAX_TEXT = 20000;
     /** @var list<class-string<TtsProvider>> */
-    public const PROVIDERS = [GoogleTts::class, PollyTts::class, AzureTts::class, ElevenLabsTts::class, OpenAiTts::class];
+    public const PROVIDERS = [LocalEmaTts::class, GoogleTts::class, PollyTts::class, AzureTts::class, ElevenLabsTts::class, OpenAiTts::class];
 
     public static function audioDir(): string
     {
@@ -83,7 +84,7 @@ class AiTtsService
                 $masked = !empty($f['json']) ? (string) (json_decode($v, true)['client_email'] ?? '') : SecretBox::mask($v);
                 $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? $masked : ''];
             }
-            $out[] = ['id' => $cls::id(), 'title' => $cls::title(), 'configured' => (new $cls($cfg))->configured(), 'fields' => $fields, 'max_chars' => $cls::maxChars()];
+            $out[] = ['id' => $cls::id(), 'title' => $cls::title(), 'local' => $cls::local(), 'configured' => (new $cls($cfg))->configured(), 'fields' => $fields, 'max_chars' => $cls::maxChars()];
         }
         return $out;
     }

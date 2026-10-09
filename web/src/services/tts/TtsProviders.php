@@ -142,6 +142,12 @@ abstract class TtsProvider
     /** MP3 bytes. $speed 0.5-2.0 */
     abstract public function synthesize(string $text, string $voice, string $language, float $speed): string;
 
+    /** Runs on this server (AI → Local models), not in a cloud: no credentials. */
+    public static function local(): bool
+    {
+        return false;
+    }
+
     public function configured(): bool
     {
         foreach (static::fields() as $f) {
