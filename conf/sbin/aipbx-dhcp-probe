@@ -24,6 +24,7 @@ import time
 
 WAIT_SECONDS = 4
 SO_BINDTODEVICE = getattr(socket, "SO_BINDTODEVICE", 25)
+ETH_P_IP = 0x0800
 
 
 def iface_mac(iface: str) -> bytes:
@@ -45,6 +46,19 @@ def discover(xid: int, mac: bytes) -> bytes:
     pkt += b"\x37\x03\x01\x03\x06"      # 55: subnet mask, router, DNS
     pkt += b"\xff"
     return pkt
+
+
+def udp_payload(frame: bytes, dport: int):
+    """(source IP, UDP payload) of an Ethernet/IPv4/UDP frame to dport, else None."""
+    if len(frame) < 14 + 20 + 8 or frame[12:14] != b"\x08\x00":
+        return None
+    ip = frame[14:]
+    ihl = (ip[0] & 0x0F) * 4
+    if ip[0] >> 4 != 4 or ip[9] != 17 or len(ip) < ihl + 8:
+        return None
+    if struct.unpack("!H", ip[ihl + 2:ihl + 4])[0] != dport:
+        return None
+    return socket.inet_ntoa(ip[12:16]), ip[ihl + 8:]
 
 
 def parse_offer(data: bytes, xid: int):
@@ -81,6 +95,12 @@ def main() -> int:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.SOL_SOCKET, SO_BINDTODEVICE, iface.encode() + b"\x00")
         sock.bind(("", 68))
+        # Replies are read from a raw packet socket: the broadcast OFFER is not
+        # "related" to our request for the firewall (firewalld drops it before a
+        # UDP socket sees it), so a UDP receive found no server on every AiPBX
+        # host. DHCP clients read raw packets for the same reason.
+        raw = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP))
+        raw.bind((iface, ETH_P_IP))
     except (OSError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
@@ -90,10 +110,14 @@ def main() -> int:
     seen = set()
     deadline = time.monotonic() + WAIT_SECONDS
     while (left := deadline - time.monotonic()) > 0:
-        ready, _, _ = select.select([sock], [], [], left)
+        ready, _, _ = select.select([raw], [], [], left)
         if not ready:
             break
-        data, (src, _port) = sock.recvfrom(4096)
+        frame = raw.recv(65535)
+        udp = udp_payload(frame, 68)
+        if udp is None:
+            continue
+        src, data = udp
         offer = parse_offer(data, xid)
         if offer is None:
             continue
