@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/PhoneProvisionService.php';
+require_once __DIR__ . '/../services/NetworkServicesService.php';
 
 /** PBX → Phones: phone list, waiting phones, CSV import, provisioning settings. */
 class PhoneController extends BaseController
@@ -35,6 +36,9 @@ class PhoneController extends BaseController
             'import_csv' => fn() => PhoneProvisionService::importCsvAction(self::uploadedCsv(), $csrf),
             'save_settings' => fn() => PhoneProvisionService::saveSettings($_POST),
         ]);
+
+        // Phones that got an address from AiPBX's DHCP (Network services) wait here too.
+        NetworkServicesService::syncLeasesToWaiting();
 
         $phones = PhoneProvisionService::listPhones();
         foreach ($phones as &$p) {
