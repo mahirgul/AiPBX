@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.3
+
+- **AI → Local models, several models:** models can now be **run** and
+  **stopped** one by one (a stopped model keeps its files and stays stopped
+  after a restart). The page shows the memory each running model uses, the
+  disk used by models (limit 5 GB), our own speed and memory measurement for
+  recommended models, and a warning on models that are not cleared for
+  commercial use.
+- **Try panel:** speak your own text with any running voice model and keep
+  the last results side by side to compare voices.
+- **German and English voices (Piper):** German *MLS* (CC BY 4.0, many
+  speakers), *Thorsten* and *Kerstin* (marked: fine-tuned from voices with a
+  research or non-commercial licence), English *Cori* (public domain, slower
+  high-quality voice). About 13× faster than real time on a 2-core server,
+  120–150 MB of memory each. The update installs `espeak-ng` on servers that
+  have the AI runtime.
+- **Cloud TTS:** the "Local models" provider offers every running voice
+  model, so announcements can be made in Turkish, German or English.
+- The speed test now reads a sentence in the model's own language.
+- Known limit: Piper voices read numbers as written (e.g. "1.234,50 Euro"
+  comes out as "… Komma fünf null"); write amounts and dates out in words
+  for now.
+
 ## 1.9.2
 
 - **Local AI models are much lighter:** the runtime now uses ONNX Runtime

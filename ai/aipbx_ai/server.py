@@ -26,9 +26,27 @@ MAX_TEXT = 5000
 SAMPLE_RATES = (8000, 16000, 24000, 48000)
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
 BENCHMARK_RATE = 8000
-BENCHMARK_TEXT = ("Merhaba, bizi aradığınız için teşekkür ederiz. Görüşmeniz kalite "
-                  "standartları gereği kayıt altına alınabilir. Lütfen hatta kalın, "
-                  "ilk uygun temsilcimiz size yardımcı olacaktır.")
+# The speed test reads a sentence in the model's own language (a voice that
+# reads another language is slower and sounds wrong, which skews the figure).
+BENCHMARK_TEXTS = {
+    "tr": ("Merhaba, bizi aradığınız için teşekkür ederiz. Görüşmeniz kalite "
+           "standartları gereği kayıt altına alınabilir. Lütfen hatta kalın, "
+           "ilk uygun temsilcimiz size yardımcı olacaktır."),
+    "de": ("Guten Tag, vielen Dank für Ihren Anruf. Ihr Gespräch kann zur Qualitätssicherung "
+           "aufgezeichnet werden. Bitte bleiben Sie in der Leitung, der nächste freie Mitarbeiter "
+           "ist gleich für Sie da."),
+    "en": ("Hello, thank you for calling. Your call may be recorded for quality purposes. "
+           "Please stay on the line, the next available agent will be with you shortly."),
+}
+BENCHMARK_TEXT = BENCHMARK_TEXTS["tr"]
+
+
+def benchmark_text(languages):
+    for lang in languages or ():
+        text = BENCHMARK_TEXTS.get(str(lang).split("-")[0].split("_")[0].lower())
+        if text:
+            return text
+    return BENCHMARK_TEXTS["en"]
 
 _MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop)$")
 
@@ -191,7 +209,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(HTTPStatus.OK, {"state": state})
         # benchmark
         try:
-            result = manager.benchmark(model_id, BENCHMARK_TEXT, BENCHMARK_RATE)
+            result = manager.benchmark(model_id, benchmark_text(manager.describe(model_id)["languages"]), BENCHMARK_RATE)
         except NotReady:
             raise ApiError(HTTPStatus.CONFLICT, "model not ready") from None
         except WrongKind:
