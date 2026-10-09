@@ -113,9 +113,9 @@ PBX servers have no GPU) and its quality on 8 kHz telephone audio. The published
 example the first audio after ~4 ms) have to be measured on our own servers.
 
 **Checked (2026-10-09).** Both models are Apache-2.0 (commercial use allowed; weights not gated).
-EMA Lightning on a 2-core i7-7700 without GPU: 3.4–4.5× faster than real time, first audio after
-0.4–0.5 s, model load 1.5 s (first time ~35 s), about 1 GB of memory for the service with torch,
-direct 8 kHz output. EmbeddingGemma 2 (740M parameters) still has to be measured.
+EMA Lightning on a 2-core i7-7700 without GPU, on ONNX Runtime (since 1.9.2): 8.6–11× faster
+than real time, a 6.4 s sentence in 0.55 s, model load 1.3–2.4 s, about 150–250 MB of memory,
+160 MB of runtime (PyTorch in 1.9.0–1.9.1: 3.4–4.5×, up to 1 GB of memory, 1.1 GB of runtime). EmbeddingGemma 2 (740M parameters) still has to be measured.
 
 **Steps.**
 

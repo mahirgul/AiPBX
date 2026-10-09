@@ -154,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
             "ok": True,
             "version": __version__,
             "python": platform.python_version(),
-            "torch": sysinfo.torch_version(),
+            "onnxruntime": sysinfo.runtime_version(),
             "cpu": {"cores": os.cpu_count() or 1, "model": sysinfo.cpu_model()},
             "ram": {"total_mb": total, "available_mb": available},
             "process": {"rss_mb": sysinfo.rss_mb(), "cpu_percent": self.server.cpu.percent()},

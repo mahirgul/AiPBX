@@ -1,4 +1,4 @@
-"""Tests for the aipbx-ai HTTP API with a fake model backend (no torch needed).
+"""Tests for the aipbx-ai HTTP API with a fake model backend (no model runtime needed).
 
     python3 -m unittest discover ai/tests
 """
@@ -70,7 +70,7 @@ class FakeBackend:
 
 
 SPEC = ModelSpec(id="ema-lightning", title="EMA Lightning", kind="tts", languages=("tr",),
-                 license="Apache-2.0", license_url="https://huggingface.co/canberkkkkkk/ema-lightning",
+                 license="Apache-2.0", license_url="https://github.com/mahirgul/AiPBX/releases/tag/models-ema-lightning-1",
                  homepage="https://github.com/canberk7/ema-lightning", download_mb=36, backend=FakeBackend)
 EMB = ModelSpec(id="fake-embed", title="Fake embedding", kind="embedding", languages=("tr",),
                 license="Apache-2.0", license_url="https://example.invalid", homepage="https://example.invalid",
@@ -158,7 +158,7 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIs(body["ok"], True)
         self.assertEqual(body["version"], "1")
-        for key in ("python", "torch", "cpu", "ram", "process"):
+        for key in ("python", "onnxruntime", "cpu", "ram", "process"):
             self.assertIn(key, body)
         self.assertGreaterEqual(body["cpu"]["cores"], 1)
         self.assertIsInstance(body["process"]["cpu_percent"], float)
@@ -179,7 +179,7 @@ class ApiTest(unittest.TestCase):
     def test_registry_entry(self):
         (spec,) = [s for s in models.REGISTRY if s.id == "ema-lightning"]
         self.assertEqual(spec.kind, "tts")
-        self.assertEqual(spec.download_mb, 36)
+        self.assertEqual(spec.download_mb, 34)
 
     # ---- state machine ---------------------------------------------------
 

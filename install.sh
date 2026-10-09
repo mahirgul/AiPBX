@@ -1267,7 +1267,7 @@ step "11. Local AI Service"
 
 # AI → Local models (roadmap 5): AI models that run on this server, served by
 # aipbx-ai on 127.0.0.1:8790. Only the code and the unit are installed here;
-# the Python runtime with torch (large, and most PBXs never use it) is created
+# the Python runtime with ONNX Runtime (~160 MB; most PBXs never use it) is created
 # by `aipbx-ai-setup install` when the admin asks for it, and only then is the
 # service enabled.
 AI_BASE=/opt/aipbx-ai
@@ -1311,8 +1311,7 @@ WorkingDirectory=/opt/aipbx-ai/app
 ExecStart=/opt/aipbx-ai/venv/bin/python -m aipbx_ai
 LoadCredential=token:/etc/aipbx/ai.token
 Environment=HOME=/var/lib/aipbx-ai AIPBX_AI_DATA=/var/lib/aipbx-ai
-Environment=HF_HOME=/var/lib/aipbx-ai/hf XDG_CACHE_HOME=/var/lib/aipbx-ai/cache
-Environment=HF_HUB_DISABLE_TELEMETRY=1 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 Restart=on-failure
 RestartSec=5
 # Calls come first: Asterisk keeps the CPU when both want it.

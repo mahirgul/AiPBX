@@ -1,6 +1,6 @@
 #!/bin/bash
 # aipbx-ai-setup — installs / removes the runtime of the local AI service
-# (roadmap 5, AI -> Local models): a Python venv with torch (CPU) and the model
+# (roadmap 5, AI -> Local models): a Python venv with ONNX Runtime and the model
 # packages, which most PBXs never need. install.sh only copies the service code
 # and writes the unit; the large runtime comes from here, on request.
 #
@@ -30,7 +30,6 @@ READY_MARK="$VENV/.aipbx-requirements"   # sha256 of requirements.txt; install.s
 DATA_DIR=/var/lib/aipbx-ai
 STATE_FILE="$DATA_DIR/runtime.json"
 LOG_FILE=/var/log/aipbx-ai-setup.log
-TORCH_INDEX=https://download.pytorch.org/whl/cpu
 UNIT=aipbx-ai.service
 
 die() { echo "aipbx-ai-setup: $*" >&2; exit 64; }
@@ -123,6 +122,12 @@ if ! python3 -c 'import ensurepip, venv' >/dev/null 2>&1; then
 fi
 
 step venv
+# Up to 1.9.1 the runtime was built on PyTorch (~1 GB): start over without it.
+if [[ -x "$VENV/bin/python" ]] && "$VENV/bin/python" -c 'import importlib.util, sys; sys.exit(0 if importlib.util.find_spec("torch") else 1)' 2>/dev/null; then
+    log "earlier runtime with torch found: rebuilding it"
+    systemctl stop "$UNIT" >>"$LOG_FILE" 2>&1 || true
+    rm -rf "$VENV"
+fi
 if [[ ! -x "$VENV/bin/python" ]]; then
     FRESH_VENV=1
     mkdir -p "$BASE"
@@ -131,17 +136,12 @@ fi
 PIP=("$VENV/bin/python" -m pip --disable-pip-version-check --no-input --no-cache-dir)
 "${PIP[@]}" install --upgrade pip >>"$LOG_FILE" 2>&1 || fail "pip upgrade failed"
 
-# CPU-only torch first: the PyPI wheel pulls several GB of CUDA libraries.
-step torch
-"${PIP[@]}" install --index-url "$TORCH_INDEX" 'torch>=2.6,<3' >>"$LOG_FILE" 2>&1 \
-    || fail "torch (CPU) could not be installed — see $LOG_FILE"
-
 step models
 "${PIP[@]}" install -r "$APP_DIR/requirements.txt" >>"$LOG_FILE" 2>&1 \
     || fail "the model packages could not be installed — see $LOG_FILE"
 
 step check
-"$VENV/bin/python" -c 'import torch, numpy, huggingface_hub, ema_lightning' >>"$LOG_FILE" 2>&1 \
+"$VENV/bin/python" -c 'import onnxruntime, numpy, normalizer_tr' >>"$LOG_FILE" 2>&1 \
     || fail "the installed packages do not import — see $LOG_FILE"
 sha256sum "$APP_DIR/requirements.txt" | cut -d' ' -f1 > "$READY_MARK"
 chmod -R go-w "$VENV"
@@ -153,5 +153,5 @@ systemctl enable "$UNIT" >>"$LOG_FILE" 2>&1 || fail "systemctl enable $UNIT fail
 systemctl restart "$UNIT" >>"$LOG_FILE" 2>&1 || fail "$UNIT does not start — see journalctl -u aipbx-ai"
 
 runtime installed ""
-log "runtime installed ($("$VENV/bin/python" -c 'import torch; print("torch", torch.__version__)' 2>/dev/null))"
+log "runtime installed ($("$VENV/bin/python" -c 'import onnxruntime; print("onnxruntime", onnxruntime.__version__)' 2>/dev/null))"
 exit 0
