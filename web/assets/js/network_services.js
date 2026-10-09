@@ -1,18 +1,18 @@
 /* Page script of templates/views/network_services/index.php */
 
-// Shows the fields of the selected mode: DHCP settings for "dhcp", the TFTP
-// networks note for "tftp" and "dhcp", the interface for "dhcp" only.
+// Shows the fields of the switched-on services: the interface and DHCP
+// settings with DHCP, the TFTP networks note with TFTP.
 (function () {
     const form = document.getElementById('netsvcForm');
     if (!form) return;
     const show = (selector, on) => form.querySelectorAll(selector).forEach(el => { el.style.display = on ? '' : 'none'; });
+    const dhcp = document.getElementById('netsvc_dhcp_on');
+    const tftp = document.getElementById('netsvc_tftp_on');
     const update = () => {
-        const checked = form.querySelector('input.netsvc-mode:checked');
-        const mode = checked ? checked.value : 'off';
-        show('.netsvc-dhcp', mode === 'dhcp');
-        show('.netsvc-needs-iface', mode === 'dhcp');
-        show('.netsvc-tftp', mode !== 'off');
+        show('.netsvc-dhcp', dhcp.checked);
+        show('.netsvc-needs-iface', dhcp.checked);
+        show('.netsvc-tftp', tftp.checked);
     };
-    form.querySelectorAll('input.netsvc-mode').forEach(r => r.addEventListener('change', update));
+    [dhcp, tftp].forEach(c => c.addEventListener('change', update));
     update();
 })();

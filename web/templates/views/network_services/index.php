@@ -2,6 +2,8 @@
 /** @var string $csrf @var array $settings @var string $status @var array $interfaces @var array $leases
  *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl */
 $mode = $settings['netsvc_mode'];
+// Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
+$tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 ?>
 <div class="card">
@@ -26,14 +28,17 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
         <div class="form-group">
-            <label class="form-label"><?php echo t('netsvc.mode'); ?></label>
-            <?php foreach (NetworkServicesService::MODES as $m): ?>
-                <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
-                    <input type="radio" name="netsvc_mode" value="<?php echo $m; ?>" class="u-accent netsvc-mode" <?php echo $mode === $m ? 'checked' : ''; ?>>
-                    <strong><?php echo t('netsvc.mode_' . $m); ?></strong>
-                    <span class="u-muted u-fs-12">· <?php echo t('netsvc.mode_' . $m . '_desc'); ?></span>
-                </label>
-            <?php endforeach; ?>
+            <label class="form-label"><?php echo t('netsvc.services'); ?></label>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <input type="checkbox" name="netsvc_dhcp_on" value="1" class="u-accent netsvc-switch" id="netsvc_dhcp_on" <?php echo $mode === 'dhcp' ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.switch_dhcp'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('netsvc.mode_dhcp_desc'); ?></span>
+            </label>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <input type="checkbox" name="netsvc_tftp" value="1" class="u-accent netsvc-switch" id="netsvc_tftp_on" <?php echo $tftpOn ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.switch_tftp'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_tftp_desc'); ?></span>
+            </label>
         </div>
 
         <div class="form-group netsvc-needs-iface">
@@ -89,10 +94,6 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                     <input type="text" class="form-control" value="<?php echo $h($provisioningUrl); ?>" readonly>
                 </div>
             </div>
-            <label class="u-check-label-6" style="display: block;">
-                <input type="checkbox" name="netsvc_tftp" value="1" class="u-accent" <?php echo $settings['netsvc_tftp'] === '1' ? 'checked' : ''; ?>>
-                <?php echo t('netsvc.also_tftp'); ?>
-            </label>
             <label class="u-check-label-6" style="display: block;">
                 <input type="checkbox" name="netsvc_confirm" value="1" class="u-accent" <?php echo $mode === 'dhcp' ? 'checked' : ''; ?>>
                 <?php echo t('netsvc.confirm'); ?>

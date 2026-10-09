@@ -116,7 +116,11 @@ class NetworkServicesService
      */
     public static function validate(array $data, array $interfaces, array $tftpNetworks): array
     {
-        $mode = (string) ($data['netsvc_mode'] ?? 'off');
+        // The page has two switches; netsvc_mode is still what is stored.
+        if (!isset($data['netsvc_mode'])) {
+            $data['netsvc_mode'] = !empty($data['netsvc_dhcp_on']) ? 'dhcp' : (!empty($data['netsvc_tftp']) ? 'tftp' : 'off');
+        }
+        $mode = (string) $data['netsvc_mode'];
         if (!in_array($mode, self::MODES, true)) {
             throw new \Exception(t('netsvc.err_mode'));
         }
@@ -252,8 +256,8 @@ class NetworkServicesService
             foreach ($v as $k => $val) {
                 $stmt->execute([$k, $val]);
             }
-            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'], 'update', $_SESSION['user_id'] ?? null);
-            return t('netsvc.saved_' . $v['netsvc_mode']);
+            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : ''), 'update', $_SESSION['user_id'] ?? null);
+            return t('netsvc.saved_' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' && $v['netsvc_tftp'] === '1' ? '_tftp' : ''));
         });
     }
 

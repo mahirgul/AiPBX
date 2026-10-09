@@ -164,4 +164,21 @@ final class NetworkServicesTest extends TestCase
         $this->assertSame('https://pbx.example.com/provision/', $byOption['66']);
         $this->assertSame('192.168.10.2', $byOption['150']);
     }
+
+    public function testSwitchesMapToTheStoredMode(): void
+    {
+        $v = NetworkServicesService::validate([], self::IFACES, []);
+        $this->assertSame('off', $v['netsvc_mode']);
+        $v = NetworkServicesService::validate(['netsvc_tftp' => '1'], self::IFACES, ['192.168.10.0/24']);
+        $this->assertSame('tftp', $v['netsvc_mode']);
+        $this->assertSame('1', $v['netsvc_tftp']);
+
+        // DHCP without TFTP.
+        $form = $this->dhcpForm(['netsvc_dhcp_on' => '1']);
+        unset($form['netsvc_mode'], $form['netsvc_tftp']);
+        $v = NetworkServicesService::validate($form, self::IFACES, []);
+        $this->assertSame('dhcp', $v['netsvc_mode']);
+        $this->assertSame('0', $v['netsvc_tftp']);
+        $this->assertContains('tftp=0', NetworkServicesService::privArgs($v, [], 'https://pbx.example.com/provision/'));
+    }
 }
