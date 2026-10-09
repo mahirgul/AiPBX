@@ -5,6 +5,23 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.4
+
+- **Speech to text on the server (Vosk):** small Turkish, German and English
+  models (36–45 MB, Apache-2.0) on *AI → Local models*. A new *Try* panel
+  records from the microphone (up to 15 s) or takes a WAV file and shows the
+  text. On a 2-core server Turkish is recognised about 5× faster than real
+  time; short requests come out well, about 1 word in 4 is wrong on noisy
+  telephone audio.
+- **Add a voice:** every voice of the public Piper voice list (about 180
+  voices, 58 languages) can be found by language and quality and added. Its
+  licence is read from the model card; non-commercial and fine-tuned voices
+  are marked. Files are pinned and checked like the recommended ones.
+- **English voices (Kokoro):** Heart and Michael (US), Emma and George (UK),
+  Apache-2.0, very natural. They share one 311 MB model (each further voice
+  adds 0.5 MB); about 1.7× faster than real time on a 2-core server, so they
+  suit announcements made in advance rather than live calls.
+
 ## 1.9.3
 
 - **AI → Local models, several models:** models can now be **run** and

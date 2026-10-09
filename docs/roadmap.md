@@ -209,8 +209,8 @@ no remote code); the licence is shown and accepted first, non-commercial licence
 files are recorded with SHA-256; a disk limit (default 5 GB).
 
 Steps: (a) catalogue and several models: download, run, stop, memory/disk *(done in 1.9.3)*;
-(b) Piper engine and the speech try panel *(done in 1.9.3)*; (c) Kokoro engine; (d) Hugging Face search and pasted addresses; (e) Vosk
-engine and the speech-to-text try panel (microphone or file); (f) the recommended list with our
+(b) Piper engine and the speech try panel *(done in 1.9.3)*; (c) Kokoro engine *(done in 1.9.4)*; (d) Hugging Face search and pasted addresses *(Piper voice list done in 1.9.4)*; (e) Vosk
+engine and the speech-to-text try panel (microphone or file) *(done in 1.9.4)*; (f) the recommended list with our
 measurements; (g) Whisper and text-embedding engines, with the AI applications. Every engine is
 measured on the CI VM (speed, memory, quality) before it is recommended.
 
@@ -225,6 +225,20 @@ administrator picks local or cloud from one list, with an optional fallback (clo
 over its limit → local). The AI applications use these choices, so switching from local to cloud
 needs no other change. Paid services get a usage counter and a monthly limit; choosing a cloud
 engine shows that audio and text are sent to that provider (privacy, KVKK/GDPR).
+
+### Ideas from voice-agent products (plan only, 2026-10-10)
+
+Two products seen as examples: **CentraVox** (custom Turkish voice assistant: inbound and
+outbound calls, appointments with calendar and clash checks, confirmation and reminder calls,
+assistants handing over to each other with the whole conversation, recordings with transcripts,
+asking the panel questions; critical promises are spoken by the system, not the language model)
+and **talku.ai** (inbound voice agents as a service, attached to an existing PBX through a SIP
+address, ~650 ms response, n8n/Zapier, priced per minute). For AiPBX this suggests, in order:
+(1) a destination "external AI assistant (SIP)" so any such service can take calls while
+recording and CDR stay here; (2) transcripts of call recordings in the CDR, searchable;
+(3) an own assistant (cloud language model, local Turkish voice, allowed actions only, hand-over
+to a person when unsure); (4) appointments with a calendar and outbound confirmation calls;
+(5) several assistants with hand-over. Not scheduled yet.
 
 ## 6. iOS app: same features as Android 1.0.54
 

@@ -46,6 +46,10 @@ model that was installed is downloaded again in the new format on the next start
 | Piper Thorsten | German, male | Piper | not cleared for commercial use* | 13×, ~122 MB |
 | Piper Kerstin | German, female | Piper | not cleared for commercial use* | 16×, ~166 MB |
 | Piper Cori | English (UK), female | Piper | public domain | 2× (high quality: announcements only) |
+| Kokoro Heart | English (US), female | Kokoro | Apache-2.0 | 1.7×, ~460 MB (shared, see below) |
+| Kokoro Michael | English (US), male | Kokoro | Apache-2.0 | 1.7×, shared |
+| Kokoro Emma | English (UK), female | Kokoro | Apache-2.0 | 1.7×, shared |
+| Kokoro George | English (UK), male | Kokoro | Apache-2.0 | 1.7×, shared |
 
 \* Their recordings are CC0, but the models were fine-tuned from voices whose data allows research
 use only (lessac) or no commercial use (ryan).
@@ -55,6 +59,66 @@ pinned revision, each file checked by SHA-256. They need the `espeak-ng` program
 installs. Several models can run at the same time; *Stop* frees their memory and keeps the files.
 A stopped model stays stopped after a restart (`/var/lib/aipbx-ai/state.json`). Downloads stop at
 the disk limit for models, 5 GB by default (`AIPBX_AI_DISK_LIMIT_MB` in the unit).
+
+### Kokoro
+
+[Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0, model and voices) is the
+recommended English voice: clearly more natural than Piper. The four voices in the catalogue are
+the best-graded English ones of its
+[VOICES.md](https://huggingface.co/hexgrad/Kokoro-82M/blob/f3ff3571791e39611d31c381e3a41a3af07b4987/VOICES.md)
+(Heart A, Emma B-, Michael C+, George C; the grades rate the training data). None of them was
+trained with CC BY audio (only the Japanese and French voices were). Kokoro also speaks Spanish,
+French, Italian, Brazilian Portuguese and Hindi (no German); the engine supports those voices,
+the catalogue has only English ones so far.
+
+- **Files**: the ONNX export [onnx-community/Kokoro-82M-v1.0-ONNX](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX)
+  at a pinned revision, each file checked by SHA-256. All voices use the same 311 MB model
+  (`onnx/model.onnx`, fp32), which is stored once in `/var/lib/aipbx-ai/models/_shared/kokoro/`
+  and deleted with the last Kokoro voice; each voice adds 0.5 MB. The page shows the model's size
+  with one of the installed voices (the one whose id sorts first), so the total is right.
+- **Memory**: the running voices share one model in memory, about 460–650 MB however many
+  of them run.
+- **Speed**: about 1.7× real time on 2 cores (1.15× on one), the first sentence after about
+  1.1 s (1.5–2 s on one core): fine for announcements and prompts made in advance, slow for live
+  calls.
+- **Why fp32**: the export also has fp16, 8-bit and 4-bit variants. On a 2-core CPU none of the
+  working ones is faster (all 1.7–1.8×); fp16 produces invalid audio (NaN) and the 8-bit/fp16 mix
+  crashes ONNX Runtime. The quantized ones are smaller (92–305 MB, the 8-bit one uses 400 MB of
+  memory instead of 650 MB) but sound different: their log-mel distance to the fp32 output is
+  3.0–3.8 dB, as large as reading 5–10 % faster (2.9 / 3.7 dB) and about half the distance to
+  another voice (7.1 dB). With no speed to gain, the reference quality wins.
+- **Pronunciation**: Kokoro was trained on the phonemes of its own G2P,
+  [misaki](https://github.com/hexgrad/misaki), which pulls in spaCy and its language models.
+  The service uses the `espeak-ng` program instead (as Piper and kokoro-onnx do) and rewrites its
+  phonemes into Kokoro's the way misaki's own espeak fallback does. That is a known, workable
+  fallback, but English sounds a little less natural: about three words in four come out as in
+  misaki's lexicon; the rest are mostly unstressed vowels (ə / ɪ / ʌ), function words ("to",
+  "the") and syllabic endings. Spanish, French, Italian, Portuguese and Hindi use espeak-ng in
+  Kokoro itself, so nothing is lost there.
+- **Numbers**: write amounts out for the best result. espeak-ng reads "$1,234.50" as
+  "dollar one thousand two hundred thirty four point five zero".
+
+### Speech to text (Vosk)
+
+| Model | Language | Size | Licence | Our measurement |
+|-------|----------|------|---------|-----------------|
+| Vosk small | Turkish | 36 MB | Apache-2.0 | 5× real time, ~120–180 MB; about 1 word in 4 wrong on 8 kHz telephone audio |
+| Vosk small | German | 45 MB | Apache-2.0 | |
+| Vosk small | English (US) | 40 MB | Apache-2.0 | |
+
+The zip files come from alphacephei.com, pinned by SHA-256, and are unpacked into the model's folder
+(paths leaving it are refused). `POST /v1/stt?model=<id>` takes a WAV file (8–48 kHz, up to 60 s);
+the page's *Try: speech to text* panel records from the microphone (up to 15 s) or takes a WAV file.
+
+### Adding voices from the Piper voice list
+
+*Add a voice* lists every voice of [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices)
+(about 180 voices in 58 languages), filtered by language and quality. Adding one pins the list's
+current revision, takes the model's SHA-256 from Hugging Face and checks the config against the
+list's MD5. The licence line of the voice's model card is shown; voices under a non-commercial
+licence, or fine-tuned from another voice, are marked as not cleared for commercial use. Added voices
+are kept in `/var/lib/aipbx-ai/models/<id>/manifest.json` and come back after a restart; *Remove*
+deletes them completely.
 
 ## Steps
 
