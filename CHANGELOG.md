@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.8.2
+
+- **Translations:** the texts added up to 1.8.1 (website widget, network
+  services, file storage, Apple push, IVR call flow, brand settings, audit
+  log names) are translated into all 21 other portal languages. These are
+  machine translations; corrections from native speakers are welcome.
+
 ## 1.8.1
 
 - **Admin menu:** *System Update*, the last item of the Admin group, was cut
