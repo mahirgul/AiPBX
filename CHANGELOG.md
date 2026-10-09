@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.5
+
+- **Website call widget** (*Integrations → Web widgets*, admin only): a
+  "Call us" button for any website. Visitors call the company from the
+  browser over WebRTC, without a phone or an app, or leave a number for a
+  call-back. Each widget works like a trunk with its own number as the DID,
+  so routing, queues, time conditions and reports apply; the destination is
+  fixed by the administrator. Calls need a one-time token, and allowed
+  websites and rate limits are set per widget. The site needs one line of
+  code; a WordPress plugin is in `integrations/wordpress`. See
+  [Website call widget](docs/web-widgets.md).
+
 ## 1.7.4
 
 - **DHCP and TFTP for desk phones** (*PBX → Network services*, roadmap 10):
