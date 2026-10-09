@@ -18,6 +18,8 @@ class BrandSettingsService {
             'site_logo_type' => 'image',
             'site_logo_icon' => 'fa-network-wired',
             'site_logo_image' => '',
+            // Optional logo for the dark theme (light text/lines); empty = the normal logo everywhere.
+            'site_logo_image_dark' => '',
             'site_favicon_url' => '',
             'brand_color_primary' => '',
             'brand_color_secondary' => '',
@@ -25,6 +27,10 @@ class BrandSettingsService {
             'support_name' => '',
             'support_email' => '',
             'support_phone' => '',
+            // E-mails: which logo goes on the coloured header, and whether the
+            // brand name is printed under it (off when the logo already contains it).
+            'mail_logo_variant' => 'light',
+            'mail_show_brand_title' => '1',
         ];
     }
 
@@ -96,7 +102,7 @@ class BrandSettingsService {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         try {
-            foreach (array_merge(glob(self::uploadDir() . '/logo.*') ?: [], glob(self::uploadDir() . '/favicon.*') ?: []) as $old) {
+            foreach (array_merge(glob(self::uploadDir() . '/logo.*') ?: [], glob(self::uploadDir() . '/logo_dark.*') ?: [], glob(self::uploadDir() . '/favicon.*') ?: []) as $old) {
                 @unlink($old);
             }
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
@@ -144,17 +150,24 @@ class BrandSettingsService {
                 'site_logo_type' => (($post['site_logo_type'] ?? 'image') === 'icon') ? 'icon' : 'image',
                 'site_logo_icon' => trim($post['site_logo_icon'] ?? $defaults['site_logo_icon']) ?: $defaults['site_logo_icon'],
                 'site_logo_image' => $current['site_logo_image'],
+                'site_logo_image_dark' => $current['site_logo_image_dark'],
                 'site_favicon_url' => $current['site_favicon_url'],
                 'brand_color_primary' => $primary,
                 'brand_color_secondary' => $secondary,
                 'support_name' => mb_substr(trim((string) ($post['support_name'] ?? '')), 0, 80),
                 'support_email' => filter_var(trim((string) ($post['support_email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '',
                 'support_phone' => mb_substr(preg_replace('/[^0-9+()\/ .-]/', '', (string) ($post['support_phone'] ?? '')), 0, 40),
+                'mail_logo_variant' => (($post['mail_logo_variant'] ?? '') === 'dark') ? 'dark' : 'light',
+                'mail_show_brand_title' => empty($post['mail_show_brand_title']) ? '0' : '1',
             ];
 
             if (!empty($post['remove_logo_image'])) {
                 foreach (glob($uploadDir . '/logo.*') as $old) { @unlink($old); }
                 $new_settings['site_logo_image'] = '';
+            }
+            if (!empty($post['remove_logo_image_dark'])) {
+                foreach (glob($uploadDir . '/logo_dark.*') as $old) { @unlink($old); }
+                $new_settings['site_logo_image_dark'] = '';
             }
             if (!empty($post['remove_favicon'])) {
                 foreach (glob($uploadDir . '/favicon.*') as $old) { @unlink($old); }
@@ -165,6 +178,11 @@ class BrandSettingsService {
             if ($uploaded_logo !== null) {
                 $new_settings['site_logo_image'] = $uploaded_logo;
                 $new_settings['site_logo_type'] = 'image';
+            }
+
+            $uploaded_logo_dark = self::saveBrandUpload('logo_dark_file', 'logo_dark', ['png', 'jpg', 'jpeg', 'svg', 'webp'], 2 * 1024 * 1024);
+            if ($uploaded_logo_dark !== null) {
+                $new_settings['site_logo_image_dark'] = $uploaded_logo_dark;
             }
 
             $uploaded_favicon = self::saveBrandUpload('favicon_file', 'favicon', ['ico', 'png'], 512 * 1024);

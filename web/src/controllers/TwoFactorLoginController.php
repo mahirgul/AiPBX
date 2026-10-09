@@ -124,6 +124,7 @@ class TwoFactorLoginController extends BaseController
         $site_logo_type = getSystemSetting('site_logo_type', 'image');
         $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
         $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
+        $site_logo_image_dark = getSystemSetting('site_logo_image_dark', '');
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
 
         static::renderAuthPage('login/two_factor', [
@@ -136,6 +137,7 @@ class TwoFactorLoginController extends BaseController
             'site_logo_type' => $site_logo_type,
             'site_logo_icon' => $site_logo_icon,
             'site_logo_image' => $site_logo_image,
+            'site_logo_image_dark' => $site_logo_image_dark,
             'site_favicon_url' => $site_favicon_url,
         ], ['title' => t('login_2fa.page_title', 'İki Faktörlü Doğrulama')]);
     }

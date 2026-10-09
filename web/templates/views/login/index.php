@@ -7,7 +7,8 @@ ob_start(); ?>
         <div class="u-text-center u-mb-24">
             <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
                 <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
-                    <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" class="<?php echo !empty($site_logo_image_dark) ? 'brand-logo-light' : ''; ?>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    <?php if (!empty($site_logo_image_dark)): ?><img src="<?php echo htmlspecialchars($site_logo_image_dark); ?>" alt="Logo" class="brand-logo-dark" style="max-width: 100%; max-height: 100%; object-fit: contain;"><?php endif; ?>
                 <?php else: ?>
                     <i class="fas <?php echo htmlspecialchars($site_logo_icon); ?> u-primary"></i>
                 <?php endif; ?>
