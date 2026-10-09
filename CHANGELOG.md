@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.2
+
+- **Android app 1.0.56: empty call history and settings after an update**
+  (#17). When the server no longer accepts the saved sign-in (expired after a
+  long time, password reset, or a server change), the app looked signed in
+  but every list stayed empty until it was reinstalled. It now signs out and
+  opens the sign-in screen.
+
 ## 1.7.1
 
 - **Phone provisioning: Snom, Cisco SPA and Poly** (#27) next to Yealink,
