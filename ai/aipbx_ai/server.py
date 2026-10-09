@@ -11,6 +11,7 @@ import logging
 import os
 import platform
 import re
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -25,6 +26,7 @@ log = logging.getLogger("aipbx_ai.server")
 
 MAX_BODY = 128 * 1024          # 5000 characters, even fully \u-escaped, fit
 MAX_TEXT = 5000
+MAX_AUDIO = 4 * 1024 * 1024   # /v1/stt: 60 s of 16 kHz 16-bit stereo fits
 SAMPLE_RATES = (8000, 16000, 24000, 48000)
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
 BENCHMARK_RATE = 8000
@@ -142,6 +144,8 @@ class Handler(BaseHTTPRequestHandler):
                                                   "disk": self.server.manager.disk()})
             if method == "POST" and path == "/v1/tts":
                 return self._tts(self._body())
+            if method == "POST" and path == "/v1/stt":
+                return self._stt()
             if method == "GET" and path == "/v1/catalog/piper":
                 return self._piper_catalog()
             if method == "POST" and path == "/v1/models/add":
@@ -185,6 +189,35 @@ class Handler(BaseHTTPRequestHandler):
             "ram": {"total_mb": total, "available_mb": available},
             "process": {"rss_mb": sysinfo.rss_mb(), "cpu_percent": self.server.cpu.percent()},
         }
+
+    def _stt(self):
+        """POST /v1/stt?model=<id>, body: a WAV file (Content-Type audio/wav), up to 60 s."""
+        from urllib.parse import parse_qs, urlsplit
+
+        model_id = (parse_qs(urlsplit(self.path).query).get("model") or [""])[0]
+        if not model_id:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "model is required")
+        if (self.headers.get("Content-Type") or "").split(";")[0].strip() not in ("audio/wav", "audio/x-wav", "audio/wave"):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "send the audio as audio/wav")
+        length = (self.headers.get("Content-Length") or "").strip()
+        if not length.isdigit():
+            raise ApiError(HTTPStatus.BAD_REQUEST, "invalid Content-Length")
+        if int(length) > MAX_AUDIO:
+            raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "audio too large")
+        wav = self.rfile.read(int(length))
+        try:
+            started = time.perf_counter()
+            result = self.server.manager.transcribe(model_id, wav)
+            result["ms"] = int(round((time.perf_counter() - started) * 1000))
+        except NotReady:
+            raise ApiError(HTTPStatus.CONFLICT, "model not ready") from None
+        except WrongKind:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "model is not a speech-to-text model") from None
+        except ServiceBusy:
+            raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "too many requests waiting") from None
+        except ValueError as e:
+            raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+        return self._json(HTTPStatus.OK, result)
 
     def _known_files(self):
         known = {}

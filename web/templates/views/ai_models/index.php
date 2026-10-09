@@ -10,6 +10,7 @@ foreach ([
     'no_models', 'btn_run', 'btn_stop', 'st_stopped', 'memory', 'disk_used', 'measured', 'noncommercial',
     'try_title', 'try_play', 'try_none', 'try_result', 'msg_try_error', 'gender_female', 'gender_male',
     'add_in_list', 'add_btn', 'add_card', 'add_speakers', 'add_loading', 'add_none', 'add_all_languages',
+    'stt_record', 'stt_stop', 'stt_result', 'stt_empty', 'stt_no_mic', 'stt_working', 'kind_stt',
 ] as $k) {
     $texts[$k] = t('ai_models.' . $k);
 }
@@ -86,6 +87,22 @@ foreach ([
             <button type="button" class="btn btn-primary" id="aim-try-go"><i class="fas fa-play"></i> <?php echo t('ai_models.try_play'); ?></button>
         </div>
         <div id="aim-try-results" class="u-mt-10"></div>
+    </div>
+</div>
+
+<div class="card" id="aim-stt-card" style="display: none;">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-microphone u-primary"></i> <?php echo t('ai_models.stt_title'); ?></div>
+    </div>
+    <div style="padding: 0 20px 20px;">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.stt_help'); ?></p>
+        <div class="u-flex-gap" style="flex-wrap: wrap; align-items: center;">
+            <select id="aim-stt-model" class="form-control" style="max-width: 320px;"></select>
+            <button type="button" class="btn btn-primary" id="aim-stt-rec"><i class="fas fa-microphone"></i> <span><?php echo t('ai_models.stt_record'); ?></span></button>
+            <label class="btn btn-secondary" style="margin: 0;"><i class="fas fa-file-audio"></i> <?php echo t('ai_models.stt_file'); ?>
+                <input type="file" id="aim-stt-file" accept=".wav,audio/wav" style="display: none;"></label>
+        </div>
+        <div id="aim-stt-results" class="u-mt-10"></div>
     </div>
 </div>
 

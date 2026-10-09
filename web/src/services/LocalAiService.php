@@ -311,6 +311,29 @@ class LocalAiService
         return $r['body'];
     }
 
+    /**
+     * Speech to text with a running speech-to-text model.
+     * @return array{text: string, seconds: float, ms: int}
+     */
+    public static function stt(string $model, string $wav): array
+    {
+        self::requireId($model);
+        if (strlen($wav) < 44 || strlen($wav) > 4 * 1024 * 1024 || !str_starts_with($wav, 'RIFF')) {
+            throw new LocalAiException(t('ai_models.err_stt_audio'));
+        }
+        $headers = ['Authorization' => 'Bearer ' . self::token(), 'Content-Type' => 'audio/wav'];
+        try {
+            $r = TtsHttp::request('POST', self::BASE_URL . '/v1/stt?model=' . rawurlencode($model), $headers, $wav, 120);
+        } catch (TtsException $e) {
+            throw new LocalAiException(t('ai_models.err_no_service'));
+        }
+        $d = json_decode($r['body'], true);
+        if ($r['status'] !== 200 || !is_array($d)) {
+            throw new LocalAiException(is_array($d) && is_string($d['error'] ?? null) ? mb_substr($d['error'], 0, 300) : 'HTTP ' . $r['status']);
+        }
+        return ['text' => (string) ($d['text'] ?? ''), 'seconds' => (float) ($d['seconds'] ?? 0), 'ms' => (int) ($d['ms'] ?? 0)];
+    }
+
     /** WAV → MP3 (what Cloud TTS keeps and plays), with lame. */
     public static function wavToMp3(string $wav): string
     {

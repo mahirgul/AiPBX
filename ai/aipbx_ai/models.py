@@ -34,6 +34,7 @@ from pathlib import Path
 from . import sysinfo
 from .ema import EmaLightningBackend
 from .piper_backend import PiperBackend
+from .vosk_backend import VoskBackend
 
 log = logging.getLogger("aipbx_ai.models")
 
@@ -86,6 +87,13 @@ def _piper(id, title, path, onnx_sha, json_sha, mb, languages, license, commerci
                      gender=gender, source=source)
 
 
+def _vosk(id, title, file, sha, mb, languages, measured=None, note=""):
+    return ModelSpec(id=id, title=title, kind="stt", languages=languages, license="Apache-2.0",
+                     license_url="https://alphacephei.com/vosk/models", homepage="https://alphacephei.com/vosk/",
+                     download_mb=mb, backend=VoskBackend, engine="vosk", measured=measured or {}, note=note,
+                     source={"file": file, "sha256": sha})
+
+
 REGISTRY = (
     ModelSpec(
         id="ema-lightning",
@@ -124,6 +132,14 @@ REGISTRY = (
            "Public domain", True, gender="female",
            note="Slow on a small server (high quality): fine for announcements, not for live calls.",
            measured={"realtime_factor": 2.1, "memory_mb": 228, "load_s": 2.5}),
+    _vosk("vosk-tr-small", "Vosk small (Turkish)", "vosk-model-small-tr-0.3.zip",
+          "8c8d07cec1bce31add14967c16891c84152cdf76d391e33c08278119b9ea96e5", 36, ("tr-TR",),
+          measured={"realtime_factor": 5, "memory_mb": 120, "load_s": 0.4},
+          note="Fast and small; on 8 kHz telephone audio about 1 word in 4 is wrong. Best with short requests."),
+    _vosk("vosk-de-small", "Vosk small (German)", "vosk-model-small-de-0.15.zip",
+          "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43", 45, ("de-DE",)),
+    _vosk("vosk-en-small", "Vosk small (English, US)", "vosk-model-small-en-us-0.15.zip",
+          "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498", 40, ("en-US",)),
 )
 
 
@@ -406,6 +422,9 @@ class ModelManager:
         finally:
             with self._mu:
                 entry.pending -= 1
+
+    def transcribe(self, model_id, wav):
+        return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))
 
     def synthesize(self, model_id, text, speed, sample_rate):
         return self._run_job(model_id, "tts",
