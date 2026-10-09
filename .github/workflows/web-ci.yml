@@ -102,7 +102,7 @@ jobs:
       - name: Unit tests
         # mail() must not send real email (no MTA in CI); the invitation tests only
         # expect the sending to count as successful.
-        run: php -d sendmail_path=/bin/true vendor/bin/phpunit --no-coverage
+        run: php -d "sendmail_path=cat > /dev/null" vendor/bin/phpunit --no-coverage
 
       - name: Smoke (every route in tr/en, RBAC, conventions, lint)
         run: |
