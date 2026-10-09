@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.7.3
+
+- **iOS push notifications (APNs):** iPhones now get incoming calls and chat
+  messages while the app is closed, like Android with FCM. A call arrives as
+  a VoIP push and rings on the CallKit screen; chat messages can be answered
+  from the lock screen. Set it up on *Admin → Push* (new APNs section: the
+  Apple `.p8` key, Key ID, Team ID, bundle ID, sandbox or production). Android
+  (FCM) and iOS (APNs) can be on at the same time. The iOS app has to be
+  signed with a push-capable profile; see `ios/README.md`.
+
 ## 1.7.2
 
 - **Android app 1.0.56: empty call history and settings after an update**
