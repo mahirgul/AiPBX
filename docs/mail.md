@@ -45,7 +45,10 @@ delivered and the test e-mail.
 Voicemail e-mails: Asterisk hands each notification to `bin/voicemail_mail.php` (`mailcmd`, written
 to `/etc/asterisk/pbx/voicemail_general.conf`), which sends the *New voicemail* template with the
 recording attached. If that fails, the message Asterisk built is delivered unchanged, so a
-notification is not lost (`journalctl -t aipbx-voicemail` shows why).
+notification is not lost, also when the script stops early (database unreachable, PHP error).
+`journalctl -t aipbx-voicemail` shows each notification: handed to sendmail, or why the original
+was sent instead. No line there for a new voicemail means Asterisk sent nothing: check that the
+user has an e-mail address and the e-mail switch on (*My Phone → Voicemail*), then *Apply*.
 
 ## Checking delivery
 
