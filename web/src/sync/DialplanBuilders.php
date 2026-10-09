@@ -278,12 +278,14 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     }
 
     // Mobile push notification hook (layer 1 - only when push is on, mobile is allowed and the subscriber has a mobile device)
+    // Android (FCM) and iOS (APNs) are separate channels; either one counts.
     $pushEnabled = (string)getSystemSetting('push_enabled', '0') === '1';
-    $pushProvider = (string)getSystemSetting('push_provider', 'none');
+    $pushChannelOn = (string)getSystemSetting('push_provider', 'none') !== 'none'
+        || (string)getSystemSetting('push_apns_enabled', '0') === '1';
     $hasMobileDevice = false;
 
-    if ($allowMob && $pushEnabled && $pushProvider !== 'none') {
-        $mStmt = $db->prepare("SELECT 1 FROM sys_mobile_devices WHERE extension = ? AND is_active = 1 AND fcm_token IS NOT NULL AND fcm_token <> '' AND push_type <> 'none' LIMIT 1");
+    if ($allowMob && $pushEnabled && $pushChannelOn) {
+        $mStmt = $db->prepare("SELECT 1 FROM sys_mobile_devices WHERE extension = ? AND is_active = 1 AND ((fcm_token IS NOT NULL AND fcm_token <> '') OR voip_token IS NOT NULL) AND push_type <> 'none' LIMIT 1");
         $mStmt->execute([$ext]);
         $hasMobileDevice = (bool)$mStmt->fetchColumn();
     }

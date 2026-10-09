@@ -13,6 +13,11 @@ function togglePushFields() {
     if (fcmSection) {
         fcmSection.style.display = (provider === 'fcm') ? 'block' : 'none';
     }
+    var apnsSelect = document.getElementById('pushApnsEnabledSelect');
+    var apnsSection = document.getElementById('apnsConfigSection');
+    if (apnsSelect && apnsSection) {
+        apnsSection.style.display = (apnsSelect.value === '1') ? 'block' : 'none';
+    }
 }
 
 function sendTestPush() {

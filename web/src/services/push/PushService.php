@@ -5,6 +5,8 @@ namespace App\Services\Push;
 require_once __DIR__ . '/PushProviderInterface.php';
 require_once __DIR__ . '/NullPushProvider.php';
 require_once __DIR__ . '/FcmPushProvider.php';
+require_once __DIR__ . '/ApnsPushProvider.php';
+require_once __DIR__ . '/CompositePushProvider.php';
 require_once __DIR__ . '/../../../config.php';
 
 class PushService
@@ -20,22 +22,41 @@ class PushService
             return self::$providerInstance;
         }
 
-        $enabled = (string)getSystemSetting('push_enabled', '0');
-        $providerType = (string)getSystemSetting('push_provider', 'none');
-
-        if ($enabled !== '1' || $providerType === 'none') {
+        if (!self::isEnabled()) {
             self::$providerInstance = new NullPushProvider();
             return self::$providerInstance;
         }
 
-        if ($providerType === 'fcm') {
-            self::$providerInstance = new FcmPushProvider();
-            return self::$providerInstance;
+        // Android (FCM) and iOS (APNs) are independent channels: both can be on.
+        $providers = [];
+        if ((string)getSystemSetting('push_provider', 'none') === 'fcm') {
+            $providers[] = new FcmPushProvider();
+        }
+        if ((string)getSystemSetting('push_apns_enabled', '0') === '1') {
+            $providers[] = new ApnsPushProvider();
         }
 
-        // Default fallback to Null
-        self::$providerInstance = new NullPushProvider();
+        if ($providers === []) {
+            self::$providerInstance = new NullPushProvider();
+        } elseif (count($providers) === 1) {
+            self::$providerInstance = $providers[0];
+        } else {
+            self::$providerInstance = new CompositePushProvider($providers);
+        }
         return self::$providerInstance;
+    }
+
+    /**
+     * The push layer is on and at least one channel (FCM or APNs) is selected.
+     * The dialplan uses it to decide whether to wake mobile devices.
+     */
+    public static function isEnabled(): bool
+    {
+        if ((string)getSystemSetting('push_enabled', '0') !== '1') {
+            return false;
+        }
+        return (string)getSystemSetting('push_provider', 'none') !== 'none'
+            || (string)getSystemSetting('push_apns_enabled', '0') === '1';
     }
 
     /**
