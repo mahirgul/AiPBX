@@ -53,6 +53,7 @@ return [
     '/pending-sync'    => ['controller' => PendingSyncController::class, 'action' => 'index', 'module' => 'pending_sync.php'],
     '/audit-log'       => ['controller' => AuditLogController::class, 'action' => 'index', 'module' => 'audit_log.php'],
     '/firewall'        => ['controller' => FirewallController::class, 'action' => 'index', 'module' => 'firewall.php'],
+    '/network-services' => ['controller' => NetworkServicesController::class, 'action' => 'index', 'module' => 'network_services.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],
     '/system-update'   => ['controller' => SystemUpdateController::class, 'action' => 'index', 'module' => 'system_update.php'],
