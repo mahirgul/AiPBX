@@ -28,6 +28,7 @@ class LocalAiService
 
     /** Answers of this request (the page and the TTS provider ask several times). */
     private static ?array $modelsCache = null;
+    private static ?array $diskCache = null;
 
     public static function tokenFile(): string
     {
@@ -150,8 +151,11 @@ class LocalAiService
         try {
             $data = self::callJson('GET', '/v1/models', null, 3);
         } catch (LocalAiException $e) {
+            self::$diskCache = null;
             return self::$modelsCache = [];
         }
+        $disk = is_array($data['disk'] ?? null) ? $data['disk'] : [];
+        self::$diskCache = ['used_mb' => (int) ($disk['used_mb'] ?? 0), 'limit_mb' => (int) ($disk['limit_mb'] ?? 0)];
         $out = [];
         foreach ((array) ($data['models'] ?? []) as $m) {
             if (is_array($m) && is_string($m['id'] ?? null) && self::validId($m['id'])) {
@@ -159,6 +163,35 @@ class LocalAiService
             }
         }
         return self::$modelsCache = $out;
+    }
+
+    /** @return array{used_mb: int, limit_mb: int}|null */
+    public static function disk(): ?array
+    {
+        self::models();
+        return self::$diskCache;
+    }
+
+    /**
+     * Running text-to-speech models (the voices of the "Local models" TTS provider).
+     * @return list<array<string, mixed>>
+     */
+    public static function readyTtsModels(): array
+    {
+        return array_values(array_filter(self::models(), fn($m) => ($m['kind'] ?? '') === 'tts' && ($m['state'] ?? '') === 'ready'));
+    }
+
+    /** "tr" → "tr-TR"; tags that already carry a region stay as they are. */
+    public static function languageTag(string $lang): string
+    {
+        $lang = str_replace('_', '-', $lang);
+        if (str_contains($lang, '-')) {
+            return $lang;
+        }
+        return match ($lang) {
+            'tr' => 'tr-TR', 'de' => 'de-DE', 'en' => 'en-US', 'fr' => 'fr-FR', 'es' => 'es-ES', 'it' => 'it-IT',
+            default => $lang,
+        };
     }
 
     public static function model(string $id): ?array
@@ -197,6 +230,24 @@ class LocalAiService
         self::callJson('POST', '/v1/models/' . $id . '/install', ['accept_license' => true], 10);
         self::$modelsCache = null;
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
+    }
+
+    /** Loads a downloaded model into memory (it stays running after restarts). */
+    public static function runModel(string $id): void
+    {
+        self::requireId($id);
+        self::callJson('POST', '/v1/models/' . $id . '/run', [], 10);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' started', 'update', $_SESSION['user_id'] ?? null);
+    }
+
+    /** Unloads a model; its files stay (it stays stopped after restarts). */
+    public static function stopModel(string $id): void
+    {
+        self::requireId($id);
+        self::callJson('POST', '/v1/models/' . $id . '/stop', [], 60);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' stopped', 'update', $_SESSION['user_id'] ?? null);
     }
 
     public static function removeModel(string $id): void
@@ -263,6 +314,7 @@ class LocalAiService
             'runtime' => $runtime,
             'service' => $health,
             'models' => $health !== null ? self::models() : [],
+            'disk' => $health !== null ? self::disk() : null,
         ];
     }
 }

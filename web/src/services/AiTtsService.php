@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../asterisk_sync.php';   // writeAuditLog, markPendingSync
 require_once __DIR__ . '/../secret_box.php';
 require_once __DIR__ . '/tts/TtsProviders.php';
-require_once __DIR__ . '/tts/LocalEmaTts.php';
+require_once __DIR__ . '/tts/LocalTts.php';
 require_once __DIR__ . '/SoundService.php';
 
 /**
@@ -18,7 +18,7 @@ class AiTtsService
     public const AUDIO_DIR = '/var/lib/aipbx/tts';
     public const MAX_TEXT = 20000;
     /** @var list<class-string<TtsProvider>> */
-    public const PROVIDERS = [LocalEmaTts::class, GoogleTts::class, PollyTts::class, AzureTts::class, ElevenLabsTts::class, OpenAiTts::class];
+    public const PROVIDERS = [LocalTts::class, GoogleTts::class, PollyTts::class, AzureTts::class, ElevenLabsTts::class, OpenAiTts::class];
 
     public static function audioDir(): string
     {

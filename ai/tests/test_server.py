@@ -218,6 +218,38 @@ class ApiTest(unittest.TestCase):
         self.assertFalse(self.fake.loaded)
         self.assertFalse(self.fake.files)
 
+    def test_stop_and_run(self):
+        self.request("POST", "/v1/models/ema-lightning/install", {"accept_license": True})
+        self.wait_state("ready")
+        status, body, _ = self.request("POST", "/v1/models/ema-lightning/stop", {})
+        self.assertEqual((status, body["state"]), (200, "installed"))
+        self.assertFalse(self.fake.loaded)
+        self.assertTrue(self.fake.files)
+        status, _, _ = self.request("POST", "/v1/tts", {"model": "ema-lightning", "text": "Merhaba"})
+        self.assertEqual(status, 409)
+        status, body, _ = self.request("POST", "/v1/models/ema-lightning/run", {})
+        self.assertEqual(status, 202)
+        self.wait_state("ready")
+        self.assertTrue(self.fake.loaded)
+
+    def test_run_needs_files(self):
+        status, body, _ = self.request("POST", "/v1/models/ema-lightning/run", {})
+        self.assertEqual((status, body["error"]), (409, "the model is not downloaded"))
+
+    def test_models_report_disk(self):
+        status, body, _ = self.request("GET", "/v1/models")
+        self.assertEqual(status, 200)
+        self.assertEqual(set(body["disk"]), {"used_mb", "limit_mb"})
+        m = next(x for x in body["models"] if x["id"] == "ema-lightning")
+        for key in ("engine", "commercial", "measured", "memory_mb"):
+            self.assertIn(key, m)
+
+    def test_disk_limit(self):
+        self.manager.disk_limit_mb = 10   # the fake model is 36 MB
+        status, body, _ = self.request("POST", "/v1/models/ema-lightning/install", {"accept_license": True})
+        self.assertEqual(status, 507)
+        self.assertEqual(self.manager.state("ema-lightning"), "absent")
+
     def test_start_loads_installed_models(self):
         self.fake.files = True
         self.assertEqual(self.manager.state("ema-lightning"), "installed")
@@ -325,3 +357,32 @@ class WavTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StoppedChoiceTest(unittest.TestCase):
+    """A stopped model stays stopped after a restart; the others load again."""
+
+    def test_restart_keeps_the_choice(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as data:
+            backends = {}
+
+            def factory(spec):
+                b = backends.get(spec.id) or FakeBackend(spec)
+                b.files = True
+                backends[spec.id] = b
+                return b
+
+            first = ModelManager((SPEC,), data, backend_factory=factory)
+            first.start()
+            deadline = time.monotonic() + 5
+            while first.state("ema-lightning") != "ready" and time.monotonic() < deadline:
+                time.sleep(0.02)
+            first.stop("ema-lightning")
+            second = ModelManager((SPEC,), data, backend_factory=factory)
+            second.start()
+            time.sleep(0.2)
+            self.assertEqual(second.state("ema-lightning"), "installed")
+            second.install("ema-lightning")      # run again clears the choice
+            third = ModelManager((SPEC,), data, backend_factory=factory)
+            self.assertNotIn("ema-lightning", third._stopped)

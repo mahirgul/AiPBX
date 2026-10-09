@@ -7,6 +7,8 @@
  *   POST action=model_install id= accept_license=1
  *   POST action=model_remove id=
  *   POST action=benchmark id=           → speed of the model on this server
+ *   POST action=model_run id= / model_stop id=   → load into memory / unload (files stay)
+ *   POST action=try id= text= speed=    → audio/wav of a voice model (the page's try panel)
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/LocalAiService.php';
@@ -63,6 +65,25 @@ try {
         case 'benchmark':
             $out['benchmark'] = LocalAiService::benchmark($id);
             break;
+        case 'model_run':
+            LocalAiService::runModel($id);
+            $out['message'] = t('ai_models.msg_starting');
+            break;
+        case 'model_stop':
+            LocalAiService::stopModel($id);
+            $out['message'] = t('ai_models.msg_stopped');
+            break;
+        case 'try':
+            $text = trim((string) ($_POST['text'] ?? ''));
+            if ($text === '' || mb_strlen($text) > 1000) {
+                throw new LocalAiException(t('ai_models.err_try_text'));
+            }
+            $started = microtime(true);
+            $wav = LocalAiService::tts($id, $text, max(0.5, min(2.0, (float) ($_POST['speed'] ?? 1))), 24000);
+            header('Content-Type: audio/wav');
+            header('X-Synthesis-Ms: ' . (int) round((microtime(true) - $started) * 1000));
+            echo $wav;
+            exit;
         default:
             http_response_code(400);
             $out = ['success' => false, 'error' => 'Unknown action'];

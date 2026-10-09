@@ -208,8 +208,8 @@ speak or upload audio and read the text). Only ONNX and data files are downloade
 no remote code); the licence is shown and accepted first, non-commercial licences are flagged;
 files are recorded with SHA-256; a disk limit (default 5 GB).
 
-Steps: (a) catalogue and several models: download, run, stop, memory/disk; (b) Piper engine and
-the speech try panel; (c) Kokoro engine; (d) Hugging Face search and pasted addresses; (e) Vosk
+Steps: (a) catalogue and several models: download, run, stop, memory/disk *(done in 1.9.3)*;
+(b) Piper engine and the speech try panel *(done in 1.9.3)*; (c) Kokoro engine; (d) Hugging Face search and pasted addresses; (e) Vosk
 engine and the speech-to-text try panel (microphone or file); (f) the recommended list with our
 measurements; (g) Whisper and text-embedding engines, with the AI applications. Every engine is
 measured on the CI VM (speed, memory, quality) before it is recommended.
