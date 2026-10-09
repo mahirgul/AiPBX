@@ -36,7 +36,9 @@ class LocalAiService
 
     private static function token(): string
     {
-        $t = trim((string) @file_get_contents(self::tokenFile()));
+        // No token file = the service was never installed here (not an error to log).
+        $file = self::tokenFile();
+        $t = is_readable($file) ? trim((string) file_get_contents($file)) : '';
         if (!preg_match('/^[A-Za-z0-9]{16,128}$/', $t)) {
             throw new LocalAiException(t('ai_models.err_no_service'));
         }
