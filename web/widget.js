@@ -329,8 +329,11 @@
             ui.callGo.classList.add('hidden');
             ui.inCall.classList.remove('hidden');
         });
+        var thisUa = ua;
         ua.on('disconnected', function () {
-            if (!session) {
+            // finish() stops the UA it ends with (ua is null by then): that
+            // disconnect is expected and must not turn "Call ended" into an error.
+            if (ua === thisUa && !session) {
                 finish(T.err_failed, true);
             }
         });
