@@ -71,12 +71,26 @@ final class LocalAiServiceTest extends TestCase
         $this->assertTrue(LocalAiService::ready('ema-lightning'));
     }
 
+    public function testRunningVoiceModelsAreTheProvidersVoices(): void
+    {
+        $this->fake(fn() => self::json(['models' => [
+            ['id' => 'ema-lightning', 'title' => 'EMA Lightning', 'kind' => 'tts', 'state' => 'ready', 'languages' => ['tr']],
+            ['id' => 'piper-de-thorsten', 'title' => 'Thorsten', 'kind' => 'tts', 'state' => 'installed', 'languages' => ['de_DE']],
+            ['id' => 'piper-de-kerstin', 'title' => 'Kerstin', 'kind' => 'tts', 'state' => 'ready', 'languages' => ['de_DE']],
+        ], 'disk' => ['used_mb' => 90, 'limit_mb' => 5120]]));
+        $p = new LocalTts([]);
+        $this->assertTrue($p->configured());
+        $this->assertSame([['ema-lightning', 'tr-TR'], ['piper-de-kerstin', 'de-DE']],
+            array_map(fn($v) => [$v['id'], $v['language']], $p->voices()));
+        $this->assertSame(['used_mb' => 90, 'limit_mb' => 5120], LocalAiService::disk());
+    }
+
     public function testServiceDownMeansNoModelsAndProviderNotConfigured(): void
     {
         $this->fake(function () { throw new TtsException('connection failed'); });
         $this->assertSame([], LocalAiService::models());
         $this->assertNull(LocalAiService::health());
-        $this->assertFalse((new LocalEmaTts([]))->configured());
+        $this->assertFalse((new LocalTts([]))->configured());
     }
 
     public function testMissingTokenFile(): void
@@ -142,7 +156,7 @@ final class LocalAiServiceTest extends TestCase
         $pcm = str_repeat(pack('v', 0), 2400);
         $wav = 'RIFF' . pack('V', 36 + strlen($pcm)) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, 24000, 48000, 2, 16) . 'data' . pack('V', strlen($pcm)) . $pcm;
         $this->fake(fn($m, $url) => str_ends_with($url, '/v1/tts') ? ['status' => 200, 'body' => $wav, 'type' => 'audio/wav'] : self::json([]));
-        $mp3 = (new LocalEmaTts([]))->synthesize('Merhaba', LocalEmaTts::VOICE, 'tr-TR', 1.0);
+        $mp3 = (new LocalTts([]))->synthesize('Merhaba', 'ema-lightning', 'tr-TR', 1.0);
         $this->assertNotSame('', $mp3);
         $this->assertNotSame('RIFF', substr($mp3, 0, 4));
         $req = json_decode((string) $this->calls[0]['body'], true);

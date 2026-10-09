@@ -37,6 +37,25 @@ gives the same audio as the PyTorch engine (largest difference 4·10⁻⁵).
 A server that had the PyTorch version: the update rebuilds the runtime without torch, and a
 model that was installed is downloaded again in the new format on the next start.
 
+## Models
+
+| Model | Language | Engine | Licence | Our measurement (2 cores) |
+|-------|----------|--------|---------|---------------------------|
+| EMA Lightning | Turkish | EMA (ONNX) | Apache-2.0 | 11–12× real time, ~115–250 MB |
+| Piper MLS | German (236 speakers) | Piper | CC BY 4.0 (name the source) | 13×, ~146 MB |
+| Piper Thorsten | German, male | Piper | not cleared for commercial use* | 13×, ~122 MB |
+| Piper Kerstin | German, female | Piper | not cleared for commercial use* | 16×, ~166 MB |
+| Piper Cori | English (UK), female | Piper | public domain | 2× (high quality: announcements only) |
+
+\* Their recordings are CC0, but the models were fine-tuned from voices whose data allows research
+use only (lessac) or no commercial use (ryan).
+
+Piper voices come from [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) at a
+pinned revision, each file checked by SHA-256. They need the `espeak-ng` program, which the runtime
+installs. Several models can run at the same time; *Stop* frees their memory and keeps the files.
+A stopped model stays stopped after a restart (`/var/lib/aipbx-ai/state.json`). Downloads stop at
+the disk limit for models, 5 GB by default (`AIPBX_AI_DISK_LIMIT_MB` in the unit).
+
 ## Steps
 
 1. **Install the runtime** (once): creates `/opt/aipbx-ai/venv` and starts the `aipbx-ai`

@@ -1340,6 +1340,11 @@ systemctl daemon-reload
 
 # READY_MARK: written by aipbx-ai-setup once the venv is complete.
 AI_READY_MARK="$AI_VENV/.aipbx-requirements"
+if [[ -f "$AI_READY_MARK" ]] && ! command -v espeak-ng >/dev/null 2>&1; then
+    # Piper voices (1.9.3) need espeak-ng; runtimes installed before get it here.
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq espeak-ng >/dev/null 2>&1 \
+        || warn "espeak-ng could not be installed: Piper voices will not load"
+fi
 if [[ -f "$AI_READY_MARK" ]]; then
     if [[ "$(cat "$AI_READY_MARK")" != "$(sha256sum "$AI_BASE/app/requirements.txt" | cut -d' ' -f1)" ]] \
        && ! systemctl is-active --quiet aipbx-ai-setup.service; then
