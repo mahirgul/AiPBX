@@ -115,7 +115,12 @@ example the first audio after ~4 ms) have to be measured on our own servers.
 **Checked (2026-10-09).** Both models are Apache-2.0 (commercial use allowed; weights not gated).
 EMA Lightning on a 2-core i7-7700 without GPU, on ONNX Runtime (since 1.9.2): 8.6–11× faster
 than real time, a 6.4 s sentence in 0.55 s, model load 1.3–2.4 s, about 150–250 MB of memory,
-160 MB of runtime (PyTorch in 1.9.0–1.9.1: 3.4–4.5×, up to 1 GB of memory, 1.1 GB of runtime). EmbeddingGemma 2 (740M parameters) still has to be measured (step 2).
+160 MB of runtime (PyTorch in 1.9.0–1.9.1: 3.4–4.5×, up to 1 GB of memory, 1.1 GB of runtime). EmbeddingGemma 2 (740M parameters, ONNX q4/q8 from onnx-community, measured 2026-10-09 with 68
+Turkish test phrases made by EMA at 8 kHz): 1.5–2 GB of memory, 0.9 s per 1.8 s clip on 2 cores,
+~700 MB download. Recognising six hotel requests **from the audio** only 54–62 % (chance 17 %),
+person/machine from the first 2 s 80 %. The **same requests as text** were matched 11 of 12 times.
+Conclusion: understanding needs speech-to-text first, then matching on text; EmbeddingGemma's
+audio part is dropped (too heavy, too weak on Turkish speech). See "Model catalogue" below.
 
 **Steps.**
 
@@ -180,6 +185,46 @@ than real time, a 6.4 s sentence in 0.55 s, model load 1.3–2.4 s, about 150–
 9. **Speech recognition and voice bot.** A local speech-to-text model (e.g. a small Whisper)
    fills in details of requests (quantity, time, wake-up calls) and, with a language model that
    decides what to say, makes a voice bot possible. EMA Lightning is its voice. Comes last.
+
+### Model catalogue and cloud services (decided 2026-10-09)
+
+**Local model catalogue.** Administrators choose, download and try models themselves. Any
+Hugging Face model of a **supported kind** can be used; each kind is an engine written once:
+
+| Engine | Job | Models |
+|--------|-----|--------|
+| EMA Lightning | Turkish speech | 1 (done) |
+| Piper | speech, 40+ languages | hundreds of voices (German *thorsten*, *kerstin*: CC0) |
+| Kokoro | speech: English, French, Spanish, Italian … (no German) | tens of voices, Apache-2.0 |
+| Vosk | speech-to-text, streaming, small (TR 35 MB, DE 45 MB, EN ~40 MB) | 20+ languages, Apache-2.0 |
+| Whisper (ONNX) | speech-to-text, 99 languages, heavier, more accurate | several sizes, MIT |
+| Text embeddings (ONNX) | matching requests, text search | many |
+
+*AI → Local models* gets: a recommended list (models we measured, with their speed and memory),
+a Hugging Face search limited to supported kinds (size, licence, language, downloads), "paste a
+model address", several models on disk, **run/stop** (loaded in memory or not) with a memory and
+disk overview and warnings, and a **try** panel (type text and listen, compare two voices;
+speak or upload audio and read the text). Only ONNX and data files are downloaded (no pickle,
+no remote code); the licence is shown and accepted first, non-commercial licences are flagged;
+files are recorded with SHA-256; a disk limit (default 5 GB).
+
+Steps: (a) catalogue and several models: download, run, stop, memory/disk; (b) Piper engine and
+the speech try panel; (c) Kokoro engine; (d) Hugging Face search and pasted addresses; (e) Vosk
+engine and the speech-to-text try panel (microphone or file); (f) the recommended list with our
+measurements; (g) Whisper and text-embedding engines, with the AI applications. Every engine is
+measured on the CI VM (speed, memory, quality) before it is recommended.
+
+**Cloud AI services.** A separate page *AI → Cloud services*: provider accounts in one place
+(API keys encrypted, connection test), each with what it can do — speech, speech-to-text,
+understanding (language models), embeddings — for example Google AI Studio (Gemini, **Gemma**),
+OpenAI, Azure Speech, Google Cloud Speech, ElevenLabs, Deepgram, Groq, OpenRouter. The keys of
+today's *Cloud TTS* page move there; that page stays as the announcement maker.
+
+**An engine per job.** For each job (speech per language, speech-to-text, understanding) the
+administrator picks local or cloud from one list, with an optional fallback (cloud unreachable or
+over its limit → local). The AI applications use these choices, so switching from local to cloud
+needs no other change. Paid services get a usage counter and a monthly limit; choosing a cloud
+engine shows that audio and text are sent to that provider (privacy, KVKK/GDPR).
 
 ## 6. iOS app: same features as Android 1.0.54
 
