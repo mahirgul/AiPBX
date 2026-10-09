@@ -23,6 +23,12 @@ import java.util.concurrent.TimeUnit
 
 class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
 
+    companion object {
+        /** Called when the server rejects the saved session even after a refresh; set by AiPbxApp. */
+        @Volatile
+        var onSessionRejected: ((String?) -> Unit)? = null
+    }
+
     private val gson = Gson()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val refreshLock = Any()
@@ -87,6 +93,11 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                                                 }
                                             } else {
                                                 Log.w("ApiClient", "Reactive refresh failed with HTTP ${refreshResp.code}")
+                                                // The server no longer accepts this session: sign out instead
+                                                // of showing empty screens while looking signed in (#17).
+                                                if (refreshResp.code == 401 || refreshResp.code == 403) {
+                                                    onSessionRejected?.invoke("HTTP ${refreshResp.code} from refresh.php")
+                                                }
                                             }
                                             Unit
                                         }
