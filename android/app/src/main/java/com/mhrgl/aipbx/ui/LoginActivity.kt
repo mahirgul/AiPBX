@@ -1,6 +1,7 @@
 package com.mhrgl.aipbx.ui
 
 import com.mhrgl.aipbx.util.BatteryPrompt
+import com.mhrgl.aipbx.service.SessionExpiry
 import com.mhrgl.aipbx.util.L10n
 import android.annotation.SuppressLint
 import android.content.Context
@@ -60,6 +61,10 @@ class LoginActivity : AppCompatActivity() {
             val bottom = maxOf(systemBars.bottom, ime.bottom)
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
             insets
+        }
+
+        if (intent.getBooleanExtra(SessionExpiry.EXTRA_SESSION_EXPIRED, false)) {
+            showError(L10n.str(R.string.session_expired_text))
         }
 
         binding.tvCurrentServer.text = prefs.serverUrl
