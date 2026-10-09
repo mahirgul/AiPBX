@@ -8,7 +8,7 @@ foreach ([
     'confirm_runtime_remove', 'confirm_model_remove', 'confirm_runtime_install', 'need_license',
     'bench_result', 'bench_live_ok', 'bench_live_slow', 'measuring', 'cpu', 'cores', 'ram', 'process', 'kind_tts', 'kind_embedding',
     'no_models', 'btn_run', 'btn_stop', 'st_stopped', 'memory', 'disk_used', 'measured', 'noncommercial',
-    'try_title', 'try_play', 'try_none', 'try_result', 'msg_try_error',
+    'try_title', 'try_play', 'try_none', 'try_result', 'msg_try_error', 'gender_female', 'gender_male',
 ] as $k) {
     $texts[$k] = t('ai_models.' . $k);
 }

@@ -80,12 +80,13 @@
                     actions += '<button type="button" class="btn btn-danger btn-sm" data-act="remove" data-id="' + esc(m.id) + '"><i class="fas fa-trash-alt"></i> ' + esc(T.btn_remove) + '</button>';
                 }
                 html += '<tr><td style="min-width: 220px;"><div class="u-strong">' + esc(m.title) + '</div>'
-                    + '<div class="u-muted u-fs-11">' + esc(T['kind_' + m.kind] || m.kind) + ' · ' + esc((m.languages || []).join(', ')) + ' · '
+                    + '<div class="u-muted u-fs-11">' + esc(T['kind_' + m.kind] || m.kind) + ' · ' + esc((m.languages || []).join(', ')) + (m.gender ? ' · ' + esc(T['gender_' + m.gender] || m.gender) : '') + ' · '
                     + esc(T.license) + ': <a href="' + esc(m.license_url) + '" target="_blank" rel="noopener">' + esc(m.license) + '</a>'
                     + (m.homepage ? ' · <a href="' + esc(m.homepage) + '" target="_blank" rel="noopener">' + esc(T.homepage) + '</a>' : '')
                     + (m.disk_mb ? ' · ' + esc(m.disk_mb) + ' MB' : '') + '</div>'
                     + (m.measured && m.measured.realtime_factor ? '<div class="u-muted u-fs-11"><i class="fas fa-gauge-high"></i> ' + esc(fmt(T.measured, m.measured.realtime_factor, m.measured.memory_mb || '?')) + '</div>' : '')
-                    + (m.commercial === false ? '<div class="u-danger u-fs-11"><i class="fas fa-triangle-exclamation"></i> ' + esc(T.noncommercial) + '</div>' : '')
+                    + (m.commercial === false ? '<div class="u-danger u-fs-11"><i class="fas fa-triangle-exclamation"></i> ' + esc(T.noncommercial) + (m.note ? ' ' + esc(m.note) : '') + '</div>'
+                        : (m.note ? '<div class="u-muted u-fs-11"><i class="fas fa-circle-info"></i> ' + esc(m.note) + '</div>' : ''))
                     + '</td>'
                     + '<td>' + st + '</td>'
                     + '<td style="text-align: right;">' + actions + (bench[m.id] ? '<div class="u-fs-12 u-mt-6">' + bench[m.id] + '</div>' : '') + '</td></tr>';

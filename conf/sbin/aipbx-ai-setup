@@ -120,6 +120,11 @@ if ! python3 -c 'import ensurepip, venv' >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv >>"$LOG_FILE" 2>&1 \
         || fail "apt-get install python3-venv failed"
 fi
+# espeak-ng turns text into phonemes for Piper voices (a separate program, GPL).
+if ! command -v espeak-ng >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq espeak-ng >>"$LOG_FILE" 2>&1 \
+        || fail "apt-get install espeak-ng failed"
+fi
 
 step venv
 # Up to 1.9.1 the runtime was built on PyTorch (~1 GB): start over without it.

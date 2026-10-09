@@ -33,6 +33,7 @@ from pathlib import Path
 
 from . import sysinfo
 from .ema import EmaLightningBackend
+from .piper_backend import PiperBackend
 
 log = logging.getLogger("aipbx_ai.models")
 
@@ -57,6 +58,31 @@ class ModelSpec:
     commercial: bool = True     # the licence allows commercial use
     # Our own measurement on a 2-core server (shown as the recommendation).
     measured: dict = field(default_factory=dict)
+    note: str = ""              # licence or quality remark shown with the model
+    gender: str = ""            # voice models: "female" / "male" / ""
+    source: dict = field(default_factory=dict)   # backend-specific download details
+
+
+# Piper voices: rhasspy/piper-voices at a pinned revision. Licences differ per
+# voice (MODEL_CARD); a voice fine-tuned from a research or non-commercial
+# voice is marked commercial=False.
+PIPER_REVISION = "c10ece1aade47bb51c153c893d14e5bf8e5b7117"
+PIPER_LICENSE_URL = "https://huggingface.co/rhasspy/piper-voices/blob/c10ece1aade47bb51c153c893d14e5bf8e5b7117/"
+
+
+def _piper(id, title, path, onnx_sha, json_sha, mb, languages, license, commercial, gender="", note="",
+           measured=None, speaker=None):
+    name = path.split("/")
+    voice = f"{name[1]}-{name[2]}-{name[3]}"
+    source = {"revision": PIPER_REVISION,
+              "files": {f"{path}/{voice}.onnx": onnx_sha, f"{path}/{voice}.onnx.json": json_sha}}
+    if speaker is not None:
+        source["speaker"] = speaker
+    return ModelSpec(id=id, title=title, kind="tts", languages=languages, license=license,
+                     license_url=PIPER_LICENSE_URL + path + "/MODEL_CARD",
+                     homepage="https://github.com/rhasspy/piper", download_mb=mb, backend=PiperBackend,
+                     engine="piper", commercial=commercial, measured=measured or {}, note=note,
+                     gender=gender, source=source)
 
 
 REGISTRY = (
@@ -72,7 +98,30 @@ REGISTRY = (
         backend=EmaLightningBackend,
         engine="ema",
         measured={"realtime_factor": 11, "memory_mb": 250, "load_s": 1.3},
+        gender="female",
     ),
+    _piper("piper-de-mls", "Piper MLS (German)", "de/de_DE/mls/medium",
+           "69cd1d2aa5a35839a518966fcc4924b5f93e5f8c948ed0752b1a616ad53f65bf",
+           "b0af1c89ddfdc72d32e015729b0e89b99eec13c2c8caa1db7488d98e9e570b40", 77, ("de-DE",),
+           "CC-BY-4.0", True, note="Trained from scratch on Multilingual LibriSpeech (CC BY 4.0: name the source). 236 speakers."),
+    _piper("piper-de-thorsten", "Piper Thorsten (German)", "de/de_DE/thorsten/medium",
+           "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
+           "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85", 63, ("de-DE",),
+           "CC0 data, model unclear", False, gender="male",
+           note="Fine-tuned from the lessac voice, whose data allows research use only.",
+           measured={"realtime_factor": 13.5, "memory_mb": 170, "load_s": 2.0}),
+    _piper("piper-de-kerstin", "Piper Kerstin (German)", "de/de_DE/kerstin/low",
+           "d352a7641892cebf2903859af94e9ba81a141110215fe3943bcda7f7da401b7a",
+           "56e708556b7b9b7a53c4f8957e021421e69f11a600962bba554cffbe72cf2d47", 63, ("de-DE",),
+           "CC0 data, model unclear", False, gender="female",
+           note="Fine-tuned from the ryan voice (CC BY-NC-SA: no commercial use).",
+           measured={"realtime_factor": 16.5, "memory_mb": 166, "load_s": 2.0}),
+    _piper("piper-en-cori", "Piper Cori (English, UK)", "en/en_GB/cori/high",
+           "470b4dd634c98f8a4850d7626ffc3dfc90774628eeef6605a6dd8f88f30a5903",
+           "9e7fb5b5671612c22f3c81cbe46c1ae87b031a4632bcb509e499dad6f1e2adec", 115, ("en-GB",),
+           "Public domain", True, gender="female",
+           note="Slow on a small server (high quality): fine for announcements, not for live calls.",
+           measured={"realtime_factor": 2.1, "memory_mb": 228, "load_s": 2.5}),
 )
 
 
@@ -192,6 +241,7 @@ class ModelManager:
             "error": error if state == ERROR else None,
             "engine": spec.engine, "commercial": spec.commercial, "measured": dict(spec.measured),
             "memory_mb": entry.memory_mb if state == READY else 0,
+            "note": spec.note, "gender": spec.gender,
         }
 
     def describe_all(self):
