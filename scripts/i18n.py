@@ -7,9 +7,12 @@ See docs/translating.md.
     scripts/i18n.py import CODE FILE            # translated chunk (same format) -> <dir>/<code>.json, validated
     scripts/i18n.py status CODE                 # how many strings are done, which chunks are missing
     scripts/i18n.py build CODE "Language name"  # <dir>/<code>.json -> web/lang/<code>.php (English key order)
+    scripts/i18n.py check [CODE ...]            # web/lang/<code>.php against English (CI; no code = every language)
 
 Validation on import: the index must exist, the placeholders (%s, %1$s, %d)
-and the HTML tags must be the same as in English.
+and the HTML tags must be the same as in English. "check" applies the same rules
+to the language files themselves, e.g. to translations coming from Weblate
+(docs/translating.md), and also reports keys English does not have.
 """
 import json, os, re, subprocess, sys
 
@@ -50,10 +53,46 @@ def php_str(v):
     return "'" + v.replace('\\', '\\\\').replace("'", "\\'") + "'"
 
 
+def check(en, codes):
+    """Problems of web/lang/<code>.php against English; exit code 1 when any."""
+    en_map = dict(en)
+    if not codes:
+        codes = sorted(f[:-4] for f in os.listdir(f'{WEB}/lang') if f.endswith('.php') and f != 'en.php')
+    problems = 0
+    for code in codes:
+        php = f'{WEB}/lang/{code}.php'
+        out = subprocess.run(['php', '-r', f'echo json_encode(require "{php}", JSON_UNESCAPED_UNICODE);'],
+                             capture_output=True, text=True)
+        try:
+            db = json.loads(out.stdout)
+            assert isinstance(db, dict)
+        except Exception:
+            print(f'{code}: lang/{code}.php does not return an array of texts {out.stderr.strip()[:200]}')
+            problems += 1
+            continue
+        errors = []
+        for key, val in db.items():
+            if key not in en_map:
+                errors.append(f'{key}: not in en.php')
+            elif not isinstance(val, str):
+                errors.append(f'{key}: not a text')
+            elif placeholders(val) != placeholders(en_map[key]):
+                errors.append(f'{key}: placeholders {placeholders(val)} != {placeholders(en_map[key])}')
+            elif tags(val) != tags(en_map[key]):
+                errors.append(f'{key}: HTML tags {tags(val)} != {tags(en_map[key])}')
+        print(f'{code}: {len(db)}/{len(en)} strings, {len(errors)} problem(s)')
+        for e in errors:
+            print('  ' + e)
+        problems += len(errors)
+    sys.exit(1 if problems else 0)
+
+
 def main():
-    os.makedirs(DIR, exist_ok=True)
-    cmd = sys.argv[1]
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     en = load_en()
+    if cmd == 'check':
+        check(en, sys.argv[2:])
+    os.makedirs(DIR, exist_ok=True)
     if cmd == 'export':
         size = int(sys.argv[2])
         for c in range(0, len(en), size):

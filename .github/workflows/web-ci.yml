@@ -10,11 +10,13 @@ on:
     paths:
       - 'web/**'
       - 'chat/**'
+      - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
       - 'web/**'
       - 'chat/**'
+      - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   workflow_dispatch:
 
@@ -68,6 +70,9 @@ jobs:
 
       - name: Language files (tr/en keys)
         run: php bin/lint_lang.php
+
+      - name: Translations (keys, placeholders, HTML tags against English)
+        run: python3 ../scripts/i18n.py check
 
       - name: PHPStan
         run: php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress --error-format=github
