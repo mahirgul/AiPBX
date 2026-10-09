@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.1
+
+- **Fix:** the update to 1.9.0 failed its page check and rolled back on
+  servers (PHP 8.5): a deprecation notice of PHP 8.5 (`curl_close()`) was
+  counted as an error once the Cloud TTS page asked the local AI service for
+  its state. Update straight to 1.9.1; it contains everything from 1.9.0.
+
 ## 1.9.0
 
 - **Local AI models** (*AI → Local models*, admin only): AI models that run
