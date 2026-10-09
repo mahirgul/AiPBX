@@ -48,6 +48,8 @@ on:
 jobs:
   build:
     name: Build Android App & Deploy
+    # App releases only: model files are published as releases too (models-* tags).
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
