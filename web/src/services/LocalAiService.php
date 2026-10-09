@@ -54,10 +54,16 @@ class LocalAiService
             $headers['Content-Type'] = 'application/json';
         }
         try {
-            return TtsHttp::request($method, self::BASE_URL . $path, $headers, $json !== null ? json_encode($json) : null, $timeout);
+            return TtsHttp::request($method, self::BASE_URL . $path, $headers, $json !== null ? self::body($json) : null, $timeout);
         } catch (TtsException $e) {
             throw new LocalAiException(t('ai_models.err_no_service'));
         }
+    }
+
+    /** JSON object body: the service refuses anything else, and json_encode([]) is "[]". */
+    private static function body(array $json): string
+    {
+        return $json === [] ? '{}' : (string) json_encode($json, JSON_UNESCAPED_UNICODE);
     }
 
     /** @return array<string, mixed> */

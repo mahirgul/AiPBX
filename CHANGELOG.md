@@ -5,6 +5,26 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.0
+
+- **Local AI models** (*AI → Local models*, admin only): AI models that run
+  on the PBX itself, so text and audio never leave the server, with no API
+  key and no cost. The page installs the local AI runtime once (Python with
+  PyTorch for the CPU, about 1 GB, in the background), downloads models after
+  their licence is accepted, shows the service's CPU and memory use, and has
+  a speed test that tells whether a model is fast enough on this server. The
+  service (`aipbx-ai`) listens only on the server itself, runs at a lower CPU
+  priority than calls and with a memory limit; it stays off until the runtime
+  is installed. See [Local AI models](docs/local-ai.md).
+- **EMA Lightning (Turkish text-to-speech):** the first local model
+  (Apache-2.0). Once downloaded it appears on *AI → Cloud TTS* as
+  "EMA Lightning (local, Turkish)": listening, MP3 download and saving as an
+  announcement work as with the cloud providers. On a 2-core server it speaks
+  about 3–4× faster than real time.
+- **Fix:** announcements could not be uploaded on *Sounds & Announcements*
+  (and AI-made ones not saved): the portal had no write access to the custom
+  sounds folder. The update fixes the folder's permissions.
+
 ## 1.8.2
 
 - **Translations:** the texts added up to 1.8.1 (website widget, network

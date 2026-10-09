@@ -40,7 +40,7 @@
             } else {
                 const cpu = svc.cpu || {}, ram = svc.ram || {}, pr = svc.process || {};
                 svcHtml = '<i class="fas fa-circle u-success" style="font-size: 9px;"></i> '
-                    + esc(T.cpu) + ': ' + esc(cpu.model || '?') + ' · ' + esc(cpu.cores || '?') + ' · '
+                    + esc(T.cpu) + ': ' + esc(cpu.model || '?') + ' · ' + esc(fmt(T.cores, cpu.cores || '?')) + ' · '
                     + esc(T.ram) + ': ' + esc(ram.available_mb) + ' / ' + esc(ram.total_mb) + ' MB · '
                     + esc(T.process) + ': ' + esc(pr.rss_mb) + ' MB, ' + esc(pr.cpu_percent) + '% CPU';
             }

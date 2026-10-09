@@ -113,6 +113,14 @@ final class LocalAiServiceTest extends TestCase
         }
     }
 
+    public function testEmptyBodyIsAJsonObject(): void
+    {
+        $this->fake(fn() => self::json(['audio_seconds' => 9.5, 'first_audio_ms' => 415, 'seconds' => 2.1, 'realtime_factor' => 4.52]));
+        $b = LocalAiService::benchmark('ema-lightning');
+        $this->assertSame('{}', $this->calls[0]['body']);
+        $this->assertSame(4.5, $b['realtime_factor']);
+    }
+
     public function testTtsErrorsAreReadable(): void
     {
         $this->fake(fn() => self::json(['error' => 'model not ready'], 409));

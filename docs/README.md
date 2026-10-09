@@ -40,6 +40,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Busy lamps (BLF)](blf.md) | Desk phone keys for colleagues, do-not-disturb, forwarding and queue login; pickup; voicemail lamp |
 | [E-mail](mail.md) | Mail relay and e-mail templates (fax, voicemail, invitations, password e-mails) |
 | [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
+| [Local AI models](local-ai.md) | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 
 ## Mobile apps

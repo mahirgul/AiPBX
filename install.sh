@@ -1105,6 +1105,10 @@ fi
 
 chown -R asterisk:asterisk /var/lib/asterisk/sounds/
 chmod -R 755 /var/lib/asterisk/sounds/
+# The portal (www-data, in the asterisk group) writes uploaded and AI-made
+# announcements into custom/: group-writable, and files it may overwrite too.
+chmod 2775 /var/lib/asterisk/sounds/custom
+find /var/lib/asterisk/sounds/custom -maxdepth 1 -type f -exec chmod 664 {} +
 
 # Debian's Asterisk searches prompts in /usr/share/asterisk/sounds, where
 # "custom" points at /usr/local/share/asterisk/sounds. The portal stores sounds

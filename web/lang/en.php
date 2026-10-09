@@ -2560,6 +2560,7 @@ return [
     'ai_models.bench_live_slow' => 'Fine for announcements made in advance; too slow to read text live during a call.',
     'ai_models.measuring' => 'Measuring…',
     'ai_models.cpu' => 'CPU',
+    'ai_models.cores' => '%s cores',
     'ai_models.ram' => 'Free memory',
     'ai_models.process' => 'Service',
     'ai_models.kind_tts' => 'Text to speech',

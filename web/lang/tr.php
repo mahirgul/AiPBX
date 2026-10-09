@@ -2559,6 +2559,7 @@ return [
     'ai_models.bench_live_slow' => 'Önceden hazırlanan anonslar için uygun; görüşme sırasında anlık okuma için yavaş.',
     'ai_models.measuring' => 'Ölçülüyor…',
     'ai_models.cpu' => 'İşlemci',
+    'ai_models.cores' => '%s çekirdek',
     'ai_models.ram' => 'Boş bellek',
     'ai_models.process' => 'Servis',
     'ai_models.kind_tts' => 'Metinden sese',

@@ -6,7 +6,7 @@ foreach ([
     'st_absent', 'st_downloading', 'st_installed', 'st_loading', 'st_ready', 'st_error',
     'btn_download', 'btn_remove', 'btn_benchmark', 'accept_license', 'license', 'homepage',
     'confirm_runtime_remove', 'confirm_model_remove', 'confirm_runtime_install', 'need_license',
-    'bench_result', 'bench_live_ok', 'bench_live_slow', 'measuring', 'cpu', 'ram', 'process', 'kind_tts', 'kind_embedding',
+    'bench_result', 'bench_live_ok', 'bench_live_slow', 'measuring', 'cpu', 'cores', 'ram', 'process', 'kind_tts', 'kind_embedding',
     'no_models',
 ] as $k) {
     $texts[$k] = t('ai_models.' . $k);
