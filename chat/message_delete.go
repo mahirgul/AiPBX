@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
@@ -50,11 +51,11 @@ func checkDeleteAllowed(m *messageForDelete, ext string, windowMinutes int, now 
 	return nil
 }
 
-// attachmentFilePaths maps a message attachment URL to the files on disk:
-// the file itself and, for an image, its thumbnail. Anything that is not one
-// of our message media paths gives no path, so a stored value can never make
-// the service delete another file.
-func attachmentFilePaths(uploadDir, url string) []string {
+// attachmentKeys maps a message attachment URL to its stored files: the file
+// itself and, for an image, its thumbnail ("images/<name>", "thumbs/<name>").
+// Anything that is not one of our message media paths gives no key, so a
+// stored value can never make the service delete another file.
+func attachmentKeys(url string) []string {
 	if url == "" || !validMediaURL(url) {
 		return nil
 	}
@@ -68,15 +69,21 @@ func attachmentFilePaths(uploadDir, url string) []string {
 	case "images":
 		ext := path.Ext(name)
 		thumb := strings.TrimSuffix(name, ext) + "_thumb" + ext
-		return []string{
-			filepath.Join(uploadDir, "images", name),
-			filepath.Join(uploadDir, "thumbs", thumb),
-		}
+		return []string{"images/" + name, "thumbs/" + thumb}
 	case "docs":
-		return []string{filepath.Join(uploadDir, "docs", name)}
+		return []string{"docs/" + name}
 	}
 	// Avatars and thumbnails are never message attachments.
 	return nil
+}
+
+// attachmentFilePaths: attachmentKeys as files in the local upload folder.
+func attachmentFilePaths(uploadDir, url string) []string {
+	var out []string
+	for _, k := range attachmentKeys(url) {
+		out = append(out, filepath.Join(uploadDir, filepath.FromSlash(k)))
+	}
+	return out
 }
 
 // GetDeleteWindowMinutes reads the admin setting; 0 = no time limit.
@@ -186,7 +193,12 @@ func (h *Hub) DeleteMessage(user *User, msgID int64) (map[string]interface{}, *s
 	}
 
 	if attachmentURL != "" && !attachmentStillUsed(attachmentURL) {
-		removeAttachmentFiles(h.uploadDir, attachmentURL)
+		if h.storage != nil {
+			// From the bucket too when S3 is in use.
+			h.storage.Remove(context.Background(), attachmentKeys(attachmentURL))
+		} else {
+			removeAttachmentFiles(h.uploadDir, attachmentURL)
+		}
 	}
 
 	data := map[string]interface{}{

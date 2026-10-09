@@ -48,6 +48,9 @@ type Hub struct {
 	secretKey string
 	// Where the uploaded files are, to remove a deleted message's attachment; set by main.go.
 	uploadDir string
+	// Where chat files are kept (local folder or S3); set by main.go. Nil:
+	// the local uploadDir only.
+	storage *Storage
 	// When each extension last went offline (in memory, reset on restart).
 	lastSeen map[string]time.Time
 }

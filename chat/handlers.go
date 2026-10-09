@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -20,6 +24,8 @@ import (
 type Server struct {
 	cfg *Config
 	hub *Hub
+	// Local folder or S3 bucket for chat files (storage.go).
+	storage *Storage
 }
 
 func NewServer(cfg *Config, hub *Hub) *Server {
@@ -340,6 +346,8 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 		uploadType = r.FormValue("type")
 	}
 
+	files := s.files()
+	ctx := r.Context()
 	if isImage {
 		if uploadType == "avatar" {
 			subDir = "avatars"
@@ -348,59 +356,31 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 			subDir = "images"
 			publicURL = "/chat/media/images/" + savedFileName
 		}
+	} else {
+		subDir = "docs"
+		publicURL = "/chat/media/docs/" + savedFileName
+	}
 
-		// Validate the target directory
-		targetDir := filepath.Join(s.cfg.UploadDir, subDir)
-		_ = os.MkdirAll(targetDir, 0755)
-		dstPath := filepath.Join(targetDir, savedFileName)
+	store := files.Primary()
+	if err := store.Put(ctx, subDir+"/"+savedFileName, file, fileSize, detectedMime); err != nil {
+		log.Printf("[Upload] Could not store %s/%s (%s): %v", subDir, savedFileName, store.Name(), err)
+		writeJSONError(w, http.StatusInternalServerError, "Dosya kaydedilemedi: "+err.Error())
+		return
+	}
 
-		dst, err := os.Create(dstPath)
-		if err != nil {
-			writeJSONError(w, http.StatusInternalServerError, "Dosya diske yazılamadı: "+err.Error())
-			return
-		}
-		if _, err := io.Copy(dst, file); err != nil {
-			dst.Close()
-			writeJSONError(w, http.StatusInternalServerError, "Dosya kopyalama hatası: "+err.Error())
-			return
-		}
-		dst.Close()
-
-		// Create a thumbnail (max 300x300)
-		thumbDir := filepath.Join(s.cfg.UploadDir, "thumbs")
-		_ = os.MkdirAll(thumbDir, 0755)
+	if isImage {
+		// Create a thumbnail (max 300x300); without one the image itself is shown.
 		thumbFileName := uniqueBase + "_thumb" + ext
-		thumbPath := filepath.Join(thumbDir, thumbFileName)
-
-		img, err := imaging.Open(dstPath)
-		if err == nil {
-			thumbImg := imaging.Fit(img, 300, 300, imaging.Lanczos)
-			if err := imaging.Save(thumbImg, thumbPath); err == nil {
+		if thumb, ok := makeThumbnail(file, ext); ok {
+			if err := store.Put(ctx, "thumbs/"+thumbFileName, bytes.NewReader(thumb), int64(len(thumb)), detectedMime); err == nil {
 				thumbURL = "/chat/media/thumbs/" + thumbFileName
+			} else {
+				log.Printf("[Upload] Could not store thumbnail %s: %v", thumbFileName, err)
 			}
 		}
 		if thumbURL == "" {
 			thumbURL = publicURL
 		}
-	} else {
-		subDir = "docs"
-		publicURL = "/chat/media/docs/" + savedFileName
-
-		targetDir := filepath.Join(s.cfg.UploadDir, subDir)
-		_ = os.MkdirAll(targetDir, 0755)
-		dstPath := filepath.Join(targetDir, savedFileName)
-
-		dst, err := os.Create(dstPath)
-		if err != nil {
-			writeJSONError(w, http.StatusInternalServerError, "Belge diske yazılamadı: "+err.Error())
-			return
-		}
-		if _, err := io.Copy(dst, file); err != nil {
-			dst.Close()
-			writeJSONError(w, http.StatusInternalServerError, "Belge kopyalama hatası: "+err.Error())
-			return
-		}
-		dst.Close()
 	}
 
 	msgType := "file"
@@ -434,14 +414,14 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		return
 	}
 
-	fullPath := filepath.Join(s.cfg.UploadDir, cleanPath)
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+	key := filepath.ToSlash(cleanPath)
+	if !validMediaKey(key) {
 		http.NotFound(w, r)
 		return
 	}
 
 	// CH-3 & T-10: authorization check (fail-closed & thumbnail support)
-	filename := filepath.Base(cleanPath)
+	filename := path.Base(key)
 	lookupName := filename
 	if strings.Contains(lookupName, "_thumb.") {
 		lookupName = strings.Replace(lookupName, "_thumb.", ".", 1)
@@ -457,7 +437,7 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		return
 	}
 
-	ext := strings.ToLower(filepath.Ext(fullPath))
+	ext := strings.ToLower(path.Ext(key))
 	isImage := ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".gif"
 
 	if !isImage {
@@ -466,7 +446,71 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		w.Header().Set("Content-Disposition", "inline")
 	}
 
-	http.ServeFile(w, r, fullPath)
+	files := s.files()
+	// On the local disk: ServeFile answers Range and If-Modified-Since requests.
+	fullPath := files.Local.path(key)
+	if st, err := os.Stat(fullPath); err == nil && st.Mode().IsRegular() {
+		http.ServeFile(w, r, fullPath)
+		return
+	}
+
+	rc, size, err := files.Open(r.Context(), key)
+	if errors.Is(err, ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		log.Printf("[Media] Could not read %s: %v", key, err)
+		http.Error(w, "Storage unavailable", http.StatusBadGateway)
+		return
+	}
+	defer rc.Close()
+	ctype := mime.TypeByExtension(ext)
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", ctype)
+	if size > 0 {
+		w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	}
+	if r.Method == http.MethodHead {
+		return
+	}
+	_, _ = io.Copy(w, rc)
+}
+
+// makeThumbnail returns the image scaled to fit 300x300, encoded like the
+// original; false when the format cannot be decoded or encoded (webp).
+func makeThumbnail(file io.ReadSeeker, ext string) ([]byte, bool) {
+	format, err := imaging.FormatFromExtension(ext)
+	if err != nil {
+		return nil, false
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return nil, false
+	}
+	img, err := imaging.Decode(file)
+	if err != nil {
+		return nil, false
+	}
+	var buf bytes.Buffer
+	if err := imaging.Encode(&buf, imaging.Fit(img, 300, 300, imaging.Lanczos), format); err != nil {
+		return nil, false
+	}
+	return buf.Bytes(), true
+}
+
+// files returns where chat files are kept (the local folder when main.go
+// set no storage, as in tests).
+func (s *Server) files() *Storage {
+	if s.storage != nil {
+		return s.storage
+	}
+	dir := ""
+	if s.cfg != nil {
+		dir = s.cfg.UploadDir
+	}
+	return NewStorage(dir, "")
 }
 
 // GET /chat/ws

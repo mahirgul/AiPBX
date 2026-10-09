@@ -18,6 +18,8 @@ type Config struct {
 	// Timezone, the same TIMEZONE setting as the portal (e.g. Europe/Istanbul) —
 	// message times are shown in this zone. The database always stores UTC.
 	Timezone string
+	// AIPBX_SETTINGS_KEY: decrypts credentials the portal stored (secretbox.go).
+	SettingsKey string
 }
 
 func LoadConfig() (*Config, error) {
@@ -72,6 +74,8 @@ func LoadConfig() (*Config, error) {
 					cfg.Port = v
 				case "CHAT_UPLOAD_DIR":
 					cfg.UploadDir = v
+				case "AIPBX_SETTINGS_KEY":
+					cfg.SettingsKey = v
 				case "TIMEZONE":
 					if v != "" {
 						cfg.Timezone = v
