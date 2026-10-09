@@ -71,6 +71,7 @@ return [
             ['href' => '/push-settings', 'icon' => 'fas fa-bell', 'label' => ['sidebar.item_push_settings', 'Bildirim'], 'show' => $can('push_settings'), 'pages' => ['push_settings.php']],
             ['href' => '/fax-mail-settings', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_mail_settings', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
             ['href' => '/mail-settings', 'icon' => 'fas fa-envelope-open-text', 'label' => ['sidebar.item_mail_settings', 'E-Posta'], 'show' => $can('mail_settings'), 'pages' => ['mail_settings.php']],
+            ['href' => '/file-storage', 'icon' => 'fas fa-hard-drive', 'label' => 'sidebar.item_file_storage', 'show' => $can('file_storage'), 'pages' => ['file_storage.php']],
             ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
             ['href' => '/audit-log', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_audit_log', 'show' => $can('audit_log'), 'pages' => ['audit_log.php']],
             ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],

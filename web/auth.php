@@ -163,6 +163,7 @@ function getModuleKeyForPage($page = null) {
         'ms_teams.php'              => 'ms_teams',
         'ai_tts.php'                => 'ai_tts',
         'mail_settings.php'         => 'mail_settings',
+        'file_storage.php'          => 'file_storage',
     ];
     return $map[$page] ?? str_replace('.php', '', $page);
 }
@@ -221,8 +222,9 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'system_update' too: it updates the system and restarts services.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
     // 'phones': the provisioning URLs it shows hand out SIP passwords.
+    // 'file_storage': holds the S3 secret key of the bucket with all chat files.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration', 'phones'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'google_integration', 'phones', 'file_storage'], true)) {
         return $role === 'admin';
     }
 

@@ -31,9 +31,12 @@ func main() {
 	hub := NewHub()
 	hub.secretKey = cfg.SecretKey
 	hub.uploadDir = cfg.UploadDir
+	storage := NewStorage(cfg.UploadDir, cfg.SettingsKey)
+	hub.storage = storage
 	go hub.Run()
 
 	server := NewServer(cfg, hub)
+	server.storage = storage
 
 	mux := http.NewServeMux()
 
@@ -76,6 +79,9 @@ func main() {
 			_, _ = w.Write([]byte(`{"status":"ok","service":"aipbx-chat"}`))
 		})
 		mux.HandleFunc(prefix+"/api/internal/presence", server.HandleInternalPresence)
+		mux.HandleFunc(prefix+"/api/internal/storage/test", server.HandleStorageTest)
+		mux.HandleFunc(prefix+"/api/internal/storage/migrate", server.HandleStorageMigrate)
+		mux.HandleFunc(prefix+"/api/internal/storage/status", server.HandleStorageStatus)
 	}
 
 	// Register with and without /chat prefix for seamless reverse proxying
