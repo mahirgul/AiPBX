@@ -39,6 +39,7 @@ class MsTeamsService
         ];
 
         MsTeamsRepository::saveSettings($settings);
+        writeAuditLog('ms_teams', 'settings', 0, 'MS Teams: direct routing ' . ($enabled === '1' ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
 
         return [
             'success' => true,
@@ -77,6 +78,7 @@ class MsTeamsService
         ];
 
         MsTeamsRepository::saveSettings($settings);
+        writeAuditLog('ms_teams', 'settings', 0, 'MS Teams: notifications ' . ($enabled === '1' ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
 
         return [
             'success' => true,

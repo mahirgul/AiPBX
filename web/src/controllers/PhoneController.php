@@ -14,6 +14,9 @@ class PhoneController extends BaseController
         if (static::isPost() && ($_POST['action'] ?? '') === 'admin_password') {
             static::requireAjaxAccess('phones', 'edit', t('auth.no_edit_module'), t('common.invalid_csrf'));
             $phone = PhoneProvisionService::getPhone((int) ($_POST['phone_id'] ?? 0));
+            if ($phone !== null) {
+                writeAuditLog('phones', 'phone', (int) $phone['id'], PhoneModels::formatMac((string) $phone['mac']), 'show_password', $_SESSION['user_id'] ?? null);
+            }
             static::json($phone === null
                 ? ['success' => false, 'message' => t('phones.err_not_found')]
                 : ['success' => true, 'password' => PhoneProvisionService::adminPassword($phone)]);

@@ -30,6 +30,7 @@ class ChatSettingsService
         }
         getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
             ->execute([self::DELETE_WINDOW_KEY, (string) (int) $value]);
+        writeAuditLog('chat', 'settings', 0, 'Chat: delete window ' . (int) $value . ' min', 'update', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('chat.settings_saved')];
     }
 }

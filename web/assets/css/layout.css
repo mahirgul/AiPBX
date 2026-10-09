@@ -261,7 +261,7 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
 }
 
 .nav-group.open .nav-submenu {
-    max-height: 380px;
+    max-height: 1200px; /* fits any group; 380px cut the 11th admin item */
     opacity: 1;
     margin-top: 4px;
     visibility: visible;
