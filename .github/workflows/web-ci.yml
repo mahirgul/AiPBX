@@ -66,6 +66,8 @@ jobs:
           php-version: '8.5'   # what the servers run (Ubuntu 26.04)
           extensions: pdo_mysql, mbstring, intl, gd, curl, dom, xml, zip
           coverage: none
+          # mail() needs a sendmail; the tests check what is sent, not delivery.
+          ini-values: sendmail_path=/usr/bin/true
           tools: composer:v2
 
       - name: Composer install
