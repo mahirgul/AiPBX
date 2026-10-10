@@ -5,6 +5,27 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.9.5
+
+- **AI → Cloud services** (admin only): the accounts of cloud AI providers in
+  one place — Google AI Studio (Gemini, Gemma), OpenAI, Azure, Google Cloud,
+  Amazon Polly, ElevenLabs, Deepgram, Groq and OpenRouter — with what each can
+  do, a link to get a key, a connection test and this month's use. For each
+  job and language (speech and speech to text in Turkish, German, English)
+  you choose a local model or a cloud provider; the AI features that follow
+  use this choice. A notice reminds that cloud engines send audio and text to
+  the provider (KVKK/GDPR). See [Cloud AI services](docs/cloud-ai.md).
+- **Cloud speech to text:** OpenAI, Groq (Whisper), Deepgram, Azure,
+  ElevenLabs and Gemini appear next to the local models in *AI → Local models
+  → Try: speech to text*, to compare them on the same recording.
+- **Numbers read correctly in German and English voices:** amounts
+  ("1.234,50 €", "$1,234.50"), times ("14:30 Uhr", "2:30 pm"), dates
+  ("am 3. Oktober", "12/31/2026"), percentages, phone numbers (read digit by
+  digit in their groups) and common abbreviations. The update adds the
+  `num2words` package to the AI runtime.
+- Cloud TTS: keys of the cloud providers are now changed on *Cloud services*
+  only (admin role); the Cloud TTS page shows their status.
+
 ## 1.9.4
 
 - **Speech to text on the server (Vosk):** small Turkish, German and English
