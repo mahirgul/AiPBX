@@ -11,6 +11,13 @@
  *   time and closes; the dialplan then goes on to the destination. When the
  *   service refuses (not running, voice not ready, too many calls) the answer
  *   is empty and the call goes straight to the destination — never lost.
+ *
+ * Voice requests: the settings are sent to the service on every Apply
+ * (PUT /v1/apps/<id>; removed apps DELETE). After AudioSocket the dialplan
+ * asks for the recognised request (GET /v1/calls/<uuid>/result), starts
+ * bin/ai_request.php in the background (request log, e-mail) and jumps to that
+ * request's destination; "none" (not understood) goes to the application's
+ * own destination, e.g. reception.
  */
 
 const AI_APP_SERVICE_URL = 'http://127.0.0.1:8790/v1/calls/start';
@@ -23,9 +30,29 @@ function syncAiApps() {
 function __syncAiAppsBody() {
     require_once dirname(__DIR__) . '/services/ai/AiAppService.php';
     $apps = getDB()->query('SELECT * FROM pbx_ai_apps WHERE is_active = 1 ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+    pushAiAppConfigs($apps);
     return writeConfWithRollback('extensions_ai_apps.conf', buildAiAppsDialplan($apps, AiAppService::dialplanKey()), function () {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_ai_apps'));
     }, t('sync.ctx_ai_apps'));
+}
+
+/**
+ * Sends the voice-requests settings to the local AI service and removes the
+ * ones of deleted or inactive applications. Never fails the sync: without the
+ * service the calls go straight to their destination anyway.
+ */
+function pushAiAppConfigs(array $apps): void {
+    try {
+        $wanted = [];
+        foreach ($apps as $a) {
+            if (($a['app_type'] ?? '') === 'voice_requests') {
+                $wanted[(int) $a['id']] = AiAppService::serviceConfig($a);
+            }
+        }
+        LocalAiService::pushApps($wanted);
+    } catch (\Throwable $e) {
+        error_log('AI applications: settings not sent to the AI service: ' . $e->getMessage());
+    }
 }
 
 /** @param array<int, array> $apps active applications */
@@ -39,6 +66,10 @@ function buildAiAppsDialplan(array $apps, string $key): string {
     }
 
     foreach ($apps as $a) {
+        if (($a['app_type'] ?? '') === 'voice_requests') {
+            $conf .= buildVoiceRequestsContext($a, $key);
+            continue;
+        }
         $id = (int) $a['id'];
         $name = toCleanAscii((string) $a['title']);
         $model = AiAppService::resolveModel((string) $a['model_id']);
@@ -76,4 +107,44 @@ function buildAiAppsDialplan(array $apps, string $key): string {
         $conf .= "; No active AI applications\n";
     }
     return $conf;
+}
+
+/** [aipbx-ai-app-<id>] of a voice-requests application. */
+function buildVoiceRequestsContext(array $a, string $key): string {
+    $id = (int) $a['id'];
+    $name = toCleanAscii((string) $a['title']);
+    $max = max(1, min(50, (int) $a['max_concurrent']));
+    $intents = AiAppService::config($a)['intents'] ?? [];
+    $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
+        . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}';
+
+    $c = "; --- AI application {$id}: {$name} (voice requests) ---\n";
+    $c .= "[aipbx-ai-app-{$id}]\n";
+    $c .= "exten => s,1,NoOp(AI application {$id}: {$name})\n";
+    $c .= " same => n,Answer()\n";
+    if ($key !== '') {
+        $c .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
+        $c .= " same => n,Set(AI_CALL=\${CURL(" . AI_APP_SERVICE_URL . ",{$post})})\n";
+        $c .= " same => n,GotoIf(\$[\"\${LEN(\${AI_CALL})}\" != \"36\"]?fallback)\n";
+        $c .= " same => n,AudioSocket(\${AI_CALL}," . AI_APP_AUDIOSOCKET . ")\n";
+        $c .= " same => n,Set(AI_INTENT=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/result?key={$key})})\n";
+        // Request log and e-mail in the background; the caller name reaches the shell URI-encoded only.
+        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} \${URIENCODE(\${CALLERID(name)})} >/dev/null 2>&1 &)\n";
+        foreach ($intents as $i) {
+            $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
+            $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"{$iid}\"]?req_{$iid})\n";
+        }
+    }
+    $c .= " same => n(fallback),NoOp(AI application {$id}: not understood or not available \${AI_INTENT})\n";
+    $c .= buildDestinationLines((string) $a['dest_type'], (string) $a['dest_id']) . "\n";
+    $c .= " same => n,Hangup()\n";
+    foreach ($key !== '' ? $intents : [] as $i) {
+        $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
+        $c .= " same => n(req_{$iid}),NoOp(AI application {$id}: request " . toCleanAscii((string) $i['name']) . ")\n";
+        if (($i['dest_type'] ?? '') !== '') {
+            $c .= buildDestinationLines((string) $i['dest_type'], (string) $i['dest_id']) . "\n";
+        }
+        $c .= " same => n,Hangup()\n";
+    }
+    return $c . "\n";
 }

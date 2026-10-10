@@ -334,6 +334,38 @@ class LocalAiService
         return ['text' => (string) ($d['text'] ?? ''), 'seconds' => (float) ($d['seconds'] ?? 0), 'ms' => (int) ($d['ms'] ?? 0)];
     }
 
+    /**
+     * Makes the service hold exactly these voice-requests settings
+     * (id => config): PUT the wanted ones, DELETE the others.
+     * @param array<int, array> $wanted
+     */
+    public static function pushApps(array $wanted): void
+    {
+        $have = self::callJson('GET', '/v1/apps', null, 5);
+        $existing = [];
+        foreach ((array) ($have['apps'] ?? $have) as $k => $v) {
+            $existing[] = (int) (is_array($v) ? ($v['id'] ?? $k) : $k);
+        }
+        foreach ($wanted as $id => $cfg) {
+            self::callJson('PUT', '/v1/apps/' . (int) $id, $cfg, 10);
+        }
+        foreach (array_diff($existing, array_keys($wanted)) as $id) {
+            if ($id > 0) {
+                self::callJson('DELETE', '/v1/apps/' . (int) $id, null, 5);
+            }
+        }
+    }
+
+    /** The caller's recording of a voice-requests call ('' when the service no longer has it). */
+    public static function callAudio(string $uuid): string
+    {
+        if (!preg_match('/^[0-9a-f-]{36}$/', $uuid)) {
+            return '';
+        }
+        $r = self::call('GET', '/v1/calls/' . $uuid . '/audio', null, 10);
+        return $r['status'] === 200 && str_starts_with($r['body'], 'RIFF') ? $r['body'] : '';
+    }
+
     /** WAV → MP3 (what Cloud TTS keeps and plays), with lame. */
     public static function wavToMp3(string $wav): string
     {
