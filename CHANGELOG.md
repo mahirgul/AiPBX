@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.12.3
+
+- **Translations:** the 221 texts added since 1.9 (local AI models, AI
+  applications and voice requests, cloud services, wide logo, the "AI request"
+  e-mail) are now translated into all 21 other portal languages, which showed
+  them in English until now.
+
 ## 1.12.2
 
 - **Invitation e-mail:** the "Sign in to the mobile app" box now comes first,
