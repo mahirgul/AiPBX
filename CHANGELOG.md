@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.12.1
+
+- **Android app 1.0.59 — pictures in chat:** pictures sent in a chat on the main
+  screen did not load or open in the Android app (the web portal showed them):
+  the app asked for them without its session, and the server refused. Long press
+  on your own message there now offers to delete it, as in the separate chat
+  window.
+
 ## 1.12.0
 
 - **Whisper speech recognition** in *AI → Models*: Whisper small for Turkish, German
