@@ -41,6 +41,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [E-mail](mail.md) | Mail relay and e-mail templates (fax, voicemail, invitations, password e-mails) |
 | [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
 | [Local AI models](local-ai.md) | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
+| [Cloud AI services](cloud-ai.md) | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq …), cloud speech to text, the engine for each job |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 
 ## Mobile apps
