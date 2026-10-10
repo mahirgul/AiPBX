@@ -25,7 +25,10 @@ The portal writes this dialplan for every application (the contract):
    UUID, and the service plays the audio in 20 ms frames paced in real time,
    then sends "terminate" (0x00) so AudioSocket() returns 0 and the dialplan
    continues. Audio and DTMF from the caller are parsed and kept in the
-   session (later application types will listen).
+   session.
+
+The second type, "voice_requests" (a pushed config, no text in the start
+request), listens to the caller: see VoiceRequestsCall and voice_requests.py.
 
 The dialplan cannot read /etc/aipbx/ai.token, so /v1/calls/start does not
 take the bearer token; ``key`` is the lowercase hex HMAC-SHA256 of
@@ -48,6 +51,7 @@ import hmac
 import json
 import logging
 import math
+import queue
 import re
 import socket
 import struct
@@ -59,7 +63,10 @@ import urllib.request
 import uuid
 from collections import deque
 
+from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
+from .voice_requests import APP_TYPE as VOICE_REQUESTS
+from .voice_requests import AppStore, Listener, ResultStore
 
 log = logging.getLogger("aipbx_ai.calls")
 
@@ -70,6 +77,8 @@ FRAME_BYTES = 320            # 20 ms of 8 kHz 16-bit mono
 FRAME_SECONDS = 0.02
 LEAD_SECONDS = 0.06          # how far ahead of real time we may send
 TAIL_SECONDS = 0.2           # after the last frame, before "terminate"
+SILENCE_FRAME = b"\x00" * FRAME_BYTES
+NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
 
 MAX_TEXT = 2000
 MAX_FILLED = 4000            # rendered text (template plus lookup values)
@@ -104,6 +113,8 @@ _ID_FIELD = re.compile(r"^[0-9+*#A-Za-z_.-]*$")
 _UNIQUEID = re.compile(r"^[0-9A-Za-z_.-]*$")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 _FIELDS = ("app", "key", "model", "speed", "max", "caller", "did", "uniqueid", "text", "lookup", "fallback")
+ANNOUNCEMENT = "announcement"
+CLEANUP_EVERY = 300.0        # seconds between deletions of old voice_requests results
 
 
 def dialplan_key(token):
@@ -289,8 +300,9 @@ def _lookup(form):
 # ---- sessions -------------------------------------------------------------
 
 class CallSession:
-    def __init__(self, app, model, caller, did, uniqueid):
+    def __init__(self, app, model, caller, did, uniqueid, kind=ANNOUNCEMENT):
         self.uuid = str(uuid.uuid4())
+        self.kind = kind
         self.app = app
         self.model = model
         self.caller = caller
@@ -315,34 +327,50 @@ class CallSession:
         self.inbound_frames = 0
         self.inbound_rate = 0
         self.dtmf_event = threading.Event()
+        # voice_requests
+        self.config = None             # the application config at start
+        self.version = None
+        self.listen_q = None           # a queue while listening: ("audio"|"dtmf", time, data)
+        self.intent = None
+        self.transcript = None
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
         self.inbound_frames += 1
         self.inbound_rate = AUDIO_RATES[kind]
+        q = self.listen_q
+        if q is not None and kind == KIND_AUDIO:
+            q.put(("audio", time.monotonic(), payload))
 
     def digit_in(self, digit):
         self.dtmf.append(digit)
         self.dtmf_event.set()
+        q = self.listen_q
+        if q is not None:
+            q.put(("dtmf", time.monotonic(), digit))
 
     def seconds(self):
         end = self.ended_mono if self.ended_mono is not None else time.monotonic()
         return round(end - self.created, 1)
 
     def describe(self):
-        return {"uuid": self.uuid, "app": self.app, "model": self.model, "state": self.state,
+        return {"uuid": self.uuid, "type": self.kind, "app": self.app, "model": self.model, "state": self.state,
                 "started": int(self.started), "caller": self.caller, "did": self.did,
                 "seconds": self.seconds(), "audio_seconds": round(self.audio_seconds, 2),
                 "chars": self.chars, "prepare_ms": self.prepare_ms, "result": self.result or None, "dtmf": "".join(self.dtmf),
-                "ended": int(self.ended) if self.ended else None}
+                "ended": int(self.ended) if self.ended else None,
+                "intent": self.intent, "transcript": self.transcript}
 
 
 class CallRegistry:
     """Prepared and live calls, the last finished ones, and /v1/calls/start."""
 
-    def __init__(self, manager, token, ttl=SESSION_TTL, max_live=MAX_LIVE):
+    def __init__(self, manager, token, ttl=SESSION_TTL, max_live=MAX_LIVE, data_dir=None):
         self.manager = manager
         self.key = dialplan_key(token).encode()
+        self.apps = AppStore(manager, data_dir)
+        self.results = ResultStore(data_dir)
+        self._next_cleanup = 0.0
         self.ttl = ttl
         self.max_live = max_live
         self._mu = threading.Lock()
@@ -355,6 +383,11 @@ class CallRegistry:
     def close(self):
         self._stop.set()
 
+    def key_ok(self, given):
+        """Constant-time check of a dialplan key (any case)."""
+        given = (given or "").strip().lower().encode("ascii", "replace")
+        return hmac.compare_digest(given, self.key)
+
     # ---- start --------------------------------------------------------
 
     def start(self, raw_body):
@@ -362,9 +395,10 @@ class CallRegistry:
         form = None
         try:
             form = parse_form(raw_body)
-            given = form.get("key", "").strip().lower().encode("ascii", "replace")
-            if not hmac.compare_digest(given, self.key):
+            if not self.key_ok(form.get("key", "")):
                 raise Refused("wrong dialplan key")
+            if "text" not in form and "model" not in form:
+                return self._start_voice_requests(form)
             return self._start(form)
         except Refused as e:
             app = (form or {}).get("app", "?")[:10]
@@ -426,6 +460,62 @@ class CallRegistry:
             raise
         return session.uuid
 
+    def _start_voice_requests(self, form):
+        """A call of a pushed voice_requests application: the greeting is made ready."""
+        unknown = set(form) - set(_FIELDS)
+        if unknown:
+            log.info("call: ignoring unknown fields %s", ",".join(sorted(unknown))[:100])
+        app = _int_field(form, "app", 1, APP_MAX)
+        limit = _int_field(form, "max", 1, MAX_PER_APP_LIMIT, MAX_PER_APP_DEFAULT)
+        config, version = self.apps.get(app)
+        if config is None:
+            raise Refused("no text and no voice_requests config for this application")
+        for name, kind in (("tts_model", "tts"), ("stt_model", "stt")):
+            model = config[name]
+            try:
+                info = self.manager.describe(model)
+            except UnknownModel:
+                raise Refused(f"unknown model {model}") from None
+            if info["kind"] != kind:
+                raise Refused(f"model {model} has the wrong kind")
+            if info["state"] != "ready":
+                raise Refused(f"model {model} is not ready ({info['state']})")
+        session = CallSession(app, config["tts_model"], _id_field(form, "caller", _ID_FIELD, MAX_ID_FIELD),
+                              _id_field(form, "did", _ID_FIELD, MAX_ID_FIELD),
+                              _id_field(form, "uniqueid", _UNIQUEID, MAX_UNIQUEID), kind=VOICE_REQUESTS)
+        session.config, session.version = config, version
+        self._reserve(session, limit)
+        try:
+            try:
+                session.pcm = self.apps.prompt(app, version, config, "greeting")
+            except NotReady:
+                raise Refused(f"model {config['tts_model']} is not ready") from None
+            except ServiceBusy:
+                raise Refused("service busy: too many requests waiting for the model") from None
+            except Exception as e:  # noqa: BLE001
+                log.exception("call synthesis failed")
+                raise Refused(f"synthesis failed: {type(e).__name__}") from None
+            if not session.pcm:
+                raise Refused("synthesis returned no audio")
+            session.chars = len(config["greeting"])
+            session.audio_seconds = len(session.pcm) / 2 / SAMPLE_RATE
+            session.prepare_ms = int((time.monotonic() - session.created) * 1000)
+        except BaseException:
+            with self._mu:
+                self._live.pop(session.uuid, None)
+            raise
+        self.apps.warm(app, version, config)     # retry, not_understood and replies, in the background
+        return session.uuid
+
+    def result_for_dialplan(self, call_uuid, key):
+        """GET /v1/calls/<uuid>/result: the intent id, "none", or "" (unknown call or wrong key)."""
+        if not self.key_ok(key):
+            return ""
+        result = self.results.get(call_uuid)
+        if result is None:
+            return ""
+        return result.get("intent") or "none"
+
     def _reserve(self, session, limit):
         with self._mu:
             if len(self._live) >= self.max_live:
@@ -477,6 +567,7 @@ class CallRegistry:
             session.ended = time.time()
             session.ended_mono = time.monotonic()
             session.pcm = b""          # free the audio
+            session.listen_q = None
             self._finished.append(session)
         played = session.sent_bytes / 2 / SAMPLE_RATE
         wall = session.ended_mono - session.connected if session.connected else 0.0
@@ -499,6 +590,11 @@ class CallRegistry:
         while not self._stop.wait(1.0):
             try:
                 self.sweep()
+                if time.monotonic() >= self._next_cleanup:
+                    self._next_cleanup = time.monotonic() + CLEANUP_EVERY
+                    removed = self.results.cleanup()
+                    if removed:
+                        log.info("deleted %d voice_requests result file(s) older than 24 h", removed)
             except Exception:  # noqa: BLE001
                 log.exception("call sweeper failed")
 
@@ -682,7 +778,10 @@ class AudioSocketServer:
         reader.thread.start()
         result = "error"
         try:
-            result = self._play(conn, session, reader)
+            if session.kind == VOICE_REQUESTS:
+                result = VoiceRequestsCall(self.registry, conn, session, reader).run()
+            else:
+                result = self._play(conn, session, reader)
         finally:
             reader.done.set()
             reader.thread.join(2.0)
@@ -714,6 +813,256 @@ class AudioSocketServer:
             return "played"
         except OSError:
             return "hangup" if session.sent_bytes else "error"
+
+
+class VoiceRequestsCall:
+    """One voice_requests call on its AudioSocket connection.
+
+    greeting -> listen -> (retry -> listen, up to `retries` times) -> reply of
+    the matched intent, or not_understood -> result saved -> terminate (0x00).
+
+    The reader thread keeps reading the caller's frames all the time; while we
+    listen they go to session.listen_q (the frames that arrive while a prompt
+    plays are dropped: no barge-in). Transcription runs in its own thread.
+    The result is saved before the terminate message, so the dialplan finds it
+    as soon as AudioSocket() returns.
+    """
+
+    def __init__(self, registry, conn, session, reader):
+        self.registry = registry
+        self.conn = conn
+        self.session = session
+        self.reader = reader
+        self.config = session.config
+        self.attempts = []
+        self.audio = b""               # the caller's last utterance
+        self.matched = None            # the intent dict
+        self.reply_started = None      # monotonic
+        self.speech_end = None         # monotonic arrival of the last loud frame of the last attempt
+        self._mu = threading.Lock()
+        self._current = None           # the prompt being sent by the pump
+        self._stop_pump = threading.Event()
+        self._broken = threading.Event()
+        self._pump_thread = threading.Thread(target=self._pump, name="call-pump", daemon=True)
+
+    # ---- audio out ------------------------------------------------------
+
+    def _pump(self):
+        """Sends a 20 ms frame every 20 ms: the current prompt, or silence.
+
+        Asterisk's AudioSocket() hangs up after 2 s without a message from us,
+        so we never pause, not even while listening or transcribing."""
+        t0 = time.monotonic()
+        i = 0
+        try:
+            while not self._stop_pump.is_set():
+                wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - time.monotonic()
+                if wait > 0 and (self._stop_pump.wait(wait) or self.reader.gone.is_set()):
+                    return
+                if self.reader.gone.is_set():
+                    return
+                with self._mu:
+                    cur = self._current
+                    if cur is not None:
+                        chunk = cur["pcm"][cur["pos"]:cur["pos"] + FRAME_BYTES]
+                        if cur["pos"] == 0:
+                            cur["started"] = time.monotonic()
+                        cur["pos"] += FRAME_BYTES
+                        if cur["pos"] >= len(cur["pcm"]):
+                            cur["ends"] = t0 + (i + 1) * FRAME_SECONDS     # heard to the end then
+                            self._current = None
+                            cur["sent"].set()
+                    else:
+                        chunk = SILENCE_FRAME
+                self.conn.sendall(message(KIND_AUDIO, chunk))
+                if cur is not None:
+                    self.session.sent_bytes += len(chunk)
+                i += 1
+        except OSError:
+            self._broken.set()
+
+    def gone(self):
+        return self.reader.gone.is_set() or self._broken.is_set()
+
+    def play(self, pcm, mark_reply=False):
+        """Plays PCM in real time; True when it has played out, False when the peer is gone."""
+        if not pcm:
+            return not self.gone()
+        cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
+        with self._mu:
+            self._current = cur
+        while not cur["sent"].wait(0.05):
+            if self.gone():
+                return False
+        if mark_reply:
+            self.reply_started = cur["started"]
+        # Wait until the caller has heard the end (the pump sends 60 ms ahead).
+        while time.monotonic() < cur["ends"]:
+            if self.reader.gone.wait(min(0.05, max(0.0, cur["ends"] - time.monotonic()))):
+                return False
+        return not self.gone()
+
+    def prompt(self, key):
+        """The prompt's audio; b"" when it cannot be made (the call goes on without it)."""
+        s = self.session
+        try:
+            return self.registry.apps.prompt(s.app, s.version, self.config, key)
+        except Exception as e:  # noqa: BLE001
+            log.warning("call app=%d: prompt %s failed (%s)", s.app, key, type(e).__name__)
+            return b""
+
+    # ---- audio in -------------------------------------------------------
+
+    def listen(self):
+        """One attempt: the attempt dict, or None when the caller hung up."""
+        session, reader, cfg = self.session, self.reader, self.config
+        q = queue.Queue()
+        listener = Listener(cfg["listen_seconds"])
+        digits = []
+        started = time.monotonic()
+        wall_limit = started + cfg["listen_seconds"] + 2.0   # Asterisk stopped sending audio
+        session.listen_q = q
+        reason = None
+        try:
+            while reason is None:
+                if self.gone():
+                    return None
+                try:
+                    kind, at, data = q.get(timeout=0.05)
+                except queue.Empty:
+                    now = time.monotonic()
+                    if now > wall_limit:
+                        reason = "timeout" if listener.heard else "silence"
+                        continue
+                    # No frames from Asterisk (a channel that sends no audio,
+                    # e.g. a Local channel in Wait()): the missing time is silence.
+                    missing = int((now - started - NO_FRAMES_GAP) / FRAME_SECONDS) - len(listener.frames)
+                    if missing > 0:
+                        reason = listener.feed(SILENCE_FRAME * missing, now)
+                    continue
+                if kind == "dtmf":
+                    digits.append(data)
+                    reason = "dtmf"
+                else:
+                    reason = listener.feed(data, at)
+        finally:
+            session.listen_q = None
+        ended = time.monotonic()
+        attempt = {"reason": reason, "transcript": "", "intent": None, "score": 0.0, "second": 0.0,
+                   "scores": {}, "dtmf": "".join(digits), "listened_seconds": round(ended - started, 2),
+                   "speech_seconds": 0.0, "stt_ms": 0}
+        if listener.heard:
+            pcm = listener.utterance()
+            self.audio = pcm
+            self.speech_end = listener.last_loud_time
+            attempt["speech_seconds"] = round(len(pcm) / 2 / SAMPLE_RATE, 2)
+            text, attempt["stt_ms"] = self.transcribe(pcm)
+            attempt["transcript"] = text
+            if text:
+                m = match_intent(text, cfg["intents"], cfg["threshold"])
+                attempt.update(intent=m["intent"], score=m["score"], second=m["second"], scores=m["scores"])
+        else:
+            self.speech_end = None
+        return attempt
+
+    def transcribe(self, pcm):
+        """(text, ms); runs in a thread of its own, the reader keeps reading meanwhile."""
+        from .wav import wav_bytes
+
+        box = {}
+        model = self.config["stt_model"]
+
+        def run():
+            try:
+                box["text"] = (self.registry.manager.transcribe(model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
+            except Exception as e:  # noqa: BLE001
+                box["error"] = type(e).__name__
+        started = time.monotonic()
+        t = threading.Thread(target=run, name="call-stt", daemon=True)
+        t.start()
+        t.join(30.0)
+        ms = int((time.monotonic() - started) * 1000)
+        if "error" in box or t.is_alive():
+            log.warning("call app=%d: transcription failed (%s)", self.session.app, box.get("error", "timeout"))
+        text = box.get("text") or ""
+        return (text.strip() if isinstance(text, str) else ""), ms
+
+    # ---- the call -------------------------------------------------------
+
+    def run(self):
+        self._pump_thread.start()
+        try:
+            return self._run()
+        finally:
+            self._stop_pump.set()
+            self._pump_thread.join(1.0)
+
+    def _run(self):
+        session, cfg = self.session, self.config
+        try:
+            if not self.play(session.pcm):
+                return self.save("hangup")
+            for n in range(cfg["retries"] + 1):
+                attempt = self.listen()
+                if attempt is None:
+                    return self.save("hangup")
+                self.attempts.append(attempt)
+                session.transcript = attempt["transcript"] or session.transcript
+                if attempt["intent"]:
+                    self.matched = next(i for i in cfg["intents"] if i["id"] == attempt["intent"])
+                    session.intent = self.matched["id"]
+                    break
+                if n < cfg["retries"] and not self.play(self.prompt("retry")):
+                    return self.save("hangup")
+            if self.matched:
+                result = "matched"
+                pcm = self.prompt("reply:" + self.matched["id"])
+            else:
+                heard = any(a["speech_seconds"] for a in self.attempts)
+                result = "not_understood" if heard else "silence"
+                pcm = self.prompt("not_understood")
+            played = self.play(pcm, mark_reply=True)
+            self.save(result)
+            if not played:
+                return "hangup"
+            if self.reader.gone.wait(TAIL_SECONDS):       # silence frames go on meanwhile
+                return result
+            self._stop_pump.set()
+            self._pump_thread.join(1.0)
+            self.conn.sendall(message(KIND_HANGUP))
+            self.reader.gone.wait(1.0)
+            return result
+        except OSError:
+            if not self.saved:
+                self.save("hangup")
+            return "hangup"
+
+    saved = False
+
+    def save(self, result):
+        """Stores the result (memory, JSON, WAV); returns result for finish()."""
+        s, cfg = self.session, self.config
+        intent = self.matched
+        timings = {}
+        if self.reply_started is not None and self.speech_end is not None:
+            timings["speech_end_to_reply_ms"] = int((self.reply_started - self.speech_end) * 1000)
+        record = {
+            "uuid": s.uuid, "type": VOICE_REQUESTS, "app": s.app, "caller": s.caller, "did": s.did,
+            "uniqueid": s.uniqueid, "started": int(s.started), "ended": int(time.time()),
+            "intent": intent["id"] if intent else None,
+            "intent_name": (intent["name"] or intent["id"]) if intent else None,
+            "score": self.attempts[-1]["score"] if self.attempts else 0.0,
+            "transcripts": [a["transcript"] for a in self.attempts],
+            "dtmf": "".join(s.dtmf), "result": result, "audio": False,
+            "attempts": self.attempts, "timings": timings,
+        }
+        self.registry.results.save(record, self.audio)
+        self.saved = True
+        log.info("call app=%d caller=%s voice_requests result=%s intent=%s score=%.2f transcripts=%s %s",
+                 s.app, s.caller or "-", result, record["intent"] or "none", record["score"],
+                 json.dumps(record["transcripts"], ensure_ascii=False)[:300],
+                 " ".join(f"{k}={v}" for k, v in timings.items()))
+        return result
 
 
 def _close(conn):

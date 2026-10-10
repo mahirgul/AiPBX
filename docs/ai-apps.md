@@ -64,6 +64,24 @@ model gets about one word in four wrong, and short requests with a clear keyword
 çalışmıyor") come through best. Give each request a few keywords and two or three example
 sentences, and keep the "not understood" path going to a person.
 
+Example keywords for a hotel (word beginnings; Turkish softening such as "hesap" → "hesabımı" is
+understood; a keyword two requests share counts less, and in "temiz havlu" the noun wins):
+
+| Request | Keywords |
+|---------|----------|
+| Towels | havlu |
+| Cleaning | temiz, topla, çarşaf, süpür |
+| Room service | yemek, sipariş, menü, kahvaltı, servis |
+| Wake-up call | uyandır, uyan, alarm |
+| Fault | çalışmıyor, bozuk, gelmiyor, yanmıyor, açılmıyor, arıza |
+| Checkout | çıkış, hesap, fatura, ödeme |
+
+Example sentences help when a caller uses none of the keywords, but only with a lower
+**certainty needed** (about 0.3); at 0.5 the keywords decide. The recording and the transcript are
+kept by the AI service for 24 hours (the request list keeps the text). Technical details:
+[Local AI models → Voice requests](local-ai.md#voice-requests-voice_requests).
+
+
 ## How it works
 
 The generated context `[aipbx-ai-app-<id>]` (`/etc/asterisk/pbx/extensions_ai_apps.conf`):

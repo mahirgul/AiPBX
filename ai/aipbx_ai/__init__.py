@@ -30,6 +30,15 @@ X-Forwarded-For or Forwarded:
                                        -> audio/wav, 16-bit mono PCM
     POST /v1/stt?model=<id>            audio/wav -> {"text", ...}
     GET  /v1/calls                     live and recently finished AI calls
+    GET  /v1/calls/{uuid}              result of a voice_requests call (JSON;
+                                       bearer token or ?key=<dialplan key>)
+    GET  /v1/calls/{uuid}/audio        the caller's utterance (audio/wav; same auth)
+    GET  /v1/calls/{uuid}/result?key=  for the dialplan: intent id, "none" or empty
+                                       (text/plain, dialplan key, no bearer token)
+    GET  /v1/apps                      pushed application configs {"apps": [...]}
+    PUT  /v1/apps/{id}                 push a voice_requests config (validated, kept
+                                       in $AIPBX_AI_DATA/apps/{id}.json)
+    GET  /v1/apps/{id}, DELETE /v1/apps/{id}
 
 Live calls (calls.py): the dialplan calls POST /v1/calls/start with CURL()
 (urlencoded, no bearer token: a dialplan key derived from the token instead)
