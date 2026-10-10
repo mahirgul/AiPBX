@@ -28,6 +28,13 @@ X-Forwarded-For or Forwarded:
     POST /v1/models/{id}/benchmark     speed test (model must be ready)
     POST /v1/tts                       {"model","text","speed","sample_rate"}
                                        -> audio/wav, 16-bit mono PCM
+    POST /v1/stt?model=<id>            audio/wav -> {"text", ...}
+    GET  /v1/calls                     live and recently finished AI calls
+
+Live calls (calls.py): the dialplan calls POST /v1/calls/start with CURL()
+(urlencoded, no bearer token: a dialplan key derived from the token instead)
+and gets the call's UUID or an empty body; AudioSocket() then connects to
+127.0.0.1:8791 and the service plays the prepared audio in real time.
 
 Model states: absent -> downloading -> loading -> ready; "installed" means the
 files are on disk but not loaded; "error" keeps the last failure. On start the

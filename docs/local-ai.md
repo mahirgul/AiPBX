@@ -212,6 +212,9 @@ JSON unless noted. Errors are HTTP 4xx/5xx with `{"error": "<message>"}`.
 500 `synthesis failed`. A long text takes time on a CPU (5000 characters: about a minute), so a
 client should wait up to a few minutes.
 
+`GET /v1/calls` lists the live AI calls and the last 50 finished ones (kept for 10 minutes), see
+[Live calls](#live-calls-ai-applications).
+
 Example on the server:
 
 ```bash
@@ -221,6 +224,94 @@ curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
      -d '{"model":"ema-lightning","text":"Merhaba, hoş geldiniz.","sample_rate":8000}' \
      -o merhaba.wav http://127.0.0.1:8790/v1/tts
 ```
+
+## Live calls (AI applications)
+
+An AI application answers calls itself (roadmap 5, AI applications). The first type is
+**announcement with values**: the caller hears a text, rendered from a template with values from the
+dialplan and optionally from a lookup URL, then the call continues to the application's destination.
+
+The portal writes one context per application:
+
+```
+[aipbx-ai-app-<id>]
+exten => s,1,Answer()
+ same => n,Set(AI_CALL=${CURL(http://127.0.0.1:8790/v1/calls/start,app=<id>&key=<dialplan key>&model=<model id>&speed=<0.5-2>&max=<n>&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${AI_DID})}&uniqueid=${UNIQUEID}&text=${URIENCODE(<template>)}&lookup=${URIENCODE(<url or empty>)}&fallback=${URIENCODE(<fallback text>)})})
+ same => n,GotoIf($["${LEN(${AI_CALL})}" != "36"]?done)
+ same => n,AudioSocket(${AI_CALL},127.0.0.1:8791)
+ same => n(done),Goto(<destination>)
+```
+
+1. **`POST /v1/calls/start`** (form-urlencoded, as `CURL()` posts it) prepares the call: it checks the
+   key, does the lookup, renders the text and synthesises it at 8 kHz. The answer is always
+   `200 text/plain`: only the call's UUID (36 characters), or an **empty body** when the call is
+   refused (the reason is in `journalctl -u aipbx-ai`): wrong key, unknown model, model not ready or
+   not a text-to-speech model, the application already has `max` live calls, more than 100 live
+   calls in all, invalid fields, the model's queue is full, or the synthesis failed. With an empty
+   answer the dialplan skips the AI part and goes straight to the destination.
+2. **`AudioSocket()`** connects to **127.0.0.1:8791** (`AIPBX_AI_AUDIOSOCKET_PORT`) and sends the
+   UUID; the service plays the audio in 20 ms frames, paced in real time (at most 60 ms ahead), and
+   200 ms after the last frame sends *terminate*: `AudioSocket()` returns and the dialplan
+   continues. A prepared call that nobody connects to within 30 s expires.
+
+**Key.** The dialplan cannot read `/etc/aipbx/ai.token`, so this one endpoint takes no bearer token.
+`key` is the lowercase hex HMAC-SHA256 of the bytes `aipbx-dialplan` with the token (the file's
+content, trimmed) as the key, compared in constant time:
+
+```bash
+printf %s aipbx-dialplan | openssl dgst -sha256 -hmac "$(sudo cat /etc/aipbx/ai.token)" -r | cut -d' ' -f1
+```
+
+Requests with `X-Forwarded-For` or `Forwarded` are refused here too; every other endpoint keeps
+the bearer token.
+
+**Fields.** `app` 1–1000000; `model` a ready text-to-speech model; `speed` 0.5–2 (default 1); `max`
+1–50 live calls of the application (default 4); `text` 1–2000 characters (UTF-8, after URL
+decoding); `fallback` up to 2000; `lookup` an http(s) URL up to 500 characters (or empty). `caller`
+and `did` (up to 40 of `0-9 + * # A-Z a-z _ . -`) and `uniqueid` (up to 64) are informational: an
+invalid value is dropped (logged), not a reason to refuse the call.
+
+**Lookup.** When `lookup` is set, the service GETs it with `caller`, `did` and `app` added to its
+query (other parameters are kept; no redirects, no proxy), 2 s at most, 64 KB at most. The answer
+must be a JSON object; its top-level string and number values with names of `A-Z a-z 0-9 _`
+(1–40 characters) fill the `{name}` placeholders of the text (nested objects, lists, booleans and
+null are ignored; each value is cut at 200 characters). If the lookup fails (timeout, HTTP error,
+not a JSON object) or a placeholder has no value, the `fallback` text is used when it is not empty
+(its placeholders filled from whatever values there are); otherwise the placeholders without a
+value are removed. Example: text `Merhaba ${CALLERID(name)}, borcunuz {amount} liradır.` with a
+lookup answering `{"amount":"1.234,50"}`.
+
+**Timing.** The dialplan waits while the call is prepared: lookup (≤ 2 s) plus synthesis. EMA
+Lightning makes a 4.3 s sentence in about 0.35–0.45 s on 2 cores; a 10 s text takes about 1 s.
+One synthesis runs at a time per model, so simultaneous calls of the same model wait for each other.
+
+**Live view.** `GET /v1/calls` (bearer token):
+
+```json
+{"calls":[{"uuid":"9dc14e44-…","app":901,"model":"ema-lightning","state":"prepared|playing|done",
+  "started":1791616715,"caller":"+905321234567","did":"02120000000","seconds":4.9,
+  "audio_seconds":4.32,"chars":41,"prepare_ms":446,"result":null|"played"|"hangup"|"expired"|"error",
+  "dtmf":"","ended":null|1791616720}],
+ "per_app":{"901":1}}
+```
+
+Live calls come first (oldest first), then up to 50 finished calls of the last 10 minutes (newest
+first). `seconds` is the time since the call was started (until its end), `per_app` counts the live
+(prepared or playing) calls. Each call writes one journal line, e.g.
+`call app=901 caller=+905321234567 chars=41 audio=4.3s prepared=446ms played=4.3s in 4.52s lookup=ok dtmf=- result=played`.
+
+**AudioSocket protocol.** Messages are 1 byte type, 2 bytes big-endian length, payload: `0x00`
+terminate, `0x01` UUID (16 bytes), `0x03` DTMF (one ASCII byte), `0x10` audio (16-bit
+little-endian signed linear, 8 kHz mono), `0xff` error. The specification also lists `0x11`–`0x18`
+for 12–192 kHz audio; Asterisk 22's `AudioSocket()` application sets the channel to 8 kHz and sends
+only `0x10` (and treats anything other than `0x10`/`0x00` from the server as an error), so the
+service sends only `0x10` and `0x00` and accepts all audio types. Audio and DTMF from the caller
+are already read into the call (DTMF digits are shown in the live view); the announcement does not
+use them yet.
+
+**Hang-ups.** When the caller hangs up during the announcement, `AudioSocket()` fails (Asterisk logs
+a warning `Failed to receive frame from channel …`) and the channel hangs up: the destination is not
+reached, only an `h` extension runs. The service ends the call with result `hangup`.
 
 ## Removing
 

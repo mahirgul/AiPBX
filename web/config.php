@@ -429,7 +429,7 @@ function toCleanAscii($str) {
  * config-injection vector.
  */
 function sanitizeDestType($type) {
-    $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route'];
+    $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app'];
     $type = trim((string)$type);
     return in_array($type, $valid, true) ? $type : 'hangup';
 }

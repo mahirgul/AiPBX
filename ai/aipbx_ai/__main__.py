@@ -6,6 +6,8 @@ Environment:
     AIPBX_AI_TOKEN_FILE    token file when not run by systemd
                            (default /etc/aipbx/ai.token)
     AIPBX_AI_PORT          TCP port on 127.0.0.1 (default 8790)
+    AIPBX_AI_AUDIOSOCKET_PORT  AudioSocket port on 127.0.0.1 for live calls
+                           (default 8791; the portal's dialplan uses 8791)
     AIPBX_AI_DATA          data directory (default /var/lib/aipbx-ai)
 """
 import logging
@@ -36,7 +38,9 @@ def main():
         logging.error("cannot read the API token: %s", e)
         return 1
     port = int(os.environ.get("AIPBX_AI_PORT", "8790"))
+    audiosocket_port = int(os.environ.get("AIPBX_AI_AUDIOSOCKET_PORT", "8791"))
 
+    from .calls import AudioSocketServer
     from .custom import Catalog
     from .models import REGISTRY, ModelManager
     from .server import AiServer
@@ -47,13 +51,16 @@ def main():
     added = [s for s in catalog.load_saved() if s.id not in builtin]
     manager = ModelManager(tuple(REGISTRY) + tuple(added), data_dir)
     server = AiServer((HOST, port), token, manager, catalog)
+    audiosocket = AudioSocketServer((HOST, audiosocket_port), server.calls).start()
     manager.start()
-    logging.info("listening on %s:%d", HOST, port)
+    logging.info("listening on %s:%d (AudioSocket %s:%d)", HOST, port, HOST, audiosocket_port)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        audiosocket.shutdown()
+        server.calls.close()
         server.server_close()
     return 0
 
