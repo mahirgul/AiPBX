@@ -34,6 +34,36 @@ Voice: a model of *AI → Local models*, or "the engine for the language" chosen
 *AI → Cloud services*. Speed 0.5–2. **Calls at the same time**: above this number, callers go
 straight to the destination (a small server prepares one announcement per voice at a time).
 
+## Voice requests
+
+The caller hears a greeting, says what they want, and the application recognises the request,
+answers by voice and acts on it — for example a hotel reception line: the guest calls from the room
+phone and says "could I get two more towels?".
+
+1. **Greeting** ("Good evening, reception here. How can I help you?") read by a voice model.
+2. **Listening:** until the caller stops speaking (about 0.8 s of silence) or at most the set number
+   of seconds. Pressing a key also ends listening.
+3. **Speech to text** with a local model (e.g. Vosk Turkish, see [Local AI models](local-ai.md)).
+4. **Matching** the text to the configured **requests**. Each request has:
+   - **keywords** — word beginnings, the strongest signal ("temiz" also matches "temizliği");
+     a keyword that several requests share counts less;
+   - **example sentences** — similar wording counts as well;
+   - the spoken **reply** ("Your request has been received");
+   - an **e-mail address** that gets the request with what was said and the caller's recording;
+   - where the call goes **afterwards** (empty: it ends after the reply).
+5. When it is not sure (below the *certainty needed*), it asks again (*ask again* times), then says
+   the *before passing on* text and sends the call to the application's destination — e.g. reception.
+
+The room comes from the calling extension: a guest does not have to say it. Every call ends up in
+**Recognised requests** on the page: time, caller, request (or "not understood"), what was said and
+the recording; staff tick *Done* when it is handled. The e-mail uses the template **AI request**
+(*E-mail → Templates*).
+
+How well it works depends mostly on the keywords: on 8 kHz telephone audio the small Turkish Vosk
+model gets about one word in four wrong, and short requests with a clear keyword ("havlu", "klima
+çalışmıyor") come through best. Give each request a few keywords and two or three example
+sentences, and keep the "not understood" path going to a person.
+
 ## How it works
 
 The generated context `[aipbx-ai-app-<id>]` (`/etc/asterisk/pbx/extensions_ai_apps.conf`):
