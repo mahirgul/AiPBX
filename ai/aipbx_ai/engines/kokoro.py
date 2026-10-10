@@ -72,6 +72,7 @@ Japanese and Mandarin voices need misaki's G2P and are not supported.
 import re
 from pathlib import Path
 
+from .. import textnorm
 from .piper import (ELLIPSIS, check_request, clean_text, espeak_available, espeak_clauses,
                     resample, split_clauses, split_long)
 
@@ -283,6 +284,10 @@ def load_voice_packs(path):
 
 
 class KokoroVoice:
+    # Numbers, dates ... written out by textnorm for the voice's language
+    # (dialect()); False turns it off.
+    normalize_text = True
+
     def __init__(self, model_path, voices, config_path, threads=0):
         if not numpy_available():
             raise RuntimeError("numpy and onnxruntime are needed for Kokoro voices")
@@ -361,6 +366,8 @@ class KokoroVoice:
         the first run is ready."""
         speed = check_request(text, speed, sample_rate)
         voice, pack = self._pack(voice)
+        if self.normalize_text:
+            text = textnorm.normalize(text, dialect(voice)[1])
         parts = []
         for tokens in self.runs(text, voice):
             audio = self.synthesize_tokens(tokens, pack, speed)
