@@ -306,12 +306,136 @@ little-endian signed linear, 8 kHz mono), `0xff` error. The specification also l
 for 12–192 kHz audio; Asterisk 22's `AudioSocket()` application sets the channel to 8 kHz and sends
 only `0x10` (and treats anything other than `0x10`/`0x00` from the server as an error), so the
 service sends only `0x10` and `0x00` and accepts all audio types. Audio and DTMF from the caller
-are already read into the call (DTMF digits are shown in the live view); the announcement does not
+are read into the call (DTMF digits are shown in the live view); the announcement does not
 use them yet.
 
 **Hang-ups.** When the caller hangs up during the announcement, `AudioSocket()` fails (Asterisk logs
 a warning `Failed to receive frame from channel …`) and the channel hangs up: the destination is not
 reached, only an `h` extension runs. The service ends the call with result `hangup`.
+
+### Voice requests (`voice_requests`)
+
+The caller says what they want ("could I get two more towels?"); the service recognises it with a
+speech-to-text model, matches it to one of the application's **intents**, confirms it by voice and
+hands the intent to the dialplan. Code: `calls.py` (the call), `voice_requests.py` (configs, VAD,
+results), `intents.py` (matching).
+
+**Config push** (bearer token). The portal pushes the application's config; the service keeps it in
+`$AIPBX_AI_DATA/apps/<id>.json` (atomic write) and loads it on start.
+
+| Request | Answer |
+|---------|--------|
+| `PUT /v1/apps/{id}` (id 1–1000000, JSON body ≤ 4 MB) | `200` the stored config with `"id"`; `400 {"error"}` when invalid |
+| `GET /v1/apps` | `{"apps":[{"id":902,"type":"voice_requests",…}]}` |
+| `GET /v1/apps/{id}` | the config, or 404 |
+| `DELETE /v1/apps/{id}` | `{"deleted":true\|false}` |
+
+```json
+{"type":"voice_requests","tts_model":"ema-lightning","stt_model":"vosk-tr-small","speed":1.0,
+ "greeting":"Merhaba, nasıl yardımcı olabilirim?","retry":"Anlayamadım, isteğinizi tekrar söyler misiniz?",
+ "not_understood":"Sizi resepsiyona aktarıyorum.","listen_seconds":7,"retries":1,"threshold":0.5,
+ "intents":[{"id":"towels","name":"Havlu","keywords":["havlu"],"examples":["İki havlu daha alabilir miyim?"],
+             "reply":"Havlu talebiniz alındı, en kısa sürede getirilecek."}]}
+```
+
+Checks: `type` must be `voice_requests`; `tts_model`/`stt_model` known models of the right kind
+(they may still be downloading — calls are refused until they are ready); `greeting` required;
+`retry`, `not_understood` and each `reply` may be empty (then nothing is said); every text ≤ 1000
+characters; `speed` 0.5–2 (default 1); `listen_seconds` 2–15 whole seconds (default 7); `retries`
+0–2 (default 1); `threshold` 0–1 (default 0.5); 1–30 intents with unique ids `[a-z0-9_-]{1,40}`
+(`none` is reserved), each with ≤ 30 keywords and ≤ 30 examples and **at least one keyword or
+example**. Unknown fields are ignored. The prompts (greeting, retry, not_understood, replies) are
+synthesised on first use and cached until the next `PUT`/`DELETE`; the first call of a config makes
+the greeting and the rest in the background.
+
+**Dialplan.** `POST /v1/calls/start` with `app`, `key`, `max`, `caller`, `did`, `uniqueid` and **no
+`text` and no `model`** starts a voice_requests call when a config exists for the app (else: empty
+answer). It is refused (empty answer) when there is no config, the TTS or STT model is not ready, the
+app has `max` live calls (default 4), or the greeting cannot be made. Afterwards:
+
+```
+[aipbx-ai-app-<id>]
+exten => s,1,Answer()
+ same => n,Set(AI_CALL=${CURL(http://127.0.0.1:8790/v1/calls/start,app=<id>&key=<key>&max=<n>&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${AI_DID})}&uniqueid=${UNIQUEID})})
+ same => n,GotoIf($["${LEN(${AI_CALL})}" != "36"]?done)
+ same => n,AudioSocket(${AI_CALL},127.0.0.1:8791)
+ same => n,Set(AI_INTENT=${CURL(http://127.0.0.1:8790/v1/calls/${AI_CALL}/result?key=<key>)})
+ ...                       (AI_INTENT: the intent id, "none", or empty)
+ same => n(done),Goto(<destination>)
+```
+
+**The call.** greeting → listen → (if not understood and retries left: retry prompt → listen) → the
+intent's reply, or `not_understood` → the result is saved → *terminate*, so the result is there as
+soon as `AudioSocket()` returns. There is no barge-in: what the caller says while a prompt plays is
+ignored. Between prompts the service sends silence frames — Asterisk's `AudioSocket()` hangs up
+after 2 s without a message from the server.
+
+**Listening** (energy VAD on 20 ms frames, `voice_requests.Listener`): the first 300 ms set the noise
+floor (mean RMS of the quieter half of the frames, 20–800); before speech the floor follows the
+quiet frames (quickly down, slowly up). Speech level is RMS ≥ max(3 × floor, 250) (≈ +10 dB over the
+noise, ≥ −42 dBFS); 3 frames in a row (60 ms) start the utterance (300 ms before it are kept); 800
+ms below speech level end it (300 ms after the last loud frame are kept); `listen_seconds` after
+the start of listening cut it. Nothing at speech level within 4 s (or `listen_seconds`, if shorter)
+is silence. A DTMF digit ends listening (the digits are stored in `dtmf`; speech heard before it is
+still transcribed). When Asterisk sends no frames for more than 200 ms (a channel without audio)
+the missing time counts as silence. The utterance goes to the STT model as an 8 kHz WAV in a
+thread of its own while the socket keeps being read and fed.
+
+**Matching** (`intents.match(transcript, intents, threshold)`, pure Python):
+
+- Text is lower-cased the Turkish way (İ→i, I→ı), diacritics are folded (ç c, ğ g, ı i, ö o, ş s,
+  ü u, ä a, ß ss), punctuation removed; so keywords may be typed with or without Turkish letters.
+- A keyword hits a word that starts with it ("temiz" → "temizliği"); weaker *stem hits* (×0.85): a
+  final p/ç/t/k/g softened to b/c/d/ğ ("hesap" → "hesabımı", "yemek" → "yemeğine"), and keywords
+  of ≥ 8 letters may differ in their last 4 ("açılmıyor" → "açılmayan"). Several words: a phrase.
+- Specificity: a keyword's weight is divided by the number of intents having the same keyword stem;
+  and when hits of two different intents are adjacent words, the first is a modifier and dropped
+  (noun phrases are head-final: "temiz havlu" is towels, not cleaning).
+- keyword score = min(1, 0.7 × best weight + 0.1 × the other hits' weights) (0.7 for one keyword,
+  +0.1 per further keyword); similarity = best cosine of TF-IDF vectors of character 3/4-grams
+  between the transcript and the intent's examples; **score = max(keyword score, 0.6 × similarity)**.
+- The best intent wins unless its score < `threshold`, or both best and second are > 0 and differ by
+  less than 0.1: then the attempt is not understood.
+
+Similarity alone stays below 0.6 (paraphrases score about 0.2–0.4), so with the default threshold
+0.5 keywords decide and examples only help with a threshold of about 0.3. On 24 Turkish hotel
+requests as Vosk wrote them from telephone audio, keywords alone got 20 right (the other 4: the
+request word was misrecognised or never said — "aldım getirebilir misiniz" for "havlu getirebilir
+misiniz" — they end as `none`, never as a wrong intent); with examples and threshold 0.3: 23.
+
+**Results** (kept 24 hours: memory and `$AIPBX_AI_DATA/calls/<uuid>.json`, the caller's last
+utterance as `<uuid>.wav`; a cleanup runs every 5 minutes):
+
+| Request | Auth | Answer |
+|---------|------|--------|
+| `GET /v1/calls/{uuid}/result?key=<dialplan key>` | dialplan key | `200 text/plain`: the intent id, `none` (not understood, silence, hang-up), or empty (unknown call, wrong key) |
+| `GET /v1/calls/{uuid}` | bearer token or `?key=<dialplan key>` | the result JSON, 404 unknown |
+| `GET /v1/calls/{uuid}/audio` | bearer token or `?key=` | `audio/wav` (8 kHz mono), 404 when there is none |
+
+The `?key=` alternative is for the portal's script that the dialplan starts as the `asterisk` user
+(which cannot read the token); a request with an `Authorization` header is checked as bearer only.
+Requests with `X-Forwarded-For`/`Forwarded` are refused (`/result` answers empty).
+
+```json
+{"uuid":"a7fc3dcd-…","type":"voice_requests","app":902,"caller":"101","did":"","uniqueid":"1760…",
+ "started":1791616715,"ended":1791616726,"intent":"towels","intent_name":"Havlu","score":0.7,
+ "transcripts":["odaya iki havlu daha gönderir misiniz"],"dtmf":"",
+ "result":"matched|not_understood|silence|hangup","audio":true,
+ "attempts":[{"reason":"speech|timeout|silence|dtmf","transcript":"…","intent":"towels","score":0.7,
+   "second":0.0,"scores":{"towels":0.7,…},"dtmf":"","listened_seconds":3.69,"speech_seconds":2.52,"stt_ms":434}],
+ "timings":{"speech_end_to_reply_ms":1259}}
+```
+
+`GET /v1/calls` shows voice_requests calls with `"type":"voice_requests"`, `intent` and `transcript`
+(the last non-empty transcript); each call also writes a journal line with result, intent and score.
+
+**Measured** on the CI VM (2 cores, Asterisk 22, EMA Lightning + vosk-tr-small, the caller's
+phrases synthesised by EMA Lightning and played into the call): "Odaya iki havlu daha gönderir
+misiniz?" → `odaya iki havlu daha gönderir misiniz` → towels 0.7; "Odadaki klima çalışmıyor." →
+fault 0.7; "Hesabımı kapatmak istiyorum, çıkış yapacağım." → checkout 0.785; "Yarın sabah yedide
+beni uyandırır mısınız?" → `… uyandır musunuz` → wakeup 0.8; a silent caller → retry →
+not_understood → `none`. From the end of speech to the start of the reply: 1.25–1.43 s (0.8 s of
+it is the VAD's end-of-speech wait, 0.42–0.58 s the transcription).
 
 ## Removing
 
