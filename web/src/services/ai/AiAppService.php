@@ -20,7 +20,8 @@ require_once dirname(__DIR__) . '/ai/CloudAiService.php';
 
 class AiAppService
 {
-    public const TYPES = ['announcement'];
+    public const TYPES = ['announcement', 'voice_requests'];
+    public const MAX_INTENTS = 30;
     public const MAX_TEXT = 2000;
     /** Placeholders Asterisk fills itself (the rest come from the lookup URL). */
     public const DIALPLAN_VALUES = [
@@ -64,6 +65,11 @@ class AiAppService
             throw new \Exception(t('ai_apps.err_model'));
         }
         $text = trim((string) ($d['text_template'] ?? ''));
+        $config = null;
+        if ($type === 'voice_requests') {
+            $config = self::validateRequests($d);
+            $text = $config['greeting'];
+        }
         if ($text === '' || mb_strlen($text) > self::MAX_TEXT) {
             throw new \Exception(sprintf(t('ai_apps.err_text'), self::MAX_TEXT));
         }
@@ -91,6 +97,7 @@ class AiAppService
             'dest_type' => $destType, 'dest_id' => $destId,
             'max_concurrent' => (string) max(1, min(50, (int) ($d['max_concurrent'] ?? 4))),
             'internal_number' => $number, 'is_active' => !empty($d['is_active']) ? '1' : '0',
+            'config' => $config !== null ? (string) json_encode($config, JSON_UNESCAPED_UNICODE) : null,
         ];
     }
 
@@ -106,7 +113,7 @@ class AiAppService
             assertInternalNumberAvailable($v['internal_number'], 'ai_app', $id);
         }
         $db = getDB();
-        $cols = ['title', 'app_type', 'model_id', 'speed', 'text_template', 'lookup_url', 'fallback_text', 'dest_type', 'dest_id', 'max_concurrent', 'is_active'];
+        $cols = ['title', 'app_type', 'model_id', 'speed', 'text_template', 'lookup_url', 'fallback_text', 'dest_type', 'dest_id', 'max_concurrent', 'is_active', 'config'];
         $vals = array_map(fn($c) => $v[$c], $cols);
         $cols[] = 'internal_number';
         $vals[] = $v['internal_number'] !== '' ? $v['internal_number'] : null;
@@ -138,6 +145,136 @@ class AiAppService
         if (!empty($app['internal_number'])) {
             markPendingSync('internal_numbers', 'ai_app', $id, 'AI application: ' . $app['title'], 'delete', $uid);
         }
+    }
+
+    /**
+     * Settings of a voice-requests application from the form: greeting,
+     * retry and "not understood" texts, the speech-to-text model, and the
+     * requests (keywords, example sentences, spoken reply, e-mail, destination).
+     */
+    public static function validateRequests(array $d): array
+    {
+        $txt = function (string $key, bool $required) use ($d): string {
+            $v = trim((string) ($d[$key] ?? ''));
+            if (($required && $v === '') || mb_strlen($v) > 1000) {
+                throw new \Exception(sprintf(t('ai_apps.err_text'), 1000));
+            }
+            return $v;
+        };
+        $stt = (string) ($d['stt_model'] ?? '');
+        if (!preg_match('/^(engine:(tr|de|en)|[a-z0-9][a-z0-9._-]{1,63})$/', $stt)) {
+            throw new \Exception(t('ai_apps.err_stt'));
+        }
+        $intents = [];
+        $seen = [];
+        foreach ((array) ($d['intents'] ?? []) as $row) {
+            if (!is_array($row) || trim((string) ($row['name'] ?? '')) === '') {
+                continue;
+            }
+            $name = mb_substr(trim((string) $row['name']), 0, 100);
+            $id = preg_match('/^[a-z0-9_]{1,40}$/', (string) ($row['id'] ?? '')) ? (string) $row['id'] : self::slug($name);
+            if ($id === 'none') {            // reserved: "not understood"
+                $id = 'none_request';
+            }
+            while (isset($seen[$id])) {
+                $id = substr($id, 0, 36) . '_' . count($seen);
+            }
+            $seen[$id] = true;
+            $split = fn($v, $sep) => array_slice(array_values(array_filter(array_map(
+                fn($x) => mb_substr(trim($x), 0, 100), preg_split($sep, (string) $v) ?: []))), 0, 30);
+            $keywords = $split($row['keywords'] ?? '', '/[,;\n]+/');
+            $examples = $split($row['examples'] ?? '', '/\n+/');
+            if ($keywords === [] && $examples === []) {
+                throw new \Exception(sprintf(t('ai_apps.err_intent_words'), $name));
+            }
+            $email = trim((string) ($row['email'] ?? ''));
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new \Exception(sprintf(t('ai_apps.err_intent_email'), $name));
+            }
+            $destType = (string) ($row['dest_type'] ?? '');
+            $destId = (string) ($row['dest_id'] ?? '');
+            if ($destType !== '' && (!preg_match('/^[a-z_]{2,30}$/', $destType) || mb_strlen($destId) > 64)) {
+                throw new \Exception(t('ai_apps.err_dest'));
+            }
+            $intents[] = ['id' => $id, 'name' => $name, 'keywords' => $keywords, 'examples' => $examples,
+                          'reply' => mb_substr(trim((string) ($row['reply'] ?? '')), 0, 1000),
+                          'email' => $email, 'dest_type' => $destType, 'dest_id' => $destId];
+            if (count($intents) >= self::MAX_INTENTS) {
+                break;
+            }
+        }
+        if ($intents === []) {
+            throw new \Exception(t('ai_apps.err_no_intents'));
+        }
+        return [
+            'greeting' => $txt('greeting', true),
+            'retry' => $txt('retry_text', false),
+            'not_understood' => $txt('not_understood_text', false),
+            'stt_model' => $stt,
+            'listen_seconds' => max(2, min(15, (int) ($d['listen_seconds'] ?? 7))),
+            'retries' => max(0, min(2, (int) ($d['retries'] ?? 1))),
+            'threshold' => max(0.0, min(1.0, round((float) ($d['threshold'] ?? 0.5), 2))),
+            'intents' => $intents,
+        ];
+    }
+
+    private static function slug(string $name): string
+    {
+        $s = strtolower(strtr($name, ['ç' => 'c', 'ğ' => 'g', 'ı' => 'i', 'İ' => 'i', 'ö' => 'o', 'ş' => 's', 'ü' => 'u',
+            'Ç' => 'c', 'Ğ' => 'g', 'Ö' => 'o', 'Ş' => 's', 'Ü' => 'u', 'ä' => 'a', 'ß' => 'ss', 'Ä' => 'a']));
+        $s = trim((string) preg_replace('/[^a-z0-9]+/', '_', $s), '_');
+        return substr($s !== '' ? $s : 'request', 0, 40);
+    }
+
+    public static function config(array $app): array
+    {
+        $c = json_decode((string) ($app['config'] ?? ''), true);
+        return is_array($c) ? $c : [];
+    }
+
+    /** The speech-to-text model a voice-requests application uses now. */
+    public static function resolveSttModel(string $model): string
+    {
+        if (str_starts_with($model, 'engine:')) {
+            $e = CloudAiService::engine('stt', substr($model, 7));
+            return str_starts_with($e, 'local:') ? substr($e, 6) : '';
+        }
+        return $model;
+    }
+
+    /** What PUT /v1/apps/<id> sends to the local AI service. */
+    public static function serviceConfig(array $app): array
+    {
+        $c = self::config($app);
+        return [
+            'type' => 'voice_requests',
+            'tts_model' => self::resolveModel((string) $app['model_id']),
+            'stt_model' => self::resolveSttModel((string) ($c['stt_model'] ?? '')),
+            'speed' => (float) $app['speed'],
+            'greeting' => (string) ($c['greeting'] ?? ''),
+            'retry' => (string) ($c['retry'] ?? ''),
+            'not_understood' => (string) ($c['not_understood'] ?? ''),
+            'listen_seconds' => (int) ($c['listen_seconds'] ?? 7),
+            'retries' => (int) ($c['retries'] ?? 1),
+            'threshold' => (float) ($c['threshold'] ?? 0.5),
+            'intents' => array_map(fn($i) => ['id' => $i['id'], 'name' => $i['name'], 'keywords' => $i['keywords'],
+                                               'examples' => $i['examples'], 'reply' => $i['reply']], $c['intents'] ?? []),
+        ];
+    }
+
+    // ------------------------------------------------------------ request log
+
+    public static function requests(int $limit = 100, bool $openOnly = false): array
+    {
+        $sql = 'SELECT r.*, a.title AS app_title FROM ai_requests r LEFT JOIN pbx_ai_apps a ON a.id = r.app_id'
+            . ($openOnly ? ' WHERE r.handled_at IS NULL' : '') . ' ORDER BY r.id DESC LIMIT ' . max(1, min(500, $limit));
+        return getDB()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function markHandled(int $id, bool $handled): void
+    {
+        getDB()->prepare('UPDATE ai_requests SET handled_at = ' . ($handled ? 'NOW()' : 'NULL') . ', handled_by = ? WHERE id = ?')
+            ->execute([$handled ? ($_SESSION['user_id'] ?? null) : null, $id]);
     }
 
     /** The voice model an application uses now ("engine:<lang>" follows AI → Cloud services). */

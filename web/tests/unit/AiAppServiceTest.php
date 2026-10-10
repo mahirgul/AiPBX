@@ -86,4 +86,78 @@ final class AiAppServiceTest extends TestCase
         $this->expectException(\Exception::class);
         AiAppService::validate(self::form(['dest_type' => 'ai_app', 'dest_id' => '5']), 5);
     }
+
+    private static function requestsForm(array $over = []): array
+    {
+        return self::form($over + ['app_type' => 'voice_requests', 'greeting' => 'Merhaba, nasıl yardımcı olabilirim?',
+            'retry_text' => 'Tekrar söyler misiniz?', 'not_understood_text' => 'Resepsiyona aktarıyorum.', 'stt_model' => 'vosk-tr-small',
+            'listen_seconds' => '7', 'retries' => '1', 'threshold' => '0.5', 'text_template' => '',
+            'intents' => [
+                ['name' => 'Havlu', 'keywords' => 'havlu', 'examples' => "İki havlu daha alabilir miyim?", 'reply' => 'Havlu talebiniz alındı.', 'email' => 'kat@example.com'],
+                ['name' => 'Arıza', 'keywords' => 'çalışmıyor, bozuk', 'examples' => '', 'reply' => 'Teknik servis geliyor.', 'dest_type' => 'hangup'],
+                ['name' => '', 'keywords' => 'ignored'],
+            ]]);
+    }
+
+    public function testVoiceRequestsValidation(): void
+    {
+        $v = AiAppService::validate(self::requestsForm());
+        $c = json_decode($v['config'], true);
+        $this->assertSame(['havlu', 'ariza'], array_column($c['intents'], 'id'));
+        $this->assertSame(['çalışmıyor', 'bozuk'], $c['intents'][1]['keywords']);
+        $none = json_decode(AiAppService::validate(self::requestsForm(['intents' => [['name' => 'None', 'keywords' => 'x']]]))['config'], true);
+        $this->assertSame('none_request', $none['intents'][0]['id']);
+        $this->assertSame('Merhaba, nasıl yardımcı olabilirim?', $v['text_template']);
+        foreach ([['intents' => []], ['stt_model' => '../x'], ['greeting' => ''],
+                  ['intents' => [['name' => 'X', 'keywords' => '', 'examples' => '']]],
+                  ['intents' => [['name' => 'X', 'keywords' => 'a', 'email' => 'not-mail']]]] as $bad) {
+            try {
+                AiAppService::validate(self::requestsForm($bad));
+                $this->fail('accepted ' . json_encode($bad));
+            } catch (\Exception $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function testVoiceRequestsDialplanAndServiceConfig(): void
+    {
+        $v = AiAppService::validate(self::requestsForm());
+        $app = ['id' => 9, 'title' => 'Resepsiyon'] + $v;
+        $conf = buildAiAppsDialplan([$app], str_repeat('cd', 32));
+        $this->assertStringContainsString('[aipbx-ai-app-9]', $conf);
+        $this->assertStringContainsString('app=9&key=' . str_repeat('cd', 32) . '&max=4&', $conf);
+        $this->assertStringNotContainsString('&text=', $conf);
+        $this->assertStringContainsString('Set(AI_INTENT=${CURL(http://127.0.0.1:8790/v1/calls/${AI_CALL}/result?key=', $conf);
+        $this->assertStringContainsString('System(/usr/local/bin/ai_request.php 9 ${FILTER(0-9a-f-,${AI_CALL})} ', $conf);
+        $this->assertStringContainsString('${URIENCODE(${CALLERID(name)})} >/dev/null 2>&1 &)', $conf);
+        $this->assertStringContainsString('GotoIf($["${AI_INTENT}" = "havlu"]?req_havlu)', $conf);
+        $this->assertStringContainsString('same => n(req_ariza),NoOp', $conf);
+        $this->assertStringContainsString('same => n(fallback),NoOp', $conf);
+
+        $cfg = AiAppService::serviceConfig($app);
+        $this->assertSame('voice_requests', $cfg['type']);
+        $this->assertSame('vosk-tr-small', $cfg['stt_model']);
+        $this->assertSame(['id', 'name', 'keywords', 'examples', 'reply'], array_keys($cfg['intents'][0]));
+    }
+
+    public function testPushAppsPutsAndDeletes(): void
+    {
+        $tok = tempnam(sys_get_temp_dir(), 'tok');
+        file_put_contents($tok, str_repeat('ef', 32));
+        putenv('AIPBX_AI_TOKEN_FILE=' . $tok);
+        $calls = [];
+        TtsHttp::$transport = function ($method, $url, $headers, $body) use (&$calls) {
+            $calls[] = $method . ' ' . parse_url($url, PHP_URL_PATH);
+            return ['status' => 200, 'body' => $method === 'GET' ? '{"apps":[{"id":3},{"id":5}]}' : '{}', 'type' => 'application/json'];
+        };
+        try {
+            LocalAiService::pushApps([5 => ['type' => 'voice_requests'], 7 => ['type' => 'voice_requests']]);
+        } finally {
+            TtsHttp::$transport = null;
+            putenv('AIPBX_AI_TOKEN_FILE');
+            unlink($tok);
+        }
+        $this->assertSame(['GET /v1/apps', 'PUT /v1/apps/5', 'PUT /v1/apps/7', 'DELETE /v1/apps/3'], $calls);
+    }
 }

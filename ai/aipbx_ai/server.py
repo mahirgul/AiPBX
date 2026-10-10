@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import __version__, sysinfo
 from .calls import CallRegistry
+from .voice_requests import APP_MAX, ConfigError
 from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
                      NotReady, ServiceBusy, UnknownModel, WrongKind)
 from .custom import CatalogError
@@ -57,6 +58,9 @@ def benchmark_text(languages):
     return BENCHMARK_TEXTS["en"]
 
 _MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop)$")
+_APP = re.compile(r"^/v1/apps/([0-9]{1,7})$")
+_CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result)?$")
+MAX_APP_BODY = 4 * 1024 * 1024  # an app config: up to 30 intents x 61 texts of 1000 characters
 
 
 class ApiError(Exception):
@@ -116,7 +120,7 @@ class Handler(BaseHTTPRequestHandler):
         if scheme.lower() != "bearer" or not hmac.compare_digest(given.strip().encode(), self.server.token):
             raise ApiError(HTTPStatus.UNAUTHORIZED, "missing or invalid token")
 
-    def _body(self):
+    def _body(self, limit=MAX_BODY):
         length = self.headers.get("Content-Length")
         if self.headers.get("Transfer-Encoding"):
             raise ApiError(HTTPStatus.BAD_REQUEST, "chunked bodies are not supported")
@@ -125,7 +129,7 @@ class Handler(BaseHTTPRequestHandler):
         if not length.strip().isdigit():
             raise ApiError(HTTPStatus.BAD_REQUEST, "invalid Content-Length")
         n = int(length)
-        if n > MAX_BODY:
+        if n > limit:
             raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "request body too large")
         if n == 0:
             return {}
@@ -160,12 +164,77 @@ class Handler(BaseHTTPRequestHandler):
             answer = ""
         self._send(HTTPStatus.OK, answer.encode("ascii"), "text/plain; charset=utf-8")
 
+    def _app(self, method, app_id):
+        """PUT/GET/DELETE /v1/apps/<id>: a voice_requests application config."""
+        apps = self.server.calls.apps
+        if not 1 <= app_id <= APP_MAX:
+            raise ApiError(HTTPStatus.NOT_FOUND, "not found")
+        if method == "PUT":
+            try:
+                config = apps.put(app_id, self._body(MAX_APP_BODY))
+            except ConfigError as e:
+                raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+            return self._json(HTTPStatus.OK, dict(config, id=app_id))
+        if method == "GET":
+            config, _ = apps.get(app_id)
+            if config is None:
+                raise ApiError(HTTPStatus.NOT_FOUND, "no config for this application")
+            return self._json(HTTPStatus.OK, dict(config, id=app_id))
+        if method == "DELETE":
+            return self._json(HTTPStatus.OK, {"deleted": apps.delete(app_id)})
+        raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
+
+    def _call_read(self, call_uuid, part):
+        """GET /v1/calls/<uuid>[/audio|/result].
+
+        /result is for the dialplan: ?key=<dialplan key>, always 200 text/plain
+        (the intent id, "none", or empty). The call itself and its audio take
+        the bearer token or the dialplan key (?key=, for the portal's script
+        that the dialplan starts as the asterisk user)."""
+        from urllib.parse import parse_qs, urlsplit
+
+        calls = self.server.calls
+        key = (parse_qs(urlsplit(self.path).query).get("key") or [""])[0]
+        if part == "/result":
+            answer = ""
+            if self._forwarded():
+                log.warning("call result refused: forwarded request")
+            else:
+                answer = calls.result_for_dialplan(call_uuid, key)
+            return self._send(HTTPStatus.OK, answer.encode("ascii", "replace"), "text/plain; charset=utf-8")
+        if self._forwarded():
+            raise ApiError(HTTPStatus.FORBIDDEN, "forwarded requests are not accepted")
+        if self.headers.get("Authorization") is not None or not key:
+            self._authorize()
+        elif not calls.key_ok(key):
+            raise ApiError(HTTPStatus.UNAUTHORIZED, "missing or invalid token")
+        result = calls.results.get(call_uuid)
+        if result is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "unknown call")
+        if part == "/audio":
+            path = calls.results.audio_path(call_uuid)
+            if path is None:
+                raise ApiError(HTTPStatus.NOT_FOUND, "no audio for this call")
+            return self._send(HTTPStatus.OK, path.read_bytes(), "audio/wav")
+        return self._json(HTTPStatus.OK, result)
+
     def _dispatch(self, method):
         try:
             path = self.path.split("?", 1)[0]
             if method == "POST" and path == "/v1/calls/start":
                 return self._call_start()
+            call = _CALL.match(path)
+            if call and method == "GET":
+                return self._call_read(call.group(1), call.group(2))
+            if call:
+                self._authorize()
+                raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
             self._authorize()
+            if method == "GET" and path == "/v1/apps":
+                return self._json(HTTPStatus.OK, {"apps": self.server.calls.apps.list()})
+            app = _APP.match(path)
+            if app:
+                return self._app(method, int(app.group(1)))
             if method == "GET" and path == "/v1/health":
                 return self._json(HTTPStatus.OK, self._health())
             if method == "GET" and path == "/v1/models":
@@ -184,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             m = _MODEL_ACTION.match(path)
             if m and method == "POST":
                 return self._model_action(m.group(1), m.group(2), self._body())
-            if path in ("/v1/health", "/v1/models", "/v1/tts", "/v1/calls", "/v1/calls/start") or m:
+            if path in ("/v1/health", "/v1/models", "/v1/tts", "/v1/calls", "/v1/calls/start", "/v1/apps") or m:
                 raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
             raise ApiError(HTTPStatus.NOT_FOUND, "not found")
         except ApiError as e:

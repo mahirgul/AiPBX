@@ -36,6 +36,9 @@ class AiAppsController extends BaseController
         static::renderPage('ai_apps/index', [
             'apps' => AiAppService::all(),
             'voices' => AiAppService::voiceModels(),
+            'stt_models' => array_values(array_filter(LocalAiService::models(), fn($m) => ($m['kind'] ?? '') === 'stt'
+                && in_array($m['state'] ?? '', ['ready', 'installed', 'loading'], true))),
+            'requests' => AiAppService::requests(100),
             'modules' => DestinationRegistry::getModuleList(),
             'service_ok' => LocalAiService::health() !== null,
             'csrf_token' => getCSRFToken(),

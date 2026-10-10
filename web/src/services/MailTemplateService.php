@@ -26,6 +26,7 @@ class MailTemplateService
         'fax_received' => ['department', 'did', 'caller', 'pages', 'date', 'brand', 'portal_link'],
         'fax_sent' => ['destination', 'fax_id', 'pages', 'date', 'brand', 'portal_link'],
         'fax_failed' => ['destination', 'fax_id', 'pages', 'date', 'error', 'brand', 'portal_link'],
+        'ai_request' => ['request', 'caller', 'caller_name', 'caller_number', 'transcript', 'app', 'date', 'brand', 'portal_link'],
         'test' => ['brand', 'date', 'from_name', 'from_address', 'to', 'host'],
     ];
 
@@ -508,7 +509,11 @@ class MailTemplateService
                 'department' => 'Sales', 'did' => '19276', 'pages' => '3', 'destination' => '+43 1 999 0000', 'fax_id' => '128',
                 'error' => 'NO ANSWER', 'from_name' => 'AiPBX', 'from_address' => 'no-reply@example.com', 'to' => 'admin@example.com',
                 'host' => gethostname() ?: 'pbx',
+                'request' => 'Towels', 'transcript' => 'could I get two more towels please', 'app' => 'Hotel reception',
             ];
+            if ($key === 'ai_request') {
+                $vars['portal_link'] = $link . '/ai-apps';
+            }
             if (in_array($key, ['fax_received', 'fax_sent', 'fax_failed'], true)) {
                 $vars['portal_link'] = $link . ($key === 'fax_received' ? '/fax-inbox' : '/fax-sent');
             }

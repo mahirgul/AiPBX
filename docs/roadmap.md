@@ -159,7 +159,7 @@ audio part is dropped (too heavy, too weak on Turkish speech). See "Model catalo
    administrator names requests with a few example sentences each and a destination ("invoice" →
    Accounting). The caller's words go to the closest request; when the match is uncertain, the
    caller gets the keypad menu or the operator.
-6. **Voice requests with a scenario (EmbeddingGemma 2 + EMA Lightning).** Application type for
+6. **Voice requests with a scenario** *(done in 1.11.0 with Vosk speech to text and keyword/example matching instead of EmbeddingGemma)*. Application type for
    requests that do not need a person on the line. Example, hotel: the guest calls 7300 from the
    room phone and says "could I get two more towels?". The request is recognised as *towels*; the
    room comes from the calling extension (no need to say it). The scenario of that request runs:

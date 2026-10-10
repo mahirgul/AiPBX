@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.11.0
+
+- **Voice requests** (new type of *AI → Applications*): the caller hears a
+  greeting, says what they want, and the application recognises the request
+  with a speech-to-text model of this server, answers by voice, e-mails the
+  staff (with what was said and the caller's recording) and passes the call
+  on — or, when it is not sure, asks again and then puts the caller through
+  to a person. Example: a hotel guest calls reception from the room phone
+  and says "Odaya iki havlu daha gönderir misiniz?" — the request "Towels"
+  is recognised, the guest hears "Your towels are on the way", housekeeping
+  gets an e-mail with the room number. Requests are set up with keywords
+  (word beginnings), example sentences, a reply, an e-mail address and a
+  destination. Every call is listed under **Recognised requests** with the
+  text and the recording, and can be ticked as done. New e-mail template
+  "AI request". See [AI applications](docs/ai-apps.md).
+
 ## 1.10.1
 
 - **Turkish amounts read naturally:** "1.234,50 lira", "1.234,50 TL" and

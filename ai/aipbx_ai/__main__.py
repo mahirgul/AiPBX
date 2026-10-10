@@ -40,7 +40,7 @@ def main():
     port = int(os.environ.get("AIPBX_AI_PORT", "8790"))
     audiosocket_port = int(os.environ.get("AIPBX_AI_AUDIOSOCKET_PORT", "8791"))
 
-    from .calls import AudioSocketServer
+    from .calls import AudioSocketServer, CallRegistry
     from .custom import Catalog
     from .models import REGISTRY, ModelManager
     from .server import AiServer
@@ -50,7 +50,8 @@ def main():
     builtin = {s.id for s in REGISTRY}
     added = [s for s in catalog.load_saved() if s.id not in builtin]
     manager = ModelManager(tuple(REGISTRY) + tuple(added), data_dir)
-    server = AiServer((HOST, port), token, manager, catalog)
+    calls = CallRegistry(manager, token, data_dir=data_dir)
+    server = AiServer((HOST, port), token, manager, catalog, calls=calls)
     audiosocket = AudioSocketServer((HOST, audiosocket_port), server.calls).start()
     manager.start()
     logging.info("listening on %s:%d (AudioSocket %s:%d)", HOST, port, HOST, audiosocket_port)
