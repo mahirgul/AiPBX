@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.10.0
+
+- **AI applications** (*AI → Applications*, admin only): AI features that
+  take calls, each with its own **internal number** and a destination
+  afterwards; they can also be chosen as a destination in IVRs, inbound routes
+  and time conditions ("AI application"). The first type, **announcement with
+  values**, reads a text to the caller in real time with a voice model of this
+  server: the caller's name and number from the call, and any value from your
+  own system through a lookup address (e.g. "Dear {caller_name}, your balance
+  is {amount}"), with a fallback text when the lookup fails. When the AI
+  service is not running or busy, calls go straight on. See
+  [AI applications](docs/ai-apps.md).
+- The local AI service takes live calls: Asterisk connects the call's audio
+  to it (AudioSocket on 127.0.0.1:8791); a sentence is ready in about half a
+  second on a 2-core server.
+
 ## 1.9.5
 
 - **AI → Cloud services** (admin only): the accounts of cloud AI providers in
