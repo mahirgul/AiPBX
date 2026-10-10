@@ -261,3 +261,34 @@ class EngineWiringTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TurkishPrePassTest(unittest.TestCase):
+    """normalize_tr: amounts and phone numbers before normalizer-tr (no num2words needed)."""
+
+    CASES = [
+        ("Borcunuz 1.234,50 lira.", "Borcunuz 1234 lira 50 kuruş."),
+        ("Borcunuz 1.234,50 TL.", "Borcunuz 1234 lira 50 kuruş."),
+        ("Ücret ₺1.234,50.", "Ücret 1234 lira 50 kuruş."),
+        ("Tutar 0,99 TL.", "Tutar 99 kuruş."),
+        ("Tutar 5 TL.", "Tutar 5 lira."),
+        ("Tutar 12,5 €.", "Tutar 12 avro 50 sent."),
+        ("Toplam $5,50.", "Toplam 5 dolar 50 sent."),
+        ("Fiyat 3,99 £", "Fiyat 3 sterlin 99 peni"),
+        ("1.234 lira 50 kuruş", "1234 lira 50 kuruş"),
+        ("Tel 0212 555 12 34", "Tel 0212, 555, 12, 34"),
+        ("Tel +90 532 123 45 67", "Tel +90, 532, 123, 45, 67"),
+        ("Yıl 2026 ve 1.234 kişi", "Yıl 2026 ve 1.234 kişi"),
+        ("15.10.2026 tarihinde", "15.10.2026 tarihinde"),
+        ("Saat 14:30", "Saat 14:30"),
+        ("Liralık ürün 5 liralık", "Liralık ürün 5 liralık"),
+    ]
+
+    def test_cases(self):
+        for text, want in self.CASES:
+            with self.subTest(text=text):
+                self.assertEqual(textnorm.normalize_tr(text), want)
+
+    def test_never_raises(self):
+        for odd in (None, "", 42, "₺", "TL TL 1,", "+90", "0" * 50):
+            textnorm.normalize_tr(odd)

@@ -154,7 +154,9 @@ class EmaOnnx:
         """float32 audio at sample_rate; on_first_audio() runs when the first piece is ready."""
         rng = np.random.default_rng(seed)
         parts = []
-        for piece, pause in chunk(self.frontend(text), speed):
+        from .textnorm import normalize_tr
+
+        for piece, pause in chunk(self.frontend(normalize_tr(text)), speed):
             parts.append(self.piece_audio(piece, speed, rng))
             if on_first_audio is not None and len(parts) == 1:
                 on_first_audio()
