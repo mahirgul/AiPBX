@@ -23,6 +23,10 @@ class AiTtsController extends BaseController
             } else {
                 try {
                     if (isset($_POST['save_provider'])) {
+                        // Keys are managed on AI → Cloud services, which is admin only.
+                        if (($_SESSION['user_role'] ?? '') !== 'admin') {
+                            throw new \RuntimeException(t('auth.no_edit_module'));
+                        }
                         $post = $_POST;
                         // A service account key can be uploaded as its .json file instead of pasted.
                         $up = $_FILES['service_account_file'] ?? null;

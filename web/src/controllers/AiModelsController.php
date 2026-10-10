@@ -12,8 +12,14 @@ class AiModelsController extends BaseController
     {
         static::requireRole('admin');
 
+        require_once __DIR__ . '/../services/ai/CloudAiService.php';
+        $cloudStt = [];
+        foreach (CloudAiService::withCap('stt') as $pid) {
+            $cloudStt[] = ['id' => 'cloud:' . $pid, 'title' => CloudAiService::provider($pid)['title']];
+        }
         static::renderPage('ai_models/index', [
             'status' => LocalAiService::status(),
+            'cloud_stt' => $cloudStt,
         ], ['title' => t('ai_models.title')]);
     }
 }
