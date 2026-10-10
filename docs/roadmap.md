@@ -134,10 +134,10 @@ audio part is dropped (too heavy, too weak on Turkish speech). See "Model catalo
    and how well it tells apart a person from an answering machine and Turkish requests from
    each other on 8 kHz telephone audio (own recordings, voicemail greetings, sample sentences).
    Steps 4–6 and 8 depend on the result.
-3. **Audio bridge (AudioSocket).** `aipbx-ai` receives and sends a call's audio live through
+3. **Audio bridge (AudioSocket)** *(done in 1.10.0)*. `aipbx-ai` receives and sends a call's audio live through
    Asterisk's AudioSocket (already loaded on the servers); the result (chosen destination,
    person/machine, recognised request) goes back to the dialplan as channel variables.
-4. **AI applications with their own numbers.** A new page *AI → Applications*. Each application
+4. **AI applications with their own numbers** *(1.10.0: page, numbers, destination, announcement with values)*. A new page *AI → Applications*. Each application
    has a type, its settings and an internal number; it is a destination like an IVR or a queue
    (DIDs, IVR keys, time conditions) and can be dialled directly. Several applications of the
    same type work side by side, each with its own settings, for example:

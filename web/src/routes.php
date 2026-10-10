@@ -77,6 +77,7 @@ return [
     '/ai-tts'          => ['controller' => AiTtsController::class, 'action' => 'index', 'module' => 'ai_tts.php'],
     '/ai-models'       => ['controller' => AiModelsController::class, 'action' => 'index', 'module' => 'ai_models.php'],
     '/ai-cloud'        => ['controller' => AiCloudController::class, 'action' => 'index', 'module' => 'ai_cloud.php'],
+    '/ai-apps'         => ['controller' => AiAppsController::class, 'action' => 'index', 'module' => 'ai_apps.php'],
     '/ms-teams'        => ['controller' => MsTeamsController::class, 'action' => 'index', 'module' => 'ms_teams.php'],
     '/web-widgets'     => ['controller' => WebWidgetController::class, 'action' => 'index', 'module' => 'web_widgets.php'],
     '/google-integration' => ['controller' => GoogleIntegrationController::class, 'action' => 'index', 'module' => 'google_integration.php'],

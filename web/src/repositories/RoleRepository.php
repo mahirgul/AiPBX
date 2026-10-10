@@ -62,6 +62,7 @@ class RoleRepository extends BaseRepository
             'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Integrations', 'actions' => $all],
             'web_widgets'        => ['title' => 'Web Widgets', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all],
+            'ai_apps'            => ['title' => 'AI Applications', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_models'          => ['title' => 'Local Models', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_cloud'           => ['title' => 'Cloud Services', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'fax_inbox'          => ['title' => 'Incoming Faxes', 'group' => 'Fax System', 'actions' => $all],

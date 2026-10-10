@@ -3,7 +3,10 @@
 Listens on 127.0.0.1 and trusts nobody: every request needs the shared token
 (Authorization: Bearer <token>, compared in constant time), and requests
 that carry X-Forwarded-For / Forwarded are refused — something proxied them,
-and the portal never does. See the package docstring for the endpoints.
+and the portal never does. The one exception is POST /v1/calls/start, which
+the dialplan calls with CURL(): it carries the dialplan key (an HMAC of the
+token, see calls.py) instead and always answers 200 with the call's UUID or
+an empty body. See the package docstring for the endpoints.
 """
 import hmac
 import json
@@ -16,6 +19,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import __version__, sysinfo
+from .calls import CallRegistry
 from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
                      NotReady, ServiceBusy, UnknownModel, WrongKind)
 from .custom import CatalogError
@@ -66,12 +70,13 @@ class AiServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, token, manager, catalog=None):
+    def __init__(self, address, token, manager, catalog=None, calls=None):
         if not token:
             raise ValueError("empty token")
         self.token = token.encode() if isinstance(token, str) else bytes(token)
         self.manager = manager
         self.catalog = catalog
+        self.calls = calls if calls is not None else CallRegistry(manager, self.token)
         self.cpu = sysinfo.CpuMeter()
         super().__init__(address, Handler)
 
@@ -104,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json(status, {"error": message})
 
     def _authorize(self):
-        if self.headers.get("X-Forwarded-For") is not None or self.headers.get("Forwarded") is not None:
+        if self._forwarded():
             raise ApiError(HTTPStatus.FORBIDDEN, "forwarded requests are not accepted")
         auth = self.headers.get("Authorization") or ""
         scheme, _, given = auth.partition(" ")
@@ -133,10 +138,34 @@ class Handler(BaseHTTPRequestHandler):
             raise ApiError(HTTPStatus.BAD_REQUEST, "the JSON body must be an object")
         return data
 
+    def _forwarded(self):
+        return self.headers.get("X-Forwarded-For") is not None or self.headers.get("Forwarded") is not None
+
+    def _call_start(self):
+        """POST /v1/calls/start from the dialplan: 200 text/plain, the UUID or empty."""
+        answer = ""
+        try:
+            length = (self.headers.get("Content-Length") or "").strip()
+            if self._forwarded():
+                log.warning("call refused: forwarded request")
+            elif self.headers.get("Transfer-Encoding") or not length.isdigit():
+                log.warning("call refused: no Content-Length")
+            elif int(length) > MAX_BODY:
+                log.warning("call refused: body too large")
+                self.close_connection = True
+            else:
+                answer = self.server.calls.start(self.rfile.read(int(length)))
+        except Exception:  # noqa: BLE001 - the dialplan only ever sees an empty answer
+            log.exception("call start failed")
+            answer = ""
+        self._send(HTTPStatus.OK, answer.encode("ascii"), "text/plain; charset=utf-8")
+
     def _dispatch(self, method):
         try:
-            self._authorize()
             path = self.path.split("?", 1)[0]
+            if method == "POST" and path == "/v1/calls/start":
+                return self._call_start()
+            self._authorize()
             if method == "GET" and path == "/v1/health":
                 return self._json(HTTPStatus.OK, self._health())
             if method == "GET" and path == "/v1/models":
@@ -146,6 +175,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._tts(self._body())
             if method == "POST" and path == "/v1/stt":
                 return self._stt()
+            if method == "GET" and path == "/v1/calls":
+                return self._json(HTTPStatus.OK, self.server.calls.snapshot())
             if method == "GET" and path == "/v1/catalog/piper":
                 return self._piper_catalog()
             if method == "POST" and path == "/v1/models/add":
@@ -153,7 +184,7 @@ class Handler(BaseHTTPRequestHandler):
             m = _MODEL_ACTION.match(path)
             if m and method == "POST":
                 return self._model_action(m.group(1), m.group(2), self._body())
-            if path in ("/v1/health", "/v1/models", "/v1/tts") or m:
+            if path in ("/v1/health", "/v1/models", "/v1/tts", "/v1/calls", "/v1/calls/start") or m:
                 raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
             raise ApiError(HTTPStatus.NOT_FOUND, "not found")
         except ApiError as e:

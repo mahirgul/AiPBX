@@ -21,7 +21,8 @@ final class InternalNumberTest extends TestCase
 
     public function testManifestteKaynaklarVarVeHangupActionKeyKullanir(): void
     {
-        $this->assertCount(7, INTERNAL_NUMBER_SOURCES);
+        $this->assertCount(8, INTERNAL_NUMBER_SOURCES);
+        $this->assertArrayHasKey('ai_app', INTERNAL_NUMBER_SOURCES);
         $this->assertArrayHasKey('ring_group', INTERNAL_NUMBER_SOURCES);
         $this->assertArrayHasKey('conference', INTERNAL_NUMBER_SOURCES);
         $this->assertSame('action_key', INTERNAL_NUMBER_SOURCES['hangup']['dest_col'],
