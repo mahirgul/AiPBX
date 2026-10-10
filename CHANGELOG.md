@@ -9,7 +9,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 - **Whisper speech recognition** in *AI → Models*: Whisper small for Turkish, German
   and English, run with int8 weights on the CPU (CTranslate2, no PyTorch). On our
-  Turkish telephone test it gets about a third of Vosk's word errors (7.6 % against
+  Turkish telephone test it makes less than half of Vosk's word errors (7.6 % against
   17 %) and recognised 22 of 24 hotel requests against 17; it answers about 1.5 s
   after the caller stops speaking. It needs about 650 MB of memory; keep Vosk on
   small servers or with many calls at once. The AI runtime is updated
