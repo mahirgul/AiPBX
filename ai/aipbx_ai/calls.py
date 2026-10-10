@@ -472,6 +472,8 @@ class CallRegistry:
             raise Refused("no text and no voice_requests config for this application")
         for name, kind in (("tts_model", "tts"), ("stt_model", "stt")):
             model = config[name]
+            if model.startswith("cloud:"):       # a cloud provider: nothing to load here
+                continue
             try:
                 info = self.manager.describe(model)
             except UnknownModel:
@@ -974,6 +976,12 @@ class VoiceRequestsCall:
 
         def run():
             try:
+                if model.startswith("cloud:"):
+                    from . import cloud_stt
+                    from .vosk_backend import pcm16_from_wav
+                    pcm16k, _ = pcm16_from_wav(wav_bytes(pcm, SAMPLE_RATE))   # 16 kHz: what every provider takes
+                    box["text"] = cloud_stt.transcribe(self.config["stt_cloud"], wav_bytes(pcm16k, 16000))
+                    return
                 box["text"] = (self.registry.manager.transcribe(model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
             except Exception as e:  # noqa: BLE001
                 box["error"] = type(e).__name__
