@@ -33,6 +33,7 @@ from array import array
 from collections import OrderedDict
 from pathlib import Path
 
+from . import cloud_stt
 from .models import UnknownModel
 
 log = logging.getLogger("aipbx_ai.voice_requests")
@@ -127,6 +128,11 @@ def _words(intent, name, where):
 
 def _model(data, name, kind, manager):
     value = data.get(name)
+    # Speech to text may also be a cloud provider (cloud_stt.py), named "cloud:<provider>".
+    if kind == "stt" and isinstance(value, str) and value.startswith("cloud:"):
+        if value[6:] not in cloud_stt.PROVIDERS:
+            raise ConfigError(f"{name}: unknown cloud provider")
+        return value
     if not isinstance(value, str) or not _MODEL_ID.match(value):
         raise ConfigError(f"{name} is not a valid model id")
     if manager is not None:
@@ -157,6 +163,13 @@ def validate_config(data, manager=None):
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
     }
+    if config["stt_model"].startswith("cloud:"):
+        try:
+            config["stt_cloud"] = cloud_stt.validate(data.get("stt_cloud"))
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        if config["stt_cloud"]["provider"] != config["stt_model"][6:]:
+            raise ConfigError("stt_cloud.provider does not match stt_model")
     intents = data.get("intents")
     if not isinstance(intents, list) or not intents:
         raise ConfigError("intents must be a non-empty list")
@@ -186,9 +199,20 @@ def validate_config(data, manager=None):
     return config
 
 
+def public(config):
+    """A config as the API shows it: a cloud provider's key is never returned."""
+    out = dict(config)
+    if "stt_cloud" in out:
+        out["stt_cloud"] = {k: v for k, v in out["stt_cloud"].items() if k != "api_key"}
+        out["stt_cloud"]["api_key_set"] = True
+    return out
+
+
 def _atomic_write(path, data):
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-    with open(tmp, "wb") as f:
+    # 0600: an app config may hold a cloud provider's key.
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "wb") as f:
         f.write(data)
         f.flush()
         os.fsync(f.fileno())
@@ -267,7 +291,7 @@ class AppStore:
 
     def list(self):
         with self._mu:
-            return [dict(config, id=app_id) for app_id, config in sorted(self._apps.items())]
+            return [dict(public(config), id=app_id) for app_id, config in sorted(self._apps.items())]
 
     # ---- prompts --------------------------------------------------------
 

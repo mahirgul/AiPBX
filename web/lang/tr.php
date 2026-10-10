@@ -2619,6 +2619,7 @@ return [
     'ai_apps.field_retries' => 'Tekrar sorma (kez)',
     'ai_apps.field_threshold' => 'Gereken emin olma',
     'ai_apps.threshold_help' => '0–1; altında arayana tekrar sorulur, sonra aktarılır. 0,5: anahtar kelimeler belirler; yaklaşık 0,3 örnek cümleleri de devreye sokar.',
+    'ai_apps.stt_cloud_help' => 'Dil: bulut sağlayıcıları için. Bulut sağlayıcısı arayanın konuşmasını alır (gizlilik).',
     'ai_apps.field_intents' => 'İstekler',
     'ai_apps.intents_help' => 'Her istek için: anahtar kelimeler (kelime başları, ör. "temiz" "temizlik"i de yakalar) — en güçlü işaret —, birkaç örnek cümle, sesli cevap, metni ve ses kaydını alacak e-posta adresi ve aramanın sonra gideceği yer (boşsa cevaptan sonra kapanır).',
     'ai_apps.intent_name' => 'İstek',
