@@ -57,6 +57,12 @@ final class AiAppServiceTest extends TestCase
         $this->assertStringContainsString('Set(AI_CALL=${CURL(http://127.0.0.1:8790/v1/calls/start,app=7&key=' . str_repeat('ab', 32) . '&model=ema-lightning&speed=1.10&max=3&', $conf);
         $this->assertStringContainsString('&lookup=https%3A%2F%2Fcrm.example%2Fx%3Fa%3D1&', $conf);
         $this->assertStringContainsString('AudioSocket(${AI_CALL},127.0.0.1:8791)', $conf);
+        $this->assertStringContainsString('Set(CURLOPT(httptimeout)=5)', $conf);
+        // Braces and brackets of the text never reach the dialplan raw (Asterisk counts them).
+        $odd = buildAiAppsDialplan([['id' => 8, 'title' => 'x', 'model_id' => 'ema-lightning', 'speed' => '1', 'max_concurrent' => 1,
+            'text_template' => 'a ( b { c ) d } e', 'lookup_url' => '', 'fallback_text' => '', 'dest_type' => 'hangup', 'dest_id' => '']], 'k');
+        $text = explode('&text=', $odd)[1];
+        $this->assertSame(0, preg_match('/[(){}]/', explode('&lookup=', $text)[0]));
         $this->assertMatchesRegularExpression('/same => n\(done\),NoOp/', $conf);
         // Without the service's key the calls go straight on.
         $off = buildAiAppsDialplan([['id' => 7, 'title' => 'x', 'model_id' => 'ema-lightning', 'speed' => '1', 'max_concurrent' => 3,

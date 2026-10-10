@@ -61,6 +61,8 @@ function buildAiAppsDialplan(array $apps, string $key): string {
         $conf .= "exten => s,1,NoOp(AI application {$id}: {$name})\n";
         $conf .= " same => n,Answer()\n";
         if ($key !== '' && $model !== '') {
+            // A service that hangs must not hold the call: at most 5 s, then straight on.
+            $conf .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
             $conf .= " same => n,Set(AI_CALL=\${CURL(" . AI_APP_SERVICE_URL . ",{$post})})\n";
             $conf .= " same => n,GotoIf(\$[\"\${LEN(\${AI_CALL})}\" != \"36\"]?done)\n";
             $conf .= " same => n,AudioSocket(\${AI_CALL}," . AI_APP_AUDIOSOCKET . ")\n";
