@@ -105,6 +105,15 @@
                     <?php endif; ?>
                 </div>
 
+                <div class="form-group" id="logo_style_field" style="<?php echo $s['site_logo_type'] !== 'image' ? 'display:none;' : ''; ?>">
+                    <label class="form-label"><?php echo t('brand_settings.logo_style'); ?></label>
+                    <select name="site_logo_style" class="form-control">
+                        <option value="square" <?php echo ($s['site_logo_style'] ?? 'square') !== 'wide' ? 'selected' : ''; ?>><?php echo t('brand_settings.logo_style_square'); ?></option>
+                        <option value="wide" <?php echo ($s['site_logo_style'] ?? '') === 'wide' ? 'selected' : ''; ?>><?php echo t('brand_settings.logo_style_wide'); ?></option>
+                    </select>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.logo_style_help'); ?></small>
+                </div>
+
                 <div class="form-group" style="margin-top: 20px;">
                     <label class="form-label"><i class="fas fa-envelope"></i> <?php echo t('brand_settings.mail_logo_title'); ?></label>
                     <select name="mail_logo_variant" class="form-control">

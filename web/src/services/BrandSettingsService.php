@@ -20,6 +20,8 @@ class BrandSettingsService {
             'site_logo_image' => '',
             // Optional logo for the dark theme (light text/lines); empty = the normal logo everywhere.
             'site_logo_image_dark' => '',
+            // square: the logo in the small box next to the brand name; wide: the whole (wide) logo, without the name.
+            'site_logo_style' => 'square',
             'site_favicon_url' => '',
             'brand_color_primary' => '',
             'brand_color_secondary' => '',
@@ -151,6 +153,7 @@ class BrandSettingsService {
                 'site_logo_icon' => trim($post['site_logo_icon'] ?? $defaults['site_logo_icon']) ?: $defaults['site_logo_icon'],
                 'site_logo_image' => $current['site_logo_image'],
                 'site_logo_image_dark' => $current['site_logo_image_dark'],
+                'site_logo_style' => (($post['site_logo_style'] ?? '') === 'wide') ? 'wide' : 'square',
                 'site_favicon_url' => $current['site_favicon_url'],
                 'brand_color_primary' => $primary,
                 'brand_color_secondary' => $secondary,
