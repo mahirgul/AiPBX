@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.10.1
+
+- **Turkish amounts read naturally:** "1.234,50 lira", "1.234,50 TL" and
+  "₺1.234,50" are spoken as "bin iki yüz otuz dört lira elli kuruş" (before:
+  "virgül beş sıfır" or "türk lirası"), "0,99 TL" as "doksan dokuz kuruş";
+  euro, dollar and pound amounts likewise ("avro … sent"). Phone numbers are
+  read with a short pause between their groups. Lookup addresses of AI
+  applications can now return amounts as written ("1.234,50 TL").
+
 ## 1.10.0
 
 - **AI applications** (*AI → Applications*, admin only): AI features that

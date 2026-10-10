@@ -24,9 +24,8 @@ A text read to the caller by a voice model of this server
 The **lookup address** is called by the server with `?caller=…&did=…&app=…` added and must answer
 within 2 seconds with a JSON object, for example `{"amount": "1.234,50", "date": "15 Ekim"}`.
 When it does not answer in time, is not JSON, or a value is missing, the **fallback text** is read
-instead (or, without one, the text without the missing values). Return values the way they should
-be spoken; numbers, amounts and dates are read out properly (Turkish: write amounts as "1.234 lira
-50 kuruş" or in words, since "1.234,50" is read as a decimal number).
+instead (or, without one, the text without the missing values). Numbers, amounts and dates are read out
+properly: Turkish "1.234,50 TL" or "1.234,50 lira" becomes "bin iki yüz otuz dört lira elli kuruş".
 
 Example: text "Sayın {caller_name}, borcunuz {amount}. Son ödeme tarihi {date}.", lookup
 `https://crm.example.com/aipbx/balance`, afterwards: the accounting queue.
