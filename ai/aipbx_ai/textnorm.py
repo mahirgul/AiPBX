@@ -695,3 +695,51 @@ class _English(_Language):
             one, many = self.UNITS[unit.strip("   ")]
             out += " " + (one if n == 1 and not dec and not neg else many)
         return out
+
+
+# ---------------------------------------------------------------- Turkish
+#
+# EMA Lightning's own normaliser (normalizer-tr) reads numbers, dates and "TL"
+# amounts itself; this pre-pass only fixes what it reads badly on the phone:
+#   "1.234,50 lira"  -> "virgül beş sıfır lira"      => "1234 lira 50 kuruş"
+#   "0,99 TL"        -> "sıfır türk lirası doksan…"  => "99 kuruş"
+#   "1.234,50 TL"    -> "… türk lirası elli kuruş"   => "1234 lira 50 kuruş" (shorter)
+#   "12,90 €", "$5,50", "3,99 £" likewise with avro/sent, dolar/sent, sterlin/peni
+#   "0212 555 12 34" -> one long number list          => "0212, 555, 12, 34" (pauses)
+# The digits stay digits: normalizer-tr turns them into words afterwards.
+
+_TR_CURRENCY = {
+    "₺": ("lira", "kuruş"), "tl": ("lira", "kuruş"), "try": ("lira", "kuruş"), "lira": ("lira", "kuruş"),
+    "€": ("avro", "sent"), "eur": ("avro", "sent"), "euro": ("avro", "sent"), "avro": ("avro", "sent"),
+    "$": ("dolar", "sent"), "usd": ("dolar", "sent"), "dolar": ("dolar", "sent"),
+    "£": ("sterlin", "peni"), "gbp": ("sterlin", "peni"), "sterlin": ("sterlin", "peni"),
+}
+_TR_NUM = r"(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?"
+_TR_WORD_CUR = r"(TL|TRY|EUR|USD|GBP|lira|euro|avro|dolar|sterlin)"
+_TR_AFTER = re.compile(r"(?<![\d.,])" + _TR_NUM + r"\s?(₺|€|\$|£|" + _TR_WORD_CUR[1:-1] + r")(?![\wçğıöşüÇĞİÖŞÜ])", re.IGNORECASE)
+_TR_BEFORE = re.compile(r"(₺|€|\$|£)\s?" + _TR_NUM + r"(?![\d,])")
+_TR_PHONE = re.compile(r"(?<![\d+])(\+\d{1,3}|0\d{2,4})((?:[ \-/]\d{2,4}){2,5})(?![\d])")
+
+
+def _tr_amount(whole, cents, cur):
+    unit, sub = _TR_CURRENCY[cur.lower()]
+    n = int(whole.replace(".", ""))
+    c = int((cents or "0").ljust(2, "0"))
+    if n == 0 and c:
+        return f"{c} {sub}"
+    if c == 0:
+        return f"{n} {unit}"
+    return f"{n} {unit} {c} {sub}"
+
+
+def normalize_tr(text):
+    """Turkish pre-pass before normalizer-tr (see above). Never raises."""
+    try:
+        if not isinstance(text, str) or not text:
+            return text
+        out = _TR_BEFORE.sub(lambda m: _tr_amount(m.group(2), m.group(3), m.group(1)), text)
+        out = _TR_AFTER.sub(lambda m: _tr_amount(m.group(1), m.group(2), m.group(3)), out)
+        out = _TR_PHONE.sub(lambda m: m.group(1) + "".join(", " + g for g in re.split(r"[ \-/]", m.group(2)) if g), out)
+        return out
+    except Exception:
+        return text
