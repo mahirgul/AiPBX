@@ -173,6 +173,9 @@ class AiAppService
             }
             $name = mb_substr(trim((string) $row['name']), 0, 100);
             $id = preg_match('/^[a-z0-9_]{1,40}$/', (string) ($row['id'] ?? '')) ? (string) $row['id'] : self::slug($name);
+            if ($id === 'none') {            // reserved: "not understood"
+                $id = 'none_request';
+            }
             while (isset($seen[$id])) {
                 $id = substr($id, 0, 36) . '_' . count($seen);
             }

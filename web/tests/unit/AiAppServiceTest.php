@@ -105,6 +105,8 @@ final class AiAppServiceTest extends TestCase
         $c = json_decode($v['config'], true);
         $this->assertSame(['havlu', 'ariza'], array_column($c['intents'], 'id'));
         $this->assertSame(['çalışmıyor', 'bozuk'], $c['intents'][1]['keywords']);
+        $none = json_decode(AiAppService::validate(self::requestsForm(['intents' => [['name' => 'None', 'keywords' => 'x']]]))['config'], true);
+        $this->assertSame('none_request', $none['intents'][0]['id']);
         $this->assertSame('Merhaba, nasıl yardımcı olabilirim?', $v['text_template']);
         foreach ([['intents' => []], ['stt_model' => '../x'], ['greeting' => ''],
                   ['intents' => [['name' => 'X', 'keywords' => '', 'examples' => '']]],

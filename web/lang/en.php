@@ -2619,7 +2619,7 @@ return [
     'ai_apps.field_listen' => 'Listen for at most (seconds)',
     'ai_apps.field_retries' => 'Ask again (times)',
     'ai_apps.field_threshold' => 'Certainty needed',
-    'ai_apps.threshold_help' => '0–1; below it the caller is asked again and then passed on. 0.5 suits keywords.',
+    'ai_apps.threshold_help' => '0–1; below it the caller is asked again and then passed on. 0.5: the keywords decide; about 0.3 lets the example sentences help too.',
     'ai_apps.field_intents' => 'Requests',
     'ai_apps.intents_help' => 'For each request: keywords (word beginnings, e.g. "temiz" also matches "temizlik") — the strongest signal —, a few example sentences, the spoken reply, an e-mail address that gets the transcript and the recording, and where the call goes afterwards (empty: it ends after the reply).',
     'ai_apps.intent_name' => 'Request',
