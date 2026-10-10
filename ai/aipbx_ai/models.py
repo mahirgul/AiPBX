@@ -36,6 +36,7 @@ from .ema import EmaLightningBackend
 from .kokoro_backend import KokoroBackend
 from .piper_backend import PiperBackend
 from .vosk_backend import VoskBackend
+from .whisper_backend import WhisperBackend
 
 log = logging.getLogger("aipbx_ai.models")
 
@@ -93,6 +94,33 @@ def _vosk(id, title, file, sha, mb, languages, measured=None, note=""):
                      license_url="https://alphacephei.com/vosk/models", homepage="https://alphacephei.com/vosk/",
                      download_mb=mb, backend=VoskBackend, engine="vosk", measured=measured or {}, note=note,
                      source={"file": file, "sha256": sha})
+
+# Whisper (OpenAI, MIT) as CTranslate2 models: Systran/faster-whisper-<size> at
+# a pinned revision, three files each checked by SHA-256 (whisper_backend.py).
+# The models are multilingual; an entry fixes the language it listens for
+# (source["language"]), so a voice-requests application that names the model
+# id gets that language without detection. Another language = another entry
+# (its own copy of the files). The base and tiny sizes were measured too and
+# are less accurate than Vosk on Turkish telephone audio, so they are not offered.
+WHISPER_VOCABULARY = {"sha256": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913", "bytes": 459861}
+WHISPER_SIZES = {
+    "small": {"repo": "Systran/faster-whisper-small", "revision": "536b0662742c02347bc0e980a01041f333bce120",
+              "config.json": ("b55496ac7940a7ae47d2c01eab40edfd8701feec1229d9cce3b40014383fb828", 2370),
+              "model.bin": ("3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671", 483546902)},
+}
+
+
+def _whisper(id, title, size, language, languages, measured=None, note=""):
+    s = WHISPER_SIZES[size]
+    files = {name: {"sha256": s[name][0], "bytes": s[name][1]} for name in ("config.json", "model.bin")}
+    files["vocabulary.txt"] = dict(WHISPER_VOCABULARY)
+    mb = -(-sum(f["bytes"] for f in files.values()) // (1024 * 1024))
+    return ModelSpec(id=id, title=title, kind="stt", languages=languages, license="MIT",
+                     license_url=f"https://huggingface.co/{s['repo']}/blob/{s['revision']}/README.md",
+                     homepage="https://github.com/openai/whisper", download_mb=mb, backend=WhisperBackend,
+                     engine="whisper", measured=measured or {}, note=note,
+                     source={"repo": s["repo"], "revision": s["revision"], "language": language, "files": files})
+
 
 # Kokoro-82M voices: onnx-community/Kokoro-82M-v1.0-ONNX at a pinned revision.
 # Model and voices are Apache-2.0 (hexgrad/Kokoro-82M; only the Japanese and
@@ -168,6 +196,18 @@ REGISTRY = (
           "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43", 45, ("de-DE",)),
     _vosk("vosk-en-small", "Vosk small (English, US)", "vosk-model-small-en-us-0.15.zip",
           "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498", 40, ("en-US",)),
+    # Measured with Turkish telephone audio (one synthetic voice, docs/local-ai.md);
+    # memory_mb: growth of the process with the model loaded and transcribing.
+    _whisper("whisper-small-tr", "Whisper small (Turkish)", "small", "tr", ("tr-TR",),
+             measured={"realtime_factor": 3, "memory_mb": 630, "load_s": 2.7},
+             note="Half the word errors of Vosk on 8 kHz telephone audio (1 word in 13 wrong), "
+                  "but slower: about 0.9 s for a 3 s request on 2 cores, and 630 MB of memory."),
+    _whisper("whisper-small-de", "Whisper small (German)", "small", "de", ("de-DE",),
+             note="Same model as Whisper small (Turkish), its own copy of the files. "
+                  "About 0.9 s for a 3 s request on 2 cores, 630 MB of memory."),
+    _whisper("whisper-small-en", "Whisper small (English)", "small", "en", ("en-US", "en-GB"),
+             note="Same model as Whisper small (Turkish), its own copy of the files. "
+                  "About 0.9 s for a 3 s request on 2 cores, 630 MB of memory."),
     # memory_mb: the shared model; further running Kokoro voices add almost nothing.
     _kokoro("kokoro-en-heart", "Kokoro Heart (English, US)", "af_heart",
             "d583ccff3cdca2f7fae535cb998ac07e9fcb90f09737b9a41fa2734ec44a8f0b", ("en-US",), "female", "A",
