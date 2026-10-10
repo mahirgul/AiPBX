@@ -25,7 +25,10 @@ The portal writes this dialplan for every application (the contract):
    UUID, and the service plays the audio in 20 ms frames paced in real time,
    then sends "terminate" (0x00) so AudioSocket() returns 0 and the dialplan
    continues. Audio and DTMF from the caller are parsed and kept in the
-   session (later application types will listen).
+   session.
+
+The second type, "voice_requests" (a pushed config, no text in the start
+request), listens to the caller: see VoiceRequestsCall and voice_requests.py.
 
 The dialplan cannot read /etc/aipbx/ai.token, so /v1/calls/start does not
 take the bearer token; ``key`` is the lowercase hex HMAC-SHA256 of
@@ -74,6 +77,8 @@ FRAME_BYTES = 320            # 20 ms of 8 kHz 16-bit mono
 FRAME_SECONDS = 0.02
 LEAD_SECONDS = 0.06          # how far ahead of real time we may send
 TAIL_SECONDS = 0.2           # after the last frame, before "terminate"
+SILENCE_FRAME = b"\x00" * FRAME_BYTES
+NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
 
 MAX_TEXT = 2000
 MAX_FILLED = 4000            # rendered text (template plus lookup values)
@@ -834,30 +839,68 @@ class VoiceRequestsCall:
         self.matched = None            # the intent dict
         self.reply_started = None      # monotonic
         self.speech_end = None         # monotonic arrival of the last loud frame of the last attempt
+        self._mu = threading.Lock()
+        self._current = None           # the prompt being sent by the pump
+        self._stop_pump = threading.Event()
+        self._broken = threading.Event()
+        self._pump_thread = threading.Thread(target=self._pump, name="call-pump", daemon=True)
 
     # ---- audio out ------------------------------------------------------
 
+    def _pump(self):
+        """Sends a 20 ms frame every 20 ms: the current prompt, or silence.
+
+        Asterisk's AudioSocket() hangs up after 2 s without a message from us,
+        so we never pause, not even while listening or transcribing."""
+        t0 = time.monotonic()
+        i = 0
+        try:
+            while not self._stop_pump.is_set():
+                wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - time.monotonic()
+                if wait > 0 and (self._stop_pump.wait(wait) or self.reader.gone.is_set()):
+                    return
+                if self.reader.gone.is_set():
+                    return
+                with self._mu:
+                    cur = self._current
+                    if cur is not None:
+                        chunk = cur["pcm"][cur["pos"]:cur["pos"] + FRAME_BYTES]
+                        if cur["pos"] == 0:
+                            cur["started"] = time.monotonic()
+                        cur["pos"] += FRAME_BYTES
+                        if cur["pos"] >= len(cur["pcm"]):
+                            cur["ends"] = t0 + (i + 1) * FRAME_SECONDS     # heard to the end then
+                            self._current = None
+                            cur["sent"].set()
+                    else:
+                        chunk = SILENCE_FRAME
+                self.conn.sendall(message(KIND_AUDIO, chunk))
+                if cur is not None:
+                    self.session.sent_bytes += len(chunk)
+                i += 1
+        except OSError:
+            self._broken.set()
+
+    def gone(self):
+        return self.reader.gone.is_set() or self._broken.is_set()
+
     def play(self, pcm, mark_reply=False):
         """Plays PCM in real time; True when it has played out, False when the peer is gone."""
-        conn, session, reader = self.conn, self.session, self.reader
         if not pcm:
-            return not reader.gone.is_set()
-        frames = (len(pcm) + FRAME_BYTES - 1) // FRAME_BYTES
-        t0 = time.monotonic()
+            return not self.gone()
+        cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
+        with self._mu:
+            self._current = cur
+        while not cur["sent"].wait(0.05):
+            if self.gone():
+                return False
         if mark_reply:
-            self.reply_started = t0
-        for i in range(frames):
-            wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - time.monotonic()
-            if wait > 0 and reader.gone.wait(wait):
+            self.reply_started = cur["started"]
+        # Wait until the caller has heard the end (the pump sends 60 ms ahead).
+        while time.monotonic() < cur["ends"]:
+            if self.reader.gone.wait(min(0.05, max(0.0, cur["ends"] - time.monotonic()))):
                 return False
-            if reader.gone.is_set():
-                return False
-            chunk = pcm[i * FRAME_BYTES:(i + 1) * FRAME_BYTES]
-            conn.sendall(message(KIND_AUDIO, chunk))
-            session.sent_bytes += len(chunk)
-        # Wait until the caller has heard the end (we send 60 ms ahead).
-        wait = t0 + frames * FRAME_SECONDS - time.monotonic()
-        return not (wait > 0 and reader.gone.wait(wait)) and not reader.gone.is_set()
+        return not self.gone()
 
     def prompt(self, key):
         """The prompt's audio; b"" when it cannot be made (the call goes on without it)."""
@@ -882,13 +925,20 @@ class VoiceRequestsCall:
         reason = None
         try:
             while reason is None:
-                if reader.gone.is_set():
+                if self.gone():
                     return None
                 try:
-                    kind, at, data = q.get(timeout=0.1)
+                    kind, at, data = q.get(timeout=0.05)
                 except queue.Empty:
-                    if time.monotonic() > wall_limit:
+                    now = time.monotonic()
+                    if now > wall_limit:
                         reason = "timeout" if listener.heard else "silence"
+                        continue
+                    # No frames from Asterisk (a channel that sends no audio,
+                    # e.g. a Local channel in Wait()): the missing time is silence.
+                    missing = int((now - started - NO_FRAMES_GAP) / FRAME_SECONDS) - len(listener.frames)
+                    if missing > 0:
+                        reason = listener.feed(SILENCE_FRAME * missing, now)
                     continue
                 if kind == "dtmf":
                     digits.append(data)
@@ -940,6 +990,14 @@ class VoiceRequestsCall:
     # ---- the call -------------------------------------------------------
 
     def run(self):
+        self._pump_thread.start()
+        try:
+            return self._run()
+        finally:
+            self._stop_pump.set()
+            self._pump_thread.join(1.0)
+
+    def _run(self):
         session, cfg = self.session, self.config
         try:
             if not self.play(session.pcm):
@@ -967,9 +1025,10 @@ class VoiceRequestsCall:
             self.save(result)
             if not played:
                 return "hangup"
-            wait = TAIL_SECONDS
-            if self.reader.gone.wait(wait):
+            if self.reader.gone.wait(TAIL_SECONDS):       # silence frames go on meanwhile
                 return result
+            self._stop_pump.set()
+            self._pump_thread.join(1.0)
             self.conn.sendall(message(KIND_HANGUP))
             self.reader.gone.wait(1.0)
             return result

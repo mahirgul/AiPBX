@@ -34,6 +34,38 @@ Voice: a model of *AI → Local models*, or "the engine for the language" chosen
 *AI → Cloud services*. Speed 0.5–2. **Calls at the same time**: above this number, callers go
 straight to the destination (a small server prepares one announcement per voice at a time).
 
+## Voice requests
+
+The caller says what they want, e.g. a hotel guest from the room phone: "could I get two more
+towels?". The request is recognised by a speech-to-text model of this server, confirmed by voice
+("your towels are on the way"), the staff get an e-mail, and the call goes on to the destination.
+
+Each application has a **greeting**, a list of **requests** (intents) and three texts for when it
+goes wrong. A request has an id, a name, **keywords**, optional **example sentences** and a
+**reply**:
+
+| Request | Keywords |
+|---------|----------|
+| Towels | havlu |
+| Cleaning | temiz, topla, çarşaf, süpür |
+| Room service | yemek, sipariş, menü, kahvaltı, servis |
+| Wake-up call | uyandır, uyan, alarm |
+| Fault | çalışmıyor, bozuk, gelmiyor, yanmıyor, açılmıyor, arıza |
+| Checkout | çıkış, hesap, fatura, ödeme |
+
+A keyword matches words that **start with it** ("temiz" also matches "temizliği"; Turkish
+softening like "hesap" → "hesabımı" is understood), so give the stem. A keyword that two requests
+share counts less, and in "temiz havlu" (clean towels) the noun wins. Example sentences help when
+a caller uses none of the keywords, but only with a lower **threshold** (about 0.3).
+
+The caller has **listen seconds** (2–15) to speak; if nothing matches, the **retry** text is said
+and they may try again (**retries** 0–2); after that the **not understood** text is said. Silence
+counts as not understood; a key press ends listening. The recording of the caller's request and the
+transcript are kept for 24 hours.
+
+If the speech-to-text or the voice model is not ready, the call goes straight to the destination.
+Technical details: [Local AI models → Voice requests](local-ai.md#voice-requests-voice_requests).
+
 ## How it works
 
 The generated context `[aipbx-ai-app-<id>]` (`/etc/asterisk/pbx/extensions_ai_apps.conf`):

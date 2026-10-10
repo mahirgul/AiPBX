@@ -120,10 +120,14 @@ class Caller:
         self.audio = bytearray()
         self.terminated = threading.Event()
         self.closed = threading.Event()
+        self.last_frame = None
+        self.max_gap = 0.0
         self.speech_frames = 0
         self.mu = threading.Lock()
         self.rng = random.Random(7)
         self.stop = threading.Event()
+        self.mute_after_speech = False
+        self.spoke = False
         threading.Thread(target=self._read, daemon=True).start()
         threading.Thread(target=self._send, daemon=True).start()
 
@@ -147,7 +151,11 @@ class Caller:
                 if kind == 0x00:
                     self.terminated.set()
                     break
+                now = time.monotonic()
                 with self.mu:
+                    if self.last_frame is not None:
+                        self.max_gap = max(self.max_gap, now - self.last_frame)
+                    self.last_frame = now
                     self.audio += payload
         except OSError:
             pass
@@ -166,6 +174,11 @@ class Caller:
                 speaking = self.speech_frames > 0
                 if speaking:
                     self.speech_frames -= 1
+                mute = self.mute_after_speech and not speaking and n > 0 and self.spoke
+                self.spoke = self.spoke or speaking
+            if mute:                    # a channel that sends nothing (Local channel in Wait())
+                time.sleep(FRAME_INTERVAL)
+                continue
             frame = (loud if speaking else quiet)[n % 8]
             n += 1
             try:
@@ -185,11 +198,22 @@ class Caller:
         with self.mu:
             return bytes(self.audio)
 
-    def wait_audio(self, n_bytes, timeout=10):
+    def finished_prompts(self):
+        """How many prompts have been followed by silence (played to the end)."""
+        audio = self.received()
+        values = struct.unpack("<%dh" % (len(audio) // 2), audio)
+        n, prev = 0, 0
+        for v in values:
+            if v == 0 and prev != 0:
+                n += 1
+            prev = v
+        return n
+
+    def wait_prompts(self, n, timeout=10):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if len(self.received()) >= n_bytes:
-                time.sleep(0.25)        # the prompt plays out, listening starts
+            if self.finished_prompts() >= n:
+                time.sleep(0.15)        # listening starts when the prompt has played out
                 return True
             time.sleep(0.01)
         return False
@@ -200,7 +224,7 @@ class Caller:
         values = struct.unpack("<%dh" % (len(audio) // 2), audio)
         out = []
         for v in values:
-            if not out or out[-1] != v:
+            if v and (not out or out[-1] != v):     # 0: the silence between prompts
                 out.append(v)
         return out
 
@@ -429,7 +453,7 @@ class VoiceRequestsTest(unittest.TestCase):
         self.stt.texts = ["iki tane daha havlu alabilir miyim"]
         u, c = self.call()
         cfg = hotel_config()
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(1.0)
         self.wait_done(c)
         self.assertTrue(c.terminated.is_set())
@@ -469,7 +493,7 @@ class VoiceRequestsTest(unittest.TestCase):
     def test_call_auth_bearer_or_key(self):
         self.stt.texts = ["klima çalışmıyor"]
         u, c = self.call(retries=0)
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.6)
         self.wait_done(c)
         self.assertEqual(self.result(u), "fault")
@@ -495,9 +519,9 @@ class VoiceRequestsTest(unittest.TestCase):
         self.stt.texts = ["şey bir şey soracaktım", "havlu lütfen"]
         u, c = self.call()
         cfg = hotel_config()
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.8)
-        self.assertTrue(c.wait_audio(2 * PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(2))
         c.speak(0.8)
         self.wait_done(c)
         self.assertEqual(c.prompts(), [self.value(cfg["greeting"]), self.value(cfg["retry"]),
@@ -512,9 +536,9 @@ class VoiceRequestsTest(unittest.TestCase):
         self.stt.texts = ["bir şey", "başka bir şey"]
         u, c = self.call()
         cfg = hotel_config()
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.5)
-        self.assertTrue(c.wait_audio(2 * PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(2))
         c.speak(0.5)
         self.wait_done(c)
         self.assertEqual(c.prompts(), [self.value(cfg["greeting"]), self.value(cfg["retry"]),
@@ -533,6 +557,10 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(c.prompts(), [self.value(cfg["greeting"]), self.value(cfg["retry"]),
                                        self.value(cfg["not_understood"])])
         self.assertEqual(self.stt.calls, [])                 # nothing to transcribe
+        # frames all the time (silence while listening): Asterisk hangs up after 2 s without one
+        self.assertLess(c.max_gap, 0.2)
+        audio = c.received()
+        self.assertGreater(len(audio), 3 * PROMPT_BYTES + 8000)   # prompts plus silence frames
         self.assertEqual(self.result(u), "none")
         data = self.details(u)[1]
         self.assertEqual((data["result"], data["audio"], data["transcripts"]), ("silence", False, ["", ""]))
@@ -540,7 +568,7 @@ class VoiceRequestsTest(unittest.TestCase):
 
     def test_dtmf_ends_listening(self):
         u, c = self.call(retries=0, listen_seconds=15)
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         started = time.monotonic()
         c.dtmf("5")
         self.wait_done(c)
@@ -552,7 +580,7 @@ class VoiceRequestsTest(unittest.TestCase):
     def test_dtmf_after_speech_keeps_the_utterance(self):
         self.stt.texts = ["havlu"]
         u, c = self.call(retries=0)
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.5)
         time.sleep(0.2)
         c.dtmf("#")
@@ -560,10 +588,23 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(self.result(u), "towels")
         self.assertEqual(self.details(u)[1]["attempts"][0]["reason"], "dtmf")
 
+    def test_no_inbound_frames_after_speech_count_as_silence(self):
+        self.stt.texts = ["klima çalışmıyor"]
+        u, c = self.call(retries=0, listen_seconds=15)
+        c.mute_after_speech = True
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.5)
+        started = time.monotonic()
+        self.wait_done(c)
+        # 0.8 s of (missing) silence ends the utterance in real time, not after 15 + 2 s
+        self.assertLess(time.monotonic() - started, 3.5)
+        data = self.details(u)[1]
+        self.assertEqual((data["intent"], data["attempts"][0]["reason"]), ("fault", "speech"))
+
     def test_stt_failure_is_not_understood(self):
         self.stt.fail = True
         u, c = self.call(retries=0)
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.5)
         self.wait_done(c)
         self.assertTrue(c.terminated.is_set())
@@ -572,7 +613,7 @@ class VoiceRequestsTest(unittest.TestCase):
 
     def test_hangup_during_listening(self):
         u, c = self.call()
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.sock.sendall(b"\x00\x00\x00")
         self.assertTrue(self.wait(lambda: self.registry.live_count() == 0))
         self.assertEqual(self.details(u)[1]["result"], "hangup")
@@ -581,7 +622,7 @@ class VoiceRequestsTest(unittest.TestCase):
     def test_cleanup_after_24h(self):
         self.stt.texts = ["havlu"]
         u, c = self.call(retries=0)
-        self.assertTrue(c.wait_audio(PROMPT_BYTES))
+        self.assertTrue(c.wait_prompts(1))
         c.speak(0.5)
         self.wait_done(c)
         results = self.registry.results
