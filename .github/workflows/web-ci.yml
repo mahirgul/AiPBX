@@ -141,6 +141,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # The text rules (textnorm) need num2words; it is small and pure Python.
+      - name: Install num2words
+        run: python -m pip install 'num2words>=0.5.14,<0.6'
       # Fake model backend: no torch or model download needed.
       - name: Unit tests
         run: python -m unittest discover -v ai/tests

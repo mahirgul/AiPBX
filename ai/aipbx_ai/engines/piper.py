@@ -74,6 +74,8 @@ import subprocess
 import unicodedata
 from math import gcd
 
+from .. import textnorm
+
 try:  # the service and the tests start without them; PiperVoice needs both
     import numpy as np
 except ImportError:  # pragma: no cover
@@ -353,6 +355,11 @@ def resample(audio, from_rate, to_rate, block=8192):
 # ---- voice ----------------------------------------------------------------
 
 class PiperVoice:
+    # Numbers, dates ... written out by textnorm before phonemisation; False
+    # turns it off.
+    normalize_text = True
+    text_language = ""
+
     def __init__(self, onnx_path, config_path, threads=0):
         if np is None or ort is None:
             raise RuntimeError("numpy and onnxruntime are needed for Piper voices")
@@ -379,6 +386,9 @@ class PiperVoice:
         lang = cfg.get("language") or {}
         family = lang.get("family") or (lang.get("code") or self.espeak_voice).replace("-", "_").split("_")[0]
         self.languages = [family.lower()]
+        # Language of the text rules (textnorm): "de_DE", "en_GB" ... or the
+        # espeak-ng voice ("de", "en-us").
+        self.text_language = lang.get("code") or self.espeak_voice
         self.missing = {}
         if not espeak_available():
             raise RuntimeError("espeak-ng is not installed")
@@ -435,6 +445,8 @@ class PiperVoice:
         the first sentence is ready."""
         speed = check_request(text, speed, sample_rate)
         sid = self.speaker_id(speaker)
+        if self.normalize_text:
+            text = textnorm.normalize(text, self.text_language)
         length_scale = self.length_scale / speed
         gap = np.zeros(round(SENTENCE_SILENCE * self.sample_rate), np.float32)
         parts = []

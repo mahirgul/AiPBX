@@ -12,8 +12,8 @@ the Python runtime with ONNX Runtime (about 160 MB) is installed when the admini
 
 - No GPU needed: the models run on the CPU.
 - RAM: EMA Lightning uses about 250 MB; the service is limited to 2 GB.
-- Disk: about 160 MB for the runtime (ONNX Runtime, numpy, the Turkish text normaliser), plus
-  each model's files (EMA Lightning: 34 MB).
+- Disk: about 160 MB for the runtime (ONNX Runtime, numpy, the text normalisers), plus each
+  model's files (EMA Lightning: 34 MB).
 - Internet access while the runtime and a model are downloaded (PyPI for the runtime, GitHub
   for the model files). Once downloaded, nothing goes online any more.
 
@@ -95,8 +95,38 @@ the catalogue has only English ones so far.
   misaki's lexicon; the rest are mostly unstressed vowels (ə / ɪ / ʌ), function words ("to",
   "the") and syllabic endings. Spanish, French, Italian, Portuguese and Hindi use espeak-ng in
   Kokoro itself, so nothing is lost there.
-- **Numbers**: write amounts out for the best result. espeak-ng reads "$1,234.50" as
-  "dollar one thousand two hundred thirty four point five zero".
+- **Numbers**: amounts, times and dates are written out before espeak-ng sees them (see below).
+
+### Numbers, dates and abbreviations (Piper and Kokoro)
+
+espeak-ng reads written numbers badly in announcements: German "1.234,50 Euro" became "eintausend
+zweihundert vierunddreißig Komma fünf null Euro", "14:30 Uhr" "vierzehn Uhr dreißig Uhr", and
+"am 3. Oktober" ended the sentence after "drei"; English "$1,234.50" became "dollar one thousand …
+point five zero". Before phonemising, the service now writes them out for **German** and
+**English** voices (`aipbx_ai/textnorm.py`, cardinal and ordinal words from
+[num2words](https://github.com/savoirfairelinux/num2words), LGPL-2.1, installed as a separate
+package). The language is the Piper voice's `language.code` (or its espeak-ng voice), and for
+Kokoro the voice prefix (`a` en-US, `b` en-GB); other languages are left as they are. EMA
+Lightning does the same for Turkish with normalizer-tr.
+
+| Written | German voice | English voice |
+|---------|--------------|---------------|
+| Amounts | "1.234,50 €" → "eintausend zweihundert vier und dreißig Euro fünfzig", "0,99 €" → "neun und neunzig Cent", "5,- €" → "fünf Euro" | "$1,234.50" → "one thousand two hundred thirty-four dollars and fifty cents", "$0.50" → "fifty cents" |
+| Times | "14:30", "14:30 Uhr", "14.30 Uhr" → "vierzehn Uhr dreißig", "9-17 Uhr" → "neun bis siebzehn Uhr" | "14:30" → "fourteen thirty", "9:05" → "nine oh five", "10:00" → "ten o'clock", "2:30 pm" → "two thirty PM" |
+| Dates | "am 3. Oktober" → "am dritten Oktober", "03.10.2026" → "dritter Oktober zweitausend sechs und zwanzig" | "October 3rd" → "October third", "3 October" → "the third of October", "10/03/2026": en-US October 3, en-GB 10 March |
+| Ordinals | "im 1. Stock" → "im ersten Stock" (before a month or a short list of nouns only) | "21st" → "twenty-first" |
+| Numbers | "2,5" → "zwei Komma fünf", "-3" → "minus drei", "50 %" → "fünfzig Prozent" | "2.5" → "two point five", "50%" → "fifty percent" |
+| Phone numbers | "0212 555 12 34" → "null zwei eins zwei, fünf fünf fünf, eins zwei, drei vier" | "zero two one two, …" ("zero", not "oh") |
+| Codes | "AB-1234" → "A B eins zwei drei vier" | letters spelled, digits one by one |
+| Abbreviations | z. B., d. h., ca., Nr., bzw., usw., inkl., ggf., Tel., Str., Mio., Mrd., Dr., Mo.–Fr. | No. (before a number), approx., e.g., i.e., etc., Mr, Mrs, Dr, St. (Saint/Street only when clear), Mon–Fri |
+
+Phone numbers are digit strings that start with 0 or + or have 7 or more digits, also when written
+in groups ("0212 555 12 34", "+49 30 1234567", "(555) 123-4567"); the groups are read with a short
+pause between them. German ordinals take their ending from the word before them: "-en" after am,
+im, vom, zum, zur, dem, den, ab, bis, seit …, "-e" after der/die/das, otherwise the strong ending
+by gender ("dritter Oktober"). German number words are spaced the way espeak-ng reads digits
+("vier und dreißig"): written as one long word, espeak-ng mispronounces them. Anything a rule does
+not recognise is left for espeak-ng, and words written out are never changed.
 
 ### Speech to text (Vosk)
 
