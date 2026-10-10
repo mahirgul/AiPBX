@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.12.2
+
+- **Invitation e-mail:** the "Sign in to the mobile app" box now comes first,
+  right below the greeting, before the password-setup button (all languages).
+  E-mail templates you changed under *E-Mail → Templates* keep your order.
+
 ## 1.12.1
 
 - **Android app 1.0.59 — pictures in chat:** pictures sent in a chat on the main
