@@ -54,6 +54,7 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''
 session_write_close();
 
 $id = (string) ($_POST['id'] ?? '');
+// The try panel may also name a cloud provider ("cloud:<id>"); everything else is a local model id.
 try {
     $out = ['success' => true];
     switch ($action) {
@@ -85,7 +86,17 @@ try {
             if (!$up || ($up['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($up['tmp_name']) || $up['size'] > 4 * 1024 * 1024) {
                 throw new LocalAiException(t('ai_models.err_stt_audio'));
             }
-            $out['result'] = LocalAiService::stt($id, (string) file_get_contents($up['tmp_name']));
+            $wav = (string) file_get_contents($up['tmp_name']);
+            if (str_starts_with($id, 'cloud:')) {
+                require_once __DIR__ . '/../src/services/ai/CloudAiService.php';
+                try {
+                    $out['result'] = CloudAiService::stt(substr($id, 6), $wav, (string) ($_POST['lang'] ?? 'tr'));
+                } catch (CloudAiException $e) {
+                    throw new LocalAiException($e->getMessage());
+                }
+            } else {
+                $out['result'] = LocalAiService::stt($id, $wav);
+            }
             break;
         case 'model_run':
             LocalAiService::runModel($id);

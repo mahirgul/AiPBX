@@ -146,7 +146,7 @@ step models
     || fail "the model packages could not be installed — see $LOG_FILE"
 
 step check
-"$VENV/bin/python" -c 'import onnxruntime, numpy, normalizer_tr' >>"$LOG_FILE" 2>&1 \
+"$VENV/bin/python" -c 'import onnxruntime, numpy, normalizer_tr, num2words' >>"$LOG_FILE" 2>&1 \
     || fail "the installed packages do not import — see $LOG_FILE"
 sha256sum "$APP_DIR/requirements.txt" | cut -d' ' -f1 > "$READY_MARK"
 chmod -R go-w "$VENV"

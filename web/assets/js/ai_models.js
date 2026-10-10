@@ -204,12 +204,14 @@
     function fillStt(models) {
         const card = document.getElementById('aim-stt-card');
         const sel = document.getElementById('aim-stt-model');
-        card.style.display = models.length ? '' : 'none';
-        const ids = models.map(m => m.id).join(',');
+        const clouds = PAGE.cloudStt || [];
+        card.style.display = (models.length || clouds.length) ? '' : 'none';
+        const ids = models.map(m => m.id).concat(clouds.map(c => c.id)).join(',');
         if (sel.dataset.ids === ids) return;
         const keep = sel.value;
         sel.dataset.ids = ids;
-        sel.innerHTML = models.map(m => '<option value="' + esc(m.id) + '">' + esc(m.title) + '</option>').join('');
+        sel.innerHTML = (models.length ? '<optgroup label="' + esc(T.stt_local) + '">' + models.map(m => '<option value="' + esc(m.id) + '">' + esc(m.title) + '</option>').join('') + '</optgroup>' : '')
+            + (clouds.length ? '<optgroup label="' + esc(T.stt_cloud) + '">' + clouds.map(c => '<option value="' + esc(c.id) + '">' + esc(c.title) + '</option>').join('') + '</optgroup>' : '');
         if (ids.split(',').includes(keep)) sel.value = keep;
     }
 
@@ -239,13 +241,14 @@
     function sendStt(blob, label) {
         const id = document.getElementById('aim-stt-model').value;
         if (!id) return;
+        label = label + ' · ' + document.getElementById('aim-stt-model').selectedOptions[0].text;
         const box = document.getElementById('aim-stt-results');
         const row = document.createElement('div');
         row.className = 'u-mt-6';
         row.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ' + esc(T.stt_working);
         box.prepend(row);
         const fd = new FormData();
-        fd.append('action', 'try_stt'); fd.append('id', id); fd.append('csrf_token', window.CSRF_TOKEN || ''); fd.append('audio', blob, 'speech.wav');
+        fd.append('action', 'try_stt'); fd.append('id', id); fd.append('csrf_token', window.CSRF_TOKEN || ''); fd.append('audio', blob, 'speech.wav'); fd.append('lang', document.getElementById('aim-stt-lang').value);
         fetch('/api/ai_models.php', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
             if (!d.success) { row.innerHTML = '<span class="u-danger">' + esc(d.error) + '</span>'; return; }
             const r = d.result;

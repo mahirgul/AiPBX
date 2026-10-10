@@ -101,6 +101,7 @@ return [
         'items' => [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts'), 'pages' => ['ai_tts.php']],
             ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin, 'pages' => ['ai_models.php']],
+            ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => 'sidebar.item_ai_cloud', 'show' => $isAdmin, 'pages' => ['ai_cloud.php']],
         ],
     ],
     [

@@ -214,7 +214,7 @@ engine and the speech-to-text try panel (microphone or file) *(done in 1.9.4)*; 
 measurements; (g) Whisper and text-embedding engines, with the AI applications. Every engine is
 measured on the CI VM (speed, memory, quality) before it is recommended.
 
-**Cloud AI services.** A separate page *AI → Cloud services*: provider accounts in one place
+**Cloud AI services** *(first version in 1.9.5: accounts, test, usage, cloud speech to text, engine per job)*. A separate page *AI → Cloud services*: provider accounts in one place
 (API keys encrypted, connection test), each with what it can do — speech, speech-to-text,
 understanding (language models), embeddings — for example Google AI Studio (Gemini, **Gemma**),
 OpenAI, Azure Speech, Google Cloud Speech, ElevenLabs, Deepgram, Groq, OpenRouter. The keys of

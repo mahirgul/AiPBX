@@ -24,6 +24,8 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
 
 <?php if ($tab === 'providers'): ?>
     <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_tts.providers_text'); ?></p>
+    <p class="u-fs-12"><i class="fas fa-key u-primary"></i> <?php echo t('ai_tts.keys_moved'); ?>
+        <?php if (hasModulePermission('ai_cloud', 'view')): ?><a href="/ai-cloud"><?php echo t('sidebar.item_ai_cloud'); ?></a><?php endif; ?></p>
     <div class="u-grid-2" style="gap: 16px;">
     <?php foreach ($providers as $p): ?>
         <?php if (!empty($p['local'])): ?>
@@ -38,39 +40,16 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
             <?php endif; ?>
         </div>
         <?php continue; endif; ?>
-        <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0" style="padding: 16px;">
-            <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
-            <input type="hidden" name="save_provider" value="<?php echo $h($p['id']); ?>">
+        <div class="card u-mb-0" style="padding: 16px;">
             <div class="u-flex-between u-mb-10">
-                <div class="u-strong"><?php echo $h($p['title']); ?></div>
+                <div class="u-strong"><i class="fas fa-cloud u-primary"></i> <?php echo $h($p['title']); ?></div>
                 <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.configured' : 'ai_tts.not_configured'); ?></span>
             </div>
-            <?php foreach ($p['fields'] as $f): ?>
-                <div class="form-group">
-                    <label class="form-label"><?php echo $h($f['label']); ?><?php echo !empty($f['optional']) ? ' <span class="u-muted u-fs-11">(' . t('ai_tts.optional') . ')</span>' : ''; ?></label>
-                    <?php if (!empty($f['json'])): ?>
-                        <?php if ($f['masked'] !== ''): ?><div class="u-fs-12 u-mb-10"><i class="fas fa-user-shield u-success"></i> <?php echo $h($f['masked']); ?></div><?php endif; ?>
-                        <input type="file" name="service_account_file" accept=".json,application/json" class="form-control" <?php echo $can_edit ? '' : 'disabled'; ?>>
-                        <textarea name="<?php echo $h($f['key']); ?>" class="form-control u-mt-4" rows="2" style="font-family: monospace; font-size: 11px;" placeholder="<?php echo $h(t('ai_tts.json_placeholder')); ?>" <?php echo $can_edit ? '' : 'disabled'; ?>></textarea>
-                    <?php elseif ($f['secret']): ?>
-                        <input type="password" name="<?php echo $h($f['key']); ?>" class="form-control" autocomplete="new-password"
-                               placeholder="<?php echo $h($f['masked'] !== '' ? $f['masked'] . ' — ' . t('ai_tts.keep_secret') : ''); ?>" <?php echo $can_edit ? '' : 'disabled'; ?>>
-                    <?php else: ?>
-                        <input type="text" name="<?php echo $h($f['key']); ?>" class="form-control" value="<?php echo $h($f['value']); ?>" placeholder="<?php echo $h($f['default'] ?? ''); ?>" <?php echo $can_edit ? '' : 'disabled'; ?>>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
             <div class="u-muted u-fs-11 u-mb-10"><?php echo sprintf(t('ai_tts.provider_hint_' . $p['id']), number_format($p['max_chars'], 0, ',', '.')); ?></div>
-            <?php if ($can_edit): ?>
-                <div class="u-flex-gap">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
-                    <?php if ($p['configured']): ?>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="ttsTest('<?php echo $h($p['id']); ?>', this)"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
-                        <button type="submit" name="clear" value="1" class="btn btn-danger btn-sm" onclick="return confirm(<?php echo $h(json_encode(t('ai_tts.confirm_clear'))); ?>)"><i class="fas fa-trash-alt"></i></button>
-                    <?php endif; ?>
-                </div>
+            <?php if ($p['configured'] && $can_edit): ?>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="ttsTest('<?php echo $h($p['id']); ?>', this)"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
             <?php endif; ?>
-        </form>
+        </div>
     <?php endforeach; ?>
     </div>
 

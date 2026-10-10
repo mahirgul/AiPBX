@@ -240,6 +240,10 @@ class AiTtsService
             $db->prepare('UPDATE ai_tts_history SET duration_ms = ? WHERE id = ?')->execute([$ms, $id]);
         }
         writeAuditLog(null, 'ai_tts', (string) $id, $cls::title() . ' · ' . $voice . ' · ' . mb_strlen($text) . ' chars', 'create', $_SESSION['user_id'] ?? null);
+        if (!$cls::local()) {
+            require_once __DIR__ . '/ai/CloudAiService.php';
+            CloudAiService::count($provider, 'tts_chars', mb_strlen($text));
+        }
         return self::get($id);
     }
 

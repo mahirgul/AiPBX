@@ -10,7 +10,7 @@ foreach ([
     'no_models', 'btn_run', 'btn_stop', 'st_stopped', 'memory', 'disk_used', 'measured', 'noncommercial',
     'try_title', 'try_play', 'try_none', 'try_result', 'msg_try_error', 'gender_female', 'gender_male',
     'add_in_list', 'add_btn', 'add_card', 'add_speakers', 'add_loading', 'add_none', 'add_all_languages',
-    'stt_record', 'stt_stop', 'stt_result', 'stt_empty', 'stt_no_mic', 'stt_working', 'kind_stt',
+    'stt_record', 'stt_stop', 'stt_result', 'stt_empty', 'stt_no_mic', 'stt_working', 'kind_stt', 'stt_local', 'stt_cloud',
 ] as $k) {
     $texts[$k] = t('ai_models.' . $k);
 }
@@ -98,6 +98,9 @@ foreach ([
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.stt_help'); ?></p>
         <div class="u-flex-gap" style="flex-wrap: wrap; align-items: center;">
             <select id="aim-stt-model" class="form-control" style="max-width: 320px;"></select>
+            <select id="aim-stt-lang" class="form-control" style="max-width: 130px;" title="<?php echo htmlspecialchars(t('ai_models.stt_lang')); ?>">
+                <option value="tr">Türkçe</option><option value="de">Deutsch</option><option value="en">English</option>
+            </select>
             <button type="button" class="btn btn-primary" id="aim-stt-rec"><i class="fas fa-microphone"></i> <span><?php echo t('ai_models.stt_record'); ?></span></button>
             <label class="btn btn-secondary" style="margin: 0;"><i class="fas fa-file-audio"></i> <?php echo t('ai_models.stt_file'); ?>
                 <input type="file" id="aim-stt-file" accept=".wav,audio/wav" style="display: none;"></label>
@@ -109,6 +112,7 @@ foreach ([
 <script>
 window.AI_MODELS_PAGE = {
     status: <?php echo json_encode($status, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>,
+    cloudStt: <?php echo json_encode($cloud_stt ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>,
     text: <?php echo json_encode($texts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>
 };
 </script>
