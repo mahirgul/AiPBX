@@ -55,6 +55,11 @@ const INTERNAL_NUMBER_SOURCES = [
         'dest_type' => 'conference', 'dest_col' => 'id',
         'ui' => 'Conference room',
     ],
+    'ai_app' => [
+        'table' => 'pbx_ai_apps', 'label_col' => 'title',
+        'dest_type' => 'ai_app', 'dest_col' => 'id',
+        'ui' => 'AI application',
+    ],
     'hangup' => [
         'table' => 'pbx_hangup_actions', 'label_col' => 'title',
         'dest_type' => 'hangup', 'dest_col' => 'action_key',

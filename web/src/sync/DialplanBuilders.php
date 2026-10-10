@@ -388,6 +388,11 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
     $internal_dial_timeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30'));
 
     switch ($dest_type) {
+        case 'ai_app':
+            // AI → Applications: its own context answers, speaks and goes on (SyncAiApps.php).
+            $lines[] = " same => n,Goto(aipbx-ai-app-" . (int) $dest_id . ",s,1)";
+            break;
+
         case 'queue':
             // 2026-08-19: queue timeout/fallback/recording settings are per queue (pbx_queues)
             // now, not global sys_settings — several queues can behave differently.
