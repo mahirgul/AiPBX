@@ -16,6 +16,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.provider.ContactsContract
 import android.view.LayoutInflater
 import android.view.View
@@ -284,8 +285,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             ChatWebSocketManager.instance.connect(sUrl, token)
         }
 
-        if (prefs.hasSleepingWarning) {
-            prefs.hasSleepingWarning = false
+        val sleptInBackground = prefs.hasSleepingWarning
+        prefs.hasSleepingWarning = false
+        // At most once a week, and never once the app is exempt from battery optimisation.
+        val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val exempt = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && pm?.isIgnoringBatteryOptimizations(packageName) == true
+        val now = System.currentTimeMillis()
+        if (sleptInBackground && !exempt && now - prefs.sleepingWarningShownAt > 7 * 24 * 3600 * 1000L) {
+            prefs.sleepingWarningShownAt = now
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.bg_restricted_title))
                 .setMessage(getString(R.string.bg_restricted_msg))

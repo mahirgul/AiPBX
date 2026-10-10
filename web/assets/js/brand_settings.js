@@ -5,6 +5,7 @@ function toggleLogoTypeFields() {
     document.getElementById('logo_icon_field').style.display = (type === 'icon') ? '' : 'none';
     document.getElementById('logo_image_field').style.display = (type === 'image') ? '' : 'none';
     document.getElementById('logo_dark_image_field').style.display = (type === 'image') ? '' : 'none';
+    document.getElementById('logo_style_field').style.display = (type === 'image') ? '' : 'none';
     updateBrandPreview();
 }
 

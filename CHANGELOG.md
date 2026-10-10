@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.11.1
+
+- **Wide logos:** *Brand settings* has a new **Logo shape** option. "Wide"
+  shows a wordmark logo across the whole head of the side menu and on the
+  sign-in page, without the brand name next to it; "Square" (the default)
+  keeps the small icon with the name.
+- **Website widget microphone messages:** instead of one message for every
+  problem, the widget now says whether the browser blocked the microphone,
+  no microphone was found, it is in use by another program, or the page is
+  not served over https.
+- **Android app 1.0.58:** the "the app was put to sleep" warning no longer
+  appears when the app is already exempt from battery optimisation or the
+  phone was restarted in between, and at most once a week.
+
 ## 1.11.0
 
 - **Voice requests** (new type of *AI → Applications*): the caller hears a

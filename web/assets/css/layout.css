@@ -148,6 +148,27 @@ body {
     display: block;
 }
 
+/* Brand settings → Logo shape "wide": the whole logo across the sidebar head and on sign-in. */
+.brand.brand-wide {
+    justify-content: center;
+}
+.brand.brand-wide img {
+    max-width: 100%;
+    max-height: 44px;
+    object-fit: contain;
+    display: block;
+}
+.sidebar.collapsed .brand.brand-wide img {
+    max-height: 32px;
+}
+.brand-wide-login img {
+    max-width: min(280px, 100%);
+    max-height: 84px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
 /* Brand settings: optional dark-theme logo (dark is the default theme). */
 .brand-logo-dark { display: none !important; }
 html:not([data-theme="light"]) .brand-logo-light { display: none !important; }

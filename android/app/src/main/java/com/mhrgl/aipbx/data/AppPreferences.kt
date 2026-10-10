@@ -165,6 +165,11 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_APP_LANGUAGE, "en") ?: "en"
         set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
 
+    /** When the "app was put to sleep" warning was last shown (at most once a week). */
+    var sleepingWarningShownAt: Long
+        get() = prefs.getLong(KEY_SLEEPING_WARNING_SHOWN_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_SLEEPING_WARNING_SHOWN_AT, value).apply()
+
     /** The automatic battery-optimisation request was shown once (see BatteryPrompt). */
     var batteryPromptShown: Boolean
         get() = prefs.getBoolean(KEY_BATTERY_PROMPT_SHOWN, false)
@@ -280,6 +285,7 @@ class AppPreferences(context: Context) {
         private const val KEY_SLEEPING_WARNING = "has_sleeping_warning"
         private const val KEY_APP_LANGUAGE = "app_language"
         private const val KEY_BATTERY_PROMPT_SHOWN = "battery_prompt_shown"
+        private const val KEY_SLEEPING_WARNING_SHOWN_AT = "sleeping_warning_shown_at"
         private const val KEY_FULL_SCREEN_PROMPT_SHOWN = "full_screen_prompt_shown"
         private const val KEY_LAST_RESURRECTION_TS = "last_resurrection_ts"
         private const val KEY_DEVICE_UUID = "device_uuid"

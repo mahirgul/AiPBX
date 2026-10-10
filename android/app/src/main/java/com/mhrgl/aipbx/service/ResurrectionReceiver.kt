@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
 import com.mhrgl.aipbx.data.AppPreferences
@@ -27,7 +28,13 @@ class ResurrectionReceiver : BroadcastReceiver() {
         val now = System.currentTimeMillis()
         if (lastTs > 0L) {
             val diffMs = now - lastTs
-            if (diffMs > 20 * 60 * 1000L) {
+            // A gap only means "the system put the app to sleep" when the phone was on the
+            // whole time (no restart in between) and the app is still subject to battery
+            // optimisation; an exempt app was warned about restrictions it no longer had.
+            val rebootedSince = SystemClock.elapsedRealtime() < diffMs
+            val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            val exempt = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && pm?.isIgnoringBatteryOptimizations(context.packageName) == true
+            if (diffMs > 20 * 60 * 1000L && !rebootedSince && !exempt) {
                 Log.w(TAG, "Gap detected in background execution: ${diffMs / 60000} mins elapsed! System is sleeping app.")
                 prefs.hasSleepingWarning = true
             }

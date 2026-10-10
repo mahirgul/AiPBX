@@ -6,6 +6,13 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
 ?>
 <!-- Sidebar Navigation -->
 <aside class="sidebar <?php echo $is_collapsed_cookie ? 'collapsed' : ''; ?>" id="app-sidebar">
+    <?php if (!empty($site_logo_wide)): ?>
+    <!-- Brand settings → Logo shape "wide": the whole logo, it carries the name itself -->
+    <div class="brand brand-wide" title="<?php echo htmlspecialchars($brand_title); ?>">
+        <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="<?php echo htmlspecialchars($brand_title); ?>" class="<?php echo !empty($site_logo_image_dark) ? 'brand-logo-light' : ''; ?>">
+        <?php if (!empty($site_logo_image_dark)): ?><img src="<?php echo htmlspecialchars($site_logo_image_dark); ?>" alt="<?php echo htmlspecialchars($brand_title); ?>" class="brand-logo-dark"><?php endif; ?>
+    </div>
+    <?php else: ?>
     <div class="brand">
         <div class="brand-icon">
             <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
@@ -20,6 +27,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             <div class="brand-sub"><?php echo htmlspecialchars($brand_sub); ?></div>
         </div>
     </div>
+    <?php endif; ?>
 
     <?php
     // Deferred reload system (2026-08-24): while changes are pending, a
