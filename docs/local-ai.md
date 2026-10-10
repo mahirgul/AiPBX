@@ -6,13 +6,13 @@ text-to-speech model (Apache-2.0). More models (EmbeddingGemma 2 for answering m
 and routing by speech) follow; see [Roadmap](roadmap.md), item 5.
 
 Everything is **off** by default. A normal install or update copies only the small service code;
-the Python runtime with ONNX Runtime (about 160 MB) is installed when the administrator asks for it.
+the Python runtime with ONNX Runtime (about 340 MB) is installed when the administrator asks for it.
 
 ## Requirements
 
 - No GPU needed: the models run on the CPU.
 - RAM: EMA Lightning uses about 250 MB; the service is limited to 2 GB.
-- Disk: about 160 MB for the runtime (ONNX Runtime, numpy, the text normalisers), plus each
+- Disk: about 340 MB for the runtime (ONNX Runtime, CTranslate2, numpy, Vosk, the text normalisers), plus each
   model's files (EMA Lightning: 34 MB).
 - Internet access while the runtime and a model are downloaded (PyPI for the runtime, GitHub
   for the model files). Once downloaded, nothing goes online any more.
@@ -139,6 +139,73 @@ not recognise is left for espeak-ng, and words written out are never changed.
 The zip files come from alphacephei.com, pinned by SHA-256, and are unpacked into the model's folder
 (paths leaving it are refused). `POST /v1/stt?model=<id>` takes a WAV file (8–48 kHz, up to 60 s);
 the page's *Try: speech to text* panel records from the microphone (up to 15 s) or takes a WAV file.
+
+### Speech to text (Whisper)
+
+| Model | Language | Size | Licence | Our measurement |
+|-------|----------|------|---------|-----------------|
+| Whisper small | Turkish | 462 MB | MIT | 0.9 s for a 3 s request, ~630 MB; about 1 word in 13 wrong on 8 kHz telephone audio |
+| Whisper small | German | 462 MB | MIT | same model (speed and memory as above) |
+| Whisper small | English | 462 MB | MIT | same model |
+
+OpenAI's Whisper, run by [CTranslate2](https://github.com/OpenNMT/CTranslate2) (MIT, about 140 MB
+more in the runtime, no PyTorch) with int8 weights. The files are the CTranslate2 conversion
+[Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) at revision
+`536b0662742c02347bc0e980a01041f333bce120`, each checked by SHA-256 (`config.json`, `model.bin`,
+`vocabulary.txt`). The model is multilingual, but every catalogue entry listens for **one language**
+(no detection, which goes wrong on short telephone requests): an application names the model id, so
+*Whisper small (Turkish)* always hears Turkish. Each language entry keeps its own copy of the files.
+Code: `ai/aipbx_ai/whisper_backend.py`.
+
+Whisper's encoder always works on a 30 s window, so even a 2 s request took 3.4 s with the small
+model on 2 cores. The service gives the encoder only the audio plus 3 s of silence: 0.9 s, with
+almost the same accuracy. On the shortened window the decoder now and then repeats its sentence;
+the output is capped to fit the audio length and repeats are removed. Silence gives an empty text
+(Whisper's own no-speech score), not an invented sentence.
+
+**Measured** on the CI VM (2-core i7-7700, no GPU), 34 Turkish phrases: the 24 hotel requests of the
+voice-requests example and 10 answering-machine/person greetings, synthesised by EMA Lightning at
+8 kHz (as from a phone line), and the same with white noise at 15 dB SNR. Whisper with
+language="tr", no VAD (the clips are already cut); Vosk through the running service. **All audio is
+one synthetic voice**: real callers, accents and line noise will give higher error rates for every
+engine; the comparison between the engines is the useful part. Word error rate (WER) is strict:
+Whisper writes numbers as digits ("7'de", "6.30"), which counts as wrong. Intent = the 24 hotel
+requests through `intents.match()` with the example's keywords, threshold 0.5. Latency = mean / 90th
+percentile for the 16 clips of 1.9–4.7 s (mean 2.7 s); Vosk's includes the HTTP request to the
+service, Whisper's is the transcription alone. Memory = peak of a process running only that
+model.
+
+| Engine (beam) | Download | WER clean | WER noisy | Intent clean | Intent noisy | Latency | Memory |
+|---------------|----------|-----------|-----------|--------------|--------------|---------|--------|
+| Vosk small tr | 36 MB | 17.1 % | 46.8 % | 17/24 | 10/24 | 0.51 / 0.67 s | ~120–180 MB |
+| Whisper tiny (5), 30 s window | 73 MB | 50.0 % | 65.2 % | 16/24 | 11/24 | 0.63 / 0.76 s | 274 MB |
+| Whisper base (5), 30 s window | 139 MB | 24.1 % | 43.0 % | 15/24 | 10/24 | 1.19 / 1.39 s | 362 MB |
+| Whisper base (5), audio + 2 s | 139 MB | 24.1 % | 43.7 % | 15/24 | 12/24 | 0.36 / 0.51 s | 307 MB |
+| Whisper small (1), 30 s window | 462 MB | 7.6 % | 23.4 % | 22/24 | 17/24 | 3.09 / 3.32 s | 811 MB |
+| Whisper small (5), 30 s window | 462 MB | 5.7 % | 14.6 % | 22/24 | 19/24 | 3.38 / 3.91 s | 812 MB |
+| Whisper small (1), audio + 2 s | 462 MB | 10.1 % | 20.9 % | 21/24 | 17/24 | 0.57 / 0.92 s | 628 MB |
+| **Whisper small (5), audio + 3 s** (as shipped) | 462 MB | **7.6 %** | **17.1 %** | **22/24** | **20/24** | **0.89 / 1.28 s** | **652 MB** |
+| Whisper large-v3-turbo int8 (1), 30 s window | 777 MB | 4.4 % | 5.7 % | 21/24 | 21/24 | 16.9 / 17.3 s | 1.6 GB |
+| Whisper large-v3-turbo int8 (5), audio + 2 s | 777 MB | 11.4 % | 21.5 % | 21/24 | 17/24 | 2.34 / 3.10 s | 1.6 GB |
+| Whisper small, ONNX Runtime int8 (1), 30 s window | 357 MB | 8.9 % | 21.5 % | 21/24 | 19/24 | 5.38 / 7.14 s | 1.46 GB |
+
+- The two hotel requests that every Whisper size misses are not recognition errors: "uyandırma
+  servisi istiyorum" is matched as food (the keyword "servis" belongs to food), and "Yarın sabah
+  altı buçukta arayın" contains no wake-up keyword. 22/24 is the most these keywords allow.
+- tiny and base are less accurate than Vosk on Turkish telephone audio and are not offered;
+  large-v3-turbo is the most accurate but takes 17 s per request and 1.6 GB, far too slow on 2 cores
+  (on the shortened window it is less accurate than small); it also turned 3 s of silence into
+  "abone ol".
+- ONNX Runtime (the sherpa-onnx int8 export, run with onnxruntime + numpy only) gave the same
+  accuracy as CTranslate2 but was 1.6× slower and needed twice the memory; CTranslate2 was chosen.
+  The faster-whisper package would have added PyAV, the Hugging Face client and tokenizers
+  (~165 MB more); the service computes the features and decodes the tokens itself in numpy.
+
+**Which one?** For voice requests on a 2-core server, *Whisper small (Turkish)* is the accurate
+choice: it understood 22/24 and 20/24 requests where Vosk understood 17/24 and 10/24, and needs
+about 0.4 s more per request (estimated end of speech to reply ≈ 1.7 s instead of 1.3 s) and ~500 MB more
+memory. *Vosk small* stays the choice for servers with little memory (under ~2 GB free for the
+service) or many calls at once: Whisper keeps both cores busy for almost a second per request.
 
 ### Adding voices from the Piper voice list
 

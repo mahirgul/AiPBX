@@ -11,3 +11,7 @@ normalizer-tr>=0.5,<1
 num2words>=0.5.14,<0.6
 # Speech-to-text (Kaldi based, Apache-2.0): small models for Turkish, German, English.
 vosk>=0.3.45,<0.4
+# Whisper speech-to-text (whisper_backend.py): CTranslate2 (MIT) runs the
+# Systran/faster-whisper models with int8 weights; about 140 MB, no PyTorch.
+# (Its only other dependency, PyYAML, is MIT.)
+ctranslate2>=4.5,<5

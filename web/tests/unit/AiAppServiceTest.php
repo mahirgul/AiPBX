@@ -160,4 +160,25 @@ final class AiAppServiceTest extends TestCase
         }
         $this->assertSame(['GET /v1/apps', 'PUT /v1/apps/5', 'PUT /v1/apps/7', 'DELETE /v1/apps/3'], $calls);
     }
+
+    public function testCloudSpeechToTextGoesWithItsKey(): void
+    {
+        $db = getDB();
+        $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.deepgram.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        try {
+            CloudAiService::save('deepgram', ['api_key' => 'dg-test-key-123']);
+            $v = AiAppService::validate(self::requestsForm(['stt_model' => 'cloud:deepgram', 'stt_lang' => 'de']));
+            $cfg = AiAppService::serviceConfig(['id' => 1, 'title' => 'x', 'model_id' => 'ema-lightning', 'speed' => '1'] + $v);
+            $this->assertSame('cloud:deepgram', $cfg['stt_model']);
+            $this->assertSame(['provider' => 'deepgram', 'api_key' => 'dg-test-key-123', 'region' => '', 'lang' => 'de'], $cfg['stt_cloud']);
+            $this->expectException(\Exception::class);
+            AiAppService::validate(self::requestsForm(['stt_model' => 'cloud:openrouter']));   // no speech to text
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.deepgram.%'");
+            $st = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
+            foreach ($before as $k => $val) {
+                $st->execute([$k, $val]);
+            }
+        }
+    }
 }

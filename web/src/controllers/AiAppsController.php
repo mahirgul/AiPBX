@@ -39,6 +39,7 @@ class AiAppsController extends BaseController
             'stt_models' => array_values(array_filter(LocalAiService::models(), fn($m) => ($m['kind'] ?? '') === 'stt'
                 && in_array($m['state'] ?? '', ['ready', 'installed', 'loading'], true))),
             'requests' => AiAppService::requests(100),
+            'cloud_stt' => array_map(fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']], CloudAiService::withCap('stt')),
             'modules' => DestinationRegistry::getModuleList(),
             'service_ok' => LocalAiService::health() !== null,
             'csrf_token' => getCSRFToken(),

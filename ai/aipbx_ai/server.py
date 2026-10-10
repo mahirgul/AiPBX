@@ -25,6 +25,7 @@ from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
                      NotReady, ServiceBusy, UnknownModel, WrongKind)
 from .custom import CatalogError
 from .custom import model_id_for as catalog_model_id
+from .voice_requests import public as public_app_config
 from .wav import wav_bytes
 
 log = logging.getLogger("aipbx_ai.server")
@@ -174,12 +175,12 @@ class Handler(BaseHTTPRequestHandler):
                 config = apps.put(app_id, self._body(MAX_APP_BODY))
             except ConfigError as e:
                 raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
-            return self._json(HTTPStatus.OK, dict(config, id=app_id))
+            return self._json(HTTPStatus.OK, dict(public_app_config(config), id=app_id))
         if method == "GET":
             config, _ = apps.get(app_id)
             if config is None:
                 raise ApiError(HTTPStatus.NOT_FOUND, "no config for this application")
-            return self._json(HTTPStatus.OK, dict(config, id=app_id))
+            return self._json(HTTPStatus.OK, dict(public_app_config(config), id=app_id))
         if method == "DELETE":
             return self._json(HTTPStatus.OK, {"deleted": apps.delete(app_id)})
         raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")

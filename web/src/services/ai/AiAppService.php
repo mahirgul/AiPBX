@@ -162,9 +162,11 @@ class AiAppService
             return $v;
         };
         $stt = (string) ($d['stt_model'] ?? '');
-        if (!preg_match('/^(engine:(tr|de|en)|[a-z0-9][a-z0-9._-]{1,63})$/', $stt)) {
+        if (!preg_match('/^(engine:(tr|de|en)|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $stt)
+            || (str_starts_with($stt, 'cloud:') && !in_array(substr($stt, 6), CloudAiService::withCap('stt'), true))) {
             throw new \Exception(t('ai_apps.err_stt'));
         }
+        $sttLang = in_array($d['stt_lang'] ?? '', ['tr', 'de', 'en'], true) ? $d['stt_lang'] : 'tr';
         $intents = [];
         $seen = [];
         foreach ((array) ($d['intents'] ?? []) as $row) {
@@ -211,6 +213,7 @@ class AiAppService
             'retry' => $txt('retry_text', false),
             'not_understood' => $txt('not_understood_text', false),
             'stt_model' => $stt,
+            'stt_lang' => str_starts_with($stt, 'engine:') ? substr($stt, 7) : $sttLang,
             'listen_seconds' => max(2, min(15, (int) ($d['listen_seconds'] ?? 7))),
             'retries' => max(0, min(2, (int) ($d['retries'] ?? 1))),
             'threshold' => max(0.0, min(1.0, round((float) ($d['threshold'] ?? 0.5), 2))),
@@ -237,7 +240,10 @@ class AiAppService
     {
         if (str_starts_with($model, 'engine:')) {
             $e = CloudAiService::engine('stt', substr($model, 7));
-            return str_starts_with($e, 'local:') ? substr($e, 6) : '';
+            if (str_starts_with($e, 'local:')) {
+                return substr($e, 6);
+            }
+            return str_starts_with($e, 'cloud:') ? $e : '';
         }
         return $model;
     }
@@ -246,10 +252,20 @@ class AiAppService
     public static function serviceConfig(array $app): array
     {
         $c = self::config($app);
-        return [
+        $stt = self::resolveSttModel((string) ($c['stt_model'] ?? ''));
+        $extra = [];
+        if (str_starts_with($stt, 'cloud:')) {
+            // The service calls the provider itself: it gets the key with the settings
+            // (kept 0600 by the service, never returned by its API).
+            $provider = substr($stt, 6);
+            $pc = CloudAiService::config($provider);
+            $extra['stt_cloud'] = ['provider' => $provider, 'api_key' => (string) ($pc['api_key'] ?? ''),
+                                   'region' => (string) ($pc['region'] ?? ''), 'lang' => (string) ($c['stt_lang'] ?? 'tr')];
+        }
+        return $extra + [
             'type' => 'voice_requests',
             'tts_model' => self::resolveModel((string) $app['model_id']),
-            'stt_model' => self::resolveSttModel((string) ($c['stt_model'] ?? '')),
+            'stt_model' => $stt,
             'speed' => (float) $app['speed'],
             'greeting' => (string) ($c['greeting'] ?? ''),
             'retry' => (string) ($c['retry'] ?? ''),

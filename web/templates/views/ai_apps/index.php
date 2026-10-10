@@ -1,5 +1,5 @@
 <?php
-/** @var array $apps @var array $voices @var array $stt_models @var array $requests @var array $modules @var bool $service_ok @var string $csrf_token */
+/** @var array $apps @var array $voices @var array $stt_models @var array $cloud_stt @var array $requests @var array $modules @var bool $service_ok @var string $csrf_token */
 use PBX\Destinations\DestinationRegistry;
 
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
@@ -110,7 +110,14 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                         <?php if ($stt_models): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_local')); ?>">
                             <?php foreach ($stt_models as $m): ?><option value="<?php echo $h($m['id']); ?>"><?php echo $h($m['title']); ?></option><?php endforeach; ?>
                         </optgroup><?php endif; ?>
-                    </select></div>
+                        <?php if ($cloud_stt): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_cloud')); ?>">
+                            <?php foreach ($cloud_stt as $p): ?><option value="cloud:<?php echo $h($p['id']); ?>"><?php echo $h($p['title']); ?></option><?php endforeach; ?>
+                        </optgroup><?php endif; ?>
+                    </select>
+                    <select name="stt_lang" id="ai_stt_lang" class="form-control u-mt-4" title="<?php echo $h(t('ai_models.stt_lang')); ?>">
+                        <option value="tr">Türkçe</option><option value="de">Deutsch</option><option value="en">English</option>
+                    </select>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.stt_cloud_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_listen'); ?></label>
                     <input type="number" name="listen_seconds" id="ai_listen" class="form-control" min="2" max="15" value="7"></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_retries'); ?></label>
@@ -188,6 +195,7 @@ function aiAppEdit(a) {
     const st = document.getElementById('ai_stt');
     if (c.stt_model && ![...st.options].some(o => o.value === c.stt_model)) st.add(new Option(c.stt_model, c.stt_model));
     st.value = c.stt_model || 'engine:tr';
+    document.getElementById('ai_stt_lang').value = c.stt_lang || 'tr';
     document.getElementById('ai_intents').innerHTML = '';
     (c.intents || []).forEach(i => aiIntentAdd(i));
     if (!(c.intents || []).length) aiIntentAdd();
