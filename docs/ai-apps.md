@@ -43,7 +43,11 @@ phone and says "could I get two more towels?".
 1. **Greeting** ("Good evening, reception here. How can I help you?") read by a voice model.
 2. **Listening:** until the caller stops speaking (about 0.8 s of silence) or at most the set number
    of seconds. Pressing a key also ends listening.
-3. **Speech to text** with a local model (e.g. Vosk Turkish, see [Local AI models](local-ai.md)).
+3. **Speech to text** with a local model (Vosk or Whisper, see [Local AI models](local-ai.md)), the
+   engine set for the language under *AI → Cloud services*, or a cloud provider directly (OpenAI,
+   Groq, Deepgram, Azure, ElevenLabs, Google AI — those with a key saved there). The cloud key is
+   kept by the AI service in a file only it can read; when the provider cannot be reached the call
+   counts as "not understood" and goes to the application's destination.
 4. **Matching** the text to the configured **requests**. Each request has:
    - **keywords** — word beginnings, the strongest signal ("temiz" also matches "temizliği");
      a keyword that several requests share counts less;
@@ -59,8 +63,9 @@ The room comes from the calling extension: a guest does not have to say it. Ever
 the recording; staff tick *Done* when it is handled. The e-mail uses the template **AI request**
 (*E-mail → Templates*).
 
-How well it works depends mostly on the keywords: on 8 kHz telephone audio the small Turkish Vosk
-model gets about one word in four wrong, and short requests with a clear keyword ("havlu", "klima
+How well it works depends mostly on the keywords and the model: on 8 kHz telephone audio the small
+Turkish Vosk model gets about one word in four wrong, Whisper small about one in thirteen (but it
+needs ~650 MB of memory and about a second of both cores per request); and short requests with a clear keyword ("havlu", "klima
 çalışmıyor") come through best. Give each request a few keywords and two or three example
 sentences, and keep the "not understood" path going to a person.
 

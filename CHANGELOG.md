@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.12.0
+
+- **Whisper speech recognition** in *AI → Models*: Whisper small for Turkish, German
+  and English, run with int8 weights on the CPU (CTranslate2, no PyTorch). On our
+  Turkish telephone test it gets about a third of Vosk's word errors (7.6 % against
+  17 %) and recognised 22 of 24 hotel requests against 17; it answers about 1.5 s
+  after the caller stops speaking. It needs about 650 MB of memory; keep Vosk on
+  small servers or with many calls at once. The AI runtime is updated
+  automatically (adds about 140 MB).
+- **Voice requests with a cloud speech-to-text provider:** besides local models and
+  the language engine, a voice-requests application can use a provider from *AI →
+  Cloud services* directly (OpenAI, Groq, Deepgram, Azure, ElevenLabs, Google AI),
+  with its own language. When the provider cannot be reached the call goes to the
+  application's destination as "not understood".
+
 ## 1.11.1
 
 - **Wide logos:** *Brand settings* has a new **Logo shape** option. "Wide"
