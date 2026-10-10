@@ -887,6 +887,25 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     // ================= TAB 4: CHAT =================
 
+    private fun confirmDeleteChatMessage(msg: ChatMessage) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.chat_delete_message))
+            .setMessage(getString(R.string.chat_delete_message_confirm))
+            .setPositiveButton(getString(R.string.ui_delete)) { _, _ ->
+                val url = prefs.serverUrl
+                val token = prefs.token ?: return@setPositiveButton
+                lifecycleScope.launch {
+                    apiClient.deleteChatMessage(url, token, msg.id)
+                        .onSuccess { chatMessageAdapter.markDeleted(msg.id) }
+                        .onFailure {
+                            Toast.makeText(this@DialerActivity, it.message, Toast.LENGTH_LONG).show()
+                        }
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_dismiss), null)
+            .show()
+    }
+
     private fun setupChatTab() {
         chatAdapter = ChatConversationAdapter { conv ->
             val isGroup = conv.type == "group"
@@ -900,7 +919,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         // Embedded Chat Room setup
         val myExt = prefs.extension ?: ""
         val baseUrl = prefs.serverUrl ?: ""
-        chatMessageAdapter = ChatMessageAdapter(myExt, baseUrl, false) { prefs.token }
+        // Named: a trailing lambda would bind to the long-press handler, leaving the
+        // token empty (images answered 401) and long press without effect.
+        chatMessageAdapter = ChatMessageAdapter(
+            myExt, baseUrl, false,
+            tokenProvider = { prefs.token },
+            onOwnMessageLongPress = { msg -> confirmDeleteChatMessage(msg) }
+        )
         val msgLm = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
