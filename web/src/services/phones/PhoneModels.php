@@ -51,11 +51,17 @@ final class PhoneModels
         'poly-edge-e350' => ['vendor' => 'poly', 'label' => 'Poly Edge E350', 'keys' => 8, 'exp_keys' => 0, 'exp_max' => 0],
         'poly-edge-e450' => ['vendor' => 'poly', 'label' => 'Poly Edge E450', 'keys' => 12, 'exp_keys' => 0, 'exp_max' => 0],
         'poly-edge-e550' => ['vendor' => 'poly', 'label' => 'Poly Edge E550', 'keys' => 16, 'exp_keys' => 0, 'exp_max' => 0],
+        // NEC DT700 / DT800 with SIP firmware (keys not written)
+        'nec-dt710' => ['vendor' => 'nec', 'label' => 'NEC DT710', 'keys' => 0, 'exp_keys' => 0, 'exp_max' => 0],
+        'nec-dt730' => ['vendor' => 'nec', 'label' => 'NEC DT730', 'keys' => 0, 'exp_keys' => 0, 'exp_max' => 0],
+        'nec-dt750' => ['vendor' => 'nec', 'label' => 'NEC DT750', 'keys' => 0, 'exp_keys' => 0, 'exp_max' => 0],
+        'nec-dt820' => ['vendor' => 'nec', 'label' => 'NEC DT820', 'keys' => 0, 'exp_keys' => 0, 'exp_max' => 0],
+        'nec-dt830' => ['vendor' => 'nec', 'label' => 'NEC DT830', 'keys' => 0, 'exp_keys' => 0, 'exp_max' => 0],
     ];
 
     public const VENDORS = [
         'yealink' => 'Yealink', 'grandstream' => 'Grandstream', 'fanvil' => 'Fanvil',
-        'snom' => 'Snom', 'cisco' => 'Cisco SPA', 'poly' => 'Poly',
+        'snom' => 'Snom', 'cisco' => 'Cisco SPA', 'poly' => 'Poly', 'nec' => 'NEC',
     ];
 
     /** MAC prefixes (OUI) per vendor, for phones that ask without a useful User-Agent. */
@@ -65,6 +71,7 @@ final class PhoneModels
         'fanvil' => ['0c383e', '7c2f80', '0c1105'],
         'snom' => ['000413'],
         'poly' => ['0004f2', '64167f', '482567'],
+        'nec' => ['0060b9'],
     ];
 
     public static function get(string $model): ?array
@@ -98,7 +105,8 @@ final class PhoneModels
     public static function guessVendor(string $mac, string $userAgent): string
     {
         foreach (array_keys(self::VENDORS) as $vendor) {
-            if (stripos($userAgent, $vendor) !== false) {
+            // At a word start: "nec" must not match "Connect".
+            if (preg_match('/(?<![a-z])' . $vendor . '/i', $userAgent)) {
                 return $vendor;
             }
         }
