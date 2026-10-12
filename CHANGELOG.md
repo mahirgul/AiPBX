@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.13.0
+
+- **NEC desk phones:** *PBX → Phones* provisions NEC DT700/DT800 phones with SIP
+  firmware (DT710, DT730, DT750, DT820, DT830): `dt-<mac>.cfg` with the account,
+  server, transport, voicemail number, codecs, time zone, language and admin
+  password. Keys are not written yet. See [Desk phones](docs/phones.md).
+
 ## 1.12.3
 
 - **Translations:** the 221 texts added since 1.9 (local AI models, AI

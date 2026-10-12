@@ -2,8 +2,8 @@
 
 **PBX → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
 configuration over HTTPS from AiPBX and registers with the right extension, keys and settings.
-Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA** and **Poly** (models listed on
-the page).
+Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
+on the page).
 
 The page is admin-only, like *Users* and *Firewall*: the provisioning URLs it shows hand out the
 SIP password of the extension.
@@ -37,6 +37,7 @@ server in the phone's web interface:
 | Snom | *Setup → Advanced → Update → Setting URL*: the copied URL followed by `snom-{mac}.xml` |
 | Cisco SPA | *Admin login → Advanced → Voice → Provisioning → Profile Rule*: the copied URL followed by `spa$MA.xml` |
 | Poly | *Settings → Provisioning Server*: server type HTTPS, the copied URL as server address |
+| NEC | The phone's file (configuration) server setting, or DHCP option 66: the copied URL |
 
 The phone then asks for its own file under that URL; AiPBX checks that the MAC in the file name
 is the phone's:
@@ -49,6 +50,7 @@ is the phone's:
 | Snom | `snom<model>-<MAC>.htm` (plug and play) or `snom-<mac>.xml` (setting URL) | `snom<model>.htm` |
 | Cisco SPA | `spa<mac>.xml` | `spa<model>.cfg` |
 | Poly | `<mac>.cfg` (master file, names the next one) and `phone<mac>.cfg` (settings) | `000000000000.cfg` |
+| NEC | `dt-<mac>.cfg` | `dt-000000000000.cfg`, `dt-sip.cfg` |
 
 Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, so zero touch
 (below) needs the Profile Rule set once.
@@ -87,6 +89,7 @@ registered.
 | Snom | `snom-check-cfg` | `snom-reboot` |
 | Cisco SPA | `sipura-check-cfg` (`resync`) | `linksys-cold-restart` |
 | Poly | `polycom-check-cfg` | — (restarts by itself when the new settings need it) |
+| NEC | `nec-check-sync` (the phone restarts and reads its file) | — |
 
 ## Key layout
 
@@ -118,6 +121,10 @@ Limits in this first version:
 - **Poly:** keys use line key reassignment; BLF keys watch the number, speed dial and park keys
   are *automata* entries of the same list (they dial without a lamp). Expansion module keys follow
   the phone's own keys.
+- **NEC:** account, server, transport, voicemail number, codecs, time zone, language and admin
+  password are written; keys are not (the phone keeps its own line key layout). The phone's
+  firmware files are NEC's and are not part of AiPBX. Turkish is not among the phone's languages,
+  English is used instead.
 
 ## Logging and protection
 

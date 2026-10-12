@@ -294,6 +294,50 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('cisco', PhoneModels::guessVendor('aabbccddeeff', 'Cisco/SPA504G-7.6.2'));
         $this->assertSame('poly', PhoneModels::guessVendor('aabbccddeeff', 'PolycomVVX-VVX_450-UA/6.4.0'));
         $this->assertSame('poly', PhoneModels::guessVendor('0004f2aabbcc', ''));
+        $this->assertSame('nec', PhoneModels::guessVendor('0060b9aabbcc', ''));
+        $this->assertSame('', PhoneModels::guessVendor('aabbccddeeff', 'HttpConnector/1.0'));
+    }
+
+    public function testNecRendersDataFile(): void
+    {
+        $ctx = $this->hostileContext('nec-dt830');
+        $out = (new NecTemplate())->render($ctx);
+        $xml = simplexml_load_string($out);
+        $this->assertNotFalse($xml, 'valid XML');
+        $this->assertSame('DT_PHONE_CONFIG_DATA', $xml->getName());
+        $line = $xml->DT_LINE_DATA->attributes();
+        $this->assertSame(self::EXT, (string) $line['line.1.extension']);
+        $this->assertSame(self::EXT, (string) $line['line.1.authentication.username']);
+        $this->assertSame(self::$sipPassword, (string) $line['line.1.authentication.password']);
+        $this->assertSame('pbx.test.example', (string) $line['line.1.primary.address']);
+        $this->assertSame('5060', (string) $line['line.1.primary.port']);
+        $this->assertSame('Ali" x="1"<b>&x', (string) $line['line.1.displayname']);
+        $this->assertNull($line['x'], 'no attribute injected');
+        $this->assertSame('1', (string) $xml->DT_SIP_DATA['sip.transport']);
+        $phone = $xml->DT_PHONE_DATA->attributes();
+        $this->assertSame('*97', (string) $phone['phone.voicemail.extension']);
+        $this->assertSame('1', (string) $phone['phone.audio.g722.pref']);
+        $this->assertSame('2', (string) $phone['phone.audio.pcma.pref']);
+        $this->assertSame('+3', (string) $xml->DT_PHONE_NETWORK_DATA['network.gmt.offset']);
+        $this->assertSame(self::$adminPassword, (string) $xml->DT_PHONE_SECURITY_DATA['security.admin.password']);
+        $this->assertSame('en_UK', (string) $xml->DT_USER_DATA['user.lang.value'], 'no Turkish on the phone');
+
+        $ctx['transport'] = 'tls';
+        $ctx['language'] = 'de';
+        $xml = simplexml_load_string((new NecTemplate())->render($ctx));
+        $this->assertSame('3', (string) $xml->DT_SIP_DATA['sip.transport']);
+        $this->assertSame('de_DE', (string) $xml->DT_USER_DATA['user.lang.value']);
+    }
+
+    public function testNecServesItsFile(): void
+    {
+        $phone = $this->addPhone('0060b9ef609f', 'nec-dt830');
+        $this->setSetting('provision_allowed_networks', '192.0.2.0/24');
+        $res = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f.cfg', '192.0.2.10', '');
+        $this->assertSame(200, $res['status']);
+        $this->assertStringContainsString('line.1.authentication.password="' . self::$sipPassword . '"', $res['body']);
+        $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9ef609f.cfg', '192.0.2.10', '')['status']);
+        $this->assertSame(404, PhoneProvisionService::handleRequest(null, 'dt-000000000000.cfg', '192.0.2.10', '')['status']);
     }
 
     public static function fileNames(): array
@@ -317,6 +361,11 @@ final class PhoneProvisionTest extends TestCase
             ['poly', 'phone0004f2aabbcc.cfg', '0004f2aabbcc'],
             ['poly', '000000000000.cfg', ''],
             ['poly', '0004f2aabbcc-phone.cfg', ''],
+            ['nec', 'dt-0060b9ef609f.cfg', '0060b9ef609f'],
+            ['nec', 'dt-0060B9EF609F.cfg', '0060b9ef609f'],
+            ['nec', 'dt-000000000000.cfg', ''],
+            ['nec', 'dt-0060b9ef609f-local.cfg', ''],
+            ['nec', 'dt-sip.cfg', ''],
         ];
     }
 
