@@ -30,7 +30,10 @@ class CdrReportService {
         $cdr = DBHelper::fetchOne("SELECT recording_path, caller_num, start_time, coalesce(nullif(linkedid, ''), call_id) AS linkedid FROM cdrs WHERE id = ?", [$del_id]);
         $rec_path = $cdr['recording_path'] ?? null;
 
-        if ($rec_path && file_exists($rec_path)) {
+        if ($rec_path && str_starts_with($rec_path, 's3:')) {
+            require_once __DIR__ . '/RecordingStorage.php';
+            RecordingStorage::delete(substr($rec_path, 3));
+        } elseif ($rec_path && file_exists($rec_path)) {
             @unlink($rec_path);
         }
 

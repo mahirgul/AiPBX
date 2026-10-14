@@ -186,7 +186,7 @@ $filter_url = function (array $override) {
                     </tr>
                 <?php else: ?>
                     <?php foreach ($cdrs as $c):
-                        $has_rec = (!empty($c['recording_path']) && file_exists($c['recording_path']));
+                        $has_rec = (!empty($c['recording_path']) && (str_starts_with($c['recording_path'], 's3:') || file_exists($c['recording_path'])));
                         $is_own = (!empty($user_ext) && ($c['agent_extension'] === $user_ext || $c['caller_num'] === $user_ext));
                         $can_listen_row = ($can_listen_all || $is_own);
 

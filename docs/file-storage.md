@@ -10,8 +10,8 @@ attachments, their thumbnails and group pictures.
 
 With a bucket, large files stay off the PBX's disk and out of its backups.
 
-Call recordings, voicemail and faxes are not affected; they stay on the local disk
-(see [Call recordings](recordings.md)).
+**Call recordings** can go into the same bucket: tick *Call recordings in the bucket too* (see
+[Call recordings](recordings.md#in-an-s3-bucket)). Voicemail and faxes stay on the local disk.
 
 ## Access stays the same
 

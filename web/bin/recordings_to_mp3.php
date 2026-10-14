@@ -9,9 +9,12 @@
  * (calls that were never bridged) are removed together with their CDR link.
  */
 require_once dirname(__DIR__) . '/config.php';
+require_once dirname(__DIR__) . '/src/services/RecordingStorage.php';
 
 const MIN_AGE_SECONDS = 180;
 const EMPTY_WAV_BYTES = 1024;
+// Recordings uploaded to the bucket per run (every 5 minutes).
+const MAX_UPLOADS_PER_RUN = 200;
 
 $lock = fopen('/run/aipbx-recordings-to-mp3.lock', 'c');
 if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
@@ -69,6 +72,29 @@ foreach ($it as $f) {
     $converted++;
 }
 
-if ($converted > 0 || $failed > 0) {
-    echo "recordings_to_mp3: converted {$converted}, failed {$failed}\n";
+// Recordings in the S3 bucket (Admin → File storage, #69): finished MP3s are
+// uploaded and leave the disk; the CDR then points at "s3:recordings/…".
+// Recordings from before the switch move a batch at a time.
+$uploaded = 0;
+if (RecordingStorage::enabled()) {
+    $rows = $db->prepare("SELECT DISTINCT userfield FROM asteriskcdr WHERE userfield LIKE ? AND userfield LIKE '%.mp3' LIMIT " . MAX_UPLOADS_PER_RUN);
+    $rows->execute([$root . '/%']);
+    foreach ($rows->fetchAll(PDO::FETCH_COLUMN) as $mp3) {
+        $key = is_file($mp3) && filemtime($mp3) <= $cutoff ? RecordingStorage::keyFor($mp3) : '';
+        if ($key === '') {
+            continue;
+        }
+        if (!RecordingStorage::upload($mp3, $key)) {
+            $failed++;
+            fwrite(STDERR, "recordings_to_mp3: upload to the bucket failed: {$mp3}\n");
+            break; // bucket or chat service down: try again next run
+        }
+        $updateCdr->execute([RecordingStorage::PREFIX . $key, $mp3]);
+        unlink($mp3);
+        $uploaded++;
+    }
+}
+
+if ($converted > 0 || $failed > 0 || $uploaded > 0) {
+    echo "recordings_to_mp3: converted {$converted}, uploaded {$uploaded}, failed {$failed}\n";
 }

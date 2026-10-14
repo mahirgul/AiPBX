@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.19.0
+
+- **Call recordings in an S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)):
+  with an S3-compatible bucket on *Admin → File storage*, tick *Call recordings in
+  the bucket too*. Finished recordings (MP3) are uploaded within minutes and leave
+  the PBX's disk; older ones follow in batches. Playing, downloading and deleting
+  work as before and the bucket stays private (files go through the PBX). When the
+  bucket cannot be reached, recordings stay on the disk until it can. See
+  [Call recordings](docs/recordings.md#in-an-s3-bucket).
+
 ## 1.18.0
 
 - **New voicemail notification in the Android app (1.0.63)**
