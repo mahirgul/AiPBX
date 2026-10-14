@@ -1,6 +1,6 @@
 name: Install test
 
-# A fresh install with install.sh on a clean Ubuntu, then `aipbx-selftest`
+# A fresh install with install.sh on a clean Ubuntu 26.04, then `aipbx-selftest`
 # (docs/health.md). Catches what only shows on a new server: a package, a
 # folder owner, a firewall rule or a unit the installer forgot. Until
 # 2026-10-14 such bugs were found only by installing by hand.
@@ -28,7 +28,7 @@ concurrency:
 jobs:
   install:
     name: Fresh install + self test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

@@ -144,7 +144,8 @@ final class HealthChecks
             }
             $pct = (int) round(100 * ($total - $free) / $total);
             // One line per file system: /var on the root file system is not listed twice.
-            $dev = (string) (@stat($path)['dev'] ?? $path);
+            $st = @stat($path);
+            $dev = $st ? (string) $st['dev'] : $path;
             if (isset($parts[$dev])) {
                 continue;
             }
