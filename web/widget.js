@@ -31,7 +31,7 @@
             hangup: 'Hang up', mute: 'Mute', unmute: 'Unmute', keypad: 'Keypad', close: 'Close',
             calling_you: 'We are calling you now.',
             err_mic: 'Microphone access is needed for the call.',
-            err_mic_denied: 'The browser blocked the microphone. Allow it for this site (lock icon next to the address) and try again.', err_mic_none: 'No microphone was found on this device.', err_mic_busy: 'The microphone is in use by another program.', err_mic_insecure: 'Calls need a secure (https) page.',
+            err_mic_policy: 'This website does not allow the microphone (its Permissions-Policy header says microphone=()). The site owner has to allow it: microphone=(self).', err_mic_denied: 'The browser blocked the microphone. Allow it for this site (lock icon next to the address) and try again.', err_mic_none: 'No microphone was found on this device.', err_mic_busy: 'The microphone is in use by another program.', err_mic_insecure: 'Calls need a secure (https) page.',
             err_busy: 'All lines are busy. Please try again later.',
             err_failed: 'The call could not be connected.',
             err_rate_ip: 'Too many attempts. Please try again later.',
@@ -49,7 +49,7 @@
             hangup: 'Kapat', mute: 'Sessiz', unmute: 'Sesi aç', keypad: 'Tuşlar', close: 'Kapat',
             calling_you: 'Sizi şimdi arıyoruz.',
             err_mic: 'Arama için mikrofon izni gerekiyor.',
-            err_mic_denied: 'Tarayıcı mikrofonu engelledi. Bu site için izin verin (adres çubuğundaki kilit simgesi) ve tekrar deneyin.', err_mic_none: 'Bu cihazda mikrofon bulunamadı.', err_mic_busy: 'Mikrofon başka bir program tarafından kullanılıyor.', err_mic_insecure: 'Arama için güvenli (https) bir sayfa gerekir.',
+            err_mic_policy: 'Bu web sitesi mikrofona izin vermiyor (Permissions-Policy başlığında microphone=() var). Site sahibinin izin vermesi gerekir: microphone=(self).', err_mic_denied: 'Tarayıcı mikrofonu engelledi. Bu site için izin verin (adres çubuğundaki kilit simgesi) ve tekrar deneyin.', err_mic_none: 'Bu cihazda mikrofon bulunamadı.', err_mic_busy: 'Mikrofon başka bir program tarafından kullanılıyor.', err_mic_insecure: 'Arama için güvenli (https) bir sayfa gerekir.',
             err_busy: 'Tüm hatlar meşgul. Lütfen daha sonra tekrar deneyin.',
             err_failed: 'Arama bağlanamadı.',
             err_rate_ip: 'Çok fazla deneme. Lütfen daha sonra tekrar deneyin.',
@@ -67,7 +67,7 @@
             hangup: 'Auflegen', mute: 'Stumm', unmute: 'Ton an', keypad: 'Tastatur', close: 'Schließen',
             calling_you: 'Wir rufen Sie jetzt an.',
             err_mic: 'Für den Anruf wird das Mikrofon benötigt.',
-            err_mic_denied: 'Der Browser hat das Mikrofon blockiert. Erlauben Sie es für diese Seite (Schloss-Symbol neben der Adresse) und versuchen Sie es erneut.', err_mic_none: 'Auf diesem Gerät wurde kein Mikrofon gefunden.', err_mic_busy: 'Das Mikrofon wird von einem anderen Programm verwendet.', err_mic_insecure: 'Anrufe brauchen eine sichere (https) Seite.',
+            err_mic_policy: 'Diese Website erlaubt das Mikrofon nicht (ihr Permissions-Policy-Header enthält microphone=()). Der Betreiber muss es erlauben: microphone=(self).', err_mic_denied: 'Der Browser hat das Mikrofon blockiert. Erlauben Sie es für diese Seite (Schloss-Symbol neben der Adresse) und versuchen Sie es erneut.', err_mic_none: 'Auf diesem Gerät wurde kein Mikrofon gefunden.', err_mic_busy: 'Das Mikrofon wird von einem anderen Programm verwendet.', err_mic_insecure: 'Anrufe brauchen eine sichere (https) Seite.',
             err_busy: 'Alle Leitungen sind besetzt. Bitte später erneut versuchen.',
             err_failed: 'Der Anruf konnte nicht verbunden werden.',
             err_rate_ip: 'Zu viele Versuche. Bitte später erneut versuchen.',
@@ -85,7 +85,7 @@
             hangup: 'Raccrocher', mute: 'Muet', unmute: 'Son', keypad: 'Clavier', close: 'Fermer',
             calling_you: 'Nous vous appelons maintenant.',
             err_mic: "L'accès au micro est nécessaire pour l'appel.",
-            err_mic_denied: 'Le navigateur a bloqué le micro. Autorisez-le pour ce site (cadenas à côté de l\'adresse) et réessayez.', err_mic_none: 'Aucun micro n\'a été trouvé sur cet appareil.', err_mic_busy: 'Le micro est utilisé par un autre programme.', err_mic_insecure: 'Les appels nécessitent une page sécurisée (https).',
+            err_mic_policy: 'Ce site n\'autorise pas le micro (son en-tête Permissions-Policy contient microphone=()). Le propriétaire du site doit l\'autoriser : microphone=(self).', err_mic_denied: 'Le navigateur a bloqué le micro. Autorisez-le pour ce site (cadenas à côté de l\'adresse) et réessayez.', err_mic_none: 'Aucun micro n\'a été trouvé sur cet appareil.', err_mic_busy: 'Le micro est utilisé par un autre programme.', err_mic_insecure: 'Les appels nécessitent une page sécurisée (https).',
             err_busy: 'Toutes les lignes sont occupées. Réessayez plus tard.',
             err_failed: "L'appel n'a pas pu être établi.",
             err_rate_ip: 'Trop de tentatives. Réessayez plus tard.',
@@ -103,7 +103,7 @@
             hangup: 'Colgar', mute: 'Silenciar', unmute: 'Activar sonido', keypad: 'Teclado', close: 'Cerrar',
             calling_you: 'Le estamos llamando ahora.',
             err_mic: 'Se necesita acceso al micrófono para la llamada.',
-            err_mic_denied: 'El navegador bloqueó el micrófono. Permítalo para este sitio (candado junto a la dirección) e inténtelo de nuevo.', err_mic_none: 'No se encontró ningún micrófono en este dispositivo.', err_mic_busy: 'El micrófono está siendo usado por otro programa.', err_mic_insecure: 'Las llamadas necesitan una página segura (https).',
+            err_mic_policy: 'Este sitio web no permite el micrófono (su cabecera Permissions-Policy contiene microphone=()). El propietario del sitio debe permitirlo: microphone=(self).', err_mic_denied: 'El navegador bloqueó el micrófono. Permítalo para este sitio (candado junto a la dirección) e inténtelo de nuevo.', err_mic_none: 'No se encontró ningún micrófono en este dispositivo.', err_mic_busy: 'El micrófono está siendo usado por otro programa.', err_mic_insecure: 'Las llamadas necesitan una página segura (https).',
             err_busy: 'Todas las líneas están ocupadas. Inténtelo más tarde.',
             err_failed: 'No se pudo conectar la llamada.',
             err_rate_ip: 'Demasiados intentos. Inténtelo más tarde.',
@@ -280,6 +280,13 @@
         // Say which microphone problem it is: "allow it" does not help when there is none.
         if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             finish(T.err_mic_insecure, true);
+            return;
+        }
+        // The page itself may forbid the microphone (Permissions-Policy: microphone=()):
+        // then no browser setting helps, only the site owner can (Chromium tells us so).
+        var policy = document.permissionsPolicy || document.featurePolicy;
+        if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('microphone')) {
+            finish(T.err_mic_policy, true);
             return;
         }
         navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (s) {

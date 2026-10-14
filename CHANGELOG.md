@@ -5,6 +5,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.16.0
+
+- **FTP:** the user `NECSDT700` of NEC DT700/DT800 phones is always there while FTP
+  is on and needs no password; switching FTP on no longer asks for one. Extra FTP
+  users with a password can be added and removed (read only, like everybody).
+- **Extra DHCP options** (*PBX → Network services*, DHCP mode): `code,value` lines
+  next to the ones AiPBX hands out; the same code replaces AiPBX's value, e.g.
+  `66,ftp://…` for phones that fetch from FTP.
+- **Website widget:** when the website itself forbids the microphone
+  (`Permissions-Policy: microphone=()`, often set by WordPress security plugins),
+  the widget now says so and what the site owner has to change, instead of
+  asking the visitor to allow the microphone.
+- **Fixes found by a fresh install test:** TFTP's firewall rule no longer needs the
+  `nf_conntrack_tftp` kernel module (missing in containers and some kernels, where
+  switching TFTP on failed); a firewall change that failed half way no longer
+  blocks the next attempt; voicemail marked as heard in the app created the
+  mailbox's `Old` folder without write access for Asterisk.
+
 ## 1.15.0
 
 - **Voicemail in the Android app (1.0.61)** ([#46](https://github.com/mahirgul/AiPBX/issues/46)):
