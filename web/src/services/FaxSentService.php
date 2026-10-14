@@ -48,11 +48,12 @@ class FaxSentService {
         // the 2026-08-31 audit).
         foreach (['pdf_path', 'tif_path'] as $path_col) {
             $path = $fax[$path_col] ?? '';
-            if ($path === '' || !file_exists($path)) continue;
+            if ($path === '' || (!str_starts_with($path, 's3:') && !file_exists($path))) continue;
             $ref_stmt = $db->prepare("SELECT COUNT(*) FROM fax_sent WHERE id != ? AND (pdf_path = ? OR tif_path = ?)");
             $ref_stmt->execute([$fax_id, $path, $path]);
             if ((int) $ref_stmt->fetchColumn() === 0) {
-                @unlink($path);
+                require_once __DIR__ . '/FaxStorage.php';
+                FaxStorage::remove($path); // local file or bucket object (#69)
             }
         }
 
@@ -102,12 +103,18 @@ class FaxSentService {
         if ($fax['status'] !== 'FAILED') {
             return ['success' => false, 'error' => t('srv_fax.err_resend_failed_only')];
         }
-        if (empty($fax['tif_path']) || !file_exists($fax['tif_path'])) {
-            return ['success' => false, 'error' => t('srv_fax.err_source_gone')];
-        }
         if (AsteriskHelper::getPrimaryTrunkName() === null) {
             return ['success' => false, 'error' => t('srv_fax.err_no_trunk')];
         }
+        // Moved to the bucket (#69)? The TIFF is needed on the disk to send it;
+        // the new record then uses the local copies (moved again an hour after it finished).
+        require_once __DIR__ . '/FaxStorage.php';
+        $tif = FaxStorage::local($fax['tif_path'] ?? null);
+        if ($tif === null) {
+            return ['success' => false, 'error' => t('srv_fax.err_source_gone')];
+        }
+        $fax['tif_path'] = $tif;
+        $fax['pdf_path'] = FaxStorage::local($fax['pdf_path'] ?? null) ?? $fax['pdf_path'];
 
         $stmt2 = $db->prepare('INSERT INTO fax_sent (user_id, sender_extension, destination_number, pdf_path, tif_path, pages, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "PENDING", NOW())');
         $stmt2->execute([$fax['user_id'], $fax['sender_extension'], $fax['destination_number'], $fax['pdf_path'], $fax['tif_path'], $fax['pages']]);
