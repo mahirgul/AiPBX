@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Съобщението не може да бъде възпроизведено</string>
     <string name="vm_load_failed">Гласовата поща не може да бъде заредена</string>
     <string name="vm_delete_confirm">Да се изтрие ли това гласово съобщение?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

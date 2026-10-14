@@ -759,6 +759,10 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
     // --- Chat Notifications ---
 
+    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {
+        VoicemailNotifications.show(this, caller, durationSec, newCount)
+    }
+
     override fun onNewMessage(message: ChatMessage) {
         val myExt = prefs.extension ?: ""
         // Do not post a notification for messages we sent ourselves

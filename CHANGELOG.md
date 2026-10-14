@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.18.0
+
+- **New voicemail notification in the Android app (1.0.63)**
+  ([#46](https://github.com/mahirgul/AiPBX/issues/46)): when a voicemail arrives the
+  app shows "Voicemail — caller · length"; tapping it opens the mailbox and the
+  badge on the voicemail button updates. It arrives over the app's connection to
+  the PBX, and by push (Firebase / APNs) when push is set up, so also when the app
+  is not running. Asterisk calls `voicemail_notify.php` (voicemail
+  `externnotify`) when a mailbox gets a new message.
+
 ## 1.17.2
 
 - **Translations:** health checks, FTP users and the extra DHCP options in all 21

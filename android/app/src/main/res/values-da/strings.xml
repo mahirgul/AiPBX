@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Beskeden kunne ikke afspilles</string>
     <string name="vm_load_failed">Telefonsvareren kunne ikke indlæses</string>
     <string name="vm_delete_confirm">Slet denne talebesked?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

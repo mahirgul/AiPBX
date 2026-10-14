@@ -2201,6 +2201,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     // --- ChatEventListener ---
 
+    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {
+        runOnUiThread { refreshVoicemailBadge() }
+    }
+
     override fun onNewMessage(message: ChatMessage) {
         runOnUiThread {
             if (isChatRoomOpen() && message.conversationId == currentChatConvId) {

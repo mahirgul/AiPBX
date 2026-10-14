@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Mesaj çalınamadı</string>
     <string name="vm_load_failed">Sesli mesajlar yüklenemedi</string>
     <string name="vm_delete_confirm">Bu sesli mesaj silinsin mi?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

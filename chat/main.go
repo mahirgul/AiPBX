@@ -79,6 +79,7 @@ func main() {
 			_, _ = w.Write([]byte(`{"status":"ok","service":"aipbx-chat"}`))
 		})
 		mux.HandleFunc(prefix+"/api/internal/presence", server.HandleInternalPresence)
+		mux.HandleFunc(prefix+"/api/internal/notify", server.HandleInternalNotify)
 		mux.HandleFunc(prefix+"/api/internal/storage/test", server.HandleStorageTest)
 		mux.HandleFunc(prefix+"/api/internal/storage/migrate", server.HandleStorageMigrate)
 		mux.HandleFunc(prefix+"/api/internal/storage/status", server.HandleStorageStatus)

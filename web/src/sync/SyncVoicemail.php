@@ -92,5 +92,7 @@ function voicemailGeneralConf(): string
         // Messages listened to or deleted outside Asterisk (portal, mobile app)
         // update the voicemail lamp of the phones within 15 s.
         . "pollmailboxes=yes\n"
-        . "pollfreq=15\n";
+        . "pollfreq=15\n"
+        // New message → notification in the mobile apps (bin/voicemail_notify.php).
+        . "externnotify=/usr/local/bin/voicemail_notify.php\n";
 }

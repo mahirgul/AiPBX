@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Δεν ήταν δυνατή η αναπαραγωγή του μηνύματος</string>
     <string name="vm_load_failed">Δεν ήταν δυνατή η φόρτωση του φωνητικού ταχυδρομείου</string>
     <string name="vm_delete_confirm">Διαγραφή αυτού του φωνητικού μηνύματος;</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>
