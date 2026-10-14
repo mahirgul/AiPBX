@@ -33,6 +33,11 @@ contain the server's own address. The phones get:
 | 150 | this server (when TFTP is on) | Cisco SPA |
 | 42 | the NTP servers entered | all phones |
 
+**Extra DHCP options** (DHCP mode): one `code,value` per line, e.g. `66,ftp://192.168.10.2/` for
+phones that should fetch from FTP, or vendor options such as `43,…`. An option with the same code
+as one above replaces AiPBX's value (66, 160, 150, 42, 3, 6). Quotes, `#`, backslashes and line
+breaks are refused: the dnsmasq file is written as root.
+
 For the MAC-based `/provision/` address to answer, the phone network must be in **Allowed
 networks** of the provisioning settings (*PBX → Phones*).
 
@@ -56,12 +61,15 @@ Some phones fetch their files over FTP instead of TFTP, e.g. NEC DT700/DT800 (us
 **FTP server (read only)** is switched on separately from DHCP and TFTP and serves the same
 folder as TFTP:
 
-- **Anonymous** login and **one FTP user** (default `NECSDT700`, password set on the page) may
-  list and download. Nothing can be uploaded, changed or deleted, and nobody gets out of the
-  folder. The FTP user is not a system account: a server login such as `root` or `admin` is refused.
-- FTP is not encrypted: the user and password travel in clear text, and anybody on the allowed
-  networks can read the files anonymously. Keep only files there that may be public on the phone
-  network (firmware, shared settings); per-phone files with SIP passwords stay on HTTPS.
+- **Anonymous** login and the fixed user **`NECSDT700`** work without a password (NEC phones log
+  in with it; any password they send is accepted).
+- **Extra FTP users** can be added on the page with a password (at most 20); tick one to remove it,
+  or enter an existing name to set a new password. Only a SHA-512 hash of the password is stored.
+- Everybody may only list and download. Nothing can be uploaded, changed or deleted, and nobody
+  gets out of the folder. No FTP user is a system account: a server login such as `root` is refused.
+- FTP is not encrypted, and anybody on the allowed networks can read the files. Keep only files
+  there that may be public on the phone network (firmware, shared settings); per-phone files with
+  SIP passwords stay on HTTPS.
 - The firewall opens TCP 21 and the passive ports 40000–40049 for the same networks as TFTP
   (the allowed networks, plus the phone network in DHCP mode). Active mode works too.
 
@@ -77,8 +85,9 @@ folder as TFTP:
   UDP 69 (the `tftp` service) for the allowed networks; *Off* removes both again.
 - FTP is vsftpd (packages `vsftpd`, `libpam-pwdfile`) in its own unit `aipbx-vsftpd`; the
   package's own `vsftpd` unit is masked. `aipbx-priv netsvc ftp-on` writes
-  `/var/lib/aipbx-netsvc/vsftpd.conf` and the password file `ftp.passwd` (root only, SHA-512
-  hash; the portal hands over only the hash). The PAM service `/etc/pam.d/aipbx-ftp` checks the
-  FTP user against that file only. Transfers are logged in `/var/log/aipbx-ftp.log`.
+  `/var/lib/aipbx-netsvc/vsftpd.conf` and the password file `ftp.passwd` of the extra users
+  (root only, SHA-512 hashes; the portal hands over only the hashes). The PAM service
+  `/etc/pam.d/aipbx-ftp` lets `NECSDT700` in and checks everybody else against that file only.
+  Transfers are logged in `/var/log/aipbx-ftp.log`.
 - The DHCP check is `/usr/local/sbin/aipbx-dhcp-probe <interface>`: one DHCP discover, the offers
   of the next 4 seconds are listed. Nothing is leased.

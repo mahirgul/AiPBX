@@ -381,8 +381,9 @@ case "$cmd" in
             apply)
                 # netsvc apply mode=tftp|dhcp [iface=] [start= end= mask= gw= lease=HOURS]
                 #   [dns=IP,IP] [ntp=IP,IP] [url=https://HOST/provision/] [tftp=0|1] [net=CIDR]...
+                #   [opt=CODE,VALUE]...  (extra DHCP options; the same code replaces AiPBX's own)
                 mode=""; iface=""; start=""; end=""; mask=""; gw=""; lease=""; dns=""; ntp=""; url=""; tftp=1
-                nets=()
+                nets=(); opts=(); declare -A optcode=()
                 for kv in "$@"; do
                     k="${kv%%=*}"; v="${kv#*=}"
                     [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
@@ -400,6 +401,11 @@ case "$cmd" in
                             for ip in "${list[@]}"; do match "$ip" "$RE_IPV4"; done
                             [ "$k" = dns ] && dns="$v" || ntp="$v" ;;
                         url) match "$v" "$RE_PROV_URL"; url="$v" ;;
+                        opt)
+                            # CODE 1-254, a value without quotes, #, backslash or line breaks.
+                            match "$v" '^([1-9][0-9]?|1[0-9][0-9]|2[0-4][0-9]|25[0-4]),[A-Za-z0-9 .:/_@,+=%~!$&()*;?-]{1,200}$'
+                            [ "${#opts[@]}" -lt 20 ] || die "too many DHCP options"
+                            opts+=("$v"); optcode["${v%%,*}"]=1 ;;
                         tftp) case "$v" in 0|1) tftp="$v" ;; *) die "invalid tftp: $v" ;; esac ;;
                         net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
                         *) die "unknown key: $k" ;;
@@ -432,16 +438,17 @@ case "$cmd" in
                         echo "bind-dynamic"
                         echo "dhcp-range=$start,$end,$mask,${lease}h"
                         echo "dhcp-leasefile=$NETSVC_DIR/dnsmasq.leases"
-                        [ -n "$gw" ] && echo "dhcp-option=option:router,$gw"
-                        [ -n "$dns" ] && echo "dhcp-option=option:dns-server,$dns"
-                        [ -n "$ntp" ] && echo "dhcp-option=option:ntp-server,$ntp"
+                        [ -n "$gw" ] && [ -z "${optcode[3]:-}" ] && echo "dhcp-option=option:router,$gw"
+                        [ -n "$dns" ] && [ -z "${optcode[6]:-}" ] && echo "dhcp-option=option:dns-server,$dns"
+                        [ -n "$ntp" ] && [ -z "${optcode[42]:-}" ] && echo "dhcp-option=option:ntp-server,$ntp"
                         if [ -n "$url" ]; then
                             # 66: Yealink, Grandstream, Fanvil, Snom, Cisco; 160: Poly.
-                            echo "dhcp-option=66,\"$url\""
-                            echo "dhcp-option=160,\"$url\""
+                            [ -z "${optcode[66]:-}" ] && echo "dhcp-option=66,\"$url\""
+                            [ -z "${optcode[160]:-}" ] && echo "dhcp-option=160,\"$url\""
                         fi
                         # 150: Cisco TFTP server; 0.0.0.0 = this server.
-                        [ "$tftp" = 1 ] && echo "dhcp-option=150,0.0.0.0"
+                        [ "$tftp" = 1 ] && [ -z "${optcode[150]:-}" ] && echo "dhcp-option=150,0.0.0.0"
+                        for o in "${opts[@]}"; do echo "dhcp-option=$o"; done
                     fi
                     if [ "$tftp" = 1 ]; then
                         echo "enable-tftp"
@@ -472,23 +479,22 @@ case "$cmd" in
                 exec systemctl restart aipbx-dnsmasq.service
                 ;;
             ftp-on)
-                # netsvc ftp-on user=NAME hash=CRYPT net=CIDR...
+                # netsvc ftp-on [user=NAME:CRYPT]... net=CIDR...
                 # Read-only FTP (vsftpd, unit aipbx-vsftpd) of the TFTP folder for
                 # phones that fetch their files over FTP (e.g. NEC DT700: user
                 # NECSDT700). Anonymous login and the one FTP user may only read;
                 # the user is not a system account (pam_pwdfile, guest = ftp).
-                ftpuser=""; ftphash=""; nets=()
+                ftpusers=(); nets=()
                 for kv in "$@"; do
                     k="${kv%%=*}"; v="${kv#*=}"
                     [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
                     case "$k" in
-                        user) match "$v" '^[A-Za-z0-9._-]{1,32}$'; ftpuser="$v" ;;
-                        hash) match "$v" '^\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$'; ftphash="$v" ;;
+                        user) match "$v" '^[A-Za-z0-9._-]{1,32}:\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$'
+                            [ "${#ftpusers[@]}" -lt 20 ] || die "too many FTP users"; ftpusers+=("$v") ;;
                         net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
                         *) die "unknown key: $k" ;;
                     esac
                 done
-                [ -n "$ftpuser" ] && [ -n "$ftphash" ] || die "ftp-on needs user= and hash="
                 [ "${#nets[@]}" -gt 0 ] || die "ftp needs at least one net="
                 [ -x /usr/sbin/vsftpd ] || die "vsftpd is not installed (run install.sh --upgrade)"
                 id -u ftp >/dev/null 2>&1 || die "the ftp system user is missing"
@@ -497,7 +503,9 @@ case "$cmd" in
                 [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
                 install -d -o root -g root -m 0755 /var/run/vsftpd/empty
                 umask 077
-                printf '%s:%s\n' "$ftpuser" "$ftphash" > "$NETSVC_DIR/ftp.passwd.tmp"
+                # Extra FTP users (NECSDT700 is let in by PAM without a password).
+                : > "$NETSVC_DIR/ftp.passwd.tmp"
+                [ "${#ftpusers[@]}" -eq 0 ] || printf '%s\n' "${ftpusers[@]}" > "$NETSVC_DIR/ftp.passwd.tmp"
                 install -o root -g root -m 0600 "$NETSVC_DIR/ftp.passwd.tmp" "$NETSVC_DIR/ftp.passwd"
                 rm -f "$NETSVC_DIR/ftp.passwd.tmp"
                 umask 022

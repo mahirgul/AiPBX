@@ -998,14 +998,17 @@ systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
 
 # Read-only FTP of the same folder for phones that fetch files over FTP (NEC
 # DT700 and others): off until the page turns it on; aipbx-priv writes its
-# configuration and the password file of the one FTP user (not a system
-# account: PAM checks it against that file).
+# configuration and the password file of the extra FTP users (not system
+# accounts: PAM checks them against that file).
 systemctl disable --now vsftpd.service >/dev/null 2>&1 || true
 systemctl mask vsftpd.service >/dev/null 2>&1 || true
 cat > /etc/pam.d/aipbx-ftp << 'FTPPAM'
-# AiPBX read-only FTP (PBX -> Network services): the FTP user's password file only.
-auth    required pam_pwdfile.so pwdfile=/var/lib/aipbx-netsvc/ftp.passwd
-account required pam_permit.so
+# AiPBX read-only FTP (PBX -> Network services). NECSDT700, the user NEC DT700/
+# DT800 phones log in with, needs no password; the extra FTP users added on the
+# page are checked against their password file. No system account can log in.
+auth    sufficient pam_succeed_if.so quiet user = NECSDT700
+auth    required   pam_pwdfile.so pwdfile=/var/lib/aipbx-netsvc/ftp.passwd
+account required   pam_permit.so
 FTPPAM
 cat > /etc/systemd/system/aipbx-vsftpd.service << 'FTPUNIT'
 [Unit]

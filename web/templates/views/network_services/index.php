@@ -50,15 +50,27 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         </div>
 
         <div class="netsvc-ftp">
+            <p class="u-fs-12" style="margin: 0 0 8px;"><?php echo sprintf(t('netsvc.ftp_fixed_user'), '<code>' . NetworkServicesService::FTP_FIXED_USER . '</code>'); ?></p>
+            <?php $ftpUsers = NetworkServicesService::ftpUsers($settings['netsvc_ftp_users']); ?>
+            <?php if ($ftpUsers !== []): ?>
+                <label class="form-label"><?php echo t('netsvc.ftp_users'); ?></label>
+                <div style="margin-bottom: 8px;">
+                    <?php foreach ($ftpUsers as $u): ?>
+                        <label class="u-check-label-6" style="display: block;">
+                            <input type="checkbox" name="netsvc_ftp_remove[]" value="<?php echo $h($u['user']); ?>" class="u-accent">
+                            <code><?php echo $h($u['user']); ?></code> <span class="u-muted u-fs-12">· <?php echo t('netsvc.ftp_remove'); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
             <div class="u-grid-2">
                 <div class="form-group">
-                    <label class="form-label"><?php echo t('netsvc.ftp_user'); ?></label>
-                    <input type="text" name="netsvc_ftp_user" class="form-control" maxlength="32" value="<?php echo $h($settings['netsvc_ftp_user']); ?>" placeholder="NECSDT700">
+                    <label class="form-label"><?php echo t('netsvc.ftp_new_user'); ?></label>
+                    <input type="text" name="netsvc_ftp_new_user" class="form-control" maxlength="32" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('netsvc.ftp_password'); ?></label>
-                    <input type="password" name="netsvc_ftp_password" class="form-control" maxlength="64" autocomplete="new-password"
-                           placeholder="<?php echo $h($settings['netsvc_ftp_password'] !== '' ? t('netsvc.ftp_password_set') : ''); ?>">
+                    <input type="password" name="netsvc_ftp_new_password" class="form-control" maxlength="64" autocomplete="new-password">
                 </div>
             </div>
             <small class="u-hint u-fs-12"><?php echo t('netsvc.ftp_help'); ?></small>
@@ -116,6 +128,12 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                     <label class="form-label"><?php echo t('netsvc.option66'); ?></label>
                     <input type="text" class="form-control" value="<?php echo $h($provisioningUrl); ?>" readonly>
                 </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('netsvc.dhcp_options'); ?></label>
+                <textarea name="netsvc_dhcp_options" class="form-control" rows="3" spellcheck="false" style="font-family: monospace;"
+                          placeholder="66,ftp://192.168.10.2/&#10;43,0A04C0A80A02"><?php echo $h($settings['netsvc_dhcp_options']); ?></textarea>
+                <small class="u-hint u-fs-11"><?php echo t('netsvc.dhcp_options_help'); ?></small>
             </div>
             <label class="u-check-label-6" style="display: block;">
                 <input type="checkbox" name="netsvc_confirm" value="1" class="u-accent" <?php echo $mode === 'dhcp' ? 'checked' : ''; ?>>
