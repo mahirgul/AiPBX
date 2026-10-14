@@ -1,0 +1,58 @@
+name: Install test
+
+# A fresh install with install.sh on a clean Ubuntu, then `aipbx-selftest`
+# (docs/health.md). Catches what only shows on a new server: a package, a
+# folder owner, a firewall rule or a unit the installer forgot. Until
+# 2026-10-14 such bugs were found only by installing by hand.
+
+on:
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'conf/**'
+      - 'asterisk-config/**'
+      - 'web/bin/**'
+      - 'web/db/**'
+      - 'web/src/sync/**'
+      - 'web/src/services/health/**'
+      - 'web/src/services/HealthService.php'
+      - '.github/workflows/install-test.yml'
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+concurrency:
+  group: install-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    name: Fresh install + self test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make room for MariaDB
+        # The runner image ships MySQL; the installer brings MariaDB.
+        run: |
+          sudo systemctl stop mysql 2>/dev/null || true
+          sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq 'mysql-*' >/dev/null 2>&1 || true
+          sudo rm -rf /var/lib/mysql /etc/mysql
+
+      - name: install.sh
+        run: |
+          sudo mkdir -p /opt/aipbx
+          sudo cp -a . /opt/aipbx/
+          cd /opt/aipbx
+          sudo DEBIAN_FRONTEND=noninteractive bash install.sh </dev/null 2>&1 | tee /tmp/install.log | sed 's/\x1b\[[0-9;]*m//g' | tail -60
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: aipbx-selftest
+        run: sudo /usr/local/sbin/aipbx-selftest
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          sudo tail -100 /tmp/install.log || true
+          sudo journalctl --no-pager -n 100 -u asterisk -u apache2 -u nginx -u aipbx-chat -u mariadb || true

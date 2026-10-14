@@ -143,8 +143,12 @@ final class HealthChecks
                 continue;
             }
             $pct = (int) round(100 * ($total - $free) / $total);
-            $key = $path . ':' . round($total);
-            $parts[$key] = sprintf('%s %d %% (%s free)', $path, $pct, self::bytes((float) $free));
+            // One line per file system: /var on the root file system is not listed twice.
+            $dev = (string) (@stat($path)['dev'] ?? $path);
+            if (isset($parts[$dev])) {
+                continue;
+            }
+            $parts[$dev] = sprintf('%s %d %% (%s free)', $path, $pct, self::bytes((float) $free));
             $worst = max($worst, $pct);
         }
         $msg = implode(', ', array_values($parts));
