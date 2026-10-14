@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../src/services/BucketFiles.php';
 require_once __DIR__ . '/../auth.php';
 requireLogin();
 
@@ -57,6 +58,16 @@ if ($type === 'sent') {
     }
 
     $db->prepare('UPDATE fax_received SET is_read = 1 WHERE id = ?')->execute([$fax_id]);
+}
+
+// In the S3 bucket (#69): streamed through the chat service, after the checks above.
+if (BucketFiles::isRemote($fax['pdf_path'])) {
+    $disposition = ($is_view ? 'inline' : 'attachment') . '; filename="fax_' . $fax_id . '.pdf"';
+    if (!BucketFiles::passthru(BucketFiles::key($fax['pdf_path']), ['Content-Type' => 'application/pdf', 'Content-Disposition' => $disposition])) {
+        http_response_code(404);
+        die(t('api.err_fax_file'));
+    }
+    exit;
 }
 
 $file_path = realpath($fax['pdf_path']);

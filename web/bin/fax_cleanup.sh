@@ -12,7 +12,14 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-CLEANUP] $*" >> "$LOGFILE"
 }
 
-MYSQL_CMD="mysql --defaults-extra-file=/root/.my.cnf -N -s asterisk"
+# Root logs in to MariaDB over its socket (unix_socket); /root/.my.cnf is used
+# when there is one. install.sh never wrote that file, so until 1.20.0 these
+# queries failed silently and nothing was cleaned up or swept.
+if [ -r /root/.my.cnf ]; then
+    MYSQL_CMD="mysql --defaults-extra-file=/root/.my.cnf -N -s asterisk"
+else
+    MYSQL_CMD="mysql -N -s asterisk"
+fi
 
 RETENTION_DAYS=$($MYSQL_CMD -e "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_retention_days' LIMIT 1;" 2>/dev/null)
 if ! [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]]; then RETENTION_DAYS=60; fi
@@ -35,12 +42,17 @@ if [ "$RETENTION_DAYS" -gt 0 ]; then
         OLD_TIFS=$($MYSQL_CMD -e "SELECT tif_path FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND tif_path != '' AND status != 'PENDING';" 2>/dev/null)
         COUNT=$($MYSQL_CMD -e "SELECT COUNT(*) FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND status != 'PENDING';" 2>/dev/null)
 
-        if [ -n "$OLD_FILES" ]; then
-            echo "$OLD_FILES" | while IFS= read -r f; do [ -n "$f" ] && rm -f "$f"; done
-        fi
-        if [ -n "$OLD_TIFS" ]; then
-            echo "$OLD_TIFS" | while IFS= read -r f; do [ -n "$f" ] && rm -f "$f"; done
-        fi
+        # Local files are removed here; files in the S3 bucket ("s3:faxes/…", #69) by fax_to_bucket.php.
+        for LIST in "$OLD_FILES" "$OLD_TIFS"; do
+            [ -n "$LIST" ] || continue
+            echo "$LIST" | while IFS= read -r f; do
+                case "$f" in
+                    '') ;;
+                    s3:*) /usr/local/bin/fax_to_bucket.php --delete "$f" >/dev/null 2>&1 ;;
+                    *) rm -f "$f" ;;
+                esac
+            done
+        done
 
         $MYSQL_CMD -e "DELETE FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND status != 'PENDING';" 2>/dev/null
         log "$TABLE: $COUNT eski kayit silindi (retention=${RETENTION_DAYS}d)"

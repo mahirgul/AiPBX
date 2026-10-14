@@ -79,6 +79,11 @@ $localFiles = (int) ($status['local_files'] ?? 0);
                 <strong><?php echo t('storage.recordings'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('storage.recordings_help'); ?></span>
             </label>
+            <label class="u-check-label-6" style="display: block; margin-top: 4px;">
+                <input type="checkbox" name="faxes_storage" value="s3" class="u-accent" <?php echo ($settings['faxes_storage'] ?? 'local') === 's3' ? 'checked' : ''; ?>>
+                <strong><?php echo t('storage.faxes'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('storage.faxes_help'); ?></span>
+            </label>
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">

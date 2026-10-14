@@ -65,7 +65,7 @@
                             </td>
                             <td class="text-right">
                                 <div class="table-actions-cell">
-                                    <?php if ($fax['pdf_path'] && file_exists($fax['pdf_path'])): ?>
+                                    <?php if ($fax['pdf_path'] && (str_starts_with($fax['pdf_path'], 's3:') || file_exists($fax['pdf_path']))): ?>
                                         <button class="btn btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&type=sent&view=1')" title="<?php echo t('fax_sent.view_tooltip'); ?>">
                                             <i class="fas fa-eye"></i>
                                         </button>
