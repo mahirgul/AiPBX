@@ -16,6 +16,7 @@ welcome there.
 | 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
 | 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](network-services.md) | | medium |
+| 11 | [Visual IVR editor](#11-visual-ivr-editor) (later) | [#16](https://github.com/mahirgul/AiPBX/issues/16) | large |
 
 Done recently: website call widget with the call-back form and a WordPress plugin ([Website call widget](web-widgets.md)); phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
@@ -355,3 +356,9 @@ address (option 66), and TFTP serves the files of phones that need it.
 **Order.** Item 9 (provisioning over HTTPS) first, because it is useful on its own with the
 company's existing DHCP server; item 10 then makes the start automatic.
 
+## 11. Visual IVR editor
+
+Planned for later. Since 1.8.0 each IVR has a read-only **Call flow** view (the whole path as a
+tree: keys, no input, invalid key, sub-menus, time conditions and announcements). The next step
+is editing on that view: dragging destinations onto keys, adding sub-menus and announcements in
+place, and seeing the changes before Apply. Until then keys are edited in the IVR dialogs.
