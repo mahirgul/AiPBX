@@ -1,7 +1,9 @@
 package com.mhrgl.aipbx.ui
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.mhrgl.aipbx.R
@@ -9,10 +11,20 @@ import com.mhrgl.aipbx.databinding.ItemCallHistoryBinding
 import com.mhrgl.aipbx.model.CallRecord
 
 class CallHistoryAdapter(
-    private val onCallClick: (String, String?) -> Unit
+    private val onCallClick: (String, String?) -> Unit,
+    private val onChatClick: (String, String?) -> Unit
 ) : RecyclerView.Adapter<CallHistoryAdapter.ViewHolder>() {
 
     private val items = mutableListOf<CallRecord>()
+
+    /** Extensions of the company directory: only these can be chatted with (not external numbers). */
+    var chatExtensions: Set<String> = emptySet()
+        set(value) {
+            if (field != value) {
+                field = value
+                notifyDataSetChanged()
+            }
+        }
 
     fun submitList(newItems: List<CallRecord>) {
         items.clear()
@@ -114,17 +126,28 @@ class CallHistoryAdapter(
             }
 
             val targetCallParty = partyStr.ifEmpty { partyNameStr }
+            val partyName = partyNameStr.ifEmpty { null }
+            val canChat = partyStr in chatExtensions
+            binding.btnChatHistory.visibility = if (canChat) View.VISIBLE else View.GONE
+            binding.btnChatHistory.setOnClickListener { onChatClick(partyStr, partyName) }
             binding.btnCallDirect.isEnabled = targetCallParty.isNotEmpty()
             binding.btnCallDirect.setOnClickListener {
                 if (targetCallParty.isNotEmpty()) {
-                    onCallClick(targetCallParty, partyNameStr.ifEmpty { null })
+                    onCallClick(targetCallParty, partyName)
                 }
             }
 
+            // A tap on the row does not call: it asks what to do (as in Contacts).
             itemView.setOnClickListener {
-                if (targetCallParty.isNotEmpty()) {
-                    onCallClick(targetCallParty, partyNameStr.ifEmpty { null })
-                }
+                if (targetCallParty.isEmpty()) return@setOnClickListener
+                val labels = mutableListOf(context.getString(R.string.ui_call))
+                if (canChat) labels.add(context.getString(R.string.ui_chat))
+                AlertDialog.Builder(context)
+                    .setTitle(displayName)
+                    .setItems(labels.toTypedArray()) { _, which ->
+                        if (which == 0) onCallClick(targetCallParty, partyName) else onChatClick(partyStr, partyName)
+                    }
+                    .show()
             }
         }
     }

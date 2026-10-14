@@ -638,9 +638,13 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     // ================= TAB 2: CALL HISTORY =================
 
     private fun setupHistoryTab() {
-        historyAdapter = CallHistoryAdapter { targetNumber, partyName ->
-            initiateCall(targetNumber, partyName)
-        }
+        historyAdapter = CallHistoryAdapter(
+            onCallClick = { targetNumber, partyName -> initiateCall(targetNumber, partyName) },
+            onChatClick = { targetExt, partyName ->
+                switchTab(Tab.CHAT)
+                openChatRoom(0, targetExt, partyName ?: targetExt, false)
+            }
+        )
         binding.rvCallHistory.layoutManager = LinearLayoutManager(this)
         binding.rvCallHistory.adapter = historyAdapter
 
@@ -734,6 +738,25 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
+    /** Which history rows get the chat button: colleagues from the company directory, loaded once if needed. */
+    private fun updateHistoryChatExtensions() {
+        val own = prefs.extension ?: ""
+        fun apply() {
+            historyAdapter.chatExtensions = corporateContactsList.map { it.extension }.filter { it.isNotEmpty() && it != own }.toSet()
+        }
+        if (corporateContactsList.isNotEmpty()) {
+            apply()
+            return
+        }
+        val token = prefs.token ?: return
+        lifecycleScope.launch {
+            apiClient.getContacts(prefs.serverUrl, token).onSuccess { response ->
+                if (corporateContactsList.isEmpty()) corporateContactsList = response.contacts ?: emptyList()
+                apply()
+            }
+        }
+    }
+
     private fun loadCallHistory(filter: String) {
         val token = prefs.token ?: return
         val baseUrl = prefs.serverUrl
@@ -748,6 +771,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             result.onSuccess { response ->
                 val list = response.calls ?: emptyList()
                 historyAdapter.submitList(list)
+                updateHistoryChatExtensions()
                 // Hiding needs server 1.5.3+ (call_key); the filter view may be empty, so keep it once known.
                 if (list.any { !it.callKey.isNullOrEmpty() }) {
                     binding.btnClearHistory.visibility = View.VISIBLE
@@ -876,6 +900,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
             result.onSuccess { response ->
                 corporateContactsList = response.contacts ?: emptyList()
+                if (::historyAdapter.isInitialized) updateHistoryChatExtensions()
                 filterContacts(binding.etContactSearch.text?.toString() ?: "")
             }.onFailure { err ->
                 Toast.makeText(this@DialerActivity, getString(R.string.err_contacts_load, err.message), Toast.LENGTH_SHORT).show()
