@@ -15,6 +15,9 @@ $auth_favicon = getSystemSetting('site_favicon_url', '');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $auth_title !== '' ? htmlspecialchars($auth_title) . ' - ' : ''; ?><?php echo htmlspecialchars($auth_site_title); ?></title>
     <link rel="shortcut icon" href="<?php echo $auth_favicon !== '' ? htmlspecialchars($auth_favicon) : '/favicon.ico'; ?>">
+    <!-- PWA: installing from the sign-in page gets the same name and icons -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
     <link rel="stylesheet" href="<?php echo asset('/assets/css/variables.css'); ?>">
     <?php renderBrandColorOverrideCSS(); ?>
     <link rel="stylesheet" href="<?php echo asset('/assets/css/layout.css'); ?>">
