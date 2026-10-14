@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Δεν ήταν δυνατή η φόρτωση του φωνητικού ταχυδρομείου</string>
     <string name="vm_delete_confirm">Διαγραφή αυτού του φωνητικού μηνύματος;</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Βιντεοκλήση</string>
+    <string name="btn_answer_video">Βίντεο</string>
+    <string name="btn_camera">Κάμερα</string>
+    <string name="btn_switch_camera">Αλλαγή κάμερας</string>
+    <string name="err_camera_permission_video">Χωρίς άδεια κάμερας: η κλήση συνεχίζεται μόνο με ήχο.</string>
+    <string name="err_camera_unavailable">Η κάμερα δεν είναι διαθέσιμη: η κλήση συνεχίζεται μόνο με ήχο.</string>
+    <string name="contacts_extensions_listed">εσωτερικά στη λίστα</string>
 </resources>

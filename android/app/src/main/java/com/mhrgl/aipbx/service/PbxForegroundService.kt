@@ -382,6 +382,10 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         listeners.forEach { it.onCallStatusChanged(status) }
     }
 
+    override fun onVideoActiveChanged(active: Boolean) {
+        listeners.forEach { it.onVideoActiveChanged(active) }
+    }
+
     override fun onIncomingCall(callerName: String, callerNumber: String) {
         val cleanNumber = callerNumber.replace(Regex("-(mob-webrtc|webrtc|sip)$"), "")
         val cleanName = if (callerName == callerNumber) cleanNumber else callerName.replace(Regex("-(mob-webrtc|webrtc|sip)$"), "")

@@ -6,6 +6,7 @@ import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
@@ -26,6 +27,13 @@ interface SipEngineListener {
     fun onConnectionStatusChanged(status: ConnectionStatus)
     fun onCallStatusChanged(status: CallStatus)
     fun onIncomingCall(callerName: String, callerNumber: String)
+    /** A video call shows pictures (own camera or the other side's) or stopped. */
+    fun onVideoActiveChanged(active: Boolean) {}
+}
+
+/** Video limits from the server (Admin -> Asterisk -> Video). */
+data class VideoLimits(val width: Int, val height: Int, val fps: Int) {
+    fun toJs(): String = "{w:$width,h:$height,fps:$fps}"
 }
 
 class SipWebRtcEngine(private val context: Context) {
@@ -53,6 +61,16 @@ class SipWebRtcEngine(private val context: Context) {
         private set
     @Volatile
     var activeCallerNumber: String = ""
+        private set
+
+    /** The ringing incoming call offers video. */
+    @Volatile
+    var incomingHasVideo: Boolean = false
+        private set
+
+    /** The call shows video at the moment (the call screen then holds the WebView). */
+    @Volatile
+    var isVideoActive: Boolean = false
         private set
 
     init {
@@ -219,7 +237,8 @@ class SipWebRtcEngine(private val context: Context) {
         turnUrl: String? = null,
         turnUser: String? = null,
         turnPass: String? = null,
-        displayName: String? = null
+        displayName: String? = null,
+        video: VideoLimits? = null
     ) {
         activeCallerName = if (!displayName.isNullOrEmpty()) displayName else targetNumber
         activeCallerNumber = targetNumber
@@ -230,14 +249,45 @@ class SipWebRtcEngine(private val context: Context) {
             val script = "makeCall(${JSONObject.quote(targetNumber)}, ${JSONObject.quote(domain)}, " +
                     "${turnUrl?.let { JSONObject.quote(it) } ?: "null"}, " +
                     "${turnUser?.let { JSONObject.quote(it) } ?: "null"}, " +
-                    "${turnPass?.let { JSONObject.quote(it) } ?: "null"});"
+                    "${turnPass?.let { JSONObject.quote(it) } ?: "null"}, ${video?.toJs() ?: "null"});"
             webView?.evaluateJavascript(script, null)
         }
     }
 
-    fun answerCall() {
+    fun answerCall(video: VideoLimits? = null) {
         handler.post {
-            webView?.evaluateJavascript("answerCall();", null)
+            webView?.evaluateJavascript("answerCall(${video?.toJs() ?: "null"});", null)
+        }
+    }
+
+    fun toggleCamera(enabled: Boolean) {
+        handler.post { webView?.evaluateJavascript("toggleCamera($enabled);", null) }
+    }
+
+    fun switchCamera() {
+        handler.post { webView?.evaluateJavascript("switchCamera();", null) }
+    }
+
+    /**
+     * Video calls: the engine's WebView (normally in no window) is placed in
+     * the call screen's [container] so its video elements show; the call
+     * and the SIP connection keep running in it unchanged.
+     */
+    fun attachVideoView(container: ViewGroup) {
+        handler.post {
+            val wv = webView ?: return@post
+            if (wv.parent === container) return@post
+            (wv.parent as? ViewGroup)?.removeView(wv)
+            wv.setBackgroundColor(android.graphics.Color.BLACK)
+            container.addView(wv, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        }
+    }
+
+    /** Back to no window (call ended or the call screen closes). */
+    fun detachVideoView(container: ViewGroup) {
+        handler.post {
+            val wv = webView ?: return@post
+            if (wv.parent === container) container.removeView(wv)
         }
     }
 
@@ -350,6 +400,24 @@ class SipWebRtcEngine(private val context: Context) {
                 Log.d(TAG, "Socket connected but SIP registering/not registered yet. Triggering reRegister() without dropping status.")
                 reRegister()
             }
+        }
+
+        @JavascriptInterface
+        fun onCameraUnavailable() {
+            handler.post {
+                android.widget.Toast.makeText(context, com.mhrgl.aipbx.util.L10n.str(com.mhrgl.aipbx.R.string.err_camera_unavailable), android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+
+        @JavascriptInterface
+        fun setIncomingVideo(hasVideo: Boolean) {
+            incomingHasVideo = hasVideo
+        }
+
+        @JavascriptInterface
+        fun onVideoActive(active: Boolean) {
+            isVideoActive = active
+            handler.post { listener?.onVideoActiveChanged(active) }
         }
 
         @JavascriptInterface

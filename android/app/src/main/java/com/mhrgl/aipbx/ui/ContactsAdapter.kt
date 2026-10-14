@@ -19,11 +19,15 @@ import com.mhrgl.aipbx.util.SearchUtils
  */
 class ContactsAdapter(
     private val onCallClick: (String, String) -> Unit,
-    private val onChatClick: ((String, String) -> Unit)? = null
+    private val onChatClick: ((String, String) -> Unit)? = null,
+    private val onVideoCallClick: ((String, String) -> Unit)? = null
 ) : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
     private val allItems = mutableListOf<ContactItem>()
     private val filteredItems = mutableListOf<ContactItem>()
+
+    /** Video calls are on for this user (the dialog then offers "Video call"). */
+    var videoEnabled = false
 
     fun submitList(newItems: List<ContactItem>) {
         allItems.clear()
@@ -131,13 +135,15 @@ class ContactsAdapter(
 
             // A tap on the row does not call: it asks what to do.
             itemView.setOnClickListener {
-                val labels = mutableListOf(context.getString(R.string.ui_call))
-                if (chat != null) labels.add(context.getString(R.string.ui_chat))
+                val actions = mutableListOf<Pair<String, () -> Unit>>(
+                    context.getString(R.string.ui_call) to { onCallClick(item.extension, item.name) }
+                )
+                val video = onVideoCallClick.takeIf { videoEnabled && !isDevice }
+                if (video != null) actions.add(context.getString(R.string.ui_video_call) to { video(item.extension, item.name) })
+                if (chat != null) actions.add(context.getString(R.string.ui_chat) to { chat(item.extension, item.name) })
                 AlertDialog.Builder(context)
                     .setTitle(item.name.ifEmpty { item.extension })
-                    .setItems(labels.toTypedArray()) { _, which ->
-                        if (which == 0) onCallClick(item.extension, item.name) else chat?.invoke(item.extension, item.name)
-                    }
+                    .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
                     .show()
             }
         }

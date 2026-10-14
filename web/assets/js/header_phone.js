@@ -302,12 +302,16 @@ function initHeaderWebRTCPhone() {
 // session.on("peerconnection")) — see the note in initHeaderJsSIPPhone.
 function attachPeerConnectionHandlers(pc) {
     pc.ontrack = (event) => {
-        const audioEl = document.getElementById("globalRemoteAudio");
-        if (!audioEl) return;
         // event.streams[0] can be empty in some SDP/negotiation cases; then a
         // MediaStream is built from the track by hand (so the browser can
         // still play the audio).
         const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
+        if (event.track.kind === "video") {
+            headerAttachRemoteVideo(event.track, stream);
+            return;
+        }
+        const audioEl = document.getElementById("globalRemoteAudio");
+        if (!audioEl) return;
         audioEl.srcObject = stream;
         audioEl.play().catch((err) => console.warn("Remote audio playback failed:", err));
     };
@@ -354,7 +358,11 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
             password: pass,
             display_name: __('js.phone.user_prefix') + ext,
             register: true,
-            session_timers: false,
+            // SIP session timers (as in the mobile apps): a call whose browser
+            // went away ends on the PBX within a few minutes, also when the
+            // RTP timeout is off (video calls).
+            session_timers: true,
+            session_timers_refresh_method: "update",
             connection_recovery_min_interval: 2,
             connection_recovery_max_interval: 30
         };
@@ -379,6 +387,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
             headerSipRegistered = true;
             console.log("JsSIP: Registered successfully as " + webrtcUsername);
             updateHeaderPhoneStatus("online", "var(--success)");
+            const videoBtn = document.getElementById("header-video-call-btn");
+            if (videoBtn) videoBtn.style.display = headerVideoAllowed() ? "" : "none";
             syncAgentAutoLogin();
         });
 
@@ -409,10 +419,18 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 playRingtone();
                 showDesktopNotification(remoteId);
                 startTitleBlink(remoteId);
-                showIncomingCallBanner(remoteId);
+                const isVideo = headerVideoAllowed() && headerOfferHasVideo(data.request);
+                headerIncomingVideo = isVideo;
+                headerVideoPeer = remoteId;
+                const answerVideoBtn = document.getElementById("header-answer-video-btn");
+                if (answerVideoBtn) answerVideoBtn.style.display = isVideo ? "" : "none";
+                showIncomingCallBanner(remoteId, isVideo);
             } else {
                 updateHeaderPhoneStatus("calling", "var(--warning)");
             }
+
+            // Local media is ready (outgoing: before the INVITE): show our own camera.
+            session.on("connecting", () => headerUpdateLocalPreview());
 
             session.on("progress", () => {
                 if (session.direction === "outgoing") {
@@ -429,6 +447,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 stopTitleBlink();
                 hideIncomingCallBanner();
                 updateHeaderPhoneStatus("in_call", "var(--success)");
+                headerUpdateLocalPreview();
                 if (window.notify) window.notify.success(__('js.phone.answered'));
             });
 
@@ -440,6 +459,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 stopTitleBlink();
                 hideIncomingCallBanner();
                 updateHeaderPhoneStatus("in_call", "var(--success)");
+                headerUpdateLocalPreview();
             });
 
             session.on("ended", () => {
@@ -492,7 +512,19 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
 // 4. CALL CONTROL ACTIONS (ANSWER, REJECT, HANGUP, MAKE CALL)
 // =========================================================================
 
-function headerPhoneAnswerCall() {
+function headerPhoneAnswerCall(withVideo) {
+    if (withVideo) {
+        // No camera: answer with audio and say why.
+        headerCameraAvailable().then((ok) => {
+            if (!ok && window.notify) window.notify.warning(__("js.phone.no_camera"));
+            headerPhoneAnswerCallNow(ok);
+        });
+        return;
+    }
+    headerPhoneAnswerCallNow(false);
+}
+
+function headerPhoneAnswerCallNow(withVideo) {
     const remoteAudio = document.getElementById("globalRemoteAudio");
     if (remoteAudio) {
         remoteAudio.play().catch(e => {});
@@ -509,8 +541,9 @@ function headerPhoneAnswerCall() {
     clearDesktopNotification();
 
     const options = {
-        mediaConstraints: { audio: getPreferredMicConstraint(), video: false },
-        pcConfig: { iceServers: HEADER_PHONE_ICE_SERVERS }
+        mediaConstraints: { audio: getPreferredMicConstraint(), video: withVideo ? headerVideoConstraint() : false },
+        pcConfig: { iceServers: HEADER_PHONE_ICE_SERVERS },
+        sessionTimersExpires: 120
     };
 
     try {
@@ -598,8 +631,9 @@ function headerPhoneHangup() {
     headerPhoneResetUI();
 }
 
-function headerPhoneMakeCall() {
+function headerPhoneMakeCall(withVideo) {
     if (headerCallInProgress) return;
+    withVideo = !!withVideo && headerVideoAllowed();
 
     const display = document.getElementById("header-phone-display");
     const input = document.getElementById("header-quick-dial-input");
@@ -623,8 +657,9 @@ function headerPhoneMakeCall() {
         updateHeaderPhoneStatus("calling", "var(--warning)");
         try {
             const options = {
-                mediaConstraints: { audio: getPreferredMicConstraint(), video: false },
+                mediaConstraints: { audio: getPreferredMicConstraint(), video: withVideo ? headerVideoConstraint() : false },
                 pcConfig: { iceServers: HEADER_PHONE_ICE_SERVERS },
+                sessionTimersExpires: 120,
                 // For outgoing calls JsSIP creates the RTCPeerConnection
                 // synchronously inside call() and fires 'peerconnection' at
                 // once, before session.on("peerconnection", ...) could be
@@ -635,6 +670,8 @@ function headerPhoneMakeCall() {
                 }
             };
             headerJsSipSession = headerJsSipUA.call(targetUri, options);
+            headerVideoPeer = target;
+            if (withVideo) headerShowVideoPanel(target);
             if (window.notify) window.notify.success(__("js.phone.webrtc_calling", target));
         } catch (err) {
             console.error("JsSIP Call error, falling back to AMI:", err);
@@ -976,7 +1013,7 @@ function stopTitleBlink() {
     }
 }
 
-function showIncomingCallBanner(caller) {
+function showIncomingCallBanner(caller, isVideo) {
     let banner = document.getElementById("globalIncomingCallBanner");
     if (!banner) {
         banner = document.createElement("div");
@@ -991,16 +1028,19 @@ function showIncomingCallBanner(caller) {
                 <i class="fas fa-phone-volume"></i>
             </div>
             <div style="flex: 1; overflow: hidden;">
-                <div style="font-size: 11px; font-weight: 700; color: var(--warning, #f59e0b); text-transform: uppercase; letter-spacing: 0.5px;">${__("js.phone.st_incoming")}</div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--warning, #f59e0b); text-transform: uppercase; letter-spacing: 0.5px;">${isVideo ? '<i class="fas fa-video"></i> ' + __("js.phone.incoming_video") : __("js.phone.st_incoming")}</div>
                 <div style="font-size: 16px; font-weight: 700; color: var(--text-main, #1e293b); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${safeCaller}</div>
             </div>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 4px;">
+            ${isVideo ? `<button type="button" class="btn btn-primary" onclick="headerPhoneAnswerCall(true)" style="flex: 1; padding: 9px 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-video"></i> ${__("js.phone.answer_video")}
+            </button>` : ""}
             <button type="button" class="btn btn-success" onclick="headerPhoneAnswerCall()" style="flex: 1; padding: 9px 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <i class="fas fa-phone"></i> Cevapla
+                <i class="fas fa-phone"></i> ${__("js.phone.answer")}
             </button>
             <button type="button" class="btn btn-danger" onclick="headerPhoneRejectCall()" style="flex: 1; padding: 9px 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <i class="fas fa-phone-slash"></i> Reddet
+                <i class="fas fa-phone-slash"></i> ${__("js.phone.reject")}
             </button>
         </div>
     `;
@@ -1109,6 +1149,10 @@ function updateHeaderPhoneStatus(state, color, detail) {
 }
 
 function headerPhoneResetUI() {
+    headerHideVideo();
+    headerIncomingVideo = false;
+    const answerVideoBtn = document.getElementById("header-answer-video-btn");
+    if (answerVideoBtn) answerVideoBtn.style.display = "none";
     headerIsOnHold = false;
     _headerCallRinging = false;
     stopRingtone();
@@ -1119,6 +1163,148 @@ function headerPhoneResetUI() {
     updateHoldButtonUI(false);
     updateHeaderPhoneStatus(headerSipRegistered ? "online" : "ready", headerSipRegistered ? "var(--success)" : "var(--text-muted)");
     headerPhoneClear();
+}
+
+// =========================================================================
+// 6b. VIDEO CALLS (Admin -> Asterisk -> Video; window.VIDEO_CALLS)
+// =========================================================================
+
+// The ringing call offers video (set when it comes in).
+var headerIncomingVideo = false;
+// Name or number shown on the video window.
+var headerVideoPeer = "";
+
+function headerVideoAllowed() {
+    return !!(window.VIDEO_CALLS && window.VIDEO_CALLS.enabled) && (localStorage.getItem("phone_mode") || "webrtc") !== "sip";
+}
+
+// getUserMedia limits from the admin settings.
+function headerVideoConstraint() {
+    const v = window.VIDEO_CALLS || {};
+    const parts = String(v.resolution || "1280x720").split("x").map(Number);
+    const fps = Number(v.fps) || 24;
+    return { width: { ideal: parts[0], max: parts[0] }, height: { ideal: parts[1], max: parts[1] }, frameRate: { ideal: fps, max: fps } };
+}
+
+// The offer of an incoming call (newRTCSession's request) has an active video stream.
+function headerOfferHasVideo(request) {
+    const body = request ? String(request.body || "") : "";
+    return /(^|\n)m=video [1-9]/.test(body);
+}
+
+// The camera can really be opened (not only present: it may be busy or refused).
+function headerCameraAvailable() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve(false);
+    return navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            stream.getTracks().forEach((t) => t.stop());
+            return true;
+        })
+        .catch(() => false);
+}
+
+// Floating window: the other side's picture, our own camera small in the corner.
+function headerVideoPanel() {
+    let panel = document.getElementById("headerVideoPanel");
+    if (panel) return panel;
+    panel = document.createElement("div");
+    panel.id = "headerVideoPanel";
+    panel.style.cssText = "position: fixed; right: 20px; bottom: 20px; z-index: 999998; width: min(420px, calc(100vw - 32px)); aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: none;";
+    panel.innerHTML = `
+        <video id="headerRemoteVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain; background: #000;"></video>
+        <video id="headerLocalVideo" autoplay playsinline muted style="position: absolute; right: 8px; bottom: 8px; width: 28%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.7); background: #111; transform: scaleX(-1); display: none;"></video>
+        <div id="headerVideoName" style="position: absolute; left: 10px; top: 8px; color: #fff; font-size: 13px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8);"></div>
+        <button type="button" onclick="headerVideoFullscreen()" title="${__("js.phone.fullscreen")}" style="position: absolute; right: 8px; top: 8px; background: rgba(0,0,0,0.45); color: #fff; border: 0; border-radius: 6px; padding: 4px 8px; cursor: pointer;">
+            <i class="fas fa-expand"></i>
+        </button>`;
+    document.body.appendChild(panel);
+    return panel;
+}
+
+function headerShowVideoPanel(name) {
+    const panel = headerVideoPanel();
+    const label = document.getElementById("headerVideoName");
+    if (label && name) label.textContent = name;
+    panel.style.display = "block";
+    headerUpdateLocalPreview();
+}
+
+// A video track shows only once pictures arrive (a rejected video stream
+// gives a track that never unmutes, and no black window).
+function headerAttachRemoteVideo(track, stream) {
+    const show = () => {
+        headerShowVideoPanel(headerVideoPeer);
+        const el = document.getElementById("headerRemoteVideo");
+        if (el) {
+            el.srcObject = stream;
+            el.play().catch(() => {});
+        }
+    };
+    if (track.muted) track.addEventListener("unmute", show, { once: true });
+    else show();
+}
+
+function headerLocalVideoSender() {
+    const pc = headerJsSipSession && headerJsSipSession.connection;
+    if (!pc || typeof pc.getSenders !== "function") return null;
+    return pc.getSenders().find((s) => s.track && s.track.kind === "video") || null;
+}
+
+function headerUpdateLocalPreview() {
+    const sender = headerLocalVideoSender();
+    const btn = document.getElementById("header-camera-btn");
+    if (btn) btn.style.display = sender ? "" : "none";
+    if (!sender) return;
+    headerVideoPanel().style.display = "block";
+    const el = document.getElementById("headerLocalVideo");
+    if (el) {
+        el.srcObject = new MediaStream([sender.track]);
+        el.style.display = "block";
+        el.play().catch(() => {});
+    }
+}
+
+// Camera off/on during the call: the stream stays, the other side sees black.
+function headerPhoneToggleCamera() {
+    const sender = headerLocalVideoSender();
+    if (!sender) return;
+    sender.track.enabled = !sender.track.enabled;
+    const btn = document.getElementById("header-camera-btn");
+    if (btn) btn.innerHTML = sender.track.enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+    const el = document.getElementById("headerLocalVideo");
+    if (el) el.style.opacity = sender.track.enabled ? "1" : "0.25";
+}
+
+function headerVideoFullscreen() {
+    const panel = document.getElementById("headerVideoPanel");
+    if (!panel) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (panel.requestFullscreen) panel.requestFullscreen().catch(() => {});
+}
+
+function headerHideVideo() {
+    const panel = document.getElementById("headerVideoPanel");
+    if (panel) {
+        if (document.fullscreenElement === panel) document.exitFullscreen().catch(() => {});
+        panel.style.display = "none";
+        ["headerRemoteVideo", "headerLocalVideo"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.srcObject = null;
+                if (id === "headerLocalVideo") {
+                    el.style.display = "none";
+                    el.style.opacity = "1";
+                }
+            }
+        });
+        const label = document.getElementById("headerVideoName");
+        if (label) label.textContent = "";
+    }
+    const btn = document.getElementById("header-camera-btn");
+    if (btn) {
+        btn.style.display = "none";
+        btn.innerHTML = '<i class="fas fa-video"></i>';
+    }
 }
 
 // =========================================================================
@@ -1217,7 +1403,7 @@ function highlightHeaderAutocompleteItem(items) {
     });
 }
 
-function headerQuickDialCall() {
+function headerQuickDialCall(withVideo) {
     const input = document.getElementById("header-quick-dial-input");
     const target = input ? input.value.trim() : "";
     if (!target) {
@@ -1226,7 +1412,14 @@ function headerQuickDialCall() {
     }
     const display = document.getElementById("header-phone-display");
     if (display) display.value = target;
-    headerPhoneMakeCall();
+    if (withVideo !== true) {
+        headerPhoneMakeCall(false);
+        return;
+    }
+    headerCameraAvailable().then((ok) => {
+        if (!ok && window.notify) window.notify.warning(__("js.phone.no_camera"));
+        headerPhoneMakeCall(ok);
+    });
 }
 
 function toggleUserProfileDropdown(e) {

@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "notes": {
-    "en-US": "Call history: tapping a call now asks whether to call or chat, as in Contacts. Colleagues in the list also get a chat button next to the call button.\nNew voicemail: a notification with the caller and length (1.0.63).",
-    "tr-TR": "Arama geçmişi: bir aramaya dokununca artık Kişiler'deki gibi arama mı chat mi diye soruluyor. Listedeki iş arkadaşlarının yanında arama düğmesinin yanına chat düğmesi de geldi.\nYeni sesli mesaj: arayan ve süreyle bildirim (1.0.63)."
+    "en-US": "Video calls: tap a colleague in Contacts or History and choose Video call; an incoming video call can be answered with video. During the call: camera on/off and front/back camera. Needs a PBX with video calls switched on (server 1.22).\nThe contact count is shown in your language.",
+    "tr-TR": "Görüntülü arama: Kişiler veya Geçmiş'te bir iş arkadaşına dokunup Görüntülü ara'yı seçin; gelen görüntülü arama görüntülü cevaplanabilir. Görüşmede kamera aç/kapat ve ön/arka kamera. Santralde görüntülü aramanın açık olması gerekir (sunucu 1.22).\nKişi sayısı artık sizin dilinizde."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
