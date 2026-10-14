@@ -65,8 +65,6 @@
     <string name="notif_channel_service">PBX-baggrundsforbindelse</string>
     <string name="notif_incoming_call_desc">Lokalnummer: %s</string>
     <string name="notif_incoming_call_title">INDGÅENDE OPKALD: %s</string>
-    <string name="notif_service_text">Lokalnummer: %1$s (%2$s) - venter på opkald</string>
-    <string name="notif_service_title">PBX-forbindelse aktiv</string>
     <string name="password_hint">Adgangskode</string>
     <string name="server_setup_subtitle">Indtast adressen på den AI PBX-server, du vil forbinde til.</string>
     <string name="server_setup_title">Serveradresse</string>

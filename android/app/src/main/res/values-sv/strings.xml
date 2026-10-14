@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Bakgrundsanslutning till växeln</string>
     <string name="notif_incoming_call_desc">Anknytning: %s</string>
     <string name="notif_incoming_call_title">INKOMMANDE SAMTAL: %s</string>
-    <string name="notif_service_text">Anknytning: %1$s (%2$s) - väntar på samtal</string>
-    <string name="notif_service_title">Växelanslutning aktiv</string>
     <string name="password_hint">Lösenord</string>
     <string name="server_setup_subtitle">Ange adressen till den AI PBX-server du vill ansluta till.</string>
     <string name="server_setup_title">Serveradress</string>

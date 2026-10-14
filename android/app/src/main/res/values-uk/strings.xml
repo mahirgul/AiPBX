@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Фонове з\'єднання з АТС</string>
     <string name="notif_incoming_call_desc">Внутрішній номер: %s</string>
     <string name="notif_incoming_call_title">ВХІДНИЙ ДЗВІНОК: %s</string>
-    <string name="notif_service_text">Внутрішній номер: %1$s (%2$s) - очікування дзвінків</string>
-    <string name="notif_service_title">З\'єднання з АТС активне</string>
     <string name="password_hint">Пароль</string>
     <string name="server_setup_subtitle">Введіть адресу сервера AI PBX, до якого потрібно підключитися.</string>
     <string name="server_setup_title">Адреса сервера</string>

@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Vaihteen taustayhteys</string>
     <string name="notif_incoming_call_desc">Alanumero: %s</string>
     <string name="notif_incoming_call_title">SAAPUVA PUHELU: %s</string>
-    <string name="notif_service_text">Alanumero: %1$s (%2$s) - odotetaan puheluita</string>
-    <string name="notif_service_title">Vaihdeyhteys aktiivinen</string>
     <string name="password_hint">Salasana</string>
     <string name="server_setup_subtitle">Syötä sen AI PBX -palvelimen osoite, johon haluat yhdistää.</string>
     <string name="server_setup_title">Palvelimen osoite</string>

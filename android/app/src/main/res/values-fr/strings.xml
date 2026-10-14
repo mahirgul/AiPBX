@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Connexion PBX en arrière-plan</string>
     <string name="notif_incoming_call_desc">Poste : %s</string>
     <string name="notif_incoming_call_title">APPEL ENTRANT : %s</string>
-    <string name="notif_service_text">Poste : %1$s (%2$s) - en attente d\'appels</string>
-    <string name="notif_service_title">Connexion PBX active</string>
     <string name="password_hint">Mot de passe</string>
     <string name="server_setup_subtitle">Saisissez l\'adresse du serveur AI PBX auquel vous souhaitez vous connecter.</string>
     <string name="server_setup_title">Adresse du serveur</string>

@@ -615,13 +615,14 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                 }
             }
             else -> {
-                val statusText = when (status) {
-                    ConnectionStatus.CONNECTED -> getString(R.string.status_connected)
-                    ConnectionStatus.CONNECTING -> getString(R.string.status_connecting)
-                    ConnectionStatus.DISCONNECTED -> getString(R.string.status_disconnected)
+                // Short on purpose: "AiPBX · 1000 ✅" — the mark says whether calls can come in.
+                val mark = when (status) {
+                    ConnectionStatus.CONNECTED -> "✅"
+                    ConnectionStatus.CONNECTING -> "\uD83D\uDFE1" // yellow circle
+                    ConnectionStatus.DISCONNECTED -> "\uD83D\uDD34" // red circle
                 }
-                title = getString(R.string.notif_service_title)
-                content = getString(R.string.notif_service_text, ext, statusText)
+                title = "${getString(R.string.app_name)} · $ext $mark"
+                content = ""
                 targetIntent = Intent(this, DialerActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 }
@@ -638,11 +639,17 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID_SERVICE)
             .setContentTitle(title)
-            .setContentText(content)
+            .setContentText(content.ifEmpty { null })
             .setSmallIcon(R.drawable.ic_phone)
             .setContentIntent(pendingOpen)
             .setOngoing(true)
             .setCategory(if (isCallActive) NotificationCompat.CATEGORY_CALL else NotificationCompat.CATEGORY_SERVICE)
+            // Accent of the icon: green while connected, amber while connecting, red when cut off.
+            .setColor(when {
+                isCallActive || status == ConnectionStatus.CONNECTED -> 0xFF16A34A.toInt()
+                status == ConnectionStatus.CONNECTING -> 0xFFD97706.toInt()
+                else -> 0xFFDC2626.toInt()
+            })
 
         if (isCallActive) {
             val declineIntent = Intent(this, PbxForegroundService::class.java).apply {

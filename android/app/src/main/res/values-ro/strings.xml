@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Conexiune PBX în fundal</string>
     <string name="notif_incoming_call_desc">Interior: %s</string>
     <string name="notif_incoming_call_title">APEL PRIMIT: %s</string>
-    <string name="notif_service_text">Interior: %1$s (%2$s) - se așteaptă apeluri</string>
-    <string name="notif_service_title">Conexiune PBX activă</string>
     <string name="password_hint">Parolă</string>
     <string name="server_setup_subtitle">Introduceți adresa serverului AI PBX la care doriți să vă conectați.</string>
     <string name="server_setup_title">Adresa serverului</string>

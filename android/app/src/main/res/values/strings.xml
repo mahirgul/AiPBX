@@ -66,8 +66,6 @@
     <string name="notif_channel_service">PBX Background Connection</string>
     <string name="notif_incoming_call_desc">Extension: %s</string>
     <string name="notif_incoming_call_title">INCOMING CALL: %s</string>
-    <string name="notif_service_text">Extension: %1$s (%2$s) - waiting for calls</string>
-    <string name="notif_service_title">PBX Connection Active</string>
     <string name="password_hint">Password</string>
     <string name="privacy_policy_url" translatable="false">https://www.mhrgl.com/privacy</string>
     <string name="server_setup_subtitle">Enter the address of the AI PBX server you want to connect to.</string>
