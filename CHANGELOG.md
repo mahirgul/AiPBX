@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.23.0
+
+- **Routing by speech** (*AI → Applications*, new type): a switchboard that listens.
+  "Hello, which department would you like to speak to?" — the caller answers in
+  their own words and is put through. For each destination: a name, keywords, two
+  or three sentences callers would say, and the target. When the caller is not
+  understood, they are asked again and then sent to the application's destination
+  (the keypad IVR or the operator). See
+  [AI applications → Routing by speech](docs/ai-apps.md#routing-by-speech).
+- **Understanding** of voice requests and routing, per application:
+  - *Keywords + local sentence meaning* (default): with the new small local model
+    **multilingual-e5-small** (*AI → Local models*, 130 MB, ~3 ms per sentence)
+    the example sentences are compared by meaning, so "can I pay by credit card?"
+    finds *Accounting* without the word "invoice". On 40 Turkish requests that
+    avoided the keywords: 21 put through correctly and none wrongly (keywords
+    alone: 6).
+  - *Keywords only*.
+  - *Cloud model*: a language model set up under *AI → Cloud services* (Google AI /
+    Gemini, OpenAI, Groq, OpenRouter) decides, and also recognises callers who
+    want something else entirely. If it does not answer within 6 s, the local
+    matching decides, so no call is lost.
+- *AI → Local models*: the speed test is offered only for voices.
+
 ## 1.22.0
 
 - **Video calls** ([#15](https://github.com/mahirgul/AiPBX/issues/15)) between the web
