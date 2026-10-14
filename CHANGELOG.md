@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.17.2
+
+- **Translations:** health checks, FTP users and the extra DHCP options in all 21
+  other portal languages.
+
 ## 1.17.1
 
 - **Health checks — trunks:** a trunk whose reachability Asterisk has not checked
