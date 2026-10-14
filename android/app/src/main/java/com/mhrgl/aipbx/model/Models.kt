@@ -77,6 +77,25 @@ enum class CallStatus {
     ENDED
 }
 
+/** One voicemail message of the user's own mailbox (api/mobile/voicemail.php). */
+data class VoicemailMessage(
+    @SerializedName("id") val id: String,
+    @SerializedName("new") val isNew: Boolean,
+    @SerializedName("caller_name") val callerName: String?,
+    @SerializedName("caller_number") val callerNumber: String?,
+    @SerializedName("time") val time: String?,
+    @SerializedName("duration") val duration: Int,
+    @SerializedName("has_audio") val hasAudio: Boolean
+)
+
+data class VoicemailResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("messages") val messages: List<VoicemailMessage>?,
+    @SerializedName("new_count") val newCount: Int,
+    @SerializedName("id") val id: String?,
+    @SerializedName("error") val error: String?
+)
+
 data class CallHistoryResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("extension") val extension: String?,

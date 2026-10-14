@@ -250,8 +250,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             openChatRoom(convId, targetExt, targetName, isGroup)
         } else if (!dialNum.isNullOrEmpty()) {
             switchTab(Tab.DIALER)
-            binding.tvDigits.text = dialNum
-            binding.btnBackspace.visibility = View.VISIBLE
+            setDialNumber(dialNum)
         }
     }
 
@@ -266,6 +265,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         super.onResume()
         ChatWebSocketManager.instance.addListener(this)
         updateFullScreenCallButton()
+        refreshVoicemailBadge()
 
         if (currentTab == Tab.HISTORY) {
             loadCallHistory(currentFilter)
@@ -330,6 +330,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         ChatWebSocketManager.instance.removeListener(this)
     }
 
+    /** Number of new voicemail messages on the button in the header. */
+    private fun refreshVoicemailBadge() {
+        val token = prefs.token ?: return
+        lifecycleScope.launch {
+            apiClient.getVoicemail(prefs.serverUrl, token).onSuccess { res ->
+                val n = res.newCount
+                binding.tvVoicemailBadge.text = if (n > 99) "99+" else n.toString()
+                binding.tvVoicemailBadge.visibility = if (n > 0) View.VISIBLE else View.GONE
+            }
+        }
+    }
+
     /**
      * Back closes the open chat, then goes to the keypad, then leaves. With
      * targetSdk 36 (predictive back) onBackPressed() is no longer called, so
@@ -355,6 +367,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         val ext = prefs.extension ?: "--"
         val name = prefs.fullName ?: (prefs.username ?: "")
         binding.tvUserExt.text = getString(R.string.user_ext_label, ext, name)
+
+        binding.btnVoicemail.setOnClickListener { VoicemailActivity.start(this) }
 
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(this)
@@ -514,17 +528,34 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             true
         }
 
+        // Deletes the selection, else the character before the cursor.
         binding.btnBackspace.setOnClickListener {
-            val current = binding.tvDigits.text.toString()
-            if (current.isNotEmpty()) {
-                binding.tvDigits.text = current.substring(0, current.length - 1)
-                updateBackspaceVisibility()
+            val field = binding.tvDigits
+            val text = field.text ?: return@setOnClickListener
+            val start = minOf(field.selectionStart, field.selectionEnd).coerceAtLeast(0)
+            val end = maxOf(field.selectionStart, field.selectionEnd).coerceAtLeast(0)
+            when {
+                start != end -> text.delete(start, end)
+                start > 0 -> text.delete(start - 1, start)
             }
+            updateBackspaceVisibility()
         }
 
         binding.btnBackspace.setOnLongClickListener {
-            binding.tvDigits.text = ""
-            updateBackspaceVisibility()
+            setDialNumber("")
+            true
+        }
+
+        // The keypad types; tapping the field only places the cursor (no system keyboard).
+        binding.tvDigits.showSoftInputOnFocus = false
+        // Typed or pasted text keeps only what can be dialled ("+90 (532) 123-45-67" → +905321234567).
+        binding.tvDigits.filters = arrayOf(android.text.InputFilter { source, start, end, _, _, _ ->
+            val kept = source.subSequence(start, end).filter { it.isDigit() || it in "*#+" }
+            if (kept.length == end - start) null else kept
+        })
+        binding.tvDigits.doAfterTextChanged { updateBackspaceVisibility() }
+        binding.tvDigits.setOnEditorActionListener { _, _, _ ->
+            binding.btnCall.performClick()
             true
         }
 
@@ -538,9 +569,20 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
+    /** Types at the cursor (replacing a selection), like a phone app's keypad. */
     private fun appendDigit(digit: String) {
-        val current = binding.tvDigits.text.toString()
-        binding.tvDigits.text = current + digit
+        val field = binding.tvDigits
+        val text = field.text ?: return
+        if (!field.hasFocus() && field.selectionStart <= 0) field.setSelection(text.length)
+        val start = minOf(field.selectionStart, field.selectionEnd).coerceAtLeast(0)
+        val end = maxOf(field.selectionStart, field.selectionEnd).coerceAtLeast(0)
+        text.replace(start, end, digit)
+        updateBackspaceVisibility()
+    }
+
+    private fun setDialNumber(number: String) {
+        binding.tvDigits.setText(number)
+        binding.tvDigits.setSelection(binding.tvDigits.text?.length ?: 0)
         updateBackspaceVisibility()
     }
 
@@ -575,8 +617,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             return
         }
 
-        binding.tvDigits.text = cleanNumber
-        updateBackspaceVisibility()
+        setDialNumber(cleanNumber)
 
         val domain = prefs.domain?.ifEmpty { null } ?: try {
             android.net.Uri.parse(prefs.serverUrl).host?.ifEmpty { null } ?: ""
@@ -1500,10 +1541,18 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.llChatUploadPreview.visibility = View.GONE
     }
 
+    /** Picture preview in the upload bar (null: the clip icon for other files). */
+    private fun showChatUploadThumb(bitmap: android.graphics.Bitmap?) {
+        binding.ivChatUploadThumb.setImageBitmap(bitmap)
+        binding.ivChatUploadThumb.visibility = if (bitmap != null) View.VISIBLE else View.GONE
+        binding.ivChatUploadIcon.visibility = if (bitmap != null) View.GONE else View.VISIBLE
+    }
+
     private fun handleChatPickedUri(uri: Uri, type: String) {
         lifecycleScope.launch {
             binding.llChatUploadPreview.visibility = View.VISIBLE
             binding.tvChatUploadFilename.text = getString(R.string.msg_uploading_file)
+            showChatUploadThumb(withContext(Dispatchers.IO) { ChatUploadPrep.thumbnail(this@DialerActivity, uri) })
 
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch

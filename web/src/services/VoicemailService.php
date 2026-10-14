@@ -65,6 +65,7 @@ class VoicemailService {
                     'duration' => 0,
                     'duration_formatted' => '00:00',
                     'has_audio' => $wavExists,
+                    'origtime' => 0,
                 ];
 
                 $lines = @file($txt, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -75,6 +76,7 @@ class VoicemailService {
                         $v = trim($v);
                         if ($k === 'callerid') $info['callerid'] = $v;
                         if ($k === 'origdate') $info['origdate'] = $v;
+                        if ($k === 'origtime') $info['origtime'] = (int) $v;
                         if ($k === 'duration') {
                             $sec = intval($v);
                             $info['duration'] = $sec;
@@ -86,33 +88,86 @@ class VoicemailService {
             }
         }
 
-        // Sort descending by date/number
-        usort($messages, fn($a, $b) => strcmp($b['origdate'], $a['origdate']));
+        // Newest first (origtime: seconds since 1970; origdate is text in the server's locale).
+        usort($messages, fn($a, $b) => [$b['origtime'], $b['origdate']] <=> [$a['origtime'], $a['origdate']]);
         return $messages;
     }
 
     public static function deleteMessage($ext, $msgId, $csrf_token = '') {
-        return PBXHelper::handleAction($csrf_token, function() use ($ext, $msgId) {
-            $ext = preg_replace('/[^0-9]/', '', (string)$ext);
-            $parts = explode(':', (string)$msgId, 2);
-            if (count($parts) !== 2) throw new \Exception(t('srv_vm.err_id'));
+        return PBXHelper::handleAction($csrf_token, fn() => self::deleteFiles((string) $ext, (string) $msgId));
+    }
 
-            $folder = preg_replace('/[^a-zA-Z]/', '', $parts[0]);
-            $msgNum = preg_replace('/[^a-zA-Z0-9]/', '', $parts[1]);
+    /** Deletes the files of one message (portal and mobile app); throws on failure. */
+    public static function deleteFiles(string $ext, string $msgId): string {
+        $ext = preg_replace('/[^0-9]/', '', $ext);
+        if ($ext === '' || !preg_match('/^(INBOX|Old):(msg[0-9]{4})$/', $msgId, $m)) {
+            throw new \Exception(t('srv_vm.err_id'));
+        }
+        $files = glob("/var/spool/asterisk/voicemail/default/{$ext}/{$m[1]}/{$m[2]}.*") ?: [];
+        if (empty($files)) {
+            throw new \Exception(t('srv_vm.err_not_found'));
+        }
+        foreach ($files as $f) {
+            // The error used to be swallowed and "deleted" was reported even when it could not be deleted.
+            if (!@unlink($f)) {
+                throw new \Exception(t('srv_vm.err_delete'));
+            }
+        }
+        return t('srv_vm.deleted');
+    }
 
-            $dir = "/var/spool/asterisk/voicemail/default/{$ext}/{$folder}";
-            $pattern = "{$dir}/{$msgNum}.*";
-            $files = glob($pattern) ?: [];
-            if (empty($files)) {
-                throw new \Exception(t('srv_vm.err_not_found'));
+    /**
+     * Path of the audio of a message ("INBOX:msg0003"), or null. Only the
+     * mailbox's own INBOX/Old folders and msgNNNN names are accepted.
+     */
+    public static function audioPath(string $ext, string $msgId): ?string
+    {
+        $ext = preg_replace('/[^0-9]/', '', $ext);
+        if ($ext === '' || !preg_match('/^(INBOX|Old):(msg[0-9]{4})$/', $msgId, $m)) {
+            return null;
+        }
+        $base = "/var/spool/asterisk/voicemail/default/{$ext}/{$m[1]}/{$m[2]}";
+        foreach (['wav', 'WAV'] as $suffix) {
+            if (is_file("{$base}.{$suffix}")) {
+                return "{$base}.{$suffix}";
             }
-            foreach ($files as $f) {
-                // The error used to be swallowed and "deleted" was reported even when it could not be deleted.
-                if (!@unlink($f)) {
-                    throw new \Exception(t('srv_vm.err_delete'));
-                }
+        }
+        return null;
+    }
+
+    /**
+     * Marks a new message as heard: moves its files from INBOX to Old under
+     * the next free number, as Asterisk does after listening (the phones'
+     * voicemail lamp follows through pollmailboxes). Returns the new id.
+     */
+    public static function markHeard(string $ext, string $msgId, ?string $spool = null): string
+    {
+        $ext = preg_replace('/[^0-9]/', '', $ext);
+        if ($ext === '' || !preg_match('/^INBOX:(msg[0-9]{4})$/', $msgId, $m)) {
+            if (preg_match('/^Old:msg[0-9]{4}$/', $msgId)) {
+                return $msgId; // already heard
             }
-            return t('srv_vm.deleted');
-        });
+            throw new \Exception(t('srv_vm.err_id'));
+        }
+        $box = ($spool ?? '/var/spool/asterisk/voicemail/default') . '/' . $ext;
+        $files = glob("{$box}/INBOX/{$m[1]}.*") ?: [];
+        if ($files === []) {
+            throw new \Exception(t('srv_vm.err_not_found'));
+        }
+        if (!is_dir("{$box}/Old") && !@mkdir("{$box}/Old", 0775)) {
+            throw new \Exception(t('srv_vm.err_delete'));
+        }
+        $next = 0;
+        foreach (glob("{$box}/Old/msg[0-9][0-9][0-9][0-9].*") ?: [] as $f) {
+            $next = max($next, (int) substr(basename($f), 3, 4) + 1);
+        }
+        $target = sprintf('msg%04d', $next);
+        foreach ($files as $f) {
+            $suffix = substr(basename($f), strlen($m[1]));
+            if (!@rename($f, "{$box}/Old/{$target}{$suffix}")) {
+                throw new \Exception(t('srv_vm.err_delete'));
+            }
+        }
+        return "Old:{$target}";
     }
 }

@@ -405,4 +405,12 @@
     <string name="chat_delete_message_confirm">Delete this message for everyone in the chat?</string>
     <string name="err_message_delete_not_allowed">This message can no longer be deleted.</string>
     <string name="api_message_delete_failed">Could not delete the message (HTTP %1$s)</string>
+    <string name="vm_title">Voicemail</string>
+    <string name="vm_empty">No voicemail messages</string>
+    <string name="vm_new">New</string>
+    <string name="vm_play">Play</string>
+    <string name="vm_unknown_caller">Unknown caller</string>
+    <string name="vm_play_failed">The message could not be played</string>
+    <string name="vm_load_failed">Voicemail could not be loaded</string>
+    <string name="vm_delete_confirm">Delete this voicemail message?</string>
 </resources>

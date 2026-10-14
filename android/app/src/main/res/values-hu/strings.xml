@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Törli ezt az üzenetet mindenkinél a csevegésben?</string>
     <string name="err_message_delete_not_allowed">Ez az üzenet már nem törölhető.</string>
     <string name="api_message_delete_failed">Az üzenetet nem sikerült törölni (HTTP %1$s)</string>
+    <string name="vm_title">Hangposta</string>
+    <string name="vm_empty">Nincsenek hangüzenetek</string>
+    <string name="vm_new">Új</string>
+    <string name="vm_play">Lejátszás</string>
+    <string name="vm_unknown_caller">Ismeretlen hívó</string>
+    <string name="vm_play_failed">Az üzenetet nem sikerült lejátszani</string>
+    <string name="vm_load_failed">A hangpostát nem sikerült betölteni</string>
+    <string name="vm_delete_confirm">Törli ezt a hangüzenetet?</string>
 </resources>

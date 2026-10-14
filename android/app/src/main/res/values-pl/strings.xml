@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Usunąć tę wiadomość dla wszystkich w czacie?</string>
     <string name="err_message_delete_not_allowed">Tej wiadomości nie można już usunąć.</string>
     <string name="api_message_delete_failed">Nie udało się usunąć wiadomości (HTTP %1$s)</string>
+    <string name="vm_title">Poczta głosowa</string>
+    <string name="vm_empty">Brak wiadomości głosowych</string>
+    <string name="vm_new">Nowa</string>
+    <string name="vm_play">Odtwórz</string>
+    <string name="vm_unknown_caller">Nieznany rozmówca</string>
+    <string name="vm_play_failed">Nie można odtworzyć wiadomości</string>
+    <string name="vm_load_failed">Nie można wczytać poczty głosowej</string>
+    <string name="vm_delete_confirm">Usunąć tę wiadomość głosową?</string>
 </resources>

@@ -242,6 +242,65 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
 
 
 
+    /** Messages of the user's own mailbox, newest first. */
+    suspend fun getVoicemail(baseUrl: String, token: String): Result<VoicemailResponse> = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("${baseUrl.trim().trimEnd('/')}/api/mobile/voicemail.php")
+                .addHeader("Authorization", "Bearer $token")
+                .get()
+                .build()
+            client.newCall(request).execute().use { response ->
+                val result = gson.fromJson(response.body?.string() ?: "", VoicemailResponse::class.java)
+                if (response.isSuccessful && result != null && result.success) Result.success(result)
+                else Result.failure(Exception(result?.error ?: L10n.str(R.string.vm_load_failed)))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** action "heard" (returns the message's new id) or "delete". */
+    suspend fun voicemailAction(baseUrl: String, token: String, action: String, id: String): Result<VoicemailResponse> =
+        withContext(Dispatchers.IO) {
+            try {
+                val body = JSONObject().put("action", action).put("id", id).toString()
+                val request = Request.Builder()
+                    .url("${baseUrl.trim().trimEnd('/')}/api/mobile/voicemail.php")
+                    .addHeader("Authorization", "Bearer $token")
+                    .post(body.toRequestBody(jsonMediaType))
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    val result = gson.fromJson(response.body?.string() ?: "", VoicemailResponse::class.java)
+                    if (response.isSuccessful && result != null && result.success) Result.success(result)
+                    else Result.failure(Exception(result?.error ?: "HTTP ${response.code}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /**
+     * Downloads a message's recording into [target] with this client (session
+     * header and the app's TLS settings, which the system media player would not use).
+     */
+    suspend fun downloadVoicemail(baseUrl: String, token: String, id: String, target: File): Result<File> =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "${baseUrl.trim().trimEnd('/')}/api/mobile/voicemail.php?action=play&id=" +
+                    java.net.URLEncoder.encode(id, "UTF-8")
+                val request = Request.Builder().url(url).addHeader("Authorization", "Bearer $token").get().build()
+                client.newCall(request).execute().use { response ->
+                    val body = response.body
+                    if (!response.isSuccessful || body == null) return@withContext Result.failure(Exception("HTTP ${response.code}"))
+                    target.outputStream().use { out -> body.byteStream().copyTo(out) }
+                }
+                Result.success(target)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
     suspend fun getCallHistory(
         baseUrl: String,
         token: String,

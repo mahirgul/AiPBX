@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Dit bericht voor iedereen in de chat verwijderen?</string>
     <string name="err_message_delete_not_allowed">Dit bericht kan niet meer worden verwijderd.</string>
     <string name="api_message_delete_failed">Kan het bericht niet verwijderen (HTTP %1$s)</string>
+    <string name="vm_title">Voicemail</string>
+    <string name="vm_empty">Geen voicemailberichten</string>
+    <string name="vm_new">Nieuw</string>
+    <string name="vm_play">Afspelen</string>
+    <string name="vm_unknown_caller">Onbekende beller</string>
+    <string name="vm_play_failed">Het bericht kon niet worden afgespeeld</string>
+    <string name="vm_load_failed">De voicemail kon niet worden geladen</string>
+    <string name="vm_delete_confirm">Dit voicemailbericht verwijderen?</string>
 </resources>

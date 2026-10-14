@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Ștergeți acest mesaj pentru toți participanții?</string>
     <string name="err_message_delete_not_allowed">Acest mesaj nu mai poate fi șters.</string>
     <string name="api_message_delete_failed">Mesajul nu a putut fi șters (HTTP %1$s)</string>
+    <string name="vm_title">Mesagerie vocală</string>
+    <string name="vm_empty">Nu există mesaje vocale</string>
+    <string name="vm_new">Nou</string>
+    <string name="vm_play">Redă</string>
+    <string name="vm_unknown_caller">Apelant necunoscut</string>
+    <string name="vm_play_failed">Mesajul nu a putut fi redat</string>
+    <string name="vm_load_failed">Mesageria vocală nu a putut fi încărcată</string>
+    <string name="vm_delete_confirm">Ștergeți acest mesaj vocal?</string>
 </resources>
