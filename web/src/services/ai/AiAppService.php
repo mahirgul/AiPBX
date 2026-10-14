@@ -20,7 +20,17 @@ require_once dirname(__DIR__) . '/ai/CloudAiService.php';
 
 class AiAppService
 {
-    public const TYPES = ['announcement', 'voice_requests'];
+    public const TYPES = ['announcement', 'voice_requests', 'speech_routing'];
+
+    /**
+     * Types that listen to the caller: voice requests, and routing by speech
+     * (the same engine with only names, words and a destination per request:
+     * no spoken reply, no e-mail).
+     */
+    public static function listens(string $type): bool
+    {
+        return $type === 'voice_requests' || $type === 'speech_routing';
+    }
     public const MAX_INTENTS = 30;
     public const MAX_TEXT = 2000;
     /** Placeholders Asterisk fills itself (the rest come from the lookup URL). */
@@ -66,8 +76,15 @@ class AiAppService
         }
         $text = trim((string) ($d['text_template'] ?? ''));
         $config = null;
-        if ($type === 'voice_requests') {
+        if (self::listens($type)) {
             $config = self::validateRequests($d);
+            if ($type === 'speech_routing') {
+                foreach ($config['intents'] as &$intent) {
+                    $intent['reply'] = '';
+                    $intent['email'] = '';
+                }
+                unset($intent);
+            }
             $text = $config['greeting'];
         }
         if ($text === '' || mb_strlen($text) > self::MAX_TEXT) {
@@ -217,8 +234,26 @@ class AiAppService
             'listen_seconds' => max(2, min(15, (int) ($d['listen_seconds'] ?? 7))),
             'retries' => max(0, min(2, (int) ($d['retries'] ?? 1))),
             'threshold' => max(0.0, min(1.0, round((float) ($d['threshold'] ?? 0.5), 2))),
+            'understand' => self::validUnderstand((string) ($d['understand'] ?? 'auto')),
             'intents' => $intents,
         ];
+    }
+
+    /**
+     * How a request is recognised: "auto" (keywords + the local sentence-meaning
+     * model when it runs), "keywords", or "cloud:<provider>" — a cloud language
+     * model of AI -> Cloud services that also knows when the caller wants none
+     * of the requests (large models are not run on the PBX itself).
+     */
+    public static function validUnderstand(string $u): string
+    {
+        if ($u === 'auto' || $u === 'keywords') {
+            return $u;
+        }
+        if (str_starts_with($u, 'cloud:') && in_array(substr($u, 6), CloudAiService::withCap('llm'), true)) {
+            return $u;
+        }
+        throw new \Exception(t('ai_apps.err_understand'));
     }
 
     private static function slug(string $name): string
@@ -262,6 +297,13 @@ class AiAppService
             $extra['stt_cloud'] = ['provider' => $provider, 'api_key' => (string) ($pc['api_key'] ?? ''),
                                    'region' => (string) ($pc['region'] ?? ''), 'lang' => (string) ($c['stt_lang'] ?? 'tr')];
         }
+        $understand = (string) ($c['understand'] ?? 'auto');
+        if (str_starts_with($understand, 'cloud:')) {
+            // The service asks the provider itself: it gets the key with the settings.
+            $provider = substr($understand, 6);
+            $extra['llm_cloud'] = ['provider' => $provider,
+                                   'api_key' => (string) (CloudAiService::config($provider)['api_key'] ?? '')];
+        }
         return $extra + [
             'type' => 'voice_requests',
             'tts_model' => self::resolveModel((string) $app['model_id']),
@@ -273,6 +315,7 @@ class AiAppService
             'listen_seconds' => (int) ($c['listen_seconds'] ?? 7),
             'retries' => (int) ($c['retries'] ?? 1),
             'threshold' => (float) ($c['threshold'] ?? 0.5),
+            'understand' => str_starts_with((string) ($c['understand'] ?? ''), 'cloud:') ? 'cloud' : (string) ($c['understand'] ?? 'auto'),
             'intents' => array_map(fn($i) => ['id' => $i['id'], 'name' => $i['name'], 'keywords' => $i['keywords'],
                                                'examples' => $i['examples'], 'reply' => $i['reply']], $c['intents'] ?? []),
         ];

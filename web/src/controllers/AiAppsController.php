@@ -33,12 +33,16 @@ class AiAppsController extends BaseController
                 }
             }
         }
+        $localModels = LocalAiService::models();
         static::renderPage('ai_apps/index', [
             'apps' => AiAppService::all(),
             'voices' => AiAppService::voiceModels(),
-            'stt_models' => array_values(array_filter(LocalAiService::models(), fn($m) => ($m['kind'] ?? '') === 'stt'
+            'stt_models' => array_values(array_filter($localModels, fn($m) => ($m['kind'] ?? '') === 'stt'
                 && in_array($m['state'] ?? '', ['ready', 'installed', 'loading'], true))),
+            // A running sentence-meaning model: example sentences are compared by meaning.
+            'meaning_ready' => array_filter($localModels, fn($m) => ($m['kind'] ?? '') === 'embedding' && ($m['state'] ?? '') === 'ready') !== [],
             'requests' => AiAppService::requests(100),
+            'cloud_llm' => array_map(fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']], CloudAiService::withCap('llm')),
             'cloud_stt' => array_map(fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']], CloudAiService::withCap('stt')),
             'modules' => DestinationRegistry::getModuleList(),
             'service_ok' => LocalAiService::health() !== null,
