@@ -74,6 +74,11 @@ $localFiles = (int) ($status['local_files'] ?? 0);
                 <input type="checkbox" name="storage_s3_path_style" value="1" class="u-accent" <?php echo $settings['storage_s3_path_style'] === '1' ? 'checked' : ''; ?>>
                 <?php echo t('storage.path_style'); ?>
             </label>
+            <label class="u-check-label-6" style="display: block; margin-top: 8px;">
+                <input type="checkbox" name="recordings_storage" value="s3" class="u-accent" <?php echo ($settings['recordings_storage'] ?? 'local') === 's3' ? 'checked' : ''; ?>>
+                <strong><?php echo t('storage.recordings'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('storage.recordings_help'); ?></span>
+            </label>
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">

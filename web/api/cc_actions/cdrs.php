@@ -39,7 +39,7 @@ if ($action === 'my_cdrs') {
 
     // Add audio playback URL and check file existence
     foreach ($cdrs as &$c) {
-        $has_rec = (!empty($c['recording_path']) && file_exists($c['recording_path']));
+        $has_rec = (!empty($c['recording_path']) && (str_starts_with($c['recording_path'], 's3:') || file_exists($c['recording_path'])));
         $c['has_recording'] = $has_rec;
         $c['can_listen'] = $can_listen || ($user_ext !== '' && ($c['agent_extension'] === $user_ext || $c['caller_num'] === $user_ext));
         $c['audio_url'] = $has_rec ? '/api/cc_audio.php?id=' . $c['id'] : null;
