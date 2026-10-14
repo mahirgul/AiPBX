@@ -17,6 +17,11 @@ the git tag message and the GitHub Release notes, and installations show it as
   (`Permissions-Policy: microphone=()`, often set by WordPress security plugins),
   the widget now says so and what the site owner has to change, instead of
   asking the visitor to allow the microphone.
+- **Fixes found by a fresh install test:** TFTP's firewall rule no longer needs the
+  `nf_conntrack_tftp` kernel module (missing in containers and some kernels, where
+  switching TFTP on failed); a firewall change that failed half way no longer
+  blocks the next attempt; voicemail marked as heard in the app created the
+  mailbox's `Old` folder without write access for Asterisk.
 
 ## 1.15.0
 

@@ -132,7 +132,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <div class="form-group">
                 <label class="form-label"><?php echo t('netsvc.dhcp_options'); ?></label>
                 <textarea name="netsvc_dhcp_options" class="form-control" rows="3" spellcheck="false" style="font-family: monospace;"
-                          placeholder="66,ftp://192.168.10.2/&#10;43,0A04C0A80A02"><?php echo $h($settings['netsvc_dhcp_options']); ?></textarea>
+                          placeholder="66,ftp://192.168.10.2/&#10;43,0a:04:c0:a8:0a:02"><?php echo $h($settings['netsvc_dhcp_options']); ?></textarea>
                 <small class="u-hint u-fs-11"><?php echo t('netsvc.dhcp_options_help'); ?></small>
             </div>
             <label class="u-check-label-6" style="display: block;">

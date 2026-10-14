@@ -34,8 +34,10 @@ contain the server's own address. The phones get:
 | 42 | the NTP servers entered | all phones |
 
 **Extra DHCP options** (DHCP mode): one `code,value` per line, e.g. `66,ftp://192.168.10.2/` for
-phones that should fetch from FTP, or vendor options such as `43,…`. An option with the same code
-as one above replaces AiPBX's value (66, 160, 150, 42, 3, 6). Quotes, `#`, backslashes and line
+phones that should fetch from FTP. Bytes are written in hex with colons, e.g. `43,0a:04:c0:a8:0a:02`;
+without colons a value is sent as text. An option with the same code
+as one above replaces AiPBX's value (66, 160, 150, 42, 3, 6). Extra options are sent even when the
+phone does not ask for them (dnsmasq `dhcp-option-force`). Quotes, `#`, backslashes and line
 breaks are refused: the dnsmasq file is written as root.
 
 For the MAC-based `/provision/` address to answer, the phone network must be in **Allowed

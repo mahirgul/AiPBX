@@ -238,11 +238,11 @@ final class NetworkServicesTest extends TestCase
 
     public function testExtraDhcpOptions(): void
     {
-        $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_dhcp_options' => "66, ftp://192.168.10.2/\n# NEC\n\n43,0A04C0A80A02"]), self::IFACES, []);
-        $this->assertSame("66,ftp://192.168.10.2/\n43,0A04C0A80A02", $v['netsvc_dhcp_options']);
+        $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_dhcp_options' => "66, ftp://192.168.10.2/\n# NEC\n\n43,0a:04:c0:a8:0a:02"]), self::IFACES, []);
+        $this->assertSame("66,ftp://192.168.10.2/\n43,0a:04:c0:a8:0a:02", $v['netsvc_dhcp_options']);
         $args = NetworkServicesService::privArgs($v, [], 'https://pbx.example.com/provision/');
         $this->assertContains('opt=66,ftp://192.168.10.2/', $args);
-        $this->assertContains('opt=43,0A04C0A80A02', $args);
+        $this->assertContains('opt=43,0a:04:c0:a8:0a:02', $args);
 
         foreach (["66,\"x\"", "300,1", "0,1", "66,a#b", "66,a\\b", "x,1", "66,", "66,dhcp-script=/tmp/x\nfoo"] as $bad) {
             try {

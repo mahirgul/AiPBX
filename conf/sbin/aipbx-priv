@@ -324,7 +324,14 @@ case "$cmd" in
         RE_PROV_URL='^https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$'
 
         fw_running() { firewall-cmd --state >/dev/null 2>&1; }
-        tftp_rule() { echo "rule family=\"ipv4\" source address=\"$1\" service name=\"tftp\" accept"; }
+        # firewall-cmd, retried once after a reload: a change that failed half way leaves
+        # firewalld's runtime state broken ("COMMAND_FAILED: 'handle'") until it is reloaded.
+        fw_add() { firewall-cmd "$@" >/dev/null 2>&1 || { firewall-cmd --reload >/dev/null 2>&1; firewall-cmd "$@" >/dev/null; }; }
+        # UDP 69 only: the firewalld "tftp" service needs the nf_conntrack_tftp kernel module,
+        # which is missing in containers and some kernels; a TFTP server does not need it
+        # (its replies open the conntrack entries the client's packets match).
+        tftp_rule() { echo "rule family=\"ipv4\" source address=\"$1\" port port=\"69\" protocol=\"udp\" accept"; }
+        tftp_rule_old() { echo "rule family=\"ipv4\" source address=\"$1\" service name=\"tftp\" accept"; }
 
         # Removes the firewall openings of the last apply (listed in the state file).
         netsvc_fw_clear() {
@@ -333,7 +340,11 @@ case "$cmd" in
                 while read -r kind value; do
                     case "$kind" in
                         tftp) [[ "$value" =~ $RE_IPV4_CIDR ]] || continue
-                            for p in "" --permanent; do firewall-cmd $p --remove-rich-rule="$(tftp_rule "$value")" >/dev/null 2>&1; done ;;
+                            for p in "" --permanent; do
+                                firewall-cmd $p --remove-rich-rule="$(tftp_rule "$value")" >/dev/null 2>&1
+                                # Rule of releases up to 1.15 (the tftp service).
+                                firewall-cmd $p --remove-rich-rule="$(tftp_rule_old "$value")" >/dev/null 2>&1
+                            done ;;
                         dhcp) [[ "$value" =~ $RE_ZONE ]] || continue
                             for p in "" --permanent; do firewall-cmd $p --zone="$value" --remove-service=dhcp >/dev/null 2>&1; done ;;
                     esac
@@ -448,7 +459,8 @@ case "$cmd" in
                         fi
                         # 150: Cisco TFTP server; 0.0.0.0 = this server.
                         [ "$tftp" = 1 ] && [ -z "${optcode[150]:-}" ] && echo "dhcp-option=150,0.0.0.0"
-                        for o in "${opts[@]}"; do echo "dhcp-option=$o"; done
+                        # Extra options are sent even when the phone does not ask for them.
+                        for o in "${opts[@]}"; do echo "dhcp-option-force=$o"; done
                     fi
                     if [ "$tftp" = 1 ]; then
                         echo "enable-tftp"
@@ -463,7 +475,7 @@ case "$cmd" in
                     : > "$NETSVC_FW"
                     if [ "$tftp" = 1 ]; then
                         for n in "${nets[@]}"; do
-                            for p in "" --permanent; do firewall-cmd $p --add-rich-rule="$(tftp_rule "$n")" >/dev/null || die "firewall: tftp $n"; done
+                            for p in "" --permanent; do fw_add $p --add-rich-rule="$(tftp_rule "$n")" || die "firewall: tftp $n"; done
                             echo "tftp $n" >> "$NETSVC_FW"
                         done
                     fi
@@ -471,7 +483,7 @@ case "$cmd" in
                         # UDP 67 in the zone of the chosen interface only.
                         zone="$(firewall-cmd --get-zone-of-interface="$iface" 2>/dev/null || firewall-cmd --get-default-zone)"
                         match "$zone" "$RE_ZONE"
-                        for p in "" --permanent; do firewall-cmd $p --zone="$zone" --add-service=dhcp >/dev/null || die "firewall: dhcp $zone"; done
+                        for p in "" --permanent; do fw_add $p --zone="$zone" --add-service=dhcp || die "firewall: dhcp $zone"; done
                         echo "dhcp $zone" >> "$NETSVC_FW"
                     fi
                 fi
@@ -548,7 +560,7 @@ FTPCONF
                     : > "$FTP_FW"
                     for n in "${nets[@]}"; do
                         for r in "$(ftp_rule "$n" 21)" "$(ftp_rule "$n" 40000-40049)"; do
-                            for p in "" --permanent; do firewall-cmd $p --add-rich-rule="$r" >/dev/null || die "firewall: ftp $n"; done
+                            for p in "" --permanent; do fw_add $p --add-rich-rule="$r" || die "firewall: ftp $n"; done
                         done
                         echo "ftp $n" >> "$FTP_FW"
                     done
