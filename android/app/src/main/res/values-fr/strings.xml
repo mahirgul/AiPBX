@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Le message n\'a pas pu être lu</string>
     <string name="vm_load_failed">La messagerie vocale n\'a pas pu être chargée</string>
     <string name="vm_delete_confirm">Supprimer ce message vocal ?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

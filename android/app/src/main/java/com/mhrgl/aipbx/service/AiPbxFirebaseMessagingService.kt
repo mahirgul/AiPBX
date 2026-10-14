@@ -37,6 +37,11 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
                 // Ensure foreground service is running and reconnects SIP to receive the incoming INVITE
                 PbxForegroundService.startWithAction(this, PbxForegroundService.ACTION_RECONNECT)
             }
+            "voicemail" -> {
+                VoicemailNotifications.show(
+                    this, data["caller"] ?: "", data["duration"]?.toIntOrNull() ?: 0, data["new_count"]?.toIntOrNull() ?: 1
+                )
+            }
             "test_push" -> {
                 val title = data["title"] ?: getString(R.string.app_name)
                 val body = data["body"] ?: L10n.str(R.string.push_test_body)

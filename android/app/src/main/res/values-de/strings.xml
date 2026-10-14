@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Die Nachricht konnte nicht abgespielt werden</string>
     <string name="vm_load_failed">Die Mailbox konnte nicht geladen werden</string>
     <string name="vm_delete_confirm">Diese Sprachnachricht löschen?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

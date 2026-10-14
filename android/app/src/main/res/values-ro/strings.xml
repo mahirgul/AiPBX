@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Mesajul nu a putut fi redat</string>
     <string name="vm_load_failed">Mesageria vocală nu a putut fi încărcată</string>
     <string name="vm_delete_confirm">Ștergeți acest mesaj vocal?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

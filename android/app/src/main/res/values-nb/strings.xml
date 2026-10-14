@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Meldingen kunne ikke spilles av</string>
     <string name="vm_load_failed">Talepostkassen kunne ikke lastes inn</string>
     <string name="vm_delete_confirm">Slette denne talemeldingen?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

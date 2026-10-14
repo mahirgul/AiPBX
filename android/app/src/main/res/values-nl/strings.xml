@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Het bericht kon niet worden afgespeeld</string>
     <string name="vm_load_failed">De voicemail kon niet worden geladen</string>
     <string name="vm_delete_confirm">Dit voicemailbericht verwijderen?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

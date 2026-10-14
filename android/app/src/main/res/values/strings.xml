@@ -411,4 +411,5 @@
     <string name="vm_play_failed">The message could not be played</string>
     <string name="vm_load_failed">Voicemail could not be loaded</string>
     <string name="vm_delete_confirm">Delete this voicemail message?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

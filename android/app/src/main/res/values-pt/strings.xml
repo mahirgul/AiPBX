@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Não foi possível reproduzir a mensagem</string>
     <string name="vm_load_failed">Não foi possível carregar o correio de voz</string>
     <string name="vm_delete_confirm">Eliminar esta mensagem de voz?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>

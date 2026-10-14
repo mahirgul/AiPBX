@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Impossibile riprodurre il messaggio</string>
     <string name="vm_load_failed">Impossibile caricare la segreteria</string>
     <string name="vm_delete_confirm">Eliminare questo messaggio vocale?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>
