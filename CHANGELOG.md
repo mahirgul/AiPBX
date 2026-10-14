@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.14.1
+
+- **Portal installed as an app (PWA):** proper icons. Android gets "maskable"
+  icons on white that fit its round and rounded-square shapes (before, the logo
+  was squeezed into a white circle), iPhone a white 180 px icon (transparent
+  parts used to turn black), and the other icons a little margin. Installing from
+  the sign-in page now gets the app name and icons too. An app installed earlier
+  picks up the new icon after its next update by the browser, or after removing
+  and installing it again.
+
 ## 1.14.0
 
 - **Read-only FTP server for desk phones** (*PBX → Network services*): for phones
