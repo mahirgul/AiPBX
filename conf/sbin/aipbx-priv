@@ -342,6 +342,21 @@ case "$cmd" in
             rm -f "$NETSVC_FW"
         }
 
+        FTP_FW="$NETSVC_DIR/ftp-firewall.state"
+        ftp_rule() { echo "rule family=\"ipv4\" source address=\"$1\" port port=\"$2\" protocol=\"tcp\" accept"; }
+        ftp_fw_clear() {
+            [ -f "$FTP_FW" ] || return 0
+            if fw_running; then
+                while read -r kind value; do
+                    [ "$kind" = ftp ] && [[ "$value" =~ $RE_IPV4_CIDR ]] || continue
+                    for r in "$(ftp_rule "$value" 21)" "$(ftp_rule "$value" 40000-40049)"; do
+                        for p in "" --permanent; do firewall-cmd $p --remove-rich-rule="$r" >/dev/null 2>&1; done
+                    done
+                done < "$FTP_FW"
+            fi
+            rm -f "$FTP_FW"
+        }
+
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             status)
@@ -455,6 +470,95 @@ case "$cmd" in
                 fi
                 rm -f "$tmp"
                 exec systemctl restart aipbx-dnsmasq.service
+                ;;
+            ftp-on)
+                # netsvc ftp-on user=NAME hash=CRYPT net=CIDR...
+                # Read-only FTP (vsftpd, unit aipbx-vsftpd) of the TFTP folder for
+                # phones that fetch their files over FTP (e.g. NEC DT700: user
+                # NECSDT700). Anonymous login and the one FTP user may only read;
+                # the user is not a system account (pam_pwdfile, guest = ftp).
+                ftpuser=""; ftphash=""; nets=()
+                for kv in "$@"; do
+                    k="${kv%%=*}"; v="${kv#*=}"
+                    [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
+                    case "$k" in
+                        user) match "$v" '^[A-Za-z0-9._-]{1,32}$'; ftpuser="$v" ;;
+                        hash) match "$v" '^\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$'; ftphash="$v" ;;
+                        net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
+                        *) die "unknown key: $k" ;;
+                    esac
+                done
+                [ -n "$ftpuser" ] && [ -n "$ftphash" ] || die "ftp-on needs user= and hash="
+                [ "${#nets[@]}" -gt 0 ] || die "ftp needs at least one net="
+                [ -x /usr/sbin/vsftpd ] || die "vsftpd is not installed (run install.sh --upgrade)"
+                id -u ftp >/dev/null 2>&1 || die "the ftp system user is missing"
+
+                mkdir -p "$NETSVC_DIR"; chown root:root "$NETSVC_DIR"; chmod 0755 "$NETSVC_DIR"
+                [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
+                install -d -o root -g root -m 0755 /var/run/vsftpd/empty
+                umask 077
+                printf '%s:%s\n' "$ftpuser" "$ftphash" > "$NETSVC_DIR/ftp.passwd.tmp"
+                install -o root -g root -m 0600 "$NETSVC_DIR/ftp.passwd.tmp" "$NETSVC_DIR/ftp.passwd"
+                rm -f "$NETSVC_DIR/ftp.passwd.tmp"
+                umask 022
+                cat > "$NETSVC_DIR/vsftpd.conf.tmp" << 'FTPCONF'
+# Written by aipbx-priv (PBX -> Network services). Do not edit: the next apply replaces it.
+listen=YES
+listen_ipv6=NO
+background=NO
+ftpd_banner=AiPBX
+# Read only, for everybody.
+write_enable=NO
+anon_upload_enable=NO
+anon_mkdir_write_enable=NO
+anon_other_write_enable=NO
+anonymous_enable=YES
+no_anon_password=YES
+anon_root=/var/lib/aipbx/tftp
+anon_world_readable_only=YES
+# The phone user: checked against ftp.passwd (PAM aipbx-ftp), then mapped to "ftp".
+local_enable=YES
+guest_enable=YES
+guest_username=ftp
+local_root=/var/lib/aipbx/tftp
+chroot_local_user=YES
+pam_service_name=aipbx-ftp
+hide_ids=YES
+secure_chroot_dir=/var/run/vsftpd/empty
+pasv_enable=YES
+pasv_min_port=40000
+pasv_max_port=40049
+xferlog_enable=YES
+vsftpd_log_file=/var/log/aipbx-ftp.log
+FTPCONF
+                install -o root -g root -m 0644 "$NETSVC_DIR/vsftpd.conf.tmp" "$NETSVC_DIR/vsftpd.conf"
+                rm -f "$NETSVC_DIR/vsftpd.conf.tmp"
+
+                # Port 21 and the passive ports, from the allowed networks only.
+                ftp_fw_clear
+                if fw_running; then
+                    : > "$FTP_FW"
+                    for n in "${nets[@]}"; do
+                        for r in "$(ftp_rule "$n" 21)" "$(ftp_rule "$n" 40000-40049)"; do
+                            for p in "" --permanent; do firewall-cmd $p --add-rich-rule="$r" >/dev/null || die "firewall: ftp $n"; done
+                        done
+                        echo "ftp $n" >> "$FTP_FW"
+                    done
+                fi
+                systemctl enable aipbx-vsftpd.service >/dev/null 2>&1
+                exec systemctl restart aipbx-vsftpd.service
+                ;;
+            ftp-off)
+                [ $# -eq 0 ] || die "usage: netsvc ftp-off"
+                systemctl stop aipbx-vsftpd.service >/dev/null 2>&1
+                rm -f "$NETSVC_DIR/vsftpd.conf" "$NETSVC_DIR/ftp.passwd"
+                ftp_fw_clear
+                exit 0
+                ;;
+            ftp-status)
+                [ $# -eq 0 ] || die "usage: netsvc ftp-status"
+                systemctl is-active aipbx-vsftpd.service 2>/dev/null
+                exit 0
                 ;;
             *) die "unknown netsvc command: $sub" ;;
         esac

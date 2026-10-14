@@ -181,4 +181,41 @@ final class NetworkServicesTest extends TestCase
         $this->assertSame('0', $v['netsvc_tftp']);
         $this->assertContains('tftp=0', NetworkServicesService::privArgs($v, [], 'https://pbx.example.com/provision/'));
     }
+
+    public function testFtpArgumentsCarryOnlyAHash(): void
+    {
+        $v = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1', 'netsvc_ftp_user' => 'NECSDT700',
+            'netsvc_ftp_password' => 'Secret123'], self::IFACES, ['192.168.10.0/24', '2001:db8::/32']);
+        $args = NetworkServicesService::ftpArgs($v, ['192.168.10.0/24', '2001:db8::/32']);
+        $this->assertSame(['netsvc', 'ftp-on', 'user=NECSDT700'], array_slice($args, 0, 3));
+        $this->assertMatchesRegularExpression('#^hash=\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$#', $args[3], 'the form aipbx-priv accepts');
+        $this->assertTrue(password_verify('Secret123', substr($args[3], 5)));
+        $this->assertSame(['net=192.168.10.0/24'], array_slice($args, 4));
+        $this->assertStringNotContainsString('Secret123', implode(' ', $args));
+    }
+
+    public function testFtpOffAndBadFtpForms(): void
+    {
+        $v = NetworkServicesService::validate(['netsvc_mode' => 'off'], self::IFACES, []);
+        $this->assertSame(['netsvc', 'ftp-off'], NetworkServicesService::ftpArgs($v, []));
+        // The phone network of DHCP mode is enough for FTP.
+        $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_ftp' => '1', 'netsvc_ftp_password' => 'pass1234']), self::IFACES, []);
+        $this->assertSame('net=192.168.10.0/24', NetworkServicesService::ftpArgs($v, [])[4]);
+
+        foreach ([
+            ['netsvc_ftp_password' => 'abc'],              // too short
+            ['netsvc_ftp_password' => 'has space'],
+            ['netsvc_ftp_user' => 'bad user', 'netsvc_ftp_password' => 'pass1234'],
+            ['netsvc_ftp_user' => "x\nnet=0.0.0.0/0", 'netsvc_ftp_password' => 'pass1234'],
+        ] as $over) {
+            try {
+                NetworkServicesService::validate($over + ['netsvc_mode' => 'off', 'netsvc_ftp' => '1'], self::IFACES, ['192.168.10.0/24']);
+                $this->fail('accepted: ' . json_encode($over));
+            } catch (\Exception $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+        $this->expectException(\Exception::class);
+        NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1', 'netsvc_ftp_password' => 'pass1234'], self::IFACES, []);
+    }
 }

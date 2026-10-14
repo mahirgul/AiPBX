@@ -19,6 +19,11 @@
  * TFTP never serves the per-phone configuration (it holds the SIP password):
  * that stays on HTTPS (/provision/). TFTP_DIR holds only what an
  * administrator uploads (boot files, firmware).
+ *
+ * FTP (netsvc_ftp, independent of the mode): vsftpd serves the same folder
+ * read-only, to anonymous logins and to one FTP user (default NECSDT700, the
+ * user NEC DT700 phones log in with), from the same networks as TFTP. The
+ * user is not a system account; aipbx-priv gets only its password hash.
  */
 
 require_once dirname(__DIR__) . '/helpers.php';
@@ -43,6 +48,9 @@ class NetworkServicesService
         'netsvc_ntp' => '',
         'netsvc_lease_hours' => '12',
         'netsvc_tftp' => '1',
+        'netsvc_ftp' => '0',
+        'netsvc_ftp_user' => 'NECSDT700',
+        'netsvc_ftp_password' => '',
     ];
 
     public const MAX_TFTP_FILE = 64 * 1024 * 1024;
@@ -131,6 +139,20 @@ class NetworkServicesService
         }
         $v['netsvc_lease_hours'] = (string) max(1, min(168, (int) ($data['netsvc_lease_hours'] ?? 12)));
         $v['netsvc_tftp'] = !empty($data['netsvc_tftp']) ? '1' : '0';
+        $v['netsvc_ftp'] = !empty($data['netsvc_ftp']) ? '1' : '0';
+        $v['netsvc_ftp_user'] = trim((string) ($data['netsvc_ftp_user'] ?? '')) ?: self::SETTINGS['netsvc_ftp_user'];
+        $v['netsvc_ftp_password'] = (string) ($data['netsvc_ftp_password'] ?? '');
+        if ($v['netsvc_ftp'] === '1') {
+            if (!preg_match('/^[A-Za-z0-9._-]{1,32}$/', $v['netsvc_ftp_user'])) {
+                throw new \Exception(t('netsvc.err_ftp_user'));
+            }
+            if (!preg_match('/^[\x21-\x7E]{4,64}$/', $v['netsvc_ftp_password'])) {
+                throw new \Exception(t('netsvc.err_ftp_password'));
+            }
+            if ($tftpNetworks === [] && $mode !== 'dhcp') {
+                throw new \Exception(t('netsvc.err_tftp_networks'));
+            }
+        }
 
         if ($mode === 'off') {
             return $v;
@@ -197,12 +219,8 @@ class NetworkServicesService
         }
         $args = ['netsvc', 'apply', 'mode=' . $v['netsvc_mode']];
         $tftp = $v['netsvc_mode'] === 'tftp' || $v['netsvc_tftp'] === '1';
-        $nets = $tftpNetworks;
+        $nets = self::serviceNetworks($v, $tftpNetworks);
         if ($v['netsvc_mode'] === 'dhcp') {
-            $mask = (int) ip2long($v['netsvc_netmask']);
-            $prefix = 32 - (int) round(log((~$mask & 0xFFFFFFFF) + 1, 2));
-            // The phone network itself always gets TFTP.
-            $nets[] = long2ip((int) ip2long($v['netsvc_range_start']) & $mask) . '/' . $prefix;
             array_push($args,
                 'iface=' . $v['netsvc_interface'],
                 'start=' . $v['netsvc_range_start'],
@@ -221,12 +239,49 @@ class NetworkServicesService
         }
         $args[] = 'tftp=' . ($tftp ? '1' : '0');
         if ($tftp) {
-            foreach (array_values(array_unique($nets)) as $n) {
-                // aipbx-priv takes IPv4 networks only.
-                if (preg_match('#^[0-9]{1,3}(\.[0-9]{1,3}){3}(/[0-9]{1,2})?$#', $n)) {
-                    $args[] = 'net=' . $n;
-                }
+            foreach ($nets as $n) {
+                $args[] = 'net=' . $n;
             }
+        }
+        return $args;
+    }
+
+    /**
+     * Networks TFTP and FTP answer: the provisioning allowed networks, plus the
+     * phone network itself when this server hands out its addresses. IPv4 only
+     * (what aipbx-priv takes).
+     *
+     * @param array<string, string> $v validated settings
+     * @return string[]
+     */
+    public static function serviceNetworks(array $v, array $tftpNetworks): array
+    {
+        $nets = $tftpNetworks;
+        if ($v['netsvc_mode'] === 'dhcp' && self::isIpv4($v['netsvc_range_start']) && self::isIpv4($v['netsvc_netmask'])) {
+            $mask = (int) ip2long($v['netsvc_netmask']);
+            $prefix = 32 - (int) round(log((~$mask & 0xFFFFFFFF) + 1, 2));
+            $nets[] = long2ip((int) ip2long($v['netsvc_range_start']) & $mask) . '/' . $prefix;
+        }
+        return array_values(array_filter(array_unique($nets),
+            fn($n) => (bool) preg_match('#^[0-9]{1,3}(\.[0-9]{1,3}){3}(/[0-9]{1,2})?$#', $n)));
+    }
+
+    /**
+     * Arguments for `aipbx-priv netsvc ftp-on` / `ftp-off`. The password goes
+     * over as a SHA-512 crypt hash only.
+     *
+     * @param array<string, string> $v validated settings
+     * @return string[]
+     */
+    public static function ftpArgs(array $v, array $tftpNetworks): array
+    {
+        if ($v['netsvc_ftp'] !== '1') {
+            return ['netsvc', 'ftp-off'];
+        }
+        $salt = substr(strtr(base64_encode(random_bytes(12)), '+', '.'), 0, 16);
+        $args = ['netsvc', 'ftp-on', 'user=' . $v['netsvc_ftp_user'], 'hash=' . crypt($v['netsvc_ftp_password'], '$6$' . $salt . '$')];
+        foreach (self::serviceNetworks($v, $tftpNetworks) as $n) {
+            $args[] = 'net=' . $n;
         }
         return $args;
     }
@@ -236,6 +291,10 @@ class NetworkServicesService
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $interfaces = self::interfaces();
             $tftpNets = self::tftpNetworks();
+            // An empty FTP password field keeps the saved one.
+            if (($data['netsvc_ftp_password'] ?? '') === '') {
+                $data['netsvc_ftp_password'] = (string) getSystemSetting('netsvc_ftp_password', '');
+            }
             $v = self::validate($data, $interfaces, $tftpNets);
 
             if ($v['netsvc_mode'] === 'dhcp' && empty($data['netsvc_force'])) {
@@ -251,13 +310,20 @@ class NetworkServicesService
             if (!$res['success']) {
                 throw new \Exception(sprintf(t('netsvc.err_apply'), $res['output']));
             }
+            if ($v['netsvc_ftp'] === '1' || getSystemSetting('netsvc_ftp', '0') === '1') {
+                $res = PrivHelper::run(self::ftpArgs($v, $tftpNets));
+                if (!$res['success']) {
+                    throw new \Exception(sprintf(t('netsvc.err_apply'), $res['output']));
+                }
+            }
 
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
             foreach ($v as $k => $val) {
                 $stmt->execute([$k, $val]);
             }
-            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : ''), 'update', $_SESSION['user_id'] ?? null);
-            return t('netsvc.saved_' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' && $v['netsvc_tftp'] === '1' ? '_tftp' : ''));
+            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : '') . ', FTP ' . ($v['netsvc_ftp'] === '1' ? 'on (' . $v['netsvc_ftp_user'] . ')' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+            return t('netsvc.saved_' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' && $v['netsvc_tftp'] === '1' ? '_tftp' : ''))
+                . ($v['netsvc_ftp'] === '1' ? ' ' . sprintf(t('netsvc.saved_ftp'), $v['netsvc_ftp_user']) : '');
         });
     }
 
@@ -323,6 +389,12 @@ class NetworkServicesService
     public static function status(): string
     {
         $res = PrivHelper::run(['netsvc', 'status']);
+        return trim($res['output']) === 'active' ? 'active' : 'inactive';
+    }
+
+    public static function ftpStatus(): string
+    {
+        $res = PrivHelper::run(['netsvc', 'ftp-status']);
         return trim($res['output']) === 'active' ? 'active' : 'inactive';
     }
 
