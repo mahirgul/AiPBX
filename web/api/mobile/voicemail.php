@@ -7,7 +7,8 @@
  *   POST {"action": "heard",  "id": ...}  → moves a new message to Old, {id: new id}
  *   POST {"action": "delete", "id": ...}
  *
- * Only the user's own extension; ids are "<INBOX|Old>:msgNNNN".
+ * Only the user's own extension; ids are "<INBOX|Old>:msgNNNN", or "Archive:<n>"
+ * for heard messages archived to the S3 bucket (#69).
  */
 require_once __DIR__ . '/auth_helper.php';
 mobileApiStart('GET, POST, OPTIONS');
@@ -38,6 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (($_GET['action'] ?? 'list') === 'play') {
+    $archived = VoicemailService::archivedKey($ext, (string) ($_GET['id'] ?? ''));
+    if ($archived !== null) {
+        require_once __DIR__ . '/../../src/services/BucketFiles.php';
+        if (!BucketFiles::passthru($archived, ['Content-Type' => 'audio/wav', 'Cache-Control' => 'private, no-store'])) {
+            mobileError(t('api.err_audio_not_found'), 404);
+        }
+        exit;
+    }
     $path = VoicemailService::audioPath($ext, (string) ($_GET['id'] ?? ''));
     if ($path === null) {
         mobileError(t('api.err_audio_not_found'), 404);
@@ -51,7 +60,7 @@ if (($_GET['action'] ?? 'list') === 'play') {
 
 $messages = [];
 foreach (VoicemailService::getVoicemailMessages($ext) as $m) {
-    if (!preg_match('/^(INBOX|Old):msg[0-9]{4}$/', $m['id'])) {
+    if (!preg_match('/^((INBOX|Old):msg[0-9]{4}|Archive:\d+)$/', $m['id'])) {
         continue;
     }
     // callerid: "Name" <number>

@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/services/VoicemailService.php';
+require_once __DIR__ . '/../../src/services/FileStorageService.php';
 
 /** Voicemail of the mobile app: marking a message heard moves it like Asterisk does. */
 final class VoicemailServiceTest extends TestCase
@@ -39,6 +40,18 @@ final class VoicemailServiceTest extends TestCase
     public function testAlreadyHeardIsLeftAlone(): void
     {
         $this->assertSame('Old:msg0001', VoicemailService::markHeard('1001', 'Old:msg0001', $this->spool));
+        $this->assertSame('Archive:12', VoicemailService::markHeard('1001', 'Archive:12', $this->spool), 'archived = heard');
+        $this->assertNull(VoicemailService::audioPath('1001', 'Archive:12'), 'archived messages are not on the disk');
+    }
+
+    public function testArchiveDaysOnlyWithTheBucket(): void
+    {
+        $this->assertSame('0', FileStorageService::validate(['storage_backend' => 'local', 'voicemail_archive_days' => '30'], '')['voicemail_archive_days']);
+        $v = FileStorageService::validate([
+            'storage_backend' => 's3', 'voicemail_archive_days' => '99999', 'storage_s3_bucket' => 'pbx-files',
+            'storage_s3_access_key' => 'AKIAEXAMPLE', 'storage_s3_secret_key' => 'secret',
+        ], '');
+        $this->assertSame('3650', $v['voicemail_archive_days']);
     }
 
     public function testOnlyOwnFoldersAndMessageNames(): void

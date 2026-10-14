@@ -777,7 +777,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($vm['callerid'] ?: 'Bilinmeyen'); ?></span>
                                     </td>
                                     <td>
-                                        <span class="badge <?php echo $vm['folder'] === 'INBOX' ? 'badge-primary' : 'badge-secondary'; ?>">
+                                        <span class="badge <?php echo ['INBOX' => 'badge-primary', 'Old' => 'badge-teal', 'Archive' => 'badge-purple'][$vm['folder']] ?? 'badge-teal'; ?>">
                                             <?php echo htmlspecialchars($vm['folder_name']); ?>
                                         </span>
                                     </td>

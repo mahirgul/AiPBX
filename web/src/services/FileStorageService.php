@@ -35,6 +35,8 @@ class FileStorageService
         'recordings_storage' => 'local',
         // Faxes into the same bucket (FaxStorage, #69).
         'faxes_storage' => 'local',
+        // Heard voicemail older than this many days is archived to the bucket (0 = never).
+        'voicemail_archive_days' => '0',
     ];
 
     /** @return array<string, string> stored values (the secret still encrypted) */
@@ -71,6 +73,7 @@ class FileStorageService
             'storage_backend' => $backend,
             'recordings_storage' => $backend === 's3' && !empty($data['recordings_storage']) ? 's3' : 'local',
             'faxes_storage' => $backend === 's3' && !empty($data['faxes_storage']) ? 's3' : 'local',
+            'voicemail_archive_days' => $backend === 's3' ? (string) max(0, min(3650, (int) ($data['voicemail_archive_days'] ?? 0))) : '0',
         ];
         if ($backend === 'local') {
             return $v;

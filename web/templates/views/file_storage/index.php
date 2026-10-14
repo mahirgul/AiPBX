@@ -84,6 +84,11 @@ $localFiles = (int) ($status['local_files'] ?? 0);
                 <strong><?php echo t('storage.faxes'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('storage.faxes_help'); ?></span>
             </label>
+            <div class="form-group" style="margin-top: 8px; max-width: 420px;">
+                <label class="form-label"><?php echo t('storage.voicemail_days'); ?></label>
+                <input type="number" min="0" max="3650" name="voicemail_archive_days" class="form-control" value="<?php echo (int) ($settings['voicemail_archive_days'] ?? 0); ?>">
+                <small class="u-hint u-fs-11"><?php echo t('storage.voicemail_days_help'); ?></small>
+            </div>
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">

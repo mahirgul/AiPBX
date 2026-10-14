@@ -28,7 +28,7 @@ final class FileStorageTest extends TestCase
 
     public function testLocalNeedsNothingAndKeepsBucketSettings(): void
     {
-        $this->assertSame(['storage_backend' => 'local', 'recordings_storage' => 'local', 'faxes_storage' => 'local'], FileStorageService::validate(['storage_backend' => 'local'], ''));
+        $this->assertSame(['storage_backend' => 'local', 'recordings_storage' => 'local', 'faxes_storage' => 'local', 'voicemail_archive_days' => '0'], FileStorageService::validate(['storage_backend' => 'local'], ''));
     }
 
     public function testUnknownBackendIsRefused(): void

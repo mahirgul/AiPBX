@@ -88,6 +88,23 @@ class VoicemailService {
             }
         }
 
+        // Heard messages archived to the S3 bucket (#69): listed, played and deleted like the others.
+        foreach (self::archived($ext) as $row) {
+            $sec = (int) $row['duration'];
+            $messages[] = [
+                'id' => 'Archive:' . $row['id'],
+                'folder' => 'Archive',
+                'folder_name' => t('srv_vm.folder_archive'),
+                'number' => (string) $row['id'],
+                'callerid' => (string) $row['callerid'],
+                'origdate' => $row['origtime'] ? date('D M j h:i:s A T Y', (int) $row['origtime']) : '',
+                'duration' => $sec,
+                'duration_formatted' => sprintf('%02d:%02d', floor($sec / 60), $sec % 60),
+                'has_audio' => true,
+                'origtime' => (int) $row['origtime'],
+            ];
+        }
+
         // Newest first (origtime: seconds since 1970; origdate is text in the server's locale).
         usort($messages, fn($a, $b) => [$b['origtime'], $b['origdate']] <=> [$a['origtime'], $a['origdate']]);
         return $messages;
@@ -100,6 +117,16 @@ class VoicemailService {
     /** Deletes the files of one message (portal and mobile app); throws on failure. */
     public static function deleteFiles(string $ext, string $msgId): string {
         $ext = preg_replace('/[^0-9]/', '', $ext);
+        if (preg_match('/^Archive:(\d+)$/', $msgId, $a)) {
+            $key = self::archivedKey($ext, $msgId);
+            if ($key === null) {
+                throw new \Exception(t('srv_vm.err_not_found'));
+            }
+            require_once __DIR__ . '/BucketFiles.php';
+            BucketFiles::delete($key);
+            getDB()->prepare('DELETE FROM voicemail_archive WHERE id = ? AND mailbox = ?')->execute([(int) $a[1], $ext]);
+            return t('srv_vm.deleted');
+        }
         if ($ext === '' || !preg_match('/^(INBOX|Old):(msg[0-9]{4})$/', $msgId, $m)) {
             throw new \Exception(t('srv_vm.err_id'));
         }
@@ -144,7 +171,7 @@ class VoicemailService {
     {
         $ext = preg_replace('/[^0-9]/', '', $ext);
         if ($ext === '' || !preg_match('/^INBOX:(msg[0-9]{4})$/', $msgId, $m)) {
-            if (preg_match('/^Old:msg[0-9]{4}$/', $msgId)) {
+            if (preg_match('/^(Old:msg[0-9]{4}|Archive:\d+)$/', $msgId)) {
                 return $msgId; // already heard
             }
             throw new \Exception(t('srv_vm.err_id'));
@@ -176,5 +203,29 @@ class VoicemailService {
             }
         }
         return "Old:{$target}";
+    }
+
+    /** Messages of a mailbox archived to the bucket, newest first. */
+    public static function archived(string $ext): array
+    {
+        try {
+            $stmt = getDB()->prepare('SELECT id, callerid, origtime, duration FROM voicemail_archive WHERE mailbox = ? ORDER BY origtime DESC');
+            $stmt->execute([$ext]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            return []; // before the migration ran
+        }
+    }
+
+    /** Bucket key of an archived message of this mailbox ("Archive:<id>"), or null. */
+    public static function archivedKey(string $ext, string $msgId): ?string
+    {
+        if (!preg_match('/^Archive:(\d+)$/', $msgId, $m)) {
+            return null;
+        }
+        $stmt = getDB()->prepare('SELECT object_key FROM voicemail_archive WHERE id = ? AND mailbox = ?');
+        $stmt->execute([(int) $m[1], preg_replace('/[^0-9]/', '', $ext)]);
+        $key = $stmt->fetchColumn();
+        return is_string($key) && str_starts_with($key, 'voicemail/') ? $key : null;
     }
 }
