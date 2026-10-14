@@ -1012,6 +1012,43 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 	})
 }
 
+// isLocalRequest: from this server itself, not through the Apache proxy (which
+// connects from 127.0.0.1 too but adds X-Forwarded-*).
+func isLocalRequest(r *http.Request) bool {
+	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" {
+		return false
+	}
+	return strings.HasPrefix(r.RemoteAddr, "127.0.0.1:") || strings.HasPrefix(r.RemoteAddr, "[::1]:")
+}
+
+// internalNotifyEvents: what the PBX may push to the apps over this endpoint.
+var internalNotifyEvents = map[string]bool{"voicemail": true}
+
+// POST /api/internal/notify (Internal only): {"extension": "1001", "event": "voicemail", "data": {...}}
+// sends {"event": ..., "data": ...} to every connected device of the extension
+// (bin/voicemail_notify.php: a new voicemail while the app is connected).
+func (s *Server) HandleInternalNotify(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost || !isLocalRequest(r) {
+		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
+		return
+	}
+	var req struct {
+		Extension string                 `json:"extension"`
+		Event     string                 `json:"event"`
+		Data      map[string]interface{} `json:"data"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024)).Decode(&req); err != nil ||
+		req.Extension == "" || !internalNotifyEvents[req.Event] {
+		writeJSONError(w, http.StatusBadRequest, "invalid request")
+		return
+	}
+	msg, _ := json.Marshal(map[string]interface{}{"event": req.Event, "data": req.Data})
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success":   true,
+		"delivered": s.hub.SendToExtension(req.Extension, msg),
+	})
+}
+
 // GET /api/internal/presence (Internal only)
 func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) {
 	remoteIP := r.RemoteAddr

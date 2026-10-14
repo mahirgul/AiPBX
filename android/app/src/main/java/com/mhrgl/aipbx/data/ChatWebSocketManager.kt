@@ -26,6 +26,8 @@ interface ChatEventListener {
     fun onGroupRoleUpdated(conversationId: Int, extension: String, role: String, actor: String) {}
     fun onGroupDeleted(conversationId: Int) {}
     fun onConnectionStateChanged(isConnected: Boolean) {}
+    /** A new voicemail arrived in the user's own mailbox. */
+    fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {}
 }
 
 class ChatWebSocketManager private constructor() {
@@ -204,6 +206,13 @@ class ChatWebSocketManager private constructor() {
                             if (msg != null) {
                                 for (l in listeners) l.onNewMessage(msg)
                             }
+                        }
+                        "voicemail" -> {
+                            val d = root.optJSONObject("data") ?: JSONObject()
+                            val caller = d.optString("caller")
+                            val duration = d.optInt("duration")
+                            val count = d.optInt("new_count")
+                            for (l in listeners) l.onVoicemail(caller, duration, count)
                         }
                         "presence" -> {
                             val ext = root.optString("extension")

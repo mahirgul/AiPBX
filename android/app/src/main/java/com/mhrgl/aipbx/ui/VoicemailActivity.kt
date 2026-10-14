@@ -61,6 +61,7 @@ class VoicemailActivity : AppCompatActivity() {
         binding.btnRefresh.setOnClickListener { load() }
         binding.rvVoicemail.layoutManager = LinearLayoutManager(this)
         binding.rvVoicemail.adapter = adapter
+        com.mhrgl.aipbx.service.VoicemailNotifications.cancel(this)
         load()
     }
 

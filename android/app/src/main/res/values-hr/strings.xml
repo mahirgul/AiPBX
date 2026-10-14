@@ -409,4 +409,5 @@
     <string name="vm_play_failed">Poruku nije moguće reproducirati</string>
     <string name="vm_load_failed">Govornu poštu nije moguće učitati</string>
     <string name="vm_delete_confirm">Izbrisati ovu govornu poruku?</string>
+    <string name="vm_push_body">%1$s · %2$s</string>
 </resources>
