@@ -10,8 +10,22 @@ attachments, their thumbnails and group pictures.
 
 With a bucket, large files stay off the PBX's disk and out of its backups.
 
-**Call recordings** can go into the same bucket: tick *Call recordings in the bucket too* (see
-[Call recordings](recordings.md#in-an-s3-bucket)). Voicemail and faxes stay on the local disk.
+**Call recordings** and **faxes** can go into the same bucket: tick *Call recordings in the bucket
+too* (see [Call recordings](recordings.md#in-an-s3-bucket)) and/or *Faxes in the bucket too* (below).
+Voicemail stays on the local disk.
+
+### Faxes in the bucket
+
+The PDF and TIFF of received and sent faxes move to the bucket **an hour after the fax finished**
+(`/usr/local/bin/fax_to_bucket.php`, every 5 minutes, 200 files per run), so the e-mail with the PDF
+and a quick *Send again* still use the local files. A file that a pending fax still uses (a fax sent
+again reuses the same TIFF) waits until that fax has finished too.
+
+- Viewing and downloading work as before, with the same access rules; the files come through the PBX.
+- *Send again* on a fax whose files are in the bucket brings the TIFF back to the disk first.
+- Deleting a fax, and the retention period (*Fax settings → retention days*), delete the files in
+  the bucket too.
+- When the bucket cannot be reached, the files stay on the disk and move on a later run.
 
 ## Access stays the same
 

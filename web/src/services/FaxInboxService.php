@@ -42,8 +42,9 @@ class FaxInboxService {
             }
         }
 
-        if (!empty($fax['pdf_path']) && file_exists($fax['pdf_path'])) @unlink($fax['pdf_path']);
-        if (!empty($fax['tif_path']) && file_exists($fax['tif_path'])) @unlink($fax['tif_path']);
+        require_once __DIR__ . '/FaxStorage.php';
+        FaxStorage::remove($fax['pdf_path'] ?? null);
+        FaxStorage::remove($fax['tif_path'] ?? null);
 
         $db->prepare("DELETE FROM fax_received WHERE id = ?")->execute([$fax_id]);
 

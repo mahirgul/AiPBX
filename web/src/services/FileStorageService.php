@@ -33,6 +33,8 @@ class FileStorageService
         'storage_s3_path_style' => '1',
         // Call recordings into the same bucket (RecordingStorage, #69).
         'recordings_storage' => 'local',
+        // Faxes into the same bucket (FaxStorage, #69).
+        'faxes_storage' => 'local',
     ];
 
     /** @return array<string, string> stored values (the secret still encrypted) */
@@ -65,7 +67,11 @@ class FileStorageService
         if (!in_array($backend, self::BACKENDS, true)) {
             throw new \Exception(t('storage.err_backend'));
         }
-        $v = ['storage_backend' => $backend, 'recordings_storage' => $backend === 's3' && !empty($data['recordings_storage']) ? 's3' : 'local'];
+        $v = [
+            'storage_backend' => $backend,
+            'recordings_storage' => $backend === 's3' && !empty($data['recordings_storage']) ? 's3' : 'local',
+            'faxes_storage' => $backend === 's3' && !empty($data['faxes_storage']) ? 's3' : 'local',
+        ];
         if ($backend === 'local') {
             return $v;
         }

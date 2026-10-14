@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.20.0
+
+- **Faxes in an S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)): tick
+  *Faxes in the bucket too* on *Admin → File storage*. The PDF and TIFF of received
+  and sent faxes move to the bucket an hour after the fax finished and leave the
+  PBX's disk. Viewing, downloading, sending again and deleting work as before;
+  the retention period deletes them in the bucket too. See
+  [File storage](docs/file-storage.md#faxes-in-the-bucket).
+- **Fix: fax retention and the stuck-fax sweep did nothing.** Both scripts logged
+  in to the database with `/root/.my.cnf`, which the installer never wrote, so old
+  faxes were never deleted (*Fax settings → retention days*) and outgoing faxes
+  that never finished stayed "pending" for ever. They now log in like the other
+  root jobs. On the first night old faxes beyond the retention period are removed.
+
 ## 1.19.0
 
 - **Call recordings in an S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)):

@@ -14,7 +14,14 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-SWEEP] $*" >> "$LOGFILE"
 }
 
-MYSQL_CMD="mysql --defaults-extra-file=/root/.my.cnf -N -s asterisk"
+# Root logs in to MariaDB over its socket (unix_socket); /root/.my.cnf is used
+# when there is one. install.sh never wrote that file, so until 1.20.0 these
+# queries failed silently and nothing was cleaned up or swept.
+if [ -r /root/.my.cnf ]; then
+    MYSQL_CMD="mysql --defaults-extra-file=/root/.my.cnf -N -s asterisk"
+else
+    MYSQL_CMD="mysql -N -s asterisk"
+fi
 
 # Asterisk call-file worst-case suresi: (MaxRetries+1) * RetryTime + WaitTime.
 # fax_max_retries dinamik olabildiginden guvenli bir sabit esik (15 dk) kullanilir.
