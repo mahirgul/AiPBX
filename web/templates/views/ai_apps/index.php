@@ -63,6 +63,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
         <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_type'); ?></label>
             <select name="app_type" id="ai_type" class="form-control" style="max-width: 420px;" onchange="aiAppType()">
                 <option value="announcement"><?php echo t('ai_apps.type_announcement'); ?></option>
+                <option value="speech_routing"><?php echo t('ai_apps.type_speech_routing'); ?></option>
                 <option value="voice_requests"><?php echo t('ai_apps.type_voice_requests'); ?></option>
             </select></div>
         <div class="u-grid-2">
@@ -122,12 +123,20 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     <input type="number" name="listen_seconds" id="ai_listen" class="form-control" min="2" max="15" value="7"></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_retries'); ?></label>
                     <input type="number" name="retries" id="ai_retries" class="form-control" min="0" max="2" value="1"></div>
+                <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_understand'); ?></label>
+                    <select name="understand" id="ai_understand" class="form-control">
+                        <option value="auto"><?php echo t('ai_apps.understand_auto'); ?></option>
+                        <option value="keywords"><?php echo t('ai_apps.understand_keywords'); ?></option>
+                        <?php foreach ($cloud_llm as $p): ?><option value="cloud:<?php echo $h($p['id']); ?>"><?php echo $h(sprintf(t('ai_apps.understand_cloud'), $p['title'])); ?></option><?php endforeach; ?>
+                    </select>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.understand_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_threshold'); ?></label>
                     <input type="number" name="threshold" id="ai_threshold" class="form-control" min="0" max="1" step="0.05" value="0.5">
                     <small class="u-hint u-fs-11"><?php echo t('ai_apps.threshold_help'); ?></small></div>
             </div>
-            <label class="form-label"><?php echo t('ai_apps.field_intents'); ?></label>
-            <p class="u-muted u-fs-11 u-mt-0"><?php echo t('ai_apps.intents_help'); ?></p>
+            <label class="form-label"><span class="ai-only-requests"><?php echo t('ai_apps.field_intents'); ?></span><span class="ai-only-routing"><?php echo t('ai_apps.field_routes'); ?></span></label>
+            <p class="u-muted u-fs-11 u-mt-0"><span class="ai-only-requests"><?php echo t('ai_apps.intents_help'); ?></span><span class="ai-only-routing"><?php echo t('ai_apps.routes_help'); ?></span></p>
+            <p class="u-fs-11 u-mt-0 <?php echo $meaning_ready ? 'u-success' : 'u-muted'; ?>"><i class="fas fa-brain"></i> <?php echo t($meaning_ready ? 'ai_apps.meaning_on' : 'ai_apps.meaning_off'); ?> <?php if (!$meaning_ready): ?><a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a><?php endif; ?></p>
             <div id="ai_intents"></div>
             <button type="button" class="btn btn-secondary btn-sm u-mb-10" onclick="aiIntentAdd()"><i class="fas fa-plus"></i> <?php echo t('ai_apps.btn_add_intent'); ?></button>
         </div>
@@ -196,6 +205,9 @@ function aiAppEdit(a) {
     if (c.stt_model && ![...st.options].some(o => o.value === c.stt_model)) st.add(new Option(c.stt_model, c.stt_model));
     st.value = c.stt_model || 'engine:tr';
     document.getElementById('ai_stt_lang').value = c.stt_lang || 'tr';
+    const un = document.getElementById('ai_understand');
+    if (c.understand && ![...un.options].some(o => o.value === c.understand)) un.add(new Option(c.understand, c.understand));
+    un.value = c.understand || 'auto';
     document.getElementById('ai_intents').innerHTML = '';
     (c.intents || []).forEach(i => aiIntentAdd(i));
     if (!(c.intents || []).length) aiIntentAdd();
@@ -212,14 +224,23 @@ bindDestinationSelector('ai_dest_type', 'ai_dest_id');
 const AI_DEST_MODULES = <?php echo json_encode(array_map(fn($m) => ['key' => $m['key'], 'name' => $m['name']], $modules), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
 const AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords' => t('ai_apps.intent_keywords'), 'examples' => t('ai_apps.intent_examples'),
     'reply' => t('ai_apps.intent_reply'), 'email' => t('ai_apps.intent_email'), 'dest' => t('ai_apps.intent_dest'), 'none' => t('ai_apps.intent_dest_none'),
-    'remove' => t('common.delete')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
+    'remove' => t('common.delete'), 'routing_greeting' => t('ai_apps.routing_greeting_placeholder'),
+    'requests_greeting' => t('ai_apps.greeting_placeholder')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
 let aiIntentSeq = 0;
 function aiAppType() {
     const t = document.getElementById('ai_type').value;
-    document.querySelectorAll('.ai-only-announcement').forEach(el => el.style.display = t === 'announcement' ? '' : 'none');
-    document.querySelectorAll('.ai-only-voice_requests').forEach(el => el.style.display = t === 'voice_requests' ? '' : 'none');
+    const listens = t === 'voice_requests' || t === 'speech_routing';
+    const show = (sel, on) => document.querySelectorAll(sel).forEach(el => el.style.display = on ? '' : 'none');
+    show('.ai-only-announcement', t === 'announcement');
+    show('.ai-only-voice_requests', listens);
+    // Routing by speech: names, words and a destination; no spoken reply, no e-mail.
+    show('.ai-only-requests', t === 'voice_requests');
+    show('.ai-only-routing', t === 'speech_routing');
+    show('.ai-intent-extra', t === 'voice_requests');
+    const g = document.getElementById('ai_greeting');
+    g.placeholder = t === 'speech_routing' ? AI_T.routing_greeting : AI_T.requests_greeting;
     document.getElementById('ai_text').required = t === 'announcement';
-    document.getElementById('ai_greeting').required = t === 'voice_requests';
+    g.required = listens;
 }
 function aiIntentAdd(i) {
     i = i || { id: '', name: '', keywords: [], examples: [], reply: '', email: '', dest_type: '', dest_id: '' };
@@ -235,15 +256,16 @@ function aiIntentAdd(i) {
         + field('keywords', AI_T.keywords, '<input type="text" class="form-control" name="intents[' + n + '][keywords]" value="' + esc((i.keywords || []).join(', ')) + '">')
         + '</div>'
         + field('examples', AI_T.examples, '<textarea class="form-control" rows="2" name="intents[' + n + '][examples]">' + esc((i.examples || []).join('\n')) + '</textarea>')
-        + field('reply', AI_T.reply, '<input type="text" class="form-control" name="intents[' + n + '][reply]" maxlength="1000" value="' + esc(i.reply) + '">')
+        + '<div class="ai-intent-extra">' + field('reply', AI_T.reply, '<input type="text" class="form-control" name="intents[' + n + '][reply]" maxlength="1000" value="' + esc(i.reply) + '">') + '</div>'
         + '<div class="u-grid-2">'
-        + field('email', AI_T.email, '<input type="email" class="form-control" name="intents[' + n + '][email]" value="' + esc(i.email) + '">')
+        + '<div class="ai-intent-extra">' + field('email', AI_T.email, '<input type="email" class="form-control" name="intents[' + n + '][email]" value="' + esc(i.email) + '">') + '</div>'
         + field('dest', AI_T.dest, '<div class="u-flex-gap"><select class="form-control" id="ai_idt_' + n + '" name="intents[' + n + '][dest_type]"><option value="">' + esc(AI_T.none) + '</option>'
             + AI_DEST_MODULES.map(m => '<option value="' + esc(m.key) + '">' + esc(m.name) + '</option>').join('') + '</select>'
             + '<select class="form-control" id="ai_idi_' + n + '" name="intents[' + n + '][dest_id]"></select></div>')
         + '</div>'
         + '<button type="button" class="btn btn-danger btn-sm" onclick="this.closest(\'.card\').remove()"><i class="fas fa-trash-alt"></i> ' + esc(AI_T.remove) + '</button>';
     document.getElementById('ai_intents').appendChild(row);
+    row.querySelectorAll('.ai-intent-extra').forEach(el => el.style.display = document.getElementById('ai_type').value === 'voice_requests' ? '' : 'none');
     const dt = document.getElementById('ai_idt_' + n);
     dt.value = i.dest_type || '';
     bindDestinationSelector('ai_idt_' + n, 'ai_idi_' + n);

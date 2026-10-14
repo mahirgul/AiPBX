@@ -45,7 +45,7 @@ function pushAiAppConfigs(array $apps): void {
     try {
         $wanted = [];
         foreach ($apps as $a) {
-            if (($a['app_type'] ?? '') === 'voice_requests') {
+            if (AiAppService::listens((string) ($a['app_type'] ?? ''))) {
                 $wanted[(int) $a['id']] = AiAppService::serviceConfig($a);
             }
         }
@@ -66,7 +66,7 @@ function buildAiAppsDialplan(array $apps, string $key): string {
     }
 
     foreach ($apps as $a) {
-        if (($a['app_type'] ?? '') === 'voice_requests') {
+        if (AiAppService::listens((string) ($a['app_type'] ?? ''))) {
             $conf .= buildVoiceRequestsContext($a, $key);
             continue;
         }

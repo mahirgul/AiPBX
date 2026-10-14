@@ -35,6 +35,7 @@ from . import sysinfo
 from .ema import EmaLightningBackend
 from .kokoro_backend import KokoroBackend
 from .piper_backend import PiperBackend
+from .embedding import EmbeddingBackend
 from .vosk_backend import VoskBackend
 from .whisper_backend import WhisperBackend
 
@@ -120,6 +121,19 @@ def _whisper(id, title, size, language, languages, measured=None, note=""):
                      homepage="https://github.com/openai/whisper", download_mb=mb, backend=WhisperBackend,
                      engine="whisper", measured=measured or {}, note=note,
                      source={"repo": s["repo"], "revision": s["revision"], "language": language, "files": files})
+
+
+# multilingual-e5-small (MIT) in the int8 ONNX export of Xenova, pinned.
+E5_SMALL = {
+    "repo": "Xenova/multilingual-e5-small", "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+    "upstream": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "files": {
+        "model.onnx": {"path": "onnx/model_quantized.onnx", "bytes": 118308185,
+                       "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193"},
+        "tokenizer.json": {"path": "tokenizer.json", "bytes": 17082730,
+                           "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"},
+    },
+}
 
 
 # Kokoro-82M voices: onnx-community/Kokoro-82M-v1.0-ONNX at a pinned revision.
@@ -221,6 +235,17 @@ REGISTRY = (
     _kokoro("kokoro-en-george", "Kokoro George (English, UK)", "bm_george",
             "c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc", ("en-GB",), "male", "C",
             measured={"realtime_factor": 1.65, "memory_mb": 460, "load_s": 1.6}),
+    # Sentence meaning for the voice requests (embedding.py), every language.
+    ModelSpec(id="e5-small-multilingual", title="Sentence meaning: multilingual-e5-small", kind="embedding",
+              languages=("tr-TR", "de-DE", "en-US", "en-GB"), license="MIT",
+              license_url=f"https://huggingface.co/intfloat/multilingual-e5-small/blob/{E5_SMALL['upstream']}/README.md",
+              homepage="https://huggingface.co/intfloat/multilingual-e5-small",
+              download_mb=-(-sum(f["bytes"] for f in E5_SMALL["files"].values()) // (1024 * 1024)),
+              backend=EmbeddingBackend, engine="e5",
+              measured={"ms_per_sentence": 3, "memory_mb": 250, "load_s": 1},
+              note="Voice requests understand what callers mean, not only the keywords: the example "
+                   "sentences are compared by meaning. About 3 ms per sentence.",
+              source={"repo": E5_SMALL["repo"], "revision": E5_SMALL["revision"], "files": E5_SMALL["files"]}),
 )
 
 
@@ -506,6 +531,18 @@ class ModelManager:
 
     def transcribe(self, model_id, wav):
         return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))
+
+    def embed(self, model_id, texts):
+        return self._run_job(model_id, "embedding", lambda b: b.embed(texts))
+
+    def ready_embedding(self):
+        """Id of a running sentence-meaning model, or None."""
+        for entry in self._entries.values():
+            if entry.spec.kind == "embedding":
+                with self._mu:
+                    if self._state(entry) == READY:
+                        return entry.spec.id
+        return None
 
     def synthesize(self, model_id, text, speed, sample_rate):
         return self._run_job(model_id, "tts",

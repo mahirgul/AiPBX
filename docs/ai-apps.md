@@ -81,11 +81,40 @@ understood; a keyword two requests share counts less, and in "temiz havlu" the n
 | Fault | çalışmıyor, bozuk, gelmiyor, yanmıyor, açılmıyor, arıza |
 | Checkout | çıkış, hesap, fatura, ödeme |
 
-Example sentences help when a caller uses none of the keywords, but only with a lower
-**certainty needed** (about 0.3); at 0.5 the keywords decide. The recording and the transcript are
+Example sentences help when a caller uses none of the keywords. Without the local sentence-meaning
+model they are compared by their letters only and need a lower **certainty needed** (about 0.3);
+with it they are compared by meaning (see *Understanding* below). The recording and the transcript are
 kept by the AI service for 24 hours (the request list keeps the text). Technical details:
 [Local AI models → Voice requests](local-ai.md#voice-requests-voice_requests).
 
+
+## Routing by speech
+
+A switchboard that listens: "Hello, which department would you like to speak to?" — the caller
+answers in their own words and is put through. It is the voice-requests engine with only what
+routing needs: for each **destination** a name (Accounting), a few keywords, two or three sentences
+callers would say, and where the call goes. There is no spoken reply and no e-mail. When the caller
+is not understood (after *ask again*), the call goes to the application's destination — usually the
+keypad IVR or the operator, so nobody is lost. An IVR key can point to the routing application, and
+the routing application's destination can be the IVR.
+
+### Understanding
+
+| Setting | How the request is recognised |
+|---------|-------------------------------|
+| **Keywords + local sentence meaning** (default) | Keywords and the letters of the examples, and — when the model *Sentence meaning: multilingual-e5-small* runs on *AI → Local models* — the **meaning** of the example sentences, so "can I pay by credit card?" finds *Accounting* without the word "invoice". |
+| **Keywords only** | Keywords and letters, no model. |
+| **Cloud model: …** | A language model of a provider set up on *AI → Cloud services* (Google AI / Gemini, OpenAI, Groq, OpenRouter) reads the destinations and the caller's words and answers which one — or **none**. If it does not answer within 6 s, the local matching decides. |
+
+The local model is small on purpose (118 MB, about 3 ms per sentence): large models are not run on
+the PBX. It is good at choosing between the configured destinations, but it rarely says "none of
+them": a caller who wants something else entirely ("I'd like to order a pizza") lands on the closest
+destination. When that matters, use a cloud model, or raise *certainty needed* (0.6 asks again more
+often).
+
+Measured on 40 Turkish requests that avoided the keywords (5 departments, 3 examples each): keywords
+and letters alone put 6 through correctly (2 wrong, the rest asked again); with the local sentence
+meaning 21 correct, 0 wrong, 19 asked again (default certainty 0.5).
 
 ## How it works
 

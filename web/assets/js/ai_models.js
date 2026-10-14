@@ -70,8 +70,10 @@
                         + fmt(esc(T.accept_license), '<a href="' + esc(m.license_url) + '" target="_blank" rel="noopener">' + esc(m.license) + '</a>') + '</label>'
                         + '<button type="button" class="btn btn-primary btn-sm" data-act="install" data-id="' + esc(m.id) + '"><i class="fas fa-download"></i> ' + esc(T.btn_download) + ' (' + esc(m.download_mb) + ' MB)</button>';
                 }
-                if (m.state === 'ready') {
+                if (m.state === 'ready' && m.kind === 'tts') {
                     actions += '<button type="button" class="btn btn-secondary btn-sm" data-act="benchmark" data-id="' + esc(m.id) + '"><i class="fas fa-gauge-high"></i> ' + esc(T.btn_benchmark) + '</button> ';
+                }
+                if (m.state === 'ready') {
                     actions += '<button type="button" class="btn btn-secondary btn-sm" data-act="stop" data-id="' + esc(m.id) + '"><i class="fas fa-stop"></i> ' + esc(T.btn_stop) + '</button> ';
                 }
                 if (m.state === 'installed') {
