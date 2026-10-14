@@ -51,6 +51,20 @@ fail2ban bans the address after repeated failures. Check `fail2ban-client status
 `fail2ban-client set asterisk unbanip <ip>` and add internal networks to the ignore list on the
 **fail2ban** page.
 
+## No notification for a new voicemail in the app
+
+The notification needs the Android app 1.0.63 or newer (older versions ignore it) and, while the app
+is not connected, push set up under **Admin → Push**. Every new message writes one line saying what
+happened:
+
+```bash
+journalctl -t aipbx-voicemail -n 20
+# new voicemail for 1001: app not connected; push to 1 device(s)
+```
+
+"push off" means push is not set up, "push to 0 device(s)" that the extension has no registered
+phone (open the app once after signing in), and "failed: ..." carries Firebase's error.
+
 ## Useful commands
 
 ```bash

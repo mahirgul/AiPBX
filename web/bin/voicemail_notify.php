@@ -77,14 +77,17 @@ function voicemailNotifySend(string $ext, int $newCount): void
         'content' => json_encode(['extension' => $ext, 'event' => 'voicemail', 'data' => $data]),
     ]]);
     $port = preg_replace('/[^0-9]/', '', (string) portalEnv('CHAT_PORT')) ?: '8086';
-    @file_get_contents('http://127.0.0.1:' . $port . '/api/internal/notify', false, $ctx);
+    $live = json_decode((string) @file_get_contents('http://127.0.0.1:' . $port . '/api/internal/notify', false, $ctx), true);
+    $log = 'new voicemail for ' . $ext . ': app ' . (!empty($live['delivered']) ? 'connected, delivered' : 'not connected');
 
     // 2. Push (also reaches an app that is not connected); the same notification
     // id on the phone, so both together show one notification.
     try {
         require_once dirname(__DIR__) . '/src/services/push/PushService.php';
-        if (\App\Services\Push\PushService::isEnabled()) {
-            \App\Services\Push\PushService::getProvider()->sendToExtension($ext, [
+        if (!\App\Services\Push\PushService::isEnabled()) {
+            $log .= '; push off (Admin -> Push)';
+        } else {
+            $r = \App\Services\Push\PushService::getProvider()->sendToExtension($ext, [
                 'action' => 'voicemail',
                 'title' => 'Voicemail',
                 'body' => trim(($caller !== '' ? $caller : 'Unknown caller') . ' ' . gmdate('i:s', $duration)),
@@ -92,8 +95,14 @@ function voicemailNotifySend(string $ext, int $newCount): void
                 'duration' => (string) $duration,
                 'new_count' => (string) $newCount,
             ]);
+            $log .= '; push to ' . (int) ($r['delivered'] ?? 0) . ' device(s)'
+                . (empty($r['errors']) ? '' : ', failed: ' . implode(' | ', array_slice($r['errors'], 0, 3)))
+                . (isset($r['message']) ? ' (' . $r['message'] . ')' : '');
         }
     } catch (\Throwable $e) {
-        error_log('voicemail_notify: ' . $e->getMessage());
+        $log .= '; push error: ' . $e->getMessage();
     }
+    // The only trace of this detached run: journalctl -t aipbx-voicemail
+    openlog('aipbx-voicemail', LOG_PID, LOG_USER);
+    syslog(LOG_INFO, $log);
 }
