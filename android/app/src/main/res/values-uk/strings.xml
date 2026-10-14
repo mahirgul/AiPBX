@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Видалити це повідомлення для всіх у чаті?</string>
     <string name="err_message_delete_not_allowed">Це повідомлення більше не можна видалити.</string>
     <string name="api_message_delete_failed">Не вдалося видалити повідомлення (HTTP %1$s)</string>
+    <string name="vm_title">Голосова пошта</string>
+    <string name="vm_empty">Немає голосових повідомлень</string>
+    <string name="vm_new">Нове</string>
+    <string name="vm_play">Прослухати</string>
+    <string name="vm_unknown_caller">Невідомий абонент</string>
+    <string name="vm_play_failed">Не вдалося відтворити повідомлення</string>
+    <string name="vm_load_failed">Не вдалося завантажити голосову пошту</string>
+    <string name="vm_delete_confirm">Видалити це голосове повідомлення?</string>
 </resources>

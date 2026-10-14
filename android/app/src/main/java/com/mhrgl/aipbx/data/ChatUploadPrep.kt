@@ -53,6 +53,32 @@ object ChatUploadPrep {
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(dir, "capture.jpg"))
     }
 
+    /**
+     * Small preview of a picture before it is sent (longer side about [maxPx]),
+     * or null for other files or when it cannot be read. Run off the main thread.
+     */
+    fun thumbnail(context: Context, uri: Uri, maxPx: Int = 160): Bitmap? = try {
+        val mime = context.contentResolver.getType(uri) ?: ""
+        if (!mime.startsWith("image/") && !uri.toString().endsWith(".jpg")) null
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, info, _ ->
+                val f = maxPx.toFloat() / max(info.size.width, info.size.height)
+                if (f < 1f) decoder.setTargetSize((info.size.width * f).toInt().coerceAtLeast(1), (info.size.height * f).toInt().coerceAtLeast(1))
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
+        } else {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            var sample = 1
+            while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+
     fun prepare(context: Context, uri: Uri, type: String): Prepared? {
         val cr = context.contentResolver
         val mime = cr.getType(uri)

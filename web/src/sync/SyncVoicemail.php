@@ -88,5 +88,9 @@ function voicemailGeneralConf(): string
         . "charset=UTF-8\n"
         . "emaildateformat=%d.%m.%Y %H:%M\n"
         . "emailsubject=Voicemail \${VM_MAILBOX}\n"
-        . "emailbody={$body}\n";
+        . "emailbody={$body}\n"
+        // Messages listened to or deleted outside Asterisk (portal, mobile app)
+        // update the voicemail lamp of the phones within 15 s.
+        . "pollmailboxes=yes\n"
+        . "pollfreq=15\n";
 }

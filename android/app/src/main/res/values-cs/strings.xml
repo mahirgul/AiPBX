@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Smazat tuto zprávu pro všechny v chatu?</string>
     <string name="err_message_delete_not_allowed">Tuto zprávu už nelze smazat.</string>
     <string name="api_message_delete_failed">Zprávu se nepodařilo smazat (HTTP %1$s)</string>
+    <string name="vm_title">Hlasová schránka</string>
+    <string name="vm_empty">Žádné hlasové zprávy</string>
+    <string name="vm_new">Nová</string>
+    <string name="vm_play">Přehrát</string>
+    <string name="vm_unknown_caller">Neznámý volající</string>
+    <string name="vm_play_failed">Zprávu nelze přehrát</string>
+    <string name="vm_load_failed">Hlasovou schránku nelze načíst</string>
+    <string name="vm_delete_confirm">Smazat tuto hlasovou zprávu?</string>
 </resources>

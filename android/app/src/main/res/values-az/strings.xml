@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Bu mesaj söhbətdəki hər kəs üçün silinsin?</string>
     <string name="err_message_delete_not_allowed">Bu mesaj artıq silinə bilməz.</string>
     <string name="api_message_delete_failed">Mesaj silinmədi (HTTP %1$s)</string>
+    <string name="vm_title">Səsli poçt</string>
+    <string name="vm_empty">Səsli mesaj yoxdur</string>
+    <string name="vm_new">Yeni</string>
+    <string name="vm_play">Dinlə</string>
+    <string name="vm_unknown_caller">Naməlum zəng edən</string>
+    <string name="vm_play_failed">Mesajı oxutmaq mümkün olmadı</string>
+    <string name="vm_load_failed">Səsli poçtu yükləmək mümkün olmadı</string>
+    <string name="vm_delete_confirm">Bu səsli mesaj silinsin?</string>
 </resources>

@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Slet denne besked for alle i chatten?</string>
     <string name="err_message_delete_not_allowed">Denne besked kan ikke længere slettes.</string>
     <string name="api_message_delete_failed">Beskeden kunne ikke slettes (HTTP %1$s)</string>
+    <string name="vm_title">Telefonsvarer</string>
+    <string name="vm_empty">Ingen talebeskeder</string>
+    <string name="vm_new">Ny</string>
+    <string name="vm_play">Afspil</string>
+    <string name="vm_unknown_caller">Ukendt opkalder</string>
+    <string name="vm_play_failed">Beskeden kunne ikke afspilles</string>
+    <string name="vm_load_failed">Telefonsvareren kunne ikke indlæses</string>
+    <string name="vm_delete_confirm">Slet denne talebesked?</string>
 </resources>
