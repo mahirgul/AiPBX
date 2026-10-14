@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Фоновое подключение к АТС</string>
     <string name="notif_incoming_call_desc">Добавочный: %s</string>
     <string name="notif_incoming_call_title">ВХОДЯЩИЙ ЗВОНОК: %s</string>
-    <string name="notif_service_text">Добавочный: %1$s (%2$s) - ожидание звонков</string>
-    <string name="notif_service_title">Подключение к АТС активно</string>
     <string name="password_hint">Пароль</string>
     <string name="server_setup_subtitle">Введите адрес сервера AI PBX, к которому хотите подключиться.</string>
     <string name="server_setup_title">Адрес сервера</string>

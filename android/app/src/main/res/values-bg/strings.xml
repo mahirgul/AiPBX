@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Фонова връзка с централата</string>
     <string name="notif_incoming_call_desc">Вътрешен номер: %s</string>
     <string name="notif_incoming_call_title">ВХОДЯЩО ОБАЖДАНЕ: %s</string>
-    <string name="notif_service_text">Вътрешен номер: %1$s (%2$s) - очаква обаждания</string>
-    <string name="notif_service_title">Връзката с централата е активна</string>
     <string name="password_hint">Парола</string>
     <string name="server_setup_subtitle">Въведете адреса на сървъра AI PBX, към който искате да се свържете.</string>
     <string name="server_setup_title">Адрес на сървъра</string>

@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Pozadinska veza s centralom</string>
     <string name="notif_incoming_call_desc">Lokal: %s</string>
     <string name="notif_incoming_call_title">DOLAZNI POZIV: %s</string>
-    <string name="notif_service_text">Lokal: %1$s (%2$s) - čeka pozive</string>
-    <string name="notif_service_title">Veza s centralom aktivna</string>
     <string name="password_hint">Lozinka</string>
     <string name="server_setup_subtitle">Unesite adresu AI PBX poslužitelja s kojim se želite povezati.</string>
     <string name="server_setup_title">Adresa poslužitelja</string>

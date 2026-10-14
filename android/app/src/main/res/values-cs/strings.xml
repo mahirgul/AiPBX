@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Připojení k ústředně na pozadí</string>
     <string name="notif_incoming_call_desc">Linka: %s</string>
     <string name="notif_incoming_call_title">PŘÍCHOZÍ HOVOR: %s</string>
-    <string name="notif_service_text">Linka: %1$s (%2$s) - čeká na hovory</string>
-    <string name="notif_service_title">Připojení k ústředně je aktivní</string>
     <string name="password_hint">Heslo</string>
     <string name="server_setup_subtitle">Zadejte adresu serveru AI PBX, ke kterému se chcete připojit.</string>
     <string name="server_setup_title">Adresa serveru</string>
