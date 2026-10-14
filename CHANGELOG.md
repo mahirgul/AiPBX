@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.17.0
+
+- **Health checks** (*Admin → Health checks*): the server watches itself — Asterisk,
+  database, web portal, chat, trunks, disk, memory, e-mail sending, pending
+  changes, outgoing faxes, DHCP/TFTP/FTP, local AI, TLS certificate, the nightly
+  backup and what the installer set up. Every check has its own interval. The
+  chosen users (and other addresses) get an e-mail when something stops working
+  and again when it works again; short hiccups stay quiet, and the alarm repeats
+  while a problem lasts. See [Health checks](docs/health.md).
+- **Daily summary for managers:** every morning yesterday's calls (incoming,
+  outgoing, internal, answered, missed, talk time), faxes, yesterday's alarms and
+  the state of every check, by e-mail.
+- **`sudo aipbx-selftest`** runs every check at once; the installer runs it at the
+  end of every installation and update and prints the result.
+
 ## 1.16.1
 
 - **Android app 1.0.62 — short status notification:** the permanent notification

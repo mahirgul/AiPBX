@@ -55,6 +55,7 @@ class RoleRepository extends BaseRepository
             'pending_sync'       => ['title' => 'Pending Changes', 'group' => 'Administration', 'actions' => self::VAE],
             'audit_log'          => ['title' => 'Audit Log', 'group' => 'Administration', 'actions' => self::VA],
             'system_update'      => ['title' => 'System Update', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
+            'health'             => ['title' => 'Health Checks', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
             'firewall'           => ['title' => 'Firewall', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'fail2ban'           => ['title' => 'Fail2ban', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'certificates'       => ['title' => 'Certificates', 'group' => 'Security', 'actions' => self::VAE, 'admin_only' => true],
