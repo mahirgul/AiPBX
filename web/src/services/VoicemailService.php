@@ -154,8 +154,15 @@ class VoicemailService {
         if ($files === []) {
             throw new \Exception(t('srv_vm.err_not_found'));
         }
-        if (!is_dir("{$box}/Old") && !@mkdir("{$box}/Old", 0775)) {
-            throw new \Exception(t('srv_vm.err_delete'));
+        if (!is_dir("{$box}/Old")) {
+            if (!@mkdir("{$box}/Old", 0775)) {
+                throw new \Exception(t('srv_vm.err_delete'));
+            }
+            // Asterisk moves messages it plays into Old too: the folder must stay
+            // writable for the asterisk group (www-data is a member), as it would
+            // be had Asterisk created it.
+            @chgrp("{$box}/Old", 'asterisk');
+            @chmod("{$box}/Old", 0775);
         }
         $next = 0;
         foreach (glob("{$box}/Old/msg[0-9][0-9][0-9][0-9].*") ?: [] as $f) {

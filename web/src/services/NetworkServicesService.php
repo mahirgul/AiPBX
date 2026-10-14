@@ -21,9 +21,14 @@
  * administrator uploads (boot files, firmware).
  *
  * FTP (netsvc_ftp, independent of the mode): vsftpd serves the same folder
- * read-only, to anonymous logins and to one FTP user (default NECSDT700, the
- * user NEC DT700 phones log in with), from the same networks as TFTP. The
- * user is not a system account; aipbx-priv gets only its password hash.
+ * read-only, from the same networks as TFTP, to anonymous logins, to the fixed
+ * user NECSDT700 without a password (NEC DT700/DT800 phones log in with it)
+ * and to extra FTP users added on the page (netsvc_ftp_users: name + SHA-512
+ * hash; aipbx-priv gets only the hashes). None of them is a system account.
+ *
+ * Extra DHCP options (netsvc_dhcp_options, "code,value" per line) are added to
+ * the ones AiPBX hands out; the same code replaces AiPBX's own (66, 160, 150,
+ * 42, 3, 6). aipbx-priv checks them again: a dnsmasq file can run commands.
  */
 
 require_once dirname(__DIR__) . '/helpers.php';
@@ -49,9 +54,18 @@ class NetworkServicesService
         'netsvc_lease_hours' => '12',
         'netsvc_tftp' => '1',
         'netsvc_ftp' => '0',
-        'netsvc_ftp_user' => 'NECSDT700',
-        'netsvc_ftp_password' => '',
+        'netsvc_ftp_users' => '[]',
+        'netsvc_dhcp_options' => '',
     ];
+
+    /** FTP user of NEC DT700/DT800 phones: always there while FTP is on, no password. */
+    public const FTP_FIXED_USER = 'NECSDT700';
+
+    public const MAX_FTP_USERS = 20;
+    public const MAX_DHCP_OPTIONS = 20;
+
+    /** Characters allowed in a DHCP option value (no quotes, #, backslash or line breaks). */
+    private const DHCP_VALUE = '/^[A-Za-z0-9 .:\/_@,+=%~!$&()*;?-]{1,200}$/';
 
     public const MAX_TFTP_FILE = 64 * 1024 * 1024;
 
@@ -122,7 +136,7 @@ class NetworkServicesService
      * @param array<string, array{ip: string, prefix: int}> $interfaces
      * @return array<string, string>
      */
-    public static function validate(array $data, array $interfaces, array $tftpNetworks): array
+    public static function validate(array $data, array $interfaces, array $tftpNetworks, array $ftpUsers = []): array
     {
         // The page has two switches; netsvc_mode is still what is stored.
         if (!isset($data['netsvc_mode'])) {
@@ -140,18 +154,10 @@ class NetworkServicesService
         $v['netsvc_lease_hours'] = (string) max(1, min(168, (int) ($data['netsvc_lease_hours'] ?? 12)));
         $v['netsvc_tftp'] = !empty($data['netsvc_tftp']) ? '1' : '0';
         $v['netsvc_ftp'] = !empty($data['netsvc_ftp']) ? '1' : '0';
-        $v['netsvc_ftp_user'] = trim((string) ($data['netsvc_ftp_user'] ?? '')) ?: self::SETTINGS['netsvc_ftp_user'];
-        $v['netsvc_ftp_password'] = (string) ($data['netsvc_ftp_password'] ?? '');
-        if ($v['netsvc_ftp'] === '1') {
-            if (!preg_match('/^[A-Za-z0-9._-]{1,32}$/', $v['netsvc_ftp_user'])) {
-                throw new \Exception(t('netsvc.err_ftp_user'));
-            }
-            if (!preg_match('/^[\x21-\x7E]{4,64}$/', $v['netsvc_ftp_password'])) {
-                throw new \Exception(t('netsvc.err_ftp_password'));
-            }
-            if ($tftpNetworks === [] && $mode !== 'dhcp') {
-                throw new \Exception(t('netsvc.err_tftp_networks'));
-            }
+        $v['netsvc_ftp_users'] = json_encode(self::ftpUsersFromForm($data, $ftpUsers));
+        $v['netsvc_dhcp_options'] = implode("\n", array_map(fn($o) => $o[0] . ',' . $o[1], self::dhcpOptions((string) ($data['netsvc_dhcp_options'] ?? ''))));
+        if ($v['netsvc_ftp'] === '1' && $tftpNetworks === [] && $mode !== 'dhcp') {
+            throw new \Exception(t('netsvc.err_tftp_networks'));
         }
 
         if ($mode === 'off') {
@@ -236,6 +242,9 @@ class NetworkServicesService
             if (preg_match('#^https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$#', $url)) {
                 $args[] = 'url=' . $url;
             }
+            foreach (self::dhcpOptions($v['netsvc_dhcp_options']) as [$code, $value]) {
+                $args[] = 'opt=' . $code . ',' . $value;
+            }
         }
         $args[] = 'tftp=' . ($tftp ? '1' : '0');
         if ($tftp) {
@@ -267,8 +276,8 @@ class NetworkServicesService
     }
 
     /**
-     * Arguments for `aipbx-priv netsvc ftp-on` / `ftp-off`. The password goes
-     * over as a SHA-512 crypt hash only.
+     * Arguments for `aipbx-priv netsvc ftp-on` / `ftp-off`: the extra users as
+     * name:SHA-512-hash (NECSDT700 needs none: PAM lets it in without a password).
      *
      * @param array<string, string> $v validated settings
      * @return string[]
@@ -278,12 +287,84 @@ class NetworkServicesService
         if ($v['netsvc_ftp'] !== '1') {
             return ['netsvc', 'ftp-off'];
         }
-        $salt = substr(strtr(base64_encode(random_bytes(12)), '+', '.'), 0, 16);
-        $args = ['netsvc', 'ftp-on', 'user=' . $v['netsvc_ftp_user'], 'hash=' . crypt($v['netsvc_ftp_password'], '$6$' . $salt . '$')];
+        $args = ['netsvc', 'ftp-on'];
+        foreach (self::ftpUsers($v['netsvc_ftp_users']) as $u) {
+            $args[] = 'user=' . $u['user'] . ':' . $u['hash'];
+        }
         foreach (self::serviceNetworks($v, $tftpNetworks) as $n) {
             $args[] = 'net=' . $n;
         }
         return $args;
+    }
+
+    /** @return list<array{user: string, hash: string}> stored extra FTP users */
+    public static function ftpUsers(string $json): array
+    {
+        $out = [];
+        foreach ((array) json_decode($json, true) as $u) {
+            if (is_array($u) && preg_match('/^[A-Za-z0-9._-]{1,32}$/', (string) ($u['user'] ?? ''))
+                && preg_match('/^\$6\$[A-Za-z0-9.\/]{1,16}\$[A-Za-z0-9.\/]{86}$/', (string) ($u['hash'] ?? ''))) {
+                $out[] = ['user' => (string) $u['user'], 'hash' => (string) $u['hash']];
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * The extra FTP users after the form: ticked ones removed, a new one added
+     * (or an existing one given a new password).
+     *
+     * @param list<array{user: string, hash: string}> $current
+     * @return list<array{user: string, hash: string}>
+     */
+    private static function ftpUsersFromForm(array $data, array $current): array
+    {
+        $remove = array_map('strval', (array) ($data['netsvc_ftp_remove'] ?? []));
+        $users = array_values(array_filter($current, fn($u) => !in_array($u['user'], $remove, true)));
+        $name = trim((string) ($data['netsvc_ftp_new_user'] ?? ''));
+        $password = (string) ($data['netsvc_ftp_new_password'] ?? '');
+        if ($name === '' && $password === '') {
+            return $users;
+        }
+        if (!preg_match('/^[A-Za-z0-9._-]{1,32}$/', $name) || in_array(strtolower($name), ['anonymous', 'ftp', strtolower(self::FTP_FIXED_USER)], true)) {
+            throw new \Exception(t('netsvc.err_ftp_user'));
+        }
+        if (!preg_match('/^[\x21-\x7E]{4,64}$/', $password)) {
+            throw new \Exception(t('netsvc.err_ftp_password'));
+        }
+        $salt = substr(strtr(base64_encode(random_bytes(12)), '+', '.'), 0, 16);
+        $users = array_values(array_filter($users, fn($u) => $u['user'] !== $name));
+        $users[] = ['user' => $name, 'hash' => crypt($password, '$6$' . $salt . '$')];
+        if (count($users) > self::MAX_FTP_USERS) {
+            throw new \Exception(sprintf(t('netsvc.err_ftp_too_many'), self::MAX_FTP_USERS));
+        }
+        return $users;
+    }
+
+    /**
+     * Extra DHCP options from the text field: "code,value" per line (empty
+     * lines and "# comments" skipped), code 1-254.
+     *
+     * @return list<array{0: int, 1: string}>
+     */
+    public static function dhcpOptions(string $text): array
+    {
+        $out = [];
+        foreach (preg_split('/\R/', $text) ?: [] as $n => $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+            if (!preg_match('/^([0-9]{1,3})\s*,\s*(.+)$/', $line, $m) || (int) $m[1] < 1 || (int) $m[1] > 254
+                || !preg_match(self::DHCP_VALUE, trim($m[2]))) {
+                throw new \Exception(sprintf(t('netsvc.err_dhcp_option'), $n + 1));
+            }
+            $out[] = [(int) $m[1], trim($m[2])];
+        }
+        if (count($out) > self::MAX_DHCP_OPTIONS) {
+            throw new \Exception(sprintf(t('netsvc.err_dhcp_option_count'), self::MAX_DHCP_OPTIONS));
+        }
+        return $out;
     }
 
     public static function save(array $data): array
@@ -291,11 +372,7 @@ class NetworkServicesService
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $interfaces = self::interfaces();
             $tftpNets = self::tftpNetworks();
-            // An empty FTP password field keeps the saved one.
-            if (($data['netsvc_ftp_password'] ?? '') === '') {
-                $data['netsvc_ftp_password'] = (string) getSystemSetting('netsvc_ftp_password', '');
-            }
-            $v = self::validate($data, $interfaces, $tftpNets);
+            $v = self::validate($data, $interfaces, $tftpNets, self::ftpUsers((string) getSystemSetting('netsvc_ftp_users', '[]')));
 
             if ($v['netsvc_mode'] === 'dhcp' && empty($data['netsvc_force'])) {
                 $others = self::otherDhcpServers($v['netsvc_interface'], $interfaces);
@@ -321,9 +398,9 @@ class NetworkServicesService
             foreach ($v as $k => $val) {
                 $stmt->execute([$k, $val]);
             }
-            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : '') . ', FTP ' . ($v['netsvc_ftp'] === '1' ? 'on (' . $v['netsvc_ftp_user'] . ')' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : '') . ', FTP ' . ($v['netsvc_ftp'] === '1' ? 'on (' . count(self::ftpUsers($v['netsvc_ftp_users'])) . ' extra users)' : 'off'), 'update', $_SESSION['user_id'] ?? null);
             return t('netsvc.saved_' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' && $v['netsvc_tftp'] === '1' ? '_tftp' : ''))
-                . ($v['netsvc_ftp'] === '1' ? ' ' . sprintf(t('netsvc.saved_ftp'), $v['netsvc_ftp_user']) : '');
+                . ($v['netsvc_ftp'] === '1' ? ' ' . sprintf(t('netsvc.saved_ftp'), self::FTP_FIXED_USER) : '');
         });
     }
 
