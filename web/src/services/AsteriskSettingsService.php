@@ -53,6 +53,8 @@ class AsteriskSettingsService {
             // answered as audio. Resolution/fps are not hard-coded but managed
             // here (passed to header_phone.js as a getUserMedia constraint).
             'video_calls_enabled'  => '0',
+            // One video codec for all endpoints (SyncExtensions::pbxVideoCodecs).
+            'video_codec'          => 'vp8',
             'video_max_resolution' => '1280x720',
             'video_max_framerate'  => '24',
 
@@ -118,6 +120,7 @@ class AsteriskSettingsService {
             // Video calls. The resolution is NOT free text: it goes straight
             // into the getUserMedia constraint, so it stays within the whitelist.
             'video_calls_enabled' => !empty($post['video_calls_enabled']) ? '1' : '0',
+            'video_codec' => in_array($post['video_codec'] ?? '', ['vp8', 'h264'], true) ? $post['video_codec'] : 'vp8',
             'video_max_resolution' => in_array($post['video_max_resolution'] ?? '', ['640x360', '960x540', '1280x720', '1920x1080'], true)
                 ? $post['video_max_resolution'] : '1280x720',
             'video_max_framerate' => in_array(intval($post['video_max_framerate'] ?? 24), [15, 24, 30], true)

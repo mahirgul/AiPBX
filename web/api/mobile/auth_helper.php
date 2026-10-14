@@ -232,3 +232,16 @@ function buildMobileLoginResponse(array $user): array
         'push_config' => $push_config
     ];
 }
+
+/**
+ * Video calls for the apps: on for the PBX (Admin -> Asterisk -> Video) and
+ * allowed in the user's phone modes, with the PBX's resolution and frame rate.
+ */
+function mobileVideoSettings(?string $phoneModes): array
+{
+    return [
+        'enabled' => getSystemSetting('video_calls_enabled', '0') === '1' && in_array('video', parsePhoneModes($phoneModes ?? 'both'), true),
+        'resolution' => getSystemSetting('video_max_resolution', '1280x720'),
+        'fps' => (int) getSystemSetting('video_max_framerate', '24'),
+    ];
+}

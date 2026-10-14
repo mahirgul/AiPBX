@@ -68,6 +68,32 @@ function syncExtension($ext) {
     return syncAllExtensions();
 }
 
+/** Audio codecs of a stored codec list (the WebRTC list also holds the chosen video codecs). */
+function pbxAudioCodecs(string $list): array {
+    return array_values(array_diff(array_filter(array_map('trim', explode(',', $list))), ['vp8', 'h264']));
+}
+
+/**
+ * The video codec for the `allow=` lines: none while video calls are off,
+ * otherwise exactly ONE for every endpoint. Asterisk does not convert video:
+ * when the two legs of a call settle on different video codecs it hangs the
+ * whole call up ("Don't know how to send format h264 packets"). With one
+ * codec everywhere a device that lacks it only goes without video.
+ * VP8: browsers and the apps. H.264: also desk video phones.
+ */
+function pbxVideoCodecs(): array {
+    if (getSystemSetting('video_calls_enabled', '0') !== '1') {
+        return [];
+    }
+    $codec = getSystemSetting('video_codec', '');
+    if (!in_array($codec, ['vp8', 'h264'], true)) {
+        // Before 1.22 the codecs were ticked with the audio codecs.
+        $old = explode(',', getSystemSetting('pjsip_codecs', ''));
+        $codec = in_array('vp8', $old, true) || !in_array('h264', $old, true) ? 'vp8' : 'h264';
+    }
+    return [$codec];
+}
+
 function syncAllExtensions() {
     return withSyncLock('extensions', '__syncAllExtensionsBody');
 }
@@ -79,8 +105,10 @@ function __syncAllExtensionsBody() {
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
     $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-    $webrtc_codecs = getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722');
-    $wired_codecs = getSystemSetting('pjsip_wired_codecs', 'alaw,ulaw,g729');
+    // Video codecs only while video calls are on (Admin -> Asterisk -> Video).
+    $video_codecs = pbxVideoCodecs();
+    $webrtc_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722')), $video_codecs));
+    $wired_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_wired_codecs', 'alaw,ulaw,g729')), $video_codecs));
     $direct_media = getSystemSetting('pjsip_direct_media', 'no');
     $rtp_symmetric = getSystemSetting('pjsip_rtp_symmetric', 'yes');
     $qualify_frequency = intval(getSystemSetting('pjsip_qualify_frequency', '60'));
@@ -116,8 +144,14 @@ function __syncAllExtensionsBody() {
     $conf .= "transport=transport-ws\n";
     $conf .= "identify_by=auth_username,username\n";
     $conf .= "dtmf_mode=rfc4733\n";
-    $conf .= "rtp_timeout=30\n";
-    $conf .= "rtp_timeout_hold=300\n";
+    // With video on, no RTP timeout here: WebRTC bundles audio and video on one
+    // port and Asterisk never sees the video stream as active, so it would hang
+    // up every video call after rtp_timeout ("lack of video RTP activity"), as
+    // well as a video call answered with audio only. Dead calls still end
+    // through SIP session timers (the web phone and the apps refresh them).
+    $wss_timeout = $video_codecs ? 0 : 30;
+    $conf .= "rtp_timeout={$wss_timeout}\n";
+    $conf .= "rtp_timeout_hold=" . ($video_codecs ? 0 : 300) . "\n";
     $conf .= "webrtc=yes\n";
     $conf .= "rtcp_mux=yes\n";
     $conf .= "direct_media={$direct_media}\n";

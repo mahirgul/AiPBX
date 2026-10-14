@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F172A"
+    android:background="#0F172A">
+
+    <!-- Video calls: the phone engine's WebView is placed here (edge to edge). -->
+    <FrameLayout
+        android:id="@+id/videoContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+<LinearLayout
+    android:id="@+id/callContent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="20dp">
@@ -204,6 +216,71 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_hold"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/btnCamera"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/ivCamera"
+                    android:contentDescription="@string/btn_camera"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/card_rounded_bg"
+                    android:backgroundTint="#1E293B"
+                    android:padding="16dp"
+                    android:src="@drawable/ic_videocam"
+                    app:tint="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tvCamera"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_camera"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnSwitchCamera"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/ivSwitchCamera"
+                    android:contentDescription="@string/btn_switch_camera"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/card_rounded_bg"
+                    android:backgroundTint="#1E293B"
+                    android:padding="16dp"
+                    android:src="@drawable/ic_switch_camera"
+                    app:tint="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tvSwitchCamera"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_switch_camera"
                     android:textColor="#94A3B8"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -553,3 +630,5 @@
     </LinearLayout>
 
 </LinearLayout>
+
+</FrameLayout>

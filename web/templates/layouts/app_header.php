@@ -101,6 +101,12 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         <?php $ring_in = getSystemSetting('webrtc_ring_incoming', ''); $ring_out = getSystemSetting('webrtc_ring_outgoing', ''); ?>
         window.WEBRTC_RING_INCOMING_URL = "<?php echo $ring_in !== '' ? '/api/sound_play.php?file=' . urlencode($ring_in) : ''; ?>";
         window.WEBRTC_RING_OUTGOING_URL = "<?php echo $ring_out !== '' ? '/api/sound_play.php?file=' . urlencode($ring_out) : ''; ?>";
+        // Video calls: on for the PBX (Admin -> Asterisk -> Video) and allowed for this user (phone modes).
+        window.VIDEO_CALLS = <?php echo json_encode([
+            'enabled' => getSystemSetting('video_calls_enabled', '0') === '1' && in_array('video', parsePhoneModes($user['allowed_phone_mode'] ?? 'both'), true),
+            'resolution' => getSystemSetting('video_max_resolution', '1280x720'),
+            'fps' => (int) getSystemSetting('video_max_framerate', '24'),
+        ]); ?>;
         window.LANG_APPLYING = <?php echo json_encode(t('topbar.applying'), JSON_UNESCAPED_UNICODE); ?>;
         if ("serviceWorker" in navigator && window.isSecureContext) {
             var isSelfSignedHost = location.protocol === 'https:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(location.hostname));

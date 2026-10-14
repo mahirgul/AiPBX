@@ -158,7 +158,15 @@ data class FeatureSettings(
     @SerializedName("cf_busy_number") val cfBusyNumber: String? = null,
     @SerializedName("cf_noanswer_number") val cfNoAnswerNumber: String? = null,
     @SerializedName("cf_noanswer_timeout") val cfNoAnswerTimeout: Int? = 20,
-    @SerializedName("allowed_phone_mode") val allowedPhoneMode: String? = "both"
+    @SerializedName("allowed_phone_mode") val allowedPhoneMode: String? = "both",
+    // Server 1.22+: video calls on for the PBX and allowed for this user.
+    @SerializedName("video") val video: VideoSettings? = null
+)
+
+data class VideoSettings(
+    @SerializedName("enabled") val enabled: Boolean,
+    @SerializedName("resolution") val resolution: String? = "1280x720",
+    @SerializedName("fps") val fps: Int? = 24
 )
 
 data class FcmTokenResponse(

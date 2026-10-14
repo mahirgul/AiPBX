@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Die Mailbox konnte nicht geladen werden</string>
     <string name="vm_delete_confirm">Diese Sprachnachricht löschen?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Videoanruf</string>
+    <string name="btn_answer_video">Video</string>
+    <string name="btn_camera">Kamera</string>
+    <string name="btn_switch_camera">Kamera wechseln</string>
+    <string name="err_camera_permission_video">Keine Kameraberechtigung: Das Gespräch läuft nur mit Ton weiter.</string>
+    <string name="err_camera_unavailable">Kamera nicht verfügbar: Das Gespräch läuft nur mit Ton weiter.</string>
+    <string name="contacts_extensions_listed">Nebenstellen aufgelistet</string>
 </resources>

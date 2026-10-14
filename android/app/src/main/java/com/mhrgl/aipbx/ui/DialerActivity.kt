@@ -225,6 +225,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         // Background initial sync
+        applyVideoEnabled()
         syncFeatures()
         syncDeviceToken()
 
@@ -590,7 +591,31 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.btnBackspace.visibility = if (binding.tvDigits.text.isNotEmpty()) View.VISIBLE else View.INVISIBLE
     }
 
-    private fun initiateCall(targetNumber: String, displayName: String? = null) {
+    private fun applyVideoEnabled() {
+        val on = prefs.videoLimits != null
+        if (::contactsAdapter.isInitialized) contactsAdapter.videoEnabled = on
+        if (::historyAdapter.isInitialized) historyAdapter.videoEnabled = on
+    }
+
+    /** A video call waiting for the camera permission. */
+    private var pendingVideoCall: Pair<String, String?>? = null
+
+    // Camera refused: the call goes out with audio only.
+    private val cameraPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val call = pendingVideoCall ?: return@registerForActivityResult
+        pendingVideoCall = null
+        if (!granted) Toast.makeText(this, getString(R.string.err_camera_permission_video), Toast.LENGTH_LONG).show()
+        initiateCall(call.first, call.second, withVideo = granted)
+    }
+
+    private fun initiateCall(targetNumber: String, displayName: String? = null, withVideo: Boolean = false) {
+        if (withVideo && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            pendingVideoCall = targetNumber to displayName
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, getString(R.string.err_mic_permission_call), Toast.LENGTH_LONG).show()
             requestPermissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
@@ -628,7 +653,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             turnUrl = prefs.turnUrl,
             turnUser = prefs.turnUsername,
             turnPass = prefs.turnCredential,
-            displayName = displayName
+            displayName = displayName,
+            video = if (withVideo) prefs.videoLimits else null
         )
 
         val callIntent = Intent(this, CallActivity::class.java)
@@ -640,6 +666,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun setupHistoryTab() {
         historyAdapter = CallHistoryAdapter(
             onCallClick = { targetNumber, partyName -> initiateCall(targetNumber, partyName) },
+            onVideoCallClick = { targetNumber, partyName -> initiateCall(targetNumber, partyName, withVideo = true) },
             onChatClick = { targetExt, partyName ->
                 switchTab(Tab.CHAT)
                 openChatRoom(0, targetExt, partyName ?: targetExt, false)
@@ -801,6 +828,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun setupContactsTab() {
         contactsAdapter = ContactsAdapter(
             onCallClick = { targetExt, contactName -> initiateCall(targetExt, contactName) },
+            onVideoCallClick = { targetExt, contactName -> initiateCall(targetExt, contactName, withVideo = true) },
             onChatClick = { targetExt, contactName ->
                 if (targetExt != (prefs.extension ?: "")) {
                     switchTab(Tab.CHAT)
@@ -841,7 +869,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         } else if (isDeviceContactsSelected) {
             getString(R.string.contacts_phone_listed)
         } else {
-            "dahili listelendi"
+            getString(R.string.contacts_extensions_listed)
         }
         binding.tvContactsCount.text = "$count $label"
 
@@ -2075,6 +2103,12 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 currentForwardBusy = f.cfBusyNumber ?: ""
                 currentForwardNoAnswer = f.cfNoAnswerNumber ?: ""
                 currentNoAnswerTimeout = f.cfNoAnswerTimeout ?: 20
+                // Video calls (server 1.22+): stored for the call screens, offered in the dialogs.
+                prefs.videoLimits = f.video?.takeIf { it.enabled }?.let { v ->
+                    val p = (v.resolution ?: "1280x720").split("x").mapNotNull { it.toIntOrNull() }
+                    if (p.size == 2) com.mhrgl.aipbx.engine.VideoLimits(p[0], p[1], v.fps ?: 24) else null
+                }
+                applyVideoEnabled()
 
                 binding.switchDnd.isChecked = isDndEnabled
                 binding.etForwardAlways.setText(currentForwardAlways)

@@ -29,6 +29,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Sounds & languages](sounds.md) | Custom sounds, the Turkish prompt packages (six formats), regenerating a prompt |
 | [Cloud TTS](cloud-tts.md) | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
 | [Translating](translating.md) | Interface languages, adding or correcting a translation with `scripts/i18n.py`, mobile app texts, prompts in other languages |
+| [Video calls](video-calls.md) | Video between the web phone, the Android app and desk video phones; the one video codec; bandwidth |
 | [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
 
 ## Users and security

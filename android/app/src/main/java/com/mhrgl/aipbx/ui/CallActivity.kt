@@ -51,6 +51,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
     private var isMuted = false
     private var isSpeakerOn = false
     private var isHold = false
+    private var isVideoMode = false
+    private var isCameraOn = true
 
     private var callSeconds = 0
     private val timerHandler = Handler(Looper.getMainLooper())
@@ -88,6 +90,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
             if (engine != null) {
                 binding.tvCallerName.text = engine.activeCallerName.ifEmpty { getString(R.string.call_from_pbx) }
                 updateCallStateUI(engine.currentCallStatus)
+                if (engine.isVideoActive) enterVideoMode()
             }
         }
 
@@ -107,8 +110,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         setContentView(binding.root)
         prefs = AppPreferences.getInstance(this)
 
-        // Edge-to-edge WindowInsets support
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+        // Edge-to-edge WindowInsets support (the controls; video stays edge to edge)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.callContent) { view, insets ->
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
@@ -191,6 +194,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
     override fun onStop() {
         super.onStop()
         stopRingback()
+        // The engine's WebView must not stay in a window that is going away.
+        if (isVideoMode) pbxService?.engine?.detachVideoView(binding.videoContainer)
         proximityWakeLock?.let { if (it.isHeld) it.release() }
         if (isBound) {
             pbxService?.unregisterListener(this)
@@ -364,6 +369,17 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         // SPEAKER
         binding.btnSpeaker.setOnClickListener {
             setSpeakerphone(!isSpeakerOn)
+        }
+
+        // Video: own camera off/on (the other side sees black) and front/back camera
+        binding.btnCamera.setOnClickListener {
+            isCameraOn = !isCameraOn
+            pbxService?.engine?.toggleCamera(isCameraOn)
+            binding.ivCamera.setImageResource(if (isCameraOn) R.drawable.ic_videocam else R.drawable.ic_videocam_off)
+            updateButtonState(binding.ivCamera, !isCameraOn)
+        }
+        binding.btnSwitchCamera.setOnClickListener {
+            pbxService?.engine?.switchCamera()
         }
 
         // HOLD / UNHOLD
@@ -592,7 +608,42 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
 
     override fun onIncomingCall(callerName: String, callerNumber: String) {}
 
+    override fun onVideoActiveChanged(active: Boolean) {
+        runOnUiThread { if (active) enterVideoMode() else exitVideoMode() }
+    }
+
+    /** Video call: the engine's WebView fills the screen under the controls, speaker on. */
+    private fun enterVideoMode() {
+        val engine = pbxService?.engine ?: return
+        engine.attachVideoView(binding.videoContainer)
+        if (isVideoMode) return
+        isVideoMode = true
+        binding.videoContainer.visibility = View.VISIBLE
+        binding.root.setBackgroundColor(android.graphics.Color.BLACK)
+        binding.ivCallerAvatar.visibility = View.GONE
+        binding.layoutCallerInfo.gravity = android.view.Gravity.TOP or android.view.Gravity.START
+        val pad = (16 * resources.displayMetrics.density).toInt()
+        binding.layoutCallerInfo.setPadding(pad, pad, pad, pad)
+        binding.btnCamera.visibility = View.VISIBLE
+        binding.btnSwitchCamera.visibility = View.VISIBLE
+        if (!isSpeakerOn) setSpeakerphone(true)
+    }
+
+    private fun exitVideoMode() {
+        if (!isVideoMode) return
+        isVideoMode = false
+        pbxService?.engine?.detachVideoView(binding.videoContainer)
+        binding.videoContainer.visibility = View.GONE
+        binding.root.setBackgroundColor(0xFF0F172A.toInt())
+        binding.ivCallerAvatar.visibility = View.VISIBLE
+        binding.layoutCallerInfo.gravity = android.view.Gravity.CENTER
+        binding.layoutCallerInfo.setPadding(0, 0, 0, 0)
+        binding.btnCamera.visibility = View.GONE
+        binding.btnSwitchCamera.visibility = View.GONE
+    }
+
     override fun onDestroy() {
+        if (isVideoMode) pbxService?.engine?.detachVideoView(binding.videoContainer)
         super.onDestroy()
         stopRingback()
         stopCallTimer()

@@ -94,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'cf_busy_number' => $updated['cf_busy_number'] ?? '',
             'cf_noanswer_number' => $updated['cf_noanswer_number'] ?? '',
             'cf_noanswer_timeout' => (int)($updated['cf_noanswer_timeout'] ?? 20),
-            'allowed_phone_mode' => $updated['allowed_phone_mode'] ?? 'both'
+            'allowed_phone_mode' => $updated['allowed_phone_mode'] ?? 'both',
+            'video' => mobileVideoSettings($updated['allowed_phone_mode'] ?? 'both')
         ]
     ]);
 }
@@ -111,6 +112,7 @@ mobileJson([
         'cf_busy_number' => $details['cf_busy_number'] ?? '',
         'cf_noanswer_number' => $details['cf_noanswer_number'] ?? '',
         'cf_noanswer_timeout' => (int)($details['cf_noanswer_timeout'] ?? 20),
-        'allowed_phone_mode' => $details['allowed_phone_mode'] ?? 'both'
+        'allowed_phone_mode' => $details['allowed_phone_mode'] ?? 'both',
+        'video' => mobileVideoSettings($details['allowed_phone_mode'] ?? 'both')
     ]
 ]);

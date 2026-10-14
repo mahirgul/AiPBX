@@ -38,12 +38,18 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
                 <!-- Quick Dial Input & Autocomplete Dropdown -->
                 <input type="text" id="header-quick-dial-input" class="header-quick-dial-input" placeholder="<?php echo t('topbar.quick_dial_placeholder'); ?>" autocomplete="off" onkeydown="handleHeaderQuickDialKeydown(event)" oninput="handleHeaderQuickDialInput(this.value)">
                 <div class="header-autocomplete-dropdown" id="header-autocomplete-dropdown" style="display: none;"></div>
+                <button type="button" id="header-video-call-btn" class="topbar-btn btn-primary" onclick="headerQuickDialCall(true)" title="<?php echo t('topbar.video_call_tooltip'); ?>" style="display: none;">
+                    <i class="fas fa-video"></i>
+                </button>
             </div>
 
             <!-- 2. INCOMING CALL STATE CONTROLS -->
             <div id="header-incoming-controls" style="display: none; align-items: center; gap: 6px;">
                 <button type="button" class="topbar-btn btn-success header-btn-pulse" onclick="headerPhoneAnswerCall()" title="<?php echo t('topbar.answer_tooltip'); ?>">
                     <i class="fas fa-phone"></i> <span class="topbar-btn-label"><?php echo t('topbar.answer_label'); ?></span>
+                </button>
+                <button type="button" id="header-answer-video-btn" class="topbar-btn btn-primary header-btn-pulse" onclick="headerPhoneAnswerCall(true)" title="<?php echo t('topbar.answer_video_tooltip'); ?>" style="display: none;">
+                    <i class="fas fa-video"></i> <span class="topbar-btn-label"><?php echo t('topbar.answer_video_label'); ?></span>
                 </button>
                 <button type="button" class="topbar-btn btn-danger" onclick="headerPhoneRejectCall()" title="<?php echo t('topbar.reject_tooltip'); ?>">
                     <i class="fas fa-phone-slash"></i> <span class="topbar-btn-label"><?php echo t('topbar.reject_label'); ?></span>
@@ -54,6 +60,9 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
             <div id="header-active-controls" style="display: none; align-items: center; gap: 6px;">
                 <button type="button" class="topbar-btn" onclick="toggleHeaderSoftphoneDrawer()" title="<?php echo t('topbar.dtmf_tooltip'); ?>">
                     <i class="fas fa-th"></i>
+                </button>
+                <button type="button" id="header-camera-btn" class="topbar-btn" onclick="headerPhoneToggleCamera()" title="<?php echo t('topbar.camera_tooltip'); ?>" style="display: none;">
+                    <i class="fas fa-video"></i>
                 </button>
                 <button type="button" id="header-hold-btn" class="topbar-btn btn-warning" onclick="headerPhoneToggleHold()" title="<?php echo t('topbar.hold_tooltip'); ?>">
                     <i class="fas fa-pause"></i> <span id="header-hold-text" class="topbar-btn-label"><?php echo t('topbar.hold_label'); ?></span>

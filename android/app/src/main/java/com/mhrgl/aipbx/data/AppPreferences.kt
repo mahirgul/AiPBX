@@ -73,6 +73,21 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_TURN_URL, null)
         set(value) = prefs.edit().putString(KEY_TURN_URL, value).apply()
 
+    /** Video calls: the server's limits, null while video is off for this user (features.php). */
+    var videoLimits: com.mhrgl.aipbx.engine.VideoLimits?
+        get() {
+            val res = prefs.getString(KEY_VIDEO_RES, null) ?: return null
+            val p = res.split("x").mapNotNull { it.toIntOrNull() }
+            if (p.size != 2) return null
+            return com.mhrgl.aipbx.engine.VideoLimits(p[0], p[1], prefs.getInt(KEY_VIDEO_FPS, 24))
+        }
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_VIDEO_RES) else {
+                putString(KEY_VIDEO_RES, "${value.width}x${value.height}")
+                putInt(KEY_VIDEO_FPS, value.fps)
+            }
+        }.apply()
+
     val isLoggedIn: Boolean
         get() = !token.isNullOrEmpty() && !extension.isNullOrEmpty() && !sipPassword.isNullOrEmpty()
 
@@ -216,6 +231,7 @@ class AppPreferences(context: Context) {
             remove(KEY_TURN_USER)
             remove(KEY_TURN_PASS)
             remove(KEY_TURN_URL)
+            remove(KEY_VIDEO_RES)
             apply()
         }
         try {
@@ -290,6 +306,8 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_RESURRECTION_TS = "last_resurrection_ts"
         private const val KEY_DEVICE_UUID = "device_uuid"
         private const val KEY_LAST_TOKEN_REFRESH_TIME = "last_token_refresh_time"
+        private const val KEY_VIDEO_RES = "video_resolution"
+        private const val KEY_VIDEO_FPS = "video_fps"
 
         private const val OLD_PREFS_NAME = "ai_pbx_prefs"
         private const val SECURE_PREFS_NAME = "ai_pbx_secure_prefs"

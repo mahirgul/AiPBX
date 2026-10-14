@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Talepostkassen kunne ikke lastes inn</string>
     <string name="vm_delete_confirm">Slette denne talemeldingen?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Videosamtale</string>
+    <string name="btn_answer_video">Video</string>
+    <string name="btn_camera">Kamera</string>
+    <string name="btn_switch_camera">Bytt kamera</string>
+    <string name="err_camera_permission_video">Ingen kameratillatelse: samtalen fortsetter med bare lyd.</string>
+    <string name="err_camera_unavailable">Kameraet er ikke tilgjengelig: samtalen fortsetter med bare lyd.</string>
+    <string name="contacts_extensions_listed">internnumre vist</string>
 </resources>

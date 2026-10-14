@@ -89,18 +89,6 @@
             <small class="u-hint"><?php echo t('asterisk_settings.codecs_help'); ?></small>
         </div>
 
-        <div class="form-group u-mt-12">
-            <label class="form-label"><?php echo t('asterisk_settings.field_video_codecs'); ?></label>
-            <div style="display: flex; gap: 16px; margin-top: 6px;">
-                <label class="u-check-label-6">
-                    <input type="checkbox" name="codecs[]" value="vp8" <?php echo in_array('vp8', $active_codecs) ? 'checked' : ''; ?>> VP8
-                </label>
-                <label class="u-check-label-6">
-                    <input type="checkbox" name="codecs[]" value="h264" <?php echo in_array('h264', $active_codecs) ? 'checked' : ''; ?>> H.264
-                </label>
-            </div>
-            <small class="u-hint"><?php echo t('asterisk_settings.video_codecs_help'); ?></small>
-        </div>
 
         <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_wired_codecs'); ?></label>
@@ -331,7 +319,7 @@
 
         <div class="module-help-box">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
-            <?php echo t('asterisk_settings.video_help'); ?>
+            <?php echo t('asterisk_settings.video_calls_help'); ?>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
@@ -341,6 +329,15 @@
                     <option value="0" <?php echo ($s['video_calls_enabled'] ?? '0') !== '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.video_disabled'); ?></option>
                     <option value="1" <?php echo ($s['video_calls_enabled'] ?? '0') === '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.video_enabled'); ?></option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_video_codec'); ?></label>
+                <select name="video_codec" class="form-control">
+                    <option value="vp8" <?php echo ($s['video_codec'] ?? 'vp8') !== 'h264' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.video_codec_vp8'); ?></option>
+                    <option value="h264" <?php echo ($s['video_codec'] ?? 'vp8') === 'h264' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.video_codec_h264'); ?></option>
+                </select>
+                <small class="u-hint"><?php echo t('asterisk_settings.video_codec_help'); ?></small>
             </div>
 
             <div class="form-group">

@@ -12,10 +12,14 @@ import com.mhrgl.aipbx.model.CallRecord
 
 class CallHistoryAdapter(
     private val onCallClick: (String, String?) -> Unit,
-    private val onChatClick: (String, String?) -> Unit
+    private val onChatClick: (String, String?) -> Unit,
+    private val onVideoCallClick: ((String, String?) -> Unit)? = null
 ) : RecyclerView.Adapter<CallHistoryAdapter.ViewHolder>() {
 
     private val items = mutableListOf<CallRecord>()
+
+    /** Video calls are on for this user (the dialog then offers "Video call"). */
+    var videoEnabled = false
 
     /** Extensions of the company directory: only these can be chatted with (not external numbers). */
     var chatExtensions: Set<String> = emptySet()
@@ -140,13 +144,15 @@ class CallHistoryAdapter(
             // A tap on the row does not call: it asks what to do (as in Contacts).
             itemView.setOnClickListener {
                 if (targetCallParty.isEmpty()) return@setOnClickListener
-                val labels = mutableListOf(context.getString(R.string.ui_call))
-                if (canChat) labels.add(context.getString(R.string.ui_chat))
+                val actions = mutableListOf<Pair<String, () -> Unit>>(
+                    context.getString(R.string.ui_call) to { onCallClick(targetCallParty, partyName) }
+                )
+                val video = onVideoCallClick.takeIf { videoEnabled }
+                if (video != null) actions.add(context.getString(R.string.ui_video_call) to { video(targetCallParty, partyName) })
+                if (canChat) actions.add(context.getString(R.string.ui_chat) to { onChatClick(partyStr, partyName) })
                 AlertDialog.Builder(context)
                     .setTitle(displayName)
-                    .setItems(labels.toTypedArray()) { _, which ->
-                        if (which == 0) onCallClick(targetCallParty, partyName) else onChatClick(partyStr, partyName)
-                    }
+                    .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
                     .show()
             }
         }

@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Гласовата поща не може да бъде заредена</string>
     <string name="vm_delete_confirm">Да се изтрие ли това гласово съобщение?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Видеообаждане</string>
+    <string name="btn_answer_video">Видео</string>
+    <string name="btn_camera">Камера</string>
+    <string name="btn_switch_camera">Смяна на камерата</string>
+    <string name="err_camera_permission_video">Няма разрешение за камерата: разговорът продължава само със звук.</string>
+    <string name="err_camera_unavailable">Камерата не е достъпна: разговорът продължава само със звук.</string>
+    <string name="contacts_extensions_listed">вътрешни номера в списъка</string>
 </resources>

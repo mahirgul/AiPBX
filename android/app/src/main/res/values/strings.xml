@@ -412,4 +412,11 @@
     <string name="vm_load_failed">Voicemail could not be loaded</string>
     <string name="vm_delete_confirm">Delete this voicemail message?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Video call</string>
+    <string name="btn_answer_video">Video</string>
+    <string name="btn_camera">Camera</string>
+    <string name="btn_switch_camera">Switch camera</string>
+    <string name="err_camera_permission_video">No camera permission: the call continues with audio only.</string>
+    <string name="err_camera_unavailable">Camera not available: the call continues with audio only.</string>
+    <string name="contacts_extensions_listed">extensions listed</string>
 </resources>
