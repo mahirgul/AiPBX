@@ -45,6 +45,24 @@ def surum_adi():
     return '?'
 
 
+def play_release_notes():
+    """'What's new' for this version from play-release-notes.json.
+
+    The text used to be written into this script and was never changed, so
+    every release showed the same old notes. The file names the version it
+    belongs to; for any other versionName a neutral text is sent instead of
+    stale notes.
+    """
+    with open(os.path.join(BASE_DIR, 'play-release-notes.json'), encoding='utf-8') as f:
+        data = json.load(f)
+    version = surum_adi()
+    notes = data.get('notes', {})
+    if data.get('version') != version:
+        print(f"    UYARI: play-release-notes.json {data.get('version')} icin, uygulama {version}: genel metin gonderiliyor.")
+        notes = data.get('fallback', {})
+    return [{'language': lang, 'text': text[:500]} for lang, text in notes.items()]
+
+
 def upload_bundle():
     if not os.path.exists(KEY_FILE):
         print(f"Hata: Key dosyasi bulunamadi: {KEY_FILE}")
@@ -110,16 +128,7 @@ def upload_bundle():
         # --- TRACK ATAMA ---
         track_label = "Kapali Test / Closed Testing" if TRACK == "alpha" else TRACK
         print(f"4. Surum '{TRACK}' ({track_label}) kanalina ataniyor (status: {DESIRED_STATUS})...")
-        release_notes = [
-            {
-                'language': 'tr-TR',
-                'text': 'Arayüz ve başlık metinleri optimize edildi: Santral ve yönlendirme sekmesindeki buton etiketleri kısaltıldı, ekran okunabilirliği artırıldı.'
-            },
-            {
-                'language': 'en-US',
-                'text': 'UI and title labels optimized: Compact button labels in PBX and forwarding tab, improved screen readability.'
-            }
-        ]
+        release_notes = play_release_notes()
 
         track_body = {
             'track': TRACK,
