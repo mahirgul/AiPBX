@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Govornu poštu nije moguće učitati</string>
     <string name="vm_delete_confirm">Izbrisati ovu govornu poruku?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Videopoziv</string>
+    <string name="btn_answer_video">Video</string>
+    <string name="btn_camera">Kamera</string>
+    <string name="btn_switch_camera">Promijeni kameru</string>
+    <string name="err_camera_permission_video">Nema dopuštenja za kameru: poziv se nastavlja samo sa zvukom.</string>
+    <string name="err_camera_unavailable">Kamera nije dostupna: poziv se nastavlja samo sa zvukom.</string>
+    <string name="contacts_extensions_listed">lokala na popisu</string>
 </resources>

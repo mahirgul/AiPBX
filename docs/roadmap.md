@@ -8,8 +8,8 @@ welcome there.
 |---|------|-------|------|
 | 1 | [Website call widget](#1-website-call-widget) and WordPress plugin | [#14](https://github.com/mahirgul/AiPBX/issues/14) | large |
 | 2 | [Delete chat messages and attachments](#2-delete-chat-messages-and-attachments) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
-| 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): first version in [File storage](file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
-| 4 | [Video calls](#4-video-calls) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
+| 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): done, see [File storage](file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | done |
+| 4 | [Video calls](#4-video-calls): web phone, Android and desk video phones done (1.22), see [Video calls](video-calls.md); iOS open | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
 | 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning): steps 0–1 in [Local AI models](local-ai.md) | | large, in steps |
 | 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |

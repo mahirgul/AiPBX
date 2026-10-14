@@ -74,16 +74,24 @@ function pbxAudioCodecs(string $list): array {
 }
 
 /**
- * Video codecs for the `allow=` lines: none while video calls are off. H.264
- * comes first: desk video phones mostly speak only H.264, and Asterisk does
- * not convert video, so both sides of a call need the same codec.
+ * The video codec for the `allow=` lines: none while video calls are off,
+ * otherwise exactly ONE for every endpoint. Asterisk does not convert video:
+ * when the two legs of a call settle on different video codecs it hangs the
+ * whole call up ("Don't know how to send format h264 packets"). With one
+ * codec everywhere a device that lacks it only goes without video.
+ * VP8: browsers and the apps. H.264: also desk video phones.
  */
 function pbxVideoCodecs(): array {
     if (getSystemSetting('video_calls_enabled', '0') !== '1') {
         return [];
     }
-    $chosen = array_values(array_intersect(['h264', 'vp8'], explode(',', getSystemSetting('pjsip_codecs', ''))));
-    return $chosen ?: ['h264', 'vp8'];
+    $codec = getSystemSetting('video_codec', '');
+    if (!in_array($codec, ['vp8', 'h264'], true)) {
+        // Before 1.22 the codecs were ticked with the audio codecs.
+        $old = explode(',', getSystemSetting('pjsip_codecs', ''));
+        $codec = in_array('vp8', $old, true) || !in_array('h264', $old, true) ? 'vp8' : 'h264';
+    }
+    return [$codec];
 }
 
 function syncAllExtensions() {

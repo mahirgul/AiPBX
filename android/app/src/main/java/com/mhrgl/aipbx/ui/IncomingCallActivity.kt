@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
@@ -20,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.mhrgl.aipbx.data.AppPreferences
 import com.mhrgl.aipbx.databinding.ActivityIncomingCallBinding
 import com.mhrgl.aipbx.engine.SipEngineListener
 import com.mhrgl.aipbx.model.CallStatus
@@ -42,7 +44,11 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
             // If call already ended before we bound, close
             if (pbxService?.engine?.currentCallStatus != CallStatus.RINGING_INCOMING) {
                 finish()
+                return
             }
+            // A video call: "answer with video" next to answer (video on for this user).
+            val video = pbxService?.engine?.incomingHasVideo == true && AppPreferences.getInstance(this@IncomingCallActivity).videoLimits != null
+            binding.layoutAnswerVideo.visibility = if (video) View.VISIBLE else View.GONE
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -85,6 +91,12 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
             }
         }
 
+        binding.btnAnswerVideo.setOnClickListener {
+            val needed = listOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA)
+                .filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+            if (needed.isEmpty()) performAnswer(withVideo = true) else requestVideoPermissionsLauncher.launch(needed.toTypedArray())
+        }
+
         binding.btnDecline.setOnClickListener {
             pbxService?.stopRinging()
             pbxService?.cancelIncomingCallNotification()
@@ -110,9 +122,25 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         }
     }
 
-    private fun performAnswer() {
+    // Camera refused: answer with audio only (the microphone is what a call needs).
+    private val requestVideoPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        val mic = result[Manifest.permission.RECORD_AUDIO] ?: (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+        val cam = result[Manifest.permission.CAMERA] ?: (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+        when {
+            !mic -> Toast.makeText(this, getString(R.string.err_mic_permission_answer), Toast.LENGTH_LONG).show()
+            !cam -> {
+                Toast.makeText(this, getString(R.string.err_camera_permission_video), Toast.LENGTH_LONG).show()
+                performAnswer()
+            }
+            else -> performAnswer(withVideo = true)
+        }
+    }
+
+    private fun performAnswer(withVideo: Boolean = false) {
         pbxService?.stopRinging()
-        pbxService?.engine?.answerCall()
+        pbxService?.engine?.answerCall(if (withVideo) AppPreferences.getInstance(this).videoLimits else null)
 
         val callIntent = Intent(this, CallActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Mesageria vocală nu a putut fi încărcată</string>
     <string name="vm_delete_confirm">Ștergeți acest mesaj vocal?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Apel video</string>
+    <string name="btn_answer_video">Video</string>
+    <string name="btn_camera">Cameră</string>
+    <string name="btn_switch_camera">Schimbă camera</string>
+    <string name="err_camera_permission_video">Fără permisiune pentru cameră: apelul continuă doar cu sunet.</string>
+    <string name="err_camera_unavailable">Camera nu este disponibilă: apelul continuă doar cu sunet.</string>
+    <string name="contacts_extensions_listed">interioare listate</string>
 </resources>

@@ -1192,10 +1192,14 @@ function headerOfferHasVideo(request) {
     return /(^|\n)m=video [1-9]/.test(body);
 }
 
+// The camera can really be opened (not only present: it may be busy or refused).
 function headerCameraAvailable() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return Promise.resolve(false);
-    return navigator.mediaDevices.enumerateDevices()
-        .then((devices) => devices.some((d) => d.kind === "videoinput"))
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve(false);
+    return navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            stream.getTracks().forEach((t) => t.stop());
+            return true;
+        })
         .catch(() => false);
 }
 

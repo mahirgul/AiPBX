@@ -410,4 +410,11 @@
     <string name="vm_load_failed">La messagerie vocale n\'a pas pu être chargée</string>
     <string name="vm_delete_confirm">Supprimer ce message vocal ?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Appel vidéo</string>
+    <string name="btn_answer_video">Vidéo</string>
+    <string name="btn_camera">Caméra</string>
+    <string name="btn_switch_camera">Changer de caméra</string>
+    <string name="err_camera_permission_video">Pas d\'autorisation caméra : l\'appel continue en audio seulement.</string>
+    <string name="err_camera_unavailable">Caméra indisponible : l\'appel continue en audio seulement.</string>
+    <string name="contacts_extensions_listed">postes listés</string>
 </resources>

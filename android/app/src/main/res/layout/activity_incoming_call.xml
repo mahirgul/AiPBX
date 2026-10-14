@@ -90,6 +90,39 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- Answer with video (only for a video call, when video is on) -->
+        <LinearLayout
+            android:id="@+id/layoutAnswerVideo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/btnAnswerVideo"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/call_btn_green"
+                android:backgroundTint="#0284C7"
+                android:contentDescription="@string/btn_answer_video"
+                android:elevation="6dp"
+                android:padding="18dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_videocam"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/btn_answer_video"
+                android:textColor="#38BDF8"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Answer -->
         <LinearLayout
             android:layout_width="0dp"

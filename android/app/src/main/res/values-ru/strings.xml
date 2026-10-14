@@ -410,4 +410,11 @@
     <string name="vm_load_failed">Не удалось загрузить голосовую почту</string>
     <string name="vm_delete_confirm">Удалить это голосовое сообщение?</string>
     <string name="vm_push_body">%1$s · %2$s</string>
+    <string name="ui_video_call">Видеозвонок</string>
+    <string name="btn_answer_video">Видео</string>
+    <string name="btn_camera">Камера</string>
+    <string name="btn_switch_camera">Сменить камеру</string>
+    <string name="err_camera_permission_video">Нет доступа к камере: разговор продолжается только со звуком.</string>
+    <string name="err_camera_unavailable">Камера недоступна: разговор продолжается только со звуком.</string>
+    <string name="contacts_extensions_listed">внутренних номеров</string>
 </resources>
