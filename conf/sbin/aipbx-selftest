@@ -1,0 +1,11 @@
+#!/bin/bash
+# AiPBX self test: runs every health check now and prints the results
+# (Admin -> Health checks, docs/health.md). Exit code 1 when a check fails.
+# No e-mails are sent and no alarm state changes.
+#   sudo aipbx-selftest
+set -u
+[ "$(id -u)" -eq 0 ] || { echo "run as root: sudo aipbx-selftest" >&2; exit 2; }
+INSTALL_DIR="$(readlink -f /var/www/html 2>/dev/null)"
+INSTALL_DIR="${INSTALL_DIR%/web}"
+[ -f "$INSTALL_DIR/web/bin/aipbx_health.php" ] || INSTALL_DIR=/opt/aipbx
+exec php "$INSTALL_DIR/web/bin/aipbx_health.php" --all --no-mail

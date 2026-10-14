@@ -385,7 +385,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php; do
+for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -412,6 +412,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Daily backup of the database and configuration (/var/backups/aipbx-daily, 14 days)
 30 2 * * * root /usr/local/sbin/aipbx-backup >/dev/null 2>&1
+
+# Health checks: the checks that are due, alarm e-mails, daily summary (Admin -> Health checks)
+* * * * * root /usr/local/bin/aipbx_health.php >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
 
@@ -966,6 +969,9 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local
 # Runtime of the local AI service (AI → Local models, step 11); the portal
 # calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ai-setup" /usr/local/sbin/aipbx-ai-setup
+
+# Self test: every health check now (Admin -> Health checks), run at the end of install.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/local/sbin/aipbx-selftest
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
@@ -1684,6 +1690,15 @@ systemctl is-active --quiet nginx      && echo -e "  ✅ Nginx    : ${GREEN}runn
 systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC} (80 / 8443 Backend)"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
 systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}running${NC}"  || echo -e "  ⚠️  coturn   : ${YELLOW}not running${NC}"
 systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
+echo ""
+
+# Self test (Admin -> Health checks): what this install set up, checked from the outside.
+echo -e "  ${BOLD}SELF TEST${NC} (sudo aipbx-selftest)"
+if /usr/local/sbin/aipbx-selftest 2>&1 | sed 's/^/  /'; then
+    echo -e "  ✅ ${GREEN}No check failed${NC}"
+else
+    echo -e "  ⚠️  ${YELLOW}A check failed — see above (the line marked FAIL)${NC}"
+fi
 echo ""
 
 ssh_cfg="$(sshd -T 2>/dev/null)"
