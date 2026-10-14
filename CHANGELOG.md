@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.21.0
+
+- **Voicemail archive in the S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)):
+  *Admin → File storage → Archive heard voicemail older than (days)*. Messages that
+  were already listened to and are older than that move to the bucket and leave
+  the PBX; they stay listed as *Archive* under *My Phone → Voicemail* and in the
+  apps, where they can be played and deleted. New messages are never moved. See
+  [File storage](docs/file-storage.md#voicemail-archive).
+- *My Phone → Voicemail*: the folder labels of heard (and archived) messages are
+  shown as badges again.
+
 ## 1.20.0
 
 - **Faxes in an S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)): tick

@@ -23,6 +23,21 @@ if ($action === 'play') {
     $folder = preg_replace('/[^a-zA-Z]/', '', $_GET['folder'] ?? 'INBOX');
     $msg = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['msg'] ?? '');
 
+    // Archived to the S3 bucket (#69): streamed through the chat service.
+    if ($folder === 'Archive') {
+        $key = VoicemailService::archivedKey($targetExt, 'Archive:' . $msg);
+        require_once __DIR__ . '/../src/services/BucketFiles.php';
+        $headers = ['Content-Type' => 'audio/wav'];
+        if (isset($_GET['download']) && $_GET['download'] == 1) {
+            $headers['Content-Disposition'] = 'attachment; filename="voicemail_' . $msg . '.wav"';
+        }
+        if ($key === null || !BucketFiles::passthru($key, $headers)) {
+            http_response_code(404);
+            die(t('api.err_audio_not_found'));
+        }
+        exit;
+    }
+
     if (empty($targetExt) || empty($msg)) {
         http_response_code(400);
         die(t('api.err_param'));

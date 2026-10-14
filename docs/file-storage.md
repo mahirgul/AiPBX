@@ -12,7 +12,7 @@ With a bucket, large files stay off the PBX's disk and out of its backups.
 
 **Call recordings** and **faxes** can go into the same bucket: tick *Call recordings in the bucket
 too* (see [Call recordings](recordings.md#in-an-s3-bucket)) and/or *Faxes in the bucket too* (below).
-Voicemail stays on the local disk.
+**Heard voicemail** can be archived there too (below).
 
 ### Faxes in the bucket
 
@@ -26,6 +26,17 @@ again reuses the same TIFF) waits until that fax has finished too.
 - Deleting a fax, and the retention period (*Fax settings → retention days*), delete the files in
   the bucket too.
 - When the bucket cannot be reached, the files stay on the disk and move on a later run.
+
+### Voicemail archive
+
+*Archive heard voicemail older than (days)* (0 = never): once an hour, messages that were already
+listened to (the mailbox's *Old* folder) and are older than that move to the bucket
+(`/usr/local/bin/voicemail_to_bucket.php`) and leave Asterisk's spool. **New messages are never
+moved**, so the voicemail lamp and listening from a desk phone stay as they are.
+
+Archived messages are listed as *Archive* under *My Phone → Voicemail* and in the mobile apps,
+where they can be played, downloaded and deleted; a desk phone (\*97) no longer offers them. A
+mailbox that Asterisk changed in the last two minutes (someone listening) waits for the next run.
 
 ## Access stays the same
 
