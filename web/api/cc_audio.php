@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../src/services/RecordingStorage.php';
 requireLogin();
 
 $user = getCurrentUser();
@@ -32,6 +33,21 @@ $can_listen = !empty($user['can_listen_recordings']);
 if ($role !== 'admin' && !$can_listen && !$is_own_call) {
     http_response_code(403);
     die('Access denied');
+}
+
+// In the S3 bucket (#69): streamed through the chat service, same checks above.
+if (RecordingStorage::isRemote($cdr['recording_path'])) {
+    $key = RecordingStorage::key($cdr['recording_path']);
+    $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION));
+    $headers = ['Content-Type' => ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'][$ext] ?? 'application/octet-stream'];
+    if (!empty($_GET['download'])) {
+        $headers['Content-Disposition'] = 'attachment; filename="cagri_kaydi_' . $id . '.' . ($ext !== '' ? $ext : 'mp3') . '"';
+    }
+    if (!RecordingStorage::passthru($key, $headers)) {
+        http_response_code(404);
+        die('Audio file not found');
+    }
+    exit;
 }
 
 $file = realpath($cdr['recording_path']);

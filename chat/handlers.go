@@ -1012,15 +1012,6 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 	})
 }
 
-// isLocalRequest: from this server itself, not through the Apache proxy (which
-// connects from 127.0.0.1 too but adds X-Forwarded-*).
-func isLocalRequest(r *http.Request) bool {
-	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" {
-		return false
-	}
-	return strings.HasPrefix(r.RemoteAddr, "127.0.0.1:") || strings.HasPrefix(r.RemoteAddr, "[::1]:")
-}
-
 // internalNotifyEvents: what the PBX may push to the apps over this endpoint.
 var internalNotifyEvents = map[string]bool{"voicemail": true}
 
@@ -1028,7 +1019,7 @@ var internalNotifyEvents = map[string]bool{"voicemail": true}
 // sends {"event": ..., "data": ...} to every connected device of the extension
 // (bin/voicemail_notify.php: a new voicemail while the app is connected).
 func (s *Server) HandleInternalNotify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost || !isLocalRequest(r) {
+	if r.Method != http.MethodPost || !localInternalRequest(r) {
 		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
 		return
 	}
