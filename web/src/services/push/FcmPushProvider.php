@@ -98,7 +98,7 @@ class FcmPushProvider implements PushProviderInterface
                 $delivered++;
             } else {
                 $failed++;
-                $errors[] = "Device {$device['id']}: " . ($res['error'] ?? 'Unknown error');
+                $errors[] = "Device {$device['id']}: " . ($res['message'] ?? $res['error'] ?? 'Unknown error');
             }
         }
 
