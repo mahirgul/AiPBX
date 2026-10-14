@@ -39,7 +39,8 @@ function __syncWidgetsBody() {
 
 /** @param array<int, array> $widgets active widgets */
 function buildWidgetPjsipConf(array $widgets): string {
-    $codecs = getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722');
+    // Website callers talk, they do not send video: audio codecs only.
+    $codecs = implode(',', array_diff(array_map('trim', explode(',', getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722'))), ['vp8', 'h264']));
     $directMedia = getSystemSetting('pjsip_direct_media', 'no');
     $rtpSymmetric = getSystemSetting('pjsip_rtp_symmetric', 'yes');
 
