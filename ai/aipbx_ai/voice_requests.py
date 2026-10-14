@@ -33,7 +33,7 @@ from array import array
 from collections import OrderedDict
 from pathlib import Path
 
-from . import cloud_stt
+from . import cloud_llm, cloud_stt
 from .models import UnknownModel
 
 log = logging.getLogger("aipbx_ai.voice_requests")
@@ -145,6 +145,9 @@ def _model(data, name, kind, manager):
     return value
 
 
+UNDERSTAND = ("auto", "keywords", "cloud")
+
+
 def validate_config(data, manager=None):
     """The normalised config, or ConfigError. Unknown fields are ignored."""
     if not isinstance(data, dict):
@@ -162,7 +165,17 @@ def validate_config(data, manager=None):
         "listen_seconds": _number(data, "listen_seconds", LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT, integer=True),
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
+        # How the request is recognised: "auto" = keywords plus the local
+        # sentence-meaning model when one runs; "keywords" = keywords and
+        # letters only; "cloud" = a cloud language model (llm_cloud), falling
+        # back to "auto" when it does not answer.
+        "understand": data.get("understand") if data.get("understand") in UNDERSTAND else "auto",
     }
+    if config["understand"] == "cloud":
+        try:
+            config["llm_cloud"] = cloud_llm.validate(data.get("llm_cloud"))
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
     if config["stt_model"].startswith("cloud:"):
         try:
             config["stt_cloud"] = cloud_stt.validate(data.get("stt_cloud"))
@@ -202,9 +215,10 @@ def validate_config(data, manager=None):
 def public(config):
     """A config as the API shows it: a cloud provider's key is never returned."""
     out = dict(config)
-    if "stt_cloud" in out:
-        out["stt_cloud"] = {k: v for k, v in out["stt_cloud"].items() if k != "api_key"}
-        out["stt_cloud"]["api_key_set"] = True
+    for name in ("stt_cloud", "llm_cloud"):
+        if name in out:
+            out[name] = {k: v for k, v in out[name].items() if k != "api_key"}
+            out[name]["api_key_set"] = True
     return out
 
 

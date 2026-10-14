@@ -961,11 +961,40 @@ class VoiceRequestsCall:
             text, attempt["stt_ms"] = self.transcribe(pcm)
             attempt["transcript"] = text
             if text:
-                m = match_intent(text, cfg["intents"], cfg["threshold"])
-                attempt.update(intent=m["intent"], score=m["score"], second=m["second"], scores=m["scores"])
+                m = self.understand(text, cfg)
+                attempt.update(intent=m["intent"], score=m["score"], second=m["second"], scores=m["scores"],
+                               method=m["method"])
         else:
             self.speech_end = None
         return attempt
+
+    def understand(self, text, cfg):
+        """The request in what the caller said (intents.match result shape)."""
+        mode = cfg.get("understand", "auto")
+        if mode == "cloud" and cfg.get("llm_cloud"):
+            from . import cloud_llm
+            started = time.monotonic()
+            try:
+                c = cloud_llm.classify(cfg["llm_cloud"], text, cfg["intents"])
+                log.info("call app=%d: cloud model %s answered in %d ms", self.session.app,
+                         cfg["llm_cloud"]["provider"], int((time.monotonic() - started) * 1000))
+                sure = c["intent"] is not None and c["confidence"] >= cfg["threshold"]
+                return {"intent": c["intent"] if sure else None, "score": c["confidence"], "second": 0.0,
+                        "scores": {c["intent"]: c["confidence"]} if c["intent"] else {}, "method": "cloud",
+                        "meaning": {}}
+            except Exception as e:  # noqa: BLE001 - never lose the call: fall back to local matching
+                log.warning("call app=%d: cloud model failed (%s), local matching", self.session.app,
+                            type(e).__name__ + ": " + str(e)[:80])
+        return match_intent(text, cfg["intents"], cfg["threshold"],
+                            embed=None if mode == "keywords" else self.embedder())
+
+    def embedder(self):
+        """Sentence meaning for matching, when such a model is running (else None)."""
+        manager = self.registry.manager
+        model = manager.ready_embedding() if hasattr(manager, "ready_embedding") else None
+        if model is None:
+            return None
+        return lambda texts: manager.embed(model, texts)
 
     def transcribe(self, pcm):
         """(text, ms); runs in a thread of its own, the reader keeps reading meanwhile."""

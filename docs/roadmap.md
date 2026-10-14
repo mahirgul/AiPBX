@@ -156,7 +156,7 @@ audio part is dropped (too heavy, too weak on Turkish speech). See "Model catalo
    ready, the caller goes to the normal (keypad) flow. The first type is **announcement with
    values** (EMA Lightning only, possible today); its values come from dialplan variables (e.g.
    the caller's number) or from a web address of the customer's own system.
-5. **Routing by speech (EmbeddingGemma 2).** Application type, also usable as an IVR option. The
+5. **Routing by speech** *(done in 1.23.0 with Vosk/Whisper speech to text, a small local sentence-meaning model (multilingual-e5-small) and, optionally, a cloud language model, instead of EmbeddingGemma)*. Application type, also usable as an IVR option. The
    administrator names requests with a few example sentences each and a destination ("invoice" →
    Accounting). The caller's words go to the closest request; when the match is uncertain, the
    caller gets the keypad menu or the operator.

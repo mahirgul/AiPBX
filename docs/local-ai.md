@@ -207,6 +207,26 @@ about 0.4 s more per request (estimated end of speech to reply ≈ 1.7 s instead
 memory. *Vosk small* stays the choice for servers with little memory (under ~2 GB free for the
 service) or many calls at once: Whisper keeps both cores busy for almost a second per request.
 
+### Sentence meaning (multilingual-e5-small)
+
+*Sentence meaning: multilingual-e5-small* (MIT, [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small),
+int8 ONNX export of Xenova, 130 MB download) turns a sentence into a vector; sentences that mean the
+same lie close together, whatever their words. Voice requests and routing by speech use it to compare
+what the caller said with the example sentences (`aipbx_ai/embedding.py`, `intents.py`).
+
+- About 3 ms per sentence on 2 cores, ~250 MB of memory; the example sentences are computed once and
+  kept.
+- The tokenizer (XLM-RoBERTa SentencePiece) is a few lines of Python here, so no tokenizer library is
+  needed; it gives the same ids as the Hugging Face `tokenizers` package.
+- Measured with 40 Turkish routing requests that avoided the keywords: multilingual-e5-small 31 of 40
+  nearest correct; multilingual-e5-base (28) and gte-multilingual-base (27) were not better, only
+  slower, so only the small one is offered.
+- How the score is decided: the mean similarity of each request's two closest sentences; what counts
+  is the lead of the best request over the second (`0.5 + 10 × (lead − 0.02)`), and meaning decides
+  first when it reaches *certainty needed*.
+- It cannot tell reliably that a sentence belongs to **no** request; for that a cloud language model
+  is the better choice ([AI applications → Understanding](ai-apps.md#understanding)).
+
 ### Adding voices from the Piper voice list
 
 *Add a voice* lists every voice of [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices)
