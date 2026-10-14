@@ -5,6 +5,33 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.22.0
+
+- **Video calls** ([#15](https://github.com/mahirgul/AiPBX/issues/15)) between the web
+  phone, the Android app (1.0.65) and desk video phones. Switch them on under
+  *Admin → Asterisk settings → Video* and choose the video codec: **VP8** for
+  browsers and apps, **H.264** if you also have desk video phones. The web phone
+  gets a video call button next to the dial field and *Video* on an incoming video
+  call; the app offers *Video call* in Contacts and History. During the call: the
+  other side's picture with the own camera in the corner, camera on/off, full
+  screen (web) and front/back camera (app). Without a camera the call goes on with
+  audio. See [Video calls](docs/video-calls.md).
+- One video codec for the whole PBX: Asterisk does not convert video and would hang
+  up a call whose two sides use different video codecs.
+- While video calls are on, WebRTC endpoints have no RTP timeout (Asterisk sees
+  bundled video as silent and hung video calls up after 30 s); the web phone now
+  uses SIP session timers like the apps, so calls of a closed browser still end.
+- **Voicemail notifications** ([#75](https://github.com/mahirgul/AiPBX/issues/75)): every
+  new message writes one line saying whether the app was reached and how push went
+  (`journalctl -t aipbx-voicemail`); Firebase errors are shown in full. The
+  notification itself needs Android app 1.0.63 or newer. See
+  [Troubleshooting](docs/troubleshooting.md#no-notification-for-a-new-voicemail-in-the-app).
+- **Android 1.0.64**: tapping a call in the history asks *Call* or *Chat* (as in
+  Contacts); colleagues get a chat button next to the call button.
+- Google Play now shows the real "What's new" text of each app version.
+- The incoming call banner of the web phone and the app's contact count were partly
+  in Turkish in every language; missing texts of the S3 storage page translated.
+
 ## 1.21.0
 
 - **Voicemail archive in the S3 bucket** ([#69](https://github.com/mahirgul/AiPBX/issues/69)):
