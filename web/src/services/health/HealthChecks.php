@@ -114,19 +114,26 @@ final class HealthChecks
         $contacts = self::sh('asterisk -rx "pjsip show contacts"');
         $regs = self::sh('asterisk -rx "pjsip show registrations"');
         $bad = [];
+        $unchecked = 0;
         foreach ($trunks as $t) {
             $q = preg_quote($t, '/');
-            if (preg_match('/Contact:\s+' . $q . '\/\S+\s+\S+\s+(Unavail|Unknown)/', $contacts, $m) && $m[1] === 'Unavail') {
-                $bad[] = $t . ' (' . t('health.trunk_unreachable') . ')';
-                continue;
+            if (preg_match('/Contact:\s+' . $q . '\/\S+\s+\S+\s+(\S+)/', $contacts, $m)) {
+                if ($m[1] === 'Unavail') {
+                    $bad[] = $t . ' (' . t('health.trunk_unreachable') . ')';
+                    continue;
+                }
+                // NonQual / Unknown: qualify off, or Asterisk has just started.
+                $unchecked += $m[1] === 'Avail' ? 0 : 1;
             }
             if (preg_match('/^\s*' . $q . '(?:-reg)?\/\S+\s+\S+\s+(Rejected|Unregistered|Stopped)/mi', $regs, $m)) {
                 $bad[] = $t . ' (' . strtolower($m[1]) . ')';
             }
         }
-        return $bad
-            ? ['fail', sprintf(t('health.msg_trunks_bad'), implode(', ', $bad))]
-            : ['ok', sprintf(t('health.msg_trunks_ok'), count($trunks))];
+        if ($bad) {
+            return ['fail', sprintf(t('health.msg_trunks_bad'), implode(', ', $bad))];
+        }
+        $msg = sprintf(t('health.msg_trunks_ok'), count($trunks) - $unchecked);
+        return ['ok', $unchecked ? $msg . ' ' . sprintf(t('health.msg_trunks_unchecked'), $unchecked) : $msg];
     }
 
     private static function disk(): array
