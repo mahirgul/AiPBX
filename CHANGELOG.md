@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.14.0
+
+- **Read-only FTP server for desk phones** (*PBX → Network services*): for phones
+  that fetch firmware and files over FTP, such as NEC DT700/DT800. It serves the
+  same files as TFTP to anonymous logins and to one FTP user (default
+  `NECSDT700`); nothing can be uploaded or changed. The firewall opens port 21
+  and the passive ports 40000–40049 for the allowed phone networks only. See
+  [Network services](docs/network-services.md).
+
 ## 1.13.0
 
 - **NEC desk phones:** *PBX → Phones* provisions NEC DT700/DT800 phones with SIP

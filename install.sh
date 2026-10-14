@@ -331,6 +331,8 @@ PACKAGES=(
   avahi-daemon
   avahi-utils
   dnsmasq-base
+  vsftpd
+  libpam-pwdfile
 )
 
 # An upgrade only installs packages a newer release added: system package
@@ -338,6 +340,9 @@ PACKAGES=(
 # mirrors (e.g. behind a stalling proxy) apt-get used to hang the update for
 # many minutes. Short timeouts so an unreachable mirror fails fast.
 APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1)
+# vsftpd's own unit would start right after installing, with local system
+# accounts allowed to log in: masked first, AiPBX runs its own (aipbx-vsftpd).
+systemctl mask vsftpd.service >/dev/null 2>&1 || true
 MISSING=()
 for p in "${PACKAGES[@]}"; do
     dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || MISSING+=("$p")
@@ -990,6 +995,35 @@ NETSVC
 systemctl daemon-reload
 systemctl enable aipbx-dnsmasq.service >/dev/null 2>&1 || true
 systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
+
+# Read-only FTP of the same folder for phones that fetch files over FTP (NEC
+# DT700 and others): off until the page turns it on; aipbx-priv writes its
+# configuration and the password file of the one FTP user (not a system
+# account: PAM checks it against that file).
+systemctl disable --now vsftpd.service >/dev/null 2>&1 || true
+systemctl mask vsftpd.service >/dev/null 2>&1 || true
+cat > /etc/pam.d/aipbx-ftp << 'FTPPAM'
+# AiPBX read-only FTP (PBX -> Network services): the FTP user's password file only.
+auth    required pam_pwdfile.so pwdfile=/var/lib/aipbx-netsvc/ftp.passwd
+account required pam_permit.so
+FTPPAM
+cat > /etc/systemd/system/aipbx-vsftpd.service << 'FTPUNIT'
+[Unit]
+Description=AiPBX read-only FTP for desk phones (PBX -> Network services)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/aipbx-netsvc/vsftpd.conf
+
+[Service]
+ExecStart=/usr/sbin/vsftpd /var/lib/aipbx-netsvc/vsftpd.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+FTPUNIT
+systemctl daemon-reload
+systemctl try-restart aipbx-vsftpd.service 2>/dev/null || true
 
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code

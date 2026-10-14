@@ -1,6 +1,6 @@
 <?php
 /** @var string $csrf @var array $settings @var string $status @var array $interfaces @var array $leases
- *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl */
+ *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus */
 $mode = $settings['netsvc_mode'];
 // Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
 $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
@@ -39,6 +39,29 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 <strong><?php echo t('netsvc.switch_tftp'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_tftp_desc'); ?></span>
             </label>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <input type="checkbox" name="netsvc_ftp" value="1" class="u-accent netsvc-switch" id="netsvc_ftp_on" <?php echo $settings['netsvc_ftp'] === '1' ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.switch_ftp'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_ftp_desc'); ?></span>
+                <?php if ($settings['netsvc_ftp'] === '1'): ?>
+                    <span class="badge <?php echo $ftpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $ftpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                <?php endif; ?>
+            </label>
+        </div>
+
+        <div class="netsvc-ftp">
+            <div class="u-grid-2">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('netsvc.ftp_user'); ?></label>
+                    <input type="text" name="netsvc_ftp_user" class="form-control" maxlength="32" value="<?php echo $h($settings['netsvc_ftp_user']); ?>" placeholder="NECSDT700">
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('netsvc.ftp_password'); ?></label>
+                    <input type="password" name="netsvc_ftp_password" class="form-control" maxlength="64" autocomplete="new-password"
+                           placeholder="<?php echo $h($settings['netsvc_ftp_password'] !== '' ? t('netsvc.ftp_password_set') : ''); ?>">
+                </div>
+            </div>
+            <small class="u-hint u-fs-12"><?php echo t('netsvc.ftp_help'); ?></small>
         </div>
 
         <div class="form-group netsvc-needs-iface">
