@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Alközponti háttérkapcsolat</string>
     <string name="notif_incoming_call_desc">Mellék: %s</string>
     <string name="notif_incoming_call_title">BEJÖVŐ HÍVÁS: %s</string>
-    <string name="notif_service_text">Mellék: %1$s (%2$s) - várakozás hívásokra</string>
-    <string name="notif_service_title">Alközponti kapcsolat aktív</string>
     <string name="password_hint">Jelszó</string>
     <string name="server_setup_subtitle">Adja meg annak az AI PBX szervernek a címét, amelyhez csatlakozni szeretne.</string>
     <string name="server_setup_title">Szervercím</string>

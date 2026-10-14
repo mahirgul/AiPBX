@@ -65,8 +65,6 @@
     <string name="notif_channel_service">PBX-achtergrondverbinding</string>
     <string name="notif_incoming_call_desc">Toestel: %s</string>
     <string name="notif_incoming_call_title">INKOMENDE OPROEP: %s</string>
-    <string name="notif_service_text">Toestel: %1$s (%2$s) - wacht op oproepen</string>
-    <string name="notif_service_title">PBX-verbinding actief</string>
     <string name="password_hint">Wachtwoord</string>
     <string name="server_setup_subtitle">Voer het adres in van de AI PBX-server waarmee je verbinding wilt maken.</string>
     <string name="server_setup_title">Serveradres</string>

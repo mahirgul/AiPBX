@@ -65,8 +65,6 @@
     <string name="notif_channel_service">Σύνδεση PBX στο παρασκήνιο</string>
     <string name="notif_incoming_call_desc">Εσωτερικό: %s</string>
     <string name="notif_incoming_call_title">ΕΙΣΕΡΧΟΜΕΝΗ ΚΛΗΣΗ: %s</string>
-    <string name="notif_service_text">Εσωτερικό: %1$s (%2$s) - αναμονή κλήσεων</string>
-    <string name="notif_service_title">Η σύνδεση PBX είναι ενεργή</string>
     <string name="password_hint">Κωδικός πρόσβασης</string>
     <string name="server_setup_subtitle">Εισαγάγετε τη διεύθυνση του διακομιστή AI PBX στον οποίο θέλετε να συνδεθείτε.</string>
     <string name="server_setup_title">Διεύθυνση διακομιστή</string>

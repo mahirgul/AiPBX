@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.16.1
+
+- **Android app 1.0.62 — short status notification:** the permanent notification
+  now reads just "AiPBX · 1000 ✅" — the extension with a mark that shows at a
+  glance whether calls can come in (✅ connected, 🟡 connecting, 🔴 not connected),
+  and the icon is green, amber or red to match. Notifications during a call are
+  unchanged.
+
 ## 1.16.0
 
 - **FTP:** the user `NECSDT700` of NEC DT700/DT800 phones is always there while FTP
