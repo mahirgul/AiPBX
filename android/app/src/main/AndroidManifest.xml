@@ -119,6 +119,12 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Own voicemail: list, listen, delete -->
+        <activity
+            android:name=".ui.VoicemailActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
+
         <!-- System & Diagnostic Log Viewer Activity -->
         <activity
             android:name=".ui.LogViewerActivity"

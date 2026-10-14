@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Radera meddelandet för alla i chatten?</string>
     <string name="err_message_delete_not_allowed">Meddelandet kan inte längre raderas.</string>
     <string name="api_message_delete_failed">Det gick inte att radera meddelandet (HTTP %1$s)</string>
+    <string name="vm_title">Röstbrevlåda</string>
+    <string name="vm_empty">Inga röstmeddelanden</string>
+    <string name="vm_new">Nytt</string>
+    <string name="vm_play">Spela upp</string>
+    <string name="vm_unknown_caller">Okänd uppringare</string>
+    <string name="vm_play_failed">Meddelandet kunde inte spelas upp</string>
+    <string name="vm_load_failed">Röstbrevlådan kunde inte läsas in</string>
+    <string name="vm_delete_confirm">Ta bort det här röstmeddelandet?</string>
 </resources>

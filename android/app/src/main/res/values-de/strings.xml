@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Diese Nachricht für alle im Chat löschen?</string>
     <string name="err_message_delete_not_allowed">Diese Nachricht kann nicht mehr gelöscht werden.</string>
     <string name="api_message_delete_failed">Die Nachricht konnte nicht gelöscht werden (HTTP %1$s)</string>
+    <string name="vm_title">Mailbox</string>
+    <string name="vm_empty">Keine Sprachnachrichten</string>
+    <string name="vm_new">Neu</string>
+    <string name="vm_play">Abspielen</string>
+    <string name="vm_unknown_caller">Unbekannter Anrufer</string>
+    <string name="vm_play_failed">Die Nachricht konnte nicht abgespielt werden</string>
+    <string name="vm_load_failed">Die Mailbox konnte nicht geladen werden</string>
+    <string name="vm_delete_confirm">Diese Sprachnachricht löschen?</string>
 </resources>

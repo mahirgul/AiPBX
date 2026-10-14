@@ -95,6 +95,38 @@
         </LinearLayout>
 
 
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="4dp">
+
+            <ImageButton
+                android:id="@+id/btnVoicemail"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/vm_title"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_voicemail"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvVoicemailBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="16dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/circle_status"
+                android:backgroundTint="#DC2626"
+                android:gravity="center"
+                android:minWidth="16dp"
+                android:paddingHorizontal="4dp"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+
         <ImageButton
             android:id="@+id/btnLogout"
             android:layout_width="36dp"
@@ -137,16 +169,24 @@
                     android:background="@drawable/card_rounded_bg"
                     android:paddingHorizontal="12dp">
 
-                    <TextView
+                    <!-- Editable like a phone app: tap to place the cursor, long press to paste;
+                         the keypad below types, the system keyboard stays closed. -->
+                    <EditText
                         android:id="@+id/tvDigits"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_centerInParent="true"
-                        android:ellipsize="start"
+                        android:background="@null"
+                        android:cursorVisible="true"
                         android:gravity="center"
+                        android:importantForAutofill="no"
+                        android:inputType="phone"
+                        android:imeOptions="actionGo"
                         android:maxLines="1"
                         android:paddingHorizontal="44dp"
+                        android:singleLine="true"
                         android:textColor="@color/text_primary"
+                        android:textCursorDrawable="@null"
                         android:textSize="28sp"
                         android:textStyle="bold" />
 
@@ -866,11 +906,21 @@
                     android:visibility="gone">
 
                     <ImageView
+                        android:id="@+id/ivChatUploadIcon"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_attach"
                         app:tint="@color/primary" />
+
+                    <!-- Picture being sent: a small preview instead of the clip icon -->
+                    <ImageView
+                        android:id="@+id/ivChatUploadThumb"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/tvChatUploadFilename"
@@ -890,8 +940,8 @@
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@drawable/ic_call_end"
-                        app:tint="#DC2626" />
+                        android:src="@drawable/ic_close"
+                        app:tint="@color/text_secondary" />
                 </LinearLayout>
 
                 <!-- Input Bar -->

@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Да се изтрие ли това съобщение за всички в чата?</string>
     <string name="err_message_delete_not_allowed">Това съобщение вече не може да бъде изтрито.</string>
     <string name="api_message_delete_failed">Съобщението не можа да бъде изтрито (HTTP %1$s)</string>
+    <string name="vm_title">Гласова поща</string>
+    <string name="vm_empty">Няма гласови съобщения</string>
+    <string name="vm_new">Ново</string>
+    <string name="vm_play">Прослушай</string>
+    <string name="vm_unknown_caller">Неизвестен абонат</string>
+    <string name="vm_play_failed">Съобщението не може да бъде възпроизведено</string>
+    <string name="vm_load_failed">Гласовата поща не може да бъде заредена</string>
+    <string name="vm_delete_confirm">Да се изтрие ли това гласово съобщение?</string>
 </resources>

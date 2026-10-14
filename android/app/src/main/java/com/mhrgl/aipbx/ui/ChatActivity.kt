@@ -80,6 +80,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     private lateinit var tvTyping: TextView
     private lateinit var llUploadPreview: LinearLayout
     private lateinit var tvUploadFilename: TextView
+    private lateinit var ivUploadThumb: android.widget.ImageView
+    private lateinit var ivUploadIcon: android.widget.ImageView
     private lateinit var btnCancelUpload: ImageButton
 
     private var pendingUpload: ChatUploadResponse? = null
@@ -216,6 +218,8 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         tvTyping = findViewById(R.id.tvTyping)
         llUploadPreview = findViewById(R.id.llUploadPreview)
         tvUploadFilename = findViewById(R.id.tvUploadFilename)
+        ivUploadThumb = findViewById(R.id.ivUploadThumb)
+        ivUploadIcon = findViewById(R.id.ivUploadIcon)
         btnCancelUpload = findViewById(R.id.btnCancelUpload)
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
@@ -466,10 +470,18 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         llUploadPreview.visibility = View.GONE
     }
 
+    /** Picture preview in the upload bar (null: the clip icon for other files). */
+    private fun showUploadThumb(bitmap: android.graphics.Bitmap?) {
+        ivUploadThumb.setImageBitmap(bitmap)
+        ivUploadThumb.visibility = if (bitmap != null) View.VISIBLE else View.GONE
+        ivUploadIcon.visibility = if (bitmap != null) View.GONE else View.VISIBLE
+    }
+
     private fun handlePickedUri(uri: Uri, type: String) {
         lifecycleScope.launch {
             llUploadPreview.visibility = View.VISIBLE
             tvUploadFilename.text = getString(R.string.msg_uploading_file)
+            showUploadThumb(withContext(Dispatchers.IO) { ChatUploadPrep.thumbnail(this@ChatActivity, uri) })
 
             val sUrl = prefs.serverUrl ?: return@launch
             val token = prefs.token ?: return@launch

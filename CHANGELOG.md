@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.15.0
+
+- **Voicemail in the Android app (1.0.61)** ([#46](https://github.com/mahirgul/AiPBX/issues/46)):
+  a voicemail button next to the sign-out button shows the number of new
+  messages and opens the mailbox: who called, when and how long, listen and
+  delete. A message listened to counts as heard, like on the phone, so the
+  voicemail lamp of desk phones goes off as well. New app endpoint
+  `api/mobile/voicemail.php` (own mailbox only); Asterisk now notices messages
+  listened to or deleted in the portal or the app within 15 s.
+- **Android keypad:** the number can be edited like in a phone app: tap to place
+  the cursor, type or delete in the middle, long press to paste (spaces, dashes
+  and brackets of a pasted number are dropped).
+- **Android chat:** a picture chosen to send shows a small preview before it is
+  sent, and the cancel button is a plain ✕ instead of the red hang-up icon.
+
 ## 1.14.1
 
 - **Portal installed as an app (PWA):** proper icons. Android gets "maskable"

@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Obrisati ovu poruku za sve u četu?</string>
     <string name="err_message_delete_not_allowed">Ova poruka više ne može da se obriše.</string>
     <string name="api_message_delete_failed">Poruka nije mogla da se obriše (HTTP %1$s)</string>
+    <string name="vm_title">Govorna pošta</string>
+    <string name="vm_empty">Nema govornih poruka</string>
+    <string name="vm_new">Nova</string>
+    <string name="vm_play">Pusti</string>
+    <string name="vm_unknown_caller">Nepoznati pozivalac</string>
+    <string name="vm_play_failed">Poruka ne može da se pusti</string>
+    <string name="vm_load_failed">Govorna pošta ne može da se učita</string>
+    <string name="vm_delete_confirm">Obrisati ovu govornu poruku?</string>
 </resources>

@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Διαγραφή αυτού του μηνύματος για όλους στη συνομιλία;</string>
     <string name="err_message_delete_not_allowed">Αυτό το μήνυμα δεν μπορεί πλέον να διαγραφεί.</string>
     <string name="api_message_delete_failed">Δεν ήταν δυνατή η διαγραφή του μηνύματος (HTTP %1$s)</string>
+    <string name="vm_title">Φωνητικό ταχυδρομείο</string>
+    <string name="vm_empty">Δεν υπάρχουν φωνητικά μηνύματα</string>
+    <string name="vm_new">Νέο</string>
+    <string name="vm_play">Αναπαραγωγή</string>
+    <string name="vm_unknown_caller">Άγνωστος καλών</string>
+    <string name="vm_play_failed">Δεν ήταν δυνατή η αναπαραγωγή του μηνύματος</string>
+    <string name="vm_load_failed">Δεν ήταν δυνατή η φόρτωση του φωνητικού ταχυδρομείου</string>
+    <string name="vm_delete_confirm">Διαγραφή αυτού του φωνητικού μηνύματος;</string>
 </resources>

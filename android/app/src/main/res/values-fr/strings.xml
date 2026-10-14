@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Supprimer ce message pour tous les participants ?</string>
     <string name="err_message_delete_not_allowed">Ce message ne peut plus être supprimé.</string>
     <string name="api_message_delete_failed">Impossible de supprimer le message (HTTP %1$s)</string>
+    <string name="vm_title">Messagerie vocale</string>
+    <string name="vm_empty">Aucun message vocal</string>
+    <string name="vm_new">Nouveau</string>
+    <string name="vm_play">Écouter</string>
+    <string name="vm_unknown_caller">Appelant inconnu</string>
+    <string name="vm_play_failed">Le message n\'a pas pu être lu</string>
+    <string name="vm_load_failed">La messagerie vocale n\'a pas pu être chargée</string>
+    <string name="vm_delete_confirm">Supprimer ce message vocal ?</string>
 </resources>

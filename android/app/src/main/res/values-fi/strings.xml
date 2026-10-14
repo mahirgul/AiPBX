@@ -403,4 +403,12 @@
     <string name="chat_delete_message_confirm">Poistetaanko tämä viesti kaikilta keskustelussa?</string>
     <string name="err_message_delete_not_allowed">Tätä viestiä ei voi enää poistaa.</string>
     <string name="api_message_delete_failed">Viestin poistaminen epäonnistui (HTTP %1$s)</string>
+    <string name="vm_title">Vastaaja</string>
+    <string name="vm_empty">Ei ääniviestejä</string>
+    <string name="vm_new">Uusi</string>
+    <string name="vm_play">Toista</string>
+    <string name="vm_unknown_caller">Tuntematon soittaja</string>
+    <string name="vm_play_failed">Viestiä ei voitu toistaa</string>
+    <string name="vm_load_failed">Vastaajaa ei voitu ladata</string>
+    <string name="vm_delete_confirm">Poistetaanko tämä ääniviesti?</string>
 </resources>

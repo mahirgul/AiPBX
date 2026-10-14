@@ -142,11 +142,21 @@
         android:visibility="gone">
 
         <ImageView
+            android:id="@+id/ivUploadIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_attach"
             app:tint="@color/primary" />
+
+        <!-- Picture being sent: a small preview instead of the clip icon -->
+        <ImageView
+            android:id="@+id/ivUploadThumb"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/tvUploadFilename"
@@ -166,8 +176,8 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_call_end"
-            app:tint="#DC2626" />
+            android:src="@drawable/ic_close"
+            app:tint="@color/text_secondary" />
     </LinearLayout>
 
     <!-- Input Bar -->
