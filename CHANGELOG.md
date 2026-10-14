@@ -13,6 +13,11 @@ the git tag message and the GitHub Release notes, and installations show it as
   `NECSDT700`); nothing can be uploaded or changed. The firewall opens port 21
   and the passive ports 40000–40049 for the allowed phone networks only. See
   [Network services](docs/network-services.md).
+- **Android app 1.0.60 — contacts:** tapping a contact no longer calls at once; it
+  asks whether to call or chat. The buttons on the right call or open the chat
+  directly (phone contacts offer calling only). The back button closes an open
+  chat and goes back to the keypad again before leaving the app (on Android 16
+  it used to close the app at once).
 
 ## 1.13.0
 

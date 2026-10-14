@@ -25,6 +25,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -179,6 +180,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         binding = ActivityDialerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        onBackPressedDispatcher.addCallback(this, backCallback)
 
         // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
@@ -328,16 +330,22 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         ChatWebSocketManager.instance.removeListener(this)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (currentTab == Tab.CHAT && isChatRoomOpen()) {
-            closeChatRoom()
-            return
-        }
-        if (currentTab != Tab.DIALER) {
-            switchTab(Tab.DIALER)
-        } else {
-            super.onBackPressed()
+    /**
+     * Back closes the open chat, then goes to the keypad, then leaves. With
+     * targetSdk 36 (predictive back) onBackPressed() is no longer called, so
+     * this runs from the dispatcher.
+     */
+    private val backCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            when {
+                currentTab == Tab.CHAT && isChatRoomOpen() -> closeChatRoom()
+                currentTab != Tab.DIALER -> switchTab(Tab.DIALER)
+                else -> {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
         }
     }
 
@@ -726,9 +734,15 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     // ================= TAB 3: CONTACTS =================
 
     private fun setupContactsTab() {
-        contactsAdapter = ContactsAdapter { targetExt, contactName ->
-            initiateCall(targetExt, contactName)
-        }
+        contactsAdapter = ContactsAdapter(
+            onCallClick = { targetExt, contactName -> initiateCall(targetExt, contactName) },
+            onChatClick = { targetExt, contactName ->
+                if (targetExt != (prefs.extension ?: "")) {
+                    switchTab(Tab.CHAT)
+                    openChatRoom(0, targetExt, contactName, false)
+                }
+            }
+        )
         binding.rvContacts.layoutManager = LinearLayoutManager(this)
         binding.rvContacts.adapter = contactsAdapter
 

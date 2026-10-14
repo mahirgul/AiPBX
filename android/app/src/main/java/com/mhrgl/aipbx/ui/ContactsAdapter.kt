@@ -1,8 +1,9 @@
 package com.mhrgl.aipbx.ui
 
-import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.mhrgl.aipbx.R
@@ -11,8 +12,14 @@ import com.mhrgl.aipbx.model.ContactItem
 
 import com.mhrgl.aipbx.util.SearchUtils
 
+/**
+ * Contacts list. Tapping a row only offers the choices (call or chat); the call
+ * and chat buttons on the right act at once. Phone (device) contacts have no
+ * PBX chat, so they offer calling only.
+ */
 class ContactsAdapter(
-    private val onCallClick: (String, String) -> Unit
+    private val onCallClick: (String, String) -> Unit,
+    private val onChatClick: ((String, String) -> Unit)? = null
 ) : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
     private val allItems = mutableListOf<ContactItem>()
@@ -111,12 +118,27 @@ class ContactsAdapter(
                 }
             }
 
+            val isDevice = item.role == context.getString(R.string.contact_role_device)
+            val chat = onChatClick.takeIf { !isDevice }
+            binding.btnChatContact.visibility = if (chat != null) View.VISIBLE else View.GONE
+
             binding.btnCallContact.setOnClickListener {
                 onCallClick(item.extension, item.name)
             }
+            binding.btnChatContact.setOnClickListener {
+                chat?.invoke(item.extension, item.name)
+            }
 
+            // A tap on the row does not call: it asks what to do.
             itemView.setOnClickListener {
-                onCallClick(item.extension, item.name)
+                val labels = mutableListOf(context.getString(R.string.ui_call))
+                if (chat != null) labels.add(context.getString(R.string.ui_chat))
+                AlertDialog.Builder(context)
+                    .setTitle(item.name.ifEmpty { item.extension })
+                    .setItems(labels.toTypedArray()) { _, which ->
+                        if (which == 0) onCallClick(item.extension, item.name) else chat?.invoke(item.extension, item.name)
+                    }
+                    .show()
             }
         }
     }
