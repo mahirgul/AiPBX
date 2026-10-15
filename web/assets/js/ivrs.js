@@ -108,11 +108,11 @@ function openIvrEntriesModal(ivrId, title) {
     const warn = document.getElementById('entry_overwrite_warning');
     if (digitSel && warn) {
         const used = (list && list.dataset.digits ? list.dataset.digits.split(',') : []).filter(Boolean);
-        const kontrolEt = function () {
+        const syncVisibility = function () {
             warn.style.display = used.indexOf(digitSel.value) !== -1 ? 'block' : 'none';
         };
-        digitSel.onchange = kontrolEt;
-        kontrolEt();
+        digitSel.onchange = syncVisibility;
+        syncVisibility();
     }
 
     bindDestinationSelector('modal_entry_dest_type', 'modal_entry_dest_id');

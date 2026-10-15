@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Microsoft Teams page.
+ * Tables: sys_settings, teams_user_mappings, sys_users.
+ * Used by MsTeamsController, MsTeamsService.
+ */
 class MsTeamsRepository extends BaseRepository
 {
     protected static string $table = 'teams_user_mappings';
@@ -115,7 +120,7 @@ class MsTeamsRepository extends BaseRepository
             return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
         }
 
-        // Benzersizlik kontrolleri
+        // Uniqueness checks
         if ($id > 0) {
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE extension = ? AND id != ?");
             $stmt->execute([$extension, $id]);

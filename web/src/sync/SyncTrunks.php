@@ -105,9 +105,9 @@ function __syncAllTrunksBody() {
         // the trunk name.
         $aor_name = $t_name;
         if ($conn_mode === 'register') {
-            $kayit_adi = preg_replace('/[^a-zA-Z0-9_-]/', '', $auth_user);
-            if ($kayit_adi !== '') {
-                $aor_name = $kayit_adi;
+            $record_name = preg_replace('/[^a-zA-Z0-9_-]/', '', $auth_user);
+            if ($record_name !== '') {
+                $aor_name = $record_name;
             }
         }
 

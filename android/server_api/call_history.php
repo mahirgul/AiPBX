@@ -21,7 +21,7 @@ if ($ext === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'error' => 'Kullanıcıya ait dahili numara bulunamadı.'
+        'error' => 'No extension found for this user.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

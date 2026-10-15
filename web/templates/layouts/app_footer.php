@@ -81,7 +81,7 @@ if ($is_spa_request) {
         <!-- Centered Floating Toast Notification Pill Container -->
         <div class="footer-toast-container" id="footer-toast-container"></div>
 
-        <!-- Sol: Saat ve Tarih -->
+        <!-- Left: time and date -->
         <div class="footer-left-group">
             <div class="footer-stat-pill u-strong" id="footer-clock">
                 <i class="far fa-clock"></i> <?php echo t('footer.loading'); ?>
@@ -136,7 +136,7 @@ if ($is_spa_request) {
                             </select>
                         </form>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
-                        <a href="/security" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent; color: var(--primary); text-align: center; text-decoration: none;" title="<?php echo t('sidebar.security_settings', 'Güvenlik & 2FA'); ?>">
+                        <a href="/security" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent; color: var(--primary); text-align: center; text-decoration: none;" title="<?php echo t('sidebar.security_settings'); ?>">
                             <i class="fas fa-shield-alt"></i>
                         </a>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>

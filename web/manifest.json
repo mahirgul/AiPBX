@@ -1,7 +1,7 @@
 {
-    "name": "AI PBX Portal - Santral & Çağrı Merkezi",
+    "name": "AI PBX Portal - PBX & Call Center",
     "short_name": "AI PBX",
-    "description": "AI PBX — Modern Santral, Faks ve Çağrı Merkezi Portalı",
+    "description": "AI PBX — PBX, fax and call center portal",
     "start_url": "/dashboard",
     "scope": "/",
     "display": "standalone",

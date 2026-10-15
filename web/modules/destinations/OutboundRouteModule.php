@@ -1,9 +1,15 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'outbound_route': an outbound route (pbx_outbound_routes): the
+ * call goes out through its trunks.
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class OutboundRouteModule implements PBXDestinationInterface {
     public function getKey(): string { return 'outbound_route'; }
-    public function getName(): string { return '🌐 Giden Rota / Dış Hat'; }
+    public function getName(): string { return '🌐 ' . \t('dest.outbound_route'); }
 
     public function getOptions(): array {
         $db = \getDB();

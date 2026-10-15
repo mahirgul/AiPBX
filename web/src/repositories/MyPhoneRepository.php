@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the My phone page (the user's own phone, devices, calls).
+ * Tables: sys_users, sys_mobile_devices, asteriskcdr, sys_call_history_hidden, sys_roles.
+ * Used by MyPhoneController.
+ */
 class MyPhoneRepository extends BaseRepository
 {
     protected static string $table = 'sys_users';

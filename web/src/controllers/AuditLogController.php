@@ -4,6 +4,12 @@
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 
+/**
+ * Audit page (/audit-log).
+ * Renders templates/views/audit_log/index.php.
+ * Logic: AuditLogRepository.
+ * Admins only.
+ */
 class AuditLogController extends BaseController
 {
     public static function index(): void

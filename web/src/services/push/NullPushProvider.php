@@ -4,6 +4,9 @@ namespace App\Services\Push;
 
 require_once __DIR__ . '/PushProviderInterface.php';
 
+/**
+ * The provider when push is off: sends nothing, so callers need no special case.
+ */
 class NullPushProvider implements PushProviderInterface
 {
     public function getIdentifier(): string

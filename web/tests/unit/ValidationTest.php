@@ -22,43 +22,43 @@ final class ValidationTest extends TestCase
      * NOTE: setAccessible() is not called — it has no effect since PHP 8.1
      * and is deprecated in 8.5 (the tests run on PHP 8.5).
      */
-    private function ozelMetot(string $class, string $method, array $args)
+    private function privateMethod(string $class, string $method, array $args)
     {
         return (new ReflectionMethod($class, $method))->invokeArgs(null, $args);
     }
 
-    public static function ipDurumlari(): array
+    public static function ipCases(): array
     {
         return [
             'tum internet'      => ['0.0.0.0/0',     false],
             'asiri genis /1'    => ['1.2.3.4/1',     false],
             'asiri genis /7'    => ['10.0.0.0/7',    false],
-            'mesru ozel ag /8'  => ['10.0.0.0/8',    true],
+            'legit private /8'  => ['10.0.0.0/8',    true],
             'duz IP'            => ['192.0.2.241',   true],
             'normal subnet'     => ['192.0.2.0/24',  true],
             'tek host /32'      => ['192.0.2.5/32',  true],
-            'gecersiz prefix'   => ['192.0.2.0/33',  false],
-            'sayisal olmayan'   => ['1.2.3.4/abc',   false],
-            'IP degil'          => ['notanip',       false],
-            'bos'               => ['',              false],
+            'invalid prefix'   => ['192.0.2.0/33',  false],
+            'not numeric'       => ['1.2.3.4/abc',   false],
+            'not an IP'          => ['notanip',       false],
+            'empty'             => ['',              false],
             'IPv6 localhost'    => ['::1',           true],
             'IPv6 subnet /48'   => ['2001:db8::/48', true],
             'IPv6 asiri genis'  => ['2001:db8::/16', false],
         ];
     }
 
-    #[DataProvider('ipDurumlari')]
-    public function testValidateIpOrCidr(string $input, bool $gecerli): void
+    #[DataProvider('ipCases')]
+    public function testValidateIpOrCidr(string $input, bool $valid): void
     {
-        $err = $this->ozelMetot('Fail2banService', 'validateIpOrCidr', [$input]);
+        $err = $this->privateMethod('Fail2banService', 'validateIpOrCidr', [$input]);
         $this->assertSame(
-            $gecerli,
+            $valid,
             $err === null,
-            "'{$input}' icin beklenen " . ($gecerli ? 'KABUL' : 'RED') . ", donen hata: " . var_export($err, true)
+            "'{$input}': expected " . ($valid ? 'ACCEPT' : 'REJECT') . ", error returned: " . var_export($err, true)
         );
     }
 
-    public static function portDurumlari(): array
+    public static function portCases(): array
     {
         return [
             'SSH'                  => ['22',          true],
@@ -66,40 +66,40 @@ final class ValidationTest extends TestCase
             'HTTPS'                => ['443',         true],
             'SIP'                  => ['5060',        true],
             'RTP araligi tam'      => ['10000-20000', true],
-            'RTP icinde tek port'  => ['15000',       true],
-            'RTP ile kesisen'      => ['19000-25000', true],
-            'SSH kapsayan aralik'  => ['20-30',       true],
-            'ilgisiz port'         => ['9999',        false],
-            'ilgisiz aralik'       => ['30000-30010', false],
-            'ters yazilmis aralik' => ['30-20',       true],
+            'single port in RTP'   => ['15000',       true],
+            'overlaps RTP'         => ['19000-25000', true],
+            'range covering SSH'   => ['20-30',       true],
+            'unrelated port'       => ['9999',        false],
+            'unrelated range'      => ['30000-30010', false],
+            'reversed range'       => ['30-20',       true],
         ];
     }
 
-    #[DataProvider('portDurumlari')]
-    public function testCoversProtectedPort(string $port, bool $korumali): void
+    #[DataProvider('portCases')]
+    public function testCoversProtectedPort(string $port, bool $protected): void
     {
-        $r = $this->ozelMetot('FirewallService', 'coversProtectedPort', [$port]);
-        $this->assertSame($korumali, $r, "port '{$port}' icin koruma beklentisi tutmadi");
+        $r = $this->privateMethod('FirewallService', 'coversProtectedPort', [$port]);
+        $this->assertSame($protected, $r, "port '{$port}': protection not as expected");
     }
 
-    public function testKritikServislerKorumaListesinde(): void
+    public function testCriticalServicesAreProtected(): void
     {
         foreach (['ssh', 'http', 'https', 'sip'] as $s) {
             $this->assertContains(
                 $s,
                 FirewallService::PROTECTED_SERVICES,
-                "'{$s}' korumali servis listesinde degil — service name=\"{$s}\" kurali kaldirilabilir"
+                "'{$s}' is not in the protected services: its service name=\"{$s}\" rule could be removed"
             );
         }
     }
 
-    public function testLocalhostBeyazListedenCikarilamaz(): void
+    public function testLocalhostCannotLeaveTheAllowList(): void
     {
         $this->assertContains('127.0.0.0/8', Fail2banService::PROTECTED_IGNOREIPS);
         $this->assertContains('::1', Fail2banService::PROTECTED_IGNOREIPS);
     }
 
-    public function testKritikPortlarKorumaListesinde(): void
+    public function testCriticalPortsAreProtected(): void
     {
         foreach (['22', '80', '443', '5060'] as $p) {
             $this->assertContains($p, FirewallService::PROTECTED_PORTS);

@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/FaxSentService.php';
 
+/**
+ * Outbound Fax page (/fax-sent).
+ * Renders templates/views/fax_sent/index.php.
+ * Logic: FaxSentRepository, FaxSentService.
+ * POST actions: delete_sent_fax, resend_sent_fax.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class FaxSentController extends BaseController
 {
     public static function index(): void

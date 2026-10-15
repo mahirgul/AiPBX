@@ -62,10 +62,10 @@ $delete_window = (int) ($delete_window ?? 0);
     <!-- Chat Card Container -->
     <div class="card chat-card-wrapper">
         
-        <!-- SOL PANEL: SOHBETLER VE REHBER -->
+        <!-- LEFT PANEL: CONVERSATIONS AND DIRECTORY -->
         <div id="chat-sidebar" class="chat-sidebar">
             
-            <!-- Sidebar Header & Arama -->
+            <!-- Sidebar header & search -->
             <div class="chat-sidebar-header">
                 <!-- Tabs: Chats / Contacts -->
                 <div class="chat-sidebar-tabs">
@@ -77,7 +77,7 @@ $delete_window = (int) ($delete_window ?? 0);
                     </button>
                 </div>
 
-                <!-- Arama Kutusu -->
+                <!-- Search box -->
                 <div class="chat-search-wrap">
                     <i class="fas fa-search"></i>
                     <input type="text" id="chat-search-input" placeholder="<?php echo t('chat.search_ph'); ?>" oninput="filterChatList(this.value)">
@@ -134,7 +134,7 @@ $delete_window = (int) ($delete_window ?? 0);
                 <!-- Active chat header -->
                 <div id="chat-header" style="padding: 12px 18px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
-                        <!-- Mobilde Geri Butonu -->
+                        <!-- Back button on mobile -->
                         <button type="button" id="chat-mobile-back-btn" class="chat-mobile-back-btn" onclick="closeActiveChatMobile()" title="<?php echo t('common.back'); ?>">
                             <i class="fas fa-arrow-left"></i>
                         </button>
@@ -168,7 +168,7 @@ $delete_window = (int) ($delete_window ?? 0);
 
                 <!-- Message stream -->
                 <div id="chat-messages-scroll" style="flex: 1; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
-                    <!-- Mesajlar dinamik eklenecek -->
+                    <!-- Messages are added by chat.js -->
                 </div>
 
                 <!-- Typing indicator -->
@@ -202,7 +202,7 @@ $delete_window = (int) ($delete_window ?? 0);
                         <i class="fas fa-camera"></i>
                     </button>
 
-                    <!-- Metin Girdisi -->
+                    <!-- Text input -->
                     <div style="flex: 1; position: relative; min-width: 0;">
                         <textarea id="chat-input-textarea" rows="1" placeholder="<?php echo t('chat.message_ph'); ?>" style="width: 100%; resize: none; max-height: 120px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none; line-height: 1.4; box-sizing: border-box;" onkeydown="handleInputKeydown(event)" oninput="handleInputTyping()"></textarea>
                     </div>
@@ -218,7 +218,7 @@ $delete_window = (int) ($delete_window ?? 0);
     </div>
 </div>
 
-<!-- Resim Tam Ekran Lightbox Modal -->
+<!-- Full-screen image lightbox modal -->
 <div id="chat-lightbox-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; padding: 20px;" onclick="closeLightbox()">
     <div style="position: relative; max-width: 90vw; max-height: 90vh;">
         <img id="chat-lightbox-img" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
@@ -228,7 +228,7 @@ $delete_window = (int) ($delete_window ?? 0);
     </div>
 </div>
 
-<!-- Yeni Grup Modal -->
+<!-- New group modal -->
 <div id="chat-new-group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;" onclick="closeNewGroupModal()">
     <div class="card" style="width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
         <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
@@ -281,7 +281,7 @@ $delete_window = (int) ($delete_window ?? 0);
     </div>
 </div>
 
-<!-- Grup Bilgisi Modal -->
+<!-- Group info modal -->
 <div id="chat-group-info-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;" onclick="closeGroupInfoModal()">
     <div class="card" style="width: 100%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
         <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">

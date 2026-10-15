@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/FirewallService.php';
 
+/**
+ * Firewall page (/firewall).
+ * Renders templates/views/firewall/index.php.
+ * Logic: FirewallService.
+ * POST actions: add_port_rule, remove_port_rule, remove_rich_rule.
+ * Admins only.
+ */
 class FirewallController extends BaseController
 {
     public static function index(): void

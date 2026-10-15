@@ -6,7 +6,7 @@ final class CreateTeamsIntegrationTables extends AbstractMigration
 {
     public function up(): void
     {
-        // 1. Teams User Mappings tablosu
+        // 1. Teams user mappings table
         if (!$this->hasTable('teams_user_mappings')) {
             $table = $this->table('teams_user_mappings', ['id' => true, 'primary_key' => ['id'], 'collation' => 'utf8mb4_general_ci']);
             $table->addColumn('extension', 'string', ['limit' => 20, 'null' => false])

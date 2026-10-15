@@ -13,36 +13,36 @@ use PHPUnit\Framework\TestCase;
  */
 final class SanitizationTest extends TestCase
 {
-    public static function satirSonuVaryantlari(): array
+    public static function lineBreakVariants(): array
     {
         return [
             'LF'          => ["evil\nmax_contacts=99"],
             'CRLF'        => ["evil\r\nmax_contacts=99"],
             'CR'          => ["evil\rmax_contacts=99"],
-            'bolum'       => ["evil\n[hacked]\ntype=endpoint"],
+            'section'     => ["evil\n[hacked]\ntype=endpoint"],
             'tab+LF'      => ["evil\t\ncontext=from-internal"],
-            'coklu satir' => ["a\nb\nc\nd"],
+            'many lines'  => ["a\nb\nc\nd"],
         ];
     }
-    #[DataProvider('satirSonuVaryantlari')]
-    public function testToCleanAsciiSatirSonuBirakmaz(string $input): void
+    #[DataProvider('lineBreakVariants')]
+    public function testToCleanAsciiLeavesNoLineBreak(string $input): void
     {
         $out = toCleanAscii($input);
-        $this->assertStringNotContainsString("\n", $out, 'LF sizdi');
-        $this->assertStringNotContainsString("\r", $out, 'CR sizdi');
+        $this->assertStringNotContainsString("\n", $out, 'LF leaked');
+        $this->assertStringNotContainsString("\r", $out, 'CR leaked');
     }
 
-    public function testToCleanAsciiBolumBasligiAcamaz(): void
+    public function testToCleanAsciiCannotOpenASectionHeader(): void
     {
         $out = toCleanAscii("evil\n[hacked]\ntype=endpoint");
         $this->assertDoesNotMatchRegularExpression(
             '/^\s*\[/m',
             $out,
-            'temizlenmis ciktida satir basinda [bolum] olusabiliyor — config injection!'
+            'the cleaned output can start a line with [section] — config injection!'
         );
     }
 
-    public function testToCleanAsciiMesruDegerleriBozmaz(): void
+    public function testToCleanAsciiKeepsValidValues(): void
     {
         $this->assertSame('alaw,ulaw,g729', toCleanAscii('alaw,ulaw,g729'));
         $this->assertSame('from-trunk-inbound', toCleanAscii('from-trunk-inbound'));
@@ -50,46 +50,46 @@ final class SanitizationTest extends TestCase
         $this->assertSame('sip:host:5060', toCleanAscii('sip:host:5060'));
     }
 
-    public function testToCleanAsciiTurkceKarakterleriCevirir(): void
+    public function testToCleanAsciiConvertsTurkishLetters(): void
     {
         // The Asterisk config expects ASCII; Turkish titles must stay readable.
         $this->assertSame('Cagri Merkezi', toCleanAscii('Çağrı Merkezi'));
         $this->assertSame('Genel Mudurluk', toCleanAscii('Genel Müdürlük'));
     }
 
-    public function testToCleanAsciiBosDegerleriTasimaz(): void
+    public function testToCleanAsciiPassesNoEmptyValues(): void
     {
         $this->assertSame('', toCleanAscii(''));
         $this->assertSame('', toCleanAscii(null));
     }
 
-    public static function gecerliDestTypeleri(): array
+    public static function validDestTypes(): array
     {
         return [['queue'], ['ivr'], ['time_condition'], ['extension'], ['fax'], ['announcement'], ['hangup']];
     }
-    #[DataProvider('gecerliDestTypeleri')]
-    public function testSanitizeDestTypeBilinenDegerleriKorur(string $type): void
+    #[DataProvider('validDestTypes')]
+    public function testSanitizeDestTypeKeepsKnownValues(string $type): void
     {
         $this->assertSame($type, sanitizeDestType($type));
     }
 
-    public static function gecersizDestTypeleri(): array
+    public static function invalidDestTypes(): array
     {
         return [
-            'bilinmeyen'  => ['evil'],
-            'satir sonu'  => ["queue\nexten => _X.,1,System(rm -rf /)"],
-            'bos'         => [''],
+            'unknown'     => ['evil'],
+            'line break'  => ["queue\nexten => _X.,1,System(rm -rf /)"],
+            'empty'       => [''],
             'buyuk harf'  => ['QUEUE'],
-            'bosluklu'    => ['queue ; evil'],
+            'with spaces' => ['queue ; evil'],
         ];
     }
-    #[DataProvider('gecersizDestTypeleri')]
-    public function testSanitizeDestTypeGecersizDegerleriHangupaDusurur(string $type): void
+    #[DataProvider('invalidDestTypes')]
+    public function testSanitizeDestTypeTurnsInvalidValuesIntoHangup(string $type): void
     {
         $this->assertSame(
             'hangup',
             sanitizeDestType($type),
-            'whitelist disi bir dest_type oldugu gibi gecti — dialplan enjeksiyonu mumkun'
+            'a dest_type outside the whitelist passed through — dialplan injection possible'
         );
     }
 }

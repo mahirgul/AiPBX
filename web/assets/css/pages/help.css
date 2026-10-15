@@ -1,0 +1,32 @@
+/* Admin → Help (templates/views/help/index.php): document list and rendered Markdown. */
+.help-layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+.help-nav { padding: 14px; position: sticky; top: 12px; max-height: calc(100vh - 120px); overflow: auto; }
+.help-search { margin-bottom: 8px; }
+.help-note { margin-bottom: 10px; }
+.help-link { display: block; padding: 6px 8px; border-radius: 6px; color: var(--text-main); text-decoration: none; font-size: 13px; }
+.help-link:hover { background: var(--bg-input); }
+.help-link.active { background: var(--primary-light, rgba(59,130,246,.12)); color: var(--primary); font-weight: 600; }
+.help-content { padding: 20px 28px; min-width: 0; }
+.doc-body { line-height: 1.6; font-size: 14px; }
+.doc-body h1 { font-size: 24px; margin: 0 0 14px; }
+.doc-body h2 { font-size: 19px; margin: 26px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
+.doc-body h3 { font-size: 16px; margin: 20px 0 8px; }
+.doc-body h1, .doc-body h2, .doc-body h3, .doc-body h4 { scroll-margin-top: 70px; }
+.doc-body code { background: var(--bg-input); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+.doc-body pre.doc-code { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; overflow: auto; font-size: 12.5px; line-height: 1.45; }
+.doc-body pre.doc-code code { background: none; padding: 0; }
+.doc-body table.doc-table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.doc-body table.doc-table th, .doc-body table.doc-table td { border: 1px solid var(--border-color); padding: 6px 10px; vertical-align: top; text-align: left; }
+.doc-body table.doc-table th { background: var(--bg-input); }
+.doc-body blockquote { margin: 10px 0; padding: 6px 14px; border-left: 3px solid var(--primary); background: var(--bg-input); }
+.help-hits li { margin: 4px 0; font-size: 13px; }
+@media (max-width: 860px) {
+    .help-layout { grid-template-columns: 1fr; }
+    .help-nav { position: static; max-height: none; }
+    .help-content { padding: 16px; }
+}
+.help-results-title { font-size: 19px; margin: 0 0 12px; }
+.help-result-doc { font-size: 15px; margin: 16px 0 6px; }
+.help-result-doc a, .help-hits a { color: var(--primary); text-decoration: none; }
+.help-hits { margin: 0 0 8px; padding-left: 18px; }
+.help-hits a:hover, .help-result-doc a:hover { text-decoration: underline; }

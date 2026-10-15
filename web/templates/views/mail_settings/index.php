@@ -14,20 +14,20 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 <!-- Mail Settings Single-Line Fixed Tabs -->
 <div class="settings-tabs">
     <button type="button" class="settings-tab-btn active" data-tab="smtp" onclick="switchSettingsTab('smtp', this)">
-        <i class="fas fa-server"></i> <?php echo t('mail_settings.tab_smtp', 'SMTP & Relay'); ?>
+        <i class="fas fa-server"></i> <?php echo t('mail_settings.tab_smtp'); ?>
     </button>
     <button type="button" class="settings-tab-btn" data-tab="sender" onclick="switchSettingsTab('sender', this)">
-        <i class="fas fa-at"></i> <?php echo t('mail_settings.tab_sender', 'Gönderici'); ?>
+        <i class="fas fa-at"></i> <?php echo t('mail_settings.tab_sender'); ?>
     </button>
     <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
-        <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.tab_test', 'Test & Durum'); ?>
+        <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.tab_test'); ?>
     </button>
     <a class="settings-tab-btn" href="/mail-templates" style="text-decoration: none;">
         <i class="fas fa-envelope-open-text"></i> <?php echo t('mail_templates.tab'); ?>
     </a>
 </div>
 
-<!-- Ana Ayarlar Formu -->
+<!-- Main settings form -->
 <form method="POST" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_mail_settings" value="1">
@@ -37,7 +37,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-server u-primary"></i> <?php echo t('mail_settings.section_smtp', 'Mail Relay & SMTP Sunucusu'); ?>
+                <i class="fas fa-server u-primary"></i> <?php echo t('mail_settings.section_smtp'); ?>
             </div>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('mailHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
@@ -46,51 +46,51 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 
         <!-- Collapsible Help Box -->
         <div class="module-help-box" id="mailHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.help_title', 'Mail Relay & E-Posta Rehberi'); ?></h4>
-            <p><?php echo t('mail_settings.help_body', 'Faks bildirimleri, şifre sıfırlama mailleri ve sistem uyarıları bu SMTP/Relay sunucusu üzerinden iletilir. Postfix MTA entegrasyonu seçilirse sunucu arka planda postconf ve SASL ayarlarını otomatik olarak günceller.'); ?></p>
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.help_title'); ?></h4>
+            <p><?php echo t('mail_settings.help_body'); ?></p>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
             <div class="form-group">
-                <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('mail_settings.field_host', 'SMTP / Relay Sunucu Adresi'); ?></label>
+                <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('mail_settings.field_host'); ?></label>
                 <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="192.168.1.25 / mail.example.com">
-                <small class="u-hint"><?php echo t('mail_settings.host_help', 'Kurumsal mail sunucunuzun veya relay makinesinin IP / FQDN adresi.'); ?></small>
+                <small class="u-hint"><?php echo t('mail_settings.host_help'); ?></small>
             </div>
 
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.field_port', 'Port'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.field_port'); ?></label>
                 <input type="number" name="mail_smtp_port" class="form-control" value="<?php echo htmlspecialchars($port); ?>" min="1" max="65535" placeholder="25">
-                <small class="u-hint"><?php echo t('mail_settings.port_help', 'Standart relay: 25, STARTTLS: 587, SSL: 465'); ?></small>
+                <small class="u-hint"><?php echo t('mail_settings.port_help'); ?></small>
             </div>
         </div>
 
         <div class="u-grid-2 u-mt-12">
             <div class="form-group">
-                <label class="form-label"><i class="fas fa-shield-alt"></i> <?php echo t('mail_settings.field_security', 'Güvenlik / Şifreleme'); ?></label>
+                <label class="form-label"><i class="fas fa-shield-alt"></i> <?php echo t('mail_settings.field_security'); ?></label>
                 <select name="mail_smtp_security" class="form-control">
-                    <option value="none" <?php echo $security === 'none' ? 'selected' : ''; ?>><?php echo t('mail_settings.sec_none', 'Yok (Düz Metin / İç Ağ Relay)'); ?></option>
+                    <option value="none" <?php echo $security === 'none' ? 'selected' : ''; ?>><?php echo t('mail_settings.sec_none'); ?></option>
                     <option value="tls" <?php echo $security === 'tls' ? 'selected' : ''; ?>><?php echo t('mail_settings.starttls'); ?></option>
                     <option value="ssl" <?php echo $security === 'ssl' ? 'selected' : ''; ?>>SSL / TLS (Port 465)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label class="form-label"><i class="fas fa-key"></i> <?php echo t('mail_settings.field_auth', 'Kimlik Doğrulama (SMTP Auth)'); ?></label>
+                <label class="form-label"><i class="fas fa-key"></i> <?php echo t('mail_settings.field_auth'); ?></label>
                 <select name="mail_smtp_auth" id="mail_smtp_auth" class="form-control" onchange="toggleAuthFields(this.value)">
-                    <option value="no" <?php echo $auth === 'no' ? 'selected' : ''; ?>><?php echo t('mail_settings.auth_no', 'Hayır (IP Bazlı İzinli / Anonim Relay)'); ?></option>
-                    <option value="yes" <?php echo $auth === 'yes' ? 'selected' : ''; ?>><?php echo t('mail_settings.auth_yes', 'Evet (Kullanıcı Adı & Parola Gerekli)'); ?></option>
+                    <option value="no" <?php echo $auth === 'no' ? 'selected' : ''; ?>><?php echo t('mail_settings.auth_no'); ?></option>
+                    <option value="yes" <?php echo $auth === 'yes' ? 'selected' : ''; ?>><?php echo t('mail_settings.auth_yes'); ?></option>
                 </select>
             </div>
         </div>
 
         <div id="auth_fields" style="display: <?php echo $auth === 'yes' ? 'grid' : 'none'; ?>; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.field_user', 'SMTP Kullanıcı Adı'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.field_user'); ?></label>
                 <input type="text" name="mail_smtp_user" class="form-control" value="<?php echo htmlspecialchars($user); ?>" placeholder="user@example.com">
             </div>
 
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.field_pass', 'SMTP Parola'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.field_pass'); ?></label>
                 <input type="password" name="mail_smtp_pass" class="form-control" placeholder="<?php echo t('mail_settings.keep_pw'); ?>">
             </div>
         </div>
@@ -98,10 +98,10 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <div class="form-group" style="margin-top: 16px;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" name="mail_sync_postfix" value="1" <?php echo $sync_postfix ? 'checked' : ''; ?>>
-                <span class="u-fw-600 u-text-main"><?php echo t('mail_settings.sync_postfix_label', 'Sistem Postfix MTA relayhost ayarlarını otomatik senkronize et'); ?></span>
+                <span class="u-fw-600 u-text-main"><?php echo t('mail_settings.sync_postfix_label'); ?></span>
             </label>
             <small style="color: var(--text-muted); display: block; margin-left: 24px; margin-top: 2px;">
-                <?php echo t('mail_settings.sync_postfix_help', 'İşaretlendiğinde arka planda çalışan Postfix MTA servisine relayhost yazılır ve servis otomatik reload edilir.'); ?>
+                <?php echo t('mail_settings.sync_postfix_help'); ?>
             </small>
         </div>
 
@@ -118,32 +118,32 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     <div class="card">
         <div class="card-header">
             <div class="card-title">
-                <i class="fas fa-at u-primary"></i> <?php echo t('mail_settings.section_sender', 'Gönderici Kimlik Bilgileri'); ?>
+                <i class="fas fa-at u-primary"></i> <?php echo t('mail_settings.section_sender'); ?>
             </div>
         </div>
 
         <div class="u-grid-2">
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.portal_from_addr', 'Sistem & Portal Gönderici E-Postası'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.portal_from_addr'); ?></label>
                 <input type="email" name="mail_from_address" class="form-control" value="<?php echo htmlspecialchars($from_addr); ?>" required>
-                <small class="u-hint"><?php echo t('mail_settings.portal_from_addr_help', 'Şifre sıfırlama ve genel bildirim maillerinde From başlığı olarak kullanılır.'); ?></small>
+                <small class="u-hint"><?php echo t('mail_settings.portal_from_addr_help'); ?></small>
             </div>
 
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.portal_from_name', 'Sistem & Portal Gönderici Adı'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.portal_from_name'); ?></label>
                 <input type="text" name="mail_from_name" class="form-control" value="<?php echo htmlspecialchars($from_name); ?>" required>
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.fax_from_addr', 'Faks Bildirim Gönderici E-Postası'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.fax_from_addr'); ?></label>
                 <input type="email" name="fax_email_from_address" class="form-control" value="<?php echo htmlspecialchars($fax_from_addr); ?>" required>
-                <small class="u-hint"><?php echo t('mail_settings.fax_from_addr_help', 'Gelen ve giden faks raporlarının iletildiği e-postalarda From başlığı.'); ?></small>
+                <small class="u-hint"><?php echo t('mail_settings.fax_from_addr_help'); ?></small>
             </div>
 
             <div class="form-group">
-                <label class="form-label"><?php echo t('mail_settings.fax_from_name', 'Faks Gönderici Adı'); ?></label>
+                <label class="form-label"><?php echo t('mail_settings.fax_from_name'); ?></label>
                 <input type="text" name="fax_email_from_name" class="form-control" value="<?php echo htmlspecialchars($fax_from_name); ?>" required>
             </div>
         </div>
@@ -162,7 +162,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-paper-plane u-primary"></i> <?php echo t('mail_settings.section_test_status', 'Canlı Posta Durumu ve Test Gönderimi'); ?>
+            <i class="fas fa-paper-plane u-primary"></i> <?php echo t('mail_settings.section_test_status'); ?>
         </div>
     </div>
 
@@ -170,7 +170,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         <!-- Status summary -->
         <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
             <div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                <span><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.mta_status', 'Postfix MTA Durumu'); ?></span>
+                <span><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.mta_status'); ?></span>
                 <?php if ($postfix['is_running']): ?>
                     <span class="badge badge-success u-fs-11"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
                 <?php else: ?>
@@ -179,18 +179,18 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
 
             <div style="font-size: 12px; line-height: 1.8; color: var(--text-muted);">
-                <div><?php echo t('mail_settings.active_relay', 'Aktif Postfix Relay:'); ?> <strong class="u-primary"><?php echo htmlspecialchars($postfix['relayhost'] ?: t('dashboard.not_configured')); ?></strong></div>
-                <div><?php echo t('mail_settings.queue_status', 'Posta Kuyruğu:'); ?> <strong style="color: <?php echo $postfix['queue_count'] > 0 ? 'var(--warning)' : 'var(--success)'; ?>;"><?php echo htmlspecialchars($postfix['queue_summary']); ?></strong></div>
+                <div><?php echo t('mail_settings.active_relay'); ?> <strong class="u-primary"><?php echo htmlspecialchars($postfix['relayhost'] ?: t('dashboard.not_configured')); ?></strong></div>
+                <div><?php echo t('mail_settings.queue_status'); ?> <strong style="color: <?php echo $postfix['queue_count'] > 0 ? 'var(--warning)' : 'var(--success)'; ?>;"><?php echo htmlspecialchars($postfix['queue_summary']); ?></strong></div>
             </div>
         </div>
 
         <!-- Test email form -->
         <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
             <div class="u-fs-13 u-fw-700 u-text-main u-mb-8">
-                <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.test_title', 'Test E-Postası Gönder'); ?>
+                <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.test_title'); ?>
             </div>
             <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 12px 0;">
-                <?php echo t('mail_settings.test_desc', 'Mevcut ayarlar üzerinden test mesajı göndererek relay bağlantısını test edin.'); ?>
+                <?php echo t('mail_settings.test_desc'); ?>
             </p>
 
             <form method="POST" autocomplete="off">
@@ -199,7 +199,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <div class="u-flex-gap">
                     <input type="email" name="test_recipient" class="form-control u-flex-1" placeholder="name@example.com" required>
                     <button type="submit" class="btn btn-secondary">
-                        <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.btn_send_test', 'Test Gönder'); ?>
+                        <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.btn_send_test'); ?>
                     </button>
                 </div>
             </form>

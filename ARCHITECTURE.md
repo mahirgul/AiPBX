@@ -200,16 +200,16 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 
 ### 5.1 Architecture & Components
 - **Architecture**: Single Activity (`DialerActivity`) hosting 5 primary navigation tabs:
-  1. `Tuşlar` (Dialer & Call Control)
-  2. `Geçmiş` (Call History / CDR)
-  3. `Rehber` (Enterprise Directory & Local Contacts)
-  4. `Sohbet` (Integrated Real-time Chat with 1-to-1 and Multi-User Groups)
-  5. `Santral` (PBX Features, System Diagnostics & Log Viewer)
+  1. Keypad (dialer & call control)
+  2. History (call history / CDR)
+  3. Contacts (company directory & local contacts)
+  4. Chat (real-time 1-to-1 and group chat)
+  5. PBX (features, diagnostics & log viewer)
 - **VoIP Subsystem**: Headless WebRTC WebView executing an optimized JsSIP engine with DTLS-SRTP.
 - **Group & Direct Chat Integration**:
   - Full parity with Go chat backend: 1-to-1 direct messaging and multi-user group chat rooms.
   - Conversation filtering chips (`ChatFilter.ALL`, `ChatFilter.DIRECT`, `ChatFilter.GROUP`).
-  - Deterministic sender color-coding algorithms and group role badges (`Yönetici` / `Üye`).
+  - Deterministic sender color-coding algorithms and group role badges (admin / member).
   - Real-time event subscription via `ChatWebSocketManager` and `ChatEventListener` for incoming messages, typing notifications, and group lifecycle events.
   - Interactive group management modal with multi-selection contact picker (`ContactSelectionAdapter`).
 - **Keepalive & Stability Engine**:

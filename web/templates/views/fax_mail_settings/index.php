@@ -22,14 +22,14 @@
         <!-- Horizontal tabs (fixed single row) -->
         <div class="settings-tabs u-mb-20">
             <button type="button" class="settings-tab-btn active" data-tab="email" onclick="switchSettingsTab('email', this)">
-                <i class="fas fa-envelope"></i> <?php echo t('fax_mail_settings.tab_email', 'E-Posta'); ?>
+                <i class="fas fa-envelope"></i> <?php echo t('fax_mail_settings.tab_email'); ?>
             </button>
             <button type="button" class="settings-tab-btn" data-tab="device" onclick="switchSettingsTab('device', this)">
-                <i class="fas fa-fax"></i> <?php echo t('fax_mail_settings.tab_device', 'Cihaz'); ?>
+                <i class="fas fa-fax"></i> <?php echo t('fax_mail_settings.tab_device'); ?>
             </button>
         </div>
 
-        <!-- TAB 1: E-Posta & Bildirim -->
+        <!-- TAB 1: E-mail & notification -->
         <div class="settings-tab-pane active" id="tab_email">
             <div class="u-grid-2">
                 <div class="form-group">
@@ -123,7 +123,7 @@
 
         <?php if (hasModulePermission('fax_mail_settings', 'edit')): ?>
             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 20px;" title="<?php echo t('fax_mail_settings.save_tooltip'); ?>">
-                <i class="fas fa-save"></i> <?php echo t('common.save', 'Kaydet'); ?>
+                <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
             </button>
         <?php endif; ?>
     </form>

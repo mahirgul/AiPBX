@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/ConferenceService.php';
 
+/**
+ * Conference Rooms page (/conferences).
+ * Renders templates/views/conferences/index.php with assets/js/conferences.js.
+ * Logic: ConferenceService.
+ * POST actions: delete_conference, kick_member, mute_member, save_conference.
+ * Admins only.
+ */
 class ConferenceController extends BaseController
 {
     public static function index(): void
@@ -22,7 +29,7 @@ class ConferenceController extends BaseController
 
         $conferences = ConferenceService::getConferences();
 
-        $page_title = t('conferences.title', 'Konferans Odaları');
+        $page_title = t('conferences.title');
         static::renderPage('conferences/index', [
             'conferences' => $conferences,
         ], ['title' => $page_title] + $notices);

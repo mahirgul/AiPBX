@@ -16,7 +16,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     protected function setUp(): void
     {
         if (DB_NAME !== 'asterisk_test') {
-            $this->fail('Testler yalnızca asterisk_test üzerinde koşmalıdır!');
+            $this->fail('tests must run only on asterisk_test!');
         }
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -240,7 +240,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * Passkey CRUD: Listeleme ve silme
+     * Passkey CRUD: listing and deleting
      */
     public function testPasskeyCrud(): void
     {

@@ -113,7 +113,7 @@ class PasskeyService
                 $rawClientDataJSON,
                 $rawAttestationObject,
                 $challenge,
-                true,  // requireUserVerification — parmak izi/PIN olmadan kaydedilemez
+                true,  // requireUserVerification: cannot be registered without fingerprint/PIN
                 true,  // requireUserPresent
                 false, // failIfRootMismatch (lenient for self-signed/local keys)
                 false  // requireCtsProfileMatch

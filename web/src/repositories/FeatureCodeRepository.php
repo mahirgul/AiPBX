@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Feature codes page.
+ * Tables: pbx_feature_codes, sys_roles.
+ * Used by FeatureCodeController.
+ */
 class FeatureCodeRepository extends BaseRepository
 {
     protected static string $table = 'pbx_feature_codes';

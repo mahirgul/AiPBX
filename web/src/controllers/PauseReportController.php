@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../services/ReportExport.php';
 
+/**
+ * Break Report page (/pause-reports).
+ * Renders templates/views/pause_reports/index.php.
+ * Logic: PauseReportRepository.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class PauseReportController extends BaseController
 {
     public static function index(): void

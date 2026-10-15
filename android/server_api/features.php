@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forward, $mode);
 
-    // Asterisk dialplan senkronizasyonu
+    // Asterisk dialplan sync
     try {
         require_once dirname(__DIR__, 2) . '/sync/SyncGeneralDialplan.php';
         if (function_exists('syncGeneralDialplan')) {
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Ayarlar başarıyla güncellendi.',
+        'message' => 'Settings updated.',
         'features' => [
             'extension' => $updated['extension'] ?? '',
             'dnd_enabled' => (bool)($updated['dnd_enabled'] ?? false),

@@ -3,6 +3,12 @@
 require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/../asterisk_helper.php';
 
+/**
+ * My Phone page (/my-phone).
+ * Renders templates/views/my_phone/index.php with assets/js/my_phone.js.
+ * Logic: MyPhoneRepository, VoicemailService.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class MyPhoneController extends BaseController
 {
     public static function index(): void

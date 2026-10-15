@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/DialPermissionService.php';
 
+/**
+ * Calling Permissions page (/dial-permissions).
+ * Renders templates/views/dial_permissions/index.php with assets/js/dial_permissions.js.
+ * Logic: DialPermissionService.
+ * POST actions: delete_group, delete_rule, save_group, save_rule.
+ * Admins only.
+ */
 class DialPermissionController extends BaseController
 {
     public static function index(): void
@@ -19,7 +26,7 @@ class DialPermissionController extends BaseController
         $selected_group_id = intval($_GET['group_id'] ?? ($groups[0]['id'] ?? 1));
         $rules = DialPermissionService::getRules($selected_group_id);
 
-        $page_title = t('dial_permissions.title', 'Arama Yetki Grupları');
+        $page_title = t('dial_permissions.title');
         static::renderPage('dial_permissions/index', [
             'groups' => $groups,
             'selected_group_id' => $selected_group_id,

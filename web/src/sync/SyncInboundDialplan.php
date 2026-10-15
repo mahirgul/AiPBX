@@ -26,7 +26,7 @@ function __syncInboundDialplanBody() {
             $trim_digits = intval($t['did_trim_digits'] ?? 0);
             $allow_outbound = !empty($t['allow_outbound_routing']);
             $route_group = max(1, intval($t['outbound_route_group'] ?? 1));
-            $is_kapanma_tonu = (($t['context'] ?? '') === 'from-trunk-kapanma-tonu');
+            $is_busy_tone_wrapper = (($t['context'] ?? '') === 'from-trunk-kapanma-tonu');
 
             $conf .= "; --- Trunk inbound: {$t_name} ({$title}) ---\n";
             $conf .= "[from-trunk-{$t_name}]\n";
@@ -34,7 +34,7 @@ function __syncInboundDialplanBody() {
             $same = " same => n,Set(CDR(direction)=inbound)\n";
             $same .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
 
-            if ($is_kapanma_tonu) {
+            if ($is_busy_tone_wrapper) {
                 // Hang-up tone detector (in-band disconnect supervision)
                 $same .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
@@ -57,7 +57,7 @@ function __syncInboundDialplanBody() {
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
-            if ($is_kapanma_tonu) {
+            if ($is_busy_tone_wrapper) {
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
             $conf .= " same => n,Set(CDR(did)=s)\n";
@@ -128,6 +128,10 @@ function __syncInboundDialplanBody() {
 
     // ------------------------------------------------------------------
     // Hang-up tone detector wrapper (for backward compatibility)
+    // "kapanma tonu" is Turkish for "hang-up tone": some analog/ISDN trunks
+    // never send a hang-up, only play a busy tone, so the call would stay in
+    // the IVR or queue. The context names keep the Turkish words because trunks
+    // store "from-trunk-kapanma-tonu" as their context in the database.
     // ------------------------------------------------------------------
     $conf .= "; --- Inbound route wrapper with hang-up tone detection ---\n";
     $conf .= "[from-trunk-kapanma-tonu]\n";

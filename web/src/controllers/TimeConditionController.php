@@ -3,6 +3,15 @@ require_once __DIR__ . '/../helpers.php';
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Time Plan page (/time-conditions).
+ * Renders templates/views/time_conditions/index.php with assets/js/destinations_helper.js,
+ * time_conditions.js.
+ * Logic: TimeConditionRepository, TimeConditionService.
+ * POST actions: delete_time_condition, delete_time_group, save_time_condition, save_time_group,
+ * toggle_status, toggle_tg_status.
+ * Admins only.
+ */
 class TimeConditionController extends BaseController
 {
     public static function index(): void

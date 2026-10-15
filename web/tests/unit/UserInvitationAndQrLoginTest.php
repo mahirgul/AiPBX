@@ -44,7 +44,7 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $this->assertTrue($res['success'], 'Invitation email should succeed: ' . ($res['error'] ?? ''));
         $this->assertNotEmpty($res['token'], 'Token should be returned');
 
-        // sys_users tablosunu kontrol et
+        // Check the sys_users table
         $stmt = $this->db->prepare("SELECT reset_token, reset_token_expires, must_reset_password FROM sys_users WHERE id = ?");
         $stmt->execute([$this->testUserId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);

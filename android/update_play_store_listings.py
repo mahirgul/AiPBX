@@ -87,27 +87,27 @@ LISTINGS = {
 
 def update_listings(commit_changes=True):
     if not os.path.exists(KEY_FILE):
-        print(f"Hata: Key dosyasi bulunamadi: {KEY_FILE}")
+        print(f"Error: key file not found: {KEY_FILE}")
         sys.exit(1)
 
-    print("1. Google Play Developer API baglantisi kuruluyor...")
+    print("1. Connecting to the Google Play Developer API...")
     creds = service_account.Credentials.from_service_account_file(
         KEY_FILE,
         scopes=['https://www.googleapis.com/auth/androidpublisher']
     )
     service = build('androidpublisher', 'v3', credentials=creds)
 
-    print(f"2. '{PACKAGE_NAME}' paketi icin yeni bir edit olusturuluyor...")
+    print(f"2. '{PACKAGE_NAME}' creating a new edit for the package...")
     edit = service.edits().insert(packageName=PACKAGE_NAME, body={}).execute()
     edit_id = edit['id']
     print(f"   Edit ID: {edit_id}")
 
     try:
         for lang, data in LISTINGS.items():
-            print(f"3. [{lang}] Magaza metinleri guncelleniyor...")
+            print(f"3. [{lang}] updating store texts...")
             print(f"   Baslik: {data['title']}")
-            print(f"   Kisa Aciklama ({len(data['shortDescription'])} kr): {data['shortDescription']}")
-            print(f"   Tam Aciklama ({len(data['fullDescription'])} kr)")
+            print(f"   Short description ({len(data['shortDescription'])} chars): {data['shortDescription']}")
+            print(f"   Full description ({len(data['fullDescription'])} chars)")
             service.edits().listings().update(
                 packageName=PACKAGE_NAME,
                 editId=edit_id,
@@ -115,23 +115,23 @@ def update_listings(commit_changes=True):
                 body=data
             ).execute()
 
-        print("\n4. Degisiklikler dogrulaniyor (validate)...")
+        print("\n4. Validating the changes...")
         service.edits().validate(packageName=PACKAGE_NAME, editId=edit_id).execute()
-        print("   Dogrulama basarili!")
+        print("   Validation passed!")
 
         if commit_changes:
-            print("\n5. Degisiklikler Google Play Console'a onaylaniyor (commit)...")
+            print("\n5. Committing the changes to Google Play Console...")
             service.edits().commit(packageName=PACKAGE_NAME, editId=edit_id).execute()
-            print("\nTEBRIKLER: Magaza aciklamalari Google Play Console'a basariyla kaydedildi!")
+            print("\nDONE: store descriptions saved to Google Play Console!")
         else:
-            print("\nBilgi: commit=False secildigi icin iptal edildi.")
+            print("\nInfo: commit=False, so the edit was discarded.")
             service.edits().delete(packageName=PACKAGE_NAME, editId=edit_id).execute()
 
     except HttpError as e:
-        print(f"\n[HTTP Hatasi] Kod: {e.resp.status}")
+        print(f"\n[HTTP error] Code: {e.resp.status}")
         try:
             err = json.loads(e.content.decode('utf-8'))
-            print("Detay:", json.dumps(err, indent=2, ensure_ascii=False))
+            print("Details:", json.dumps(err, indent=2, ensure_ascii=False))
         except Exception:
             print("Icerik:", e.content)
         try:
@@ -140,7 +140,7 @@ def update_listings(commit_changes=True):
             pass
         sys.exit(1)
     except Exception as ex:
-        print(f"\nGenel Hata: {ex}")
+        print(f"\nError: {ex}")
         try:
             service.edits().delete(packageName=PACKAGE_NAME, editId=edit_id).execute()
         except Exception:

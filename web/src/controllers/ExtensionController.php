@@ -3,6 +3,13 @@ require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/DialPermissionService.php';
 require_once __DIR__ . '/../services/BossSecretaryService.php';
 
+/**
+ * Extensions page (/extensions).
+ * Renders templates/views/extensions/index.php with assets/js/extensions.js.
+ * Logic: BossSecretaryService, DialPermissionService, ExtensionRepository, ExtensionService.
+ * POST actions: remove_extension, save_extension, sync_all_extensions, toggle_status.
+ * Admins only.
+ */
 class ExtensionController extends BaseController
 {
     public static function index(): void

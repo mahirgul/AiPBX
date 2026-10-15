@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../../modules/destinations/DestinationRegistry.php';
 
+/**
+ * Database access for the Time conditions page.
+ * Tables: pbx_time_conditions, pbx_time_groups.
+ * Used by TimeConditionController.
+ */
 class TimeConditionRepository extends BaseRepository
 {
     protected static string $table = 'pbx_time_conditions';

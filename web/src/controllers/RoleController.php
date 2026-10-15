@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../services/RoleService.php';
 
+/**
+ * Roles page (/roles).
+ * Renders templates/views/roles/index.php with assets/js/roles.js.
+ * Logic: RoleRepository, RoleService.
+ * Admins only.
+ */
 class RoleController extends BaseController
 {
     public static function index(): void

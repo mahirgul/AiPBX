@@ -358,15 +358,15 @@ class HealthService
         $calls = self::callStats($from, $to);
 
         $callRows = [
-            t('health.sum_calls_total') => (string) $calls['toplam'],
-            t('health.sum_calls_in') => (string) $calls['gelen'],
-            t('health.sum_calls_out') => (string) $calls['giden'],
-            t('health.sum_calls_internal') => (string) $calls['dahili'],
-            t('health.sum_answered') => (string) $calls['cevaplanan'],
-            t('health.sum_missed') => (string) $calls['cevapsiz'],
-            t('health.sum_busy') => (string) $calls['mesgul'],
-            t('health.sum_avg_talk') => gmdate($calls['ort_konusma'] >= 3600 ? 'H:i:s' : 'i:s', $calls['ort_konusma']),
-            t('health.sum_total_talk') => HealthChecks::duration($calls['toplam_sure']),
+            t('health.sum_calls_total') => (string) $calls['total'],
+            t('health.sum_calls_in') => (string) $calls['inbound'],
+            t('health.sum_calls_out') => (string) $calls['outbound'],
+            t('health.sum_calls_internal') => (string) $calls['internal'],
+            t('health.sum_answered') => (string) $calls['answered'],
+            t('health.sum_missed') => (string) $calls['missed'],
+            t('health.sum_busy') => (string) $calls['busy'],
+            t('health.sum_avg_talk') => gmdate($calls['avg_talk'] >= 3600 ? 'H:i:s' : 'i:s', $calls['avg_talk']),
+            t('health.sum_total_talk') => HealthChecks::duration($calls['total_duration']),
         ];
         $fax = self::faxStats($from, $to);
         if ($fax['received'] + $fax['sent'] + $fax['failed'] > 0) {
@@ -406,8 +406,8 @@ class HealthService
     /** Calls of a period, grouped as on the call report (one row per call, not per leg). */
     public static function callStats(string $from, string $to): array
     {
-        $r = CdrReportRepository::ozetGrouped(true, '', $from, $to, '', '', '');
-        foreach (['toplam', 'gelen', 'giden', 'dahili', 'cevaplanan', 'cevapsiz', 'mesgul', 'ort_konusma', 'toplam_sure'] as $k) {
+        $r = CdrReportRepository::summaryGrouped(true, '', $from, $to, '', '', '');
+        foreach (['total', 'inbound', 'outbound', 'internal', 'answered', 'missed', 'busy', 'avg_talk', 'total_duration'] as $k) {
             $r[$k] = (int) ($r[$k] ?? 0);
         }
         return $r;

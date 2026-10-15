@@ -27,7 +27,7 @@ final class Fixtures
      * test that set t38_support=0 still saw t38_udptl=yes because of the
      * sip.t38_udptl='yes' left by the previous test.
      */
-    private const TABLOLAR = [
+    private const TABLES = [
         'pbx_dids',
         'pbx_ivrs',
         'pbx_queues',
@@ -42,31 +42,31 @@ final class Fixtures
 
     public static function load(): void
     {
-        self::uretimKontrolu();
+        self::productionGuard();
 
         $db = getDB();
         $db->exec('SET FOREIGN_KEY_CHECKS=0');
-        foreach (self::TABLOLAR as $t) {
+        foreach (self::TABLES as $t) {
             $db->exec("TRUNCATE TABLE `{$t}`");
         }
         $db->exec('SET FOREIGN_KEY_CHECKS=1');
 
-        // Trunk — zorunlu kolonlar: trunk_name, title, ip_address.
+        // Trunk: required columns trunk_name, title, ip_address.
         $db->prepare(
             'INSERT INTO pbx_trunks
                 (trunk_name, title, ip_address, port, codecs, is_active, t38_support, send_caller_name)
              VALUES (?, ?, ?, ?, ?, 1, 1, 0)'
         )->execute([self::TRUNK_NAME, 'Test Trunk', '192.0.2.10', 5060, 'alaw,ulaw']);
 
-        // Kuyruk — zorunlu kolonlar: queue_name, title.
+        // Queue: required columns queue_name, title.
         $db->prepare(
             'INSERT INTO pbx_queues (queue_name, title, strategy, is_active) VALUES (?, ?, ?, 1)'
         )->execute([self::QUEUE_NAME, 'Test Queue', 'ringall']);
 
-        // IVR — zorunlu kolon: title.
+        // IVR: required column title.
         $db->prepare('INSERT INTO pbx_ivrs (title) VALUES (?)')->execute(['Test IVR']);
 
-        // DID — zorunlu kolonlar: did_number, title, dest_type, dest_id.
+        // DID: required columns did_number, title, dest_type, dest_id.
         $queueId = (int) $db->query(
             'SELECT id FROM pbx_queues WHERE queue_name = ' . $db->quote(self::QUEUE_NAME)
         )->fetchColumn();
@@ -83,7 +83,7 @@ final class Fixtures
              VALUES (?, ?, ?, ?, 1)'
         )->execute(['testbusy', 'Test Mesgul', 'busy', '1020']);
 
-        // Giden rota — zorunlu kolonlar: route_name, match_pattern, trunks_json
+        // Outbound route: required columns route_name, match_pattern, trunks_json
         $db->prepare(
             'INSERT INTO pbx_outbound_routes (route_name, match_pattern, trunks_json, is_internal, route_group, is_active)
              VALUES (?, ?, ?, 0, 1, 1)'
@@ -94,11 +94,11 @@ final class Fixtures
      * Must NEVER run on the production database — TRUNCATE cannot be undone.
      * bootstrap.php already prevents it; this is the second line of defence.
      */
-    private static function uretimKontrolu(): void
+    private static function productionGuard(): void
     {
         if (DB_NAME !== 'asterisk_test') {
             throw new RuntimeException(
-                "Fixtures YALNIZCA asterisk_test uzerinde calisir, su an DB_NAME='" . DB_NAME . "'"
+                "Fixtures run ONLY on asterisk_test, current DB_NAME='" . DB_NAME . "'"
             );
         }
     }

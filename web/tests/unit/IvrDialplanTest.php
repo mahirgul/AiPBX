@@ -35,13 +35,13 @@ final class IvrDialplanTest extends TestCase
         // 1. Bash parameter expansion (${VAR:-0}) causes a syntax error in Asterisk
         // (ast_expr2 unexpected '+'). So it must never contain :-.
         $this->assertStringNotContainsString(':-', $conf,
-            'IVR dialplaninda Asterisk tarafindan desteklenmeyen :- parametre genislemesi bulunmamali');
+            'the IVR dialplan must not use the :- parameter expansion, which Asterisk does not support');
 
         // 2. A valid failure counter and check for Asterisk
         $this->assertStringContainsString('Set(IVR1FAILS=$[0${IVR1FAILS} + 1])', $conf,
-            'IVR basarisizlik sayaci Set(IVR1FAILS=$[0${IVR1FAILS} + 1]) seklinde olmali');
+            'the IVR failure counter must be Set(IVR1FAILS=$[0${IVR1FAILS} + 1])');
         $this->assertStringContainsString('GotoIf($[0${IVR1FAILS} < 3]?s,1)', $conf,
-            'IVR esik kontrolu GotoIf($[0${IVR1FAILS} < 3]?s,1) seklinde olmali');
+            'the IVR threshold check must be GotoIf($[0${IVR1FAILS} < 3]?s,1)');
     }
 
     public function testIvrDialplanCustomMaxFailures(): void
@@ -92,7 +92,7 @@ final class IvrDialplanTest extends TestCase
         $conf = buildIVRDialplanBlock($ivr, [], $exts);
 
         $this->assertStringNotContainsString('exten => 1000', $conf,
-            'allow_direct_dial=0 iken dahili numaralar IVR dialplanina eklenmemeli');
+            'with allow_direct_dial=0 extensions must not be added to the IVR dialplan');
         $this->assertStringNotContainsString('exten => 2000', $conf);
     }
 
@@ -131,7 +131,7 @@ final class IvrDialplanTest extends TestCase
 
         // 1. The configured digit_timeout (5 s) must be written to TIMEOUT(digit)
         $this->assertStringContainsString('Set(TIMEOUT(digit)=5)', $conf,
-            'Ozel digit_timeout degeri Set(TIMEOUT(digit)=X) satirina yansitilmali');
+            'a custom digit_timeout must appear in the Set(TIMEOUT(digit)=X) line');
         $this->assertStringContainsString('Set(TIMEOUT(response)=15)', $conf);
 
         // 2. Direct extension dialing lines
@@ -177,7 +177,7 @@ final class IvrDialplanTest extends TestCase
             ['match_pattern' => '_[4-9]XXX', 'route_name' => 'dahili', 'is_internal' => 1],
             ['match_pattern' => '9999', 'route_name' => 'Ozel Santral', 'is_internal' => 1],
             ['match_pattern' => '_X.', 'route_name' => 'Genel Rota', 'is_internal' => 1], // Catch-all atlanmali
-            ['match_pattern' => '1', 'route_name' => 'Cakisan Rota', 'is_internal' => 1],   // Menu tusu '1' ile cakisan atlanmali
+            ['match_pattern' => '1', 'route_name' => 'Clashing route', 'is_internal' => 1],   // clashes with menu key '1': must be skipped
         ];
 
         $conf = buildIVRDialplanBlock($ivr, $entries, $exts, [], $routes);

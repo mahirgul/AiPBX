@@ -100,8 +100,8 @@ function openMohUploadModal(className) {
     const sel = document.getElementById('upload_moh_class_select');
     if (sel && className) { sel.value = className; }
 
-    const dosya = document.getElementById('modal_moh_audio');
-    if (dosya) { dosya.value = ''; }
+    const fileInput = document.getElementById('modal_moh_audio');
+    if (fileInput) { fileInput.value = ''; }
 
     const modal = document.getElementById('mohUploadModal');
     if (modal) {

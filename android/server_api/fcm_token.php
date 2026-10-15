@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     echo json_encode([
         'success' => true,
-        'message' => 'FCM token başarıyla kaydedildi.',
+        'message' => 'FCM token saved.',
         'device_id' => $deviceId,
         'id' => (int)$id
     ], JSON_UNESCAPED_UNICODE);
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Cihaz kaydı pasife alındı.'
+        'message' => 'Device record deactivated.'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

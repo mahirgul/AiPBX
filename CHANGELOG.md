@@ -5,6 +5,25 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.30.0
+
+- **Admin → Help:** the documentation is now inside the portal, for administrators
+  only. It is read from the server's own disk (`/opt/aipbx/docs`), so it works on
+  installations without internet access; with a search over all documents.
+- **System map** (`docs/system-map.md`, the first page of Help): where everything is
+  on an AiPBX server — services, ports, logs, files, the *Apply* flow from the
+  database to the Asterisk files, database tables, scheduled jobs, root tools,
+  debugging recipes and a "where is the code of this feature" table.
+- **One documentation for everywhere:** `docs/` is shown unchanged on GitHub, in the
+  portal and on [aipbx.bid/docs](https://aipbx.bid/docs). The documentation is in
+  English only.
+- **English code:** comments, messages, test names and identifiers across the web
+  portal, mobile apps, chat service and scripts are now English, and the main files
+  explain why they exist, so that anyone can follow the code. The portal's own
+  texts stay translated into all 23 languages; destination names in the dialplan
+  editors are now translated too.
+- Lists: the page size parameter is `size` (old `boyut` links still work).
+
 ## 1.29.1
 
 - **NEC:** the data file no longer lists the phone's language menu; each entry made the

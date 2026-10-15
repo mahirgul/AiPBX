@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Forced password change.
+ * Tables: sys_users.
+ * Used by ForceResetController.
+ */
 class ForceResetRepository extends BaseRepository
 {
     protected static string $table = 'sys_users';

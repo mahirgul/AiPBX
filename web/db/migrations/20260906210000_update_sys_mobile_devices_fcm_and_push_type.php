@@ -12,7 +12,7 @@ final class UpdateSysMobileDevicesFcmAndPushType extends AbstractMigration
             // fcm_token kolonunu NULL olabilir yap
             $table->changeColumn('fcm_token', 'string', ['limit' => 512, 'null' => true, 'default' => null]);
             
-            // push_type kolonu yoksa ekle
+            // Add the push_type column when it is missing
             if (!$table->hasColumn('push_type')) {
                 $table->addColumn('push_type', 'string', ['limit' => 32, 'default' => 'none', 'null' => false, 'after' => 'platform']);
             }

@@ -2,6 +2,11 @@
 require_once __DIR__ . '/../services/ForceResetService.php';
 require_once __DIR__ . '/../services/ResetPasswordService.php';
 
+/**
+ * Forced password change (/force-reset): LoginService sends the user here after sign-in
+ * when the password must be changed before the portal can be used.
+ * Logic: ForceResetRepository, ForceResetService, ResetPasswordService.
+ */
 class ForceResetController extends BaseController
 {
     public static function index(): void

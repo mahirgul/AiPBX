@@ -388,26 +388,26 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	if convID <= 0 && in.TargetExt != "" {
 		conv, err := GetOrCreateDirectConversation(user.Extension, in.TargetExt, user.Extension)
 		if err != nil {
-			return nil, &sendError{http.StatusInternalServerError, "Sohbet başlatılamadı: " + err.Error()}
+			return nil, &sendError{http.StatusInternalServerError, "Could not start the conversation: " + err.Error()}
 		}
 		convID = conv.ID
 	}
 	if convID <= 0 {
-		return nil, &sendError{http.StatusBadRequest, "conversation_id veya target_ext zorunludur."}
+		return nil, &sendError{http.StatusBadRequest, "conversation_id or target_ext is required."}
 	}
 
 	// CH-2: participant check (prevents IDOR)
 	if isPart, err := IsParticipant(convID, user.Extension); err != nil || !isPart {
-		return nil, &sendError{http.StatusForbidden, "Bu sohbete mesaj gönderme yetkiniz yok."}
+		return nil, &sendError{http.StatusForbidden, "You may not send messages to this conversation."}
 	}
 
 	// CH-4: attachment_url may only be one of our own media paths and the sender's own upload
 	if in.AttachmentURL != "" {
 		if !validMediaURL(in.AttachmentURL) {
-			return nil, &sendError{http.StatusBadRequest, "Geçersiz attachment_url formatı."}
+			return nil, &sendError{http.StatusBadRequest, "Invalid attachment_url format."}
 		}
 		if !attachmentOwnedBy(h.secretKey, in.AttachmentURL, user.Extension) {
-			return nil, &sendError{http.StatusForbidden, "Bu dosyayı iliştirme yetkiniz yok."}
+			return nil, &sendError{http.StatusForbidden, "You may not attach this file."}
 		}
 	}
 
@@ -452,7 +452,7 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	}
 	bodyPreview := saved.Message
 	if saved.MsgType == "image" {
-		bodyPreview = "📷 [Fotoğraf]"
+		bodyPreview = "📷 [Fotoğraf]" // user-visible, Turkish on purpose (see the note in db.go)
 	} else if saved.MsgType == "file" {
 		bodyPreview = "📎 [Dosya] " + saved.FileName
 	}

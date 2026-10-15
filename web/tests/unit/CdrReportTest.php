@@ -93,10 +93,10 @@ final class CdrReportTest extends TestCase
         $this->assertCount(4, $master['legs'], 'All 4 legs should be attached for timeline');
 
         // Test Grouped Summary
-        $ozet = CdrReportRepository::ozet(true, '', null, null, '', '', '05051112233', '', 'grouped');
-        $this->assertEquals(1, $ozet['toplam'], 'Summary should count 1 unique call');
-        $this->assertEquals(1, $ozet['cevaplanan'], 'Summary should count 1 answered call');
-        $this->assertEquals(0, $ozet['cevapsiz'], 'False missed calls should NOT be counted in grouped summary');
+        $summary = CdrReportRepository::summary(true, '', null, null, '', '', '05051112233', '', 'grouped');
+        $this->assertEquals(1, $summary['total'], 'Summary should count 1 unique call');
+        $this->assertEquals(1, $summary['answered'], 'Summary should count 1 answered call');
+        $this->assertEquals(0, $summary['missed'], 'False missed calls should NOT be counted in grouped summary');
 
         // Test Raw Search returns all 4 rows
         $rawResults = CdrReportRepository::search(true, '', null, null, '', '', '05051112233', 1, 10, '', 'raw');
@@ -149,8 +149,8 @@ final class CdrReportTest extends TestCase
         $this->assertSame('9931', $inbound['agent_extension'], 'the extension that answered, not the transfer target');
         $this->assertTrue($inbound['flow']['transferred']);
 
-        $ozet = CdrReportRepository::ozet(true, '', null, null, '', '', 'test-cdr-group-dir-', '', 'grouped');
-        $this->assertSame([4, 1, 1, 1, 1], [$ozet['toplam'], $ozet['gelen'], $ozet['giden'], $ozet['dahili'], $ozet['transit']]);
+        $summary = CdrReportRepository::summary(true, '', null, null, '', '', 'test-cdr-group-dir-', '', 'grouped');
+        $this->assertSame([4, 1, 1, 1, 1], [$summary['total'], $summary['inbound'], $summary['outbound'], $summary['internal'], $summary['transit']]);
     }
 
     public function testDeleteCdrRemovesAllLegsOfLinkedCall(): void

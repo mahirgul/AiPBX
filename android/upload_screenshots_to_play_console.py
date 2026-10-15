@@ -28,29 +28,29 @@ SCREENSHOTS = [
 
 def upload_screenshots(commit_changes=True):
     if not os.path.exists(KEY_FILE):
-        print(f"Hata: Key dosyasi bulunamadi: {KEY_FILE}")
+        print(f"Error: key file not found: {KEY_FILE}")
         sys.exit(1)
 
     for path, name in SCREENSHOTS:
         if not os.path.exists(path):
-            print(f"Hata: Ekran goruntusu bulunamadi: {path}")
+            print(f"Error: screenshot not found: {path}")
             sys.exit(1)
 
-    print("1. Google Play Developer API baglantisi kuruluyor...")
+    print("1. Connecting to the Google Play Developer API...")
     creds = service_account.Credentials.from_service_account_file(
         KEY_FILE,
         scopes=['https://www.googleapis.com/auth/androidpublisher']
     )
     service = build('androidpublisher', 'v3', credentials=creds)
 
-    print(f"2. '{PACKAGE_NAME}' paketi icin yeni bir edit olusturuluyor...")
+    print(f"2. '{PACKAGE_NAME}' creating a new edit for the package...")
     edit = service.edits().insert(packageName=PACKAGE_NAME, body={}).execute()
     edit_id = edit['id']
     print(f"   Edit ID: {edit_id}")
 
     try:
         for lang in ['tr-TR', 'en-US']:
-            print(f"\n3. [{lang}] Eski telefon ekran goruntuleri temizleniyor...")
+            print(f"\n3. [{lang}] removing old phone screenshots...")
             service.edits().images().deleteall(
                 packageName=PACKAGE_NAME,
                 editId=edit_id,
@@ -58,7 +58,7 @@ def upload_screenshots(commit_changes=True):
                 imageType='phoneScreenshots'
             ).execute()
 
-            print(f"4. [{lang}] 5 yeni ekran goruntusu yukleniyor...")
+            print(f"4. [{lang}] uploading 5 new screenshots...")
             for img_path, label in SCREENSHOTS:
                 media = MediaFileUpload(img_path, mimetype='image/jpeg')
                 res = service.edits().images().upload(
@@ -69,25 +69,25 @@ def upload_screenshots(commit_changes=True):
                     media_body=media
                 ).execute()
                 img_id = res.get('image', {}).get('id')
-                print(f"   -> [{lang}] {label} yuklendi (ID: {img_id})")
+                print(f"   -> [{lang}] {label} uploaded (ID: {img_id})")
 
-        print("\n5. Degisiklikler dogrulaniyor (validate)...")
+        print("\n5. Validating the changes...")
         service.edits().validate(packageName=PACKAGE_NAME, editId=edit_id).execute()
-        print("   Dogrulama basarili!")
+        print("   Validation passed!")
 
         if commit_changes:
-            print("\n6. Degisiklikler Google Play Console'a onaylaniyor (commit)...")
+            print("\n6. Committing the changes to Google Play Console...")
             service.edits().commit(packageName=PACKAGE_NAME, editId=edit_id).execute()
-            print("\nTEBRIKLER: Ekran goruntuleri Google Play Console magaza sayfasina basariyla yayinlandi!")
+            print("\nDONE: screenshots published to the Google Play store listing!")
         else:
-            print("\nBilgi: commit=False secildigi icin degisiklikler geri aliniyor.")
+            print("\nInfo: commit=False, so the changes are discarded.")
             service.edits().delete(packageName=PACKAGE_NAME, editId=edit_id).execute()
 
     except HttpError as e:
-        print(f"\n[HTTP Hatasi] Kod: {e.resp.status}")
+        print(f"\n[HTTP error] Code: {e.resp.status}")
         try:
             err = json.loads(e.content.decode('utf-8'))
-            print("Detay:", json.dumps(err, indent=2, ensure_ascii=False))
+            print("Details:", json.dumps(err, indent=2, ensure_ascii=False))
         except Exception:
             print("Icerik:", e.content)
         try:
@@ -96,7 +96,7 @@ def upload_screenshots(commit_changes=True):
             pass
         sys.exit(1)
     except Exception as ex:
-        print(f"\nGenel Hata: {ex}")
+        print(f"\nError: {ex}")
         try:
             service.edits().delete(packageName=PACKAGE_NAME, editId=edit_id).execute()
         except Exception:

@@ -24,39 +24,39 @@ require_once dirname(__DIR__, 2) . '/api/cc_actions/cc_lib.php';
 final class TransferChannelTest extends TestCase
 {
     /** Builds a core show channels concise line (14 columns, '!'-separated). */
-    private function satir(string $kanal, string $kopru, string $cid = ''): string
+    private function row(string $channel, string $bridge, string $cid = ''): string
     {
         $c = array_fill(0, 14, '');
-        $c[0] = $kanal;
+        $c[0] = $channel;
         $c[7] = $cid;
-        $c[12] = $kopru;
-        $c[13] = 'uid-' . substr(md5($kanal), 0, 8);
+        $c[12] = $bridge;
+        $c[13] = 'uid-' . substr(md5($channel), 0, 8);
         return implode('!', $c);
     }
 
     /** Queue call: a Local pair sits in between, not optimized away. */
-    public function testLocalKanalZinciriBoyuncaArayaniBulur(): void
+    public function testFindsTheCallerAlongTheLocalChannelChain(): void
     {
         $lines = [
-            $this->satir('PJSIP/3002-webrtc-00000114', 'ff4c7042'),
-            $this->satir('Local/3002@from-internal-pbx-00000012;2', 'ff4c7042'),
-            $this->satir('Local/3002@from-internal-pbx-00000012;1', '0518db58'),
-            $this->satir('PJSIP/ccisgw-00000113', '0518db58', '05379902352'),
+            $this->row('PJSIP/3002-webrtc-00000114', 'ff4c7042'),
+            $this->row('Local/3002@from-internal-pbx-00000012;2', 'ff4c7042'),
+            $this->row('Local/3002@from-internal-pbx-00000012;1', '0518db58'),
+            $this->row('PJSIP/ccisgw-00000113', '0518db58', '05379902352'),
         ];
 
         $this->assertSame(
             'PJSIP/ccisgw-00000113',
             findCallerChannelForAgent('3002', $lines),
-            'Local cifti asilarak arayanin trunk kanali bulunmaliydi'
+            'the caller\'s trunk channel should have been found through the Local pair'
         );
     }
 
     /** When the Local channel is optimized away, the agent is bridged straight to the caller. */
-    public function testLocalOptimizeEdilmisseDogrudanEsiBulur(): void
+    public function testFindsThePeerDirectlyWhenLocalIsOptimisedAway(): void
     {
         $lines = [
-            $this->satir('PJSIP/3001-sip-000000f6', 'aabbccdd'),
-            $this->satir('PJSIP/ccisgw-000000f0', 'aabbccdd', '05379902352'),
+            $this->row('PJSIP/3001-sip-000000f6', 'aabbccdd'),
+            $this->row('PJSIP/ccisgw-000000f0', 'aabbccdd', '05379902352'),
         ];
 
         $this->assertSame(
@@ -66,37 +66,37 @@ final class TransferChannelTest extends TestCase
     }
 
     /** With no active call for the agent it must return null — no wrong channel may be picked. */
-    public function testAktifCagriYoksaNullDoner(): void
+    public function testReturnsNullWithoutAnActiveCall(): void
     {
         $lines = [
-            $this->satir('PJSIP/9999-sip-00000001', 'zzzz'),
-            $this->satir('PJSIP/ccisgw-00000002', 'zzzz'),
+            $this->row('PJSIP/9999-sip-00000001', 'zzzz'),
+            $this->row('PJSIP/ccisgw-00000002', 'zzzz'),
         ];
 
         $this->assertNull(findCallerChannelForAgent('3002', $lines));
     }
 
-    /** Temsilcinin kendi kanali arayan olarak DONDURULMEMELI. */
-    public function testTemsilcininKendiKanaliDondurulmez(): void
+    /** The agent's own channel must NOT be returned as the caller. */
+    public function testAgentsOwnChannelIsNotReturned(): void
     {
         $lines = [
-            $this->satir('PJSIP/3002-webrtc-00000114', 'ff4c7042'),
-            $this->satir('Local/3002@from-internal-pbx-00000012;2', 'ff4c7042'),
+            $this->row('PJSIP/3002-webrtc-00000114', 'ff4c7042'),
+            $this->row('Local/3002@from-internal-pbx-00000012;2', 'ff4c7042'),
         ];
 
         $this->assertNull(findCallerChannelForAgent('3002', $lines));
     }
 
     /** The duration is column 11; column 10 is amaflags (always 3) — every call used to show "00:03". */
-    public function testGorusmeSuresiDogruSutundanOkunur(): void
+    public function testTalkTimeIsReadFromTheRightColumn(): void
     {
-        $arayan = $this->satir('PJSIP/ccisgw-00000115', 'b1', '05321112233');
-        $cols = explode('!', $arayan);
+        $caller = $this->row('PJSIP/ccisgw-00000115', 'b1', '05321112233');
+        $cols = explode('!', $caller);
         $cols[10] = '3';
         $cols[11] = '125';
         $lines = [
             implode('!', $cols),
-            $this->satir('PJSIP/3002-webrtc-00000114', 'b1'),
+            $this->row('PJSIP/3002-webrtc-00000114', 'b1'),
         ];
 
         $d = findAgentCallDetails('3002', $lines);
@@ -106,7 +106,7 @@ final class TransferChannelTest extends TestCase
     }
 
     /** queue show: waiting callers are not members; the Asterisk 22 pause format is recognized. */
-    public function testKuyrukCiktisiUyeVeMolaDurumu(): void
+    public function testQueueOutputMemberAndPauseState(): void
     {
         $out = [
             "queue_cc has 1 calls (max unlimited) in 'rrmemory' strategy (3s holdtime, 20s talktime), W:0, C:5, A:1, SL:0.0%, SL2:0.0% within 0s",

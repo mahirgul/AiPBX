@@ -86,7 +86,7 @@
             android:textSize="13sp" />
     </LinearLayout>
 
-    <!-- Filter Chips (Tümü / Bireysel / Gruplar) -->
+    <!-- Filter Chips (All / Direct / Groups) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

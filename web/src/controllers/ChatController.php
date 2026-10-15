@@ -3,6 +3,13 @@
 require_once __DIR__ . '/../../api/mobile/auth_helper.php';
 require_once __DIR__ . '/../services/ChatSettingsService.php';
 
+/**
+ * Chat page (/chat).
+ * Renders templates/views/chat/index.php with assets/js/chat.js.
+ * Logic: ChatSettingsService.
+ * POST actions: save_chat_settings.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class ChatController extends BaseController
 {
     public static function index(): void

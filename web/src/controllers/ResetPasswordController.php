@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../services/ResetPasswordService.php';
 
+/**
+ * Reset-password page (/reset-password), public: sets a new password with the token of
+ * the e-mailed link ("Forgot your password?").
+ * Logic: ResetPasswordRepository, ResetPasswordService.
+ */
 class ResetPasswordController extends BaseController
 {
     public static function index(): void

@@ -447,6 +447,11 @@ func SaveMessage(convID int, senderExt, msgType, message, attachmentURL, fileNam
 	}
 
 	lastPreview := message
+	// User-visible texts stored in the database (conversation preview, group system
+	// messages below) are still Turkish: the apps and the web chat show them as they are.
+	// Translating them needs the clients to render a structured event in their own
+	// language; until then they stay as they are (changing them would show English to
+	// Turkish users).
 	if msgType == "image" {
 		lastPreview = "📷 [Fotoğraf]"
 	} else if msgType == "file" {
@@ -648,7 +653,7 @@ func CanAccessAttachment(filename, ext string) (bool, error) {
 
 func GetConversationByID(convID int) (*Conversation, error) {
 	if convID <= 0 || db == nil {
-		return nil, fmt.Errorf("Geçersiz konuşma ID")
+		return nil, fmt.Errorf("Invalid conversation ID")
 	}
 	var cv Conversation
 	var lastMsgAt sql.NullTime
@@ -680,7 +685,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 	title = strings.ReplaceAll(title, "\r", "")
 	title = strings.ReplaceAll(title, "\n", "")
 	if title == "" {
-		return nil, nil, fmt.Errorf("Grup adı boş olamaz")
+		return nil, nil, fmt.Errorf("The group name cannot be empty")
 	}
 	title = clipRunes(title, 100)
 	description = clipRunes(strings.TrimSpace(description), 255)
@@ -699,14 +704,14 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 
 	// CH-G3: at most 256 members
 	if len(memberMap) > 256 {
-		return nil, nil, fmt.Errorf("Grup üye sayısı en fazla 256 olabilir")
+		return nil, nil, fmt.Errorf("A group can have at most 256 members")
 	}
 
 	// CH-G2: sys_users validation
 	for m := range memberMap {
 		u, err := GetUserByExt(m)
 		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
-			return nil, nil, fmt.Errorf("Geçersiz veya pasif kullanıcı dahili numarası: %s", m)
+			return nil, nil, fmt.Errorf("Invalid or inactive user extension: %s", m)
 		}
 	}
 
@@ -821,7 +826,7 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 		return nil, err
 	}
 	if conv.Type != "group" {
-		return nil, fmt.Errorf("Bu sohbet bir grup değildir")
+		return nil, fmt.Errorf("This conversation is not a group")
 	}
 
 	rows, err := db.Query(`
@@ -859,7 +864,7 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, nil, fmt.Errorf("Grup üyesi eklemek için yönetici olmalısınız")
+		return nil, nil, fmt.Errorf("You must be a group admin to add members")
 	}
 
 	var currentCount int
@@ -884,11 +889,11 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 
 	if len(validExts) == 0 {
-		return nil, nil, fmt.Errorf("Eklenebilecek geçerli yeni kullanıcı bulunamadı")
+		return nil, nil, fmt.Errorf("No valid new user to add")
 	}
 
 	if currentCount+len(validExts) > 256 {
-		return nil, nil, fmt.Errorf("Grup üye sayısı en fazla 256 olabilir")
+		return nil, nil, fmt.Errorf("A group can have at most 256 members")
 	}
 
 	tx, err := db.Begin()
@@ -910,7 +915,7 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 
 	if len(added) == 0 {
-		return nil, nil, fmt.Errorf("Üyeler eklenemedi")
+		return nil, nil, fmt.Errorf("Could not add the members")
 	}
 
 	actorName := actorExt
@@ -968,10 +973,10 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, fmt.Errorf("Gruptan üye çıkarmak için yönetici olmalısınız")
+		return nil, fmt.Errorf("You must be a group admin to remove members")
 	}
 	if actorExt == targetExt {
-		return nil, fmt.Errorf("Kendi hesabınızı gruptan çıkaramazsınız, gruptan ayrıl seçeneğini kullanın")
+		return nil, fmt.Errorf("You cannot remove yourself; use leave group instead")
 	}
 
 	res, err := db.Exec(`
@@ -984,7 +989,7 @@ func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error)
 	}
 	rowsAff, _ := res.RowsAffected()
 	if rowsAff == 0 {
-		return nil, fmt.Errorf("Belirtilen kullanıcı grupta aktif değil")
+		return nil, fmt.Errorf("The user is not an active member of the group")
 	}
 
 	actorName := actorExt
@@ -1010,12 +1015,12 @@ func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error)
 func LeaveGroup(convID int, ext string) (*Message, error) {
 	isPart, err := IsParticipant(convID, ext)
 	if err != nil || !isPart {
-		return nil, fmt.Errorf("Bu grubun aktif bir üyesi değilsiniz")
+		return nil, fmt.Errorf("You are not an active member of this group")
 	}
 	// Leaving is for groups only: on a direct chat the "no admin left" step
 	// below would make the other person admin of the private conversation.
 	if conv, err := GetConversationByID(convID); err != nil || conv.Type != "group" {
-		return nil, fmt.Errorf("Bu sohbet bir grup değildir")
+		return nil, fmt.Errorf("This conversation is not a group")
 	}
 
 	_, err = db.Exec(`
@@ -1063,14 +1068,14 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string) (*Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, fmt.Errorf("Grup bilgilerini güncellemek için yönetici olmalısınız")
+		return nil, fmt.Errorf("You must be a group admin to update the group")
 	}
 
 	title = strings.TrimSpace(title)
 	title = strings.ReplaceAll(title, "\r", "")
 	title = strings.ReplaceAll(title, "\n", "")
 	if title == "" {
-		return nil, fmt.Errorf("Grup adı boş olamaz")
+		return nil, fmt.Errorf("The group name cannot be empty")
 	}
 	title = clipRunes(title, 100)
 	description = clipRunes(strings.TrimSpace(description), 255)
@@ -1099,10 +1104,10 @@ func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string)
 func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) error {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return fmt.Errorf("Grup yetkilerini değiştirmek için yönetici olmalısınız")
+		return fmt.Errorf("You must be a group admin to change roles")
 	}
 	if newRole != "admin" && newRole != "member" {
-		return fmt.Errorf("Geçersiz rol: %s", newRole)
+		return fmt.Errorf("Invalid role: %s", newRole)
 	}
 
 	res, err := db.Exec(`
@@ -1115,7 +1120,7 @@ func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) erro
 	}
 	rowsAff, _ := res.RowsAffected()
 	if rowsAff == 0 {
-		return fmt.Errorf("Kullanıcı grupta aktif değil")
+		return fmt.Errorf("The user is not an active member of the group")
 	}
 	return nil
 }
@@ -1124,7 +1129,7 @@ func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) erro
 func DeleteGroup(convID int, actorExt string) error {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return fmt.Errorf("Grubu silmek için yönetici olmalısınız")
+		return fmt.Errorf("You must be a group admin to delete the group")
 	}
 
 	_, err = db.Exec("UPDATE chat_conversations SET is_deleted = 1, updated_at = NOW() WHERE id = ?", convID)

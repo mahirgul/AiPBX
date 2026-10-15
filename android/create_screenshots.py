@@ -181,7 +181,7 @@ def make_screenshot_2():
     draw_text_center(pdraw, "02:45", center_sx, ay + 285, f_dur, (56, 189, 248, 255))
 
     # Controls Grid
-    # Row 1: mute (Sessiz), keypad (Tuşlar), speaker (Hoparlör)
+    # Row 1: mute, keypad, speaker (the screenshots show the Turkish labels)
     # Row 2: hold (Beklet), transfer (Aktar)
     btn_r = 44
     row1_y = ay + 420
@@ -219,13 +219,13 @@ def make_screenshot_3():
     f_mini_sub = ImageFont.truetype(FONT_REG, 18)
     draw_text_center(pdraw, "9998 - Görüşmede (03:12)", center_sx, cy, f_mini_name, (255, 255, 255, 255))
 
-    # DTMF Header box (Display + Gizle button)
+    # DTMF header box (display + hide button)
     dty = cy + 60
     pdraw.rounded_rectangle([sx1 + 40, dty, sx2 - 40, dty + 80], radius=20, fill=(30, 41, 59, 255), outline=(56, 189, 248, 140), width=1)
     f_dtmf_dig = ImageFont.truetype(FONT_BOLD, 34)
     pdraw.text((sx1 + 65, dty + 18), "DTMF: 1402#", font=f_dtmf_dig, fill=(56, 189, 248, 255))
 
-    # Gizle button
+    # Hide button
     f_gizle = ImageFont.truetype(FONT_BOLD, 18)
     pdraw.rounded_rectangle([sx2 - 160, dty + 15, sx2 - 50, dty + 65], radius=14, fill=(51, 65, 85, 255))
     pdraw.text((sx2 - 130, dty + 23), "Gizle", font=f_gizle, fill=(241, 245, 249, 255))

@@ -5,22 +5,22 @@
     <!-- Settings Single-Line Fixed Tabs -->
     <div class="settings-tabs">
         <button type="button" class="settings-tab-btn active" data-tab="pjsip" onclick="switchSettingsTab('pjsip', this)">
-            <i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.tab_pjsip', 'PJSIP & Ağ'); ?>
+            <i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.tab_pjsip'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="rtp" onclick="switchSettingsTab('rtp', this)">
-            <i class="fas fa-wave-square"></i> <?php echo t('asterisk_settings.tab_rtp', 'RTP'); ?>
+            <i class="fas fa-wave-square"></i> <?php echo t('asterisk_settings.tab_rtp'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="t38" onclick="switchSettingsTab('t38', this)">
-            <i class="fas fa-fax"></i> <?php echo t('asterisk_settings.tab_t38', 'T.38 Faks'); ?>
+            <i class="fas fa-fax"></i> <?php echo t('asterisk_settings.tab_t38'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="ring" onclick="switchSettingsTab('ring', this)">
-            <i class="fas fa-bell"></i> <?php echo t('asterisk_settings.tab_ring', 'Zil Sesi'); ?>
+            <i class="fas fa-bell"></i> <?php echo t('asterisk_settings.tab_ring'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="video" onclick="switchSettingsTab('video', this)">
-            <i class="fas fa-video"></i> <?php echo t('asterisk_settings.tab_video', 'Video'); ?>
+            <i class="fas fa-video"></i> <?php echo t('asterisk_settings.tab_video'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="lang" onclick="switchSettingsTab('lang', this)">
-            <i class="fas fa-language"></i> <?php echo t('asterisk_settings.tab_lang', 'Dil'); ?>
+            <i class="fas fa-language"></i> <?php echo t('asterisk_settings.tab_lang'); ?>
         </button>
     </div>
 
@@ -391,7 +391,7 @@
 
     <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
-            <i class="fas fa-save"></i> <?php echo t('common.save', 'Tüm Ayarları Kaydet'); ?>
+            <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
         </button>
     <?php endif; ?>
 </form>

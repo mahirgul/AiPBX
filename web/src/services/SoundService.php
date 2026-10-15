@@ -77,7 +77,7 @@ class SoundService {
             }
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
-            $eski_numara = (string) (DBHelper::fetchColumn(
+            $old_number = (string) (DBHelper::fetchColumn(
                 "SELECT internal_number FROM pbx_announcements WHERE id = ?", [$anc_id]
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'announcement', $anc_id);
@@ -91,8 +91,8 @@ class SoundService {
             markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
             markPendingSync('ivrs', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
             markPendingSync('time_conditions', 'announcement', $anc_id, "Announcement: {$title}", 'update', $uid);
-            // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
-            if ($internal_number !== $eski_numara) {
+            // When a number was added, changed or removed, the internal targets context must be rebuilt too.
+            if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'announcement', $anc_id,
                     "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $uid);
@@ -127,7 +127,7 @@ class SoundService {
             $anc_id = intval($anc_id);
             $custom_dir = SOUNDS_CUSTOM_DIR;
             $anc = DBHelper::fetchOne("SELECT audio_file, internal_number FROM pbx_announcements WHERE id = ?", [$anc_id]);
-            $silinen_numara = (string) ($anc['internal_number'] ?? '');
+            $removed_number = (string) ($anc['internal_number'] ?? '');
 
             if ($anc) {
                 $file_path = $custom_dir . '/' . str_replace('custom/', '', $anc['audio_file']) . '.wav';
@@ -137,9 +137,9 @@ class SoundService {
                 markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
                 markPendingSync('ivrs', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
                 markPendingSync('time_conditions', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
-                if (!empty($silinen_numara)) {
+                if (!empty($removed_number)) {
                     markPendingSync('internal_numbers', 'announcement', $anc_id,
-                        "Internal number removed: {$silinen_numara}", 'delete', $uid);
+                        "Internal number removed: {$removed_number}", 'delete', $uid);
                 }
                 return t('srv_sound.deleted');
             }

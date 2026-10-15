@@ -1,6 +1,14 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Sounds page (/sounds).
+ * Renders templates/views/sounds/index.php with assets/js/sound_packs.js, sounds.js.
+ * Logic: SoundPackService, SoundRepository, SoundService.
+ * POST actions: delete_announcement, delete_moh_class, save_announcement, save_moh_class,
+ * toggle_status, upload_moh_file, upload_sound.
+ * Admins only.
+ */
 class SoundController extends BaseController
 {
     public static function index(): void

@@ -7,6 +7,11 @@ require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
 
+/**
+ * PBX → Conference rooms: save/delete rooms (marks conferences and internal_numbers
+ * for Apply) and the live room view: members, kick and mute through the Asterisk CLI
+ * (confbridge list/kick/mute).
+ */
 class ConferenceService {
     public static function getConferences() {
         $db = getDB();
