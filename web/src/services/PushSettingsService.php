@@ -18,7 +18,7 @@ class PushSettingsService
         $current = PushSettingsRepository::currentSettings();
 
         $provider = trim($post['push_provider'] ?? 'none');
-        if (!in_array($provider, ['none', 'fcm', 'unifiedpush'], true)) {
+        if (!in_array($provider, ['none', 'fcm'], true)) {
             $provider = 'none';
         }
 
