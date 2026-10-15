@@ -5,6 +5,27 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.24.0
+
+- **More cloud language models** (*AI → Cloud services*): **NVIDIA NIM**
+  (build.nvidia.com: Llama, Nemotron, Qwen, DeepSeek …), **Qwen** (Alibaba Cloud
+  Model Studio, international or mainland endpoint) and **OpenAI-compatible (own
+  address)** for any service with the OpenAI chat API — DeepSeek, Mistral,
+  Together, or an Ollama/vLLM server on another machine. Each has a *Model* field;
+  *Test* sends one tiny request, so a wrong model name shows at once. They can be
+  the *Understanding* of routing by speech and voice requests, and the new
+  **language model** engine per language. Large models stay in the cloud; the PBX
+  runs only small ones. See [Cloud AI services](docs/cloud-ai.md#language-models).
+- **Voicemail as text** (*AI → Cloud services → Voicemail as text*): a new
+  voicemail is written down with the speech-to-text engine of the PBX's language
+  (a small local model or a cloud provider) and, if wanted, summarised in one
+  sentence by the language model ("John Smith wants to move tomorrow's 10:00
+  meeting to Friday"). It appears in the voicemail e-mail (`{ai_text}`), the app
+  notification (Android 1.0.66), *My Phone → Voicemail* and the apps' voicemail
+  list. Nothing holds back the e-mail or the notification when the engine fails.
+  See [Voicemail as text](docs/cloud-ai.md#voicemail-as-text).
+- *My Phone → Voicemail*: an unknown caller was shown in Turkish in every language.
+
 ## 1.23.0
 
 - **Routing by speech** (*AI → Applications*, new type): a switchboard that listens.
