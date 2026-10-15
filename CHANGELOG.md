@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.28.1
+
+- **Fix (NEC):** a DT710 showed the time one hour ahead: it kept the daylight saving
+  rule of an earlier file although AiPBX switches it off. The file now also sets the
+  daylight saving adjustment to 0.
+
 ## 1.28.0
 
 - **NTP server** (*Network services → NTP server (time)*): phones take their time
