@@ -88,6 +88,27 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         }
     }
 
+    /**
+     * Follows up the watchdog's forced REGISTER. JsSIP reports every successful
+     * REGISTER, so no report within REGISTER_ANSWER_TIMEOUT_MS means the request
+     * was never answered. Seen on 2026-10-15: after a video call the engine's
+     * JavaScript stopped running (registration stuck at the 401 challenge for
+     * hours) while the app still showed "connected", so calls never rang. A
+     * failed REGISTER (network gone) reports DISCONNECTED instead and goes the
+     * normal reconnect way; this only catches the silent case. Not during a
+     * call: the call itself shows the engine is alive.
+     */
+    private var registrationCheckForcedAt = 0L
+    private val registrationCheck = Runnable {
+        val idle = engine.currentCallStatus == CallStatus.IDLE || engine.currentCallStatus == CallStatus.ENDED
+        if (prefs.isLoggedIn && idle && isNetworkAvailable
+            && engine.currentConnectionStatus == ConnectionStatus.CONNECTED
+            && engine.lastRegisteredMs < registrationCheckForcedAt) {
+            Log.w(TAG, "Watchdog: forced REGISTER got no answer in ${REGISTER_ANSWER_TIMEOUT_MS / 1000}s, restarting the engine")
+            engine.restart("no REGISTER answer after the watchdog refresh")
+        }
+    }
+
     private fun runWatchdogCheck() {
         try {
             if (prefs.isLoggedIn) {
@@ -114,7 +135,11 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                     // Refresh the registration for real: a socket that died silently (network
                     // change, half-open TCP, PBX restart) otherwise still looks registered here.
                     Log.d(TAG, "Watchdog: Engine is CONNECTED, refreshing the registration")
+                    val forcedAt = SystemClock.elapsedRealtime()
                     engine.reRegister(force = true)
+                    watchdogHandler.removeCallbacks(registrationCheck)
+                    registrationCheckForcedAt = forcedAt
+                    watchdogHandler.postDelayed(registrationCheck, REGISTER_ANSWER_TIMEOUT_MS)
                 }
                 connectChatWs()
             }
@@ -290,6 +315,26 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                         putExtra(com.mhrgl.aipbx.ui.IncomingCallActivity.EXTRA_CALLER_NUMBER, engine.activeCallerNumber)
                     }
                     startActivity(incomingIntent)
+                }
+            }
+            ACTION_ANSWER_VIDEO -> {
+                // Video answer from the notification (#83). Without microphone or camera
+                // permission the full-screen call screen asks for them instead.
+                val granted = { p: String ->
+                    androidx.core.content.ContextCompat.checkSelfPermission(this, p) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                }
+                if (granted(android.Manifest.permission.RECORD_AUDIO) && granted(android.Manifest.permission.CAMERA)) {
+                    stopRinging()
+                    engine.answerCall(prefs.videoLimits)
+                    startActivity(Intent(this, CallActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    })
+                } else {
+                    startActivity(Intent(this, com.mhrgl.aipbx.ui.IncomingCallActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        putExtra(com.mhrgl.aipbx.ui.IncomingCallActivity.EXTRA_CALLER_NAME, engine.activeCallerName)
+                        putExtra(com.mhrgl.aipbx.ui.IncomingCallActivity.EXTRA_CALLER_NUMBER, engine.activeCallerNumber)
+                    })
                 }
             }
             ACTION_DECLINE -> {
@@ -760,7 +805,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID_CALLS)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID_CALLS)
             .setContentTitle(getString(R.string.notif_incoming_call_title, callerName))
             .setContentText(getString(R.string.notif_incoming_call_desc, callerNumber))
             .setSmallIcon(R.drawable.ic_phone)
@@ -772,10 +817,17 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             .setOngoing(true)
             .addAction(R.drawable.ic_call_end, getString(R.string.action_decline), pendingDecline)
             .addAction(R.drawable.ic_phone, getString(R.string.action_answer), pendingAnswer)
-            .build()
+        // A video call gets a third button; "Answer" stays audio only (#83).
+        if (engine.incomingHasVideo) {
+            val pendingVideo = PendingIntent.getService(
+                this, 4, Intent(this, PbxForegroundService::class.java).apply { action = ACTION_ANSWER_VIDEO },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(R.drawable.ic_videocam, getString(R.string.btn_answer_video), pendingVideo)
+        }
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID_CALL, notification)
+        nm.notify(NOTIFICATION_ID_CALL, builder.build())
     }
 
     fun cancelIncomingCallNotification() {
@@ -883,6 +935,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         const val WATCHDOG_INTERVAL_MS = 120_000L // 2 minutes (M1, M2 keepalive & recovery)
         /** Not registered for longer than this while CONNECTING: the watchdog connects again. */
         const val CONNECTING_TIMEOUT_MS = 45_000L
+        /** A forced REGISTER that has not been answered by then counts as a stuck engine. */
+        const val REGISTER_ANSWER_TIMEOUT_MS = 20_000L
         const val INITIAL_RECONNECT_DELAY_MS = 3000L // exponential backoff initial delay (M28)
         const val MAX_RECONNECT_DELAY_MS = 60_000L // exponential backoff ceiling (1 minute) (M28)
 
@@ -894,6 +948,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         const val NOTIFICATION_ID_CALL = 1002
 
         const val ACTION_ANSWER = "com.mhrgl.aipbx.ACTION_ANSWER"
+        const val ACTION_ANSWER_VIDEO = "com.mhrgl.aipbx.ACTION_ANSWER_VIDEO"
         const val ACTION_DECLINE = "com.mhrgl.aipbx.ACTION_DECLINE"
         const val ACTION_RECONNECT = "com.mhrgl.aipbx.ACTION_RECONNECT"
         const val ACTION_WATCHDOG = "com.mhrgl.aipbx.ACTION_WATCHDOG"
