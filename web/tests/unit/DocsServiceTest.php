@@ -27,6 +27,28 @@ final class DocsServiceTest extends TestCase
         $this->assertStringNotContainsString('href="javascript', $html);
     }
 
+    public function testBareHtmlLineIsDropped(): void
+    {
+        $html = DocsService::render("<p align=\"center\"><img src=\"logo.png\" alt=\"AiPBX\" width=\"96\"></p>\n\n# Title");
+        $this->assertSame("<h1 id=\"title\">Title</h1>\n", $html);
+        $this->assertStringContainsString('&lt;b&gt;', DocsService::render('<b>bold</b> text'));
+    }
+
+    public function testWebsiteLinkSettings(): void
+    {
+        DocsService::$docUrl = '/docs/';
+        DocsService::$repoUrl = 'https://github.com/mahirgul/AiPBX/blob/main';
+        try {
+            $html = DocsService::inline('[map](system-map.md#logs), [sync](../web/src/sync/SyncTrunks.php)');
+            $this->assertStringContainsString('<a href="/docs/system-map#logs">map</a>', $html);
+            $this->assertStringContainsString('href="https://github.com/mahirgul/AiPBX/blob/main/web/src/sync/SyncTrunks.php"', $html);
+        } finally {
+            DocsService::$docUrl = '/help?doc=';
+            DocsService::$repoUrl = null;
+        }
+        $this->assertStringContainsString('sync <code>web/src/sync/SyncTrunks.php</code>', DocsService::inline('[sync](../web/src/sync/SyncTrunks.php)'));
+    }
+
     public function testBlocks(): void
     {
         $md = "## Syslog (phone logs)\n\n- one\n  continued\n- two\n  - nested\n\n1. first\n2. second\n\n> quote\n\n| A | B |\n|---|---|\n| `a|b` | **x** |\n\n---\n";

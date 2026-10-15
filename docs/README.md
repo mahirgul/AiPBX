@@ -5,6 +5,14 @@
 Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 [installation guide](../INSTALL.md), then use the pages below while configuring the system.
 
+These pages are the single source of the documentation. The same text is shown on GitHub, in
+the portal under *Admin → Help* (from `/opt/aipbx/docs`, so it works without internet access)
+and on [aipbx.bid/docs](https://aipbx.bid/docs) (pulled from GitHub every hour). Change it here
+and all three follow. The documentation is in English only.
+
+When something does not work, start with the [system map](system-map.md) (where everything is)
+and [troubleshooting](troubleshooting.md) (symptom → fix).
+
 ## Getting started
 
 | Page | What it covers |
