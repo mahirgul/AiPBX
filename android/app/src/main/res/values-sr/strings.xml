@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Kamera</string>
     <string name="btn_switch_camera">Promeni kameru</string>
+    <string name="btn_hide_controls">Sakrij tastere</string>
+    <string name="btn_show_controls">Prikaži tastere</string>
     <string name="err_camera_permission_video">Nema dozvole za kameru: poziv se nastavlja samo sa zvukom.</string>
     <string name="err_camera_unavailable">Kamera nije dostupna: poziv se nastavlja samo sa zvukom.</string>
     <string name="contacts_extensions_listed">lokala na listi</string>

@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Kamera</string>
     <string name="btn_switch_camera">Kamera wechseln</string>
+    <string name="btn_hide_controls">Tasten ausblenden</string>
+    <string name="btn_show_controls">Tasten einblenden</string>
     <string name="err_camera_permission_video">Keine Kameraberechtigung: Das Gespräch läuft nur mit Ton weiter.</string>
     <string name="err_camera_unavailable">Kamera nicht verfügbar: Das Gespräch läuft nur mit Ton weiter.</string>
     <string name="contacts_extensions_listed">Nebenstellen aufgelistet</string>

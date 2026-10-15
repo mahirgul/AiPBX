@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Cameră</string>
     <string name="btn_switch_camera">Schimbă camera</string>
+    <string name="btn_hide_controls">Ascunde butoanele</string>
+    <string name="btn_show_controls">Arată butoanele</string>
     <string name="err_camera_permission_video">Fără permisiune pentru cameră: apelul continuă doar cu sunet.</string>
     <string name="err_camera_unavailable">Camera nu este disponibilă: apelul continuă doar cu sunet.</string>
     <string name="contacts_extensions_listed">interioare listate</string>
