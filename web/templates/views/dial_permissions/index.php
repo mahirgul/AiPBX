@@ -18,14 +18,14 @@ if (!$selected_group && !empty($groups)) {
 <div class="card mb-3">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('dial_permissions.title', 'Arama Yetki Grupları'); ?>
+            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('dial_permissions.title'); ?>
         </div>
         <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateGroupModal()" title="<?php echo t('dial_permissions.new_group_btn', 'Yeni Yetki Grubu'); ?>">
+                <button class="btn btn-primary btn-sm" onclick="openCreateGroupModal()" title="<?php echo t('dial_permissions.new_group_btn'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -34,12 +34,12 @@ if (!$selected_group && !empty($groups)) {
 
     <!-- Collapsible Help Box -->
     <div class="module-help-box" id="permHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('dial_permissions.help_title', 'Arama Yetki Grupları Nasıl Çalışır?'); ?></h4>
-        <p><?php echo t('dial_permissions.help_body', 'Arama yetki grupları, dahili abonelerin harici hatlara doğru yapacakları aramaları denetler.'); ?></p>
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('dial_permissions.help_title'); ?></h4>
+        <p><?php echo t('dial_permissions.help_body'); ?></p>
         <ul>
-            <li><strong><?php echo t('dial_permissions.help_default', 'Varsayılan Davranış:'); ?></strong> <?php echo t('dial_permissions.help_default_desc', 'Grup "İzin Ver" modundaysa kurallar kara liste (engelleme), "Engelle" modundaysa kurallar beyaz liste (izin verme) olarak çalışır.'); ?></li>
-            <li><strong><?php echo t('dial_permissions.help_prefix', 'Ön Ek (Prefix):'); ?></strong> <?php echo t('dial_permissions.help_prefix_desc', 'Örneğin "0" girilirse 0 ile başlayan tüm numaralar, "00" girilirse yurtdışı, "05" girilirse tüm GSM aramaları kapsanır.'); ?></li>
-            <li><strong><?php echo t('dial_permissions.help_exact', 'Tam Numara:'); ?></strong> <?php echo t('dial_permissions.help_exact_desc', 'Spesifik bir numara girildiğinde sadece o numara için kural işletilir.'); ?></li>
+            <li><strong><?php echo t('dial_permissions.help_default'); ?></strong> <?php echo t('dial_permissions.help_default_desc'); ?></li>
+            <li><strong><?php echo t('dial_permissions.help_prefix'); ?></strong> <?php echo t('dial_permissions.help_prefix_desc'); ?></li>
+            <li><strong><?php echo t('dial_permissions.help_exact'); ?></strong> <?php echo t('dial_permissions.help_exact_desc'); ?></li>
         </ul>
     </div>
 </div>
@@ -49,7 +49,7 @@ if (!$selected_group && !empty($groups)) {
     <div class="card" style="padding: 16px;">
         <div class="card-header u-mb-14">
             <div class="card-title">
-                <i class="fas fa-layer-group u-primary"></i> <?php echo t('dial_permissions.groups_list', 'Yetki Grupları'); ?>
+                <i class="fas fa-layer-group u-primary"></i> <?php echo t('dial_permissions.groups_list'); ?>
             </div>
             <span class="badge badge-secondary"><?php echo count($groups); ?></span>
         </div>
@@ -65,13 +65,13 @@ if (!$selected_group && !empty($groups)) {
                         <span class="u-fw-700 u-fs-14 u-text-main">
                             <?php echo htmlspecialchars($g['group_name']); ?>
                             <?php if ($isDefault): ?>
-                                <span class="badge badge-info u-fs-10"><?php echo t('dial_permissions.default_badge', 'Varsayılan'); ?></span>
+                                <span class="badge badge-info u-fs-10"><?php echo t('dial_permissions.default_badge'); ?></span>
                             <?php endif; ?>
                         </span>
                         <?php if ($g['default_action'] === 'allow'): ?>
-                            <span class="badge badge-success u-fs-10"><?php echo t('dial_permissions.default_allow', 'Genel İzin'); ?></span>
+                            <span class="badge badge-success u-fs-10"><?php echo t('dial_permissions.default_allow'); ?></span>
                         <?php else: ?>
-                            <span class="badge badge-danger u-fs-10"><?php echo t('dial_permissions.default_deny', 'Genel Engel'); ?></span>
+                            <span class="badge badge-danger u-fs-10"><?php echo t('dial_permissions.default_deny'); ?></span>
                         <?php endif; ?>
                     </div>
                     <?php if (!empty($g['description'])): ?>
@@ -111,7 +111,7 @@ if (!$selected_group && !empty($groups)) {
                     <i class="fas fa-sliders-h u-primary"></i> 
                     <span><?php echo htmlspecialchars($selected_group['group_name'] ?? ''); ?></span>
                     <span style="font-size: 13px; font-weight: normal; color: var(--text-muted); margin-left: 8px;">
-                        (<?php echo t('dial_permissions.base_mode', 'Temel Mod:'); ?> 
+                        (<?php echo t('dial_permissions.base_mode'); ?> 
                         <strong><?php echo ($selected_group['default_action'] ?? 'allow') === 'allow' ? t('dial_permissions.mode_blacklist') : t('dial_permissions.mode_whitelist'); ?></strong>)
                     </span>
                 </div>
@@ -119,7 +119,7 @@ if (!$selected_group && !empty($groups)) {
             <?php if (hasModulePermission('dial_permissions', 'edit') && $selected_group): ?>
                 <div class="u-flex-gap">
                     <button class="btn btn-primary btn-sm" onclick="openCreateRuleModal(<?php echo $selected_group['id']; ?>)">
-                        <i class="fas fa-plus"></i> <?php echo t('dial_permissions.add_rule_btn', 'Yeni Kural Ekle'); ?>
+                        <i class="fas fa-plus"></i> <?php echo t('dial_permissions.add_rule_btn'); ?>
                     </button>
                 </div>
             <?php endif; ?>
@@ -128,7 +128,7 @@ if (!$selected_group && !empty($groups)) {
         <?php if (hasModulePermission('dial_permissions', 'edit') && $selected_group): ?>
             <!-- Quick rule buttons -->
             <div style="background: var(--bg-input); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px;">
-                <span class="u-fw-600 u-text-main"><i class="fas fa-bolt text-warning"></i> <?php echo t('dial_permissions.quick_rules', 'Hızlı Kurallar:'); ?></span>
+                <span class="u-fw-600 u-text-main"><i class="fas fa-bolt text-warning"></i> <?php echo t('dial_permissions.quick_rules'); ?></span>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_long')), ENT_QUOTES); ?>)" style="padding: 2px 8px; font-size: 11px;">
                     <i class="fas fa-ban text-danger"></i> <?php echo t('dial_permissions.qb_zero'); ?>
                 </button>
@@ -148,17 +148,17 @@ if (!$selected_group && !empty($groups)) {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 70px;"><?php echo t('dial_permissions.col_priority', 'Sıra'); ?></th>
-                        <th><?php echo t('dial_permissions.col_pattern', 'Numara / Kalıp'); ?></th>
-                        <th><?php echo t('dial_permissions.col_type', 'Eşleşme Tipi'); ?></th>
-                        <th><?php echo t('dial_permissions.col_action', 'İşlem'); ?></th>
-                        <th><?php echo t('dial_permissions.col_desc', 'Açıklama'); ?></th>
-                        <th class="text-right" style="width: 100px;"><?php echo t('dial_permissions.col_actions', 'İşlemler'); ?></th>
+                        <th style="width: 70px;"><?php echo t('dial_permissions.col_priority'); ?></th>
+                        <th><?php echo t('dial_permissions.col_pattern'); ?></th>
+                        <th><?php echo t('dial_permissions.col_type'); ?></th>
+                        <th><?php echo t('dial_permissions.col_action'); ?></th>
+                        <th><?php echo t('dial_permissions.col_desc'); ?></th>
+                        <th class="text-right" style="width: 100px;"><?php echo t('dial_permissions.col_actions'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($rules)): ?>
-                        <?php echo uiTableEmptyRow(6, t('dial_permissions.no_rules', 'Bu grupta henüz tanımlı kural bulunmuyor. Temel mod geçerlidir.'), 'fa-filter'); ?>
+                        <?php echo uiTableEmptyRow(6, t('dial_permissions.no_rules'), 'fa-filter'); ?>
                     <?php else: ?>
                         <?php foreach ($rules as $r): ?>
                             <tr>
@@ -171,16 +171,16 @@ if (!$selected_group && !empty($groups)) {
                                 </td>
                                 <td>
                                     <?php if ($r['pattern_type'] === 'prefix'): ?>
-                                        <span class="badge badge-info"><i class="fas fa-arrow-right"></i> <?php echo t('dial_permissions.type_prefix', 'Ön Ek (Prefix)'); ?></span>
+                                        <span class="badge badge-info"><i class="fas fa-arrow-right"></i> <?php echo t('dial_permissions.type_prefix'); ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary"><i class="fas fa-equals"></i> <?php echo t('dial_permissions.type_exact', 'Tam Eşleşme'); ?></span>
+                                        <span class="badge badge-secondary"><i class="fas fa-equals"></i> <?php echo t('dial_permissions.type_exact'); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($r['action'] === 'allow'): ?>
-                                        <span class="badge badge-success"><i class="fas fa-check"></i> <?php echo t('dial_permissions.action_allow', 'İZİN VER'); ?></span>
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> <?php echo t('dial_permissions.action_allow'); ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-danger"><i class="fas fa-ban"></i> <?php echo t('dial_permissions.action_deny', 'ENGELLE'); ?></span>
+                                        <span class="badge badge-danger"><i class="fas fa-ban"></i> <?php echo t('dial_permissions.action_deny'); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="u-muted u-fs-12"><?php echo htmlspecialchars($r['description'] ?? '-'); ?></td>
@@ -248,7 +248,7 @@ if (!$selected_group && !empty($groups)) {
                     </label>
                 </div>
 
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('groupModal')", t('common.save', 'Kaydet'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('groupModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>
@@ -303,7 +303,7 @@ if (!$selected_group && !empty($groups)) {
                     <input type="text" name="description" id="modal_rule_desc" class="form-control" placeholder="<?php echo t('dial_permissions.rule_desc_ph'); ?>">
                 </div>
 
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('ruleModal')", t('common.save', 'Kaydet'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('ruleModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>

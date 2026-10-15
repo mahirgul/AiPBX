@@ -61,5 +61,7 @@ final class DocsServiceTest extends TestCase
         $this->assertNull(DocsService::source('nope'));
         $found = DocsService::search('aipbx-selftest');
         $this->assertContains('system-map', array_column($found, 'name'));
+        $this->assertSame('aipbx-selftest — Runs every health check', mb_substr(DocsService::plain('| `aipbx-selftest` | Runs every health check now |'), 0, 40));
+        $this->assertSame('Start with aipbx-selftest and the *Health* page', DocsService::plain('**Start with** `aipbx-selftest` and the *Health* page'));
     }
 }

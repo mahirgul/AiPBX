@@ -20,7 +20,7 @@ class BossSecretaryController extends BaseController
         $extensions = BossSecretaryService::getAvailableExtensions();
         $modules = DestinationRegistry::getModuleList();
 
-        $page_title = t('boss_secretary.title', 'Şef - Sekreter Grupları');
+        $page_title = t('boss_secretary.title');
         static::renderPage('boss_secretary/index', [
             'groups' => $groups,
             'extensions' => $extensions,

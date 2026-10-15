@@ -364,10 +364,10 @@ CREATE TABLE `sys_users` (
 
 
 
--- asteriskcdr: Asterisk'in kendi realtime CDR tablosu (cdr_adaptive_odbc.conf ile
--- otomatik oluşturulur/genişletilir) — bu migration'a SADECE `cdrs` view'ı fresh bir
--- ortamda oluşturulabilsin diye eklendi. Gerçek Asterisk kurulumunda bu tabloyu
--- Asterisk kendi yönetir, uygulama migration'ları BU TABLOYU DEĞİŞTİRMEMELİDİR.
+-- asteriskcdr: Asterisk's own realtime CDR table (created and extended by
+-- cdr_adaptive_odbc.conf). It is in this migration ONLY so that the `cdrs` view can be
+-- created on a fresh database. On a real installation Asterisk manages this table;
+-- application migrations MUST NOT CHANGE IT.
 CREATE TABLE `asteriskcdr` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `calldate` datetime NOT NULL DEFAULT '2000-01-01 00:00:00',
@@ -398,9 +398,9 @@ CREATE TABLE `asteriskcdr` (
   KEY `idx_cdr_dst_date` (`dst`,`calldate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- cdrs view (agent_extension caller/callee doğru atama mantığıyla, bkz. proje geçmişi)
--- DEFINER bilerek belirtilmedi — oluşturan kullanıcı (CURRENT_USER) otomatik atanır,
--- taşınabilirlik için (canlıda root@localhost, fresh bir ortamda farklı olabilir).
+-- cdrs view (with the caller/callee logic of agent_extension, see the project history).
+-- DEFINER is left out on purpose: the creating user (CURRENT_USER) is used, so the dump
+-- loads anywhere (root@localhost on production, another user on a fresh database).
 CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `cdrs` AS select `c`.`id` AS `id`,`c`.`uniqueid` AS `call_id`,`c`.`src` AS `caller_num`,case when `c`.`lastapp` = 'ReceiveFAX' then 'Gelen Faks' when `c`.`lastapp` = 'SendFAX' then 'Giden Faks' when `c`.`lastapp` = 'Queue' then substring_index(`c`.`lastdata`,',',1) when `d`.`title` is not null then `d`.`title` when `c`.`dcontext` = 'from-internal-pbx' then 'Dahili Görüşme' else concat('Gelen Rota: ',`c`.`dst`) end AS `queue_name`,case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end AS `agent_extension`,`u`.`full_name` AS `agent_name`,`c`.`calldate` AS `start_time`,`c`.`calldate` AS `answer_time`,`c`.`calldate` + interval `c`.`duration` second AS `end_time`,`c`.`duration` AS `duration`,`c`.`billsec` AS `billsec`,`c`.`disposition` AS `status`,case when `c`.`userfield` is not null and `c`.`userfield` <> '' then `c`.`userfield` when `c`.`lastapp` = 'ReceiveFAX' then substring_index(`c`.`lastdata`,',',1) else '' end AS `recording_path`,`c`.`calldate` AS `created_at` from ((`asteriskcdr` `c` left join `sys_users` `u` on(`u`.`extension` = case when `c`.`accountcode` is not null and `c`.`accountcode` <> '' and `c`.`accountcode` <> `c`.`src` then `c`.`accountcode` when `c`.`dst` is not null and `c`.`dst` <> '' and `c`.`dst` <> '0' and `c`.`dst` <> `c`.`src` then `c`.`dst` else NULL end)) left join `pbx_dids` `d` on(`d`.`did_number` = `c`.`dst`));
 
 SET FOREIGN_KEY_CHECKS=1;

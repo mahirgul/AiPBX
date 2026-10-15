@@ -48,7 +48,7 @@ $formatDuration = function(int $seconds): string {
             <button type="button" class="btn btn-outline-primary btn-sm" id="btnToggleAllJourneys" onclick="toggleAllQueueJourneys()" title="<?php echo t('queue_logs.btn_expand_all'); ?>" style="<?php echo ($view_mode !== 'grouped' || empty($parsed_logs)) ? 'display: none;' : ''; ?>">
                 <i class="fas fa-layer-group"></i> <span id="toggleAllJourneysText"><?php echo t('queue_logs.btn_expand_all'); ?></span>
             </button>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('qlogHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('qlogHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
 <?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
@@ -114,7 +114,7 @@ $formatDuration = function(int $seconds): string {
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($event_filter) || !empty($agent_filter) || !empty($search_query) || $date_filter !== 'today' || $view_mode !== 'grouped'): ?>
-            <a href="/queue-logs" class="btn btn-secondary btn-sm" title="<?php echo t('common.reset', 'Sıfırla'); ?>"><i class="fas fa-undo"></i></a>
+            <a href="/queue-logs" class="btn btn-secondary btn-sm" title="<?php echo t('common.reset'); ?>"><i class="fas fa-undo"></i></a>
         <?php endif; ?>
     </form>
 
@@ -362,8 +362,8 @@ $formatDuration = function(int $seconds): string {
 
 <script>
 window.QUEUE_LOGS_I18N = {
-    collapse_all: <?php echo json_encode(t('queue_logs.btn_collapse_all', 'Tümünü Daralt')); ?>,
-    expand_all: <?php echo json_encode(t('queue_logs.btn_expand_all', 'Tümünü Genişlet')); ?>
+    collapse_all: <?php echo json_encode(t('queue_logs.btn_collapse_all')); ?>,
+    expand_all: <?php echo json_encode(t('queue_logs.btn_expand_all')); ?>
 };
 </script>
 <script src="<?php echo asset('/assets/js/queue_logs.js'); ?>"></script>

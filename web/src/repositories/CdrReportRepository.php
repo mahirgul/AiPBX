@@ -98,7 +98,7 @@ class CdrReportRepository extends BaseRepository
     }
 
     /**
-     * Ham (un-grouped) CDR listesi.
+     * Raw (un-grouped) CDR list.
      */
     public static function searchRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = ''): array
     {

@@ -25,3 +25,8 @@
     .help-nav { position: static; max-height: none; }
     .help-content { padding: 16px; }
 }
+.help-results-title { font-size: 19px; margin: 0 0 12px; }
+.help-result-doc { font-size: 15px; margin: 16px 0 6px; }
+.help-result-doc a, .help-hits a { color: var(--primary); text-decoration: none; }
+.help-hits { margin: 0 0 8px; padding-left: 18px; }
+.help-hits a:hover, .help-result-doc a:hover { text-decoration: underline; }

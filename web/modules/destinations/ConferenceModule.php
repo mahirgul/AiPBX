@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class ConferenceModule implements PBXDestinationInterface {
     public function getKey(): string { return 'conference'; }
-    public function getName(): string { return '👥 Konferans Odası'; }
+    public function getName(): string { return '👥 ' . \t('dest.conference'); }
 
     public function getOptions(): array {
         $db = \getDB();

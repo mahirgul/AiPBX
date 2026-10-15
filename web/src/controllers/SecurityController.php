@@ -29,7 +29,7 @@ class SecurityController extends BaseController
         if (static::isPost()) {
             $csrf = $_POST['csrf_token'] ?? '';
             if (!verifyCSRFToken($csrf)) {
-                $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $error = t('login.csrf_error');
             } else {
                 $action = $_POST['action'] ?? '';
 
@@ -38,14 +38,14 @@ class SecurityController extends BaseController
                     $secret = trim($_POST['secret'] ?? '');
                     $code = trim($_POST['verify_code'] ?? '');
                     if (empty($secret) || empty($code)) {
-                        $error = t('security.enter_code_error', 'Lütfen authenticator uygulamasındaki 6 haneli kodu girin.');
+                        $error = t('security.enter_code_error');
                     } else {
                         $res = TwoFactorService::enableTwoFactor($userId, $secret, $code);
                         if ($res['success']) {
                             $twoFactorEnabled = true;
                             $newRecoveryCodes = $res['recovery_codes'];
                             unset($_SESSION['pending_2fa_setup_secret']);
-                            $message = t('security.2fa_enabled_success', 'İki faktörlü doğrulama başarıyla aktifleştirildi! Kurtarma kodlarınızı lütfen güvenli bir yere kaydedin.');
+                            $message = t('security.2fa_enabled_success');
                         } else {
                             $error = $res['error'] ?? t('security.err_code');
                         }
@@ -59,7 +59,7 @@ class SecurityController extends BaseController
                     if ($res['success']) {
                         $twoFactorEnabled = false;
                         unset($_SESSION['pending_2fa_setup_secret']);
-                        $message = t('security.2fa_disabled_success', 'İki faktörlü doğrulama devre dışı bırakıldı.');
+                        $message = t('security.2fa_disabled_success');
                     } else {
                         $error = $res['error'] ?? t('common.action_failed');
                     }
@@ -71,7 +71,7 @@ class SecurityController extends BaseController
                     $res = TwoFactorService::regenerateRecoveryCodes($userId, $password);
                     if ($res['success']) {
                         $newRecoveryCodes = $res['recovery_codes'];
-                        $message = t('security.recovery_codes_regen_success', 'Yeni kurtarma kodları üretildi. Eski kurtarma kodları artık geçersizdir.');
+                        $message = t('security.recovery_codes_regen_success');
                     } else {
                         $error = $res['error'] ?? t('common.action_failed');
                     }
@@ -88,11 +88,11 @@ class SecurityController extends BaseController
                     $curHash = $pStmt->fetchColumn();
 
                     if (!password_verify($curPass, $curHash)) {
-                        $error = t('security.wrong_current_password', 'Mevcut şifrenizi hatalı girdiniz.');
+                        $error = t('security.wrong_current_password');
                     } elseif (mb_strlen($newPass) < 8) {
-                        $error = t('security.password_min_length', 'Yeni şifre en az 8 karakter olmalıdır.');
+                        $error = t('security.password_min_length');
                     } elseif ($newPass !== $confPass) {
-                        $error = t('security.password_mismatch', 'Yeni şifreler birbiriyle uyuşmuyor.');
+                        $error = t('security.password_mismatch');
                     } else {
                         $newHash = password_hash($newPass, PASSWORD_DEFAULT);
                         // When the password changes, the sessions on the phones drop too (token_epoch).
@@ -101,7 +101,7 @@ class SecurityController extends BaseController
                         if (function_exists('writeAuditLog')) {
                             writeAuditLog($userId, 'sys_users', $userId, "User '{$user['username']}' changed their web password.", 'password_change');
                         }
-                        $message = t('security.password_changed_success', 'Şifreniz başarıyla güncellendi.');
+                        $message = t('security.password_changed_success');
                     }
                 }
 
@@ -134,7 +134,7 @@ class SecurityController extends BaseController
         $passkeys = PasskeyService::getUserPasskeys($userId);
 
 
-        $page_title = t('security.page_title', 'Güvenlik Ayarları (2FA, Passkey & Google)');
+        $page_title = t('security.page_title');
         static::renderPage('security/index', [
             'user' => $user,
             'twoFactorEnabled' => $twoFactorEnabled,

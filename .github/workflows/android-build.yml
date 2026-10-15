@@ -94,7 +94,7 @@ jobs:
             echo "has_keystore=true" >> $GITHUB_OUTPUT
             echo "Release keystore configured successfully."
           else
-            echo "::error::ANDROID_KEYSTORE_BASE64 secret bulunamadı! Lütfen GitHub repo Settings -> Secrets and variables -> Actions altına ekleyin."
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing. Add it under the repository Settings -> Secrets and variables -> Actions."
             echo "has_keystore=false" >> $GITHUB_OUTPUT
             exit 1
           fi
@@ -150,13 +150,13 @@ jobs:
           fi
 
           if [ -z "$PLAY_KEY_JSON" ]; then
-            echo "::warning::PLAY_STORE_JSON_KEY secret bulunamadı! Google Play Console yüklemesi atlanıyor."
+            echo "::warning::PLAY_STORE_JSON_KEY secret is missing; skipping the Google Play Console upload."
             echo "can_upload=false" >> $GITHUB_OUTPUT
           elif [ "$IS_PUSH" = "true" ] || [ "$INPUT_UPLOAD" = "true" ] || [ -z "$INPUT_UPLOAD" ]; then
-            echo "Google Play yükleme şartları sağlandı -> Upload başlatılacak."
+            echo "Google Play upload requirements met -> uploading."
             echo "can_upload=true" >> $GITHUB_OUTPUT
           else
-            echo "upload_to_play=false seçildiği için yükleme atlanıyor."
+            echo "upload_to_play=false: skipping the upload."
             echo "can_upload=false" >> $GITHUB_OUTPUT
           fi
 

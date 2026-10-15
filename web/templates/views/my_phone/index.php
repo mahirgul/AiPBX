@@ -128,7 +128,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </button>
             <?php if (!$isFaxUser): ?>
             <button type="button" class="btn btn-sm <?php echo $currentTab === 'voicemail' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-voicemail" onclick="switchMyPhoneTab('voicemail')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-voicemail"></i> <?php echo t('my_phone.tab_voicemail', 'Sesli Posta'); ?>
+                <i class="fas fa-voicemail"></i> <?php echo t('my_phone.tab_voicemail'); ?>
                 <span class="badge <?php echo !empty($vmMessages) ? 'badge-danger' : 'badge-secondary'; ?>" style="font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($vmMessages); ?></span>
             </button>
             <?php endif; ?>
@@ -559,7 +559,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     </div>
                 </div>
 
-                <!-- Zil Sesi Seviyesi -->
+                <!-- Ringtone volume -->
                 <div class="form-group u-mb-0">
                     <label class="form-label" style="font-size: 12px; font-weight: 600; display: flex; justify-content: space-between;">
                         <span><i class="fas fa-bell"></i> <?php echo t('phone_settings.field_ring_volume'); ?></span>
@@ -602,7 +602,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
             </div>
 
-            <!-- Kart 4: Mobil Uygulama & Cihaz Bilgileri -->
+            <!-- Card 4: mobile app & device information -->
             <div class="card" style="padding: 24px; border-radius: 14px;">
                 <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                     <span class="u-flex-center">
@@ -674,7 +674,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         <div id="tab-pane-voicemail" class="card" style="display: <?php echo $currentTab === 'voicemail' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
             <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
                 <div class="card-title u-flex-center u-title">
-                    <i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.voicemail_inbox', 'Sesli Posta Kutum'); ?>
+                    <i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.voicemail_inbox'); ?>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
                     <span><i class="fas fa-phone-alt text-info"></i> <?php echo t('my_phone.vm_internal'); ?>: <strong class="badge badge-info u-fs-11">*97</strong></span>

@@ -240,7 +240,7 @@ final class TwoFactorAndPasskeyTest extends TestCase
     }
 
     /**
-     * Passkey CRUD: Listeleme ve silme
+     * Passkey CRUD: listing and deleting
      */
     public function testPasskeyCrud(): void
     {

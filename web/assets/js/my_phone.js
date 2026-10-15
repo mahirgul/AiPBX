@@ -239,7 +239,7 @@ function initMyPhone() {
         loadMyPhoneAudioDevices();
     }
 
-    // WebRTC durumunu softphone ile senkronize et
+    // Keep the WebRTC status in sync with the softphone
     function syncMyPhoneWebrtc() {
         const txt = document.getElementById("my-phone-webrtc-text");
         if (!txt) return;

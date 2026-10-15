@@ -486,7 +486,7 @@ final class SyncGeneratorTest extends TestCase
         $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, extension_type, is_active, role) VALUES ('user_push_none', 'testhash', 'Push None User', ?, 'sip', 1, 'user')")->execute([$ext]);
         $userId = (int)$db->lastInsertId();
 
-        // push_type='none' ve fcm_token=NULL (T-16 durumu)
+        // push_type='none' and fcm_token=NULL (case T-16)
         $db->prepare("INSERT INTO sys_mobile_devices (user_id, extension, fcm_token, push_type, device_id, platform, is_active, created_at, updated_at) VALUES (?, ?, NULL, 'none', 'test_dev_02', 'android', 1, NOW(), NOW())")->execute([$userId, $ext]);
 
         try {

@@ -35,7 +35,7 @@ ob_start(); ?>
             <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
         </a>
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
-            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
+            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey'); ?>
         </button>
         <?php $lang_switch_class = 'inline'; require dirname(__DIR__, 2) . '/auth_lang_switch.php'; ?>
     </div>
@@ -84,17 +84,17 @@ ob_start(); ?>
 <?php if (!$is_mobile_device): ?>
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider', 'VEYA'); ?></span>
+            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider'); ?></span>
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
         </div>
 
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
-            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey', 'Passkey ile Giriş Yap'); ?>
+            <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey'); ?>
         </button>
 <?php elseif (!empty($googleLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled())): ?>
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider', 'VEYA'); ?></span>
+            <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider'); ?></span>
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
         </div>
 <?php endif; ?>
@@ -107,7 +107,7 @@ ob_start(); ?>
                 <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/>
                 <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
             </svg>
-            <span><?php echo t('login.btn_google', 'Google ile Giriş Yap'); ?></span>
+            <span><?php echo t('login.btn_google'); ?></span>
         </a>
         <?php endif; ?>
 

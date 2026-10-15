@@ -8,15 +8,15 @@ use PBX\Destinations\DestinationRegistry;
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.title', 'Şef - Sekreter Grupları'); ?>
+            <i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.title'); ?>
             <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($groups); ?></span>
         </div>
         <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateBsModal()" title="<?php echo t('boss_secretary.new_group_btn', 'Yeni Şef Grubu'); ?>">
+                <button class="btn btn-primary btn-sm" onclick="openCreateBsModal()" title="<?php echo t('boss_secretary.new_group_btn'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -25,12 +25,12 @@ use PBX\Destinations\DestinationRegistry;
 
     <!-- Collapsible Help Box -->
     <div class="module-help-box" id="bsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('boss_secretary.help_title', 'Şef - Sekreter Modülü Nasıl Çalışır?'); ?></h4>
-        <p><?php echo t('boss_secretary.help_body', 'Yöneticilerin doğrudan aranarak rahatsız edilmesini engeller:'); ?></p>
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('boss_secretary.help_title'); ?></h4>
+        <p><?php echo t('boss_secretary.help_body'); ?></p>
         <ul>
-            <li><strong><?php echo t('boss_secretary.help_intercept', 'Arama Yakalama:'); ?></strong> <?php echo t('boss_secretary.help_intercept_desc', 'Dahili veya harici bir arayan şefin numarasını tuşladığında arama otomatik olarak tanımlı sekreter(ler)e aktarılır.'); ?></li>
-            <li><strong><?php echo t('boss_secretary.help_direct', 'Doğrudan Arama:'); ?></strong> <?php echo t('boss_secretary.help_direct_desc', 'Sekreterler ve VIP/Beyaz Listedeki dahililer şefi doğrudan arayabilir.'); ?></li>
-            <li><strong><?php echo t('boss_secretary.help_strategy', 'Çalma Stratejisi:'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc', 'Hepsi Birlikte (Aynı anda çalar, ilk açan bağlanır) veya Sırayla (Belirlenen sırayla teker teker çalar).'); ?></li>
+            <li><strong><?php echo t('boss_secretary.help_intercept'); ?></strong> <?php echo t('boss_secretary.help_intercept_desc'); ?></li>
+            <li><strong><?php echo t('boss_secretary.help_direct'); ?></strong> <?php echo t('boss_secretary.help_direct_desc'); ?></li>
+            <li><strong><?php echo t('boss_secretary.help_strategy'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc'); ?></li>
         </ul>
     </div>
 
@@ -50,7 +50,7 @@ use PBX\Destinations\DestinationRegistry;
             </thead>
             <tbody>
                 <?php if (empty($groups)): ?>
-                    <?php echo uiTableEmptyRow(8, t('boss_secretary.empty', 'Henüz tanımlanmış bir şef-sekreter grubu bulunmuyor.'), 'fa-user-tie'); ?>
+                    <?php echo uiTableEmptyRow(8, t('boss_secretary.empty'), 'fa-user-tie'); ?>
                 <?php else: ?>
                     <?php foreach ($groups as $g): ?>
                         <?php 
@@ -217,7 +217,7 @@ use PBX\Destinations\DestinationRegistry;
                     </label>
                 </div>
 
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('bsModal')", t('common.save', 'Kaydet'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('bsModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>

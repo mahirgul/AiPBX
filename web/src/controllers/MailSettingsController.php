@@ -17,7 +17,7 @@ class MailSettingsController extends BaseController
         $sys_settings = MailSettingsRepository::allSettings();
         $postfix_status = MailSettingsRepository::getPostfixStatus();
 
-        $page_title = t('mail_settings.title', 'E-Posta & Mail Relay Ayarları');
+        $page_title = t('mail_settings.title');
         static::renderPage('mail_settings/index', [
             'settings' => $sys_settings,
             'postfix' => $postfix_status,

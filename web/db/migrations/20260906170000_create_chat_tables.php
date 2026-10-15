@@ -3,13 +3,13 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * AI-PBX Chat, Mesajlasma ve Medya Paylasim Tablolari.
+ * AI-PBX chat: messaging and media sharing tables.
  */
 final class CreateChatTables extends AbstractMigration
 {
     public function up(): void
     {
-        // 1. Konusmalar (Sohbet Odalari)
+        // 1. Conversations (chat rooms)
         if (!$this->hasTable('chat_conversations')) {
             $table = $this->table('chat_conversations', ['collation' => 'utf8mb4_general_ci', 'encoding' => 'utf8mb4']);
             $table->addColumn('type', 'string', ['limit' => 16, 'default' => 'direct', 'null' => false])
@@ -38,7 +38,7 @@ final class CreateChatTables extends AbstractMigration
                   ->create();
         }
 
-        // 3. Mesajlar ve Ekler
+        // 3. Messages and attachments
         if (!$this->hasTable('chat_messages')) {
             $table = $this->table('chat_messages', ['collation' => 'utf8mb4_general_ci', 'encoding' => 'utf8mb4']);
             $table->addColumn('conversation_id', 'integer', ['null' => false])

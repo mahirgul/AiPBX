@@ -67,7 +67,7 @@ class GoogleAuthController extends BaseController
             return;
         }
 
-        // 4. Kodu Token ile Takas Et
+        // 4. Exchange the code for tokens
         $tokenData = GoogleAuthService::exchangeCode($code);
         if (!$tokenData || empty($tokenData['access_token'])) {
             notify(t('google.err_token'), 'danger');

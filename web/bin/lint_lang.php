@@ -95,7 +95,7 @@ if (!empty($missing)) {
     foreach ($missing as $key => $files) {
         $in_tr = array_key_exists($key, $tr) ? 'tr:var' : 'tr:YOK';
         $in_en = array_key_exists($key, $en) ? 'en:var' : 'en:YOK';
-        echo "  - $key ($in_tr, $in_en) — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' dosya daha' : '') . "\n";
+        echo "  - $key ($in_tr, $in_en) — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' more file(s)' : '') . "\n";
     }
     $problems += count($missing);
 }
@@ -103,7 +103,7 @@ if (!empty($missing)) {
 if (!empty($dynamic_prefixes)) {
     echo "\nDynamic key prefixes (t('prefix' . \$var), not checked — " . count($dynamic_prefixes) . "):\n";
     foreach ($dynamic_prefixes as $prefix => $files) {
-        echo "  - {$prefix}* — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' dosya daha' : '') . "\n";
+        echo "  - {$prefix}* — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' more file(s)' : '') . "\n";
     }
 }
 

@@ -38,7 +38,7 @@ if (!$cert['exists']) {
         </button>
     </div>
 
-    <!-- Rehber Kutusu -->
+    <!-- Guide box -->
     <div class="module-help-box" id="teamsHelpBox">
         <h4 style="color: #464775; margin-top: 0;"><i class="fab fa-microsoft"></i> <?php echo t('ms_teams.guide_title'); ?></h4>
         <p style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
@@ -363,7 +363,7 @@ if (!$cert['exists']) {
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKME 4: M365 PowerShell Rehberi          -->
+    <!-- TAB 4: M365 PowerShell guide             -->
     <!-- ========================================== -->
     <div id="tab-powershell" class="teams-tab-pane <?php echo $active_tab === 'powershell' ? 'active' : ''; ?>">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">

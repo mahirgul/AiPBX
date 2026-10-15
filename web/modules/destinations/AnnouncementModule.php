@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class AnnouncementModule implements PBXDestinationInterface {
     public function getKey(): string { return 'announcement'; }
-    public function getName(): string { return '🔊 Sesli Anons'; }
+    public function getName(): string { return '🔊 ' . \t('dest.announcement'); }
 
     public function getOptions(): array {
         $db = \getDB();

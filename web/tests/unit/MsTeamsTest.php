@@ -142,7 +142,7 @@ final class MsTeamsTest extends TestCase
 
     public function testWebhookServiceValidation(): void
     {
-        // Webhook aktifken URL zorunlu
+        // With the webhook on, the URL is required
         $res1 = MsTeamsService::saveWebhookSettings([
             'teams_webhook_enabled' => '1',
             'teams_webhook_url'     => '',

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Üretim ağ politikası (2026-09-05).
+    Production network policy (2026-09-05).
 
-    Koddaki TLS baypasları kaldırıldı; kendinden imzalı / kurumsal sertifika
-    ihtiyacı varsa çözüm buradadır, kodda değil. Üretimde YALNIZCA sistem CA
-    deposu güvenilir sayılır ve şifrelenmemiş (http) trafik yasaktır.
+    The TLS bypasses in the code were removed; when a self-signed or company
+    certificate is needed, the solution belongs here, not in the code. In
+    production ONLY the system CA store is trusted and cleartext (http) traffic
+    is forbidden.
 
-    Debug derlemesi bunu app/src/debug/res/xml altındaki sürümüyle EZER ve
-    kullanıcı CA deposunu da kabul eder. O dosya release paketine GİRMEZ.
+    The debug build OVERRIDES this with its version under app/src/debug/res/xml
+    and also trusts the user CA store. That file is NOT in the release package.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">

@@ -261,10 +261,10 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         ChatWebSocketManager.instance.addListener(this)
         connectChatWs()
 
-        // Periyodik native watchdog'u baslat (2 dakikada bir) (M1, M2)
+        // Start the periodic native watchdog (every 2 minutes) (M1, M2)
         watchdogHandler.postDelayed(watchdogRunnable, WATCHDOG_INTERVAL_MS)
 
-        // AlarmManager tabanli Doze-dayanikli diriltme ve watchdog alarmini kur (§4.3)
+        // Set the AlarmManager watchdog that survives Doze and revives the service (§4.3)
         ResurrectionReceiver.schedule(this, WATCHDOG_INTERVAL_MS)
     }
 
@@ -517,7 +517,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                     }
                 }
 
-                // Fallback: MediaPlayer ile raw veya default uri
+                // Fallback: MediaPlayer with the raw resource or the default URI
                 if (!playedWithRingtone) {
                     mediaPlayer = try {
                         MediaPlayer.create(this, R.raw.ringtone)
@@ -880,7 +880,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         var isServiceRunning: Boolean = false
             private set
 
-        const val WATCHDOG_INTERVAL_MS = 120_000L // 2 dakika (M1, M2 Keepalive & Recovery)
+        const val WATCHDOG_INTERVAL_MS = 120_000L // 2 minutes (M1, M2 keepalive & recovery)
         /** Not registered for longer than this while CONNECTING: the watchdog connects again. */
         const val CONNECTING_TIMEOUT_MS = 45_000L
         const val INITIAL_RECONNECT_DELAY_MS = 3000L // exponential backoff initial delay (M28)

@@ -114,9 +114,9 @@
             pc.addEventListener('connectionstatechange', function() {
                 log("PeerConnection State: " + pc.connectionState);
             });
-            // Toplama SURESI de loglanir: cagri gec basliyorsa ilk bakilacak
-            // yer burasi (2026-09-05'te 4-5 sn / 30 sn gecikme teshisinde
-            // tam olarak bu bilgi eksikti).
+            // The gathering TIME is logged too: when a call starts late, look here
+            // first (exactly this was missing when 4-5 s / 30 s delays were
+            // diagnosed on 2026-09-05).
             var iceGatherT0 = Date.now();
             pc.addEventListener('icegatheringstatechange', function() {
                 var gecen = ((Date.now() - iceGatherT0) / 1000).toFixed(2);
@@ -157,7 +157,7 @@
                 log("Error checking existing receivers: " + err);
             }
 
-            // Standart track event - onaddstream cift atamayla ses kekelemesi yaptigi icin kaldirildi
+            // Standard track event only: onaddstream was removed, attaching the stream twice made the audio stutter
             pc.addEventListener('track', function(event) {
                 log("Received remote audio track: " + event.track.kind + " (enabled=" + event.track.enabled + ", readyState=" + event.track.readyState + ")");
                 var remoteAudio = document.getElementById('remoteAudio');
@@ -186,7 +186,7 @@
             try {
                 var configKey = wsUrl + "|" + sipUsername + "|" + domain;
 
-                // Eğer UA zaten mevcut, aynı ayarlarla çalışıyor ve bağlıysa gereksiz yere stop etme!
+                // If the UA already runs with the same settings and is connected, do not stop it for nothing.
                 if (ua && currentConfigKey === configKey) {
                     if (ua.isConnected && ua.isConnected()) {
                         if (ua.isRegistered && ua.isRegistered()) {
@@ -222,7 +222,7 @@
                         credential: turnPass
                     });
                 }
-                // Genel STUN sunucusu YALNIZCA TURN yokken eklenir (2026-09-05).
+                // The public STUN server is added ONLY when there is no TURN server (2026-09-05).
                 if (!turnVar) {
                     globalIceServers.push({ urls: "stun:stun.l.google.com:19302" });
                 }
@@ -234,7 +234,7 @@
                     password: password,
                     display_name: displayName || sipUsername,
                     register: true,
-                    register_expires: 300, // Mobil NAT tablolarını taze tutmak için 5 dk
+                    register_expires: 300, // 5 min: keeps mobile NAT bindings fresh
                     session_timers: true,
                     session_timers_refresh_method: 'update',
                     connection_recovery_min_interval: 2,
@@ -347,7 +347,7 @@
                     return;
                 }
 
-                // Onceki oturum veya medya kalintisi varsa yeni aramadan once tamamen temizle
+                // Clean up any previous session or media left over before a new call
                 if (currentSession) {
                     log("makeCall: Cleaning up previous session before placing new call");
                     try {
@@ -380,7 +380,7 @@
                         });
                     }
                 }
-                // TURN varsa genel STUN EKLENMEZ — gerekce initUA'daki notta.
+                // With TURN the public STUN server is NOT added; the reason is in the note in initUA.
                 var hasTurn = iceServers.some(function(s) {
                     var u = s.urls;
                     if (!u) return false;
@@ -590,7 +590,7 @@
             return isReg;
         }
 
-        // 30 saniyelik mobil NAT keepalive
+        // Mobile NAT keepalive every 30 seconds
         setInterval(function() {
             try {
                 if (ua && ua.isConnected && ua.isConnected()) {

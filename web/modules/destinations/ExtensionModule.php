@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class ExtensionModule implements PBXDestinationInterface {
     public function getKey(): string { return 'extension'; }
-    public function getName(): string { return '📱 Dahili Abone'; }
+    public function getName(): string { return '📱 ' . \t('dest.extension'); }
 
     public function getOptions(): array {
         $db = \getDB();

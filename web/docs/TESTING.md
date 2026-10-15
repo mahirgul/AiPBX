@@ -1,89 +1,89 @@
-# Test Süreci
+# Testing
 
-## Duman testi
+## Smoke test
 
-Tek komutla "hiçbir şey patlamıyor mu?" kontrolü. Her commit'te otomatik çalışır.
+One command to check that "nothing blows up". It runs on every commit.
 
-    php bin/smoke.php                    # tümü (~18 sn)
-    php bin/smoke.php --only=routes      # sadece sayfa render (~12 sn)
-    php bin/smoke.php --only=rbac        # sadece yetki (~2 sn)
-    php bin/smoke.php --only=conventions # sadece mimari kurallar (<1 sn)
-    php bin/smoke.php --only=lint        # sadece sözdizimi/dil/JS (~4 sn)
-    php bin/smoke.php --route=/queues    # tek bir rota (hata ayıklama)
+    php bin/smoke.php                    # everything (~18 s)
+    php bin/smoke.php --only=routes      # page rendering only (~12 s)
+    php bin/smoke.php --only=rbac        # permissions only (~2 s)
+    php bin/smoke.php --only=conventions # architecture rules only (<1 s)
+    php bin/smoke.php --only=lint        # syntax/language/JS only (~4 s)
+    php bin/smoke.php --route=/queues    # one route (debugging)
 
-Çıkış kodu: `0` temiz, `1` en az bir hata.
+Exit code: `0` clean, `1` at least one error.
 
-### Ne kontrol eder
+### What it checks
 
-| Grup | Kontrol |
+| Group | Check |
 |---|---|
-| **rota** | Her rota TR ve EN'de render ediliyor mu — fatal yok, PHP uyarısı yok, çıktı şaşırtıcı derecede kısa değil, HTML `</html>` ile kapanıyor |
-| **rbac** | Admin-only sayfalar düşük yetkili rolle engelleniyor mu (admin'in aynı sayfayı görebildiği "kanarya" ile birlikte) |
-| **konvansiyon** | 5 mimari kural — ertelenmiş reload, FileHelper, marka, yetki kontrolü, api guard |
-| **lint** | `php -l` (196 dosya), tr/en anahtar simetrisi, JS parantez dengesi |
+| **routes** | Every route renders in TR and EN: no fatal error, no PHP warning, the output is not suspiciously short, the HTML ends with `</html>` |
+| **rbac** | Admin-only pages are blocked for a low-privilege role (with a "canary": admin can see the same page) |
+| **conventions** | 5 architecture rules: deferred reload, FileHelper, branding, permission check, API guard |
+| **lint** | `php -l` (196 files), tr/en key symmetry, JS bracket balance |
 
-Rota listesi `src/routes.php`'den okunur — **yeni sayfa eklendiğinde test kapsamı
-kendiliğinden büyür**, elle liste güncellemek gerekmez.
+The route list is read from `src/routes.php`: **a new page is covered automatically**, no list to
+update by hand.
 
-### Nasıl çalışır
+### How it works
 
-Her rota ayrı bir PHP alt-sürecinde (`bin/_smoke_render.php`) render edilir.
-Ayrı süreç şart: yönlendiren controller'lar `header()+exit` çağırıyor ve `exit`
-tek süreçte koşan bir runner'ı öldürürdü; fatal error'lar da böylece izole olur.
+Every route is rendered in its own PHP subprocess (`bin/_smoke_render.php`). A separate process is
+required: redirecting controllers call `header()+exit`, and `exit` would kill a runner working in a
+single process; fatal errors are isolated this way too.
 
-PHP uyarıları **çıktıda aranmaz**, alt-süreçteki `set_error_handler` ile
-programatik yakalanır — uygulama bilinçli olarak `display_errors=Off` ile
-çalıştığı için uyarılar HTML'e hiç basılmaz.
+PHP warnings are **not searched for in the output**; they are caught programmatically with
+`set_error_handler` in the subprocess. The application runs with `display_errors=Off` on purpose, so
+warnings never reach the HTML.
 
-### Güvenlik
+### Safety
 
-Duman testi yalnızca **okur ve render eder**. Hiçbir POST, servis yazımı,
-Asterisk config üretimi veya reload'u tetiklemez. Bilinen tek yan etki:
-`requireLogin()` → `_touchLastSeen()` admin'in `last_seen_at` alanını günceller.
+The smoke test only **reads and renders**. It triggers no POST, no service write, no Asterisk
+configuration generation or reload. The only known side effect: `requireLogin()` →
+`_touchLastSeen()` updates the admin's `last_seen_at`.
 
-`root` olarak çalıştırılır — `bin/` dizini sertleştirme gereği `drwxr-x--- root:root`.
+It runs as `root`: the `bin/` directory is `drwxr-x--- root:root` for hardening.
 
-## Birim testleri
+## Unit tests
 
     php vendor/bin/phpunit
     php vendor/bin/phpunit --filter SanitizationTest
 
-| Test | Neyi kilitler |
+| Test | What it locks in |
 |---|---|
-| `SanitizationTest` | `toCleanAscii` / `sanitizeDestType` — config injection savunması |
-| `ValidationTest` | firewall/fail2ban IP-CIDR ve korumalı port aralığı doğrulaması |
-| `SyncGeneratorTest` | PJSIP trunk üretecinin çıktısı, enjeksiyon direnci, idempotentliği |
-| `PendingSyncTest` | Ertelenmiş reload sözleşmesi (işaretleme config'e dokunmaz) |
-| `RbacTest` | Yetki yükseltme devre kesicisi — DB'de izin verilse bile admin dışı reddedilir |
+| `SanitizationTest` | `toCleanAscii` / `sanitizeDestType`: defence against configuration injection |
+| `ValidationTest` | firewall/fail2ban IP-CIDR and protected port range validation |
+| `SyncGeneratorTest` | Output of the PJSIP trunk generator, resistance to injection, idempotence |
+| `PendingSyncTest` | Deferred reload contract (marking does not touch the configuration) |
+| `RbacTest` | Privilege escalation breaker: a non-admin is refused even if the database allows it |
 
-Her test dosyası, geçmişte **gerçekten yaşanmış** bir hatanın tekrarlanmasını
-engellemek için yazıldı; başlıklarında olay tarihi var.
+Each test file was written to stop a bug that **really happened** from coming back; the date of the
+incident is in its header.
 
-### İzolasyon
+### Isolation
 
-Testler yalnızca `asterisk_test` veritabanında ve `/tmp/aipbx-test-conf`
-dizininde çalışır. `tests/bootstrap.php` üç kilit kurar:
+Tests run only on the `asterisk_test` database and in `/tmp/aipbx-test-conf`.
+`tests/bootstrap.php` sets three locks:
 
-1. `DB_NAME` `asterisk_test` değilse testler **hiç başlamaz**
-2. `ASTERISK_PBX_DIR` geçici dizine yönlendirilir — canlı `/etc/asterisk`'e yazım yok
-3. `AIPBX_NO_ASTERISK=1` — canlı Asterisk'e CLI komutu (reload dahil) gitmez
+1. If `DB_NAME` is not `asterisk_test`, the tests **do not start at all**
+2. `ASTERISK_PBX_DIR` points to a temporary directory: nothing is written to the live `/etc/asterisk`
+3. `AIPBX_NO_ASTERISK=1`: no CLI command (reload included) goes to a live Asterisk
 
-Üçüncü kilit şart: `syncAllTrunks()` gibi üreteçler `writeConfWithRollback()`
-içinden `pjsip reload` tetikliyor. `SyncGeneratorTest` bu kilitlerin kurulu
-olduğunu ilk iki testinde ayrıca doğrular.
+The third lock is required: generators such as `syncAllTrunks()` trigger `pjsip reload` from
+`writeConfWithRollback()`. `SyncGeneratorTest` checks in its first two tests that these locks are
+set.
 
-## Kurulum (yeni klon / sunucu)
+## Setup (new clone / server)
 
     composer install
-    bash bin/setup-test-db.sh     # asterisk_test veritabanını kurar
-    bash bin/install-hooks.sh     # pre-commit hook'unu kurar
+    bash bin/setup-test-db.sh     # creates the asterisk_test database
+    bash bin/install-hooks.sh     # installs the pre-commit hook
 
-Hook, commit öncesi duman testini ve (test veritabanı kuruluysa) birim
-testlerini koşar; başarısızsa commit'i durdurur. Gerçekten gerekiyorsa
-`git commit --no-verify` ile atlanabilir — ama alışkanlık hâline getirilmemeli.
+The hook runs the smoke test and (when the test database exists) the unit tests before a commit and
+stops the commit when they fail. If really needed it can be skipped with `git commit --no-verify`,
+but do not make it a habit.
 
-## Kapsam dışı (bilerek)
+## Out of scope (on purpose)
 
-Tarayıcı/SPA davranışı, WebRTC ses yolu ve gerçek çağrı/faks akışları otomatik
-test edilmez. Bunlar anlamlı şekilde otomatikleştirilemediği için elle test
-edilmeye devam eder (`pjsua` test istemcileri, gerçek arama/faks denemeleri).
+Browser/SPA behaviour, the WebRTC audio path and real call/fax flows are not tested automatically.
+They cannot be automated in a meaningful way, so they stay manual tests (`pjsua` test clients, real
+calls and faxes).

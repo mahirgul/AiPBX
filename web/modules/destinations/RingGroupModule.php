@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class RingGroupModule implements PBXDestinationInterface {
     public function getKey(): string { return 'ring_group'; }
-    public function getName(): string { return '🔔 Çalma Grubu'; }
+    public function getName(): string { return '🔔 ' . \t('dest.ring_group'); }
 
     public function getOptions(): array {
         $db = \getDB();

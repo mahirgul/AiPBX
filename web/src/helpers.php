@@ -100,8 +100,8 @@ class PBXHelper {
             // for nothing.
             if ($table !== 'sys_users' || !empty($row['extension'])) {
                 markPendingSync($meta['domain'], $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
-                // Pasife alinan bir hedefin numarasi da dialplan'dan dusmeli
-                // (SyncInternalNumbers yalnizca is_active=1 satirlari yazar).
+                // The number of a target that was switched off must leave the dialplan too
+                // (SyncInternalNumbers writes only is_active=1 rows).
                 if (!empty($meta['has_internal_number'])) {
                     $num = DBHelper::fetchColumn("SELECT internal_number FROM {$table} WHERE id = ?", [$id]);
                     if (!empty($num)) {

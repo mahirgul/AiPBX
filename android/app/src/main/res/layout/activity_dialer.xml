@@ -562,7 +562,7 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- ================= PAGE 4: CHAT / MESAJLAR ================= -->
+        <!-- ================= PAGE 4: CHAT / MESSAGES ================= -->
         <LinearLayout
             android:id="@+id/layoutChat"
             android:layout_width="match_parent"
@@ -605,8 +605,8 @@
                         android:textColorHint="@color/text_secondary"
                         android:textSize="13sp" />
 
-                    <!-- Yazısız iki ikon (grup / sohbet) fark edilmiyordu: tek, etiketli
-                         buton; basınca "Bireysel Sohbet / Yeni Grup" menüsü açılır. -->
+                    <!-- Two icons without text (group / chat) went unnoticed: one labelled
+                         button; tapping it opens the "Direct chat / New group" menu. -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChatCreate"
                         android:layout_width="wrap_content"
@@ -627,7 +627,7 @@
                         app:iconTint="#FFFFFF" />
                 </LinearLayout>
 
-                <!-- Chat Filter Chips (Tümü / Bireysel / Gruplar) -->
+                <!-- Chat Filter Chips (All / Direct / Groups) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1001,7 +1001,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ================= PAGE 5: FEATURES / SANTRAL ================= -->
+        <!-- ================= PAGE 5: FEATURES / PBX ================= -->
         <ScrollView
             android:id="@+id/layoutFeatures"
             android:layout_width="match_parent"
@@ -1093,7 +1093,7 @@
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
 
-                        <!-- 1. Her Zaman (Koşulsuz) Yönlendir -->
+                        <!-- 1. Always (unconditional) forward -->
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -1130,7 +1130,7 @@
                                 android:maxLines="1" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <!-- 2. Meşgulken Yönlendir -->
+                        <!-- 2. Forward when busy -->
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -1167,7 +1167,7 @@
                                 android:maxLines="1" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <!-- 3. Cevapsızken Yönlendir -->
+                        <!-- 3. Forward when unanswered -->
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -1378,7 +1378,7 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Sistem & Tanı Logları Kartı -->
+                <!-- System & diagnostic logs card -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -28,7 +28,7 @@ public struct MainTabView: View {
                 }
                 .tag(1)
 
-            // Tab 3: Rehber
+            // Tab 3: Contacts
             ContactsTabView()
                 .tabItem {
                     Image(systemName: "person.2.fill")
@@ -36,7 +36,7 @@ public struct MainTabView: View {
                 }
                 .tag(2)
 
-            // Tab 4: Sohbet
+            // Tab 4: Chat
             ChatTabView()
                 .tabItem {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -45,7 +45,7 @@ public struct MainTabView: View {
                 .badge(totalUnreadMessages > 0 ? "\(totalUnreadMessages)" : nil)
                 .tag(3)
 
-            // Tab 5: Santral
+            // Tab 5: PBX
             SettingsTabView()
                 .tabItem {
                     Image(systemName: "slider.horizontal.3")

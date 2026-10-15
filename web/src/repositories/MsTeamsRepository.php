@@ -115,7 +115,7 @@ class MsTeamsRepository extends BaseRepository
             return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
         }
 
-        // Benzersizlik kontrolleri
+        // Uniqueness checks
         if ($id > 0) {
             $stmt = $db->prepare("SELECT id FROM teams_user_mappings WHERE extension = ? AND id != ?");
             $stmt->execute([$extension, $id]);

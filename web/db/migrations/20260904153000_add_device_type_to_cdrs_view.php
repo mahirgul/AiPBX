@@ -3,7 +3,7 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * cdrs gorunumune device_type (mobil, webrtc, sip) eklenmesi ve sure tutarsizliginin duzeltilmesi.
+ * Adds device_type (mobile, webrtc, sip) to the cdrs view and fixes the inconsistent durations.
  */
 final class AddDeviceTypeToCdrsView extends AbstractMigration
 {

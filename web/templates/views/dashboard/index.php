@@ -22,7 +22,7 @@
                     <i class="fas fa-sync-alt"></i> <span class="btn-label"><?php echo t('dashboard.reload_button'); ?></span>
                 </button>
             </form>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('dashHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('dashHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
         </div>
@@ -113,7 +113,7 @@ window.DASHBOARD_PAGE = {
         <div class="u-fs-26 u-fw-800 u-mt-6 u-text-main"><?php echo $user_count; ?></div>
     </div>
 
-    <!-- Dahililer -->
+    <!-- Extensions -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_extensions'); ?></div>
@@ -135,7 +135,7 @@ window.DASHBOARD_PAGE = {
         <div class="u-fs-26 u-fw-800 u-mt-6 u-success"><?php echo $online_trunk_count; ?> <span class="u-fs-13 u-fw-600 u-muted">/ <?php echo $trunk_count; ?></span></div>
     </div>
 
-    <!-- Gelen Fakslar -->
+    <!-- Incoming faxes -->
     <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_fax_in'); ?></div>
@@ -149,7 +149,7 @@ window.DASHBOARD_PAGE = {
 
 <!-- 3. Server info and service management grid -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
-    <!-- Sunucu Metrikleri -->
+    <!-- Server metrics -->
     <div class="card u-mb-0">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">
@@ -176,7 +176,7 @@ window.DASHBOARD_PAGE = {
         </div>
     </div>
 
-    <!-- Servis Restarts ve Reboot -->
+    <!-- Service restarts and reboot -->
     <div class="card u-mb-0">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">

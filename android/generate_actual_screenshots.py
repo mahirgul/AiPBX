@@ -193,7 +193,7 @@ def make_real_dtmf():
     f_dig = ImageFont.truetype(FONT_BOLD, 46)
     draw.text((85, dty + 26), "DTMF: 1402#", font=f_dig, fill=(56, 189, 248, 255))
 
-    # Gizle Button
+    # Hide button
     draw.rounded_rectangle([W - 230, dty + 20, W - 80, dty + 90], radius=18, fill=(51, 65, 85, 255))
     f_giz = ImageFont.truetype(FONT_BOLD, 24)
     draw_text_center(draw, "Gizle ✖", W - 155, dty + 34, f_giz, (241, 245, 249, 255))

@@ -1,9 +1,9 @@
-# PHPStan statik analiz — CI (.github/workflows/web-ci.yml) her gönderimde çalıştırır.
+# PHPStan static analysis: CI (.github/workflows/web-ci.yml) runs it on every push.
 # Yerelde: vendor/bin/phpstan analyse
 #
-# phpstan-baseline.neon: bu yapılandırma eklendiğinde (2026-09-27) var olan
-# bulgular. CI yalnızca YENİ hatalarda kırmızı olur; baseline zamanla küçültülmeli
-# (bir bulguyu düzelttiğinde `vendor/bin/phpstan analyse --generate-baseline`).
+# phpstan-baseline.neon: the findings that existed when this configuration was
+# added (2026-09-27). CI fails only on NEW errors; shrink the baseline over time
+# (after fixing a finding: `vendor/bin/phpstan analyse --generate-baseline`).
 includes:
     - phpstan-baseline.neon
 
@@ -22,6 +22,6 @@ parameters:
     tmpDir: .phpstan-cache
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        # config.php'deki define() sabitleri çalışma anında /etc/ai-pbx.env'den
-        # okunuyor; PHPStan bunları göremiyor.
+        # The define() constants of config.php are read from /etc/ai-pbx.env at
+        # run time; PHPStan cannot see them.
         - identifier: constant.notFound

@@ -47,7 +47,7 @@ foreach ($directory as $contact) {
     $mobWebrtcStatus = $pjsipStatuses["{$cExt}-mob-webrtc"] ?? 'Unavailable';
     $isChatOnline = isset($chatOnline[$cExt]);
 
-    // Durum belirleme: SIP, WebRTC veya Sohbetten herhangi birinde aktifse 'online'
+    // Status: 'online' when active on any of SIP, WebRTC or chat
     $isOnline = ($sipStatus === 'Not in use' || $sipStatus === 'In use' ||
                  $webrtcStatus === 'Not in use' || $webrtcStatus === 'In use' ||
                  $mobWebrtcStatus === 'Not in use' || $mobWebrtcStatus === 'In use' ||

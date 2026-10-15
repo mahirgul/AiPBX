@@ -162,6 +162,8 @@ function getModuleKeyForPage($page = null) {
         'fail2ban.php'              => 'fail2ban',
         'certificates.php'          => 'certificates',
         'system_update.php'         => 'system_update',
+        // Admin → Help (system guide): admins only (HelpController), listed with System update.
+        'help.php'                  => 'system_update',
         'push_settings.php'         => 'push_settings',
         'ms_teams.php'              => 'ms_teams',
         'web_widgets.php'           => 'web_widgets',

@@ -161,7 +161,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
     private var isRingbackPlaying = false
 
     private fun startRingback() {
-        // Yalnizca giden cagri baglanirken/calarken calar; aktif gorusmede veya gelen cagrida calmaz
+        // Plays only while an outgoing call connects/rings; never during a call or for an incoming call
         val status = pbxService?.engine?.currentCallStatus
         if (status == CallStatus.ACTIVE || status == CallStatus.RINGING_INCOMING || status == CallStatus.ENDED || status == CallStatus.IDLE) {
             return
@@ -232,7 +232,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                 )
             }
 
-            // Audio Focus alindiktan HEMEN SONRA ses rotasi uygulanir (Varsayilan daima AHIZE!)
+            // The audio route is applied RIGHT AFTER audio focus is granted (default is always the EARPIECE)
             applyAudioRouting(false)
         } catch (e: Exception) {
             Log.e("CallActivity", "Error requesting audio focus", e)
@@ -295,7 +295,7 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
                         it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
                         it.type == AudioDeviceInfo.TYPE_USB_HEADSET
                     } ?:
-                    // 3. Dahili ahize
+                    // 3. Built-in earpiece
                     available.firstOrNull {
                         it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
                     }

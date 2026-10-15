@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class TimeConditionModule implements PBXDestinationInterface {
     public function getKey(): string { return 'time_condition'; }
-    public function getName(): string { return '⏰ Zaman Koşulu'; }
+    public function getName(): string { return '⏰ ' . \t('dest.time_condition'); }
 
     public function getOptions(): array {
         $db = \getDB();
