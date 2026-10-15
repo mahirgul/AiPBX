@@ -1,6 +1,6 @@
 <?php
 /** @var string $csrf @var array $settings @var string $status @var array $interfaces @var array $leases
- *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus */
+ *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus @var string $syslogStatus */
 $mode = $settings['netsvc_mode'];
 // Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
 $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
@@ -45,6 +45,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_ftp_desc'); ?></span>
                 <?php if ($settings['netsvc_ftp'] === '1'): ?>
                     <span class="badge <?php echo $ftpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $ftpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                <?php endif; ?>
+            </label>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <input type="checkbox" name="netsvc_syslog" value="1" class="u-accent netsvc-switch" id="netsvc_syslog_on" <?php echo $settings['netsvc_syslog'] === '1' ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.switch_syslog'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_syslog_desc'); ?> <a href="/phone-logs"><?php echo t('sidebar.item_phone_logs'); ?></a></span>
+                <?php if ($settings['netsvc_syslog'] === '1'): ?>
+                    <span class="badge <?php echo $syslogStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $syslogStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
                 <?php endif; ?>
             </label>
         </div>

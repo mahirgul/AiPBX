@@ -1,0 +1,121 @@
+#!/usr/bin/python3 -I
+"""AiPBX phone log receiver (unit aipbx-syslog; PBX -> Phone logs).
+
+Desk phones send their log as syslog over UDP 514. This writes one line per
+message to /var/log/aipbx-phones/phones.log:
+
+    2026-10-15T11:10:01+03:00 10.12.3.90 err <message as sent, without <PRI>>
+
+- Only senders in the allowed networks (net= lines of the configuration that
+  `aipbx-priv netsvc syslog-on` writes) are accepted: the firewall opens the
+  port to the same networks, this is the second fence.
+- Control characters become spaces and a message is cut at 2000 characters,
+  so a line is always one line of text.
+- At most RATE messages per second are written; the rest is counted and
+  reported in one line ("dropped N messages").
+- The file is rotated at MAX_BYTES (phones.log.1 .. .KEEP), so the log never
+  takes more than about MAX_BYTES * (KEEP + 1).
+
+Runs as the system user aipbx-syslog (group www-data, so the portal can read
+the file) with only CAP_NET_BIND_SERVICE. Standard library only.
+"""
+import ipaddress
+import os
+import socket
+import sys
+import time
+
+CONF = "/var/lib/aipbx-netsvc/syslog.conf"
+LOG = "/var/log/aipbx-phones/phones.log"
+MAX_BYTES = 20 * 1024 * 1024
+KEEP = 4
+RATE = 500
+MAX_MSG = 2000
+SEVERITY = ("emerg", "alert", "crit", "err", "warning", "notice", "info", "debug")
+_CTRL = {c: " " for c in list(range(0, 32)) + [127]}
+
+
+def load_networks(path=CONF):
+    nets = []
+    with open(path, encoding="ascii") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("net="):
+                nets.append(ipaddress.ip_network(line[4:], strict=False))
+    return nets
+
+
+def allowed(ip, nets):
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return any(addr in n for n in nets)
+
+
+def format_line(data, ip, now=None):
+    """The log line of one datagram (with its newline)."""
+    text = data.decode("utf-8", errors="replace")
+    sev = "-"
+    if text.startswith("<"):
+        end = text.find(">", 1, 5)
+        if end > 1 and text[1:end].isdigit():
+            sev = SEVERITY[int(text[1:end]) % 8]
+            text = text[end + 1:]
+    text = " ".join(text.translate(_CTRL).split())[:MAX_MSG]
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(now))
+    stamp = stamp[:-2] + ":" + stamp[-2:]
+    return f"{stamp} {ip} {sev} {text}\n"
+
+
+class LogFile:
+    def __init__(self, path=LOG, max_bytes=MAX_BYTES, keep=KEEP):
+        self.path, self.max_bytes, self.keep = path, max_bytes, keep
+        self.f = None
+        self.open()
+
+    def open(self):
+        self.f = open(self.path, "a", encoding="utf-8")
+        os.chmod(self.path, 0o640)
+
+    def write(self, line):
+        self.f.write(line)
+        self.f.flush()
+        if self.f.tell() >= self.max_bytes:
+            self.rotate()
+
+    def rotate(self):
+        self.f.close()
+        for i in range(self.keep, 0, -1):
+            src = self.path if i == 1 else f"{self.path}.{i - 1}"
+            if os.path.exists(src):
+                os.replace(src, f"{self.path}.{i}")
+        self.open()
+
+
+def main():
+    nets = load_networks()
+    if not nets:
+        sys.exit("no net= in " + CONF)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", 514))
+    log = LogFile()
+    second, count, dropped = 0, 0, 0
+    while True:
+        data, (ip, _port) = sock.recvfrom(8192)
+        if not allowed(ip, nets):
+            continue
+        now = int(time.time())
+        if now != second:
+            if dropped:
+                log.write(format_line(f"<12>aipbx-syslogd: dropped {dropped} messages (more than {RATE}/s)".encode(), "-", second))
+            second, count, dropped = now, 0, 0
+        count += 1
+        if count > RATE:
+            dropped += 1
+            continue
+        log.write(format_line(data, ip))
+
+
+if __name__ == "__main__":
+    main()

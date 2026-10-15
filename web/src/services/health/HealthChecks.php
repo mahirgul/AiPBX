@@ -220,7 +220,8 @@ final class HealthChecks
     {
         $mode = (string) getSystemSetting('netsvc_mode', 'off');
         $ftp = getSystemSetting('netsvc_ftp', '0') === '1';
-        if ($mode === 'off' && !$ftp) {
+        $syslog = getSystemSetting('netsvc_syslog', '0') === '1';
+        if ($mode === 'off' && !$ftp && !$syslog) {
             return ['off', t('health.msg_netsvc_off')];
         }
         $down = [];
@@ -229,6 +230,9 @@ final class HealthChecks
         }
         if ($ftp && trim(self::sh('systemctl is-active aipbx-vsftpd')) !== 'active') {
             $down[] = 'FTP';
+        }
+        if ($syslog && trim(self::sh('systemctl is-active aipbx-syslog')) !== 'active') {
+            $down[] = 'Syslog';
         }
         return $down ? ['fail', sprintf(t('health.msg_netsvc_down'), implode(', ', $down))] : ['ok', t('health.msg_netsvc_ok')];
     }

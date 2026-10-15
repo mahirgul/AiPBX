@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.27.0
+
+- **Phone logs** (*PBX → Phone logs*): desk phones' syslog, received on this server
+  and followed live in the browser. Filter by **IP or MAC address** (a MAC finds every
+  address the phone was seen at; NEC phones name their MAC in each line), by text and
+  by level. Switch the receiver on under *Network services → Syslog (phone logs)*: UDP
+  514 is opened to the provisioning allowed networks only. Set this server as *Syslog
+  server* under *Phones → Provisioning settings* (written to NEC phones).
+- The log is kept in `/var/log/aipbx-phones/` (about 100 MB at most); the health check
+  reports a stopped receiver.
+- See [Network services → Syslog](docs/network-services.md#syslog-phone-logs).
+
 ## 1.26.0
 
 - **NEC phone files rebuilt on NEC's template:** a DT710 rejected AiPBX's file as a

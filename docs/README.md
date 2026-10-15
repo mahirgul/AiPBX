@@ -21,7 +21,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 | [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, multiple PBXes with different number formats |
 | [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
 | [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, key layouts (BLF, speed dial, park), re-provision |
-| [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server |
+| [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, phone logs (syslog) by IP or MAC |
 | [Health checks](health.md) | The server watches itself (services, trunks, disk, certificate, backup …), alarm e-mails, the daily summary with yesterday's calls, `aipbx-selftest` |
 | [Website call widget](web-widgets.md) | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
 | [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
