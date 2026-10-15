@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.69",
+  "version": "1.0.70",
   "notes": {
-    "en-US": "More reliable incoming calls: after the PBX restarts or the phone sleeps, the app now connects again by itself instead of staying offline until it is opened. Video calls (1.0.68): a button hides the call buttons so you see the whole picture.",
-    "tr-TR": "Gelen aramalar daha güvenilir: santral yeniden başladığında ya da telefon uykudayken uygulama, açılana kadar çevrimdışı kalmak yerine kendiliğinden yeniden bağlanır. Görüntülü görüşme (1.0.68): bir düğme arama tuşlarını gizler, görüntünün tamamı görünür."
+    "en-US": "Fix: after a video call the phone could stop receiving calls until the app was restarted. The app now keeps its connection and repairs itself if it gets stuck. Video calls: answer with video straight from the notification, and a video button in the call history.",
+    "tr-TR": "Düzeltme: görüntülü görüşmeden sonra telefon, uygulama yeniden başlatılana kadar arama almayabiliyordu. Uygulama artık bağlantısını korur, takılırsa kendini onarır. Görüntülü arama: bildirimden doğrudan görüntülü cevap ve arama geçmişinde video düğmesi."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
