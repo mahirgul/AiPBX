@@ -630,4 +630,20 @@ final class PhoneProvisionTest extends TestCase
         }
         $this->assertSame($before, [PhoneProvisionService::sipServer(), PhoneProvisionService::baseUrl()]);
     }
+
+    public function testPreviewHidesPasswordsUnlessRevealed(): void
+    {
+        $files = PhoneProvisionService::previewFiles($this->addPhone('001565aabbcc', 'yealink-t46u'));
+        $this->assertSame('001565aabbcc.cfg', $files[0]['name']);
+        $this->assertStringContainsString('account.1.user_name = ' . self::EXT, $files[0]['content']);
+        $this->assertStringNotContainsString(self::$sipPassword, $files[0]['content']);
+        $this->assertStringContainsString('••••••••', $files[0]['content']);
+        $shown = PhoneProvisionService::previewFiles($this->addPhone('001565aabbcc', 'yealink-t46u'), true);
+        $this->assertStringContainsString(self::$sipPassword, $shown[0]['content']);
+        // Poly: both files; a phone without a user gets none.
+        $poly = PhoneProvisionService::previewFiles($this->addPhone('0004f2aabbcc', 'poly-vvx450'));
+        $this->assertSame(['0004f2aabbcc.cfg', 'phone0004f2aabbcc.cfg'], array_column($poly, 'name'));
+        $id = PhoneProvisionService::upsertPhone(0, '001565aabbdd', 'yealink-t46u', 0);
+        $this->assertNull(PhoneProvisionService::previewFiles(PhoneProvisionService::getPhone($id)));
+    }
 }
