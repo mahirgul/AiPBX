@@ -80,7 +80,7 @@ class DocsService
                         continue 2;
                     }
                 }
-                $hits[] = ['line' => trim($line), 'anchor' => $anchor];
+                $hits[] = ['line' => self::plain($line), 'anchor' => $anchor];
                 if (count($hits) >= $maxPerDoc) {
                     break;
                 }
@@ -90,6 +90,18 @@ class DocsService
             }
         }
         return $out;
+    }
+
+    /** A Markdown line as plain text for search results: no markers, table cells joined. */
+    public static function plain(string $line): string
+    {
+        $line = trim($line);
+        if (str_starts_with($line, '|')) {
+            $line = implode(' — ', array_filter(self::cells($line), fn($c) => $c !== ''));
+        }
+        $line = (string) preg_replace('/\[([^\]]+)\]\([^)]*\)/', '$1', $line);
+        $line = (string) preg_replace('/^(#{1,6}|[-*+]|\d+[.)]|>)\s+/', '', $line);
+        return trim(str_replace(['**', '`'], '', $line));
     }
 
     /** First "# " heading of a file. */

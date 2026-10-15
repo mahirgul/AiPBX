@@ -51,22 +51,22 @@ final class Fixtures
         }
         $db->exec('SET FOREIGN_KEY_CHECKS=1');
 
-        // Trunk — zorunlu kolonlar: trunk_name, title, ip_address.
+        // Trunk: required columns trunk_name, title, ip_address.
         $db->prepare(
             'INSERT INTO pbx_trunks
                 (trunk_name, title, ip_address, port, codecs, is_active, t38_support, send_caller_name)
              VALUES (?, ?, ?, ?, ?, 1, 1, 0)'
         )->execute([self::TRUNK_NAME, 'Test Trunk', '192.0.2.10', 5060, 'alaw,ulaw']);
 
-        // Kuyruk — zorunlu kolonlar: queue_name, title.
+        // Queue: required columns queue_name, title.
         $db->prepare(
             'INSERT INTO pbx_queues (queue_name, title, strategy, is_active) VALUES (?, ?, ?, 1)'
         )->execute([self::QUEUE_NAME, 'Test Queue', 'ringall']);
 
-        // IVR — zorunlu kolon: title.
+        // IVR: required column title.
         $db->prepare('INSERT INTO pbx_ivrs (title) VALUES (?)')->execute(['Test IVR']);
 
-        // DID — zorunlu kolonlar: did_number, title, dest_type, dest_id.
+        // DID: required columns did_number, title, dest_type, dest_id.
         $queueId = (int) $db->query(
             'SELECT id FROM pbx_queues WHERE queue_name = ' . $db->quote(self::QUEUE_NAME)
         )->fetchColumn();
@@ -83,7 +83,7 @@ final class Fixtures
              VALUES (?, ?, ?, ?, 1)'
         )->execute(['testbusy', 'Test Mesgul', 'busy', '1020']);
 
-        // Giden rota — zorunlu kolonlar: route_name, match_pattern, trunks_json
+        // Outbound route: required columns route_name, match_pattern, trunks_json
         $db->prepare(
             'INSERT INTO pbx_outbound_routes (route_name, match_pattern, trunks_json, is_internal, route_group, is_active)
              VALUES (?, ?, ?, 0, 1, 1)'

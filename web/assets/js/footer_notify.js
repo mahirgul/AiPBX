@@ -126,7 +126,7 @@
     }
 
     /**
-     * Toast Bildirimini Animasyonla Kapatma
+     * Closes the toast notification with an animation
      */
     function dismissToast(el) {
         if (!el || el.classList.contains('toast-leaving')) return;

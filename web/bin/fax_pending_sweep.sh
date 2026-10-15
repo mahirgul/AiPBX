@@ -24,7 +24,7 @@ else
 fi
 
 # Asterisk call-file worst-case suresi: (MaxRetries+1) * RetryTime + WaitTime.
-# fax_max_retries dinamik olabildiginden guvenli bir sabit esik (15 dk) kullanilir.
+# fax_max_retries can change, so a safe fixed threshold (15 min) is used.
 STALE_MINUTES=15
 
 STALE_IDS=$($MYSQL_CMD -e "SELECT id FROM fax_sent WHERE status = 'PENDING' AND created_at < DATE_SUB(NOW(), INTERVAL $STALE_MINUTES MINUTE);" 2>/dev/null)
@@ -36,5 +36,5 @@ fi
 echo "$STALE_IDS" | while IFS= read -r id; do
     [ -z "$id" ] && continue
     $MYSQL_CMD -e "UPDATE fax_sent SET status = 'FAILED', error_message = 'Hedef cevap vermedi / zaman asimi (otomatik kapatildi)', completed_at = NOW() WHERE id = $id AND status = 'PENDING';" 2>/dev/null
-    log "FAX #$id: PENDING -> FAILED (>${STALE_MINUTES}dk cevapsiz, otomatik kapatildi)"
+    log "FAX #$id: PENDING -> FAILED (no answer for >${STALE_MINUTES} min, closed automatically)"
 done

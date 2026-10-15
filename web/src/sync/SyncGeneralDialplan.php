@@ -156,11 +156,11 @@ function __syncGeneralDialplanBody() {
     // Why it is built this way: group 1 stays untouched, so nothing changes
     // on installs without groups or for the Local/...@from-internal-pbx calls
     // in the queues.
-    $gruplar = getDB()->query(
+    $groups = getDB()->query(
         "SELECT DISTINCT route_group FROM pbx_outbound_routes WHERE is_active = 1 AND route_group <> 1 ORDER BY route_group"
     )->fetchAll(PDO::FETCH_COLUMN);
 
-    foreach ($gruplar as $g) {
+    foreach ($groups as $g) {
         $g = intval($g);
         if ($g <= 1) continue;
         $conf .= "; Users of outbound route group {$g}\n";

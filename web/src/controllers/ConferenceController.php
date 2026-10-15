@@ -22,7 +22,7 @@ class ConferenceController extends BaseController
 
         $conferences = ConferenceService::getConferences();
 
-        $page_title = t('conferences.title', 'Konferans Odaları');
+        $page_title = t('conferences.title');
         static::renderPage('conferences/index', [
             'conferences' => $conferences,
         ], ['title' => $page_title] + $notices);

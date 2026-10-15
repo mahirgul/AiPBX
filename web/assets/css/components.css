@@ -1530,7 +1530,7 @@ body.auth-body > .auth-cards {
         display: none;
     }
 
-    /* Cevapla/Reddet/Beklet/Aktar/Kapat: mobilde sadece ikon, metin gizli */
+    /* Answer/Reject/Hold/Transfer/Hang up: icon only on mobile, text hidden */
     .topbar-btn-label {
         display: none;
     }

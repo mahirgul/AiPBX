@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class HangupModule implements PBXDestinationInterface {
     public function getKey(): string { return 'hangup'; }
-    public function getName(): string { return '🛑 Çağrı Sonlandır'; }
+    public function getName(): string { return '🛑 ' . \t('dest.hangup'); }
 
     public function getOptions(): array {
         $options = [];
@@ -30,16 +30,16 @@ class HangupModule implements PBXDestinationInterface {
         } catch (\Exception $e) {
             // Fallback default options
             $options = [
-                ['id' => 'hangup', 'name' => '🛑 Hemen Kapat'],
-                ['id' => 'busy', 'name' => '🚫 Meşgul Tonu Ver'],
-                ['id' => 'congestion', 'name' => '⚠️ Şebeke Meşgul']
+                ['id' => 'hangup', 'name' => '🛑 ' . \t('dest.hangup_now')],
+                ['id' => 'busy', 'name' => '🚫 ' . \t('dest.hangup_busy')],
+                ['id' => 'congestion', 'name' => '⚠️ ' . \t('dest.hangup_congestion')]
             ];
         }
 
         return !empty($options) ? $options : [
-            ['id' => 'hangup', 'name' => '🛑 Hemen Kapat'],
-            ['id' => 'busy', 'name' => '🚫 Meşgul Tonu Ver'],
-            ['id' => 'congestion', 'name' => '⚠️ Şebeke Meşgul']
+            ['id' => 'hangup', 'name' => '🛑 ' . \t('dest.hangup_now')],
+            ['id' => 'busy', 'name' => '🚫 ' . \t('dest.hangup_busy')],
+            ['id' => 'congestion', 'name' => '⚠️ ' . \t('dest.hangup_congestion')]
         ];
     }
 

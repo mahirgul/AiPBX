@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class IVRModule implements PBXDestinationInterface {
     public function getKey(): string { return 'ivr'; }
-    public function getName(): string { return '🎙️ IVR Menüsü'; }
+    public function getName(): string { return '🎙️ ' . \t('dest.ivr'); }
 
     public function getOptions(): array {
         $db = \getDB();

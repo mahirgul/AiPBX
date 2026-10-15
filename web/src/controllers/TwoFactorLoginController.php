@@ -41,12 +41,12 @@ class TwoFactorLoginController extends BaseController
             // code without limit. The same IP/user lockout as the web login.
             if (checkBruteForceLockout($clientIp, $user['username'])) {
                 unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);
-                notify(t('login.too_many_attempts', 'Çok fazla hatalı deneme yapıldı. Lütfen 15 dakika sonra tekrar deneyin.'), 'danger');
+                notify(t('login.too_many_attempts'), 'danger');
                 static::redirect('/login');
                 return;
             }
             if (!verifyCSRFToken($csrf)) {
-                $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.');
+                $error = t('login.csrf_error');
             } else {
                 $authMode = $_POST['auth_mode'] ?? 'totp';
                 $isValid = false;
@@ -54,22 +54,22 @@ class TwoFactorLoginController extends BaseController
                 if ($authMode === 'recovery') {
                     $recoveryCode = trim($_POST['recovery_code'] ?? '');
                     if (empty($recoveryCode)) {
-                        $error = t('login_2fa.enter_recovery_code', 'Lütfen kurtarma kodunu girin.');
+                        $error = t('login_2fa.enter_recovery_code');
                     } else {
                         $isValid = TwoFactorService::verifyAndConsumeRecoveryCode($userId, $recoveryCode);
                         if (!$isValid) {
-                            $error = t('login_2fa.invalid_recovery_code', 'Geçersiz veya daha önce kullanılmış kurtarma kodu!');
+                            $error = t('login_2fa.invalid_recovery_code');
                         }
                     }
                 } else {
                     $totpCode = trim($_POST['totp_code'] ?? '');
                     if (empty($totpCode) || strlen($totpCode) !== 6) {
-                        $error = t('login_2fa.enter_valid_totp', 'Lütfen 6 haneli doğrulama kodunu eksiksiz girin.');
+                        $error = t('login_2fa.enter_valid_totp');
                     } else {
                         $secret = $user['two_factor_secret'] ?? '';
                         $isValid = TwoFactorService::verifyCode($secret, $totpCode);
                         if (!$isValid) {
-                            $error = t('login_2fa.invalid_totp_code', 'Hatalı veya süresi dolmuş doğrulama kodu! Lütfen telefonunuzdaki güncel kodu girin.');
+                            $error = t('login_2fa.invalid_totp_code');
                         }
                     }
                 }
@@ -109,7 +109,7 @@ class TwoFactorLoginController extends BaseController
                     $_SESSION['pending_2fa_failures'] = ($_SESSION['pending_2fa_failures'] ?? 0) + 1;
                     if ($_SESSION['pending_2fa_failures'] >= 5) {
                         unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name'], $_SESSION['pending_2fa_failures']);
-                        notify(t('login_2fa.too_many_failures', 'Çok fazla hatalı doğrulama kodu girildi. Lütfen yeniden giriş yapın.'), 'danger');
+                        notify(t('login_2fa.too_many_failures'), 'danger');
                         static::redirect('/login');
                         return;
                     }
@@ -141,6 +141,6 @@ class TwoFactorLoginController extends BaseController
             'site_logo_image_dark' => $site_logo_image_dark,
             'site_logo_wide' => $site_logo_wide,
             'site_favicon_url' => $site_favicon_url,
-        ], ['title' => t('login_2fa.page_title', 'İki Faktörlü Doğrulama')]);
+        ], ['title' => t('login_2fa.page_title')]);
     }
 }

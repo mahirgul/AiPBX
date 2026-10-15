@@ -44,7 +44,7 @@ class TimeConditionService {
             if (empty($title)) throw new \Exception(t('srv_tc.err_title'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
-            $eski_numara = (string) (DBHelper::fetchColumn(
+            $old_number = (string) (DBHelper::fetchColumn(
                 "SELECT internal_number FROM pbx_time_conditions WHERE id = ?", [$tc_id]
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'time_condition', $tc_id);
@@ -65,8 +65,8 @@ class TimeConditionService {
             ]);
 
             markPendingSync('time_conditions', 'time_condition', $id, "Time condition: {$title}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
-            if ($internal_number !== $eski_numara) {
+            // When a number was added, changed or removed, the internal targets context must be rebuilt too.
+            if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'time_condition', $id,
                     "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
@@ -80,12 +80,12 @@ class TimeConditionService {
         return PBXHelper::handleAction($csrf_token, function() use ($tc_id) {
             $tc_id = intval($tc_id);
             $tc_title = DBHelper::fetchColumn("SELECT title FROM pbx_time_conditions WHERE id = ?", [$tc_id]);
-            $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_time_conditions WHERE id = ?", [$tc_id]) ?? '');
+            $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_time_conditions WHERE id = ?", [$tc_id]) ?? '');
             DBHelper::delete('pbx_time_conditions', 'id', $tc_id);
             markPendingSync('time_conditions', 'time_condition', $tc_id, "Time condition: " . ($tc_title ?: $tc_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
-            if ($silinen_numara !== '') {
+            if ($removed_number !== '') {
                 markPendingSync('internal_numbers', 'time_condition', $tc_id,
-                    "Internal number removed: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$removed_number}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 

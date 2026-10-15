@@ -30,7 +30,7 @@ class ForceResetService {
         }
 
         $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', time() + 1800); // 30 dakika
+        $expires = date('Y-m-d H:i:s', time() + 1800); // 30 minutes
         $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?');
         $upd->execute([$token, $expires, $user_id]);
 

@@ -1,6 +1,6 @@
 {
     "name": "ai-pbx/portal",
-    "description": "AI PBX — Santral, Faks & Çağrı Merkezi Portalı",
+    "description": "AI PBX — PBX, fax & call center portal",
     "type": "project",
     "license": "MIT",
     "authors": [

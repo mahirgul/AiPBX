@@ -89,7 +89,7 @@ func TestHandleUploadRejectsDisallowedFiles(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("Expected 400 Bad Request for .html upload, got %d", rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "Desteklenmeyen dosya uzantısı") {
+	if !strings.Contains(rr.Body.String(), "Unsupported file extension") {
 		t.Fatalf("Unexpected response body: %s", rr.Body.String())
 	}
 

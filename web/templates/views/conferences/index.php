@@ -7,15 +7,15 @@
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.title', 'Konferans Odaları (ConfBridge)'); ?>
+            <i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.title'); ?>
             <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($conferences); ?></span>
         </div>
         <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('conferences', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateConfModal()" title="<?php echo t('conferences.new_conf_btn', 'Yeni Konferans Odası'); ?>">
+                <button class="btn btn-primary btn-sm" onclick="openCreateConfModal()" title="<?php echo t('conferences.new_conf_btn'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -24,12 +24,12 @@
 
     <!-- Collapsible Help Box -->
     <div class="module-help-box" id="confHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title', 'Konferans Odaları Nasıl Çalışır?'); ?></h4>
-        <p><?php echo t('conferences.help_body', 'Konferans odaları, dahili ve harici arayanların aynı anda bağlanarak toplu görüşme yapmasını sağlar.'); ?></p>
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title'); ?></h4>
+        <p><?php echo t('conferences.help_body'); ?></p>
         <ul>
-            <li><strong><?php echo t('conferences.help_pins', 'Kullanıcı ve Yönetici PIN:'); ?></strong> <?php echo t('conferences.help_pins_desc', 'PIN tanımlanırsa arayanlardan PIN istenir. Yönetici PIN ile girenler lider yetkisi kazanır.'); ?></li>
-            <li><strong><?php echo t('conferences.help_wait_leader', 'Lideri Bekle:'); ?></strong> <?php echo t('conferences.help_wait_leader_desc', 'Aktif edilirse, bir yönetici odaya girene kadar katılımcılar bekleme müziği dinler, görüşme lider gelince başlar.'); ?></li>
-            <li><strong><?php echo t('conferences.help_live_ctrl', 'Canlı Denetim:'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc', 'Aktif katılımcıları canlı izleyebilir, istediklerinizi sessize alabilir (Mute) veya odadan atabilirsiniz (Kick).'); ?></li>
+            <li><strong><?php echo t('conferences.help_pins'); ?></strong> <?php echo t('conferences.help_pins_desc'); ?></li>
+            <li><strong><?php echo t('conferences.help_wait_leader'); ?></strong> <?php echo t('conferences.help_wait_leader_desc'); ?></li>
+            <li><strong><?php echo t('conferences.help_live_ctrl'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc'); ?></li>
         </ul>
     </div>
 
@@ -49,7 +49,7 @@
             </thead>
             <tbody>
                 <?php if (empty($conferences)): ?>
-                    <?php echo uiTableEmptyRow(8, t('conferences.empty', 'Henüz tanımlanmış bir konferans odası bulunmuyor.'), 'fa-users-rectangle'); ?>
+                    <?php echo uiTableEmptyRow(8, t('conferences.empty'), 'fa-users-rectangle'); ?>
                 <?php else: ?>
                     <?php foreach ($conferences as $cf): ?>
                         <tr>
@@ -232,7 +232,7 @@
                     </label>
                 </div>
 
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('confModal')", t('common.save', 'Kaydet'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('confModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>

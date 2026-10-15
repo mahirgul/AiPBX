@@ -67,7 +67,7 @@ class QueueService {
             if (empty($queue_name)) throw new \Exception(t('srv_queue.err_name'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
-            $eski_numara = (string) (DBHelper::fetchColumn(
+            $old_number = (string) (DBHelper::fetchColumn(
                 "SELECT internal_number FROM pbx_queues WHERE id = ?", [$queue_id]
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'queue', $queue_id);
@@ -115,8 +115,8 @@ class QueueService {
             // presses Apply on the "Apply" page (2026-08-24, deferred reload
             // system). The real regen+reload: applyPendingSync().
             markPendingSync('queues', 'queue', $queue_name, "Queue: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
-            if ($internal_number !== $eski_numara) {
+            // When a number was added, changed or removed, the internal targets context must be rebuilt too.
+            if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'queue', $id,
                     "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
@@ -157,12 +157,12 @@ class QueueService {
                 }
                 QueueHelper::deleteDetails($q_name);
             }
-            $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_queues WHERE id = ?", [$queue_id]) ?? '');
+            $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_queues WHERE id = ?", [$queue_id]) ?? '');
             DBHelper::delete('pbx_queues', 'id', $queue_id);
             markPendingSync('queues', 'queue', $q_name ?: ('id_' . $queue_id), "Kuyruk: " . ($q_row['title'] ?? $q_name ?? $queue_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            if ($silinen_numara !== '') {
+            if ($removed_number !== '') {
                 markPendingSync('internal_numbers', 'queue', $queue_id,
-                    "Internal number removed: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$removed_number}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 

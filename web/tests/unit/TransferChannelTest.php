@@ -76,7 +76,7 @@ final class TransferChannelTest extends TestCase
         $this->assertNull(findCallerChannelForAgent('3002', $lines));
     }
 
-    /** Temsilcinin kendi kanali arayan olarak DONDURULMEMELI. */
+    /** The agent's own channel must NOT be returned as the caller. */
     public function testTemsilcininKendiKanaliDondurulmez(): void
     {
         $lines = [

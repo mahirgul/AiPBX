@@ -19,7 +19,7 @@ class RingGroupController extends BaseController
         $ring_groups = RingGroupService::getRingGroups();
         $modules = DestinationRegistry::getModuleList();
 
-        $page_title = t('ring_groups.title', 'Çalma Grupları');
+        $page_title = t('ring_groups.title');
         static::renderPage('ring_groups/index', [
             'ring_groups' => $ring_groups,
             'modules' => $modules,

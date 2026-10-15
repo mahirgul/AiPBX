@@ -1,142 +1,85 @@
-# AI PBX Android Kurumsal İletişim Uygulaması
+# AiPBX Android app
 
-> **Sürüm**: v1.0.32 (Build 33)  
-> **Paket Adı**: `com.mhrgl.AiPBX`  
-> **Hedef Android Sürümü**: Android 8.0 (API 26) – Android 16 (API 36)  
-> **Yayın Durumu**: Google Play Console (Kapalı Test / Closed Testing Track) & Doğrudan İmzalı APK  
+- **Package:** `com.mhrgl.AiPBX` (debug builds: `com.mhrgl.AiPBX.debug`)
+- **Android:** 8.0 (API 26) to 16 (API 36)
+- **Version:** `versionName` / `versionCode` in `app/build.gradle.kts`
+- **Distribution:** Google Play (CI uploads every build of `main` to the alpha track), or the signed
+  APK directly
 
-Bu proje, kurum içi **Asterisk 22 Web PBX** santral sistemiyle tam entegre çalışan, **harici bulut bağımlılığı olmayan**, güvenli, WebRTC tabanlı ve çok fonksiyonlu yerel (native) Android kurumsal iletişim uygulamasıdır.
+A native Android client for an AiPBX server: calls (audio and video) over WebRTC, chat, voicemail,
+call history and the company directory. It talks only to the user's own PBX; push through Firebase
+is optional.
 
----
+## Screens (`DialerActivity`, five tabs)
 
-## 🌟 Temel Yetenekler ve Mimari
+1. **Keypad:** dialling, DTMF; the call screen (`CallActivity`) has mute, speaker, hold, transfer,
+   camera and a button that hides the controls in a video call. Incoming calls wake the locked screen
+   (`IncomingCallActivity`).
+2. **History:** the server's call records (`/api/mobile/call_history.php`), filters for all, missed,
+   incoming and outgoing; call or chat from a row.
+3. **Contacts:** the PBX directory with presence (online/offline) and the device's contacts.
+4. **Chat:** direct and group chats over the chat service's WebSocket, photos and files, group
+   management.
+5. **PBX:** do-not-disturb, call forwarding, voicemail, the in-app log viewer (`LogViewerActivity`)
+   for troubleshooting.
 
-### 1. 5 Sekmeli Bütünleşik Ana Ekran (`DialerActivity`)
-Uygulama, tüm iletişim ihtiyaçlarını tek bir modern ana aktivite altında 5 ana sekmede toplar:
-1. **📞 Tuşlar (Dialer):**
-   - Hızlı arama alanı, 0-9, *, # DTMF tuşları ve çağrı kontrolü.
-   - Aktif görüşme ekranı (`CallActivity`): Sessize alma (Mute), Hoparlör (Speaker), Bekletme (Hold), Aktarım ve Çağrı Süre Sayacı.
-   - Kilit ekranında gelen çağrıyı anında uyandırma (`IncomingCallActivity`, `TurnScreenOn` / `ShowWhenLocked`).
-2. **📊 Geçmiş (Call History):**
-   - Sunucu CDR kayıtları ile tam senkronize çağrı listesi.
-   - Hızlı yön filtreleme çipleri: *Tümü*, *Cevapsız*, *Gelen*, *Giden*.
-   - Tek dokunuşla geri arama desteği.
-3. **👥 Rehber (Contacts):**
-   - Santraldeki tüm dahilileri (50+ dahili) otomatik senkronize eden kurumsal rehber.
-   - Anlık çevrimiçi/çevrimdışı varlık (presence) takibi (yeşil/gri durum noktaları).
-   - Departman ve rol rozetleri (`admin`, `cc_agent`, `standard_user` vb.).
-4. **💬 Sohbet (Chat & Group Chat):**
-   - **Bireysel (1-to-1) Sohbet:** Dahililer arası anlık metin, fotoğraf ve belge paylaşımı.
-   - **Çok Kullanıcılı Grup Sohbeti:** 256 kişiye kadar ekip ve departman grup odaları.
-   - **Hızlı Grup Kurulumu:** `+ Yeni Grup` butonu ve rehberden çoklu üye seçici (`ContactSelectionAdapter`).
-   - **Gelişmiş Sohbet Filtreleme:** *Tümü*, *Bireysel*, *Gruplar* filtre çipleri ile anlık geçiş.
-   - **Grup Yönetim Modalı:** Katılımcı listesi, yönetici rolleri (`admin`/`member`), üye ekleme/çıkarma, grup başlığı düzenleme ve ayrılma.
-   - **Görsel Ayrım:** Grup rozetleri (`Grup`), mor/indigo avatar ikonları (`👥`) ve grup mesajlarında algoritmik renkli gönderen isimleri (`getDeterministicColor`).
-   - **Sistem Bildirimleri:** Üye katıldı/ayrıldı/çıkarıldı durumları için özel biçimlendirilmiş sistem balonları.
-5. **⚙️ Santral (Features & Diagnostics):**
-   - Rahatsız Etmeyin (DND) kontrolü.
-   - Çağrı Yönlendirme (Her Zaman, Meşgulde, Cevapsızda) ve çalma süre eşikleri (10–45 sn).
-   - Dahili sistem log görüntüleyicisi (`LogViewerActivity` & `AppLogManager`) ile anlık Logcat inceleme ve e-posta/dosya paylaşımı.
+## How calls reach the phone
 
----
+- **SIP engine:** `engine/SipWebRtcEngine.kt` runs JsSIP (`assets/phone_engine.html`,
+  `assets/jssip.min.js`) in a headless WebView; it registers as `<extension>-mob-webrtc` over
+  `wss://<server>/ws`.
+- **Staying connected:** `service/PbxForegroundService.kt` keeps the engine connected in a
+  foreground service. A watchdog (every 2 minutes, an `AlarmManager` alarm that also fires in Doze,
+  `ResurrectionReceiver`) reconnects when the app has not been registered for 45 s and refreshes the
+  registration. Exempting the app from battery optimisation (`util/BatteryPrompt.kt`) makes this
+  reliable.
+- **Push (optional):** with Firebase configured on the server (*Admin → Push*),
+  `AiPbxFirebaseMessagingService` wakes the app for calls and messages when it is not connected.
+  Without it, the foreground service connection is the only path (the default).
 
-### 2. Güvenlik & WebRTC Ses Motoru
-* 🔒 **Sıfır Bulut Bağımlılığı:** Tüm sinyalleşme doğrudan kendi kurum santraliniz üzerinden şifreli (**WSS / TLS / DTLS-SRTP**) olarak yürütülür.
-* 🛡️ **Kısıtlayıcı Ağ ve Güvenlik Duvarı Aşımı:** Kurumsal ağlarda UDP engelli olsa bile Port 443 üzerinden **coturn TURNS** ile kesintisiz ses geçişi.
-* 🎙️ **Opus HD Voice:** Düşük bant genişliğinde bile yüksek kaliteli, kristal netliğinde ses iletimi.
+## Build
 
----
+Requirements: Android SDK 36, JDK 17; the Gradle wrapper is included.
 
-### 3. Arka Plan Kararlılığı & Push Bildirimleri
-* **Foreground Service (`PbxForegroundService`):** Android Doze Mode veya agresif pil tasarrufunun bağlantıyı kesmesini önleyen kalıcı ön plan servisi.
-* **Firebase Cloud Messaging (FCM):** Uygulama tamamen kapalıyken dahi gelen çağrılar ve grup/bireysel sohbet mesajları için anlık uyandırma bildirimi.
-* **Konuşma Düzeyinde Bildirim Gruplama:** Grup ve bireysel sohbet bildirimleri bildirim panelinde otomatik olarak konuşma bazında kümelenir.
-
----
-
-## 🛠️ Derleme ve Dağıtım (Build & Deployment)
-
-### Gereksinimler
-- Android SDK 36 (Build Tools 36.0.0)
-- Java 17 / OpenJDK 17
-- Gradle 8.x (Gradle Wrapper dahildir)
-
-### 1. Birim Testlerini Çalıştırma
 ```bash
-cd /home/pbx/android
-./gradlew testReleaseUnitTest
+./gradlew testReleaseUnitTest      # unit tests
+./gradlew assembleDebug            # app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease          # signed release APK
+./gradlew bundleRelease            # signed AAB for Google Play
+bin/tls_audit.sh                   # checks that no TLS bypass came back (Play policy)
 ```
 
-### 2. İmzalı Release APK Derleme
-```bash
-./gradlew assembleRelease
-```
-* Çıktı: `app/build/outputs/apk/release/app-release.apk` (~2.8 MB)
-* Otomatik olarak `release.keystore` anahtarıyla imzalanır ve zipalign edilir.
+Release signing reads `keystore.properties` (not in git). `sdk.dir` goes into `local.properties`.
 
-### 3. İmzalı Release App Bundle (AAB) Derleme
-```bash
-./gradlew bundleRelease
-```
-* Çıktı: `app/build/outputs/bundle/release/app-release.aab` (~4.2 MB)
+### Releasing
 
-### 4. Google Play Console'a Yükleme
-Proje kök dizinindeki otomatik Google Play API betiği ile Kapalı Test kanalına tek komutla yüklenir:
-```bash
-python3 upload_to_play_console.py alpha completed
-```
-* Sürüm kodu (`versionCode: 32`) ve sürüm adı (`versionName: "1.0.31"`) `build.gradle.kts` üzerinden otomatik okunur.
-* Çok dilli sürüm notları (tr-TR ve en-US) Google Play API üzerinden otomatik kaydedilir ve onaylanır.
+1. Raise `versionCode` and `versionName` in `app/build.gradle.kts`.
+2. Update `play-release-notes.json` ("What's new" on Google Play; `version` must equal
+   `versionName`).
+3. Merge to `main`: the *Build Android App & Deploy* workflow builds, signs and uploads to the Play
+   alpha track.
 
-### 5. Doğrudan Web İndirme Bağlantısı
-Üretilen APK, kullanıcıların doğrudan indirebilmesi için web sunucusuna kopyalanır:
-```bash
-cp app/build/outputs/apk/release/app-release.apk /home/pbx/web/aipbx-latest.apk
-```
-* Web İndirme URL: `https://<santral-adresi>/aipbx-latest.apk`
+Texts: `app/src/main/res/values*/strings.xml` (23 languages); `scripts/check_mobile_lang.py` checks
+that every language has every string.
 
----
-
-## 📂 Dizin Yapısı
+## Layout
 
 ```
 android/
-├── app/
-│   ├── build.gradle.kts          # Sürüm (v1.0.32 Build 33) ve bağımlılık tanımları
-│   └── src/
-│       ├── main/
-│       │   ├── AndroidManifest.xml # VoIP izinleri, servisler ve ekranlar
-│       │   ├── java/com/mhrgl/aipbx/
-│       │   │   ├── data/
-│       │   │   │   ├── ApiClient.kt            # REST API (Giriş, Rehber, Grup Chat vb.)
-│       │   │   │   ├── AppPreferences.kt       # Yerel ayarlar ve oturum verileri
-│       │   │   │   ├── ChatWebSocketManager.kt # Go Chat WebSocket istemcisi ve olay dinleyicisi
-│       │   │   │   └── SimpleImageLoader.kt    # Hafif görsel önbellekleyici
-│       │   │   ├── engine/
-│       │   │   │   └── SipWebRtcEngine.kt      # Headless WebRTC JsSIP ses motoru
-│       │   │   ├── model/
-│       │   │   │   └── Models.kt               # Veri modelleri (Grup, Mesaj, Rehber, CDR vb.)
-│       │   │   ├── service/
-│       │   │   │   ├── AiPbxFirebaseMessagingService.kt # FCM Push yöneticisi
-│       │   │   │   ├── BootReceiver.kt                 # Cihaz açılış tetikleyicisi
-│       │   │   │   └── PbxForegroundService.kt         # Kalıcı VoIP ön plan servisi
-│       │   │   └── ui/
-│       │   │       ├── CallActivity.kt             # Aktif Görüşme Ekranı
-│       │   │       ├── ChatActivity.kt             # Grup & Bireysel Sohbet Ekranı
-│       │   │       ├── ChatConversationAdapter.kt  # Sohbet listesi adaptörü (Grup rozetli)
-│       │   │       ├── ChatListActivity.kt         # Bağımsız Sohbet Aktivitesi
-│       │   │       ├── ChatMessageAdapter.kt       # Mesaj balonları & sistem olayları
-│       │   │       ├── ContactSelectionAdapter.kt  # Gruba üye ekleme seçim adaptörü
-│       │   │       ├── ContactsAdapter.kt          # Kurumsal rehber adaptörü
-│       │   │       ├── DialerActivity.kt           # Ana 5 Sekmeli Aktivite (Tuşlar, Sohbet vb.)
-│       │   │       ├── GroupParticipantAdapter.kt  # Grup katılımcıları & yönetici menüsü
-│       │   │       ├── IncomingCallActivity.kt     # Gelen çağrı kilit ekranı
-│       │   │       ├── LoginActivity.kt            # Kullanıcı oturum açma ekranı
-│       │   │       ├── LogViewerActivity.kt        # Canlı log ve arıza teşhis ekranı
-│       │   │       └── ServerSetupActivity.kt      # Sunucu adresi yapılandırma
-│       │   └── res/                                # Layout, renkler, ikonlar ve animasyonlar
-│       └── test/                                   # Model ve iş mantığı birim testleri
-├── release.keystore              # Üretim imzalama anahtarı
-├── upload_to_play_console.py     # Google Play Console API otomatik yayınlama betiği
-└── README.md                     # Android dokümantasyonu
+├── app/build.gradle.kts            # version, SDK levels, dependencies
+├── app/src/main/
+│   ├── AndroidManifest.xml         # permissions, services, deep link aipbx://login
+│   ├── assets/phone_engine.html    # JsSIP engine (WebView)
+│   └── java/com/mhrgl/aipbx/
+│       ├── data/                   # ApiClient (REST), AppPreferences, ChatWebSocketManager
+│       ├── engine/                 # SipWebRtcEngine (WebView bridge to JsSIP)
+│       ├── model/                  # data classes
+│       ├── service/                # PbxForegroundService, push, notifications, boot, watchdog
+│       ├── ui/                     # activities and adapters
+│       └── util/                   # logging, battery/full-screen prompts, search, L10n
+├── app/src/test/                   # unit tests
+├── bin/tls_audit.sh                # TLS bypass check
+├── play-release-notes.json         # Play "What's new" text per version
+├── server_api/                     # old copy of the mobile API; the live one is web/api/mobile/
+└── *.py, *.png                     # Play store screenshots and graphics
 ```

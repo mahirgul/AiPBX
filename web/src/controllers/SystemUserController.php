@@ -31,7 +31,7 @@ class SystemUserController extends BaseController
             // Every form on this page posts a CSRF token; check it once here.
             // The services re-check it themselves.
             if (!static::verifyCsrf()) {
-                $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $error = t('login.csrf_error');
             } elseif (isset($_POST['save_system_user'])) {
                 $res = UserService::saveUser($_POST);
                 ['message' => $message, 'error' => $error] = static::notices($res);
@@ -98,7 +98,7 @@ class SystemUserController extends BaseController
             } elseif (isset($_POST['reset_2fa'])) {
                 $res = TwoFactorService::disableTwoFactor((int) ($_POST['user_id'] ?? 0), '', true);
                 if ($res['success']) {
-                    $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
+                    $message = t('system_users.2fa_reset_success');
                 } else {
                     $error = $res['error'] ?? t('common.action_failed');
                 }

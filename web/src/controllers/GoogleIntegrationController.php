@@ -19,7 +19,7 @@ class GoogleIntegrationController extends BaseController
         ]);
 
 
-        $page_title = t('google_integration.title', 'Google ile Giriş Entegrasyonu');
+        $page_title = t('google_integration.title');
         static::renderPage('google_integration/index', [
             'settings' => GoogleAuthService::settingsForPage(),
             'csrf_token' => getCSRFToken(),

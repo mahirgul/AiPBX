@@ -88,13 +88,13 @@ final class SipShadowTableTest extends TestCase
         ];
     }
     #[DataProvider('kosulluAlanlar')]
-    public function testTumKosulluAlanlarGeriAlinabiliyor(string $alan, string $deger): void
+    public function testTumKosulluAlanlarGeriAlinabiliyor(string $field, string $value): void
     {
-        SIPHelper::syncTrunkToSIP($this->trunk([$alan => $deger]));
-        $this->assertSame($deger, $this->sipDegeri($alan), "on kosul: {$alan} yazilmali");
+        SIPHelper::syncTrunkToSIP($this->trunk([$field => $value]));
+        $this->assertSame($value, $this->sipDegeri($field), "on kosul: {$field} yazilmali");
 
-        SIPHelper::syncTrunkToSIP($this->trunk([$alan => '']));
-        $this->assertNull($this->sipDegeri($alan), "{$alan} bosaltilinca sip tablosunda kaldi");
+        SIPHelper::syncTrunkToSIP($this->trunk([$field => '']));
+        $this->assertNull($this->sipDegeri($field), "{$field} bosaltilinca sip tablosunda kaldi");
     }
 
     public function testDoluAlanlarSilinmiyor(): void

@@ -27,12 +27,12 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 
     <section class="card help-content">
         <?php if ($query !== ''): ?>
-            <h2><?php echo $h(sprintf(t('help.results_for'), $query)); ?></h2>
+            <h2 class="help-results-title"><?php echo $h(sprintf(t('help.results_for'), $query)); ?></h2>
             <?php if ($results === []): ?>
                 <p class="text-muted"><?php echo t('help.no_results'); ?></p>
             <?php endif; ?>
             <?php foreach ($results as $r): ?>
-                <h3><a href="/help?doc=<?php echo $h($r['name']); ?>"><?php echo $h($r['title']); ?></a></h3>
+                <h3 class="help-result-doc"><a href="/help?doc=<?php echo $h($r['name']); ?>"><?php echo $h($r['title']); ?></a></h3>
                 <ul class="help-hits">
                     <?php foreach ($r['hits'] as $hit): ?>
                         <li><a href="/help?doc=<?php echo $h($r['name']); ?><?php echo $hit['anchor'] !== '' ? '#' . $h($hit['anchor']) : ''; ?>"><?php echo $h(mb_strimwidth($hit['line'], 0, 220, '…')); ?></a></li>

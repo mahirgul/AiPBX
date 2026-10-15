@@ -289,19 +289,19 @@ $filter_url = function (array $override) {
                                     : max(0, intval($c['duration']) - intval($c['billsec']));
                                 $bill = intval($c['billsec'] ?? 0);
                                 $dur  = max(intval($c['duration'] ?? 0), $bill);
-                                $sure_bicim = fn(int $sn) => sprintf('%02d:%02d', intdiv($sn, 60), $sn % 60);
+                                $format_duration = fn(int $sn) => sprintf('%02d:%02d', intdiv($sn, 60), $sn % 60);
                             ?>
                             <td>
                                 <?php if ($c['status'] === 'ANSWERED'): ?>
                                     <div style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--success);">
-                                        <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $sure_bicim($bill); ?>
+                                        <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $format_duration($bill); ?>
                                     </div>
                                     <div class="u-fs-11 u-muted u-mt-2 u-nowrap">
-                                        <?php echo t('cdr_reports.col_ring'); ?>: <?php echo $sure_bicim($ring); ?> • <?php echo t('cdr_reports.stat_total'); ?>: <?php echo $sure_bicim($dur); ?>
+                                        <?php echo t('cdr_reports.col_ring'); ?>: <?php echo $format_duration($ring); ?> • <?php echo t('cdr_reports.stat_total'); ?>: <?php echo $format_duration($dur); ?>
                                     </div>
                                 <?php elseif (in_array($c['status'], ['NO ANSWER', 'NOANSWER', 'CANCEL', 'ABANDON'])): ?>
                                     <div style="font-family: monospace; font-size: 12px; color: var(--warning); font-weight: 600;">
-                                        <i class="fas fa-bell" style="font-size: 10px; margin-right: 3px;"></i><?php echo t('cdr_reports.col_ring'); ?>: <?php echo $sure_bicim($ring); ?>
+                                        <i class="fas fa-bell" style="font-size: 10px; margin-right: 3px;"></i><?php echo t('cdr_reports.col_ring'); ?>: <?php echo $format_duration($ring); ?>
                                     </div>
                                 <?php else: ?>
                                     <span style="color: var(--text-muted); font-size: 12px; font-family: monospace;">-</span>

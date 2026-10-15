@@ -48,13 +48,13 @@ func (s *Server) authMiddleware(next func(http.ResponseWriter, *http.Request, *U
 
 		token := ExtractToken(r)
 		if token == "" {
-			writeJSONError(w, http.StatusUnauthorized, "Oturum tokeni bulunamadı.")
+			writeJSONError(w, http.StatusUnauthorized, "No session token.")
 			return
 		}
 
 		user, err := ValidateBearerToken(token, s.cfg.SecretKey)
 		if err != nil {
-			writeJSONError(w, http.StatusUnauthorized, "Geçersiz oturum: "+err.Error())
+			writeJSONError(w, http.StatusUnauthorized, "Invalid session: "+err.Error())
 			return
 		}
 
@@ -87,7 +87,7 @@ func (s *Server) HandleMe(w http.ResponseWriter, r *http.Request, user *User) {
 func (s *Server) HandleContacts(w http.ResponseWriter, r *http.Request, user *User) {
 	contacts, err := GetContacts(user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Kişiler alınamadı: "+err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Could not load the contacts: "+err.Error())
 		return
 	}
 
@@ -105,7 +105,7 @@ func (s *Server) HandleContacts(w http.ResponseWriter, r *http.Request, user *Us
 func (s *Server) HandleConversations(w http.ResponseWriter, r *http.Request, user *User) {
 	convs, err := GetConversations(user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Konuşmalar alınamadı: "+err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Could not load the conversations: "+err.Error())
 		return
 	}
 
@@ -133,13 +133,13 @@ func (s *Server) HandleCreateDirectConversation(w http.ResponseWriter, r *http.R
 
 	targetExt := strings.TrimSpace(body.TargetExtension)
 	if targetExt == user.Extension {
-		writeJSONError(w, http.StatusBadRequest, "Kendinizle sohbet başlatamazsınız.")
+		writeJSONError(w, http.StatusBadRequest, "You cannot start a conversation with yourself.")
 		return
 	}
 
 	conv, err := GetOrCreateDirectConversation(user.Extension, targetExt, user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Sohbet oluşturulamadı: "+err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Could not create the conversation: "+err.Error())
 		return
 	}
 
@@ -156,14 +156,14 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 	convIDStr := r.URL.Query().Get("conversation_id")
 	convID, err := strconv.Atoi(convIDStr)
 	if err != nil || convID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz conversation_id.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid conversation_id.")
 		return
 	}
 
 	// CH-1: authorization check (prevents IDOR)
 	isPart, err := IsParticipant(convID, user.Extension)
 	if err != nil || !isPart {
-		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
+		writeJSONError(w, http.StatusForbidden, "You have no access to this conversation.")
 		return
 	}
 
@@ -181,7 +181,7 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 
 	messages, err := GetMessages(convID, limit, beforeID)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Mesajlar alınamadı: "+err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Could not load the messages: "+err.Error())
 		return
 	}
 
@@ -207,7 +207,7 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user *User) {
 	var in InMessage
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek gövdesi.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body.")
 		return
 	}
 
@@ -229,14 +229,14 @@ func (s *Server) HandleMarkRead(w http.ResponseWriter, r *http.Request, user *Us
 		LastMessageID  int64 `json:"last_message_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz conversation_id.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid conversation_id.")
 		return
 	}
 
 	// CH-1: participant check
 	isPart, err := IsParticipant(body.ConversationID, user.Extension)
 	if err != nil || !isPart {
-		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
+		writeJSONError(w, http.StatusForbidden, "You have no access to this conversation.")
 		return
 	}
 
@@ -285,13 +285,13 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Dosya boyutu çok büyük (Max 25 MB).")
+		writeJSONError(w, http.StatusBadRequest, "The file is too large (max 25 MB).")
 		return
 	}
 
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Yüklenecek dosya bulunamadı: "+err.Error())
+		writeJSONError(w, http.StatusBadRequest, "No file to upload: "+err.Error())
 		return
 	}
 	defer file.Close()
@@ -302,7 +302,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 
 	// CH-5: extension whitelist check
 	if !allowedUploadExts[ext] {
-		writeJSONError(w, http.StatusBadRequest, "Desteklenmeyen dosya uzantısı.")
+		writeJSONError(w, http.StatusBadRequest, "Unsupported file extension.")
 		return
 	}
 
@@ -310,7 +310,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	buf := make([]byte, 512)
 	n, _ := file.Read(buf)
 	if n == 0 {
-		writeJSONError(w, http.StatusBadRequest, "Yüklenen dosya boş.")
+		writeJSONError(w, http.StatusBadRequest, "The uploaded file is empty.")
 		return
 	}
 	detectedMime := http.DetectContentType(buf[:n])
@@ -322,13 +322,13 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	if strings.Contains(lowerMime, "html") || strings.Contains(lowerMime, "xml") ||
 		strings.Contains(lowerMime, "javascript") || strings.Contains(lowerMime, "x-sh") ||
 		strings.Contains(lowerMime, "executable") {
-		writeJSONError(w, http.StatusBadRequest, "Güvenlik nedeniyle bu dosya türü yüklenemez.")
+		writeJSONError(w, http.StatusBadRequest, "This file type cannot be uploaded for security reasons.")
 		return
 	}
 
 	isImage := ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".gif"
 	if isImage && !strings.HasPrefix(lowerMime, "image/") {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz görsel içeriği.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid image content.")
 		return
 	}
 
@@ -433,7 +433,7 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 	// was a wildcard.
 	ok, err := CanAccessAttachment(lookupName, user.Extension)
 	if err != nil || !ok {
-		http.Error(w, "Forbidden: Bu medyaya erişim yetkiniz yok", http.StatusForbidden)
+		http.Error(w, "Forbidden: you have no access to this media", http.StatusForbidden)
 		return
 	}
 
@@ -554,7 +554,7 @@ func (s *Server) HandleWS(w http.ResponseWriter, r *http.Request) {
 // POST /chat/api/conversations/group (CH-G1, CH-G2, CH-G3, CH-G4)
 func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -565,18 +565,18 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 		Members     []string `json:"members"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek gövdesi.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body.")
 		return
 	}
 
 	body.Title = strings.TrimSpace(body.Title)
 	if body.Title == "" {
-		writeJSONError(w, http.StatusBadRequest, "Grup adı zorunludur.")
+		writeJSONError(w, http.StatusBadRequest, "The group name is required.")
 		return
 	}
 
 	if body.AvatarURL != "" && (!validMediaURL(body.AvatarURL) || !attachmentOwnedBy(s.cfg.SecretKey, body.AvatarURL, user.Extension)) {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz grup resmi.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid group image.")
 		return
 	}
 
@@ -624,24 +624,24 @@ func (s *Server) HandleGetGroupDetails(w http.ResponseWriter, r *http.Request, u
 	convIDStr := r.URL.Query().Get("conversation_id")
 	convID, err := strconv.Atoi(convIDStr)
 	if err != nil || convID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz conversation_id.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid conversation_id.")
 		return
 	}
 
 	// CH-G1: participant check
 	isPart, err := IsParticipant(convID, user.Extension)
 	if err != nil || !isPart {
-		writeJSONError(w, http.StatusForbidden, "Bu sohbete erişim yetkiniz yok.")
+		writeJSONError(w, http.StatusForbidden, "You have no access to this conversation.")
 		return
 	}
 
 	conv, err := GetGroupDetails(convID, user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Grup detayları alınamadı: "+err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Could not load the group details: "+err.Error())
 		return
 	}
 
-	// Presence bilgilerini ekle
+	// Add the presence information
 	onlineCount := 0
 	for i := range conv.Participants {
 		conv.Participants[i].IsOnline = s.hub.IsOnline(conv.Participants[i].Extension)
@@ -660,7 +660,7 @@ func (s *Server) HandleGetGroupDetails(w http.ResponseWriter, r *http.Request, u
 // POST /chat/api/conversations/group/update (CH-G1, CH-G4)
 func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -671,14 +671,14 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 		Description    string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
-		writeJSONError(w, http.StatusForbidden, "Grup bilgilerini güncellemek için yönetici olmalısınız.")
+		writeJSONError(w, http.StatusForbidden, "You must be a group admin to update the group.")
 		return
 	}
 
@@ -688,7 +688,7 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 		cur, _ := GetConversationByID(body.ConversationID)
 		if cur == nil || cur.AvatarURL != body.AvatarURL {
 			if !validMediaURL(body.AvatarURL) || !attachmentOwnedBy(s.cfg.SecretKey, body.AvatarURL, user.Extension) {
-				writeJSONError(w, http.StatusBadRequest, "Geçersiz grup resmi.")
+				writeJSONError(w, http.StatusBadRequest, "Invalid group image.")
 				return
 			}
 		}
@@ -731,7 +731,7 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 // POST /chat/api/conversations/group/members/add (CH-G1, CH-G2, CH-G3)
 func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -740,14 +740,14 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 		Extensions     []string `json:"extensions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || len(body.Extensions) == 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
-		writeJSONError(w, http.StatusForbidden, "Grup üyesi eklemek için yönetici olmalısınız.")
+		writeJSONError(w, http.StatusForbidden, "You must be a group admin to add members.")
 		return
 	}
 
@@ -801,7 +801,7 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 // POST /chat/api/conversations/group/members/remove (CH-G1, CH-G6)
 func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -810,14 +810,14 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 		Extension      string `json:"extension"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || body.Extension == "" {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
-		writeJSONError(w, http.StatusForbidden, "Gruptan üye çıkarmak için yönetici olmalısınız.")
+		writeJSONError(w, http.StatusForbidden, "You must be a group admin to remove members.")
 		return
 	}
 
@@ -858,7 +858,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 // POST /chat/api/conversations/group/members/role (CH-G1)
 func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -868,14 +868,14 @@ func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Requ
 		Role           string `json:"role"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 || body.Extension == "" || (body.Role != "admin" && body.Role != "member") {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
-		writeJSONError(w, http.StatusForbidden, "Grup yetkilerini değiştirmek için yönetici olmalısınız.")
+		writeJSONError(w, http.StatusForbidden, "You must be a group admin to change roles.")
 		return
 	}
 
@@ -907,7 +907,7 @@ func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Requ
 // POST /chat/api/conversations/group/leave (CH-G1)
 func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -915,14 +915,14 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 		ConversationID int `json:"conversation_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: participant check
 	isPart, err := IsParticipant(body.ConversationID, user.Extension)
 	if err != nil || !isPart {
-		writeJSONError(w, http.StatusForbidden, "Bu grubun aktif bir üyesi değilsiniz.")
+		writeJSONError(w, http.StatusForbidden, "You are not an active member of this group.")
 		return
 	}
 
@@ -968,7 +968,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 // POST /chat/api/conversations/group/delete (CH-G1, CH-G7)
 func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user *User) {
 	if r.Method != http.MethodPost {
-		writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
 
@@ -976,14 +976,14 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 		ConversationID int `json:"conversation_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID <= 0 {
-		writeJSONError(w, http.StatusBadRequest, "Geçersiz istek parametreleri.")
+		writeJSONError(w, http.StatusBadRequest, "Invalid request parameters.")
 		return
 	}
 
 	// CH-G1: admin check
 	isAdmin, err := IsGroupAdmin(body.ConversationID, user.Extension)
 	if err != nil || !isAdmin {
-		writeJSONError(w, http.StatusForbidden, "Grubu silmek için yönetici olmalısınız.")
+		writeJSONError(w, http.StatusForbidden, "You must be a group admin to delete the group.")
 		return
 	}
 
@@ -1020,7 +1020,7 @@ var internalNotifyEvents = map[string]bool{"voicemail": true}
 // (bin/voicemail_notify.php: a new voicemail while the app is connected).
 func (s *Server) HandleInternalNotify(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost || !localInternalRequest(r) {
-		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
+		writeJSONError(w, http.StatusForbidden, "Access denied.")
 		return
 	}
 	var req struct {
@@ -1050,7 +1050,7 @@ func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) 
 	// connects directly.
 	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
 		(!strings.HasPrefix(remoteIP, "127.0.0.1:") && !strings.HasPrefix(remoteIP, "[::1]:")) {
-		writeJSONError(w, http.StatusForbidden, "Erişim engellendi.")
+		writeJSONError(w, http.StatusForbidden, "Access denied.")
 		return
 	}
 	exts := s.hub.GetOnlineExtensions()

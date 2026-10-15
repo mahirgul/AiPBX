@@ -19,7 +19,7 @@ class DialPermissionController extends BaseController
         $selected_group_id = intval($_GET['group_id'] ?? ($groups[0]['id'] ?? 1));
         $rules = DialPermissionService::getRules($selected_group_id);
 
-        $page_title = t('dial_permissions.title', 'Arama Yetki Grupları');
+        $page_title = t('dial_permissions.title');
         static::renderPage('dial_permissions/index', [
             'groups' => $groups,
             'selected_group_id' => $selected_group_id,

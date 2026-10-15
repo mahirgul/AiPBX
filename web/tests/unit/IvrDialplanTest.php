@@ -177,7 +177,7 @@ final class IvrDialplanTest extends TestCase
             ['match_pattern' => '_[4-9]XXX', 'route_name' => 'dahili', 'is_internal' => 1],
             ['match_pattern' => '9999', 'route_name' => 'Ozel Santral', 'is_internal' => 1],
             ['match_pattern' => '_X.', 'route_name' => 'Genel Rota', 'is_internal' => 1], // Catch-all atlanmali
-            ['match_pattern' => '1', 'route_name' => 'Cakisan Rota', 'is_internal' => 1],   // Menu tusu '1' ile cakisan atlanmali
+            ['match_pattern' => '1', 'route_name' => 'Clashing route', 'is_internal' => 1],   // clashes with menu key '1': must be skipped
         ];
 
         $conf = buildIVRDialplanBlock($ivr, $entries, $exts, [], $routes);

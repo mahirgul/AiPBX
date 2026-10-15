@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    YALNIZCA DEBUG derlemesi için; release paketine girmez. Kullanıcı CA
-    deposu da güvenilir sayılır: kendinden imzalı bir sunucuya karşı test
-    etmek isteyen yönetici kendi kök sertifikasını cihaza kurar.
+    For the DEBUG build ONLY; it is not in the release package. The user CA
+    store is trusted too: an admin who wants to test against a self-signed
+    server installs their own root certificate on the device.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">

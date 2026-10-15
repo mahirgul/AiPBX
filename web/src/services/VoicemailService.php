@@ -29,7 +29,7 @@ class VoicemailService {
             $stmt = $db->prepare("UPDATE sys_users SET voicemail_enabled = ?, voicemail_pin = ?, voicemail_email = ?, voicemail_attach_audio = ?, vm_on_noanswer = ?, vm_on_busy = ?, vm_on_unavail = ?, vm_always = ? WHERE id = ?");
             $stmt->execute([$voicemail_enabled, $pin, $email, $attach, $vm_on_noanswer, $vm_on_busy, $vm_on_unavail, $vm_always, $userId]);
 
-            // Voicemail ve General Dialplan sync gerekli
+            // Voicemail and the general dialplan need an Apply
             markPendingSync('voicemail', 'voicemail', 'mailbox', "Voicemail settings (#{$userId})", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan (voicemail)", 'update', $_SESSION['user_id'] ?? null);
 

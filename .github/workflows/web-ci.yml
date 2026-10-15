@@ -85,12 +85,12 @@ jobs:
           printf 'DB_HOST=%s\nDB_NAME=%s\nDB_USER=%s\nDB_PASS=%s\n' "$DB_HOST" "$DB_NAME" "$DB_USER" "$DB_PASS" > tests/.env.test
           php vendor/bin/phinx migrate -e testing
           mysql -h "$DB_HOST" -u root -pci-root "$DB_NAME" -e "INSERT IGNORE INTO sys_roles (role_key, role_name, description, is_system) VALUES
-            ('admin', 'Yönetici', 'Tam yetkili', 1),
-            ('read_only_admin', 'İzleyici', 'İzleyici', 1),
-            ('cc_agent', 'Temsilci', 'Temsilci', 1),
-            ('fax_user', 'Faks', 'Faks', 1),
-            ('cc_manager', 'Kuyruk Yönetici', 'Kuyruk Yönetici', 1),
-            ('user', 'Kullanıcı', 'Kullanıcı', 1);"
+            ('admin', 'Administrator', 'Full access', 1),
+            ('read_only_admin', 'Viewer', 'Viewer', 1),
+            ('cc_agent', 'Agent', 'Agent', 1),
+            ('fax_user', 'Fax', 'Fax', 1),
+            ('cc_manager', 'Queue manager', 'Queue manager', 1),
+            ('user', 'User', 'User', 1);"
           # bin/smoke.php renders pages with a user_id=1 session (the first admin
           # on servers); it has an extension for the pages that need one (My Phone, chat).
           mysql -h "$DB_HOST" -u root -pci-root "$DB_NAME" -e "INSERT IGNORE INTO sys_users

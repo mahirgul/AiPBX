@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class OutboundRouteModule implements PBXDestinationInterface {
     public function getKey(): string { return 'outbound_route'; }
-    public function getName(): string { return '🌐 Giden Rota / Dış Hat'; }
+    public function getName(): string { return '🌐 ' . \t('dest.outbound_route'); }
 
     public function getOptions(): array {
         $db = \getDB();

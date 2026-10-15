@@ -3,7 +3,7 @@
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Mobil cihaz FCM push bildirim tokenlari tablosu.
+ * Table of the mobile devices' FCM push tokens.
  */
 final class CreateSysMobileDevices extends AbstractMigration
 {

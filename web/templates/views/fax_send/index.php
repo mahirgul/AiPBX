@@ -99,7 +99,7 @@
         </button>
         <?php else: ?>
         <div style="margin-top: 15px; padding: 12px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 13px;">
-            <i class="fas fa-info-circle"></i> <?php echo t('common.readonly_mode', 'Sadece izleyici modundasınız; faks gönderimi yapamazsınız.'); ?>
+            <i class="fas fa-info-circle"></i> <?php echo t('common.readonly_mode'); ?>
         </div>
         <?php endif; ?>
     </form>

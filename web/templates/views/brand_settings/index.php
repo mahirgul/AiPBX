@@ -5,13 +5,13 @@
     <!-- Brand Settings Single-Line Fixed Tabs -->
     <div class="settings-tabs">
         <button type="button" class="settings-tab-btn active" data-tab="identity" onclick="switchSettingsTab('identity', this)">
-            <i class="fas fa-id-card"></i> <?php echo t('brand_settings.tab_identity', 'Kimlik'); ?>
+            <i class="fas fa-id-card"></i> <?php echo t('brand_settings.tab_identity'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="logo" onclick="switchSettingsTab('logo', this)">
-            <i class="fas fa-image"></i> <?php echo t('brand_settings.tab_logo', 'Logo & İkon'); ?>
+            <i class="fas fa-image"></i> <?php echo t('brand_settings.tab_logo'); ?>
         </button>
         <button type="button" class="settings-tab-btn" data-tab="colors" onclick="switchSettingsTab('colors', this)">
-            <i class="fas fa-palette"></i> <?php echo t('brand_settings.tab_colors', 'Renkler'); ?>
+            <i class="fas fa-palette"></i> <?php echo t('brand_settings.tab_colors'); ?>
         </button>
     </div>
 

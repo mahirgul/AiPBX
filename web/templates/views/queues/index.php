@@ -111,22 +111,22 @@
                 <!-- Queue Modal Single-Line Fixed Tabs -->
                 <div class="modal-tabs">
                     <button type="button" class="modal-tab-btn active queue-tab-btn" data-tab="basic" onclick="switchQueueTab('basic', this)">
-                        <i class="fas fa-info-circle"></i> <?php echo t('queues.tab_basic', 'Temel'); ?>
+                        <i class="fas fa-info-circle"></i> <?php echo t('queues.tab_basic'); ?>
                     </button>
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="strategy" onclick="switchQueueTab('strategy', this)">
-                        <i class="fas fa-random"></i> <?php echo t('queues.tab_strategy', 'Strateji'); ?>
+                        <i class="fas fa-random"></i> <?php echo t('queues.tab_strategy'); ?>
                     </button>
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="announcements" onclick="switchQueueTab('announcements', this)">
-                        <i class="fas fa-music"></i> <?php echo t('queues.tab_announcements', 'Anons & MOH'); ?>
+                        <i class="fas fa-music"></i> <?php echo t('queues.tab_announcements'); ?>
                     </button>
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="behavior" onclick="switchQueueTab('behavior', this)">
-                        <i class="fas fa-cogs"></i> <?php echo t('queues.tab_behavior', 'Davranış'); ?>
+                        <i class="fas fa-cogs"></i> <?php echo t('queues.tab_behavior'); ?>
                     </button>
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="timeout" onclick="switchQueueTab('timeout', this)">
-                        <i class="fas fa-hourglass-half"></i> <?php echo t('queues.tab_timeout', 'Zaman Aşımı'); ?>
+                        <i class="fas fa-hourglass-half"></i> <?php echo t('queues.tab_timeout'); ?>
                     </button>
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="agents" onclick="switchQueueTab('agents', this)">
-                        <i class="fas fa-users-cog"></i> <?php echo t('queues.tab_agents', 'Temsilciler'); ?>
+                        <i class="fas fa-users-cog"></i> <?php echo t('queues.tab_agents'); ?>
                     </button>
                 </div>
 
@@ -160,7 +160,7 @@
                     </div>
                 </div>
 
-                <!-- 2. Strateji ve Zamanlar -->
+                <!-- 2. Strategy and timers -->
                 <div id="queue_tab_strategy" class="queue-tab-pane" style="display: none;">
                     <div class="form-group">
                         <label class="form-label form-label-help">

@@ -3,7 +3,7 @@ namespace PBX\Destinations;
 
 class FaxModule implements PBXDestinationInterface {
     public function getKey(): string { return 'fax'; }
-    public function getName(): string { return '📠 Faks Hattı'; }
+    public function getName(): string { return '📠 ' . \t('dest.fax'); }
 
     public function getOptions(): array {
         $db = \getDB();

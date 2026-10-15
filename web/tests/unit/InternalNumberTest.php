@@ -40,9 +40,9 @@ final class InternalNumberTest extends TestCase
     public function testEntriesFixtureNumaralariniDondurur(): void
     {
         $entries = internalNumberEntries();
-        $numaralar = array_column($entries, 'number');
-        sort($numaralar);
-        $this->assertSame(['1010', '1020'], $numaralar);
+        $numbers = array_column($entries, 'number');
+        sort($numbers);
+        $this->assertSame(['1010', '1020'], $numbers);
 
         $hangup = null;
         foreach ($entries as $e) {
@@ -57,8 +57,8 @@ final class InternalNumberTest extends TestCase
     public function testPasifKayitlarListeyeGirmez(): void
     {
         getDB()->exec("UPDATE pbx_ivrs SET is_active = 0 WHERE internal_number = '1010'");
-        $numaralar = array_column(internalNumberEntries(), 'number');
-        $this->assertNotContains('1010', $numaralar);
+        $numbers = array_column(internalNumberEntries(), 'number');
+        $this->assertNotContains('1010', $numbers);
     }
 
     public function testGercekDahiliyleCakismaYakalanir(): void
