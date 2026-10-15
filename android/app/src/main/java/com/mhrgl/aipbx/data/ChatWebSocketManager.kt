@@ -27,7 +27,8 @@ interface ChatEventListener {
     fun onGroupDeleted(conversationId: Int) {}
     fun onConnectionStateChanged(isConnected: Boolean) {}
     /** A new voicemail arrived in the user's own mailbox. */
-    fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {}
+    /** text: summary or start of the transcript (server 1.24+, voicemail as text), "" without. */
+    fun onVoicemail(caller: String, durationSec: Int, newCount: Int, text: String) {}
 }
 
 class ChatWebSocketManager private constructor() {
@@ -212,7 +213,8 @@ class ChatWebSocketManager private constructor() {
                             val caller = d.optString("caller")
                             val duration = d.optInt("duration")
                             val count = d.optInt("new_count")
-                            for (l in listeners) l.onVoicemail(caller, duration, count)
+                            val text = d.optString("text")
+                            for (l in listeners) l.onVoicemail(caller, duration, count, text)
                         }
                         "presence" -> {
                             val ext = root.optString("extension")

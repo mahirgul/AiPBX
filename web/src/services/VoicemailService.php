@@ -105,6 +105,24 @@ class VoicemailService {
             ];
         }
 
+        // Voicemail as text (VoicemailAiService), when it was made.
+        try {
+            $st = getDB()->prepare('SELECT origtime, transcript, summary FROM voicemail_ai WHERE mailbox = ?');
+            $st->execute([(string) $ext]);
+            $texts = [];
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $texts[(int) $r['origtime']] = $r;
+            }
+            foreach ($messages as &$m) {
+                $t = $texts[$m['origtime']] ?? null;
+                $m['transcript'] = (string) ($t['transcript'] ?? '');
+                $m['summary'] = (string) ($t['summary'] ?? '');
+            }
+            unset($m);
+        } catch (\Throwable $e) {
+            // table missing before the migration ran: no texts
+        }
+
         // Newest first (origtime: seconds since 1970; origdate is text in the server's locale).
         usort($messages, fn($a, $b) => [$b['origtime'], $b['origdate']] <=> [$a['origtime'], $a['origdate']]);
         return $messages;

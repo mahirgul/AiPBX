@@ -65,6 +65,31 @@ class CloudLlmTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cloud_llm.validate(bad)
 
+    def test_nvidia_qwen_and_own_address(self):
+        seen = []
+        n = cloud_llm.validate({"provider": "nvidia", "api_key": "nvapi-1234567890"})
+        cloud_llm.classify(n, "arıza", INTENTS, post=fake('{"intent": "destek"}', seen))
+        url, headers, body = seen[-1]
+        self.assertEqual(url, "https://integrate.api.nvidia.com/v1/chat/completions")
+        self.assertEqual(body["model"], "meta/llama-3.3-70b-instruct")
+        self.assertNotIn("response_format", body)          # not every NIM model has JSON mode
+        q = cloud_llm.validate({"provider": "qwen", "api_key": "sk-qwen-123456",
+                                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/"})
+        cloud_llm.classify(q, "arıza", INTENTS, post=fake('{"intent": "destek"}', seen))
+        url, headers, body = seen[-1]
+        self.assertEqual(url, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions")
+        self.assertEqual((body["model"], body["response_format"]["type"]), ("qwen-plus", "json_object"))
+        o = cloud_llm.validate({"provider": "openai_compat", "base_url": "http://10.0.0.5:11434/v1", "model": "qwen2.5:7b"})
+        cloud_llm.classify(o, "arıza", INTENTS, post=fake('{"intent": "destek"}', seen))
+        url, headers, body = seen[-1]
+        self.assertEqual(url, "http://10.0.0.5:11434/v1/chat/completions")
+        self.assertNotIn("Authorization", headers)        # keyless local server
+        for bad in ({"provider": "openai_compat", "model": "m"},                       # no address
+                    {"provider": "openai_compat", "base_url": "ftp://x/v1", "model": "m"},
+                    {"provider": "openai_compat", "base_url": "http://u:p@x/v1", "model": "m"}):
+            with self.assertRaises(ValueError):
+                cloud_llm.validate(bad)
+
     def test_prompt_lists_requests(self):
         p = cloud_llm.prompt("merhaba", INTENTS)
         self.assertIn('id "muhasebe"', p)

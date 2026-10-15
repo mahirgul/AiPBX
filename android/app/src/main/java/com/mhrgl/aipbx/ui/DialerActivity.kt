@@ -2260,7 +2260,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     // --- ChatEventListener ---
 
-    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {
+    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int, text: String) {
         runOnUiThread { refreshVoicemailBadge() }
     }
 

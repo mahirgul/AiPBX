@@ -51,6 +51,7 @@ try {
     require_once dirname(__DIR__) . '/config.php';
     require_once dirname(__DIR__) . '/src/services/MailTemplateService.php';
     require_once dirname(__DIR__) . '/src/services/VoicemailMailParser.php';
+    require_once dirname(__DIR__) . '/src/services/VoicemailAiService.php';
 
     $msg = VoicemailMailParser::parse($raw);
     if ($msg === null) {
@@ -80,7 +81,16 @@ try {
     if ($vars['caller'] === '') {
         $vars['caller'] = MailTemplateService::inLanguage($lang, fn() => t('mail_templates.unknown_caller'));
     }
-    $res = MailTemplateService::send('voicemail', $msg['to'], $lang, $vars, [], $attachments);
+    // Voicemail as text (AI -> Cloud services -> Voicemail): never holds the mail back.
+    $ai = null;
+    try {
+        $ai = VoicemailAiService::forNewest((string) ($info['mailbox'] ?? ''));
+    } catch (\Throwable $e) {
+        syslog(LOG_WARNING, 'voicemail text not made: ' . $e->getMessage());
+    }
+    $blocks = ['ai_text' => MailTemplateService::inLanguage($lang, fn() => MailTemplateService::voicemailTextBlock(
+        (string) ($ai['summary'] ?? ''), (string) ($ai['transcript'] ?? '')))];
+    $res = MailTemplateService::send('voicemail', $msg['to'], $lang, $vars, $blocks, $attachments);
     if ($tmp) {
         @unlink($tmp);
     }

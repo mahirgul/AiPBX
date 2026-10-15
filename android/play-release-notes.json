@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.65",
+  "version": "1.0.66",
   "notes": {
-    "en-US": "Video calls: tap a colleague in Contacts or History and choose Video call; an incoming video call can be answered with video. During the call: camera on/off and front/back camera. Needs a PBX with video calls switched on (server 1.22).\nThe contact count is shown in your language.",
-    "tr-TR": "Görüntülü arama: Kişiler veya Geçmiş'te bir iş arkadaşına dokunup Görüntülü ara'yı seçin; gelen görüntülü arama görüntülü cevaplanabilir. Görüşmede kamera aç/kapat ve ön/arka kamera. Santralde görüntülü aramanın açık olması gerekir (sunucu 1.22).\nKişi sayısı artık sizin dilinizde."
+    "en-US": "Voicemail as text: when your PBX writes voicemail down (server 1.24), the notification and the voicemail list show what the caller said or a one-line summary.\nVideo calls (1.0.65): Video call in Contacts and History, Video answer, camera on/off and front/back camera.",
+    "tr-TR": "Sesli mesaj metni: santraliniz sesli mesajları yazıya döküyorsa (sunucu 1.24), bildirimde ve sesli mesaj listesinde arayanın söyledikleri veya tek satırlık özet görünür.\nGörüntülü arama (1.0.65): Kişiler ve Geçmiş'te Görüntülü ara, görüntülü cevap, kamera aç/kapat ve ön/arka kamera."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

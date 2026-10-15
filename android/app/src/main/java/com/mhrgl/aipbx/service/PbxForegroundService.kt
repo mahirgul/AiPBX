@@ -763,8 +763,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
     // --- Chat Notifications ---
 
-    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int) {
-        VoicemailNotifications.show(this, caller, durationSec, newCount)
+    override fun onVoicemail(caller: String, durationSec: Int, newCount: Int, text: String) {
+        VoicemailNotifications.show(this, caller, durationSec, newCount, text)
     }
 
     override fun onNewMessage(message: ChatMessage) {
