@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Hacer / enviar foto</string>
     <string name="ui_type_message">Escriba un mensaje...</string>
     <string name="ui_typing">escribiendo...</string>
-    <string name="user_ext_label">Extensión: %1$s (%2$s)</string>
     <string name="full_screen_title">Llamadas entrantes a pantalla completa</string>
     <string name="full_screen_msg">Android ha desactivado las notificaciones a pantalla completa para AiPBX, por lo que con el teléfono bloqueado una llamada solo aparece como una pequeña notificación. Permita las «Notificaciones a pantalla completa» para AiPBX en la siguiente pantalla.</string>
     <string name="full_screen_status_on">Llamadas a pantalla completa: permitidas</string>

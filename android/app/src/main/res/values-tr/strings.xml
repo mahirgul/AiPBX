@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Fotoğraf Çek / Gönder</string>
     <string name="ui_type_message">Bir mesaj yazın...</string>
     <string name="ui_typing">yazıyor...</string>
-    <string name="user_ext_label">Dahili: %1$s (%2$s)</string>
     <string name="full_screen_title">Tam ekran gelen çağrılar</string>
     <string name="full_screen_msg">Android, AiPBX için tam ekran bildirimleri kapattı; bu yüzden kilitli telefonda gelen çağrı yalnızca küçük bir bildirim olarak görünür. Sonraki ekranda AiPBX için \"Tam ekran bildirimler\" iznini verin.</string>
     <string name="full_screen_status_on">Tam ekran çağrı: izinli</string>

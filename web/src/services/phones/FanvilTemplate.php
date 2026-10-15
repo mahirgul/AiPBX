@@ -64,6 +64,8 @@ final class FanvilTemplate extends PhoneTemplate
             'SIP1 Sip Name      :' . $ext,
             'SIP1 Register Addr :' . self::clean($ctx['server'], 255),
             'SIP1 Register Port :' . (int) $ctx['port'],
+            'SIP1 Proxy Addr    :' . self::clean($ctx['proxy'], 255),
+            'SIP1 Proxy Port    :' . ($ctx['proxy'] !== '' ? (int) $ctx['port'] : ''),
             'SIP1 Register User :' . $ext,
             'SIP1 Register Pswd :' . self::clean($ctx['sip_password'], 128),
             'SIP1 Register TTL  :1800',

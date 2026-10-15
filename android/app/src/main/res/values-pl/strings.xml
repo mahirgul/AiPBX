@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Zrób / wyślij zdjęcie</string>
     <string name="ui_type_message">Napisz wiadomość...</string>
     <string name="ui_typing">pisze...</string>
-    <string name="user_ext_label">Numer wewnętrzny: %1$s (%2$s)</string>
     <string name="full_screen_title">Połączenia przychodzące na pełnym ekranie</string>
     <string name="full_screen_msg">Android wyłączył dla AiPBX powiadomienia pełnoekranowe, więc na zablokowanym telefonie połączenie pojawia się tylko jako małe powiadomienie. Na następnym ekranie zezwól AiPBX na „Powiadomienia pełnoekranowe”.</string>
     <string name="full_screen_status_on">Połączenia na pełnym ekranie: dozwolone</string>

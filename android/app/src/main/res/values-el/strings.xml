@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Λήψη / αποστολή φωτογραφίας</string>
     <string name="ui_type_message">Πληκτρολογήστε ένα μήνυμα...</string>
     <string name="ui_typing">πληκτρολογεί...</string>
-    <string name="user_ext_label">Εσωτερικό: %1$s (%2$s)</string>
     <string name="full_screen_title">Εισερχόμενες κλήσεις σε πλήρη οθόνη</string>
     <string name="full_screen_msg">Το Android απενεργοποίησε τις ειδοποιήσεις πλήρους οθόνης για το AiPBX, γι\' αυτό σε κλειδωμένο τηλέφωνο μια κλήση εμφανίζεται μόνο ως μικρή ειδοποίηση. Επιτρέψτε τις «Ειδοποιήσεις πλήρους οθόνης» για το AiPBX στην επόμενη οθόνη.</string>
     <string name="full_screen_status_on">Κλήσεις σε πλήρη οθόνη: επιτρέπονται</string>

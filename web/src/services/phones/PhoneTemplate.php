@@ -34,6 +34,16 @@ abstract class PhoneTemplate
     abstract public function render(array $ctx): string;
 
     /**
+     * Files written for one phone into the TFTP/FTP folder (provisioning
+     * setting): the device file; a vendor with several files lists them all.
+     * @return list<string>
+     */
+    public function exportFiles(string $mac): array
+    {
+        return [$this->deviceFile($mac)];
+    }
+
+    /**
      * The answer to one per-phone file name. Most vendors have a single file;
      * a vendor with several (Poly: master file + settings file) overrides this.
      */

@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Ta / send bilde</string>
     <string name="ui_type_message">Skriv en melding...</string>
     <string name="ui_typing">skriver...</string>
-    <string name="user_ext_label">Internnummer: %1$s (%2$s)</string>
     <string name="full_screen_title">Innkommende anrop i fullskjerm</string>
     <string name="full_screen_msg">Android har slått av fullskjermvarsler for AiPBX, så på en låst telefon vises et innkommende anrop bare som et lite varsel. Tillat «Fullskjermvarsler» for AiPBX på neste skjerm.</string>
     <string name="full_screen_status_on">Anrop i fullskjerm: tillatt</string>

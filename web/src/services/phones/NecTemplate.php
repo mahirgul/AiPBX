@@ -66,8 +66,8 @@ final class NecTemplate extends PhoneTemplate
                 'line.1.displayname' => self::xml($ctx['display_name']),
                 'line.1.primary.address' => self::xml($ctx['server'], 255),
                 'line.1.primary.port' => (string) (int) $ctx['port'],
-                'line.1.outboundproxy.address' => '',
-                'line.1.outboundproxy.port' => '',
+                'line.1.outboundproxy.address' => self::xml($ctx['proxy'], 255),
+                'line.1.outboundproxy.port' => $ctx['proxy'] !== '' ? (string) (int) $ctx['port'] : '',
                 'line.1.authentication.username' => $ext,
                 'line.1.authentication.password' => self::xml($ctx['sip_password'], 128),
                 // Anything dialled is sent after the inter-digit timeout or #.

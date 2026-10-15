@@ -96,7 +96,7 @@ class NetworkServicesService
     /** URL handed out as option 66/160: the MAC-based provisioning address. */
     public static function provisioningUrl(): string
     {
-        return ForgotPasswordService::portalUrl() . '/provision/';
+        return PhoneProvisionService::baseUrl() . '/provision/';
     }
 
     /** Networks TFTP answers: the provisioning allowed networks (Phones → settings). */

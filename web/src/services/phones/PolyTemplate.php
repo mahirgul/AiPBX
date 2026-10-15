@@ -62,6 +62,11 @@ final class PolyTemplate extends PhoneTemplate
         return str_starts_with(strtolower($file), 'phone') ? $this->render($ctx) : self::master($ctx['mac']);
     }
 
+    public function exportFiles(string $mac): array
+    {
+        return [$mac . '.cfg', 'phone' . $mac . '.cfg'];
+    }
+
     /** Master file: points the phone at its settings file next to it. */
     public static function master(string $mac): string
     {
@@ -84,6 +89,8 @@ final class PolyTemplate extends PhoneTemplate
             'reg.1.server.1.address' => self::xml($ctx['server'], 255),
             'reg.1.server.1.port' => (string) (int) $ctx['port'],
             'reg.1.server.1.transport' => $tls ? 'TLS' : 'UDPOnly',
+            'reg.1.outboundProxy.address' => self::xml($ctx['proxy'], 255),
+            'reg.1.outboundProxy.port' => $ctx['proxy'] !== '' ? (string) (int) $ctx['port'] : '',
             'sec.srtp.enable' => (int) $ctx['srtp'] > 0 ? '1' : '0',
             'sec.srtp.offer' => (int) $ctx['srtp'] > 0 ? '1' : '0',
             'sec.srtp.require' => (int) $ctx['srtp'] === 2 ? '1' : '0',

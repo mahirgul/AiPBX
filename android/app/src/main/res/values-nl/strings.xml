@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Foto maken / verzenden</string>
     <string name="ui_type_message">Typ een bericht...</string>
     <string name="ui_typing">typt...</string>
-    <string name="user_ext_label">Toestel: %1$s (%2$s)</string>
     <string name="full_screen_title">Inkomende oproepen op volledig scherm</string>
     <string name="full_screen_msg">Android heeft meldingen op volledig scherm voor AiPBX uitgeschakeld, waardoor een oproep op een vergrendelde telefoon alleen als kleine melding verschijnt. Sta op het volgende scherm \"Meldingen op volledig scherm\" toe voor AiPBX.</string>
     <string name="full_screen_status_on">Oproepen op volledig scherm: toegestaan</string>

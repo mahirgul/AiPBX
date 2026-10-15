@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Foto aufnehmen / senden</string>
     <string name="ui_type_message">Nachricht eingeben...</string>
     <string name="ui_typing">schreibt...</string>
-    <string name="user_ext_label">Nebenstelle: %1$s (%2$s)</string>
     <string name="full_screen_title">Eingehende Anrufe im Vollbild</string>
     <string name="full_screen_msg">Android hat Vollbild-Benachrichtigungen für AiPBX abgeschaltet, deshalb erscheint ein Anruf bei gesperrtem Telefon nur als kleine Benachrichtigung. Erlauben Sie auf der nächsten Seite „Vollbild-Benachrichtigungen“ für AiPBX.</string>
     <string name="full_screen_status_on">Anrufe im Vollbild: erlaubt</string>

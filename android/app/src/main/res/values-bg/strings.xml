@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Заснемане / изпращане на снимка</string>
     <string name="ui_type_message">Напишете съобщение...</string>
     <string name="ui_typing">пише...</string>
-    <string name="user_ext_label">Вътрешен номер: %1$s (%2$s)</string>
     <string name="full_screen_title">Входящи обаждания на цял екран</string>
     <string name="full_screen_msg">Android е изключил известията на цял екран за AiPBX, затова на заключен телефон входящото обаждане се показва само като малко известие. Разрешете „Известия на цял екран“ за AiPBX на следващия екран.</string>
     <string name="full_screen_status_on">Обаждания на цял екран: разрешени</string>

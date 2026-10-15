@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.66",
+  "version": "1.0.67",
   "notes": {
-    "en-US": "Voicemail as text: when your PBX writes voicemail down (server 1.24), the notification and the voicemail list show what the caller said or a one-line summary.\nVideo calls (1.0.65): Video call in Contacts and History, Video answer, camera on/off and front/back camera.",
-    "tr-TR": "Sesli mesaj metni: santraliniz sesli mesajları yazıya döküyorsa (sunucu 1.24), bildirimde ve sesli mesaj listesinde arayanın söyledikleri veya tek satırlık özet görünür.\nGörüntülü arama (1.0.65): Kişiler ve Geçmiş'te Görüntülü ara, görüntülü cevap, kamera aç/kapat ve ön/arka kamera."
+    "en-US": "The header shows just your number and name (no \"Extension:\" label).\nVoicemail as text (1.0.66): the notification and voicemail list show what the caller said when your PBX writes voicemail down.",
+    "tr-TR": "Üst başlıkta yalnızca numaranız ve adınız görünür (\"Extension:\" yazısı kaldırıldı).\nSesli mesaj metni (1.0.66): santraliniz sesli mesajları yazıya döküyorsa bildirimde ve listede arayanın söyledikleri görünür."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
