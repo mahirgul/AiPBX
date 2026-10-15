@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.27.1
+
+- *Network services → TFTP files* shows the folder on the server
+  (`/var/lib/aipbx/tftp`), which TFTP and FTP both serve.
+
 ## 1.27.0
 
 - **Phone logs** (*PBX → Phone logs*): desk phones' syslog, received on this server

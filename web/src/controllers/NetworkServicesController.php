@@ -35,6 +35,7 @@ class NetworkServicesController extends BaseController
             'interfaces' => $interfaces,
             'leases' => $leases,
             'tftpFiles' => NetworkServicesService::tftpFiles(),
+            'tftpDir' => NetworkServicesService::tftpDir(),
             'tftpNetworks' => NetworkServicesService::tftpNetworks(),
             'hints' => NetworkServicesService::dhcpOptionHints(NetworkServicesService::provisioningUrl(), $serverIp),
             'provisioningUrl' => NetworkServicesService::provisioningUrl(),

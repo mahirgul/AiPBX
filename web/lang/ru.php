@@ -4171,6 +4171,7 @@ return [
     'netsvc.never' => 'никогда',
     'netsvc.tftp_title' => 'Файлы TFTP',
     'netsvc.tftp_help' => 'Файлы, которые отдаёт TFTP-сервер, например загрузочные файлы или прошивки. Файлы конфигурации с MAC-адресом в имени отклоняются: они содержат пароль SIP и отдаются только по HTTPS.',
+    'netsvc.tftp_folder' => 'Папка на сервере: %s — TFTP и FTP раздают одну и ту же папку.',
     'netsvc.tftp_empty' => 'Нет файлов',
     'netsvc.col_file' => 'Файл',
     'netsvc.col_size' => 'Размер',
