@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.29.0
+
+- **Fix (NEC):** `dt-<mac>.cfg` is now the phone's *master file* and names the
+  settings file `dt-<mac>-phone.cfg`. The phones read AiPBX's settings file under the
+  master name as a master file without data files, so only the local override file
+  was applied: daylight saving (the clock stayed one hour ahead), codec order,
+  language and telnet never reached them. Three files per phone now (master, data,
+  local override), all in the TFTP/FTP folder and in *Show the phone's file*.
+- **Android 1.0.69:** after the PBX restarts, or while the phone sleeps, the app
+  connects again by itself; before, a phone could stay off the PBX (calls did not
+  ring) until the app was opened. **1.0.68:** in a video call a button next to hang
+  up hides the call buttons.
+- Push: the unused UnifiedPush value is gone; only FCM (and APNs) count as push.
+
 ## 1.28.1
 
 - **Fix (NEC):** a DT710 showed the time one hour ahead: it kept the daylight saving
