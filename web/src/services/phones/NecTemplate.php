@@ -228,7 +228,9 @@ final class NecTemplate extends PhoneTemplate
                 'dst.start.occurence' => '2', 'dst.end.occurence' => '1',
                 'dst.start.last' => '1', 'dst.end.last' => '1',
                 'dst.start.change.time' => '120', 'dst.end.change.time' => '180',
-                'dst.time.adjustment' => '60',
+                // 0 as well: a DT710 kept adding the hour of an earlier file's
+                // rule with dst.start.month 0 alone.
+                'dst.time.adjustment' => '0',
             ],
             'DT_PHONE_SECURITY_DATA' => [
                 'security.telnet.mode' => '1',
