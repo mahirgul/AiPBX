@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.67",
+  "version": "1.0.68",
   "notes": {
-    "en-US": "The header shows just your number and name (no \"Extension:\" label).\nVoicemail as text (1.0.66): the notification and voicemail list show what the caller said when your PBX writes voicemail down.",
-    "tr-TR": "Üst başlıkta yalnızca numaranız ve adınız görünür (\"Extension:\" yazısı kaldırıldı).\nSesli mesaj metni (1.0.66): santraliniz sesli mesajları yazıya döküyorsa bildirimde ve listede arayanın söyledikleri görünür."
+    "en-US": "Video calls: a button next to hang up (or a tap on the picture) hides the call buttons and your name, so you see the whole picture; tap again to bring them back.",
+    "tr-TR": "Görüntülü görüşme: kapat düğmesinin yanındaki düğme (ya da görüntüye dokunmak) arama tuşlarını ve adı gizler, görüntünün tamamı görünür; tekrar dokununca geri gelir."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

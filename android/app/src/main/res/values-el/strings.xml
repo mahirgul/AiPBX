@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Βίντεο</string>
     <string name="btn_camera">Κάμερα</string>
     <string name="btn_switch_camera">Αλλαγή κάμερας</string>
+    <string name="btn_hide_controls">Απόκρυψη κουμπιών</string>
+    <string name="btn_show_controls">Εμφάνιση κουμπιών</string>
     <string name="err_camera_permission_video">Χωρίς άδεια κάμερας: η κλήση συνεχίζεται μόνο με ήχο.</string>
     <string name="err_camera_unavailable">Η κάμερα δεν είναι διαθέσιμη: η κλήση συνεχίζεται μόνο με ήχο.</string>
     <string name="contacts_extensions_listed">εσωτερικά στη λίστα</string>

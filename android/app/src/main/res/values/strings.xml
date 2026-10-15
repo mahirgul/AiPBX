@@ -415,6 +415,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Camera</string>
     <string name="btn_switch_camera">Switch camera</string>
+    <string name="btn_hide_controls">Hide buttons</string>
+    <string name="btn_show_controls">Show buttons</string>
     <string name="err_camera_permission_video">No camera permission: the call continues with audio only.</string>
     <string name="err_camera_unavailable">Camera not available: the call continues with audio only.</string>
     <string name="contacts_extensions_listed">extensions listed</string>
