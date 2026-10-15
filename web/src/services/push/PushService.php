@@ -55,7 +55,8 @@ class PushService
         if ((string)getSystemSetting('push_enabled', '0') !== '1') {
             return false;
         }
-        return (string)getSystemSetting('push_provider', 'none') !== 'none'
+        // Only FCM sends to Android; any other stored value is "none".
+        return (string)getSystemSetting('push_provider', 'none') === 'fcm'
             || (string)getSystemSetting('push_apns_enabled', '0') === '1';
     }
 
