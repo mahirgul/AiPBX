@@ -18,8 +18,17 @@ class CallHistoryAdapter(
 
     private val items = mutableListOf<CallRecord>()
 
-    /** Video calls are on for this user (the dialog then offers "Video call"). */
+    /**
+     * Video calls are on for this user: rows of company extensions get a video
+     * button (#83: it was only in the long-press dialog, which users missed).
+     */
     var videoEnabled = false
+        set(value) {
+            if (field != value) {
+                field = value
+                notifyDataSetChanged()
+            }
+        }
 
     /** Extensions of the company directory: only these can be chatted with (not external numbers). */
     var chatExtensions: Set<String> = emptySet()
@@ -134,6 +143,10 @@ class CallHistoryAdapter(
             val canChat = partyStr in chatExtensions
             binding.btnChatHistory.visibility = if (canChat) View.VISIBLE else View.GONE
             binding.btnChatHistory.setOnClickListener { onChatClick(partyStr, partyName) }
+            // Video only to company extensions: an external number is reached over a trunk.
+            val video = onVideoCallClick.takeIf { videoEnabled && canChat }
+            binding.btnVideoHistory.visibility = if (video != null) View.VISIBLE else View.GONE
+            binding.btnVideoHistory.setOnClickListener { video?.invoke(partyStr, partyName) }
             binding.btnCallDirect.isEnabled = targetCallParty.isNotEmpty()
             binding.btnCallDirect.setOnClickListener {
                 if (targetCallParty.isNotEmpty()) {

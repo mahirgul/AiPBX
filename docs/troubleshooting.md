@@ -51,6 +51,25 @@ fail2ban bans the address after repeated failures. Check `fail2ban-client status
 `fail2ban-client set asterisk unbanip <ip>` and add internal networks to the ignore list on the
 **fail2ban** page.
 
+## The mobile app does not ring
+
+A call to an extension rings its mobile app only while the app is registered (or, with push set
+up under *Admin → Push*, after the push wakes it). Check the registration:
+
+```
+asterisk -rx "pjsip show contacts" | grep <ext>-mob-webrtc
+grep '<ext>-mob-webrtc' /var/log/asterisk/security.log | tail
+```
+
+- No contact and no recent `SuccessfulAuth`: the app is not connected. Without push the call ends
+  at once (CDR `NO ANSWER`, last application `Hangup`).
+- The app refreshes its registration every 2 minutes. A `ChallengeSent` that is never followed by
+  `SuccessfulAuth` means the app's SIP engine stopped answering; Android 1.0.65–1.0.69 could do
+  this after a video call. 1.0.70 restarts the engine by itself within about 2 minutes; on an older
+  version close the app (*Force stop*) and open it again.
+- Xiaomi and some other phones also need *Autostart* allowed and battery saving set to *No
+  restrictions* for the app.
+
 ## No notification for a new voicemail in the app
 
 The notification needs the Android app 1.0.63 or newer (older versions ignore it) and, while the app
