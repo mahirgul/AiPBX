@@ -28,7 +28,7 @@ final class SipShadowTableTest extends TestCase
     protected function setUp(): void
     {
         if (DB_NAME !== 'asterisk_test') {
-            $this->fail('testler yalnizca asterisk_test uzerinde kosmali');
+            $this->fail('tests must run only on asterisk_test');
         }
         getDB()->exec("DELETE FROM sip WHERE id = '" . self::TRUNK . "'");
     }
@@ -46,7 +46,7 @@ final class SipShadowTableTest extends TestCase
         ], $ustyaz);
     }
 
-    private function sipDegeri(string $keyword): ?string
+    private function sipValue(string $keyword): ?string
     {
         $st = getDB()->prepare('SELECT data FROM sip WHERE id = ? AND keyword = ?');
         $st->execute([self::TRUNK, $keyword]);
@@ -54,29 +54,29 @@ final class SipShadowTableTest extends TestCase
         return $v === false ? null : (string) $v;
     }
 
-    public function testDegerYazilabiliyor(): void
+    public function testValueCanBeWritten(): void
     {
         SIPHelper::syncTrunkToSIP($this->trunk(['match_hosts' => '10.1.1.1']));
-        $this->assertSame('10.1.1.1', $this->sipDegeri('match_hosts'));
+        $this->assertSame('10.1.1.1', $this->sipValue('match_hosts'));
     }
 
-    public function testBOSALTILAN_ALAN_GERCEKTEN_SILINIYOR(): void
+    public function testClearedFieldIsReallyRemoved(): void
     {
         // Fill first
         SIPHelper::syncTrunkToSIP($this->trunk(['match_hosts' => '127.0.0.1']));
-        $this->assertSame('127.0.0.1', $this->sipDegeri('match_hosts'), 'on kosul: deger yazilmali');
+        $this->assertSame('127.0.0.1', $this->sipValue('match_hosts'), 'precondition: the value must be written');
 
         // Then save as if cleared in the panel
         SIPHelper::syncTrunkToSIP($this->trunk(['match_hosts' => '']));
 
         $this->assertNull(
-            $this->sipDegeri('match_hosts'),
-            'BOSALTILAN alan sip tablosunda KALDI — eski deger pbx_trunks\'i golgeler '
-            . 've alan bir daha temizlenemez (WebRTC\'yi kiran hatanin ta kendisi)'
+            $this->sipValue('match_hosts'),
+            'a CLEARED field STAYED in the sip table: the old value shadows pbx_trunks '
+            . 'and the field can never be cleared again (exactly the bug that broke WebRTC)'
         );
     }
 
-    public static function kosulluAlanlar(): array
+    public static function conditionalFields(): array
     {
         return [
             'match_hosts'        => ['match_hosts', '10.9.9.9'],
@@ -87,17 +87,17 @@ final class SipShadowTableTest extends TestCase
             'auth_username'      => ['auth_username', 'kullanici'],
         ];
     }
-    #[DataProvider('kosulluAlanlar')]
-    public function testTumKosulluAlanlarGeriAlinabiliyor(string $field, string $value): void
+    #[DataProvider('conditionalFields')]
+    public function testEveryConditionalFieldCanBeCleared(string $field, string $value): void
     {
         SIPHelper::syncTrunkToSIP($this->trunk([$field => $value]));
-        $this->assertSame($value, $this->sipDegeri($field), "on kosul: {$field} yazilmali");
+        $this->assertSame($value, $this->sipValue($field), "precondition: {$field} must be written");
 
         SIPHelper::syncTrunkToSIP($this->trunk([$field => '']));
-        $this->assertNull($this->sipDegeri($field), "{$field} bosaltilinca sip tablosunda kaldi");
+        $this->assertNull($this->sipValue($field), "{$field} stayed in the sip table after being cleared");
     }
 
-    public function testDoluAlanlarSilinmiyor(): void
+    public function testFilledFieldsAreNotRemoved(): void
     {
         // With filled and empty fields at the same time, only the empty ones must be deleted.
         SIPHelper::syncTrunkToSIP($this->trunk([
@@ -109,7 +109,7 @@ final class SipShadowTableTest extends TestCase
             'from_user'   => '',
         ]));
 
-        $this->assertSame('10.2.2.2', $this->sipDegeri('match_hosts'), 'dolu alan yanlislikla silindi');
-        $this->assertNull($this->sipDegeri('from_user'), 'bos alan silinmedi');
+        $this->assertSame('10.2.2.2', $this->sipValue('match_hosts'), 'a filled field was removed by mistake');
+        $this->assertNull($this->sipValue('from_user'), 'an empty field was not removed');
     }
 }

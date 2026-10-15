@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/FaxInboxService.php';
 
+/**
+ * Inbound Fax page (/fax-inbox).
+ * Renders templates/views/fax_inbox/index.php.
+ * Logic: FaxInboxRepository, FaxInboxService.
+ * POST actions: delete_fax.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class FaxInboxController extends BaseController
 {
     public static function index(): void
@@ -22,7 +29,7 @@ class FaxInboxController extends BaseController
         ]);
 
         $page = max(1, intval($_GET['page'] ?? 1));
-        $per_page = View::sayfaBoyutu(50);
+        $per_page = View::pageSize(50);
         $offset = ($page - 1) * $per_page;
 
         $result = FaxInboxRepository::search($user_role, $user_ext, $search, $date_from, $date_to, $per_page, $offset, $user_id);

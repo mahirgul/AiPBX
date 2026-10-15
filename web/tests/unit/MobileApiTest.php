@@ -67,7 +67,7 @@ final class MobileApiTest extends TestCase
         $this->assertSame('8888', $validatedUser['extension']);
     }
 
-    public function testTokenEpochArtincaEskiTokenGecersizYenisiGecerli(): void
+    public function testRaisingTokenEpochInvalidatesOldTokens(): void
     {
         $db = getDB();
         $old = generateMobileToken(self::$testUserId, 3600);
@@ -75,14 +75,14 @@ final class MobileApiTest extends TestCase
 
         $db->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([self::$testUserId]);
         try {
-            $this->assertNull(validateMobileToken($old), 'Şifre sıfırlanınca eski token düşmeli');
+            $this->assertNull(validateMobileToken($old), 'a password reset must revoke the old token');
             $this->assertNotNull(validateMobileToken(generateMobileToken(self::$testUserId, 3600)));
         } finally {
             $db->prepare('UPDATE sys_users SET token_epoch = 0 WHERE id = ?')->execute([self::$testUserId]);
         }
     }
 
-    public function testKullaniciAdiEslesmesiDahiliEslesmesineOncelikli(): void
+    public function testUsernameMatchBeatsExtensionMatch(): void
     {
         $db = getDB();
         $db->exec("DELETE FROM sys_users WHERE username IN ('9001','testuser2')");

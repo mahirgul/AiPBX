@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Trunks page (/trunks).
+ * Renders templates/views/trunks/index.php with assets/js/trunks.js.
+ * Logic: TrunkRepository, TrunkService.
+ * POST actions: delete_trunk, save_trunk, toggle_status.
+ * Admins only.
+ */
 class TrunkController extends BaseController
 {
     public static function index(): void

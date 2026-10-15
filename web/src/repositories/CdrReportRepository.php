@@ -6,7 +6,7 @@ class CdrReportRepository extends BaseRepository
     protected static string $table = 'cdrs';
 
     /** Records per page. */
-    public const SAYFA_BOYUTU = 50;
+    public const PAGE_SIZE = 50;
 
     public static function agentsForFilter(): array
     {
@@ -50,7 +50,7 @@ class CdrReportRepository extends BaseRepository
     /**
      * Builds the filter conditions and parameters (for raw mode).
      */
-    private static function kosullar(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
+    private static function conditions(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
     {
         $sql = " FROM cdrs c LEFT JOIN callcenter_notes n ON n.call_id = c.call_id WHERE 1=1";
         $params = [];
@@ -89,24 +89,24 @@ class CdrReportRepository extends BaseRepository
     /**
      * Branches the search method by view mode.
      */
-    public static function search(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
+    public static function search(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $current_page = 1, int $boyut = self::PAGE_SIZE, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
         if ($viewMode === 'raw') {
-            return static::searchRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $sayfa, $boyut, $deviceFilter);
+            return static::searchRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $current_page, $boyut, $deviceFilter);
         }
-        return static::searchGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $sayfa, $boyut, $deviceFilter, $directionFilter, $trunkFilter);
+        return static::searchGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $current_page, $boyut, $deviceFilter, $directionFilter, $trunkFilter);
     }
 
     /**
      * Raw (un-grouped) CDR list.
      */
-    public static function searchRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = ''): array
+    public static function searchRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $current_page = 1, int $boyut = self::PAGE_SIZE, string $deviceFilter = ''): array
     {
-        [$where, $params] = static::kosullar($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
+        [$where, $params] = self::conditions($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
 
-        $sayfa = max(1, $sayfa);
+        $current_page = max(1, $current_page);
         $boyut = max(1, $boyut);
-        $offset = ($sayfa - 1) * $boyut;
+        $offset = ($current_page - 1) * $boyut;
 
         $sql = "SELECT c.id, c.call_id, c.caller_num, c.queue_name, c.agent_extension, c.agent_name, c.start_time, c.answer_time, c.end_time, c.duration, c.billsec, c.ring_sec, c.status, c.device_type, c.channel, c.dstchannel, c.recording_path,
                        n.customer_name AS note_customer_name, n.phone AS note_phone, n.disposition AS note_disposition, n.notes AS note_text"
@@ -292,14 +292,14 @@ class CdrReportRepository extends BaseRepository
      * Grouped call list (by linkedid).
      * 1 customer call = 1 row.
      */
-    public static function searchGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $sayfa = 1, int $boyut = self::SAYFA_BOYUTU, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
+    public static function searchGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, int $current_page = 1, int $boyut = self::PAGE_SIZE, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
     {
         [$userMap, $didMap] = static::getLookupMaps();
         [$sql, $params] = static::groupedCallsSql($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
 
-        $sayfa = max(1, $sayfa);
+        $current_page = max(1, $current_page);
         $boyut = max(1, $boyut);
-        $offset = ($sayfa - 1) * $boyut;
+        $offset = ($current_page - 1) * $boyut;
 
         static::db()->exec('SET SESSION group_concat_max_len = 65535');
         $stmt = static::db()->prepare($sql . " ORDER BY g.start_time DESC LIMIT " . $boyut . " OFFSET " . $offset);
@@ -502,37 +502,37 @@ class CdrReportRepository extends BaseRepository
     /**
      * Total record count and summary statistics — over ALL matching records.
      */
-    public static function ozet(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
+    public static function summary(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $viewMode = 'grouped', string $directionFilter = '', string $trunkFilter = ''): array
     {
         if ($viewMode === 'raw') {
-            return static::ozetRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
+            return static::summaryRaw($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
         }
-        return static::ozetGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
+        return static::summaryGrouped($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
     }
 
     /**
      * Raw (ungrouped) summary statistics.
      */
-    public static function ozetRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
+    public static function summaryRaw(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = ''): array
     {
-        [$where, $params] = static::kosullar($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
+        [$where, $params] = self::conditions($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter);
 
-        $sql = "SELECT COUNT(*) AS toplam,
-                       SUM(c.status = 'ANSWERED') AS cevaplanan,
-                       SUM(c.status IN ('NO ANSWER','ABANDON')) AS cevapsiz,
-                       SUM(c.status = 'BUSY') AS mesgul,
-                       SUM(c.status NOT IN ('ANSWERED','NO ANSWER','ABANDON','BUSY')) AS basarisiz,
-                       COALESCE(SUM(c.billsec), 0) AS toplam_sure,
-                       COALESCE(SUM(c.ring_sec), 0) AS toplam_calma,
-                       COALESCE(ROUND(AVG(CASE WHEN c.status = 'ANSWERED' THEN c.billsec END)), 0) AS ort_konusma,
-                       COALESCE(ROUND(AVG(c.ring_sec)), 0) AS ort_calma,
-                       SUM(c.recording_path IS NOT NULL AND c.recording_path != '') AS kayitli"
+        $sql = "SELECT COUNT(*) AS total,
+                       SUM(c.status = 'ANSWERED') AS answered,
+                       SUM(c.status IN ('NO ANSWER','ABANDON')) AS missed,
+                       SUM(c.status = 'BUSY') AS busy,
+                       SUM(c.status NOT IN ('ANSWERED','NO ANSWER','ABANDON','BUSY')) AS failed,
+                       COALESCE(SUM(c.billsec), 0) AS total_duration,
+                       COALESCE(SUM(c.ring_sec), 0) AS total_ring,
+                       COALESCE(ROUND(AVG(CASE WHEN c.status = 'ANSWERED' THEN c.billsec END)), 0) AS avg_talk,
+                       COALESCE(ROUND(AVG(c.ring_sec)), 0) AS avg_ring,
+                       SUM(c.recording_path IS NOT NULL AND c.recording_path != '') AS recorded"
              . $where;
 
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
         $r = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        foreach (['toplam','cevaplanan','cevapsiz','mesgul','basarisiz','toplam_sure','toplam_calma','ort_konusma','ort_calma','kayitli'] as $k) {
+        foreach (['total','answered','missed','busy','failed','total_duration','total_ring','avg_talk','avg_ring','recorded'] as $k) {
             $r[$k] = intval($r[$k] ?? 0);
         }
         return $r;
@@ -541,30 +541,30 @@ class CdrReportRepository extends BaseRepository
     /**
      * Real call statistics, grouped by linkedid.
      */
-    public static function ozetGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
+    public static function summaryGrouped(bool $canViewAll, string $userExt, ?string $startTs, ?string $endTs, string $statusFilter, string $agentFilter, string $searchQuery, string $deviceFilter = '', string $directionFilter = '', string $trunkFilter = ''): array
     {
         [$sql, $params] = static::groupedCallsSql($canViewAll, $userExt, $startTs, $endTs, $statusFilter, $agentFilter, $searchQuery, $deviceFilter, $directionFilter, $trunkFilter);
 
         static::db()->exec('SET SESSION group_concat_max_len = 65535');
         $stmt = static::db()->prepare("SELECT
-            COUNT(*) AS toplam,
-            SUM(status = 'ANSWERED') AS cevaplanan,
-            SUM(status IN ('NO ANSWER', 'ABANDON')) AS cevapsiz,
-            SUM(status = 'BUSY') AS mesgul,
-            SUM(status NOT IN ('ANSWERED', 'NO ANSWER', 'ABANDON', 'BUSY')) AS basarisiz,
-            COALESCE(SUM(billsec), 0) AS toplam_sure,
-            COALESCE(SUM(ring_sec), 0) AS toplam_calma,
-            COALESCE(ROUND(AVG(CASE WHEN status = 'ANSWERED' THEN billsec END)), 0) AS ort_konusma,
-            COALESCE(ROUND(AVG(ring_sec)), 0) AS ort_calma,
-            SUM(recording_path IS NOT NULL) AS kayitli,
-            SUM(direction = '" . CdrCallAnalyzer::INBOUND . "') AS gelen,
-            SUM(direction = '" . CdrCallAnalyzer::OUTBOUND . "') AS giden,
-            SUM(direction = '" . CdrCallAnalyzer::INTERNAL . "') AS dahili,
+            COUNT(*) AS total,
+            SUM(status = 'ANSWERED') AS answered,
+            SUM(status IN ('NO ANSWER', 'ABANDON')) AS missed,
+            SUM(status = 'BUSY') AS busy,
+            SUM(status NOT IN ('ANSWERED', 'NO ANSWER', 'ABANDON', 'BUSY')) AS failed,
+            COALESCE(SUM(billsec), 0) AS total_duration,
+            COALESCE(SUM(ring_sec), 0) AS total_ring,
+            COALESCE(ROUND(AVG(CASE WHEN status = 'ANSWERED' THEN billsec END)), 0) AS avg_talk,
+            COALESCE(ROUND(AVG(ring_sec)), 0) AS avg_ring,
+            SUM(recording_path IS NOT NULL) AS recorded,
+            SUM(direction = '" . CdrCallAnalyzer::INBOUND . "') AS inbound,
+            SUM(direction = '" . CdrCallAnalyzer::OUTBOUND . "') AS outbound,
+            SUM(direction = '" . CdrCallAnalyzer::INTERNAL . "') AS internal,
             SUM(direction = '" . CdrCallAnalyzer::TRANSIT . "') AS transit
         FROM ({$sql}) calls");
         $stmt->execute($params);
         $r = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        foreach (['toplam','cevaplanan','cevapsiz','mesgul','basarisiz','toplam_sure','toplam_calma','ort_konusma','ort_calma','kayitli','gelen','giden','dahili','transit'] as $k) {
+        foreach (['total','answered','missed','busy','failed','total_duration','total_ring','avg_talk','avg_ring','recorded','inbound','outbound','internal','transit'] as $k) {
             $r[$k] = intval($r[$k] ?? 0);
         }
         return $r;

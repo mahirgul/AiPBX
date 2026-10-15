@@ -22,7 +22,7 @@ $code = trim($json['code'] ?? $_POST['code'] ?? '');
 $device_name = trim($json['device_name'] ?? $_POST['device_name'] ?? 'Mobile');
 
 if (empty($idToken) && empty($code)) {
-    mobileError('Google id_token veya authorization code parametresi gereklidir.', 400);
+    mobileError('Google id_token or authorization code is required.', 400);
 }
 
 $userInfo = null;

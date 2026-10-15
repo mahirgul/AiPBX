@@ -146,7 +146,7 @@ $filter_url = function (array $override) {
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('cdr_reports.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
-        <input type="hidden" name="boyut" value="<?php echo (int)$sayfa_boyutu; ?>">
+        <input type="hidden" name="size" value="<?php echo (int)$page_size; ?>">
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('cdr_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($search_query) || !empty($status_filter) || !empty($agent_filter) || !empty($device_filter) || !empty($direction_filter) || !empty($trunk_filter) || ($view_mode ?? 'grouped') !== 'grouped' || $date_filter !== 'today'): ?>
@@ -159,7 +159,7 @@ $filter_url = function (array $override) {
         <?php
             // The "Show: N records" selector sits ABOVE the table, on the right —
             // in the same place as the other tables in the system (dt-controls-bar).
-            $page_size = $sayfa_boyutu;
+            $page_size = $page_size;
             require dirname(__DIR__, 2) . '/pagination_controls.php';
         ?>
         <table class="data-table" data-no-dt="true">
@@ -453,9 +453,9 @@ $filter_url = function (array $override) {
 
     <?php
         // Sistem genelinde tek sayfalama gorunumu (templates/pagination.php).
-        $page = $sayfa;
-        $page_size = $sayfa_boyutu;
-        $total_pages = $toplam_sayfa;
+        $page = $current_page;
+        $page_size = $page_size;
+        $total_pages = $total_pages;
         $total_rows = $stat_total;
         require dirname(__DIR__, 2) . '/pagination.php';
     ?>

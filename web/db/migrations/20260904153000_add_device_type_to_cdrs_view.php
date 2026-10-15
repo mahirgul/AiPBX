@@ -9,19 +9,19 @@ final class AddDeviceTypeToCdrsView extends AbstractMigration
 {
     public function up(): void
     {
-        $this->execute($this->gorunum(true));
+        $this->execute($this->viewSql(true));
     }
 
     public function down(): void
     {
-        $this->execute($this->gorunum(false));
+        $this->execute($this->viewSql(false));
     }
 
-    private function gorunum(bool $yeni): string
+    private function viewSql(bool $withNew): string
     {
-        $hedef = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
+        $target = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
 
-        $deviceSql = $yeni
+        $deviceSql = $withNew
             ? ", `c`.`channel` AS `channel`,
                `c`.`dstchannel` AS `dstchannel`,
                CASE
@@ -35,7 +35,7 @@ final class AddDeviceTypeToCdrsView extends AbstractMigration
                END AS `device_type`"
             : "";
 
-        $durationSql = $yeni
+        $durationSql = $withNew
             ? "GREATEST(`c`.`duration`, `c`.`billsec`) AS `duration`,
                `c`.`billsec` AS `billsec`,
                GREATEST(`c`.`duration`, `c`.`billsec`) - `c`.`billsec` AS `ring_sec`"
@@ -53,7 +53,7 @@ final class AddDeviceTypeToCdrsView extends AbstractMigration
                 WHEN `c`.`lastapp` = 'Queue' THEN substring_index(`c`.`lastdata`, ',', 1)
                 WHEN `d`.`title` IS NOT NULL THEN `d`.`title`
                 WHEN `c`.`dcontext` = 'from-internal-pbx' THEN 'Dahili Görüşme'
-                ELSE concat('Gelen Rota: ', {$hedef})
+                ELSE concat('Gelen Rota: ', {$target})
             END AS `queue_name`,
             CASE
                 WHEN `c`.`accountcode` IS NOT NULL AND `c`.`accountcode` <> '' AND `c`.`accountcode` <> `c`.`src` THEN `c`.`accountcode`
@@ -79,6 +79,6 @@ final class AddDeviceTypeToCdrsView extends AbstractMigration
                 WHEN `c`.`dst` IS NOT NULL AND `c`.`dst` <> '' AND `c`.`dst` <> '0' AND `c`.`dst` <> `c`.`src` THEN `c`.`dst`
                 ELSE NULL
             END
-        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$hedef}";
+        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$target}";
     }
 }

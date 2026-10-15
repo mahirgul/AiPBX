@@ -18,10 +18,10 @@ function syncOutboundDialplan() {
 function __syncOutboundDialplanBody() {
     // Trunk channel limits. The route's trunks_json does not have them; the
     // limit is kept on the trunk's own record (pbx_trunks.max_channels).
-    $trunk_limitleri = [];
+    $trunk_limits = [];
     $trunk_cid_norm = [];
     foreach (getDB()->query("SELECT trunk_name, max_channels, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
-        $trunk_limitleri[$tl['trunk_name']] = intval($tl['max_channels']);
+        $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
         $trunk_cid_norm[$tl['trunk_name']] = [
             'keep_last' => max(0, min(20, intval($tl['cid_keep_last'] ?? 0))),
             'prepend' => preg_replace('/[^0-9+]/', '', (string)($tl['cid_prepend'] ?? '')),
@@ -78,7 +78,7 @@ function __syncOutboundDialplanBody() {
             foreach ($trunks_raw as $t) {
                 $tn = trim($t['trunk_name'] ?? '');
                 if ($tn === '') continue;
-                $trunk_chain[] = ['trunk_name' => $tn, 'callerid_override' => trim($t['callerid_override'] ?? ''), 'max_channels' => intval($trunk_limitleri[$tn] ?? 0)];
+                $trunk_chain[] = ['trunk_name' => $tn, 'callerid_override' => trim($t['callerid_override'] ?? ''), 'max_channels' => intval($trunk_limits[$tn] ?? 0)];
             }
             if (empty($trunk_chain)) {
                 $fallback = AsteriskHelper::getPrimaryTrunkName();

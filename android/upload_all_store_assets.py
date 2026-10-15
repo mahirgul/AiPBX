@@ -22,13 +22,13 @@ SCREENSHOTS = [
 
 def upload_all():
     if not os.path.exists(KEY_FILE):
-        print(f"Hata: Key dosyasi bulunamadi: {KEY_FILE}")
+        print(f"Error: key file not found: {KEY_FILE}")
         return
     if not os.path.exists(AAB_PATH):
-        print(f"Hata: AAB dosyasi bulunamadi: {AAB_PATH}")
+        print(f"Error: AAB file not found: {AAB_PATH}")
         return
 
-    print("1. Google Play Developer API baglantisi kuruluyor...")
+    print("1. Connecting to the Google Play Developer API...")
     creds = service_account.Credentials.from_service_account_file(
         KEY_FILE,
         scopes=['https://www.googleapis.com/auth/androidpublisher']
@@ -36,13 +36,13 @@ def upload_all():
     service = build('androidpublisher', 'v3', credentials=creds)
 
     try:
-        print(f"2. '{PACKAGE_NAME}' paketi icin yeni bir duzenleme (edit) olusturuluyor...")
+        print(f"2. '{PACKAGE_NAME}' creating a new edit for the package...")
         edit = service.edits().insert(packageName=PACKAGE_NAME, body={}).execute()
         edit_id = edit['id']
         print(f"   Duzenleme ID: {edit_id}")
 
-        # --- AAB YUKLEME ---
-        print(f"3. AAB paketi yukleniyor (v1.0.5, build 6)...")
+        # --- AAB UPLOAD ---
+        print(f"3. Uploading the AAB (v1.0.5, build 6)...")
         media = MediaFileUpload(AAB_PATH, mimetype='application/octet-stream', resumable=True)
         bundle_response = service.edits().bundles().upload(
             packageName=PACKAGE_NAME,
@@ -51,10 +51,10 @@ def upload_all():
         ).execute()
 
         version_code = bundle_response['versionCode']
-        print(f"   AAB yuklendi! Version Code: {version_code}")
+        print(f"   AAB uploaded! Version code: {version_code}")
 
         # --- TRACK ATAMA ---
-        print(f"4. Surum '{TRACK}' kanalina ataniyor...")
+        print(f"4. Assigning the release to track '{TRACK}'...")
         track_body = {
             'track': TRACK,
             'releases': [{
@@ -79,18 +79,18 @@ def upload_all():
             track=TRACK,
             body=track_body
         ).execute()
-        print(f"   Surum '{TRACK}' kanalina atandi.")
+        print(f"   Release assigned to track '{TRACK}'.")
 
-        # --- SCREENSHOTS YUKLEME ---
-        print("5. Magaza ekran goruntuleri (Phone Screenshots) yukleniyor...")
+        # --- SCREENSHOTS UPLOAD ---
+        print("5. Uploading store screenshots (phone)...")
         listings = service.edits().listings().list(packageName=PACKAGE_NAME, editId=edit_id).execute()
         languages = [item['language'] for item in listings.get('listings', [])]
         if not languages:
             languages = ['tr-TR', 'en-US']
-        print(f"   Diller: {languages}")
+        print(f"   Languages: {languages}")
 
         for lang in languages:
-            print(f"   [{lang}] Dili icin ekran goruntuleri guncelleniyor...")
+            print(f"   [{lang}] updating screenshots for this language...")
             try:
                 service.edits().images().deleteall(
                     packageName=PACKAGE_NAME,
@@ -111,22 +111,22 @@ def upload_all():
                         imageType='phoneScreenshots',
                         media_body=sc_media
                     ).execute()
-                    print(f"      Screenshot {idx} yuklendi (ID: {res['image']['id']})")
+                    print(f"      Screenshot {idx} uploaded (ID: {res['image']['id']})")
 
         # --- COMMIT ---
-        print("6. Tum degisiklikler onaylanip yayinlaniyor (commit)...")
+        print("6. Committing all changes...")
         service.edits().commit(packageName=PACKAGE_NAME, editId=edit_id).execute()
-        print("   Tebrikler! Hem yeni surum (AAB v1.0.5) hem de ekran goruntuleri Google Play Console'a basariyla kaydedildi.")
+        print("   Done: the new version (AAB v1.0.5) and the screenshots were saved to Google Play Console.")
 
     except HttpError as e:
-        print(f"\n[HTTP Hatasi] Kod: {e.resp.status}")
+        print(f"\n[HTTP error] Code: {e.resp.status}")
         try:
             err = json.loads(e.content.decode('utf-8'))
-            print("Detay:", json.dumps(err, indent=2, ensure_ascii=False))
+            print("Details:", json.dumps(err, indent=2, ensure_ascii=False))
         except Exception:
             print("Icerik:", e.content)
     except Exception as ex:
-        print(f"\nGenel Hata: {ex}")
+        print(f"\nError: {ex}")
 
 if __name__ == '__main__':
     upload_all()

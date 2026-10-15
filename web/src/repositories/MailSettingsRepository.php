@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the E-mail settings.
+ * Tables: sys_settings.
+ * Used by MailSettingsController, FaxMailSettingsController.
+ */
 class MailSettingsRepository extends BaseRepository
 {
     protected static string $table = 'sys_settings';

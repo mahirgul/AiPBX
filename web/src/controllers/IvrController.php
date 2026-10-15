@@ -4,6 +4,13 @@ require_once __DIR__ . '/../services/IvrCallFlowService.php';
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * IVR page (/ivrs).
+ * Renders templates/views/ivrs/index.php with assets/js/destinations_helper.js, ivrs.js.
+ * Logic: IVRService, IvrCallFlowService, IvrRepository.
+ * POST actions: delete_ivr, delete_ivr_entry, save_ivr, save_ivr_entry, toggle_status.
+ * Admins only.
+ */
 class IvrController extends BaseController
 {
     public static function index(): void

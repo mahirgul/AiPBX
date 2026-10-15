@@ -4,6 +4,11 @@
  */
 require_once __DIR__ . '/../asterisk_sync.php';
 
+/**
+ * Admin → Appearance: portal name, logos and colours (sys_settings).
+ * Uploaded logos are checked by extension and size and stored under uploadDir(),
+ * which the web server serves; resetToDefaults() goes back to the AiPBX look.
+ */
 class BrandSettingsService {
     const UPLOAD_DIR_SUFFIX = '/assets/images/brand';
     const UPLOAD_URL = '/assets/images/brand';

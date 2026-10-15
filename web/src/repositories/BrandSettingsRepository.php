@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Appearance page (logo, name, colours).
+ * Tables: sys_settings.
+ * Used by BrandSettingsController.
+ */
 class BrandSettingsRepository extends BaseRepository
 {
     protected static string $table = 'sys_settings';

@@ -114,40 +114,40 @@ function findCallerChannelForAgent($ext, $lines = null) {
     // "core show channels concise" has 14 columns separated by '!'
     // (see Asterisk main/cli.c CONCISE_FORMAT_STRING): [12] is the bridge id.
     $kopru = [];
-    $koprudekiler = [];
+    $bridgeMembers = [];
     foreach ($lines as $l) {
         $c = explode('!', $l);
         if (count($c) < 14 || $c[0] === '') continue;
         $kopru[$c[0]] = $c[12];
-        if ($c[12] !== '') $koprudekiler[$c[12]][] = $c[0];
+        if ($c[12] !== '') $bridgeMembers[$c[12]][] = $c[0];
     }
 
-    $koprudekiEs = function ($kanal) use ($kopru, $koprudekiler) {
-        $b = $kopru[$kanal] ?? '';
+    $bridgePeer = function ($channel) use ($kopru, $bridgeMembers) {
+        $b = $kopru[$channel] ?? '';
         if ($b === '') return null;
-        foreach ($koprudekiler[$b] ?? [] as $k) {
-            if ($k !== $kanal) return $k;
+        foreach ($bridgeMembers[$b] ?? [] as $k) {
+            if ($k !== $channel) return $k;
         }
         return null;
     };
 
-    $cihazDeseni = '#^PJSIP/' . preg_quote($ext, '#') . '-(sip|webrtc|mob-webrtc)-#';
-    $kendiDeseni = '#^(PJSIP/' . preg_quote($ext, '#') . '-|Local/' . preg_quote($ext, '#') . '@)#';
+    $devicePattern = '#^PJSIP/' . preg_quote($ext, '#') . '-(sip|webrtc|mob-webrtc)-#';
+    $ownPattern = '#^(PJSIP/' . preg_quote($ext, '#') . '-|Local/' . preg_quote($ext, '#') . '@)#';
 
-    foreach (array_keys($kopru) as $kanal) {
-        if (!preg_match($cihazDeseni, $kanal)) continue;
+    foreach (array_keys($kopru) as $channel) {
+        if (!preg_match($devicePattern, $channel)) continue;
 
-        $es = $koprudekiEs($kanal);
+        $es = $bridgePeer($channel);
         if ($es === null) continue;
 
         // If a Local pair sits in between, move on to the other half's bridge.
         if (preg_match('#^(Local/.*);2$#', $es, $m)) {
-            $es = $koprudekiEs($m[1] . ';1');
+            $es = $bridgePeer($m[1] . ';1');
             if ($es === null) continue;
         }
 
         // The agent's own legs cannot be the caller.
-        if (preg_match($kendiDeseni, $es)) continue;
+        if (preg_match($ownPattern, $es)) continue;
 
         return $es;
     }

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Microsoft Teams page.
+ * Tables: sys_settings, teams_user_mappings, sys_users.
+ * Used by MsTeamsController, MsTeamsService.
+ */
 class MsTeamsRepository extends BaseRepository
 {
     protected static string $table = 'teams_user_mappings';

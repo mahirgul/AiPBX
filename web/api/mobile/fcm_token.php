@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($deviceId === '' && $fcmToken === null) {
-        mobileError('device_id veya fcm_token parametresi zorunludur.', 400);
+        mobileError('device_id or fcm_token is required.', 400);
     }
 
     // Find the existing record: by device_id first, otherwise by fcm_token
@@ -52,11 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // If the same FCM token is registered to ANOTHER user, that row is NOT TAKEN OVER.
         $stmt = $db->prepare("SELECT id, user_id, fcm_token, push_type, voip_token FROM sys_mobile_devices WHERE fcm_token = ? LIMIT 1");
         $stmt->execute([$fcmToken]);
-        $yabanci = $stmt->fetch(PDO::FETCH_ASSOC);
+        $foreign = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($yabanci && (int) $yabanci['user_id'] === (int) $userId) {
-            $existing = $yabanci;
-        } elseif ($yabanci) {
+        if ($foreign && (int) $foreign['user_id'] === (int) $userId) {
+            $existing = $foreign;
+        } elseif ($foreign) {
             $db->prepare("UPDATE sys_mobile_devices 
                              SET is_active = 0, 
                                  fcm_token = CONCAT('revoked:', id, ':', UNIX_TIMESTAMP()), 
@@ -64,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                  voip_token = NULL,
                                  updated_at = NOW() 
                            WHERE id = ?")
-               ->execute([$yabanci['id']]);
-            error_log("fcm_token.php: token reassigned, old record deactivated (id={$yabanci['id']}, eski user_id={$yabanci['user_id']})");
+               ->execute([$foreign['id']]);
+            error_log("fcm_token.php: token reassigned, old record deactivated (id={$foreign['id']}, old user_id={$foreign['user_id']})");
         }
     }
 

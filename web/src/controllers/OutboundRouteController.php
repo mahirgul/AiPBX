@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Outbound page (/outbound-routes).
+ * Renders templates/views/outbound_routes/index.php with assets/js/outbound_routes.js.
+ * Logic: OutboundRouteRepository, RouteService.
+ * POST actions: delete_route, save_route, toggle_status.
+ * Admins only.
+ */
 class OutboundRouteController extends BaseController
 {
     public static function index(): void

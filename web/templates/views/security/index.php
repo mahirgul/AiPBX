@@ -78,7 +78,7 @@
             </div>
 
             <?php if ($twoFactorEnabled): ?>
-                <!-- 2FA Aktif Durumu -->
+                <!-- 2FA enabled status -->
                 <div style="text-align: center; padding: 20px 0;">
                     <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(34, 197, 94, 0.15); color: var(--success); display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 14px;">
                         <i class="fas fa-shield-check"></i>

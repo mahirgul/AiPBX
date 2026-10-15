@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Feature Codes page (/feature-codes).
+ * Renders templates/views/feature_codes/index.php with assets/js/feature_codes.js.
+ * Logic: FeatureCodeRepository, FeatureCodeService.
+ * POST actions: save_feature_code, toggle_status.
+ * Admins only.
+ */
 class FeatureCodeController extends BaseController
 {
     public static function index(): void

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Sounds page.
+ * Tables: pbx_moh_classes.
+ * Used by SoundController.
+ */
 class SoundRepository extends BaseRepository
 {
     protected static string $table = 'pbx_announcements';

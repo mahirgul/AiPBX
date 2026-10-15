@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Call end (hang-up actions) page.
+ * Tables: pbx_hangup_actions, pbx_announcements.
+ * Used by HangupActionController.
+ */
 class HangupActionRepository extends BaseRepository
 {
     protected static string $table = 'pbx_hangup_actions';

@@ -3,6 +3,13 @@
 require_once __DIR__ . '/../../auth.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
 
+/**
+ * Sign in with Google page (/google-integration, /integrations/google).
+ * Renders templates/views/google_integration/index.php with assets/js/google_integration.js.
+ * Logic: GoogleAuthService.
+ * POST actions: action.
+ * Admins only.
+ */
 class GoogleIntegrationController extends BaseController
 {
     public static function index(): void

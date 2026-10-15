@@ -89,11 +89,11 @@ function buildInternalNumbersConf(array $entries): string
         return $conf;
     }
 
-    $gorulen = [];
+    $seen = [];
     foreach ($entries as $e) {
         $num = preg_replace('/[^0-9]/', '', (string) $e['number']);
-        if ($num === '' || isset($gorulen[$num])) continue;
-        $gorulen[$num] = true;
+        if ($num === '' || isset($seen[$num])) continue;
+        $seen[$num] = true;
 
         $label = toCleanAscii((string) $e['label']);
         $conf .= "\n; " . $e['dest_type'] . " #" . $e['dest_id'] . " ({$label})\n";

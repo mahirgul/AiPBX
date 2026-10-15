@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Sent faxes.
+ * Tables: fax_sent.
+ * Used by FaxSentController.
+ */
 class FaxSentRepository extends BaseRepository
 {
     protected static string $table = 'fax_sent';

@@ -5,6 +5,13 @@ require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.ph
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Boss - Secretary page (/boss-secretary).
+ * Renders templates/views/boss_secretary/index.php with assets/js/boss_secretary.js.
+ * Logic: BossSecretaryService.
+ * POST actions: delete_group, save_group.
+ * Admins only.
+ */
 class BossSecretaryController extends BaseController
 {
     public static function index(): void

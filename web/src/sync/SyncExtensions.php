@@ -40,8 +40,8 @@ function pjsipIdentifyHosts(): array
 
     $hosts = ['localhost', '127.0.0.1'];
 
-    $harici = trim((string) getSystemSetting('pjsip_external_ip', ''));
-    if ($harici !== '') { $hosts[] = $harici; }
+    $external = trim((string) getSystemSetting('pjsip_external_ip', ''));
+    if ($external !== '') { $hosts[] = $external; }
 
     if (function_exists('net_get_interfaces')) {
         foreach ((array) net_get_interfaces() as $iface) {

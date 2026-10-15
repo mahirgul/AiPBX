@@ -29,7 +29,7 @@
             </button>
         </div>
 
-        <!-- TAB 1: E-Posta & Bildirim -->
+        <!-- TAB 1: E-mail & notification -->
         <div class="settings-tab-pane active" id="tab_email">
             <div class="u-grid-2">
                 <div class="form-group">

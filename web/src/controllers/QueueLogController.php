@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../services/ReportExport.php';
 
+/**
+ * Queue Log page (/queue-logs).
+ * Renders templates/views/queue_logs/index.php with assets/js/queue_logs.js.
+ * Logic: QueueLogRepository.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class QueueLogController extends BaseController
 {
     public static function index(): void
@@ -33,13 +39,13 @@ class QueueLogController extends BaseController
             $start_ts = strtotime('-30 days midnight');
         }
 
-        $sayfa = max(1, intval($_GET['page'] ?? 1));
-        $sayfa_boyutu = View::sayfaBoyutu(50);
+        $current_page = max(1, intval($_GET['page'] ?? 1));
+        $page_size = View::pageSize(50);
 
         // Ensure latest logs are synced to DB
         QueueLogRepository::syncLatest();
 
-        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map, $view_mode, $sayfa, $sayfa_boyutu);
+        $result = QueueLogRepository::searchAndParse($start_ts, $end_ts, $event_filter, $agent_filter, $search_query, $agent_map, $view_mode, $current_page, $page_size);
 
         $format = $_GET['export'] ?? '';
         if (in_array($format, ['pdf', 'xlsx'], true)) {
@@ -53,9 +59,9 @@ class QueueLogController extends BaseController
         }
 
         $total_records = (int)($result['total'] ?? count($result['logs']));
-        $toplam_sayfa = max(1, (int)ceil($total_records / $sayfa_boyutu));
-        if ($sayfa > $toplam_sayfa) {
-            $sayfa = $toplam_sayfa;
+        $total_pages = max(1, (int)ceil($total_records / $page_size));
+        if ($current_page > $total_pages) {
+            $current_page = $total_pages;
         }
 
         $page_title = t('queue_logs.title');
@@ -72,9 +78,9 @@ class QueueLogController extends BaseController
             'search_query' => $search_query,
             'date_filter' => $date_filter,
             'view_mode' => $view_mode,
-            'sayfa' => $sayfa,
-            'toplam_sayfa' => $toplam_sayfa,
-            'sayfa_boyutu' => $sayfa_boyutu,
+            'current_page' => $current_page,
+            'total_pages' => $total_pages,
+            'page_size' => $page_size,
             'total_records' => $total_records,
             'parsed_logs' => $result['logs'],
             'stat_total_enter' => $result['stat_total_enter'],

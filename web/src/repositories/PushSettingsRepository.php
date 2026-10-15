@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Push settings page.
+ * Tables: sys_settings, sys_mobile_devices, sys_users.
+ * Used by PushSettingsController, PushSettingsService.
+ */
 class PushSettingsRepository extends BaseRepository
 {
     protected static string $table = 'sys_settings';

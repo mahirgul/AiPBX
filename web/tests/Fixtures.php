@@ -27,7 +27,7 @@ final class Fixtures
      * test that set t38_support=0 still saw t38_udptl=yes because of the
      * sip.t38_udptl='yes' left by the previous test.
      */
-    private const TABLOLAR = [
+    private const TABLES = [
         'pbx_dids',
         'pbx_ivrs',
         'pbx_queues',
@@ -42,11 +42,11 @@ final class Fixtures
 
     public static function load(): void
     {
-        self::uretimKontrolu();
+        self::productionGuard();
 
         $db = getDB();
         $db->exec('SET FOREIGN_KEY_CHECKS=0');
-        foreach (self::TABLOLAR as $t) {
+        foreach (self::TABLES as $t) {
             $db->exec("TRUNCATE TABLE `{$t}`");
         }
         $db->exec('SET FOREIGN_KEY_CHECKS=1');
@@ -94,11 +94,11 @@ final class Fixtures
      * Must NEVER run on the production database — TRUNCATE cannot be undone.
      * bootstrap.php already prevents it; this is the second line of defence.
      */
-    private static function uretimKontrolu(): void
+    private static function productionGuard(): void
     {
         if (DB_NAME !== 'asterisk_test') {
             throw new RuntimeException(
-                "Fixtures YALNIZCA asterisk_test uzerinde calisir, su an DB_NAME='" . DB_NAME . "'"
+                "Fixtures run ONLY on asterisk_test, current DB_NAME='" . DB_NAME . "'"
             );
         }
     }

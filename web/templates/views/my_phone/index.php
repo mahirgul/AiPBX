@@ -64,12 +64,12 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         </div>
 
         <div class="my-phone-badges-wrapper">
-            <!-- WebRTC Durum Rozeti -->
+            <!-- WebRTC status badge -->
             <?php $isWebrtcOnline = ($webrtcStatus && stripos($webrtcStatus, 'not in use') !== false); ?>
             <span id="my-phone-webrtc-pill" class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
                 <i class="fas fa-globe"></i> WebRTC: <strong id="my-phone-webrtc-text" style="color: <?php echo $isWebrtcOnline ? 'var(--success)' : 'var(--text-muted)'; ?>;"><?php echo $isWebrtcOnline ? t('my_phone.webrtc_status_online') : t('my_phone.webrtc_status_offline'); ?></strong>
             </span>
-            <!-- SIP Durum Rozeti -->
+            <!-- SIP status badge -->
             <?php $isSipOnline = ($sipStatus && stripos($sipStatus, 'not in use') !== false); ?>
             <span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
                 <i class="fas fa-phone-square-alt"></i> SIP: 
@@ -77,7 +77,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <?php echo $isSipOnline ? t('my_phone.sip_status_online') : t('my_phone.sip_status_offline'); ?>
                 </strong>
             </span>
-            <!-- Mobil Durum Rozeti -->
+            <!-- Mobile status badge -->
             <?php $isMobileOnline = (!empty($mobileStatus) && stripos($mobileStatus, 'not in use') !== false); ?>
             <span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
                 <i class="fas fa-mobile-alt"></i> <?php echo t('my_phone.lbl_mobile'); ?>: 
@@ -85,7 +85,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <?php echo $isMobileOnline ? t('my_phone.mobile_status_online') : t('my_phone.mobile_status_offline'); ?>
                 </strong>
             </span>
-            <!-- DND Rozeti -->
+            <!-- DND badge -->
             <?php if ($isDnd): ?>
                 <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 5px 10px; font-size: 11.5px; border-radius: 8px;">
                     <i class="fas fa-minus-circle"></i> <?php echo t('my_phone.dnd_on'); ?>
@@ -169,7 +169,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     </button>
                 </div>
 
-                <!-- Arama Kutusu -->
+                <!-- Search box -->
                 <div class="my-phone-search-wrapper" style="position: relative; flex: 1; min-width: 200px; max-width: 380px;">
                     <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
                     <input type="text" name="q" value="<?php echo htmlspecialchars($search); ?>" class="form-control form-control-sm" placeholder="<?php echo t('my_phone.search_placeholder'); ?>" style="padding-left: 32px; border-radius: 8px;">
@@ -212,7 +212,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </tr>
                         <?php else: ?>
                             <?php
-                            $sureBicim = fn(int $sn) => sprintf('%02d:%02d', intdiv($sn, 60), $sn % 60);
+                            $formatDuration = fn(int $sn) => sprintf('%02d:%02d', intdiv($sn, 60), $sn % 60);
                             foreach ($calls as $c):
                                 $dir = $c['direction'];
                                 $bill = (int)$c['billsec'];
@@ -243,7 +243,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <!-- ID -->
                                     <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $c['id']; ?></td>
                                     
-                                    <!-- Tarih & Saat -->
+                                    <!-- Date & time -->
                                     <td class="u-fw-600 u-nowrap">
                                         <?php echo date('d.m.Y H:i:s', strtotime($c['calldate'])); ?>
                                     </td>
@@ -278,7 +278,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <?php endif; ?>
                                     </td>
 
-                                    <!-- Cihaz -->
+                                    <!-- Device -->
                                     <td class="col-hide-mobile">
                                         <?php if ($dev === 'mobil'): ?>
                                             <span class="badge" style="background: rgba(13, 202, 240, 0.15); color: #087990; border: 1px solid rgba(13, 202, 240, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
@@ -301,21 +301,21 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <td>
                                         <?php if ($disp === 'ANSWERED'): ?>
                                             <div style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--success);">
-                                                <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $sureBicim($bill); ?>
+                                                <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $formatDuration($bill); ?>
                                             </div>
                                             <div class="u-fs-11 u-muted u-mt-2 u-nowrap">
-                                                <?php echo t('my_phone.ring'); ?>: <?php echo $sureBicim($ring); ?> • <?php echo t('my_phone.total'); ?>: <?php echo $sureBicim($dur); ?>
+                                                <?php echo t('my_phone.ring'); ?>: <?php echo $formatDuration($ring); ?> • <?php echo t('my_phone.total'); ?>: <?php echo $formatDuration($dur); ?>
                                             </div>
                                         <?php elseif (in_array($disp, ['NO ANSWER', 'NOANSWER', 'CANCEL', 'BUSY'])): ?>
                                             <div style="font-family: monospace; font-size: 12px; color: var(--warning); font-weight: 600;">
-                                                <i class="fas fa-bell" style="font-size: 10px; margin-right: 3px;"></i><?php echo t('my_phone.ring'); ?>: <?php echo $sureBicim($ring > 0 ? $ring : $dur); ?>
+                                                <i class="fas fa-bell" style="font-size: 10px; margin-right: 3px;"></i><?php echo t('my_phone.ring'); ?>: <?php echo $formatDuration($ring > 0 ? $ring : $dur); ?>
                                             </div>
                                         <?php else: ?>
                                             <span style="color: var(--text-muted); font-size: 12px; font-family: monospace;">-</span>
                                         <?php endif; ?>
                                     </td>
 
-                                    <!-- Durum -->
+                                    <!-- Status -->
                                     <td>
                                         <span class="badge <?php echo $badgeClass; ?> u-fs-11">
                                             <?php echo $dispLabel; ?>
@@ -647,7 +647,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 <div class="u-flex-between">
                                     <strong class="u-fs-13 u-text-main">
                                         <i class="fas fa-mobile-alt u-mr-6 u-primary"></i>
-                                        <?php echo htmlspecialchars($md['device_name'] ?: 'Android Cihaz'); ?>
+                                        <?php echo htmlspecialchars($md['device_name'] ?: 'Android'); ?>
                                     </strong>
                                     <span class="badge badge-success" style="font-size: 10px; padding: 3px 8px;">
                                         v<?php echo htmlspecialchars($md['app_version'] ?: '1.0'); ?>

@@ -21,7 +21,7 @@ final class PendingSyncTest extends TestCase
         Fixtures::load();
     }
 
-    public function testIsaretlemeSatirOlusturur(): void
+    public function testMarkingCreatesARow(): void
     {
         markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
 
@@ -31,7 +31,7 @@ final class PendingSyncTest extends TestCase
         $this->assertSame(1, $n);
     }
 
-    public function testAyniKayitTekrarIsaretlenincesMukerrerSatirOlusmaz(): void
+    public function testMarkingTheSameRecordTwiceMakesNoDuplicate(): void
     {
         markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
         markPendingSync('trunks', 'trunk', 1, 'Test Trunk (degisti)', 'update', null);
@@ -39,10 +39,10 @@ final class PendingSyncTest extends TestCase
         $n = (int) getDB()->query(
             "SELECT COUNT(*) FROM sys_pending_sync WHERE domain='trunks'"
         )->fetchColumn();
-        $this->assertSame(1, $n, '(domain, entity_type, entity_id) benzersiz olmali');
+        $this->assertSame(1, $n, '(domain, entity_type, entity_id) must be unique');
     }
 
-    public function testFarkliDomainlerAyriSayilir(): void
+    public function testDifferentDomainsCountSeparately(): void
     {
         $this->assertSame(0, getPendingSyncCount());
 
@@ -52,26 +52,26 @@ final class PendingSyncTest extends TestCase
         $this->assertSame(2, getPendingSyncCount());
     }
 
-    public function testIsaretlemekConfDosyasinaDOKUNMAZ(): void
+    public function testMarkingDoesNotTouchTheConfFile(): void
     {
         $f = ASTERISK_PBX_DIR . '/pjsip_trunks.conf';
-        file_put_contents($f, "; onceki icerik\n");
+        file_put_contents($f, "; previous content\n");
         $once = md5_file($f);
 
         markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
 
         clearstatcache();
         $this->assertSame($once, md5_file($f),
-            'markPendingSync config dosyasini degistirdi — ertelenmis reload sozlesmesi bozuk!');
+            'markPendingSync changed the config file — the deferred reload contract is broken!');
     }
 
-    public function testBilinmeyenDomainReddedilir(): void
+    public function testUnknownDomainIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        markPendingSync('__olmayan_domain__', 'trunk', 1, 'X', 'update', null);
+        markPendingSync('__missing_domain__', 'trunk', 1, 'X', 'update', null);
     }
 
-    public function testListeIsaretlenenKaydiGosterir(): void
+    public function testListShowsTheMarkedRecord(): void
     {
         markPendingSync('trunks', 'trunk', 42, 'Ozel Etiket', 'create', null);
 
@@ -86,7 +86,7 @@ final class PendingSyncTest extends TestCase
         $this->assertSame('trunk', $list['trunks'][0]['entity_type']);
     }
 
-    public function testSilmeIsaretiDeKaydedilir(): void
+    public function testDeleteMarkIsRecordedToo(): void
     {
         markPendingSync('queues', 'queue', 7, 'Silinen Kuyruk', 'delete', null);
 
@@ -97,7 +97,7 @@ final class PendingSyncTest extends TestCase
         $this->assertSame('Silinen Kuyruk', $row['entity_label']);
     }
 
-    public function testApiDirektUygulaGecerliCsrfIleCalisir(): void
+    public function testApiDirectApplyWorksWithValidCsrf(): void
     {
         $_SESSION['user_id'] = 1;
         $_SESSION['user_role'] = 'admin';

@@ -24,7 +24,8 @@ if ($page_size <= 0) {
 // that page might not exist and the list would look empty.
 $boyut_url = static function (int $b): string {
     $qs = $_GET;
-    $qs['boyut'] = $b;
+    unset($qs['boyut']);
+    $qs['size'] = $b;
     $qs['page'] = 1;
     return '?' . http_build_query($qs);
 };
@@ -34,7 +35,7 @@ $boyut_url = static function (int $b): string {
     <div class="dt-length-box">
         <span><?php echo t('pagination.show'); ?></span>
         <select class="dt-length-select" onchange="if(window.loadSPAPage){window.loadSPAPage(this.value,true);}else{window.location.href=this.value;}">
-            <?php foreach (View::SAYFA_BOYUTLARI as $b): ?>
+            <?php foreach (View::PAGE_SIZES as $b): ?>
                 <option value="<?php echo htmlspecialchars($boyut_url($b)); ?>" <?php echo $b === $page_size ? 'selected' : ''; ?>>
                     <?php echo sprintf(t('pagination.records'), $b); ?>
                 </option>

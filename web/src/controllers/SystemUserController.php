@@ -5,6 +5,14 @@ require_once __DIR__ . '/../services/TwoFactorService.php';
 require_once __DIR__ . '/../services/UserInvitationService.php';
 require_once __DIR__ . '/../services/UserImportService.php';
 
+/**
+ * Users page (/system-users).
+ * Renders templates/views/system_users/index.php with assets/js/system_users.js.
+ * Logic: RoleRepository, RoleService, SystemUserRepository, TwoFactorService, UserImportService,
+ * UserInvitationService, UserService.
+ * POST actions: delete_user, reset_password, toggle_status.
+ * Admins only.
+ */
 class SystemUserController extends BaseController
 {
     public static function index(): void

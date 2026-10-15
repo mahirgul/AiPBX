@@ -93,12 +93,12 @@ function check_routes(?string $onlyRoute = null): void
             $n++;
 
             if ($d === null) {
-                fail('rota', "$path [$lang]", 'alt-surec sonuc uretmedi');
+                fail('routes', "$path [$lang]", 'the subprocess produced no result');
                 continue;
             }
             if (($d['status'] ?? '') === 'skip') { $n--; continue; }
             if (($d['status'] ?? '') === 'fatal') {
-                fail('rota', "$path [$lang]", $d['error']);
+                fail('routes', "$path [$lang]", $d['error']);
                 continue;
             }
 
@@ -108,7 +108,7 @@ function check_routes(?string $onlyRoute = null): void
             // from the output — the app runs with display_errors=Off, so they
             // never show up in the HTML (see the note in _smoke_render.php).
             foreach (($d['php_errors'] ?? []) as $e) {
-                fail('rota', "$path [$lang]", 'PHP hatasi: ' . $e);
+                fail('routes', "$path [$lang]", 'PHP error: ' . $e);
             }
 
             // GHOST ID: an element the JS looks up with getElementById that is
@@ -121,11 +121,11 @@ function check_routes(?string $onlyRoute = null): void
             // it. Checking one language is enough.
             if ($lang === 'tr') {
                 preg_match_all('/\bid=["\']([^"\']+)["\']/', $html, $mv);
-                $mevcut = array_flip($mv[1]);
+                $existing = array_flip($mv[1]);
                 preg_match_all('/getElementById\(\s*[\'"]([^\'"]+)[\'"]\s*\)/', $html, $ar);
                 foreach (array_unique($ar[1]) as $id) {
-                    if (!isset($mevcut[$id])) {
-                        fail('rota', $path, "hayalet id: JS '{$id}' elemanini ariyor ama sayfada yok");
+                    if (!isset($existing[$id])) {
+                        fail('routes', $path, "ghost id: JS looks for element '{$id}' but the page has none");
                     }
                 }
             }
@@ -134,14 +134,14 @@ function check_routes(?string $onlyRoute = null): void
                 continue; // redirect is legitimate — no size/closing-tag check
             }
             if (($d['bytes'] ?? 0) < $MIN_BYTES) {
-                fail('rota', "$path [$lang]", 'cikti sasirtici sekilde kisa: ' . ($d['bytes'] ?? 0) . ' bayt');
+                fail('routes', "$path [$lang]", 'output is suspiciously short: ' . ($d['bytes'] ?? 0) . ' bytes');
             }
             if (empty($d['closed'])) {
-                fail('rota', "$path [$lang]", 'cikti </html> ile kapanmiyor (yarim render?)');
+                fail('routes', "$path [$lang]", 'output does not end with </html> (partial render?)');
             }
         }
     }
-    group_done('rota', $n);
+    group_done('routes', $n);
 }
 
 if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
@@ -181,8 +181,8 @@ function check_rbac(): void
     // removed from the controller the page does not open — a second layer
     // prints 403 (defence in depth). Showing in production that this check
     // "can turn red" would need breaking both layers at once; not done.
-    $IZINLI_MIN    = 10000;
-    $ENGELLI_MAKS  = 5000;
+    $ALLOWED_MIN    = 10000;
+    $BLOCKED_MAX  = 5000;
 
     foreach ($ADMIN_ONLY as $path) {
         // Canary: admin must be able to see this page. Otherwise the real
@@ -190,9 +190,9 @@ function check_rbac(): void
         $asAdmin = render_route($path, 'tr', 'admin');
         $n++;
         $adminBytes = $asAdmin['bytes'] ?? 0;
-        if ($adminBytes < $IZINLI_MIN) {
-            fail('rbac', $path, "KANARYA: admin bile bu sayfayi render edemedi ({$adminBytes} bayt)"
-                . ' — bu kontrol anlamsiz gecerdi');
+        if ($adminBytes < $ALLOWED_MIN) {
+            fail('rbac', $path, "CANARY: even admin could not render this page ({$adminBytes} bytes)"
+                . ' — this check would have passed meaninglessly');
             continue;
         }
 
@@ -200,9 +200,9 @@ function check_rbac(): void
         $asLow = render_route($path, 'tr', 'fax_user');
         $n++;
         $lowBytes = $asLow['bytes'] ?? 0;
-        if ($lowBytes > $ENGELLI_MAKS) {
-            fail('rbac', $path, "fax_user rolu bu admin sayfasini RENDER EDEBILDI ({$lowBytes} bayt,"
-                . " admin {$adminBytes} bayt) — yetki acigi!");
+        if ($lowBytes > $BLOCKED_MAX) {
+            fail('rbac', $path, "the fax_user role COULD RENDER this admin page ({$lowBytes} bytes,"
+                . " admin {$adminBytes} bytes) — permission hole!");
         }
     }
     group_done('rbac', $n);
@@ -310,8 +310,8 @@ function check_conventions(): void
     foreach (glob(SMOKE_ROOT . '/src/services/*.php') as $f) {
         $src = php_code_without_comments($f);
         if (preg_match('/(?<![\w:>$])(syncAll[A-Za-z]+|sync[A-Za-z]+Dialplan|syncEverything)\s*\(/', $src, $m)) {
-            fail('konvansiyon', $rel($f),
-                "dogrudan {$m[1]}() cagiriyor — markPendingSync() kullanilmali");
+            fail('conventions', $rel($f),
+                "calls {$m[1]}() directly — use markPendingSync()");
         }
     }
 
@@ -323,8 +323,8 @@ function check_conventions(): void
                          glob(SMOKE_ROOT . '/src/sync/*.php')) as $f) {
         $src = php_code_without_comments($f);
         if (preg_match('/file_put_contents\s*\(\s*[^,)]*(\/etc\/|OVERRIDE_FILE|ASTERISK_PBX_DIR)/', $src)) {
-            fail('konvansiyon', $rel($f),
-                'repo disina duz file_put_contents ile yaziyor — FileHelper::writeFile() kullanilmali');
+            fail('conventions', $rel($f),
+                'writes outside the repo with a plain file_put_contents — use FileHelper::writeFile()');
         }
     }
 
@@ -336,7 +336,7 @@ function check_conventions(): void
                          glob(SMOKE_ROOT . '/src/services/*.php')) as $f) {
         $src = php_code_without_comments($f);
         if (preg_match('/(KB[UÜ] Portal|Karab[uü]k)/u', $src, $m)) {
-            fail('konvansiyon', $rel($f), "uretilen ciktida eski marka referansi: '{$m[1]}'");
+            fail('conventions', $rel($f), "old brand reference in generated output: '{$m[1]}'");
         }
     }
 
@@ -344,7 +344,7 @@ function check_conventions(): void
     //    EXCEPTION: the authentication flow itself needs NO session — the
     //    login, logout and password reset pages are anonymous by nature, so
     //    looking for an access check there would be wrong.
-    $ANONIM_CONTROLLER = [
+    $ANONYMOUS_CONTROLLERS = [
         'LoginController.php',
         'TwoFactorLoginController.php',
         'LogoutController.php',
@@ -362,10 +362,10 @@ function check_conventions(): void
     ];
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/controllers/*.php') as $f) {
-        if (in_array(basename($f), $ANONIM_CONTROLLER, true)) { continue; }
+        if (in_array(basename($f), $ANONYMOUS_CONTROLLERS, true)) { continue; }
         $src = php_code_without_comments($f);
         if (!preg_match('/(requireRole|requireLogin|requireApiLogin)\s*\(/', $src)) {
-            fail('konvansiyon', $rel($f), 'hicbir yetki kontrolu cagirmiyor');
+            fail('conventions', $rel($f), 'calls no permission check');
         }
     }
 
@@ -374,7 +374,7 @@ function check_conventions(): void
     $n++;
     foreach (glob(SMOKE_ROOT . '/api/cc_actions/*.php') as $f) {
         if (strpos(file_get_contents($f), 'CC_DISPATCH_ACTIVE') === false) {
-            fail('konvansiyon', $rel($f), 'CC_DISPATCH_ACTIVE guard yok — dogrudan cagrilabilir');
+            fail('conventions', $rel($f), 'no CC_DISPATCH_ACTIVE guard — can be called directly');
         }
     }
 
@@ -387,15 +387,15 @@ function check_conventions(): void
     $sdb = getDB();
     foreach (INTERNAL_NUMBER_SOURCES as $key => $src) {
         try {
-            $kolonlar = $sdb->query("DESCRIBE `{$src['table']}`")->fetchAll(PDO::FETCH_COLUMN);
+            $columns = $sdb->query("DESCRIBE `{$src['table']}`")->fetchAll(PDO::FETCH_COLUMN);
         } catch (\Throwable $e) {
-            fail('konvansiyon', "internal_numbers: {$src['table']}", 'tablo okunamadi: ' . $e->getMessage());
+            fail('conventions', "internal_numbers: {$src['table']}", 'cannot read table: ' . $e->getMessage());
             continue;
         }
-        foreach (['internal_number' => 'internal_number', 'label_col' => $src['label_col'], 'dest_col' => $src['dest_col']] as $etiket => $kolon) {
-            if (!in_array($kolon, $kolonlar, true)) {
-                fail('konvansiyon', "internal_numbers[{$key}]",
-                     "{$src['table']}.{$kolon} yok ({$etiket}) — manifest ile sema uyumsuz");
+        foreach (['internal_number' => 'internal_number', 'label_col' => $src['label_col'], 'dest_col' => $src['dest_col']] as $label => $column) {
+            if (!in_array($column, $columns, true)) {
+                fail('conventions', "internal_numbers[{$key}]",
+                     "{$src['table']}.{$column} missing ({$label}) — manifest does not match the schema");
             }
         }
     }
@@ -411,12 +411,12 @@ function check_conventions(): void
         $src = php_code_without_comments($f);
         if (strpos($src, "dirname(__DIR__, 2) . '/sync/") !== false
             || strpos($src, 'dirname(__DIR__, 2) . "/sync/') !== false) {
-            fail('konvansiyon', $rel($f),
-                 "yanlis sync yolu: /var/www/html/sync/ yok, dogrusu /src/sync/");
+            fail('conventions', $rel($f),
+                 "wrong sync path: there is no /var/www/html/sync/, use /src/sync/");
         }
     }
 
-    group_done('konvansiyon', $n);
+    group_done('conventions', $n);
 }
 
 if ($only === null || $only === 'conventions') { check_conventions(); }
@@ -493,7 +493,7 @@ function check_lint(): void
             $open = substr_count($src, '{');
             $close = substr_count($src, '}');
             if ($open !== $close) {
-                fail('lint', basename($f), "suslu parantez dengesi bozuk ({ $open / } $close) [node yok]");
+                fail('lint', basename($f), "unbalanced braces ({ $open / } $close) [no node]");
             }
         }
     }
@@ -505,14 +505,14 @@ if ($only === null || $only === 'lint') { check_lint(); }
 
 // ---------------------------------------------------------------- RAPOR
 echo "\n";
-foreach ($COUNTS as $g => $n) { printf("  %-14s %d kontrol\n", $g, $n); }
+foreach ($COUNTS as $g => $n) { printf("  %-14s %d checks\n", $g, $n); }
 
 if (empty($FAILS)) {
     echo "\nCLEAN — all checks passed.\n";
     exit(0);
 }
 
-echo "\n" . count($FAILS) . " HATA:\n";
+echo "\n" . count($FAILS) . " ERRORS:\n";
 foreach ($FAILS as $f) {
     printf("  [%s] %s\n      %s\n", $f['group'], $f['what'], $f['detail']);
 }

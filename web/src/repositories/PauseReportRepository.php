@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Pause reports (call center).
+ * Tables: cc_pause_logs.
+ * Used by PauseReportController.
+ */
 class PauseReportRepository extends BaseRepository
 {
     protected static string $table = 'cc_pause_logs';

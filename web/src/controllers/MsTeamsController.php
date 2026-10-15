@@ -4,6 +4,13 @@ require_once __DIR__ . '/../../auth.php';
 require_once __DIR__ . '/../services/MsTeamsService.php';
 require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
 
+/**
+ * Teams page (/ms-teams).
+ * Renders templates/views/ms_teams/index.php with assets/js/ms_teams.js.
+ * Logic: MsTeamsRepository, MsTeamsService.
+ * POST actions: save_direct_routing, save_webhook_settings.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class MsTeamsController extends BaseController
 {
     public static function index(): void

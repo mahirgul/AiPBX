@@ -1,4 +1,9 @@
 <?php
+/**
+ * Database access for the Outbound routes page.
+ * Tables: pbx_outbound_routes, pbx_trunks.
+ * Used by OutboundRouteController.
+ */
 class OutboundRouteRepository extends BaseRepository
 {
     protected static string $table = 'pbx_outbound_routes';

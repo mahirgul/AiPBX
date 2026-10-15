@@ -19,19 +19,19 @@ class QueueLogRepository extends BaseRepository
      * - 'grouped': joins the call legs by call_id into a call journey.
      * - 'raw': lists the raw Asterisk event logs line by line.
      */
-    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $sayfa = 1, int $boyut = 50): array
+    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $current_page = 1, int $boyut = 50): array
     {
         if ($viewMode === 'raw') {
-            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
+            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $current_page, $boyut);
         }
-        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
+        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $current_page, $boyut);
     }
 
     /**
      * Grouped call list (by call_id).
      * 1 queue call = 1 row (with an expandable call journey / timeline).
      */
-    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
+    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $current_page = 1, int $boyut = 50): array
     {
         $db = static::db();
 
@@ -76,7 +76,7 @@ class QueueLogRepository extends BaseRepository
         }
 
         // Pick the most recent calls (call_id) matching the filters (paged)
-        $offset = max(0, ($sayfa - 1) * $boyut);
+        $offset = max(0, ($current_page - 1) * $boyut);
         $sqlCalls = "SELECT call_id, MIN(time_id) AS first_ts, MAX(time_id) AS last_ts, MAX(queue_name) AS q_name 
                      FROM cc_queue_logs"
                   . $where
@@ -279,7 +279,7 @@ class QueueLogRepository extends BaseRepository
     /**
      * Raw (un-grouped) Asterisk queue log list.
      */
-    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
+    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $current_page = 1, int $boyut = 50): array
     {
         $sqlWhere = " WHERE 1=1";
         $params = [];
@@ -320,7 +320,7 @@ class QueueLogRepository extends BaseRepository
             return array_merge(['view_mode' => 'raw', 'logs' => [], 'total' => 0], $stats);
         }
 
-        $offset = max(0, ($sayfa - 1) * $boyut);
+        $offset = max(0, ($current_page - 1) * $boyut);
         $sql = "SELECT id, time_id, created_at, call_id, queue_name, agent, event, data1, data2, data3, data4 FROM cc_queue_logs"
              . $sqlWhere
              . " ORDER BY time_id DESC, id DESC LIMIT " . (int)$boyut . " OFFSET " . (int)$offset;
