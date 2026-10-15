@@ -4494,4 +4494,11 @@ return [
     'netsvc.switch_ntp_server' => 'NTP-сервер (час)',
     'netsvc.switch_ntp_server_desc' => 'цей сервер роздає час телефонам із мереж вище; вкажіть їм %s як NTP-сервер;',
     'netsvc.saved_ntp_server' => 'Цей сервер роздає час (NTP).',
+    'sidebar.item_help' => 'Довідка (посібник із системи)',
+    'help.title' => 'Довідка',
+    'help.search_placeholder' => 'Пошук у документах…',
+    'help.offline_note' => 'Читається з цього сервера: працює без інтернету. Документи англійською мовою.',
+    'help.results_for' => 'Результати для «%s»',
+    'help.no_results' => 'Нічого не знайдено.',
+    'help.not_found' => 'Такого документа немає.',
 ];
