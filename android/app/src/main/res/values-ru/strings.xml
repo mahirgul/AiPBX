@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Снять / отправить фото</string>
     <string name="ui_type_message">Введите сообщение...</string>
     <string name="ui_typing">печатает...</string>
-    <string name="user_ext_label">Добавочный: %1$s (%2$s)</string>
     <string name="full_screen_title">Входящие звонки на весь экран</string>
     <string name="full_screen_msg">Android отключил полноэкранные уведомления для AiPBX, поэтому на заблокированном телефоне входящий звонок показывается только маленьким уведомлением. На следующем экране разрешите AiPBX «Полноэкранные уведомления».</string>
     <string name="full_screen_status_on">Звонки на весь экран: разрешены</string>

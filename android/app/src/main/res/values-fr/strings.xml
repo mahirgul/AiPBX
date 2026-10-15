@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Prendre / envoyer une photo</string>
     <string name="ui_type_message">Saisissez un message...</string>
     <string name="ui_typing">écrit...</string>
-    <string name="user_ext_label">Poste : %1$s (%2$s)</string>
     <string name="full_screen_title">Appels entrants en plein écran</string>
     <string name="full_screen_msg">Android a désactivé les notifications en plein écran pour AiPBX : sur un téléphone verrouillé, un appel n’apparaît que sous forme de petite notification. Autorisez les « Notifications plein écran » pour AiPBX sur l’écran suivant.</string>
     <string name="full_screen_status_on">Appels en plein écran : autorisés</string>

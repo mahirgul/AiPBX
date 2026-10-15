@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Pořídit / odeslat fotografii</string>
     <string name="ui_type_message">Napište zprávu...</string>
     <string name="ui_typing">píše...</string>
-    <string name="user_ext_label">Linka: %1$s (%2$s)</string>
     <string name="full_screen_title">Příchozí hovory na celou obrazovku</string>
     <string name="full_screen_msg">Android vypnul pro AiPBX oznámení na celou obrazovku, takže na zamčeném telefonu se příchozí hovor zobrazí jen jako malé oznámení. Na další obrazovce povolte pro AiPBX „Oznámení na celou obrazovku“.</string>
     <string name="full_screen_status_on">Hovory na celou obrazovku: povoleny</string>

@@ -59,6 +59,7 @@ final class GrandstreamTemplate extends PhoneTemplate
             'P271' => '1',                                     // account 1 active
             'P270' => self::clean($ctx['extension']),          // account name
             'P47' => $server,                                  // SIP server
+            'P48' => $ctx['proxy'] !== '' ? self::clean($ctx['proxy'], 255) . ':' . (int) $ctx['port'] : '', // outbound proxy
             'P35' => self::clean($ctx['extension']),           // SIP user ID
             'P36' => self::clean($ctx['extension']),           // authenticate ID
             'P34' => self::clean($ctx['sip_password'], 128),   // authenticate password

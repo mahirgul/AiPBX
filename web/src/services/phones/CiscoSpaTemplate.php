@@ -61,6 +61,8 @@ final class CiscoSpaTemplate extends PhoneTemplate
             'Auth_ID_1_' => self::xml($ctx['extension']),
             'Proxy_1_' => self::xml($ctx['server'], 255) . ':' . (int) $ctx['port'],
             'Register_1_' => 'Yes',
+            'Use_Outbound_Proxy_1_' => $ctx['proxy'] !== '' ? 'Yes' : 'No',
+            'Outbound_Proxy_1_' => $ctx['proxy'] !== '' ? self::xml($ctx['proxy'], 255) . ':' . (int) $ctx['port'] : '',
             'SIP_Transport_1_' => $tls ? 'TLS' : 'UDP',
             'Secure_Call_Setting_1_' => (int) $ctx['srtp'] > 0 ? 'Yes' : 'No',
             'Voice_Mail_Number' => self::xml($ctx['voicemail']),

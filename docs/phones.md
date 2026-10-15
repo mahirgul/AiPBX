@@ -56,17 +56,43 @@ Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, 
 (below) needs the Profile Rule set once.
 
 **Zero touch (DHCP option 66).** Fill **Allowed networks** in *Provisioning settings* with your
-phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision/` as option 66.
+phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision/` (or the
+*provisioning address*, below) as option 66.
 Phones inside these networks then ask for their MAC-based file directly; a known MAC gets its
 configuration, an unknown one appears under *Waiting phones*.
 AiPBX can also be that DHCP server for a phone network or VLAN, or serve TFTP next to your own
 DHCP server: see [Network services](network-services.md).
 
+## Server addresses (networks without DNS)
+
+Phone networks often have no DNS or no internet access, so a phone cannot resolve the PBX's name.
+*Provisioning settings → Server addresses* takes IP addresses instead (empty: the domain):
+
+| Field | Written to / used for |
+|-------|-----------------------|
+| **SIP server (registration)** | the registrar in every vendor's file |
+| **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
+| **Provisioning address** | where phones fetch their files, e.g. `http://10.23.3.70`: the per-phone URLs on the page and DHCP option 66/160 |
+| **NTP server** | a name or an IP address |
+
+Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
+(no redirect to HTTPS), for phones that cannot do HTTPS to an IP address or do not follow a
+redirect; the allowed networks and the per-phone token still apply. With an IP over HTTPS the
+certificate does not match the address: most phones accept that, some need HTTP.
+
+**TFTP / FTP.** For phones that read their file from TFTP or FTP (NEC), tick *Also write the
+phones' files into the TFTP/FTP folder*: every assigned phone's file (`dt-<mac>.cfg`, `<mac>.cfg`,
+…) is written into the folder of [Network services](network-services.md) and kept current — right
+after a change on this page and every 5 minutes (`bin/provision_tftp.php`, so a SIP password
+changed elsewhere follows). Files of removed phones are deleted, and all of them when the option
+is switched off. The files contain the SIP password; TFTP and FTP answer only the allowed networks.
+
 ## What is written to the phone
 
 | Setting | Value |
 |---------|-------|
-| SIP server | the installation's domain (the same setting as the links in e-mails: `PORTAL_DOMAIN`, else the external domain on *PBX Settings*), never the address the phone used |
+| SIP server | the *SIP server* address of the provisioning settings, else the installation's domain (the same setting as the links in e-mails: `PORTAL_DOMAIN`, else the external domain on *PBX Settings*), never the address the phone used |
+| Outbound proxy | the *Outbound proxy* of the provisioning settings (empty: none) |
 | Transport | UDP (port 5060) or TLS (5061), from *PBX Settings* ports |
 | Account | the extension number as user and authentication name, its SIP password, the user's name as display name |
 | SRTP | off, optional or required |

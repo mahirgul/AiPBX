@@ -75,7 +75,7 @@ final class PhoneProvisionTest extends TestCase
         return [
             'mac' => '001565aabbcc', 'model' => $model, 'extension' => self::EXT,
             'display_name' => "Ali\nlinekey.9.type = 16", 'sip_password' => self::$sipPassword,
-            'server' => 'pbx.test.example', 'port' => 5060, 'transport' => 'udp', 'srtp' => 1,
+            'server' => 'pbx.test.example', 'proxy' => '', 'port' => 5060, 'transport' => 'udp', 'srtp' => 1,
             'codecs' => ['g722', 'pcma'], 'ntp' => 'pool.ntp.org', 'utc_offset' => 180, 'language' => 'tr',
             'voicemail' => '*97', 'pickup_prefix' => '*21', 'admin_password' => self::$adminPassword,
             'keys' => $keys,
@@ -599,5 +599,35 @@ final class PhoneProvisionTest extends TestCase
         $this->assertFalse(PhoneProvisionService::savePhone(['csrf_token' => 'phones-test-csrf', 'mac' => '001565aabbcc', 'model' => 'nope'])['success']);
         $this->assertTrue(PhoneProvisionService::savePhone(['csrf_token' => 'phones-test-csrf', 'mac' => '001565aabbcc', 'model' => 'yealink-t46u', 'user_id' => $this->userId])['success']);
         $this->assertFalse(PhoneProvisionService::savePhone(['csrf_token' => 'wrong', 'mac' => '001565aabbcd', 'model' => 'yealink-t46u'])['success']);
+    }
+
+    public function testOutboundProxyInEveryTemplate(): void
+    {
+        $ctx = ['proxy' => '10.23.3.70'] + $this->context('yealink-t46u');
+        $this->assertStringContainsString('account.1.outbound_proxy_enable = 1', (new YealinkTemplate())->render($ctx));
+        $this->assertStringContainsString('account.1.outbound_proxy.1.address = 10.23.3.70', (new YealinkTemplate())->render($ctx));
+        $this->assertStringContainsString('<P48>10.23.3.70:5060</P48>', (new GrandstreamTemplate())->render($ctx));
+        $this->assertStringContainsString('SIP1 Proxy Addr    :10.23.3.70', (new FanvilTemplate())->render($ctx));
+        $this->assertStringContainsString('10.23.3.70:5060;transport=udp', (new SnomTemplate())->render($ctx));
+        $this->assertStringContainsString('Outbound_Proxy_1_', (new CiscoSpaTemplate())->render($ctx));
+        $this->assertStringContainsString('reg.1.outboundProxy.address="10.23.3.70"', (new PolyTemplate())->render($ctx));
+        $this->assertStringContainsString('10.23.3.70', (new NecTemplate())->render($ctx));
+        // Without a proxy nothing is switched on.
+        $this->assertStringContainsString('account.1.outbound_proxy_enable = 0', (new YealinkTemplate())->render($this->context('yealink-t46u')));
+    }
+
+    public function testServerAddressesFromSettings(): void
+    {
+        $before = [PhoneProvisionService::sipServer(), PhoneProvisionService::baseUrl()];
+        $set = getDB()->prepare('REPLACE INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
+        try {
+            $set->execute(['provision_sip_server', '10.23.3.70']);
+            $set->execute(['provision_base_url', 'http://10.23.3.70']);
+            $this->assertSame('10.23.3.70', PhoneProvisionService::sipServer());
+            $this->assertSame('http://10.23.3.70/provision/', NetworkServicesService::provisioningUrl());
+        } finally {
+            getDB()->exec("DELETE FROM sys_settings WHERE setting_key IN ('provision_sip_server', 'provision_base_url')");
+        }
+        $this->assertSame($before, [PhoneProvisionService::sipServer(), PhoneProvisionService::baseUrl()]);
     }
 }

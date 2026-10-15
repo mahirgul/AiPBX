@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Tag / send foto</string>
     <string name="ui_type_message">Skriv en besked...</string>
     <string name="ui_typing">skriver...</string>
-    <string name="user_ext_label">Lokalnummer: %1$s (%2$s)</string>
     <string name="full_screen_title">Indgående opkald i fuld skærm</string>
     <string name="full_screen_msg">Android har slået fuldskærmsnotifikationer fra for AiPBX, så på en låst telefon vises et indgående opkald kun som en lille notifikation. Tillad \"Fuldskærmsnotifikationer\" for AiPBX på næste skærm.</string>
     <string name="full_screen_status_on">Opkald i fuld skærm: tilladt</string>
