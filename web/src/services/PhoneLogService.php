@@ -87,7 +87,7 @@ class PhoneLogService
         if ($max > 0 && count($lines) > $max) {
             $lines = array_slice($lines, -$max);
         }
-        return ['lines' => array_values($lines), 'cursor' => ['ino' => $ino, 'pos' => $end], 'exists' => true];
+        return ['lines' => $lines, 'cursor' => ['ino' => $ino, 'pos' => $end], 'exists' => true];
     }
 
     /**

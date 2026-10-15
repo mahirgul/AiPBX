@@ -1,4 +1,4 @@
-# Network services (DHCP, TFTP and FTP for desk phones)
+# Network services (DHCP, TFTP, FTP and syslog for desk phones)
 
 **PBX → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
 the provisioning address (option 66), and TFTP serves boot files or firmware to phones that need
@@ -79,6 +79,23 @@ folder as TFTP:
 - The firewall opens TCP 21 and the passive ports 40000–40049 for the same networks as TFTP
   (the allowed networks, plus the phone network in DHCP mode). Active mode works too.
 
+## Syslog (phone logs)
+
+**Syslog (phone logs)** receives what desk phones log (syslog, UDP 514) from the same networks as
+TFTP and FTP; read it on **PBX → Phone logs**. Set this server's IP as *Syslog server* on
+*PBX → Phones → Provisioning settings* (NEC phones get it with their file; other phones in their
+own menu or web page).
+
+The page shows the newest 500 lines and, with *Live* on, follows new ones every 3 seconds. Type an
+**IP** or **MAC address** for one phone (part of an address works too, e.g. `10.12.3.`) and text to
+narrow the lines; the level list keeps warnings and errors only. A MAC address stands for every
+address the phone was seen at: its last configuration download, the waiting phones, the download
+log, and the log itself — NEC phones name their MAC (`[MAC:0060B9EF8B1F]`) in every line, so their
+other lines from the same address are found too.
+
+Lines are kept in `/var/log/aipbx-phones/phones.log`, rotated at 20 MB with 4 older files (about
+100 MB in all). At most 500 messages a second are written; the rest is counted in one line.
+
 ## How it works
 
 - dnsmasq (package `dnsmasq-base`) runs as its own unit, `aipbx-dnsmasq`, with DNS switched off
@@ -95,5 +112,10 @@ folder as TFTP:
   (root only, SHA-512 hashes; the portal hands over only the hashes). The PAM service
   `/etc/pam.d/aipbx-ftp` lets `NECSDT700` in and checks everybody else against that file only.
   Transfers are logged in `/var/log/aipbx-ftp.log`.
+- Syslog is `/usr/local/sbin/aipbx-syslogd` (Python, standard library) in its own unit
+  `aipbx-syslog`, as the system user `aipbx-syslog` (group `www-data`, so the portal can read the
+  file) with only `CAP_NET_BIND_SERVICE`. `aipbx-priv netsvc syslog-on` writes the networks to
+  `/var/lib/aipbx-netsvc/syslog.conf` and opens UDP 514 to them; the receiver drops other senders
+  itself as well. It does not use the system's rsyslog.
 - The DHCP check is `/usr/local/sbin/aipbx-dhcp-probe <interface>`: one DHCP discover, the offers
   of the next 4 seconds are listed. Nothing is leased.
