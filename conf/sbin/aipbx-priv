@@ -381,6 +381,20 @@ case "$cmd" in
             rm -f "$SYSLOG_FW"
         }
 
+        NTP_CONF=/etc/chrony/conf.d/aipbx-ntp-server.conf
+        NTP_FW="$NETSVC_DIR/ntp-firewall.state"
+        ntp_rule() { echo "rule family=\"ipv4\" source address=\"$1\" port port=\"123\" protocol=\"udp\" accept"; }
+        ntp_fw_clear() {
+            [ -f "$NTP_FW" ] || return 0
+            if fw_running; then
+                while read -r kind value; do
+                    [ "$kind" = ntp ] && [[ "$value" =~ $RE_IPV4_CIDR ]] || continue
+                    for p in "" --permanent; do firewall-cmd $p --remove-rich-rule="$(ntp_rule "$value")" >/dev/null 2>&1; done
+                done < "$NTP_FW"
+            fi
+            rm -f "$NTP_FW"
+        }
+
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             status)
@@ -638,6 +652,55 @@ FTPCONF
             syslog-status)
                 [ $# -eq 0 ] || die "usage: netsvc syslog-status"
                 systemctl is-active aipbx-syslog.service 2>/dev/null
+                exit 0
+                ;;
+            ntp-on)
+                # netsvc ntp-on net=CIDR... — this server gives the time (NTP, UDP 123)
+                # to the allowed networks: chrony (the system's own time sync) gets
+                # "allow" lines for them, and keeps serving from its own clock when
+                # the internet sources are unreachable (local stratum 10).
+                nets=()
+                for kv in "$@"; do
+                    k="${kv%%=*}"; v="${kv#*=}"
+                    [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
+                    case "$k" in
+                        net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
+                        *) die "unknown key: $k" ;;
+                    esac
+                done
+                [ "${#nets[@]}" -gt 0 ] || die "ntp needs at least one net="
+                command -v chronyd >/dev/null 2>&1 && [ -d /etc/chrony/conf.d ] || die "chrony is not installed"
+                {
+                    echo "# Written by aipbx-priv (PBX -> Network services). Do not edit: the next apply replaces it."
+                    printf 'allow %s\n' "${nets[@]}"
+                    echo "local stratum 10"
+                } > "$NTP_CONF.tmp"
+                install -o root -g root -m 0644 "$NTP_CONF.tmp" "$NTP_CONF"
+                rm -f "$NTP_CONF.tmp"
+                mkdir -p "$NETSVC_DIR"
+                ntp_fw_clear
+                if fw_running; then
+                    : > "$NTP_FW"
+                    for n in "${nets[@]}"; do
+                        for p in "" --permanent; do fw_add $p --add-rich-rule="$(ntp_rule "$n")" || die "firewall: ntp $n"; done
+                        echo "ntp $n" >> "$NTP_FW"
+                    done
+                fi
+                exec systemctl restart chrony.service
+                ;;
+            ntp-off)
+                [ $# -eq 0 ] || die "usage: netsvc ntp-off"
+                ntp_fw_clear
+                if [ -f "$NTP_CONF" ]; then
+                    rm -f "$NTP_CONF"
+                    systemctl restart chrony.service >/dev/null 2>&1
+                fi
+                exit 0
+                ;;
+            ntp-status)
+                # active = chrony runs and serves the networks (the allow file is there).
+                [ $# -eq 0 ] || die "usage: netsvc ntp-status"
+                if [ -f "$NTP_CONF" ]; then systemctl is-active chrony.service 2>/dev/null; else echo inactive; fi
                 exit 0
                 ;;
             *) die "unknown netsvc command: $sub" ;;

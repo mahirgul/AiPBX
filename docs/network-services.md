@@ -1,4 +1,4 @@
-# Network services (DHCP, TFTP, FTP and syslog for desk phones)
+# Network services (DHCP, TFTP, FTP, NTP and syslog for desk phones)
 
 **PBX → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
 the provisioning address (option 66), and TFTP serves boot files or firmware to phones that need
@@ -78,6 +78,18 @@ folder as TFTP:
 - TFTP and FTP use the same folder (`/var/lib/aipbx/tftp`).
 - The firewall opens TCP 21 and the passive ports 40000–40049 for the same networks as TFTP
   (the allowed networks, plus the phone network in DHCP mode). Active mode works too.
+
+## NTP server (time)
+
+**NTP server (time)** lets the phones take their time from this server (NTP, UDP 123), from the same
+networks as TFTP and FTP — useful on phone networks without internet access. Enter this server's IP
+as *NTP server* under *PBX → Phones → Provisioning settings* (NEC phones take an IP address only);
+in DHCP mode, option 42 names this server when the DHCP *NTP servers* field is empty.
+
+The server's own time sync (chrony) does the work: switching it on writes
+`/etc/chrony/conf.d/aipbx-ntp-server.conf` (`allow` for the networks, `local stratum 10` so the
+phones keep a time while the internet sources are unreachable), opens UDP 123 to those networks and
+restarts chrony. Switching it off removes the file and the firewall rules again.
 
 ## Syslog (phone logs)
 

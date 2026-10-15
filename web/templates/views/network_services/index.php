@@ -1,6 +1,6 @@
 <?php
 /** @var string $csrf @var array $settings @var string $status @var array $interfaces @var array $leases
- *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus @var string $syslogStatus @var string $tftpDir */
+ *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus @var string $syslogStatus @var string $tftpDir @var string $ntpStatus @var string $serverIp */
 $mode = $settings['netsvc_mode'];
 // Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
 $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
@@ -53,6 +53,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_syslog_desc'); ?> <a href="/phone-logs"><?php echo t('sidebar.item_phone_logs'); ?></a></span>
                 <?php if ($settings['netsvc_syslog'] === '1'): ?>
                     <span class="badge <?php echo $syslogStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $syslogStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                <?php endif; ?>
+            </label>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <input type="checkbox" name="netsvc_ntp_server" value="1" class="u-accent netsvc-switch" id="netsvc_ntp_server_on" <?php echo $settings['netsvc_ntp_server'] === '1' ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.switch_ntp_server'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo sprintf(t('netsvc.switch_ntp_server_desc'), $h($serverIp)); ?></span>
+                <?php if ($settings['netsvc_ntp_server'] === '1'): ?>
+                    <span class="badge <?php echo $ntpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $ntpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
                 <?php endif; ?>
             </label>
         </div>
