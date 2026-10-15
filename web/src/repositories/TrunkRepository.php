@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../asterisk_helper.php';
 
+/**
+ * Database access for the Trunks page.
+ * Tables: pbx_trunks.
+ * Used by TrunkController.
+ */
 class TrunkRepository extends BaseRepository
 {
     protected static string $table = 'pbx_trunks';

@@ -126,8 +126,8 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
         $u->execute([$number]);
     }
     if ($row = $u->fetch(PDO::FETCH_ASSOC)) {
-        $tip = ($row['extension_type'] === 'fax') ? t('internal_number.fax_extension') : t('internal_number.extension');
-        return "{$tip}: " . $row['full_name'];
+        $type = ($row['extension_type'] === 'fax') ? t('internal_number.fax_extension') : t('internal_number.extension');
+        return "{$type}: " . $row['full_name'];
     }
 
     $f = $db->prepare("SELECT title FROM pbx_feature_codes WHERE code = ? LIMIT 1");

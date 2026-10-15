@@ -2,6 +2,11 @@
 
 require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
 
+/**
+ * Integration → Microsoft Teams: Direct Routing settings (SBC address, TLS
+ * certificate check), the call notification webhook, and a PowerShell script for the
+ * Microsoft 365 side generated from the user mappings.
+ */
 class MsTeamsService
 {
     /**
@@ -235,7 +240,7 @@ class MsTeamsService
 
         $output = [];
         $output[] = "# ==============================================================================";
-        $output[] = "# AiPBX - Microsoft Teams Direct Routing Yapilandirma Scripti";
+        $output[] = "# AiPBX - Microsoft Teams Direct Routing configuration script";
         $output[] = "# Olusturuldu: " . date('Y-m-d H:i:s');
         $output[] = "# SBC FQDN: {$domain} (Port: {$port})";
         $output[] = "# ==============================================================================";
@@ -287,10 +292,10 @@ class MsTeamsService
         $output[] = "# 4. User and extension mappings";
 
         if (empty($mappings)) {
-            $output[] = "# Henuz web arayuzunde kullanici eslestirmesi yapilmamis.";
+            $output[] = "# No user mapping has been set up in the portal yet.";
             $output[] = "# Example user assignment command:";
-            $output[] = "# Grant-CsOnlineVoiceRoutingPolicy -Identity 'kullanici@alanadiniz.com' -PolicyName '{$voicePolicy}'";
-            $output[] = "# Set-CsPhoneNumberAssignment -Identity 'kullanici@alanadiniz.com' -PhoneNumber '+90212XXXXXXX' -PhoneNumberType DirectRouting";
+            $output[] = "# Grant-CsOnlineVoiceRoutingPolicy -Identity 'user@yourdomain.com' -PolicyName '{$voicePolicy}'";
+            $output[] = "# Set-CsPhoneNumberAssignment -Identity 'user@yourdomain.com' -PhoneNumber '+90212XXXXXXX' -PhoneNumberType DirectRouting";
         } else {
             foreach ($mappings as $m) {
                 if (empty($m['direct_routing_enabled'])) continue;

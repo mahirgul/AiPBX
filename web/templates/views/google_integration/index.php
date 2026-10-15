@@ -9,24 +9,24 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fab fa-google" style="color: #EA4335;"></i> <?php echo t('google_integration.header_title', 'Google ile Giriş Entegrasyonu (OAuth 2.0)'); ?>
+            <i class="fab fa-google" style="color: #EA4335;"></i> <?php echo t('google_integration.header_title'); ?>
             <span class="badge <?php echo $is_enabled ? 'badge-success' : 'badge-secondary'; ?>" style="margin-left: 8px; font-size: 11px;">
-                <?php echo $is_enabled ? t('common.active', 'Aktif') : t('common.passive', 'Devre Dışı'); ?>
+                <?php echo $is_enabled ? t('common.active') : t('common.passive'); ?>
             </span>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('googleHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('googleHelpBox')" title="<?php echo t('common.module_guide'); ?>">
             <i class="fas fa-question-circle"></i>
         </button>
     </div>
 
-    <!-- Rehber Kutusu -->
+    <!-- Guide box -->
     <div class="module-help-box" id="googleHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('google_integration.guide_title', 'Google OAuth 2.0 & Tek Tıkla Giriş Rehberi'); ?></h4>
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('google_integration.guide_title'); ?></h4>
         <p>
-            <?php echo t('google_integration.guide_p1', 'Google ile Giriş entegrasyonu, santral kullanıcılarının e-posta adresleri üzerinden şifre girmeden tek tıkla oturum açmasını sağlar. Bu özellik Web Portalı, Android ve iOS mobil uygulamalarının tamamında ortak çalışır.'); ?>
+            <?php echo t('google_integration.guide_p1'); ?>
         </p>
         <p class="u-mb-0">
-            <?php echo t('google_integration.guide_p2', 'Kullanıcının Google hesabı ile AI PBX kullanıcısının e-posta adresi eşleştiğinde kimlik doğrulanır ve yetkisine uygun arayüze otomatik olarak yönlendirilir.'); ?>
+            <?php echo t('google_integration.guide_p2'); ?>
         </p>
     </div>
 
@@ -38,10 +38,10 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             <div>
                 <label for="googleOauthToggle" style="font-size: 14px; font-weight: 700; cursor: pointer; margin: 0; display: block;">
                     <i class="fas fa-power-off" style="color: <?php echo $raw_enabled ? '#10b981' : 'var(--text-muted)'; ?>; margin-right: 6px;"></i>
-                    <?php echo t('google_integration.enable_label', 'Google ile Girişi Etkinleştir'); ?>
+                    <?php echo t('google_integration.enable_label'); ?>
                 </label>
                 <small style="color: var(--text-muted); display: block; margin-top: 3px;">
-                    <?php echo t('google_integration.enable_desc', 'Aktif edildiğinde Web giriş ekranında ve mobil uygulamalarda Google ile Giriş Yap butonu görünür.'); ?>
+                    <?php echo t('google_integration.enable_desc'); ?>
                 </small>
             </div>
             <div>
@@ -55,7 +55,7 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
             </label>
             <input type="text" name="google_client_id" class="form-control" value="<?php echo htmlspecialchars($client_id); ?>" placeholder="<?php echo t('common.eg'); ?> 1234567890-abcdefg123456.apps.googleusercontent.com" style="height: 40px; font-family: monospace; font-size: 13px;">
             <small style="color: var(--text-muted); display: block; margin-top: 5px;">
-                <?php echo t('google_integration.client_id_desc', 'Google Cloud Console üzerinden oluşturulan OAuth 2.0 Web Client ID değeri.'); ?>
+                <?php echo t('google_integration.client_id_desc'); ?>
             </small>
         </div>
 
@@ -70,28 +70,28 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
                 </button>
             </div>
             <small style="color: var(--text-muted); display: block; margin-top: 5px;">
-                <?php echo t('google_integration.client_secret_desc', 'Google Cloud Console OAuth istemcisine ait gizli anahtar.'); ?>
+                <?php echo t('google_integration.client_secret_desc'); ?>
             </small>
         </div>
 
         <div class="form-group u-mb-24">
             <label class="form-label u-fs-13 u-fw-700">
-                <i class="fas fa-link u-primary"></i> <?php echo t('google_integration.redirect_uri_label', 'Yetkili Yönlendirme Adresi (Redirect URI)'); ?>
+                <i class="fas fa-link u-primary"></i> <?php echo t('google_integration.redirect_uri_label'); ?>
             </label>
             <div class="u-flex-gap">
                 <input type="text" id="redirectUriInput" readonly class="form-control" value="<?php echo htmlspecialchars($redirect_uri); ?>" style="height: 40px; font-family: monospace; font-size: 13px; background: var(--bg-hover, rgba(0,0,0,0.03)); user-select: all;">
                 <button type="button" class="btn btn-secondary u-nowrap" onclick="copyRedirectUri()">
-                    <i class="fas fa-copy"></i> <span id="copyBtnText"><?php echo t('common.copy', 'Kopyala'); ?></span>
+                    <i class="fas fa-copy"></i> <span id="copyBtnText"><?php echo t('common.copy'); ?></span>
                 </button>
             </div>
             <small style="color: var(--text-muted); display: block; margin-top: 5px;">
-                <?php echo t('google_integration.redirect_uri_desc', 'Google Cloud Console > Yetkili yönlendirme URI\'leri (Authorized redirect URIs) alanına birebir bu adresi eklemelisiniz.'); ?>
+                <?php echo t('google_integration.redirect_uri_desc'); ?>
             </small>
         </div>
 
         <div style="display: flex; justify-content: flex-end;">
             <button type="submit" class="btn btn-primary" style="font-weight: 700; padding: 10px 24px;">
-                <i class="fas fa-save"></i> <?php echo t('google_integration.btn_save', 'Google Entegrasyon Ayarlarını Kaydet'); ?>
+                <i class="fas fa-save"></i> <?php echo t('google_integration.btn_save'); ?>
             </button>
         </div>
     </form>
@@ -101,38 +101,38 @@ $redirect_uri = $settings['redirect_uri'] ?? '';
 <div class="card" style="margin-top: 20px;">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-tasks u-primary"></i> <?php echo t('google_integration.setup_guide_title', 'Google Cloud Console Kurulum Adımları'); ?>
+            <i class="fas fa-tasks u-primary"></i> <?php echo t('google_integration.setup_guide_title'); ?>
         </div>
     </div>
     <div style="padding: 20px; line-height: 1.7; font-size: 13.5px;">
         <ol style="padding-left: 20px; margin-bottom: 0;">
             <li class="u-mb-10">
-                <?php echo t('google_integration.setup_step1', '<strong>Google Cloud Console</strong> adresine gidin:'); ?> 
+                <?php echo t('google_integration.setup_step1'); ?> 
                 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: underline;">
                     console.cloud.google.com/apis/credentials <i class="fas fa-external-link-alt u-fs-11"></i>
                 </a>
             </li>
             <li class="u-mb-10">
-                <?php echo t('google_integration.setup_step2', 'Üst kısımdan <strong>+ CREATE CREDENTIALS (+ KİMLİK BİLGİSİ OLUŞTUR)</strong> butonuna tıklayıp <strong>OAuth client ID</strong> seçeneğini seçin.'); ?>
+                <?php echo t('google_integration.setup_step2'); ?>
             </li>
             <li class="u-mb-10">
-                <?php echo t('google_integration.setup_step3', 'Uygulama türü (Application type) olarak <strong>Web application (Web uygulaması)</strong> seçin ve bir isim verin (Örn: <em>AI PBX Santral</em>).'); ?>
+                <?php echo t('google_integration.setup_step3'); ?>
             </li>
             <li class="u-mb-10">
-                <?php echo sprintf(t('google_integration.setup_step4', '<strong>Authorized redirect URIs (Yetkili yönlendirme URI\'leri)</strong> bölümünün altındaki <strong>+ ADD URI</strong> butonuna tıklayın ve yukarıda gösterilen <code>%s</code> adresini yapıştırın.'), htmlspecialchars($redirect_uri)); ?>
+                <?php echo sprintf(t('google_integration.setup_step4'), htmlspecialchars($redirect_uri)); ?>
             </li>
             <li class="u-mb-10">
-                <?php echo t('google_integration.setup_step5', '<strong>Create (Oluştur)</strong> butonuna basarak <strong>Client ID</strong> ve <strong>Client Secret</strong> değerlerinizi alın.'); ?>
+                <?php echo t('google_integration.setup_step5'); ?>
             </li>
             <li class="u-mb-10">
-                <?php echo t('google_integration.setup_step6', 'Bu değerleri yukarıdaki forma yapıştırıp <strong>Google ile Girişi Etkinleştir</strong> onay kutusunu işaretleyerek kaydedin.'); ?>
+                <?php echo t('google_integration.setup_step6'); ?>
             </li>
             <li class="u-mb-0">
-                <?php echo t('google_integration.setup_step7', '<strong>Mobil Uygulama (Android / iOS):</strong> Android ve iOS mobil uygulamalarınız aynı Web Client ID\'yi kullanacak şekilde hazırdır. Santral üzerinde ayarları kaydettikten sonra mobil uygulamalarda tek tıkla Google ile oturum açılabilir.'); ?>
+                <?php echo t('google_integration.setup_step7'); ?>
             </li>
         </ol>
     </div>
 </div>
 
-<script>window.GOOGLE_INTEGRATION_COPIED = <?php echo json_encode(t('google_integration.copied', 'Kopyalandı!')); ?>;</script>
+<script>window.GOOGLE_INTEGRATION_COPIED = <?php echo json_encode(t('google_integration.copied')); ?>;</script>
 <script src="<?php echo asset('/assets/js/google_integration.js'); ?>"></script>

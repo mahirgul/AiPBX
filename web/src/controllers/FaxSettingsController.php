@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/FaxSettingsService.php';
 
+/**
+ * Fax Units page (/fax-settings).
+ * Renders templates/views/fax_settings/index.php with assets/js/fax_settings.js.
+ * Logic: FaxSettingsRepository, FaxSettingsService.
+ * POST actions: delete_did, save_did, toggle_status.
+ * Admins only.
+ */
 class FaxSettingsController extends BaseController
 {
     public static function index(): void

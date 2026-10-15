@@ -100,7 +100,7 @@
             </div>
         </div>
 
-        <!-- 5. Temsilciler & SLA -->
+        <!-- 5. Agents & SLA -->
         <div class="card cc-board-tile" style="padding: 12px 14px; border-left: 4px solid #6366f1; display: flex; flex-direction: column; justify-content: space-between;">
             <div class="u-flex-between">
                 <span class="cc-board-label"><?php echo t('cc_board.agents_logged_in'); ?> & SLA</span>

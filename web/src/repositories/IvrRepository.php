@@ -3,6 +3,11 @@ require_once __DIR__ . '/../../modules/destinations/DestinationRegistry.php';
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Database access for the IVR page.
+ * Tables: pbx_ivr_entries (menu keys), pbx_announcements.
+ * Used by IvrController.
+ */
 class IvrRepository extends BaseRepository
 {
     protected static string $table = 'pbx_ivrs';

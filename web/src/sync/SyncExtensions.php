@@ -40,8 +40,8 @@ function pjsipIdentifyHosts(): array
 
     $hosts = ['localhost', '127.0.0.1'];
 
-    $harici = trim((string) getSystemSetting('pjsip_external_ip', ''));
-    if ($harici !== '') { $hosts[] = $harici; }
+    $external = trim((string) getSystemSetting('pjsip_external_ip', ''));
+    if ($external !== '') { $hosts[] = $external; }
 
     if (function_exists('net_get_interfaces')) {
         foreach ((array) net_get_interfaces() as $iface) {
@@ -229,9 +229,9 @@ function __syncAllExtensionsBody() {
         //
         // A context set by hand in the sip table wins (an escape hatch for
         // special cases).
-        $grup = max(1, intval($u['outbound_group'] ?? 1));
-        $grup_context = ($grup > 1) ? "from-internal-g{$grup}" : 'from-internal-pbx';
-        $context = !empty($sip_map['context']) ? $sip_map['context'] : $grup_context;
+        $group = max(1, intval($u['outbound_group'] ?? 1));
+        $group_context = ($group > 1) ? "from-internal-g{$group}" : 'from-internal-pbx';
+        $context = !empty($sip_map['context']) ? $sip_map['context'] : $group_context;
         $callerid = !empty($sip_map['callerid']) ? $sip_map['callerid'] : "\"{$name}\" <{$ext}>";
         $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
         $max_contacts = !empty($sip_map['max_contacts']) ? $sip_map['max_contacts'] : '5';

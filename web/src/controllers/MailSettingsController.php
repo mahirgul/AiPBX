@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/MailSettingsService.php';
 
+/**
+ * E-Mail page (/mail-settings).
+ * Renders templates/views/mail_settings/index.php.
+ * Logic: MailSettingsRepository, MailSettingsService.
+ * POST actions: save_mail_settings, send_test_email.
+ * Admins only.
+ */
 class MailSettingsController extends BaseController
 {
     public static function index(): void
@@ -17,7 +24,7 @@ class MailSettingsController extends BaseController
         $sys_settings = MailSettingsRepository::allSettings();
         $postfix_status = MailSettingsRepository::getPostfixStatus();
 
-        $page_title = t('mail_settings.title', 'E-Posta & Mail Relay Ayarları');
+        $page_title = t('mail_settings.title');
         static::renderPage('mail_settings/index', [
             'settings' => $sys_settings,
             'postfix' => $postfix_status,

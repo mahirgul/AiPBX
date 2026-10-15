@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/BrandSettingsService.php';
 
+/**
+ * Appearance page (/brand-settings).
+ * Renders templates/views/brand_settings/index.php with assets/js/brand_settings.js.
+ * Logic: BrandSettingsRepository, BrandSettingsService.
+ * POST actions: reset_brand_settings, save_brand_settings.
+ * Admins only.
+ */
 class BrandSettingsController extends BaseController
 {
     public static function index(): void

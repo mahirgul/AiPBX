@@ -4,7 +4,7 @@ require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/FaxSendService.php';
 
 /**
- * Fax Sent (Giden Fakslar) Service
+ * Sent faxes (outgoing faxes) service
  */
 class FaxSentService {
     /**

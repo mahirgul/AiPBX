@@ -3,6 +3,14 @@ require_once __DIR__ . '/../helpers.php';
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Inbound page (/did-routes).
+ * Renders templates/views/did_routes/index.php with assets/js/destinations_helper.js,
+ * did_routes.js.
+ * Logic: DidRouteRepository, RouteService.
+ * POST actions: delete_did_route, save_did_route, toggle_status.
+ * Admins only.
+ */
 class DidRouteController extends BaseController
 {
     public static function index(): void

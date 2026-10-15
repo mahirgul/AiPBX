@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Fax inbox.
+ * Tables: fax_received, sys_did_mappings.
+ * Used by FaxInboxController, FaxInboxService.
+ */
 class FaxInboxRepository extends BaseRepository
 {
     protected static string $table = 'fax_received';

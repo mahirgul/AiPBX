@@ -74,7 +74,7 @@ final class UserPasswordGenerationTest extends TestCase
 
     public function testExplicitPasswordIsKeptAndNothingGenerated(): void
     {
-        $secret = 'T' . bin2hex(random_bytes(8)); // repoda parola benzeri sabit tutulmuyor
+        $secret = 'T' . bin2hex(random_bytes(8)); // no password-like constant is kept in the repository
         $res = $this->create('pwgen_test_b', $secret);
         $this->assertTrue($res['success'], $res['error'] ?? '');
         $this->assertArrayNotHasKey('generated_password', $res);

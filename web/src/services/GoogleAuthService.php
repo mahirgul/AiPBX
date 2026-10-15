@@ -138,7 +138,7 @@ class GoogleAuthService
     }
 
     /**
-     * Authorization code parametresini Google Access/ID token ile takas eder.
+     * Exchanges the authorization code for Google access/ID tokens.
      */
     public static function exchangeCode(string $code): ?array
     {

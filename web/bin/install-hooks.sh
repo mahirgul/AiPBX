@@ -11,7 +11,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 HOOK="$REPO/.git/hooks/pre-commit"
 
 if [ ! -d "$REPO/.git" ]; then
-    echo "HATA: $REPO bir git deposu değil." >&2
+    echo "ERROR: $REPO is not a git repository." >&2
     exit 1
 fi
 
@@ -21,10 +21,10 @@ cat > "$HOOK" <<'HOOKEOF'
 # To skip: git commit --no-verify   (do not make it a habit!)
 REPO="$(git rev-parse --show-toplevel)"
 
-echo "Duman testi çalışıyor..."
+echo "Running the smoke test..."
 if ! php "$REPO/bin/smoke.php"; then
     echo ""
-    echo "COMMIT DURDURULDU — duman testi başarısız (yukarıdaki hatalara bak)."
+    echo "COMMIT STOPPED: the smoke test failed (see the errors above)."
     echo "Gerçekten gerekiyorsa: git commit --no-verify"
     exit 1
 fi
@@ -32,10 +32,10 @@ fi
 # Unit tests are CONDITIONAL: the hook must not block commits on a clone
 # without the test database (bin/setup-test-db.sh may not have run yet).
 if [ -x "$REPO/vendor/bin/phpunit" ] && [ -f "$REPO/tests/.env.test" ]; then
-    echo "Birim testleri çalışıyor..."
+    echo "Running the unit tests..."
     if ! php "$REPO/vendor/bin/phpunit"; then
         echo ""
-        echo "COMMIT DURDURULDU — birim testleri başarısız."
+        echo "COMMIT STOPPED: the unit tests failed."
         echo "Gerçekten gerekiyorsa: git commit --no-verify"
         exit 1
     fi
@@ -43,4 +43,4 @@ fi
 HOOKEOF
 
 chmod +x "$HOOK"
-echo "Kuruldu: $HOOK"
+echo "Installed: $HOOK"

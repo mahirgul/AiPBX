@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // The setting was written to the DB but the dialplan could not be
         // generated. Do not swallow it silently — this bug stayed invisible
         // exactly because of silent swallowing.
-        error_log('mobile/features.php dialplan senkron hatasi: ' . $e->getMessage());
+        error_log('mobile/features.php dialplan sync error: ' . $e->getMessage());
     }
 
     if (function_exists('writeAuditLog')) {

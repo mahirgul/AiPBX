@@ -58,7 +58,7 @@ function __syncTimeConditionBody($tc_id) {
 
     $day_map = [1=>'mon', 2=>'tue', 3=>'wed', 4=>'thu', 5=>'fri', 6=>'sat', 7=>'sun'];
     $resolved_rules = [];
-    $tatiller = [];
+    $holidays = [];
     foreach ($rule_defs as $rd) {
         $tg_st = $db->prepare("SELECT * FROM pbx_time_groups WHERE id = ? AND is_active = 1");
         $tg_st->execute([intval($rd['time_group_id'])]);
@@ -88,7 +88,7 @@ function __syncTimeConditionBody($tc_id) {
         foreach ((array)json_decode($tg['holidays_json'] ?? '[]', true) as $h) {
             $h = trim((string)$h);
             // Only YYYY-MM-DD is accepted; nothing else reaches the dialplan.
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $h)) $tatiller[$h] = true;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $h)) $holidays[$h] = true;
         }
 
         $resolved_rules[] = [
@@ -108,9 +108,9 @@ function __syncTimeConditionBody($tc_id) {
     //
     // GotoIfTime has no YEAR field, so the full date is compared —
     // otherwise "2026-01-01" would repeat every year.
-    if (!empty($tatiller)) {
+    if (!empty($holidays)) {
         $conf .= " same => n,Set(BUGUN=\${STRFTIME(\${EPOCH},,%Y-%m-%d)})\n";
-        foreach (array_keys($tatiller) as $h) {
+        foreach (array_keys($holidays) as $h) {
             $conf .= " same => n,GotoIf(\$[\"\${BUGUN}\" = \"{$h}\"]?tc_nomatch)\n";
         }
     }

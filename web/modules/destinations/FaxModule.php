@@ -1,9 +1,14 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'fax': a fax line (fax users in sys_users).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class FaxModule implements PBXDestinationInterface {
     public function getKey(): string { return 'fax'; }
-    public function getName(): string { return '📠 Faks Hattı'; }
+    public function getName(): string { return '📠 ' . \t('dest.fax'); }
 
     public function getOptions(): array {
         $db = \getDB();

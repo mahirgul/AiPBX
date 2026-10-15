@@ -3,7 +3,7 @@ require_once __DIR__ . '/../db_helper.php';
 require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
- * Fax Inbox (Gelen Fakslar) Service
+ * Fax inbox (incoming faxes) service
  */
 class FaxInboxService {
     /**

@@ -217,7 +217,7 @@ class SIPHelper {
         // $defaults, and if the old row is not deleted it shadows pbx_trunks
         // forever. When a NEW conditional field is added it must be added HERE
         // TOO — otherwise that field also becomes "can be set but not undone".
-        $kosullu_alanlar = [
+        $conditional_fields = [
             'match_hosts', 'outbound_proxy',
             't38_udptl_maxdatagram', 'fax_detect', 'fax_detect_timeout',
             'from_user', 'from_domain', 'outbound_caller_id',
@@ -225,7 +225,7 @@ class SIPHelper {
             'auth_username', 'auth_password',
             'registration_enabled', 'registration_expiration', 'registration_retry_interval',
         ];
-        self::deleteKeys($t_name, array_values(array_diff($kosullu_alanlar, array_keys($defaults))));
+        self::deleteKeys($t_name, array_values(array_diff($conditional_fields, array_keys($defaults))));
 
         return self::setSettings($t_name, $defaults);
     }

@@ -19,19 +19,19 @@ class QueueLogRepository extends BaseRepository
      * - 'grouped': joins the call legs by call_id into a call journey.
      * - 'raw': lists the raw Asterisk event logs line by line.
      */
-    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $sayfa = 1, int $boyut = 50): array
+    public static function searchAndParse(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, string $viewMode = 'grouped', int $current_page = 1, int $boyut = 50): array
     {
         if ($viewMode === 'raw') {
-            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
+            return static::searchRaw($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $current_page, $boyut);
         }
-        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $sayfa, $boyut);
+        return static::searchGrouped($startTs, $endTs, $eventFilter, $agentFilter, $searchQuery, $agentMap, $current_page, $boyut);
     }
 
     /**
      * Grouped call list (by call_id).
      * 1 queue call = 1 row (with an expandable call journey / timeline).
      */
-    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
+    public static function searchGrouped(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $current_page = 1, int $boyut = 50): array
     {
         $db = static::db();
 
@@ -76,7 +76,7 @@ class QueueLogRepository extends BaseRepository
         }
 
         // Pick the most recent calls (call_id) matching the filters (paged)
-        $offset = max(0, ($sayfa - 1) * $boyut);
+        $offset = max(0, ($current_page - 1) * $boyut);
         $sqlCalls = "SELECT call_id, MIN(time_id) AS first_ts, MAX(time_id) AS last_ts, MAX(queue_name) AS q_name 
                      FROM cc_queue_logs"
                   . $where
@@ -158,7 +158,7 @@ class QueueLogRepository extends BaseRepository
                 }
                 $agentName = $agentMap[$agentExt] ?? ($evAgent !== 'NONE' ? $evAgent : '');
 
-                // Arayan numara tespiti
+                // Find the caller's number
                 if ($evName === 'ENTERQUEUE') {
                     if (!empty($ev['data2'])) $callerNum = $ev['data2'];
                 }
@@ -233,7 +233,7 @@ class QueueLogRepository extends BaseRepository
                 ];
             }
 
-            // Durum etiketi ve rozeti
+            // Status label and badge
             $statusBadge = static::getStatusBadge($status);
 
             // Recording check
@@ -277,9 +277,9 @@ class QueueLogRepository extends BaseRepository
     }
 
     /**
-     * Ham (un-grouped) Asterisk Queue Log listesi.
+     * Raw (un-grouped) Asterisk queue log list.
      */
-    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $sayfa = 1, int $boyut = 50): array
+    public static function searchRaw(int $startTs, int $endTs, string $eventFilter, string $agentFilter, string $searchQuery, array $agentMap, int $current_page = 1, int $boyut = 50): array
     {
         $sqlWhere = " WHERE 1=1";
         $params = [];
@@ -320,7 +320,7 @@ class QueueLogRepository extends BaseRepository
             return array_merge(['view_mode' => 'raw', 'logs' => [], 'total' => 0], $stats);
         }
 
-        $offset = max(0, ($sayfa - 1) * $boyut);
+        $offset = max(0, ($current_page - 1) * $boyut);
         $sql = "SELECT id, time_id, created_at, call_id, queue_name, agent, event, data1, data2, data3, data4 FROM cc_queue_logs"
              . $sqlWhere
              . " ORDER BY time_id DESC, id DESC LIMIT " . (int)$boyut . " OFFSET " . (int)$offset;
@@ -449,9 +449,9 @@ class QueueLogRepository extends BaseRepository
                     'icon' => 'fa-sign-in-alt',
                     'badge' => 'badge-info',
                     'node_color' => 'var(--primary)',
-                    'title' => t('queue_logs.step_enterqueue', 'Kuyruğa Girdi'),
-                    'detail' => (!empty($d2) ? t('queue_logs.detail_caller_number', 'Arayan Numara') . ": <strong>{$d2}</strong>" : '')
-                             . (!empty($d3) ? " • " . t('queue_logs.detail_queue_pos', 'Sıra') . ": <strong>#{$d3}</strong>" : ''),
+                    'title' => t('queue_logs.step_enterqueue'),
+                    'detail' => (!empty($d2) ? t('queue_logs.detail_caller_number') . ": <strong>{$d2}</strong>" : '')
+                             . (!empty($d3) ? " • " . t('queue_logs.detail_queue_pos') . ": <strong>#{$d3}</strong>" : ''),
                 ];
             case 'RINGNOANSWER':
                 $ringSec = round((float)$d1 / 1000, 1);
@@ -460,73 +460,73 @@ class QueueLogRepository extends BaseRepository
                     'icon' => 'fa-bell-slash',
                     'badge' => 'badge-warning',
                     'node_color' => 'var(--warning)',
-                    'title' => t('queue_logs.step_ringnoanswer', 'Temsilciye Çaldırıldı (Cevapsız)'),
-                    'detail' => (!empty($agentDisplay) ? t('queue_logs.col_agent', 'Temsilci') . ": <strong>{$agentDisplay}</strong>" : '')
-                             . ($ringSec > 0 ? " • " . sprintf(t('queue_logs.detail_ring_sec', '%s sn çaldı, açılmadı'), $ringSec) : ''),
+                    'title' => t('queue_logs.step_ringnoanswer'),
+                    'detail' => (!empty($agentDisplay) ? t('queue_logs.col_agent') . ": <strong>{$agentDisplay}</strong>" : '')
+                             . ($ringSec > 0 ? " • " . sprintf(t('queue_logs.detail_ring_sec'), $ringSec) : ''),
                 ];
             case 'CONNECT':
                 return [
                     'icon' => 'fa-headset',
                     'badge' => 'badge-success',
                     'node_color' => 'var(--success)',
-                    'title' => t('queue_logs.step_connect', 'Temsilci Yanıtladı'),
-                    'detail' => (!empty($agentDisplay) ? t('queue_logs.col_agent', 'Temsilci') . ": <strong>{$agentDisplay}</strong>" : '')
-                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait_time', 'Bekleme') . ": <strong>{$d1} sn</strong>" : '')
-                             . (!empty($d3) ? " • " . t('queue_logs.detail_ring', 'Çaldırma') . ": {$d3} sn" : ''),
+                    'title' => t('queue_logs.step_connect'),
+                    'detail' => (!empty($agentDisplay) ? t('queue_logs.col_agent') . ": <strong>{$agentDisplay}</strong>" : '')
+                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait_time') . ": <strong>{$d1} sn</strong>" : '')
+                             . (!empty($d3) ? " • " . t('queue_logs.detail_ring') . ": {$d3} sn" : ''),
                 ];
             case 'COMPLETECALLER':
                 return [
                     'icon' => 'fa-phone-slash',
                     'badge' => 'badge-success',
                     'node_color' => 'var(--success)',
-                    'title' => t('queue_logs.step_completecaller', 'Arayan Kapattı'),
-                    'detail' => (!empty($d2) ? t('queue_logs.detail_talk_time', 'Konuşma') . ": <strong>{$d2} sn</strong>" : '')
-                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait', 'Bekleme') . ": {$d1} sn" : '')
-                             . (!empty($agentDisplay) ? " • " . t('queue_logs.col_agent', 'Temsilci') . ": {$agentDisplay}" : ''),
+                    'title' => t('queue_logs.step_completecaller'),
+                    'detail' => (!empty($d2) ? t('queue_logs.detail_talk_time') . ": <strong>{$d2} sn</strong>" : '')
+                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait') . ": {$d1} sn" : '')
+                             . (!empty($agentDisplay) ? " • " . t('queue_logs.col_agent') . ": {$agentDisplay}" : ''),
                 ];
             case 'COMPLETEAGENT':
                 return [
                     'icon' => 'fa-user-check',
                     'badge' => 'badge-success',
                     'node_color' => 'var(--success)',
-                    'title' => t('queue_logs.step_completeagent', 'Temsilci Kapattı'),
-                    'detail' => (!empty($d2) ? t('queue_logs.detail_talk_time', 'Konuşma') . ": <strong>{$d2} sn</strong>" : '')
-                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait', 'Bekleme') . ": {$d1} sn" : '')
-                             . (!empty($agentDisplay) ? " • " . t('queue_logs.col_agent', 'Temsilci') . ": {$agentDisplay}" : ''),
+                    'title' => t('queue_logs.step_completeagent'),
+                    'detail' => (!empty($d2) ? t('queue_logs.detail_talk_time') . ": <strong>{$d2} sn</strong>" : '')
+                             . (!empty($d1) ? " • " . t('queue_logs.detail_wait') . ": {$d1} sn" : '')
+                             . (!empty($agentDisplay) ? " • " . t('queue_logs.col_agent') . ": {$agentDisplay}" : ''),
                 ];
             case 'ABANDON':
                 return [
                     'icon' => 'fa-phone-slash',
                     'badge' => 'badge-danger',
                     'node_color' => 'var(--danger)',
-                    'title' => t('queue_logs.step_abandon', 'Arayan Terk Etti'),
-                    'detail' => (!empty($d3) ? t('queue_logs.detail_wait_time', 'Bekleme') . ": <strong>{$d3} sn</strong>" : '')
-                             . (!empty($d1) ? " • " . t('queue_logs.detail_abandoned_pos', 'Terk Edilen Sıra') . ": #{$d1}" : ''),
+                    'title' => t('queue_logs.step_abandon'),
+                    'detail' => (!empty($d3) ? t('queue_logs.detail_wait_time') . ": <strong>{$d3} sn</strong>" : '')
+                             . (!empty($d1) ? " • " . t('queue_logs.detail_abandoned_pos') . ": #{$d1}" : ''),
                 ];
             case 'EXITWITHTIMEOUT':
                 return [
                     'icon' => 'fa-hourglass-end',
                     'badge' => 'badge-warning',
                     'node_color' => 'var(--warning)',
-                    'title' => t('queue_logs.step_timeout', 'Zaman Aşımı ile Ayrıldı'),
-                    'detail' => (!empty($d3) ? t('queue_logs.detail_wait_time', 'Bekleme') . ": <strong>{$d3} sn</strong>" : '')
-                             . (!empty($d1) ? " • " . t('queue_logs.detail_queue_pos', 'Sıra') . ": #{$d1}" : ''),
+                    'title' => t('queue_logs.step_timeout'),
+                    'detail' => (!empty($d3) ? t('queue_logs.detail_wait_time') . ": <strong>{$d3} sn</strong>" : '')
+                             . (!empty($d1) ? " • " . t('queue_logs.detail_queue_pos') . ": #{$d1}" : ''),
                 ];
             case 'EXITEMPTY':
                 return [
                     'icon' => 'fa-users-slash',
                     'badge' => 'badge-secondary',
                     'node_color' => 'var(--text-muted)',
-                    'title' => t('queue_logs.step_empty', 'Kuyrukta Temsilci Yoktu'),
-                    'detail' => t('queue_logs.detail_empty_desc', 'Uygun temsilci bulunamadığı için çağrı kuyruktan ayrıldı.'),
+                    'title' => t('queue_logs.step_empty'),
+                    'detail' => t('queue_logs.detail_empty_desc'),
                 ];
             case 'EXITWITHKEY':
                 return [
                     'icon' => 'fa-keyboard',
                     'badge' => 'badge-info',
                     'node_color' => 'var(--info)',
-                    'title' => t('queue_logs.step_key', 'Tuşlama Yaparak Ayrıldı'),
-                    'detail' => t('queue_logs.detail_pressed_key', 'Tuşlanan') . ": <strong>{$d1}</strong> • " . t('queue_logs.detail_queue_pos', 'Sıra') . ": #{$d2}",
+                    'title' => t('queue_logs.step_key'),
+                    'detail' => t('queue_logs.detail_pressed_key') . ": <strong>{$d1}</strong> • " . t('queue_logs.detail_queue_pos') . ": #{$d2}",
                 ];
             case 'BLINDTRANSFER':
             case 'ATTENDEDTRANSFER':
@@ -534,7 +534,7 @@ class QueueLogRepository extends BaseRepository
                     'icon' => 'fa-random',
                     'badge' => 'badge-info',
                     'node_color' => 'var(--info)',
-                    'title' => t('queue_logs.step_transfer', 'Çağrı Transfer Edildi'),
+                    'title' => t('queue_logs.step_transfer'),
                     'detail' => "{$d1} → {$d2}",
                 ];
             default:
@@ -555,17 +555,17 @@ class QueueLogRepository extends BaseRepository
     {
         switch ($status) {
             case 'CONNECTED':
-                return ['label' => t('queue_logs.status_connected', 'Bağlandı'), 'class' => 'badge-success'];
+                return ['label' => t('queue_logs.status_connected'), 'class' => 'badge-success'];
             case 'ABANDON':
-                return ['label' => t('queue_logs.status_abandon', 'Terk Edildi'), 'class' => 'badge-danger'];
+                return ['label' => t('queue_logs.status_abandon'), 'class' => 'badge-danger'];
             case 'TIMEOUT':
-                return ['label' => t('queue_logs.status_timeout', 'Zaman Aşımı'), 'class' => 'badge-warning'];
+                return ['label' => t('queue_logs.status_timeout'), 'class' => 'badge-warning'];
             case 'EXITEMPTY':
-                return ['label' => t('queue_logs.status_empty', 'Kuyruk Boş'), 'class' => 'badge-secondary'];
+                return ['label' => t('queue_logs.status_empty'), 'class' => 'badge-secondary'];
             case 'KEY':
-                return ['label' => t('queue_logs.status_key', 'Tuşlama ile Çıkış'), 'class' => 'badge-info'];
+                return ['label' => t('queue_logs.status_key'), 'class' => 'badge-info'];
             default:
-                return ['label' => t('queue_logs.status_inqueue', 'Kuyrukta'), 'class' => 'badge-warning'];
+                return ['label' => t('queue_logs.status_inqueue'), 'class' => 'badge-warning'];
         }
     }
 }

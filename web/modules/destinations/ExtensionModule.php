@@ -1,9 +1,14 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'extension': a user's extension (sys_users).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class ExtensionModule implements PBXDestinationInterface {
     public function getKey(): string { return 'extension'; }
-    public function getName(): string { return '📱 Dahili Abone'; }
+    public function getName(): string { return '📱 ' . \t('dest.extension'); }
 
     public function getOptions(): array {
         $db = \getDB();

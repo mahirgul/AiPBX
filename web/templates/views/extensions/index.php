@@ -42,7 +42,7 @@
                     <th class="col-hide-mobile"><?php echo t('extensions.col_type'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_sip_password'); ?></th>
                     <th class="col-hide-mobile"><?php echo t('extensions.col_live_status'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_perm_role', 'Yetki / Grup'); ?></th>
+                    <th class="col-hide-mobile"><?php echo t('extensions.col_perm_role'); ?></th>
                     <th class="text-right"><?php echo t('extensions.col_actions'); ?></th>
                 </tr>
             </thead>
@@ -224,7 +224,7 @@
 
                 <div class="u-grid-2">
                     <div class="form-group">
-                        <label class="form-label"><i class="fas fa-shield-alt text-info"></i> <?php echo t('extensions.field_permission_group', 'Arama Yetki Grubu'); ?></label>
+                        <label class="form-label"><i class="fas fa-shield-alt text-info"></i> <?php echo t('extensions.field_permission_group'); ?></label>
                         <select name="permission_group_id" id="modal_permission_group_id" class="form-control">
                             <?php foreach ($permission_groups ?? [] as $pg): ?>
                                 <option value="<?php echo $pg['id']; ?>"><?php echo htmlspecialchars($pg['group_name']); ?></option>
@@ -233,7 +233,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><i class="fas fa-user-tie text-warning"></i> <?php echo t('extensions.field_boss_secretary_group', 'Şef - Sekreter Grubu'); ?></label>
+                        <label class="form-label"><i class="fas fa-user-tie text-warning"></i> <?php echo t('extensions.field_boss_secretary_group'); ?></label>
                         <select name="boss_secretary_group_id" id="modal_boss_secretary_group_id" class="form-control">
                             <option value=""><?php echo t('extensions.no_group'); ?></option>
                             <?php foreach ($boss_secretary_groups ?? [] as $bsg): ?>

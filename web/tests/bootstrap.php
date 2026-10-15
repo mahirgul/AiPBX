@@ -16,7 +16,7 @@
 
 $envFile = __DIR__ . '/.env.test';
 if (!is_readable($envFile)) {
-    fwrite(STDERR, "HATA: tests/.env.test yok.\nÖnce çalıştır: bash bin/setup-test-db.sh\n");
+    fwrite(STDERR, "ERROR: tests/.env.test is missing.\nRun first: bash bin/setup-test-db.sh\n");
     exit(1);
 }
 foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -27,8 +27,8 @@ foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line)
 
 // LOCK 1 — never run tests against the production database.
 if (getenv('DB_NAME') !== 'asterisk_test') {
-    fwrite(STDERR, "GÜVENLİK: testler yalnızca 'asterisk_test' üzerinde koşabilir, "
-        . "şu an DB_NAME='" . getenv('DB_NAME') . "'. İptal edildi.\n");
+    fwrite(STDERR, "SAFETY: tests may run only on 'asterisk_test', "
+        . "DB_NAME is now '" . getenv('DB_NAME') . "'. Aborted.\n");
     exit(1);
 }
 

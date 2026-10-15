@@ -382,7 +382,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 /**
  * Format Native Dialplan Destination Lines
  */
-function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik = 0) {
+function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0) {
     $db = getDB();
     $lines = [];
     $internal_dial_timeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30'));
@@ -512,23 +512,23 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $derinlik =
             // `post_dest_id` were saved by the panel but NEVER READ HERE: the
             // call was hung up whatever was selected (2026-09-01 field audit).
             //
-            // $derinlik keeps an announcement -> announcement chain from going
+            // $depth keeps an announcement -> announcement chain from going
             // on forever.
-            $sonraki_tip = '';
-            $sonraki_id  = '';
+            $next_type = '';
+            $next_id  = '';
             if (is_numeric($dest_id)) {
                 $ps = $db->prepare("SELECT post_dest_type, post_dest_id FROM pbx_announcements WHERE id = ?");
                 $ps->execute([$dest_id]);
                 if ($row = $ps->fetch(PDO::FETCH_ASSOC)) {
-                    $sonraki_tip = trim((string)($row['post_dest_type'] ?? ''));
-                    $sonraki_id  = trim((string)($row['post_dest_id'] ?? ''));
+                    $next_type = trim((string)($row['post_dest_type'] ?? ''));
+                    $next_id  = trim((string)($row['post_dest_id'] ?? ''));
                 }
             }
 
-            if ($sonraki_tip !== '' && $sonraki_tip !== 'hangup' && $derinlik < 3) {
-                $lines[] = buildDestinationLines($sonraki_tip, $sonraki_id, $orig_did, $derinlik + 1);
+            if ($next_type !== '' && $next_type !== 'hangup' && $depth < 3) {
+                $lines[] = buildDestinationLines($next_type, $next_id, $orig_did, $depth + 1);
             } else {
-                if ($derinlik >= 3) {
+                if ($depth >= 3) {
                     $lines[] = " same => n,NoOp(Announcement chain too deep, hanging up)";
                 }
                 $lines[] = " same => n,Hangup()";

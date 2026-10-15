@@ -6,6 +6,11 @@
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
 
+/**
+ * Voicemail of a user: settings, the message list read from Asterisk's spool
+ * (/var/spool/asterisk/voicemail/default/<ext>/<folder>), playing, marking heard and
+ * deleting; heard messages moved to S3 storage are listed from voicemail_archive.
+ */
 class VoicemailService {
     public static function getUserVoicemailSettings($userId) {
         $db = getDB();
@@ -29,7 +34,7 @@ class VoicemailService {
             $stmt = $db->prepare("UPDATE sys_users SET voicemail_enabled = ?, voicemail_pin = ?, voicemail_email = ?, voicemail_attach_audio = ?, vm_on_noanswer = ?, vm_on_busy = ?, vm_on_unavail = ?, vm_always = ? WHERE id = ?");
             $stmt->execute([$voicemail_enabled, $pin, $email, $attach, $vm_on_noanswer, $vm_on_busy, $vm_on_unavail, $vm_always, $userId]);
 
-            // Voicemail ve General Dialplan sync gerekli
+            // Voicemail and the general dialplan need an Apply
             markPendingSync('voicemail', 'voicemail', 'mailbox', "Voicemail settings (#{$userId})", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan (voicemail)", 'update', $_SESSION['user_id'] ?? null);
 

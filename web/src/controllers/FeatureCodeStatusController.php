@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Active Codes page (/feature-codes-status).
+ * Renders templates/views/feature_codes_status/index.php.
+ * Logic: FeatureCodeStatusRepository.
+ * Admins only.
+ */
 class FeatureCodeStatusController extends BaseController
 {
     public static function index(): void

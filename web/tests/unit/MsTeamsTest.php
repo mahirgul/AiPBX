@@ -11,7 +11,7 @@ final class MsTeamsTest extends TestCase
     protected function setUp(): void
     {
         if (DB_NAME !== 'asterisk_test') {
-            $this->fail('Testler yalnizca asterisk_test uzerinde kosmali');
+            $this->fail('tests must run only on asterisk_test');
         }
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
@@ -142,7 +142,7 @@ final class MsTeamsTest extends TestCase
 
     public function testWebhookServiceValidation(): void
     {
-        // Webhook aktifken URL zorunlu
+        // With the webhook on, the URL is required
         $res1 = MsTeamsService::saveWebhookSettings([
             'teams_webhook_enabled' => '1',
             'teams_webhook_url'     => '',

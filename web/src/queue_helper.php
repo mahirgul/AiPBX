@@ -217,7 +217,7 @@ class QueueHelper {
         $stmt_user->execute([$ext]);
         $agent_name = $stmt_user->fetchColumn() ?: "Agent $ext";
 
-        // cc_pause_logs tablosuna kaydet
+        // Record it in cc_pause_logs
         $stmt_close = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
         $stmt_close->execute([$ext]);
 

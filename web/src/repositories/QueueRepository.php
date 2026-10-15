@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Queues page.
+ * Tables: pbx_queues, sys_users (agents), pbx_moh_classes.
+ * Used by QueueController.
+ */
 class QueueRepository extends BaseRepository
 {
     protected static string $table = 'pbx_queues';

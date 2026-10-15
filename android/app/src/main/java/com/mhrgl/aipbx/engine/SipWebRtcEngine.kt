@@ -128,7 +128,7 @@ class SipWebRtcEngine(private val context: Context) {
                 // If an error lands here, something is really wrong and it must
                 // be visible; the log line is kept on purpose for diagnosis.
                 override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-                    Log.e(TAG, "WebView SSL hatasi (${error?.primaryError}) - yukleme iptal edildi: ${error?.url}")
+                    Log.e(TAG, "WebView SSL error (${error?.primaryError}) - load cancelled: ${error?.url}")
                     handler?.cancel()
                 }
 

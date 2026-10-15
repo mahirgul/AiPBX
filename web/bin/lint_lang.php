@@ -30,12 +30,12 @@ $only_in_tr = array_diff(array_keys($tr), array_keys($en));
 $only_in_en = array_diff(array_keys($en), array_keys($tr));
 
 if (!empty($only_in_tr)) {
-    echo "Sadece tr.php'de olan anahtarlar (" . count($only_in_tr) . "):\n";
+    echo "Keys only in tr.php (" . count($only_in_tr) . "):\n";
     foreach ($only_in_tr as $k) echo "  - $k\n";
     $problems += count($only_in_tr);
 }
 if (!empty($only_in_en)) {
-    echo "Sadece en.php'de olan anahtarlar (" . count($only_in_en) . "):\n";
+    echo "Keys only in en.php (" . count($only_in_en) . "):\n";
     foreach ($only_in_en as $k) echo "  - $k\n";
     $problems += count($only_in_en);
 }
@@ -95,7 +95,7 @@ if (!empty($missing)) {
     foreach ($missing as $key => $files) {
         $in_tr = array_key_exists($key, $tr) ? 'tr:var' : 'tr:YOK';
         $in_en = array_key_exists($key, $en) ? 'en:var' : 'en:YOK';
-        echo "  - $key ($in_tr, $in_en) — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' dosya daha' : '') . "\n";
+        echo "  - $key ($in_tr, $in_en) — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' more file(s)' : '') . "\n";
     }
     $problems += count($missing);
 }
@@ -103,7 +103,7 @@ if (!empty($missing)) {
 if (!empty($dynamic_prefixes)) {
     echo "\nDynamic key prefixes (t('prefix' . \$var), not checked — " . count($dynamic_prefixes) . "):\n";
     foreach ($dynamic_prefixes as $prefix => $files) {
-        echo "  - {$prefix}* — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' dosya daha' : '') . "\n";
+        echo "  - {$prefix}* — " . $files[0] . (count($files) > 1 ? ' +' . (count($files) - 1) . ' more file(s)' : '') . "\n";
     }
 }
 

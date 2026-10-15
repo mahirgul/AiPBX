@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/AsteriskSettingsService.php';
 
+/**
+ * PBX Settings page (/asterisk-settings).
+ * Renders templates/views/asterisk_settings/index.php.
+ * Logic: AsteriskSettingsRepository, AsteriskSettingsService.
+ * POST actions: save_asterisk_settings.
+ * Admins only.
+ */
 class AsteriskSettingsController extends BaseController
 {
     public static function index(): void

@@ -3,6 +3,11 @@ require_once __DIR__ . '/../../modules/destinations/DestinationRegistry.php';
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Database access for the Inbound routes (DIDs) page.
+ * Tables: sys_did_mappings.
+ * Used by DidRouteController.
+ */
 class DidRouteRepository extends BaseRepository
 {
     protected static string $table = 'pbx_dids';

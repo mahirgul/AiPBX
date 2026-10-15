@@ -9,11 +9,11 @@ $apns_on = ($settings['push_apns_enabled'] ?? '0') === '1';
 <!-- Push Settings Single-Line Fixed Tabs -->
 <div class="settings-tabs u-mb-20">
     <button type="button" class="settings-tab-btn active" data-tab="config" onclick="switchSettingsTab('config', this)">
-        <i class="fas fa-sliders-h"></i> <?php echo t('push_settings.tab_config', 'Yapılandırma'); ?>
+        <i class="fas fa-sliders-h"></i> <?php echo t('push_settings.tab_config'); ?>
     </button>
     <?php if (hasModulePermission('push_settings', 'edit')): ?>
     <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
-        <i class="fas fa-paper-plane"></i> <?php echo t('push_settings.tab_test', 'Test & Gönderim'); ?>
+        <i class="fas fa-paper-plane"></i> <?php echo t('push_settings.tab_test'); ?>
     </button>
     <?php endif; ?>
 </div>
@@ -185,7 +185,7 @@ $apns_on = ($settings['push_apns_enabled'] ?? '0') === '1';
         <?php if (hasModulePermission('push_settings', 'edit')): ?>
         <div class="push-save-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
             <button type="submit" name="save_push_settings" class="btn btn-primary">
-                <i class="fas fa-save"></i> <?php echo t('common.save', 'Ayarları Kaydet'); ?>
+                <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
             </button>
         </div>
         <?php endif; ?>

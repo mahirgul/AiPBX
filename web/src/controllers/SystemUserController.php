@@ -5,6 +5,14 @@ require_once __DIR__ . '/../services/TwoFactorService.php';
 require_once __DIR__ . '/../services/UserInvitationService.php';
 require_once __DIR__ . '/../services/UserImportService.php';
 
+/**
+ * Users page (/system-users).
+ * Renders templates/views/system_users/index.php with assets/js/system_users.js.
+ * Logic: RoleRepository, RoleService, SystemUserRepository, TwoFactorService, UserImportService,
+ * UserInvitationService, UserService.
+ * POST actions: delete_user, reset_password, toggle_status.
+ * Admins only.
+ */
 class SystemUserController extends BaseController
 {
     public static function index(): void
@@ -31,7 +39,7 @@ class SystemUserController extends BaseController
             // Every form on this page posts a CSRF token; check it once here.
             // The services re-check it themselves.
             if (!static::verifyCsrf()) {
-                $error = t('login.csrf_error', 'Güvenlik doğrulaması (CSRF) geçersiz!');
+                $error = t('login.csrf_error');
             } elseif (isset($_POST['save_system_user'])) {
                 $res = UserService::saveUser($_POST);
                 ['message' => $message, 'error' => $error] = static::notices($res);
@@ -98,7 +106,7 @@ class SystemUserController extends BaseController
             } elseif (isset($_POST['reset_2fa'])) {
                 $res = TwoFactorService::disableTwoFactor((int) ($_POST['user_id'] ?? 0), '', true);
                 if ($res['success']) {
-                    $message = t('system_users.2fa_reset_success', 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.');
+                    $message = t('system_users.2fa_reset_success');
                 } else {
                     $error = $res['error'] ?? t('common.action_failed');
                 }

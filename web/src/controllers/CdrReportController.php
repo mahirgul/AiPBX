@@ -2,6 +2,12 @@
 require_once __DIR__ . '/../services/CdrReportService.php';
 require_once __DIR__ . '/../services/ReportExport.php';
 
+/**
+ * Reports page (/cdr-reports).
+ * Renders templates/views/cdr_reports/index.php.
+ * Logic: CdrReportRepository, CdrReportService.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class CdrReportController extends BaseController
 {
     public static function index(): void
@@ -67,32 +73,32 @@ class CdrReportController extends BaseController
             $trunk_filter = '';
         }
 
-        $sayfa = max(1, intval($_GET['page'] ?? 1));
-        $sayfa_boyutu = View::sayfaBoyutu(CdrReportRepository::SAYFA_BOYUTU);
+        $current_page = max(1, intval($_GET['page'] ?? 1));
+        $page_size = View::pageSize(CdrReportRepository::PAGE_SIZE);
 
         $view_mode = trim($_GET['view_mode'] ?? 'grouped');
         if ($view_mode !== 'raw') {
             $view_mode = 'grouped';
         }
 
-        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $sayfa, $sayfa_boyutu, $device_filter, $view_mode, $direction_filter, $trunk_filter);
+        $cdrs = CdrReportRepository::search($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $current_page, $page_size, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
         // The summary is computed in the database over ALL matching records.
         // It used to be looped row by row in PHP; with paging that would cover
         // only the displayed page and the summary would be wrong. It also
         // called file_exists() for every row.
-        $ozet = CdrReportRepository::ozet($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode, $direction_filter, $trunk_filter);
+        $summary = CdrReportRepository::summary($can_view_all, $user_ext, $start_ts, $end_ts, $status_filter, $agent_filter, $search_query, $device_filter, $view_mode, $direction_filter, $trunk_filter);
 
-        $stat_total            = $ozet['toplam'];
-        $stat_answered         = $ozet['cevaplanan'];
-        $stat_no_answer        = $ozet['cevapsiz'];
-        $stat_busy             = $ozet['mesgul'];
-        $stat_failed           = $ozet['basarisiz'];
-        $stat_total_billsec    = $ozet['toplam_sure'];
-        $stat_recordings_count = $ozet['kayitli'];
-        $stat_total_ring       = $ozet['toplam_calma'];
-        $stat_avg_talk         = $ozet['ort_konusma'];
-        $stat_avg_ring         = $ozet['ort_calma'];
+        $stat_total            = $summary['total'];
+        $stat_answered         = $summary['answered'];
+        $stat_no_answer        = $summary['missed'];
+        $stat_busy             = $summary['busy'];
+        $stat_failed           = $summary['failed'];
+        $stat_total_billsec    = $summary['total_duration'];
+        $stat_recordings_count = $summary['recorded'];
+        $stat_total_ring       = $summary['total_ring'];
+        $stat_avg_talk         = $summary['avg_talk'];
+        $stat_avg_ring         = $summary['avg_ring'];
 
         $format = $_GET['export'] ?? '';
         if (in_array($format, ['pdf', 'xlsx'], true)) {
@@ -114,11 +120,11 @@ class CdrReportController extends BaseController
                 t('export.f_device') => $device_filter,
                 t('export.f_search') => $search_query,
             ], fn($v) => $v !== '');
-            ReportExport::send(static::exportDoc(array_slice($all, 0, $limit), $ozet, $start_ts, $end_ts, $filters, $stat_total), $format, 'call-report');
+            ReportExport::send(static::exportDoc(array_slice($all, 0, $limit), $summary, $start_ts, $end_ts, $filters, $stat_total), $format, 'call-report');
         }
 
-        $toplam_sayfa  = max(1, (int)ceil($stat_total / $sayfa_boyutu));
-        if ($sayfa > $toplam_sayfa) $sayfa = $toplam_sayfa;
+        $total_pages  = max(1, (int)ceil($stat_total / $page_size));
+        if ($current_page > $total_pages) $current_page = $total_pages;
 
         $answer_rate = $stat_total > 0 ? round(($stat_answered / $stat_total) * 100, 1) : 0;
 
@@ -140,19 +146,19 @@ class CdrReportController extends BaseController
             'trunk_filter' => $trunk_filter,
             'trunks' => $trunks,
             'stat_directions' => [
-                CdrCallAnalyzer::INBOUND => $ozet['gelen'] ?? 0,
-                CdrCallAnalyzer::OUTBOUND => $ozet['giden'] ?? 0,
-                CdrCallAnalyzer::INTERNAL => $ozet['dahili'] ?? 0,
-                CdrCallAnalyzer::TRANSIT => $ozet['transit'] ?? 0,
+                CdrCallAnalyzer::INBOUND => $summary['inbound'] ?? 0,
+                CdrCallAnalyzer::OUTBOUND => $summary['outbound'] ?? 0,
+                CdrCallAnalyzer::INTERNAL => $summary['internal'] ?? 0,
+                CdrCallAnalyzer::TRANSIT => $summary['transit'] ?? 0,
             ],
             'view_mode' => $view_mode,
             'cdrs' => $cdrs,
             'stat_total_ring' => $stat_total_ring,
             'stat_avg_talk' => $stat_avg_talk,
             'stat_avg_ring' => $stat_avg_ring,
-            'sayfa' => $sayfa,
-            'toplam_sayfa' => $toplam_sayfa,
-            'sayfa_boyutu' => $sayfa_boyutu,
+            'current_page' => $current_page,
+            'total_pages' => $total_pages,
+            'page_size' => $page_size,
             'stat_total' => $stat_total,
             'stat_answered' => $stat_answered,
             'stat_total_billsec' => $stat_total_billsec,
@@ -174,7 +180,7 @@ class CdrReportController extends BaseController
     }
 
     /** One row per call with the same columns as the page, plus what only fits in a spreadsheet. */
-    protected static function exportDoc(array $calls, array $ozet, ?string $from, ?string $to, array $filters, int $total): array
+    protected static function exportDoc(array $calls, array $summary, ?string $from, ?string $to, array $filters, int $total): array
     {
         $rows = [];
         foreach ($calls as $c) {
@@ -205,16 +211,16 @@ class CdrReportController extends BaseController
                 $note,
             ];
         }
-        $rate = $ozet['toplam'] > 0 ? round($ozet['cevaplanan'] * 100 / $ozet['toplam'], 1) : 0;
+        $rate = $summary['total'] > 0 ? round($summary['answered'] * 100 / $summary['total'], 1) : 0;
         $kpis = [
-            [t('cdr_reports.stat_total'), (string) $ozet['toplam'], ''],
-            [t('cdr_reports.stat_answered'), (string) $ozet['cevaplanan'], ReportExport::format($rate, 'pct')],
-            [t('cdr_reports.stat_talk_time'), ReportExport::format($ozet['toplam_sure'], 'dur'), ''],
-            [t('cdr_reports.stat_recordings'), (string) $ozet['kayitli'], ''],
+            [t('cdr_reports.stat_total'), (string) $summary['total'], ''],
+            [t('cdr_reports.stat_answered'), (string) $summary['answered'], ReportExport::format($rate, 'pct')],
+            [t('cdr_reports.stat_talk_time'), ReportExport::format($summary['total_duration'], 'dur'), ''],
+            [t('cdr_reports.stat_recordings'), (string) $summary['recorded'], ''],
         ];
-        foreach (['gelen' => 'inbound', 'giden' => 'outbound', 'dahili' => 'internal', 'transit' => 'transit'] as $k => $dir) {
-            if (isset($ozet[$k])) {
-                $kpis[] = [t('cdr_reports.dir_' . $dir), (string) $ozet[$k], ''];
+        foreach (['inbound' => 'inbound', 'outbound' => 'outbound', 'internal' => 'internal', 'transit' => 'transit'] as $k => $dir) {
+            if (isset($summary[$k])) {
+                $kpis[] = [t('cdr_reports.dir_' . $dir), (string) $summary[$k], ''];
             }
         }
         return [

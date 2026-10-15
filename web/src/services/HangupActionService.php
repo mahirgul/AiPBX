@@ -18,20 +18,20 @@ class HangupActionService {
             }
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
-            $eski_numara = (string) (DBHelper::fetchColumn(
+            $old_number = (string) (DBHelper::fetchColumn(
                 "SELECT internal_number FROM pbx_hangup_actions WHERE id = ?", [$action_id]
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'hangup', $action_id);
-            $numara_kolonu = $internal_number !== '' ? $internal_number : null;
+            $number_column = $internal_number !== '' ? $internal_number : null;
 
             $db = getDB();
             $is_new = ($action_id <= 0);
             if ($action_id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_hangup_actions SET title = ?, action_type = ?, announcement_id = ?, internal_number = ? WHERE id = ?");
-                $stmt->execute([$title, $action_type, $announcement_id, $numara_kolonu, $action_id]);
+                $stmt->execute([$title, $action_type, $announcement_id, $number_column, $action_id]);
             } else {
                 $stmt = $db->prepare("INSERT INTO pbx_hangup_actions (action_key, title, action_type, announcement_id, internal_number) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$action_key, $title, $action_type, $announcement_id, $numara_kolonu]);
+                $stmt->execute([$action_key, $title, $action_type, $announcement_id, $number_column]);
                 $action_id = $db->lastInsertId();
             }
             // The 'hangup' branch of buildDestinationLines() reads this table
@@ -44,8 +44,8 @@ class HangupActionService {
             markPendingSync('inbound_dialplan', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
             markPendingSync('ivrs', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
             markPendingSync('time_conditions', 'hangup_action', $action_id, "Hangup action: {$title}", $action, $uid);
-            // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
-            if ($internal_number !== $eski_numara) {
+            // When a number was added, changed or removed, the internal targets context must be rebuilt too.
+            if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'hangup_action', $action_id,
                     "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $uid);
@@ -60,7 +60,7 @@ class HangupActionService {
             if ($action_id > 0) {
                 $db = getDB();
                 $title = DBHelper::fetchColumn("SELECT title FROM pbx_hangup_actions WHERE id = ?", [$action_id]);
-                $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_hangup_actions WHERE id = ?", [$action_id]) ?? '');
+                $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_hangup_actions WHERE id = ?", [$action_id]) ?? '');
                 $stmt = $db->prepare("DELETE FROM pbx_hangup_actions WHERE id = ? AND action_key NOT IN ('hangup', 'busy', 'congestion')");
                 $stmt->execute([$action_id]);
                 $uid = $_SESSION['user_id'] ?? null;
@@ -68,9 +68,9 @@ class HangupActionService {
                 markPendingSync('inbound_dialplan', 'hangup_action', $action_id, $label, 'delete', $uid);
                 markPendingSync('ivrs', 'hangup_action', $action_id, $label, 'delete', $uid);
                 markPendingSync('time_conditions', 'hangup_action', $action_id, $label, 'delete', $uid);
-                if ($silinen_numara !== '') {
+                if ($removed_number !== '') {
                     markPendingSync('internal_numbers', 'hangup_action', $action_id,
-                        "Internal number removed: {$silinen_numara}", 'delete', $uid);
+                        "Internal number removed: {$removed_number}", 'delete', $uid);
                 }
                 return t('srv_hangup.deleted');
             }

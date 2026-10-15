@@ -213,11 +213,11 @@
                             </td>
                             <td>
                                 <?php if (!empty($u['two_factor_enabled'])): ?>
-                                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700; font-size: 11px;" title="<?php echo t('system_users.2fa_active_tooltip', '2FA Aktif'); ?>">
+                                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700; font-size: 11px;" title="<?php echo t('system_users.2fa_active_tooltip'); ?>">
                                         <i class="fas fa-lock"></i> <?php echo t('common.active'); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-size: 11px;" title="<?php echo t('system_users.2fa_inactive_tooltip', '2FA Kapalı'); ?>">
+                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-size: 11px;" title="<?php echo t('system_users.2fa_inactive_tooltip'); ?>">
                                         <i class="fas fa-unlock-alt"></i> <?php echo t('system_users.twofa_off'); ?>
                                     </span>
                                 <?php endif; ?>
@@ -242,11 +242,11 @@
                                         </button>
                                     <?php endif; ?>
                                     <?php if (!empty($u['two_factor_enabled'])): ?>
-                                        <form method="POST" class="u-inline" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm', '%s kullanıcısının 2FA doğrulaması sıfırlanacaktır. Emin misiniz?'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
+                                        <form method="POST" class="u-inline" onsubmit="return confirm('<?php echo sprintf(t('system_users.reset_2fa_confirm'), htmlspecialchars($u['username'], ENT_QUOTES)); ?>');">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="reset_2fa" value="1">
                                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm u-warning" title="<?php echo t('system_users.reset_2fa_tooltip', '2FA Sıfırla'); ?>">
+                                            <button type="submit" class="btn btn-secondary btn-sm u-warning" title="<?php echo t('system_users.reset_2fa_tooltip'); ?>">
                                                 <i class="fas fa-shield-alt"></i>
                                             </button>
                                         </form>

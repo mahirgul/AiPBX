@@ -19,23 +19,23 @@ final class CdrRingAndTalkDurations extends AbstractMigration
 {
     public function up(): void
     {
-        $this->execute($this->gorunum(true));
+        $this->execute($this->viewSql(true));
     }
 
     public function down(): void
     {
-        $this->execute($this->gorunum(false));
+        $this->execute($this->viewSql(false));
     }
 
-    private function gorunum(bool $sureleriEkle): string
+    private function viewSql(bool $addDurations): string
     {
-        $hedef = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
+        $target = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
 
-        $cevap = $sureleriEkle
+        $answer = $addDurations
             ? "`c`.`calldate` + INTERVAL greatest(`c`.`duration` - `c`.`billsec`, 0) SECOND"
             : "`c`.`calldate`";
 
-        $ekstra = $sureleriEkle
+        $extra = $addDurations
             ? ", greatest(`c`.`duration` - `c`.`billsec`, 0) AS `ring_sec`"
             : "";
 
@@ -49,7 +49,7 @@ final class CdrRingAndTalkDurations extends AbstractMigration
                 WHEN `c`.`lastapp` = 'Queue' THEN substring_index(`c`.`lastdata`, ',', 1)
                 WHEN `d`.`title` IS NOT NULL THEN `d`.`title`
                 WHEN `c`.`dcontext` = 'from-internal-pbx' THEN 'Dahili Görüşme'
-                ELSE concat('Gelen Rota: ', {$hedef})
+                ELSE concat('Gelen Rota: ', {$target})
             END AS `queue_name`,
             CASE
                 WHEN `c`.`accountcode` IS NOT NULL AND `c`.`accountcode` <> '' AND `c`.`accountcode` <> `c`.`src` THEN `c`.`accountcode`
@@ -59,10 +59,10 @@ final class CdrRingAndTalkDurations extends AbstractMigration
             END AS `agent_extension`,
             `u`.`full_name` AS `agent_name`,
             `c`.`calldate` AS `start_time`,
-            {$cevap} AS `answer_time`,
+            {$answer} AS `answer_time`,
             `c`.`calldate` + INTERVAL `c`.`duration` SECOND AS `end_time`,
             `c`.`duration` AS `duration`,
-            `c`.`billsec` AS `billsec`{$ekstra},
+            `c`.`billsec` AS `billsec`{$extra},
             `c`.`disposition` AS `status`,
             CASE
                 WHEN `c`.`userfield` IS NOT NULL AND `c`.`userfield` <> '' THEN `c`.`userfield`
@@ -76,6 +76,6 @@ final class CdrRingAndTalkDurations extends AbstractMigration
                 WHEN `c`.`dst` IS NOT NULL AND `c`.`dst` <> '' AND `c`.`dst` <> '0' AND `c`.`dst` <> `c`.`src` THEN `c`.`dst`
                 ELSE NULL
             END
-        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$hedef}";
+        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$target}";
     }
 }

@@ -30,7 +30,7 @@ class IVRService {
             if (empty($title)) throw new \Exception(t('srv_ivr.err_title'));
 
             $internal_number = internalNumberSanitize($data['internal_number'] ?? '');
-            $eski_numara = (string) (DBHelper::fetchColumn(
+            $old_number = (string) (DBHelper::fetchColumn(
                 "SELECT internal_number FROM pbx_ivrs WHERE id = ?", [$ivr_id]
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'ivr', $ivr_id);
@@ -55,8 +55,8 @@ class IVRService {
             ]);
 
             markPendingSync('ivrs', 'ivr', $id, "IVR: {$title}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
-            // Numara eklendi/degistirildi/silindiyse dahili hedef context'i de tazelenmeli.
-            if ($internal_number !== $eski_numara) {
+            // When a number was added, changed or removed, the internal targets context must be rebuilt too.
+            if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'ivr', $id,
                     "Internal number: " . ($internal_number !== '' ? $internal_number : 'removed'),
                     'update', $_SESSION['user_id'] ?? null);
@@ -95,12 +95,12 @@ class IVRService {
             if ($refs > 0) {
                 throw new \Exception(t('srv_ivr.err_in_use'));
             }
-            $silinen_numara = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_ivrs WHERE id = ?", [$ivr_id]) ?? '');
+            $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_ivrs WHERE id = ?", [$ivr_id]) ?? '');
             DBHelper::delete('pbx_ivrs', 'id', $ivr_id);
             markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
-            if ($silinen_numara !== '') {
+            if ($removed_number !== '') {
                 markPendingSync('internal_numbers', 'ivr', $ivr_id,
-                    "Internal number removed: {$silinen_numara}", 'delete',
+                    "Internal number removed: {$removed_number}", 'delete',
                     $_SESSION['user_id'] ?? null);
             }
 

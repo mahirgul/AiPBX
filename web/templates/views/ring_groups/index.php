@@ -8,15 +8,15 @@ use PBX\Destinations\DestinationRegistry;
 <div class="card">
     <div class="card-header">
         <div class="card-title">
-            <i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.title', 'Çalma Grupları (Ring Groups)'); ?>
+            <i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.title'); ?>
             <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($ring_groups); ?></span>
         </div>
         <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide', 'Modül Rehberi'); ?>">
+            <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if (hasModulePermission('ring_groups', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateRgModal()" title="<?php echo t('ring_groups.new_group_btn', 'Yeni Çalma Grubu'); ?>">
+                <button class="btn btn-primary btn-sm" onclick="openCreateRgModal()" title="<?php echo t('ring_groups.new_group_btn'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
@@ -25,12 +25,12 @@ use PBX\Destinations\DestinationRegistry;
 
     <!-- Collapsible Help Box -->
     <div class="module-help-box" id="rgHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ring_groups.help_title', 'Çalma Grubu Nedir ve Nasıl Çalışır?'); ?></h4>
-        <p><?php echo t('ring_groups.help_body', 'Bir çağrı geldiğinde veya grup dahili numarası arandığında birden fazla hedefi aynı anda çaldırır.'); ?></p>
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('ring_groups.help_title'); ?></h4>
+        <p><?php echo t('ring_groups.help_body'); ?></p>
         <ul>
-            <li><strong><?php echo t('ring_groups.help_mixed', 'Dahili ve Harici Numaralar:'); ?></strong> <?php echo t('ring_groups.help_mixed_desc', 'Listeye santral içi dahilileri (ör: 1001, 1002) ve cep telefonu / harici sabit hatları (ör: 05051234567) serbestçe virgülle ayırarak yazabilirsiniz.'); ?></li>
-            <li><strong><?php echo t('ring_groups.help_first_wins', 'İlk Açan Kazanır:'); ?></strong> <?php echo t('ring_groups.help_first_wins_desc', 'Gruptaki hedeflerden hangisi çağrıyı açarsa, arayan doğrudan ona bağlanır ve diğer tüm çalan telefonlar anında susar.'); ?></li>
-            <li><strong><?php echo t('ring_groups.help_internal_ext', 'Sanal Dahili Numarası:'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc', 'Her çalma grubunun kendi dahili erişim numarası olabilir (ör: 7000). IVR, zaman koşulu ve dahililerden doğrudan bu numara aranabilir.'); ?></li>
+            <li><strong><?php echo t('ring_groups.help_mixed'); ?></strong> <?php echo t('ring_groups.help_mixed_desc'); ?></li>
+            <li><strong><?php echo t('ring_groups.help_first_wins'); ?></strong> <?php echo t('ring_groups.help_first_wins_desc'); ?></li>
+            <li><strong><?php echo t('ring_groups.help_internal_ext'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc'); ?></li>
         </ul>
     </div>
 
@@ -50,7 +50,7 @@ use PBX\Destinations\DestinationRegistry;
             </thead>
             <tbody>
                 <?php if (empty($ring_groups)): ?>
-                    <?php echo uiTableEmptyRow(8, t('ring_groups.empty', 'Henüz tanımlanmış bir çalma grubu bulunmuyor.'), 'fa-users'); ?>
+                    <?php echo uiTableEmptyRow(8, t('ring_groups.empty'), 'fa-users'); ?>
                 <?php else: ?>
                     <?php foreach ($ring_groups as $rg): ?>
                         <?php 
@@ -211,7 +211,7 @@ use PBX\Destinations\DestinationRegistry;
                     </label>
                 </div>
 
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('rgModal')", t('common.save', 'Kaydet'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('rgModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>

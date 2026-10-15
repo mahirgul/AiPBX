@@ -131,7 +131,7 @@ function __syncRtpSettingsBody()
     $conf = buildRtpConf();
 
     // Keep the current content: restore it if the reload fails.
-    $onceki = is_readable(RTP_CONF_PATH) ? file_get_contents(RTP_CONF_PATH) : null;
+    $previous = is_readable(RTP_CONF_PATH) ? file_get_contents(RTP_CONF_PATH) : null;
 
     if (!FileHelper::writeFile(RTP_CONF_PATH, $conf, 'asterisk', 'asterisk', 0644)) {
         throw new \Exception(sprintf(t('sync.err_conf_write'), 'rtp.conf'));
@@ -140,7 +140,7 @@ function __syncRtpSettingsBody()
     try {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadRTP()], t('sync.ctx_rtp'));
     } catch (\Exception $e) {
-        if ($onceki !== null && FileHelper::writeFile(RTP_CONF_PATH, $onceki, 'asterisk', 'asterisk', 0644)) {
+        if ($previous !== null && FileHelper::writeFile(RTP_CONF_PATH, $previous, 'asterisk', 'asterisk', 0644)) {
             AsteriskHelper::reloadRTP();
             throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'RTP', $e->getMessage()));
         }

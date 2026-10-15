@@ -19,30 +19,30 @@ final class InternalNumberTest extends TestCase
         Fixtures::load();
     }
 
-    public function testManifestteKaynaklarVarVeHangupActionKeyKullanir(): void
+    public function testManifestHasSourcesAndHangupUsesActionKey(): void
     {
         $this->assertCount(8, INTERNAL_NUMBER_SOURCES);
         $this->assertArrayHasKey('ai_app', INTERNAL_NUMBER_SOURCES);
         $this->assertArrayHasKey('ring_group', INTERNAL_NUMBER_SOURCES);
         $this->assertArrayHasKey('conference', INTERNAL_NUMBER_SOURCES);
         $this->assertSame('action_key', INTERNAL_NUMBER_SOURCES['hangup']['dest_col'],
-            'hangup hedefinin dest_id\'si buildDestinationLines() icinde action_key ile aranir');
+            'buildDestinationLines() looks up the dest_id of a hangup destination by action_key');
         $this->assertSame('id', INTERNAL_NUMBER_SOURCES['ivr']['dest_col']);
     }
 
-    public function testSanitizeYalnizcaRakamBirakir(): void
+    public function testSanitizeKeepsDigitsOnly(): void
     {
         $this->assertSame('1010', internalNumberSanitize(' 10-10 '));
         $this->assertSame('', internalNumberSanitize('abc'));
         $this->assertSame('', internalNumberSanitize(null));
     }
 
-    public function testEntriesFixtureNumaralariniDondurur(): void
+    public function testEntriesReturnTheFixtureNumbers(): void
     {
         $entries = internalNumberEntries();
-        $numaralar = array_column($entries, 'number');
-        sort($numaralar);
-        $this->assertSame(['1010', '1020'], $numaralar);
+        $numbers = array_column($entries, 'number');
+        sort($numbers);
+        $this->assertSame(['1010', '1020'], $numbers);
 
         $hangup = null;
         foreach ($entries as $e) {
@@ -51,17 +51,17 @@ final class InternalNumberTest extends TestCase
         $this->assertNotNull($hangup);
         $this->assertSame('hangup', $hangup['dest_type']);
         $this->assertSame('testbusy', $hangup['dest_id'],
-            'hangup dest_id sayisal id degil action_key olmali');
+            'hangup dest_id must be the action_key, not a numeric id');
     }
 
-    public function testPasifKayitlarListeyeGirmez(): void
+    public function testInactiveRecordsAreNotListed(): void
     {
         getDB()->exec("UPDATE pbx_ivrs SET is_active = 0 WHERE internal_number = '1010'");
-        $numaralar = array_column(internalNumberEntries(), 'number');
-        $this->assertNotContains('1010', $numaralar);
+        $numbers = array_column(internalNumberEntries(), 'number');
+        $this->assertNotContains('1010', $numbers);
     }
 
-    public function testGercekDahiliyleCakismaYakalanir(): void
+    public function testClashWithARealExtensionIsCaught(): void
     {
         getDB()->exec("DELETE FROM sys_users WHERE username = 'tuser'");
         getDB()->prepare(
@@ -71,7 +71,7 @@ final class InternalNumberTest extends TestCase
 
         try {
             assertInternalNumberAvailable('3001', 'ivr', 0);
-            $this->fail('gercek dahiliyle cakisma yakalanmadi');
+            $this->fail('conflict with a real extension was not detected');
         } catch (Exception $e) {
             $this->assertStringContainsString('3001', $e->getMessage());
             $this->assertStringContainsString('extension', $e->getMessage());
@@ -80,26 +80,26 @@ final class InternalNumberTest extends TestCase
         }
     }
 
-    public function testBaskaBirVarliginNumarasiylaCakismaYakalanir(): void
+    public function testClashWithAnotherItemsNumberIsCaught(): void
     {
         $this->expectException(Exception::class);
         assertInternalNumberAvailable('1020', 'ivr', 0);
     }
 
-    public function testKendiNumarasiCakismaSayilmaz(): void
+    public function testOwnNumberIsNotAClash(): void
     {
         $ivrId = (int) getDB()->query("SELECT id FROM pbx_ivrs WHERE internal_number = '1010'")->fetchColumn();
         assertInternalNumberAvailable('1010', 'ivr', $ivrId);
-        $this->assertTrue(true, 'kendi numarasi cakisma saymadi');
+        $this->assertTrue(true, 'its own number was not counted as a conflict');
     }
 
-    public function testCokKisaVeCokUzunNumaraReddedilir(): void
+    public function testTooShortAndTooLongNumbersAreRejected(): void
     {
         $this->expectException(Exception::class);
         assertInternalNumberAvailable('5', 'ivr', 0);
     }
 
-    public function testAsteriskDeseniRegexeCevrilir(): void
+    public function testAsteriskPatternBecomesRegex(): void
     {
         $re = asteriskPatternToRegex('_[4-9]XXX');
         $this->assertNotNull($re);
@@ -109,10 +109,10 @@ final class InternalNumberTest extends TestCase
 
         $this->assertSame(1, preg_match(asteriskPatternToRegex('_0X.'), '05321234567'));
         $this->assertSame(1, preg_match(asteriskPatternToRegex('112'), '112'));
-        $this->assertNull(asteriskPatternToRegex('_9%$'), 'desteklenmeyen karakterde null donmeli');
+        $this->assertNull(asteriskPatternToRegex('_9%$'), 'an unsupported character must return null');
     }
 
-    public function testGidenRotaCakismasiUyariUretir(): void
+    public function testOutboundRouteClashGivesAWarning(): void
     {
         getDB()->exec("DELETE FROM pbx_outbound_routes");
         getDB()->prepare(

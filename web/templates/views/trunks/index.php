@@ -130,7 +130,7 @@
                     <button type="button" class="modal-tab-btn trunk-tab-btn" data-tab="advanced" onclick="switchTrunkTab('advanced', this)"><i class="fas fa-cogs"></i> <?php echo t('trunks.tab_advanced'); ?></button>
                 </div>
 
-                <!-- TAB 1: Temel Ayarlar -->
+                <!-- TAB 1: Basic settings -->
                 <div id="trunk_tab_basic" class="trunk-tab-pane">
                     <div class="u-grid-2">
                         <div class="form-group">

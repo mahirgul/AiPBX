@@ -14,7 +14,7 @@ final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
             $this->execute("CREATE INDEX `idx_cdr_linkedid` ON `asteriskcdr` (`linkedid`)");
         }
 
-        $this->execute($this->gorunumSql(true));
+        $this->execute($this->viewSql(true));
     }
 
     public function down(): void
@@ -23,17 +23,17 @@ final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
         if (!empty($indices)) {
             $this->execute("DROP INDEX `idx_cdr_linkedid` ON `asteriskcdr`");
         }
-        $this->execute($this->gorunumSql(false));
+        $this->execute($this->viewSql(false));
     }
 
-    private function gorunumSql(bool $yeni): string
+    private function viewSql(bool $withNew): string
     {
-        $hedef = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
+        $target = "coalesce(nullif(`c`.`did`, ''), `c`.`dst`)";
 
-        $linkedIdCol = $yeni ? "coalesce(nullif(`c`.`linkedid`, ''), `c`.`uniqueid`) AS `linkedid`," : "";
-        $lastAppCols = $yeni ? "`c`.`lastapp` AS `lastapp`, `c`.`lastdata` AS `lastdata`, `c`.`did` AS `did`," : "";
+        $linkedIdCol = $withNew ? "coalesce(nullif(`c`.`linkedid`, ''), `c`.`uniqueid`) AS `linkedid`," : "";
+        $lastAppCols = $withNew ? "`c`.`lastapp` AS `lastapp`, `c`.`lastdata` AS `lastdata`, `c`.`did` AS `did`," : "";
 
-        $queueNameSql = $yeni
+        $queueNameSql = $withNew
             ? "CASE
                 WHEN `c`.`lastapp` = 'ReceiveFAX' THEN 'Gelen Faks'
                 WHEN `c`.`lastapp` = 'SendFAX' THEN 'Giden Faks'
@@ -41,7 +41,7 @@ final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
                 WHEN `d`.`title` IS NOT NULL THEN `d`.`title`
                 WHEN `c`.`channel` LIKE 'Local/%@from-internal-pbx%' AND (`c`.`src` REGEXP '^[0-9]{10,14}$' OR `c`.`src` LIKE '+%') THEN 'Kuyruk Çağrısı'
                 WHEN `c`.`dcontext` = 'from-internal-pbx' THEN 'Dahili Görüşme'
-                ELSE concat('Gelen Rota: ', {$hedef})
+                ELSE concat('Gelen Rota: ', {$target})
             END AS `queue_name`,"
             : "CASE
                 WHEN `c`.`lastapp` = 'ReceiveFAX' THEN 'Gelen Faks'
@@ -49,7 +49,7 @@ final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
                 WHEN `c`.`lastapp` = 'Queue' THEN substring_index(`c`.`lastdata`, ',', 1)
                 WHEN `d`.`title` IS NOT NULL THEN `d`.`title`
                 WHEN `c`.`dcontext` = 'from-internal-pbx' THEN 'Dahili Görüşme'
-                ELSE concat('Gelen Rota: ', {$hedef})
+                ELSE concat('Gelen Rota: ', {$target})
             END AS `queue_name`,";
 
         return "CREATE OR REPLACE VIEW `cdrs` AS SELECT
@@ -96,6 +96,6 @@ final class AddLinkedidIndexAndUpdateCdrsView extends AbstractMigration
                 WHEN `c`.`dst` IS NOT NULL AND `c`.`dst` <> '' AND `c`.`dst` <> '0' AND `c`.`dst` <> `c`.`src` THEN `c`.`dst`
                 ELSE NULL
             END
-        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$hedef}";
+        LEFT JOIN `pbx_dids` `d` ON `d`.`did_number` = {$target}";
     }
 }

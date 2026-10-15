@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Active codes page (who has DND, forwarding … on).
+ * Tables: sys_users.
+ * Used by FeatureCodeStatusController.
+ */
 class FeatureCodeStatusRepository extends BaseRepository
 {
     protected static string $table = 'sys_users';

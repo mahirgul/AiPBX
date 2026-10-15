@@ -53,7 +53,7 @@ func main() {
 			} else if r.Method == http.MethodGet {
 				server.HandleGetGroupDetails(w, r, user)
 			} else {
-				writeJSONError(w, http.StatusMethodNotAllowed, "Geçersiz istek metodu.")
+				writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 			}
 		}))
 		mux.HandleFunc(prefix+"/api/conversations/group/update", server.authMiddleware(server.HandleUpdateGroup))

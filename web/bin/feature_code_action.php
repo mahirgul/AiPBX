@@ -18,7 +18,7 @@ $action = $argv[1] ?? '';
 $ext = preg_replace('/[^0-9]/', '', $argv[2] ?? '');
 
 if ($ext === '') {
-    fwrite(STDERR, "Gecersiz dahili\n");
+    fwrite(STDERR, "Invalid extension\n");
     exit(1);
 }
 
@@ -37,7 +37,7 @@ switch ($action) {
     case 'cf_set':
         $target = preg_replace('/[^0-9]/', '', $argv[3] ?? '');
         if ($target === '') {
-            fwrite(STDERR, "Hedef numara bos\n");
+            fwrite(STDERR, "Empty target number\n");
             exit(1);
         }
         $db->prepare("UPDATE sys_users SET call_forward_number = ? WHERE extension = ?")->execute([$target, $ext]);
@@ -64,7 +64,7 @@ switch ($action) {
                 }
             }
             if (empty($assigned_queues)) {
-                fwrite(STDERR, "Dahili {$ext} hicbir aktif kuyruga atanmamis\n");
+                fwrite(STDERR, "Extension {$ext} is not a member of any active queue\n");
                 exit(1);
             }
             foreach ($assigned_queues as $q_name) {
@@ -82,11 +82,11 @@ switch ($action) {
             }
             $queue_name = $q_row['queue_name'];
             if ($join && !QueueHelper::isAssignedMember($ext, $queue_name)) {
-                fwrite(STDERR, "Dahili {$ext} bu kuyruga ({$queue_name}) atanmamis\n");
+                fwrite(STDERR, "Extension {$ext} is not a member of queue {$queue_name}\n");
                 exit(1);
             }
             if (!$join && QueueHelper::isStaticMember($ext, $queue_name)) {
-                fwrite(STDERR, "Dahili {$ext} bu kuyrukta ({$queue_name}) statik temsilci, cikis yapamaz\n");
+                fwrite(STDERR, "Extension {$ext} is a static agent in queue {$queue_name} and cannot log out\n");
                 exit(1);
             }
             QueueHelper::setMembership($ext, $queue_name, $join);
