@@ -103,7 +103,7 @@ class PhoneProvisionService
             $sipServer = $host('provision_sip_server', 'phones.err_sip_server');
             $sipProxy = $host('provision_sip_proxy', 'phones.err_sip_proxy');
             $baseUrl = rtrim(trim((string) ($data['provision_base_url'] ?? '')), '/');
-            if ($baseUrl !== '' && !preg_match('~^https?://[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~', $baseUrl)) {
+            if ($baseUrl !== '' && !preg_match('~^(https?://)?[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~i', $baseUrl)) {
                 throw new \Exception(t('phones.err_base_url'));
             }
 
@@ -819,11 +819,16 @@ class PhoneProvisionService
     /**
      * Where phones fetch their files (http(s)://host[:port], no slash at the
      * end): the provisioning settings' address, else the portal's address.
+     * An address without a scheme (just an IP or name) means http: phone
+     * networks without DNS rarely have a certificate for an IP.
      */
     public static function baseUrl(): string
     {
         $set = trim((string) getSystemSetting('provision_base_url', ''));
-        return $set !== '' ? $set : ForgotPasswordService::portalUrl();
+        if ($set === '') {
+            return ForgotPasswordService::portalUrl();
+        }
+        return preg_match('~^https?://~i', $set) ? $set : 'http://' . $set;
     }
 
     private static function sipPort(bool $tls): int

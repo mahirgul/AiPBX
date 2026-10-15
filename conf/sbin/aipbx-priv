@@ -321,7 +321,7 @@ case "$cmd" in
         RE_IPV4='^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$'
         RE_IFACE='^[A-Za-z0-9][A-Za-z0-9._-]{0,14}$'
         RE_ZONE='^[A-Za-z0-9_-]{1,32}$'
-        RE_PROV_URL='^https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$'
+        RE_PROV_URL='^https?://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$'
 
         fw_running() { firewall-cmd --state >/dev/null 2>&1; }
         # firewall-cmd, retried once after a reload: a change that failed half way leaves
@@ -391,7 +391,7 @@ case "$cmd" in
                 ;;
             apply)
                 # netsvc apply mode=tftp|dhcp [iface=] [start= end= mask= gw= lease=HOURS]
-                #   [dns=IP,IP] [ntp=IP,IP] [url=https://HOST/provision/] [tftp=0|1] [net=CIDR]...
+                #   [dns=IP,IP] [ntp=IP,IP] [url=http(s)://HOST/provision/] [tftp=0|1] [net=CIDR]...
                 #   [opt=CODE,VALUE]...  (extra DHCP options; the same code replaces AiPBX's own)
                 mode=""; iface=""; start=""; end=""; mask=""; gw=""; lease=""; dns=""; ntp=""; url=""; tftp=1
                 nets=(); opts=(); declare -A optcode=()

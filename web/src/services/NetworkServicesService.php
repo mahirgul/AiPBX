@@ -239,7 +239,7 @@ class NetworkServicesService
                     $args[] = $key . '=' . $v[$setting];
                 }
             }
-            if (preg_match('#^https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$#', $url)) {
+            if (preg_match('#^https?://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?/provision/$#', $url)) {
                 $args[] = 'url=' . $url;
             }
             foreach (self::dhcpOptions($v['netsvc_dhcp_options']) as [$code, $value]) {
