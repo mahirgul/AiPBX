@@ -330,6 +330,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('', (string) $net['network.sntp.address'], 'the phone takes no names');
         $this->assertSame('', (string) $net['network.syslog.address']);
         $this->assertSame('0', (string) $xml->DT_PHONE_DST_DATA['dst.start.month'], 'no daylight saving');
+        $this->assertSame('0', (string) $xml->DT_PHONE_DST_DATA['dst.time.adjustment']);
         $this->assertNull($xml->DT_PHONE_SECURITY_DATA['security.admin.password'], 'keypad takes digits only');
         $this->assertSame('1', (string) $xml->DT_PHONE_SECURITY_DATA['security.telnet.mode']);
         $this->assertStringNotContainsString(self::$adminPassword, $out);
