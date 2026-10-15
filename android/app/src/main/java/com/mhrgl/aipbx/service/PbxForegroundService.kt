@@ -22,6 +22,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -75,6 +76,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     // Reconnection exponential backoff & network awareness (M28)
     private var isNetworkAvailable = true
     private var currentReconnectDelayMs = INITIAL_RECONNECT_DELAY_MS
+    /** elapsedRealtime since when the engine is not registered (0 = registered). */
+    private var notRegisteredSinceMs = 0L
 
     // Native Doze/Sleep watchdog: refreshes the SIP registration every 2 minutes (M1, M2, M14)
     private val watchdogHandler = Handler(Looper.getMainLooper())
@@ -96,10 +99,22 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
                     Log.w(TAG, "Watchdog: Engine is DISCONNECTED, re-triggering connectSip() (M14)")
                     connectSip()
                 } else if (engine.currentConnectionStatus == ConnectionStatus.CONNECTING) {
-                    Log.d(TAG, "Watchdog: Engine is already CONNECTING, waiting for outcome")
+                    // In Doze the network is open only for a few seconds after this alarm;
+                    // waiting for a connect attempt that started without network (or got a
+                    // 503 while the PBX restarted) kept the app off the PBX until it was
+                    // opened again. Not registered for a while: connect now, in this window.
+                    val since = notRegisteredSinceMs
+                    if (since > 0L && SystemClock.elapsedRealtime() - since > CONNECTING_TIMEOUT_MS) {
+                        Log.w(TAG, "Watchdog: not registered for ${(SystemClock.elapsedRealtime() - since) / 1000}s while CONNECTING, connecting again")
+                        connectSip()
+                    } else {
+                        Log.d(TAG, "Watchdog: Engine is CONNECTING, waiting for outcome")
+                    }
                 } else {
-                    Log.d(TAG, "Watchdog: Engine is CONNECTED, sending keepalive check")
-                    engine.reRegister()
+                    // Refresh the registration for real: a socket that died silently (network
+                    // change, half-open TCP, PBX restart) otherwise still looks registered here.
+                    Log.d(TAG, "Watchdog: Engine is CONNECTED, refreshing the registration")
+                    engine.reRegister(force = true)
                 }
                 connectChatWs()
             }
@@ -354,6 +369,13 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
     // --- SipEngineListener Callbacks ---
 
     override fun onConnectionStatusChanged(status: ConnectionStatus) {
+        // Not "since CONNECTING": JsSIP's own retries flip CONNECTING/DISCONNECTED every
+        // few seconds, so only the time since the last registration tells a stuck engine.
+        notRegisteredSinceMs = when {
+            status == ConnectionStatus.CONNECTED -> 0L
+            notRegisteredSinceMs == 0L -> SystemClock.elapsedRealtime()
+            else -> notRegisteredSinceMs
+        }
         updateServiceNotification(status)
         listeners.forEach { it.onConnectionStatusChanged(status) }
 
@@ -859,6 +881,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             private set
 
         const val WATCHDOG_INTERVAL_MS = 120_000L // 2 dakika (M1, M2 Keepalive & Recovery)
+        /** Not registered for longer than this while CONNECTING: the watchdog connects again. */
+        const val CONNECTING_TIMEOUT_MS = 45_000L
         const val INITIAL_RECONNECT_DELAY_MS = 3000L // exponential backoff initial delay (M28)
         const val MAX_RECONNECT_DELAY_MS = 60_000L // exponential backoff ceiling (1 minute) (M28)
 
