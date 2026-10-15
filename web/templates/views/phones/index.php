@@ -46,7 +46,7 @@ $userOptions = function () use ($users) {
             </button>
             <a href="/phone-keys" class="btn btn-secondary btn-sm" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
             <?php if ($canEdit): ?>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phoneSettingsModal')" title="<?php echo t('phones.settings_title'); ?>"><i class="fas fa-sliders-h"></i></button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('provisionSettingsModal')" title="<?php echo t('phones.settings_title'); ?>"><i class="fas fa-sliders-h"></i></button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phoneImportModal')" title="<?php echo t('phones.import_title'); ?>"><i class="fas fa-file-csv"></i></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openCreatePhoneModal()" title="<?php echo t('phones.add'); ?>"><i class="fas fa-plus-circle"></i></button>
             <?php endif; ?>
@@ -298,11 +298,11 @@ $userOptions = function () use ($users) {
 </div>
 
 <!-- Modal: provisioning settings -->
-<div class="modal-overlay" id="phoneSettingsModal">
+<div class="modal-overlay" id="provisionSettingsModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-sliders-h u-primary"></i> <?php echo t('phones.settings_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phoneSettingsModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('provisionSettingsModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -367,7 +367,7 @@ $userOptions = function () use ($users) {
                     <textarea name="provision_allowed_networks" class="form-control" rows="3" placeholder="192.168.1.0/24&#10;10.0.0.0/8"><?php echo htmlspecialchars($settings['provision_allowed_networks']); ?></textarea>
                     <div class="text-muted u-fs-11"><?php echo t('phones.allowed_networks_help'); ?></div>
                 </div>
-                <?php echo uiModalFooter("UIHelper.closeOverlayModal('phoneSettingsModal')", t('common.save'), '', 'fa-save'); ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('provisionSettingsModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>
     </div>
