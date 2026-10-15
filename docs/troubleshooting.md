@@ -19,7 +19,7 @@ fixes it; run `install.sh --upgrade` if the override is missing.
 Usually an IVR/announcement sound is missing. Look for *"does not exist in any format"* in
 `/var/log/asterisk/messages.log` and see [Sounds](sounds.md#where-sounds-live).
 
-## A number is not routed ("Eslesen gelen rota bulunamadi", congestion)
+## A number is not routed ("No matching inbound route", congestion)
 
 Find out what the trunk actually sends (next section), then check:
 
