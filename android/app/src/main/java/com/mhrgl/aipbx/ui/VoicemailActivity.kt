@@ -201,6 +201,10 @@ class VoicemailActivity : AppCompatActivity() {
             }.orEmpty()
             val length = DateUtils.formatElapsedTime(m.duration.toLong())
             b.tvDetails.text = if (whenText.isNotEmpty()) "$whenText · $length" else length
+            // Voicemail as text: the summary, else the transcript.
+            val said = m.summary?.takeIf { it.isNotBlank() } ?: m.transcript.orEmpty()
+            b.tvText.visibility = if (said.isBlank()) View.GONE else View.VISIBLE
+            b.tvText.text = said
             b.btnPlay.setImageResource(if (playingId == m.id) R.drawable.ic_pause else R.drawable.ic_play)
             b.btnPlay.isEnabled = m.hasAudio
             b.btnPlay.alpha = if (m.hasAudio) 1f else 0.4f

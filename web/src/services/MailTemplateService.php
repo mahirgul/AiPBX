@@ -22,7 +22,7 @@ class MailTemplateService
         'invite_new' => ['name', 'username', 'extension', 'email', 'brand', '*account_details', 'reset_link', '*reset_button', '*mobile_section'],
         'invite' => ['name', 'username', 'extension', 'email', 'brand', '*account_details', 'reset_link', '*reset_button', '*mobile_section'],
         'password_reset' => ['name', 'username', 'brand', 'reset_link', '*reset_button'],
-        'voicemail' => ['name', 'mailbox', 'caller', 'caller_name', 'caller_number', 'date', 'duration', 'brand', 'portal_link'],
+        'voicemail' => ['name', 'mailbox', 'caller', 'caller_name', 'caller_number', 'date', 'duration', '*ai_text', 'brand', 'portal_link'],
         'fax_received' => ['department', 'did', 'caller', 'pages', 'date', 'brand', 'portal_link'],
         'fax_sent' => ['destination', 'fax_id', 'pages', 'date', 'brand', 'portal_link'],
         'fax_failed' => ['destination', 'fax_id', 'pages', 'date', 'error', 'brand', 'portal_link'],
@@ -552,6 +552,10 @@ class MailTemplateService
                 ]),
             ];
         }
+        if ($key === 'voicemail') {
+            return ['ai_text' => self::voicemailTextBlock('John Smith wants to move tomorrow\'s 10:00 meeting to Friday.',
+                'Hello, this is John Smith. I would like to move tomorrow\'s meeting at ten to Friday, please call me back.')];
+        }
         if (!in_array($key, ['invite', 'invite_new', 'password_reset'], true)) {
             return [];
         }
@@ -561,6 +565,23 @@ class MailTemplateService
             $blocks['mobile_section'] = UserInvitationService::mobileSection('https://pbx.example.com/m/…');
         }
         return $blocks;
+    }
+
+    /**
+     * {ai_text} of the voicemail e-mail (VoicemailAiService): summary and
+     * transcript; an empty block when there is neither.
+     * @return array{html: string, text: string}
+     */
+    public static function voicemailTextBlock(string $summary, string $transcript): array
+    {
+        $rows = [];
+        if ($summary !== '') {
+            $rows[t('mail_templates.vm_ai_summary')] = $summary;
+        }
+        if ($transcript !== '') {
+            $rows[t('mail_templates.vm_ai_transcript')] = $transcript;
+        }
+        return $rows === [] ? ['html' => '', 'text' => ''] : self::detailsBlock(t('mail_templates.vm_ai_title'), $rows);
     }
 
     /** Runs $fn with t() answering in $lang (the request's own language is restored afterwards). */

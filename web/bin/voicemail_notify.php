@@ -68,7 +68,17 @@ function voicemailNotifySend(string $ext, int $newCount): void
     if (strcasecmp($caller, 'Unknown') === 0) {
         $caller = '';
     }
-    $data = ['caller' => $caller, 'duration' => $duration, 'new_count' => $newCount];
+    // Voicemail as text (AI -> Cloud services -> Voicemail): the e-mail has
+    // usually made it already; without an e-mail address it is made here.
+    $text = '';
+    try {
+        require_once dirname(__DIR__) . '/src/services/VoicemailAiService.php';
+        $ai = VoicemailAiService::forNewest($ext);
+        $text = (string) (($ai['summary'] ?? '') !== '' ? $ai['summary'] : mb_strimwidth((string) ($ai['transcript'] ?? ''), 0, 200, '…'));
+    } catch (\Throwable $e) {
+        $text = '';
+    }
+    $data = ['caller' => $caller, 'duration' => $duration, 'new_count' => $newCount, 'text' => $text];
 
     // 1. Connected apps: the chat service's live connection.
     $ctx = stream_context_create(['http' => [
@@ -90,10 +100,11 @@ function voicemailNotifySend(string $ext, int $newCount): void
             $r = \App\Services\Push\PushService::getProvider()->sendToExtension($ext, [
                 'action' => 'voicemail',
                 'title' => 'Voicemail',
-                'body' => trim(($caller !== '' ? $caller : 'Unknown caller') . ' ' . gmdate('i:s', $duration)),
+                'body' => trim(($caller !== '' ? $caller : 'Unknown caller') . ' ' . gmdate('i:s', $duration)) . ($text !== '' ? ' — ' . $text : ''),
                 'caller' => $caller,
                 'duration' => (string) $duration,
                 'new_count' => (string) $newCount,
+                'text' => $text,
             ]);
             $log .= '; push to ' . (int) ($r['delivered'] ?? 0) . ' device(s)'
                 . (empty($r['errors']) ? '' : ', failed: ' . implode(' | ', array_slice($r['errors'], 0, 3)))

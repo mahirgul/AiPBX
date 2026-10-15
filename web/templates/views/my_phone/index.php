@@ -774,7 +774,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <td><span class="badge badge-secondary"><?php echo htmlspecialchars($vm['number']); ?></span></td>
                                     <td class="u-fw-600"><?php echo htmlspecialchars($vm['origdate']); ?></td>
                                     <td>
-                                        <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($vm['callerid'] ?: 'Bilinmeyen'); ?></span>
+                                        <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($vm['callerid'] ?: t('mail_templates.unknown_caller')); ?></span>
+                                        <?php $vmText = ($vm['summary'] ?? '') !== '' ? $vm['summary'] : ($vm['transcript'] ?? ''); ?>
+                                        <?php if ($vmText !== ''): ?>
+                                            <div class="u-muted u-fs-12 u-mt-4" style="max-width: 420px; white-space: normal;" title="<?php echo htmlspecialchars((string) ($vm['transcript'] ?? '')); ?>"><i class="fas fa-quote-left"></i> <?php echo htmlspecialchars(mb_strimwidth($vmText, 0, 160, '…')); ?></div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <span class="badge <?php echo ['INBOX' => 'badge-primary', 'Old' => 'badge-teal', 'Archive' => 'badge-purple'][$vm['folder']] ?? 'badge-teal'; ?>">

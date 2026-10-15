@@ -39,7 +39,8 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
             }
             "voicemail" -> {
                 VoicemailNotifications.show(
-                    this, data["caller"] ?: "", data["duration"]?.toIntOrNull() ?: 0, data["new_count"]?.toIntOrNull() ?: 1
+                    this, data["caller"] ?: "", data["duration"]?.toIntOrNull() ?: 0, data["new_count"]?.toIntOrNull() ?: 1,
+                    data["text"] ?: ""
                 )
             }
             "test_push" -> {

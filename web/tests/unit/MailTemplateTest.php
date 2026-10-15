@@ -164,4 +164,13 @@ final class MailTemplateTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/\{[a-z_]+\}/', $m['subject'] . $m['html'], $key);
         }
     }
+
+    public function testVoicemailTextBlock(): void
+    {
+        $this->assertSame(['html' => '', 'text' => ''], MailTemplateService::voicemailTextBlock('', ''));
+        $b = MailTemplateService::voicemailTextBlock('Calls about the invoice.', 'hello <b>invoice</b>');
+        $this->assertStringContainsString('Calls about the invoice.', $b['text']);
+        $this->assertStringContainsString('hello &lt;b&gt;invoice&lt;/b&gt;', $b['html']);
+        $this->assertContains('ai_text', MailTemplateService::variables('voicemail'));
+    }
 }

@@ -85,7 +85,10 @@ data class VoicemailMessage(
     @SerializedName("caller_number") val callerNumber: String?,
     @SerializedName("time") val time: String?,
     @SerializedName("duration") val duration: Int,
-    @SerializedName("has_audio") val hasAudio: Boolean
+    @SerializedName("has_audio") val hasAudio: Boolean,
+    // Voicemail as text (server 1.24+), empty without.
+    @SerializedName("summary") val summary: String? = null,
+    @SerializedName("transcript") val transcript: String? = null
 )
 
 data class VoicemailResponse(

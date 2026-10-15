@@ -300,9 +300,7 @@ class AiAppService
         $understand = (string) ($c['understand'] ?? 'auto');
         if (str_starts_with($understand, 'cloud:')) {
             // The service asks the provider itself: it gets the key with the settings.
-            $provider = substr($understand, 6);
-            $extra['llm_cloud'] = ['provider' => $provider,
-                                   'api_key' => (string) (CloudAiService::config($provider)['api_key'] ?? '')];
+            $extra['llm_cloud'] = CloudAiService::llmSettings(substr($understand, 6));
         }
         return $extra + [
             'type' => 'voice_requests',
