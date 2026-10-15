@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.24.1
+
+- **Fix:** on *PBX → Phones* the settings button (*Provisioning settings*) opened
+  the web phone's microphone/speaker dialog instead, so the **allowed networks** —
+  which TFTP needs before it can be switched on under *Network services* — could not
+  be entered.
+
 ## 1.24.0
 
 - **More cloud language models** (*AI → Cloud services*): **NVIDIA NIM**
