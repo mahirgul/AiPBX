@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Fotografiši / pošalji fotografiju</string>
     <string name="ui_type_message">Unesite poruku...</string>
     <string name="ui_typing">kuca...</string>
-    <string name="user_ext_label">Lokal: %1$s (%2$s)</string>
     <string name="full_screen_title">Dolazni pozivi preko celog ekrana</string>
     <string name="full_screen_msg">Android je isključio obaveštenja preko celog ekrana za AiPBX, pa se na zaključanom telefonu dolazni poziv prikazuje samo kao malo obaveštenje. Na sledećem ekranu dozvolite \"Obaveštenja preko celog ekrana\" za AiPBX.</string>
     <string name="full_screen_status_on">Pozivi preko celog ekrana: dozvoljeni</string>

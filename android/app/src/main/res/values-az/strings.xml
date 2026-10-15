@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Foto çək / göndər</string>
     <string name="ui_type_message">Mesaj yazın...</string>
     <string name="ui_typing">yazır...</string>
-    <string name="user_ext_label">Daxili nömrə: %1$s (%2$s)</string>
     <string name="full_screen_title">Tam ekran gələn zənglər</string>
     <string name="full_screen_msg">Android AiPBX üçün tam ekran bildirişləri söndürüb, buna görə kilidli telefonda gələn zəng yalnız kiçik bildiriş kimi görünür. Növbəti ekranda AiPBX üçün \"Tam ekran bildirişlər\" icazəsini verin.</string>
     <string name="full_screen_status_on">Tam ekran zəng: icazəli</string>

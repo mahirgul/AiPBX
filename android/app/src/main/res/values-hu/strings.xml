@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Fénykép készítése / küldése</string>
     <string name="ui_type_message">Írjon üzenetet...</string>
     <string name="ui_typing">gépel...</string>
-    <string name="user_ext_label">Mellék: %1$s (%2$s)</string>
     <string name="full_screen_title">Bejövő hívások teljes képernyőn</string>
     <string name="full_screen_msg">Az Android kikapcsolta az AiPBX teljes képernyős értesítéseit, ezért zárolt telefonon a bejövő hívás csak kis értesítésként jelenik meg. A következő képernyőn engedélyezze az AiPBX számára a „Teljes képernyős értesítéseket”.</string>
     <string name="full_screen_status_on">Teljes képernyős hívás: engedélyezve</string>

@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Ota / lähetä kuva</string>
     <string name="ui_type_message">Kirjoita viesti...</string>
     <string name="ui_typing">kirjoittaa...</string>
-    <string name="user_ext_label">Alanumero: %1$s (%2$s)</string>
     <string name="full_screen_title">Saapuvat puhelut koko näytöllä</string>
     <string name="full_screen_msg">Android on poistanut AiPBX:n koko näytön ilmoitukset käytöstä, joten lukitussa puhelimessa saapuva puhelu näkyy vain pienenä ilmoituksena. Salli AiPBX:lle \"Koko näytön ilmoitukset\" seuraavassa näkymässä.</string>
     <string name="full_screen_status_on">Puhelut koko näytöllä: sallittu</string>

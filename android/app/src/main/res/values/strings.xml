@@ -379,7 +379,6 @@
     <string name="ui_take_send_photo">Take / Send Photo</string>
     <string name="ui_type_message">Type a message...</string>
     <string name="ui_typing">typing...</string>
-    <string name="user_ext_label">Extension: %1$s (%2$s)</string>
     <string name="full_screen_title">Full-screen incoming calls</string>
     <string name="full_screen_msg">Android has switched off full-screen notifications for AiPBX, so on a locked phone an incoming call only shows a small notification. Allow \"Full-screen notifications\" for AiPBX on the next screen.</string>
     <string name="full_screen_status_on">Full-screen calls: allowed</string>

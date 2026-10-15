@@ -385,7 +385,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php; do
+for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -412,6 +412,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Heard voicemail older than N days archived to the S3 bucket (Admin -> File storage)
 17 * * * * root /usr/local/bin/voicemail_to_bucket.php >/dev/null 2>&1
+
+# Phone files into the TFTP/FTP folder when switched on (PBX -> Phones -> settings)
+*/5 * * * * www-data /usr/local/bin/provision_tftp.php >/dev/null 2>&1
 
 # Daily check for a new AiPBX release (shown on the portal's System Update page)
 37 4 * * * root /usr/local/sbin/aipbx-update --check >/dev/null 2>&1
@@ -746,9 +749,14 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     ServerName ${PORTAL_DOMAIN}
     DocumentRoot /var/www/html
 
-    # Let's Encrypt HTTP-01 challenge pass-through, redirect all other traffic to HTTPS
+    # Let's Encrypt HTTP-01 challenge pass-through, redirect all other traffic to HTTPS.
+    # Desk phone files (/provision/) are served over plain HTTP too: many phones
+    # cannot do HTTPS to an IP address or do not follow redirects, and phone
+    # networks often have no DNS. The files are still limited to the allowed
+    # networks and the per-phone token (PhoneProvisionService).
     RewriteEngine On
     RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+    RewriteCond %{THE_REQUEST} !\s/provision/
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log

@@ -338,6 +338,7 @@ $userOptions = function () use ($users) {
                     <div class="form-group">
                         <label class="form-label"><?php echo t('phones.ntp'); ?></label>
                         <input type="text" name="provision_ntp" class="form-control" value="<?php echo htmlspecialchars($settings['provision_ntp']); ?>" required>
+                        <div class="text-muted u-fs-11"><?php echo t('phones.ntp_help'); ?></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('phones.timezone'); ?></label>
@@ -366,6 +367,27 @@ $userOptions = function () use ($users) {
                     <label class="form-label"><?php echo t('phones.allowed_networks'); ?></label>
                     <textarea name="provision_allowed_networks" class="form-control" rows="3" placeholder="192.168.1.0/24&#10;10.0.0.0/8"><?php echo htmlspecialchars($settings['provision_allowed_networks']); ?></textarea>
                     <div class="text-muted u-fs-11"><?php echo t('phones.allowed_networks_help'); ?></div>
+                </div>
+                <h4 class="u-mt-12 u-mb-0"><i class="fas fa-server u-primary"></i> <?php echo t('phones.addresses_title'); ?></h4>
+                <p class="text-muted u-fs-11 u-mt-4"><?php echo t('phones.addresses_help'); ?></p>
+                <div class="u-grid-2">
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('phones.sip_server'); ?></label>
+                        <input type="text" name="provision_sip_server" class="form-control" maxlength="255" value="<?php echo htmlspecialchars($settings['provision_sip_server']); ?>" placeholder="<?php echo htmlspecialchars(PhoneProvisionService::sipServer() === $settings['provision_sip_server'] ? '' : PhoneProvisionService::sipServer()); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('phones.sip_proxy'); ?></label>
+                        <input type="text" name="provision_sip_proxy" class="form-control" maxlength="255" value="<?php echo htmlspecialchars($settings['provision_sip_proxy']); ?>" placeholder="<?php echo htmlspecialchars(t('phones.sip_proxy_none')); ?>">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.base_url'); ?></label>
+                    <input type="text" name="provision_base_url" class="form-control" maxlength="300" value="<?php echo htmlspecialchars($settings['provision_base_url']); ?>" placeholder="<?php echo htmlspecialchars(ForgotPasswordService::portalUrl()); ?>">
+                    <div class="text-muted u-fs-11"><?php echo t('phones.base_url_help'); ?></div>
+                </div>
+                <div class="form-group">
+                    <label class="u-check-label"><input type="checkbox" class="u-accent" name="provision_tftp_export" value="1" <?php echo $settings['provision_tftp_export'] === '1' ? 'checked' : ''; ?>> <?php echo t('phones.tftp_export'); ?></label>
+                    <div class="text-muted u-fs-11"><?php echo t('phones.tftp_export_help'); ?></div>
                 </div>
                 <?php echo uiModalFooter("UIHelper.closeOverlayModal('provisionSettingsModal')", t('common.save'), '', 'fa-save'); ?>
             </form>

@@ -367,7 +367,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun setupUserHeader() {
         val ext = prefs.extension ?: "--"
         val name = prefs.fullName ?: (prefs.username ?: "")
-        binding.tvUserExt.text = getString(R.string.user_ext_label, ext, name)
+        // Number and name only ("19000 (Mahir)"): the "Extension:" label took room without telling anything.
+        binding.tvUserExt.text = if (name.isNotBlank() && name != ext) "$ext ($name)" else ext
 
         binding.btnVoicemail.setOnClickListener { VoicemailActivity.start(this) }
 

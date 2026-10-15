@@ -49,9 +49,12 @@ assigned an extension before they even ask for their configuration.
 
 ## TFTP
 
-TFTP serves only the files uploaded under *TFTP files* on the page (boot files, firmware). File
-names that contain a MAC address are refused: those would be per-phone configuration files.
-Shared files such as `y000000000108.cfg` or `000000000000.cfg` are allowed.
+TFTP serves the files uploaded under *TFTP files* on the page (boot files, firmware). File
+names that contain a MAC address are refused for upload: those would be per-phone configuration
+files. Shared files such as `y000000000108.cfg` or `000000000000.cfg` are allowed. The per-phone
+files are written into the folder by AiPBX itself when *Also write the phones' files into the
+TFTP/FTP folder* is ticked on *PBX → Phones → Provisioning settings* (see
+[Desk phones](phones.md#server-addresses-networks-without-dns)).
 
 TFTP answers only the **Allowed networks** of the provisioning settings (plus, in DHCP mode, the
 phone network itself): the firewall opens UDP 69 for these networks only. In DHCP mode TFTP
@@ -69,9 +72,9 @@ folder as TFTP:
   or enter an existing name to set a new password. Only a SHA-512 hash of the password is stored.
 - Everybody may only list and download. Nothing can be uploaded, changed or deleted, and nobody
   gets out of the folder. No FTP user is a system account: a server login such as `root` is refused.
-- FTP is not encrypted, and anybody on the allowed networks can read the files. Keep only files
-  there that may be public on the phone network (firmware, shared settings); per-phone files with
-  SIP passwords stay on HTTPS.
+- FTP is not encrypted, and anybody on the allowed networks can read the files. Per-phone files
+  with SIP passwords are only there when you switch that on (above).
+- TFTP and FTP use the same folder (`/var/lib/aipbx/tftp`).
 - The firewall opens TCP 21 and the passive ports 40000–40049 for the same networks as TFTP
   (the allowed networks, plus the phone network in DHCP mode). Active mode works too.
 

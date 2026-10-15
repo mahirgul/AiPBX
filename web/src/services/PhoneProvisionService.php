@@ -41,6 +41,13 @@ class PhoneProvisionService
         'provision_language' => 'en',
         'provision_allowed_networks' => '',
         'provision_rate_limit' => '60',
+        // Addresses written to the phones; empty = the installation's domain.
+        // On phone networks without DNS (or without internet) an IP is needed.
+        'provision_sip_server' => '',
+        'provision_sip_proxy' => '',
+        'provision_base_url' => '',
+        // Also write each phone's files into the TFTP/FTP folder (exportTftp).
+        'provision_tftp_export' => '0',
     ];
 
     /** Rows kept in the fetch log. */
@@ -86,6 +93,19 @@ class PhoneProvisionService
                 throw new \Exception(sprintf(t('phones.err_networks'), implode(', ', $bad)));
             }
             $rate = max(5, min(1000, (int) ($data['provision_rate_limit'] ?? 60)));
+            $host = function (string $key, string $err) use ($data): string {
+                $v = trim((string) ($data[$key] ?? ''));
+                if ($v !== '' && !preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$/', $v)) {
+                    throw new \Exception(t($err));
+                }
+                return $v;
+            };
+            $sipServer = $host('provision_sip_server', 'phones.err_sip_server');
+            $sipProxy = $host('provision_sip_proxy', 'phones.err_sip_proxy');
+            $baseUrl = rtrim(trim((string) ($data['provision_base_url'] ?? '')), '/');
+            if ($baseUrl !== '' && !preg_match('~^https?://[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~', $baseUrl)) {
+                throw new \Exception(t('phones.err_base_url'));
+            }
 
             $values = [
                 'provision_transport' => $transport,
@@ -96,12 +116,17 @@ class PhoneProvisionService
                 'provision_language' => $lang,
                 'provision_allowed_networks' => implode("\n", $networks),
                 'provision_rate_limit' => (string) $rate,
+                'provision_sip_server' => $sipServer,
+                'provision_sip_proxy' => $sipProxy,
+                'provision_base_url' => $baseUrl,
+                'provision_tftp_export' => !empty($data['provision_tftp_export']) ? '1' : '0',
             ];
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
             foreach ($values as $k => $v) {
                 $stmt->execute([$k, $v]);
             }
             writeAuditLog('phones', 'settings', 0, 'Provisioning settings', 'update', $_SESSION['user_id'] ?? null);
+            self::exportTftpQuietly();
             return t('phones.settings_saved');
         });
     }
@@ -207,7 +232,7 @@ class PhoneProvisionService
 
     public static function provisioningUrl(array $phone): string
     {
-        return ForgotPasswordService::portalUrl() . '/provision/' . $phone['token'] . '/';
+        return self::baseUrl() . '/provision/' . $phone['token'] . '/';
     }
 
     public static function savePhone(array $data): array
@@ -220,6 +245,7 @@ class PhoneProvisionService
                 (int) ($data['user_id'] ?? 0),
                 (string) ($data['notes'] ?? '')
             );
+            self::exportTftpQuietly();
             return sprintf(t('phones.saved'), PhoneModels::formatMac((string) self::getPhone($id)['mac']));
         });
     }
@@ -287,6 +313,7 @@ class PhoneProvisionService
             }
             getDB()->prepare('DELETE FROM pbx_phones WHERE id = ?')->execute([$id]);
             writeAuditLog('phones', 'phone', $id, PhoneModels::formatMac($phone['mac']), 'delete', $_SESSION['user_id'] ?? null);
+            self::exportTftpQuietly();
             return t('phones.deleted');
         });
     }
@@ -315,6 +342,7 @@ class PhoneProvisionService
                 throw new \Exception(t('phones.err_not_found'));
             }
             self::upsertPhone(0, (string) $mac, $model, $userId);
+            self::exportTftpQuietly();
             return sprintf(t('phones.saved'), PhoneModels::formatMac((string) $mac));
         });
     }
@@ -494,6 +522,7 @@ class PhoneProvisionService
             $rows = self::validateKeys($keys);
             self::writeKeys($userId, $rows);
             writeAuditLog('phones', 'key_layout', $userId, (string) self::userRow($userId)['extension'], 'update', $_SESSION['user_id'] ?? null);
+            self::exportTftpQuietly();
             return t('phones.keys_saved');
         });
     }
@@ -515,6 +544,7 @@ class PhoneProvisionService
             if ($n === 0) {
                 throw new \Exception(t('phones.err_copy_none'));
             }
+            self::exportTftpQuietly();
             return sprintf(t('phones.keys_copied'), $n);
         });
     }
@@ -569,6 +599,79 @@ class PhoneProvisionService
         } catch (\Throwable $e) {
             $db->rollBack();
             throw $e;
+        }
+    }
+
+    // ------------------------------------------------------ TFTP / FTP folder
+
+    /**
+     * Writes the configuration files of every assigned phone into the TFTP/FTP
+     * folder (Network services), for phones that fetch their files over TFTP
+     * or FTP (NEC). Only with "provision_tftp_export" on; files of phones that
+     * are gone (or the whole set, when switched off) are removed. A file is
+     * rewritten only when its content changed. The folder answers only the
+     * allowed networks (firewall), like the HTTP provisioning.
+     *
+     * Runs on every change on the Phones page and every 5 minutes
+     * (bin/provision_tftp.php), so a changed SIP password reaches it too.
+     *
+     * @return array{written: int, removed: int, files: int}
+     */
+    public static function exportTftp(?string $dir = null): array
+    {
+        $dir = $dir ?? (getenv('AIPBX_TFTP_DIR') ?: '/var/lib/aipbx/tftp');
+        $old = json_decode((string) getSystemSetting('provision_tftp_files', '[]'), true);
+        $old = is_array($old) ? $old : [];
+        $new = [];
+        $written = 0;
+        if (getSystemSetting('provision_tftp_export', '0') === '1' && is_dir($dir) && is_writable($dir)) {
+            $phones = getDB()->query('SELECT * FROM pbx_phones WHERE user_id IS NOT NULL')->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($phones as $phone) {
+                $tpl = PhoneTemplates::forModel((string) $phone['model']);
+                $user = self::userRow((int) $phone['user_id']);
+                if ($tpl === null || $user === null || (int) $user['is_active'] !== 1) {
+                    continue;
+                }
+                $ctx = self::buildContext($phone, $user);
+                foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
+                    if (!preg_match('/^[A-Za-z0-9._-]{1,120}$/', $name)) {
+                        continue;
+                    }
+                    $new[] = $name;
+                    $body = $tpl->renderFile($name, $ctx);
+                    $path = $dir . '/' . $name;
+                    if (is_file($path) && @file_get_contents($path) === $body) {
+                        continue;
+                    }
+                    $tmp = $dir . '/.' . $name . '.tmp';
+                    if (@file_put_contents($tmp, $body) !== false && @chmod($tmp, 0644) && @rename($tmp, $path)) {
+                        $written++;
+                    } else {
+                        @unlink($tmp);
+                    }
+                }
+            }
+        }
+        $removed = 0;
+        foreach (array_diff($old, $new) as $name) {
+            if (is_string($name) && preg_match('/^[A-Za-z0-9._-]{1,120}$/', $name) && @unlink($dir . '/' . $name)) {
+                $removed++;
+            }
+        }
+        if ($old !== $new) {
+            getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+                ->execute(['provision_tftp_files', (string) json_encode(array_values(array_unique($new)))]);
+        }
+        return ['written' => $written, 'removed' => $removed, 'files' => count(array_unique($new))];
+    }
+
+    /** exportTftp() after a change on the page; a failure must not fail the change. */
+    public static function exportTftpQuietly(): void
+    {
+        try {
+            self::exportTftp();
+        } catch (\Throwable $e) {
+            error_log('phones: TFTP folder not updated: ' . $e->getMessage());
         }
     }
 
@@ -681,6 +784,8 @@ class PhoneProvisionService
             'display_name' => toCleanAscii((string) $user['full_name']) ?: $ext,
             'sip_password' => $secret,
             'server' => self::sipServer(),
+            // Outbound proxy ('' = none): same port as the SIP server.
+            'proxy' => $s['provision_sip_proxy'],
             'port' => self::sipPort($tls),
             'transport' => $tls ? 'tls' : 'udp',
             'srtp' => (int) $s['provision_srtp'],
@@ -696,14 +801,29 @@ class PhoneProvisionService
     }
 
     /**
-     * The SIP server written to phones: the installation's domain, from the
-     * same settings as ForgotPasswordService::portalUrl() (never the Host
-     * header of the request), without the web port.
+     * The SIP server written to phones: the address set in the provisioning
+     * settings (an IP for phone networks without DNS), else the installation's
+     * domain from the same settings as ForgotPasswordService::portalUrl()
+     * (never the Host header of the request), without the web port.
      */
     public static function sipServer(): string
     {
+        $set = trim((string) getSystemSetting('provision_sip_server', ''));
+        if ($set !== '') {
+            return $set;
+        }
         $host = (string) parse_url(ForgotPasswordService::portalUrl(), PHP_URL_HOST);
         return trim($host, '[]') ?: 'localhost';
+    }
+
+    /**
+     * Where phones fetch their files (http(s)://host[:port], no slash at the
+     * end): the provisioning settings' address, else the portal's address.
+     */
+    public static function baseUrl(): string
+    {
+        $set = trim((string) getSystemSetting('provision_base_url', ''));
+        return $set !== '' ? $set : ForgotPasswordService::portalUrl();
     }
 
     private static function sipPort(bool $tls): int

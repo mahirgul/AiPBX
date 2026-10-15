@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Зробити / надіслати фото</string>
     <string name="ui_type_message">Введіть повідомлення...</string>
     <string name="ui_typing">друкує...</string>
-    <string name="user_ext_label">Внутрішній номер: %1$s (%2$s)</string>
     <string name="full_screen_title">Вхідні дзвінки на весь екран</string>
     <string name="full_screen_msg">Android вимкнув повноекранні сповіщення для AiPBX, тому на заблокованому телефоні вхідний дзвінок показується лише маленьким сповіщенням. На наступному екрані дозвольте AiPBX «Повноекранні сповіщення».</string>
     <string name="full_screen_status_on">Дзвінки на весь екран: дозволено</string>

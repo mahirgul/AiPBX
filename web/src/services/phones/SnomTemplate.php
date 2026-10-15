@@ -71,7 +71,8 @@ final class SnomTemplate extends PhoneTemplate
             ['user_pass', self::xml($ctx['sip_password'], 128), 1],
             ['user_realname', self::xml($ctx['display_name']), 1],
             ['user_host', $server, 1],
-            ['user_outbound', $server . ':' . (int) $ctx['port'] . ';transport=' . ($tls ? 'tls' : 'udp'), 1],
+            // Outbound proxy: the one set in the provisioning settings, else the server itself.
+            ['user_outbound', ($ctx['proxy'] !== '' ? self::xml($ctx['proxy'], 255) : $server) . ':' . (int) $ctx['port'] . ';transport=' . ($tls ? 'tls' : 'udp'), 1],
             ['user_srtp', (int) $ctx['srtp'] > 0 ? 'on' : 'off', 1],
             ['user_savp', $srtp, 1],
             ['user_mailbox', self::xml($ctx['voicemail']), 1],

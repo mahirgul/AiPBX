@@ -377,7 +377,6 @@
     <string name="ui_take_send_photo">Faceți / trimiteți fotografie</string>
     <string name="ui_type_message">Scrieți un mesaj...</string>
     <string name="ui_typing">scrie...</string>
-    <string name="user_ext_label">Interior: %1$s (%2$s)</string>
     <string name="full_screen_title">Apeluri primite pe tot ecranul</string>
     <string name="full_screen_msg">Android a dezactivat notificările pe tot ecranul pentru AiPBX, așa că pe un telefon blocat un apel apare doar ca o notificare mică. Permiteți „Notificări pe tot ecranul” pentru AiPBX pe ecranul următor.</string>
     <string name="full_screen_status_on">Apeluri pe tot ecranul: permise</string>
