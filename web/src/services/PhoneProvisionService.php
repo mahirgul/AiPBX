@@ -46,6 +46,8 @@ class PhoneProvisionService
         'provision_sip_server' => '',
         'provision_sip_proxy' => '',
         'provision_base_url' => '',
+        // Where phones send their log (syslog, UDP 514); IPv4, empty = none.
+        'provision_syslog' => '',
         // Also write each phone's files into the TFTP/FTP folder (exportTftp).
         'provision_tftp_export' => '0',
     ];
@@ -102,6 +104,10 @@ class PhoneProvisionService
             };
             $sipServer = $host('provision_sip_server', 'phones.err_sip_server');
             $sipProxy = $host('provision_sip_proxy', 'phones.err_sip_proxy');
+            $syslog = trim((string) ($data['provision_syslog'] ?? ''));
+            if ($syslog !== '' && filter_var($syslog, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+                throw new \Exception(t('phones.err_syslog'));
+            }
             $baseUrl = rtrim(trim((string) ($data['provision_base_url'] ?? '')), '/');
             if ($baseUrl !== '' && !preg_match('~^(https?://)?[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~i', $baseUrl)) {
                 throw new \Exception(t('phones.err_base_url'));
@@ -119,6 +125,7 @@ class PhoneProvisionService
                 'provision_sip_server' => $sipServer,
                 'provision_sip_proxy' => $sipProxy,
                 'provision_base_url' => $baseUrl,
+                'provision_syslog' => $syslog,
                 'provision_tftp_export' => !empty($data['provision_tftp_export']) ? '1' : '0',
             ];
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
@@ -791,6 +798,7 @@ class PhoneProvisionService
             'srtp' => (int) $s['provision_srtp'],
             'codecs' => array_values(array_intersect(explode(',', $s['provision_codecs']), self::CODECS)),
             'ntp' => $s['provision_ntp'],
+            'syslog' => $s['provision_syslog'],
             'utc_offset' => $offset,
             'language' => $s['provision_language'],
             'voicemail' => self::VOICEMAIL_CODE,

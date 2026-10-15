@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.26.0
+
+- **NEC phone files rebuilt on NEC's template:** a DT710 rejected AiPBX's file as a
+  whole ("configuration is invalid") and restarted. The file now follows NEC's data
+  file template group by group and keeps every value within the phone's schema: NTP
+  and syslog only as IP addresses, the extension as display name, all six codecs
+  ranked, whole-hour time zone without daylight saving, TLS as transport 4. The admin
+  password is no longer written (the phone's menu takes digits only); telnet stays on.
+- **Syslog server** (*PBX → Phones → Provisioning settings*): where phones send their
+  log; written to NEC phones.
+- See [Desk phones → Vendor notes](docs/phones.md).
+
 ## 1.25.2
 
 - The **provisioning address** (*PBX → Phones → Provisioning settings*) no longer

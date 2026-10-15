@@ -311,21 +311,43 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(self::$sipPassword, (string) $line['line.1.authentication.password']);
         $this->assertSame('pbx.test.example', (string) $line['line.1.primary.address']);
         $this->assertSame('5060', (string) $line['line.1.primary.port']);
-        $this->assertSame('Ali" x="1"<b>&x', (string) $line['line.1.displayname']);
+        // No spaces or special characters allowed: the extension.
+        $this->assertSame(self::EXT, (string) $line['line.1.displayname']);
         $this->assertNull($line['x'], 'no attribute injected');
         $this->assertSame('1', (string) $xml->DT_SIP_DATA['sip.transport']);
         $phone = $xml->DT_PHONE_DATA->attributes();
         $this->assertSame('*97', (string) $phone['phone.voicemail.extension']);
         $this->assertSame('1', (string) $phone['phone.audio.g722.pref']);
         $this->assertSame('2', (string) $phone['phone.audio.pcma.pref']);
-        $this->assertSame('+3', (string) $xml->DT_PHONE_NETWORK_DATA['network.gmt.offset']);
-        $this->assertSame(self::$adminPassword, (string) $xml->DT_PHONE_SECURITY_DATA['security.admin.password']);
+        // All six codecs ranked, each rank once (the phone rejects the file otherwise).
+        $ranks = [];
+        foreach (['g722', 'pcma', 'pcmu', 'g729', 'g7221.24kbps', 'g7221.32kbps'] as $c) {
+            $ranks[] = (string) $phone["phone.audio.$c.pref"];
+        }
+        $this->assertEqualsCanonicalizing(['1', '2', '3', '4', '5', '6'], $ranks);
+        $net = $xml->DT_PHONE_NETWORK_DATA->attributes();
+        $this->assertSame('+3', (string) $net['network.gmt.offset']);
+        $this->assertSame('', (string) $net['network.sntp.address'], 'the phone takes no names');
+        $this->assertSame('', (string) $net['network.syslog.address']);
+        $this->assertSame('0', (string) $xml->DT_PHONE_DST_DATA['dst.start.month'], 'no daylight saving');
+        $this->assertNull($xml->DT_PHONE_SECURITY_DATA['security.admin.password'], 'keypad takes digits only');
+        $this->assertSame('1', (string) $xml->DT_PHONE_SECURITY_DATA['security.telnet.mode']);
+        $this->assertStringNotContainsString(self::$adminPassword, $out);
         $this->assertSame('en_UK', (string) $xml->DT_USER_DATA['user.lang.value'], 'no Turkish on the phone');
+        // The groups of NEC's DT700/DT800 data file template, in its order.
+        $this->assertSame(['DT_LINE_DATA', 'DT_SIP_DATA', 'DT_PHONE_NETWORK_DATA', 'DT_PHONE_DST_DATA', 'DT_PHONE_SECURITY_DATA',
+            'DT_PHONE_DATA', 'DT_PHONE_FEATURE_DATA', 'DT_USER_DATA'], array_map(fn($e) => $e->getName(), iterator_to_array($xml->children(), false)));
+
+        $ctx['ntp'] = '10.23.3.1';
+        $ctx['syslog'] = '10.23.3.70';
+        $ctx['utc_offset'] = 330;
+        $net = simplexml_load_string((new NecTemplate())->render($ctx))->DT_PHONE_NETWORK_DATA->attributes();
+        $this->assertSame(['10.23.3.1', '10.23.3.70', '+6'], [(string) $net['network.sntp.address'], (string) $net['network.syslog.address'], (string) $net['network.gmt.offset']]);
 
         $ctx['transport'] = 'tls';
         $ctx['language'] = 'de';
         $xml = simplexml_load_string((new NecTemplate())->render($ctx));
-        $this->assertSame('3', (string) $xml->DT_SIP_DATA['sip.transport']);
+        $this->assertSame('4', (string) $xml->DT_SIP_DATA['sip.transport']);
         $this->assertSame('de_DE', (string) $xml->DT_USER_DATA['user.lang.value']);
     }
 

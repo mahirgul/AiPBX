@@ -403,6 +403,11 @@ $userOptions = function () use ($users) {
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.syslog'); ?></label>
+                    <input type="text" name="provision_syslog" class="form-control" maxlength="15" value="<?php echo htmlspecialchars($settings['provision_syslog']); ?>" placeholder="<?php echo htmlspecialchars(t('phones.sip_proxy_none')); ?>">
+                    <div class="text-muted u-fs-11"><?php echo t('phones.syslog_help'); ?></div>
+                </div>
+                <div class="form-group">
                     <label class="form-label"><?php echo t('phones.base_url'); ?></label>
                     <input type="text" name="provision_base_url" class="form-control" maxlength="300" value="<?php echo htmlspecialchars($settings['provision_base_url']); ?>" placeholder="<?php echo htmlspecialchars(ForgotPasswordService::portalUrl()); ?>">
                     <div class="text-muted u-fs-11"><?php echo t('phones.base_url_help'); ?></div>
