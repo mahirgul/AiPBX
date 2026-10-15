@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.29.1
+
+- **NEC:** the data file no longer lists the phone's language menu; each entry made the
+  phone fetch a language file it could not find at every boot.
+
 ## 1.29.0
 
 - **Fix (NEC):** `dt-<mac>.cfg` is now the phone's *master file* and names the

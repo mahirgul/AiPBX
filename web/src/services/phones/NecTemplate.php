@@ -48,13 +48,6 @@ final class NecTemplate extends PhoneTemplate
     private const LOG_AREAS = ['cc', 'ept', 'app', 'pm', 'sntp', 'pdir', 'ch', 'cfg', 'net', 'rtpt', 'lldp', 'prof',
         'dot1x', 'crypto', 'opt', 'kmgr', 'wsmgr', 'csta', 'stup', 'usb', 'vpn'];
 
-    /** The language menu of NEC's template (label => value). */
-    private const LANGUAGE_MENU = [
-        'English (UK)' => 'en_UK', 'Nederlands (Dutch)' => 'nl_NL', 'Italiano (Italian)' => 'it_IT',
-        'Deutsch (German)' => 'de_DE', 'Danske (Danish)' => 'da_DK', 'Svenka (Swedish)' => 'sv_SE',
-        'Espanol (Spanish)' => 'es_ES', 'Portugues (Portuguese)' => 'pt_PT', 'Francais (French)' => 'fr_BE',
-    ];
-
     public function vendor(): string
     {
         return 'nec';
@@ -301,12 +294,8 @@ final class NecTemplate extends PhoneTemplate
         foreach ($prefs as $name => $p) {
             $groups['DT_PHONE_DATA']["phone.audio.{$name}.pref"] = (string) $p;
         }
-        $i = 1;
-        foreach (self::LANGUAGE_MENU as $label => $value) {
-            $groups['DT_USER_DATA']["user.lang.menu.label.$i"] = $label;
-            $groups['DT_USER_DATA']["user.lang.menu.value.$i"] = $value;
-            $i++;
-        }
+        // No user.lang.menu.*: each entry makes the phone fetch <lang>.mo from the
+        // file server at boot (9 failed downloads); the menu language itself works without.
         return $groups;
     }
 
