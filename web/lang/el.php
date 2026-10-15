@@ -4494,4 +4494,11 @@ return [
     'netsvc.switch_ntp_server' => 'Διακομιστής NTP (ώρα)',
     'netsvc.switch_ntp_server_desc' => 'αυτός ο διακομιστής δίνει την ώρα στα τηλέφωνα των παραπάνω δικτύων· ορίστε το %s ως διακομιστή NTP τους·',
     'netsvc.saved_ntp_server' => 'Αυτός ο διακομιστής δίνει την ώρα (NTP).',
+    'sidebar.item_help' => 'Βοήθεια (οδηγός συστήματος)',
+    'help.title' => 'Βοήθεια',
+    'help.search_placeholder' => 'Αναζήτηση στα έγγραφα…',
+    'help.offline_note' => 'Διαβάζεται από αυτόν τον διακομιστή: λειτουργεί χωρίς internet. Τα έγγραφα είναι στα αγγλικά.',
+    'help.results_for' => 'Αποτελέσματα για «%s»',
+    'help.no_results' => 'Δεν βρέθηκε τίποτα.',
+    'help.not_found' => 'Αυτό το έγγραφο δεν υπάρχει.',
 ];
