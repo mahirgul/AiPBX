@@ -103,6 +103,11 @@ is switched off. The files contain the SIP password; TFTP and FTP answer only th
 | Keys | the user's key layout (below) |
 | Admin password | the phone's own web admin password |
 
+**Show the phone's file** (the file icon in a phone's row) opens exactly what the phone downloads, one
+tab per file (Poly: the master file and the settings file), with a copy button. The SIP and admin
+passwords are hidden; users who may edit phones can show them, which is written to the audit log.
+A phone without an active user gets no file, so the button is shown only for assigned phones.
+
 Changes reach a phone at its next configuration download. **Re-provision** (↻) sends it a SIP
 NOTIFY through Asterisk so it reloads at once; **Reboot** (⏻) restarts it. Both need the phone to be
 registered.

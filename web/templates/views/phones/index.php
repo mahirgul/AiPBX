@@ -112,6 +112,7 @@ $userOptions = function () use ($users) {
                             <td class="text-right">
                                 <div class="table-actions-cell">
                                     <?php if ($p['user_id']): ?>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="showPhoneFile(<?php echo (int) $p['id']; ?>, <?php echo htmlspecialchars(json_encode(PhoneModels::formatMac($p['mac'])), ENT_QUOTES); ?>)" title="<?php echo t('phones.preview'); ?>"><i class="fas fa-file-code"></i></button>
                                         <a class="btn btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $p['user_id']; ?>" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
                                     <?php endif; ?>
                                     <?php if ($canEdit): ?>
@@ -298,6 +299,27 @@ $userOptions = function () use ($users) {
 </div>
 
 <!-- Modal: provisioning settings -->
+<!-- The file(s) a phone gets (showPhoneFile in phones.js) -->
+<div class="modal-overlay" id="phoneFileModal">
+    <div class="modal-card" style="max-width: 900px;">
+        <div class="modal-header u-flex-between">
+            <h3 class="u-title"><i class="fas fa-file-code u-primary"></i> <span id="phoneFileTitle"></span></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phoneFileModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div id="phoneFileTabs" class="u-flex-gap u-mb-10"></div>
+            <pre id="phoneFileContent" style="max-height: 60vh; overflow: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.45; white-space: pre; margin: 0;"></pre>
+            <div class="u-flex-between u-mt-12">
+                <span class="text-muted u-fs-11" id="phoneFileNote"></span>
+                <span class="u-flex-gap">
+                    <?php if ($canEdit): ?><button type="button" class="btn btn-secondary btn-sm" id="phoneFileReveal" onclick="togglePhoneFilePasswords()"><i class="fas fa-eye"></i> <span></span></button><?php endif; ?>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="copyPhoneFile()"><i class="fas fa-copy"></i> <?php echo t('common.copy'); ?></button>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="provisionSettingsModal">
     <div class="modal-card" style="max-width: 600px;">
         <div class="modal-header">
