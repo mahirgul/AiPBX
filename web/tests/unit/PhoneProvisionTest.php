@@ -356,7 +356,12 @@ final class PhoneProvisionTest extends TestCase
     {
         $phone = $this->addPhone('0060b9ef609f', 'nec-dt830');
         $this->setSetting('provision_allowed_networks', '192.0.2.0/24');
-        $res = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f.cfg', '192.0.2.10', '');
+        // dt-<mac>.cfg is the master file naming the data file.
+        $master = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f.cfg', '192.0.2.10', '');
+        $this->assertSame(200, $master['status']);
+        $this->assertStringContainsString('<DT_APPLICATION DATA_FILES="dt-0060b9ef609f-phone.cfg" />', $master['body']);
+        $this->assertStringNotContainsString(self::$sipPassword, $master['body']);
+        $res = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f-phone.cfg', '192.0.2.10', '');
         $this->assertSame(200, $res['status']);
         $this->assertStringContainsString('line.1.authentication.password="' . self::$sipPassword . '"', $res['body']);
         $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9ef609f.cfg', '192.0.2.10', '')['status']);
@@ -374,7 +379,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(self::EXT, (string) $data['line.1.extension']);
         $this->assertSame(self::$sipPassword, (string) $data['line.1.authentication.password']);
         $this->assertSame('+3', trim((string) $data['network.gmt.offset']));
-        $this->assertSame(['dt-0060b9ef609f.cfg', 'dt-0060b9ef609f-local.cfg'], (new NecTemplate())->exportFiles('0060b9ef609f'));
+        $this->assertSame(['dt-0060b9ef609f.cfg', 'dt-0060b9ef609f-phone.cfg', 'dt-0060b9ef609f-local.cfg'], (new NecTemplate())->exportFiles('0060b9ef609f'));
     }
 
     public static function fileNames(): array
@@ -402,6 +407,7 @@ final class PhoneProvisionTest extends TestCase
             ['nec', 'dt-0060B9EF609F.cfg', '0060b9ef609f'],
             ['nec', 'dt-000000000000.cfg', ''],
             ['nec', 'dt-0060b9ef609f-local.cfg', '0060b9ef609f'],
+            ['nec', 'dt-0060B9EF609F-phone.cfg', '0060b9ef609f'],
             ['nec', 'dt-sip.cfg', ''],
         ];
     }
