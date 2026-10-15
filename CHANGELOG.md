@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.25.2
+
+- The **provisioning address** (*PBX → Phones → Provisioning settings*) no longer
+  needs `http://`: a bare IP or name (`10.23.3.70`, `10.23.3.70:8080`) is enough and
+  means HTTP; `https://…` still works.
+- **Fix:** with the DHCP server on, an `http://` provisioning address was left out
+  of DHCP options 66/160 (only `https://` was sent); now both are.
+
 ## 1.25.1
 
 - **Show the phone's file** (*PBX → Phones*, the file icon in a phone's row): a
