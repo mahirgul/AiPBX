@@ -368,6 +368,19 @@ case "$cmd" in
             rm -f "$FTP_FW"
         }
 
+        SYSLOG_FW="$NETSVC_DIR/syslog-firewall.state"
+        syslog_rule() { echo "rule family=\"ipv4\" source address=\"$1\" port port=\"514\" protocol=\"udp\" accept"; }
+        syslog_fw_clear() {
+            [ -f "$SYSLOG_FW" ] || return 0
+            if fw_running; then
+                while read -r kind value; do
+                    [ "$kind" = syslog ] && [[ "$value" =~ $RE_IPV4_CIDR ]] || continue
+                    for p in "" --permanent; do firewall-cmd $p --remove-rich-rule="$(syslog_rule "$value")" >/dev/null 2>&1; done
+                done < "$SYSLOG_FW"
+            fi
+            rm -f "$SYSLOG_FW"
+        }
+
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             status)
@@ -578,6 +591,53 @@ FTPCONF
             ftp-status)
                 [ $# -eq 0 ] || die "usage: netsvc ftp-status"
                 systemctl is-active aipbx-vsftpd.service 2>/dev/null
+                exit 0
+                ;;
+            syslog-on)
+                # netsvc syslog-on net=CIDR... — receive the phones' logs (syslog,
+                # UDP 514) from the allowed networks into /var/log/aipbx-phones/
+                # (PBX -> Phone logs): aipbx-syslogd (unit aipbx-syslog), which also
+                # drops senders outside these networks itself.
+                nets=()
+                for kv in "$@"; do
+                    k="${kv%%=*}"; v="${kv#*=}"
+                    [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
+                    case "$k" in
+                        net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
+                        *) die "unknown key: $k" ;;
+                    esac
+                done
+                [ "${#nets[@]}" -gt 0 ] || die "syslog needs at least one net="
+                [ -x /usr/local/sbin/aipbx-syslogd ] || die "aipbx-syslogd is missing (run install.sh --upgrade)"
+                mkdir -p "$NETSVC_DIR"; chown root:root "$NETSVC_DIR"; chmod 0755 "$NETSVC_DIR"
+                {
+                    echo "# Written by aipbx-priv (PBX -> Network services). Do not edit: the next apply replaces it."
+                    printf 'net=%s\n' "${nets[@]}"
+                } > "$NETSVC_DIR/syslog.conf.tmp"
+                install -o root -g root -m 0644 "$NETSVC_DIR/syslog.conf.tmp" "$NETSVC_DIR/syslog.conf"
+                rm -f "$NETSVC_DIR/syslog.conf.tmp"
+
+                syslog_fw_clear
+                if fw_running; then
+                    : > "$SYSLOG_FW"
+                    for n in "${nets[@]}"; do
+                        for p in "" --permanent; do fw_add $p --add-rich-rule="$(syslog_rule "$n")" || die "firewall: syslog $n"; done
+                        echo "syslog $n" >> "$SYSLOG_FW"
+                    done
+                fi
+                systemctl enable aipbx-syslog.service >/dev/null 2>&1
+                exec systemctl restart aipbx-syslog.service
+                ;;
+            syslog-off)
+                [ $# -eq 0 ] || die "usage: netsvc syslog-off"
+                systemctl disable --now aipbx-syslog.service >/dev/null 2>&1
+                rm -f "$NETSVC_DIR/syslog.conf"
+                syslog_fw_clear
+                exit 0
+                ;;
+            syslog-status)
+                [ $# -eq 0 ] || die "usage: netsvc syslog-status"
+                systemctl is-active aipbx-syslog.service 2>/dev/null
                 exit 0
                 ;;
             *) die "unknown netsvc command: $sub" ;;

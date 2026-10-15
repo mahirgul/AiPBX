@@ -259,4 +259,14 @@ final class NetworkServicesTest extends TestCase
             }
         }
     }
+
+    public function testSyslogArgs(): void
+    {
+        $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_syslog' => '1']), self::IFACES, ['10.0.0.0/8']);
+        $this->assertSame('1', $v['netsvc_syslog']);
+        $args = NetworkServicesService::syslogArgs($v, ['10.0.0.0/8']);
+        $this->assertSame(['netsvc', 'syslog-on'], array_slice($args, 0, 2));
+        $this->assertContains('net=10.0.0.0/8', $args);
+        $this->assertSame(['netsvc', 'syslog-off'], NetworkServicesService::syslogArgs(['netsvc_syslog' => '0'] + $v, []));
+    }
 }

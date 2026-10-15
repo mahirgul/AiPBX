@@ -1048,6 +1048,43 @@ FTPUNIT
 systemctl daemon-reload
 systemctl try-restart aipbx-vsftpd.service 2>/dev/null || true
 
+# Phone logs (PBX -> Phone logs): desk phones send syslog (UDP 514) to
+# aipbx-syslogd, switched on under Network services (aipbx-priv netsvc
+# syslog-on writes its networks). Own system user in group www-data, so the
+# portal reads the log; only the right to bind port 514.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-syslogd" /usr/local/sbin/aipbx-syslogd
+id -u aipbx-syslog >/dev/null 2>&1 || useradd --system --no-create-home --home-dir /nonexistent \
+    --shell /usr/sbin/nologin --gid www-data aipbx-syslog
+cat > /etc/systemd/system/aipbx-syslog.service << 'SYSLOGUNIT'
+[Unit]
+Description=AiPBX phone log receiver, syslog UDP 514 (PBX -> Phone logs)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/aipbx-netsvc/syslog.conf
+
+[Service]
+ExecStart=/usr/local/sbin/aipbx-syslogd
+User=aipbx-syslog
+Group=www-data
+LogsDirectory=aipbx-phones
+LogsDirectoryMode=0750
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SYSLOGUNIT
+systemctl daemon-reload
+systemctl try-restart aipbx-syslog.service 2>/dev/null || true
+
 # Sudoers: www-data may run the helper and nothing else as root. Granting
 # asterisk/postconf/fail2ban-client/firewall-cmd directly would let any code
 # execution bug in the portal escalate straight to root.
