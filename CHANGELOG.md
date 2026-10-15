@@ -5,6 +5,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.25.0
+
+- **Server addresses for phone networks without DNS** (*PBX → Phones →
+  Provisioning settings → Server addresses*): the **SIP server**, an **outbound
+  proxy** and the **provisioning address** (where phones fetch their files) can be
+  IP addresses. The proxy is written for Yealink, Grandstream, Fanvil, Snom, Poly,
+  Cisco SPA and NEC; the provisioning address is used for the phones' URLs and DHCP
+  option 66/160. Empty fields keep the domain as before.
+- Phone files under `/provision/` are answered over plain **HTTP** too, for phones
+  that cannot use HTTPS to an IP address; the allowed networks and per-phone tokens
+  still apply.
+- **Phone files in the TFTP/FTP folder** (option in the same dialog): for phones
+  that read their configuration over TFTP or FTP (NEC), every assigned phone's file
+  is written into the folder of *Network services* and kept current.
+- **Android 1.0.67:** the header shows the number and name only, without
+  "Extension:".
+- See [Desk phones → Server addresses](docs/phones.md#server-addresses-networks-without-dns).
+
 ## 1.24.1
 
 - **Fix:** on *PBX → Phones* the settings button (*Provisioning settings*) opened
