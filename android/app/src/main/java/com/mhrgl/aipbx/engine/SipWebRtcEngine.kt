@@ -6,6 +6,7 @@ import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
@@ -68,6 +69,15 @@ class SipWebRtcEngine(private val context: Context) {
     var incomingHasVideo: Boolean = false
         private set
 
+    /**
+     * elapsedRealtime of the last successful REGISTER (JsSIP 'registered', which
+     * fires on every refresh). The watchdog compares it with the time of its own
+     * forced REGISTER to notice a JavaScript engine that stopped running.
+     */
+    @Volatile
+    var lastRegisteredMs: Long = 0L
+        private set
+
     /** The call shows video at the moment (the call screen then holds the WebView). */
     @Volatile
     var isVideoActive: Boolean = false
@@ -81,6 +91,11 @@ class SipWebRtcEngine(private val context: Context) {
     private fun initWebView() {
         try {
             val wv = WebView(context.applicationContext)
+            // The SIP stack lives in this WebView's renderer. Android lowers the
+            // priority of a renderer whose WebView is not visible and may freeze or
+            // kill it; this one is never visible (except in a video call) but must
+            // keep running for incoming calls to ring.
+            wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
             wv.settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -287,11 +302,51 @@ class SipWebRtcEngine(private val context: Context) {
         }
     }
 
-    /** Back to no window (call ended or the call screen closes). */
+    /**
+     * Back to no window (call ended or the call screen closes).
+     *
+     * Why the extra calls: when the call screen goes to the background (screen
+     * off, home button) the WebView is told its window became invisible before
+     * it is removed, and it keeps that state in no window. Chromium then treats
+     * the page as hidden and throttles or stops its timers, so JsSIP stopped
+     * refreshing the registration after a video call and calls no longer rang
+     * (Android 1.0.65–1.0.69). Restoring "visible" returns it to the state it
+     * had before the first video call.
+     */
     fun detachVideoView(container: ViewGroup) {
         handler.post {
             val wv = webView ?: return@post
             if (wv.parent === container) container.removeView(wv)
+            if (wv.parent == null) {
+                wv.dispatchWindowVisibilityChanged(View.VISIBLE)
+                wv.onResume()
+                wv.resumeTimers()
+            }
+        }
+    }
+
+    /**
+     * Throws the WebView away and starts a new one, which registers again with
+     * the last credentials. For a JavaScript engine that stopped answering
+     * (frozen renderer): it cannot be repaired from outside.
+     */
+    fun restart(reason: String) {
+        handler.post {
+            Log.w(TAG, "Restarting the engine: $reason")
+            isEngineReady = false
+            pendingRegisterAction = null
+            currentConnectionStatus = ConnectionStatus.DISCONNECTED
+            listener?.onConnectionStatusChanged(ConnectionStatus.DISCONNECTED)
+            val wv = webView
+            webView = null
+            try {
+                (wv?.parent as? ViewGroup)?.removeView(wv)
+                wv?.destroy()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error destroying stuck WebView", e)
+            }
+            // initWebView → onEngineReady → lastRegisterAction (initUA) again.
+            handler.postDelayed({ initWebView() }, 500)
         }
     }
 
@@ -381,6 +436,7 @@ class SipWebRtcEngine(private val context: Context) {
 
         @JavascriptInterface
         fun onStatusChanged(status: String) {
+            if (status == "CONNECTED") lastRegisteredMs = android.os.SystemClock.elapsedRealtime()
             val connStatus = when (status) {
                 "CONNECTED" -> ConnectionStatus.CONNECTED
                 "CONNECTING" -> ConnectionStatus.CONNECTING
