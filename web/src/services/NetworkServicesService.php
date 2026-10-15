@@ -30,6 +30,10 @@
  * phones' logs (UDP 514) from the same networks into PhoneLogService::FILE,
  * read on PBX -> Phone logs.
  *
+ * NTP server (netsvc_ntp_server, independent of the mode): chrony, the system's
+ * own time sync, also gives the time to the same networks (phones on networks
+ * without internet still get a correct clock).
+ *
  * Extra DHCP options (netsvc_dhcp_options, "code,value" per line) are added to
  * the ones AiPBX hands out; the same code replaces AiPBX's own (66, 160, 150,
  * 42, 3, 6). aipbx-priv checks them again: a dnsmasq file can run commands.
@@ -60,6 +64,7 @@ class NetworkServicesService
         'netsvc_ftp' => '0',
         'netsvc_ftp_users' => '[]',
         'netsvc_syslog' => '0',
+        'netsvc_ntp_server' => '0',
         'netsvc_dhcp_options' => '',
     ];
 
@@ -160,9 +165,10 @@ class NetworkServicesService
         $v['netsvc_tftp'] = !empty($data['netsvc_tftp']) ? '1' : '0';
         $v['netsvc_ftp'] = !empty($data['netsvc_ftp']) ? '1' : '0';
         $v['netsvc_syslog'] = !empty($data['netsvc_syslog']) ? '1' : '0';
+        $v['netsvc_ntp_server'] = !empty($data['netsvc_ntp_server']) ? '1' : '0';
         $v['netsvc_ftp_users'] = json_encode(self::ftpUsersFromForm($data, $ftpUsers));
         $v['netsvc_dhcp_options'] = implode("\n", array_map(fn($o) => $o[0] . ',' . $o[1], self::dhcpOptions((string) ($data['netsvc_dhcp_options'] ?? ''))));
-        if (($v['netsvc_ftp'] === '1' || $v['netsvc_syslog'] === '1') && $tftpNetworks === [] && $mode !== 'dhcp') {
+        if (($v['netsvc_ftp'] === '1' || $v['netsvc_syslog'] === '1' || $v['netsvc_ntp_server'] === '1') && $tftpNetworks === [] && $mode !== 'dhcp') {
             throw new \Exception(t('netsvc.err_tftp_networks'));
         }
 
@@ -321,6 +327,24 @@ class NetworkServicesService
         return $args;
     }
 
+    /**
+     * Arguments for `aipbx-priv netsvc ntp-on` / `ntp-off`.
+     *
+     * @param array<string, string> $v validated settings
+     * @return string[]
+     */
+    public static function ntpArgs(array $v, array $tftpNetworks): array
+    {
+        if ($v['netsvc_ntp_server'] !== '1') {
+            return ['netsvc', 'ntp-off'];
+        }
+        $args = ['netsvc', 'ntp-on'];
+        foreach (self::serviceNetworks($v, $tftpNetworks) as $n) {
+            $args[] = 'net=' . $n;
+        }
+        return $args;
+    }
+
     /** @return list<array{user: string, hash: string}> stored extra FTP users */
     public static function ftpUsers(string $json): array
     {
@@ -405,9 +429,14 @@ class NetworkServicesService
                 }
             }
 
+            // DHCP option 42: this server when it gives the time and no NTP server is entered.
+            $dhcp = $v;
+            if ($v['netsvc_ntp_server'] === '1' && $v['netsvc_ntp'] === '' && isset($interfaces[$v['netsvc_interface']])) {
+                $dhcp['netsvc_ntp'] = $interfaces[$v['netsvc_interface']]['ip'];
+            }
             $res = $v['netsvc_mode'] === 'off'
                 ? PrivHelper::run(['netsvc', 'off'])
-                : PrivHelper::run(self::privArgs($v, $tftpNets, self::provisioningUrl()));
+                : PrivHelper::run(self::privArgs($dhcp, $tftpNets, self::provisioningUrl()));
             if (!$res['success']) {
                 throw new \Exception(sprintf(t('netsvc.err_apply'), $res['output']));
             }
@@ -423,15 +452,22 @@ class NetworkServicesService
                     throw new \Exception(sprintf(t('netsvc.err_apply'), $res['output']));
                 }
             }
+            if ($v['netsvc_ntp_server'] === '1' || getSystemSetting('netsvc_ntp_server', '0') === '1') {
+                $res = PrivHelper::run(self::ntpArgs($v, $tftpNets));
+                if (!$res['success']) {
+                    throw new \Exception(sprintf(t('netsvc.err_apply'), $res['output']));
+                }
+            }
 
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
             foreach ($v as $k => $val) {
                 $stmt->execute([$k, $val]);
             }
-            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : '') . ', FTP ' . ($v['netsvc_ftp'] === '1' ? 'on (' . count(self::ftpUsers($v['netsvc_ftp_users'])) . ' extra users)' : 'off') . ', syslog ' . ($v['netsvc_syslog'] === '1' ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+            writeAuditLog('network_services', 'settings', 0, 'Network services: ' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' ? ' (TFTP ' . ($v['netsvc_tftp'] === '1' ? 'on' : 'off') . ')' : '') . ', FTP ' . ($v['netsvc_ftp'] === '1' ? 'on (' . count(self::ftpUsers($v['netsvc_ftp_users'])) . ' extra users)' : 'off') . ', syslog ' . ($v['netsvc_syslog'] === '1' ? 'on' : 'off') . ', NTP server ' . ($v['netsvc_ntp_server'] === '1' ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
             return t('netsvc.saved_' . $v['netsvc_mode'] . ($v['netsvc_mode'] === 'dhcp' && $v['netsvc_tftp'] === '1' ? '_tftp' : ''))
                 . ($v['netsvc_ftp'] === '1' ? ' ' . sprintf(t('netsvc.saved_ftp'), self::FTP_FIXED_USER) : '')
-                . ($v['netsvc_syslog'] === '1' ? ' ' . t('netsvc.saved_syslog') : '');
+                . ($v['netsvc_syslog'] === '1' ? ' ' . t('netsvc.saved_syslog') : '')
+                . ($v['netsvc_ntp_server'] === '1' ? ' ' . t('netsvc.saved_ntp_server') : '');
         });
     }
 
@@ -503,6 +539,12 @@ class NetworkServicesService
     public static function ftpStatus(): string
     {
         $res = PrivHelper::run(['netsvc', 'ftp-status']);
+        return trim($res['output']) === 'active' ? 'active' : 'inactive';
+    }
+
+    public static function ntpStatus(): string
+    {
+        $res = PrivHelper::run(['netsvc', 'ntp-status']);
         return trim($res['output']) === 'active' ? 'active' : 'inactive';
     }
 
