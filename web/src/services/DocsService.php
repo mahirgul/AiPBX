@@ -13,11 +13,26 @@
  * bold, italics and links. All text is HTML-escaped first, so a document can
  * never inject markup. Links to other documents (troubleshooting.md#capturing-sip)
  * become /help?doc=troubleshooting#capturing-sip; other links open in a new tab.
+ *
+ * Single source: the same docs/*.md are read on GitHub, in the portal and on
+ * the website (aipbx.bid/docs). The website copies this file and docs/ from the
+ * repository and only changes $docUrl and $repoUrl, so a fix to a document
+ * reaches all three places.
  */
 class DocsService
 {
     /** Shown first in the document list; the rest follow alphabetically. */
     private const FIRST = ['system-map', 'troubleshooting', 'README'];
+
+    /** Prefix of a link to another document: the portal uses /help?doc=, the website /docs/. */
+    public static string $docUrl = '/help?doc=';
+
+    /**
+     * Where links to repository files (../web/src/x.php) point. Null in the portal:
+     * the files are on the server's disk, so they are shown as a path. The website
+     * sets the GitHub tree URL.
+     */
+    public static ?string $repoUrl = null;
 
     public static function dir(): string
     {
@@ -153,6 +168,12 @@ class DocsService
                 continue;
             }
             if (trim($line) === '') {
+                $i++;
+                continue;
+            }
+            // A line of bare HTML with no text (the centred logo of README.md): GitHub
+            // shows it, here it is left out rather than printed as escaped markup.
+            if (preg_match('/^\s*<(p|div|img|picture|br)\b[^>]*>/i', $line) && trim(strip_tags($line)) === '') {
                 $i++;
                 continue;
             }
@@ -321,7 +342,7 @@ class DocsService
     {
         $inner = self::inline($label);
         if (preg_match('~^(?:\.\./)?(?:docs/)?([A-Za-z0-9_-]+)\.md(#[A-Za-z0-9_-]*)?$~', $url, $m)) {
-            return '<a href="/help?doc=' . self::e($m[1]) . self::e($m[2] ?? '') . '">' . $inner . '</a>';
+            return '<a href="' . self::e(self::$docUrl . $m[1]) . self::e($m[2] ?? '') . '">' . $inner . '</a>';
         }
         if (str_starts_with($url, '#')) {
             return '<a href="' . self::e($url) . '">' . $inner . '</a>';
@@ -329,8 +350,13 @@ class DocsService
         if (preg_match('~^https?://~i', $url)) {
             return '<a href="' . self::e($url) . '" target="_blank" rel="noopener noreferrer">' . $inner . '</a>';
         }
-        // Repository files (../web/..., ../CHANGELOG.md): shown as text, they are on disk.
-        return $inner . ' <code>' . self::e(ltrim($url, './')) . '</code>';
+        // Repository files (../web/..., ../CHANGELOG.md): on disk in the portal, on GitHub on the website.
+        $path = ltrim($url, './');
+        if (self::$repoUrl !== null) {
+            return '<a href="' . self::e(rtrim(self::$repoUrl, '/') . '/' . $path) . '" target="_blank" rel="noopener noreferrer">'
+                . $inner . '</a>';
+        }
+        return $inner . ' <code>' . self::e($path) . '</code>';
     }
 
     private static function e(string $s): string
