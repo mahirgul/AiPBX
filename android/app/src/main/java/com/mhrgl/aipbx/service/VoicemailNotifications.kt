@@ -18,7 +18,8 @@ import com.mhrgl.aipbx.util.L10n
 object VoicemailNotifications {
     private const val NOTIFICATION_ID = 7001
 
-    fun show(context: Context, caller: String, durationSec: Int, newCount: Int) {
+    /** text: the message as text (summary or transcript), shown under the caller when there is one. */
+    fun show(context: Context, caller: String, durationSec: Int, newCount: Int, text: String = "") {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         val open = PendingIntent.getActivity(
             context, NOTIFICATION_ID,
@@ -27,9 +28,11 @@ object VoicemailNotifications {
         )
         val who = caller.ifBlank { L10n.str(R.string.vm_unknown_caller) }
         val body = L10n.str(R.string.vm_push_body, who, DateUtils.formatElapsedTime(durationSec.toLong()))
-        val notif = NotificationCompat.Builder(context, PbxForegroundService.CHANNEL_ID_CHAT)
+        val builder = NotificationCompat.Builder(context, PbxForegroundService.CHANNEL_ID_CHAT)
             .setContentTitle(L10n.str(R.string.vm_title))
-            .setContentText(body)
+            .setContentText(if (text.isNotBlank()) "$body — $text" else body)
+        if (text.isNotBlank()) builder.setStyle(NotificationCompat.BigTextStyle().bigText("$body\n$text"))
+        val notif = builder
             .setSmallIcon(R.drawable.ic_voicemail)
             .setContentIntent(open)
             .setNumber(newCount)

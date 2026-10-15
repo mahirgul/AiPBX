@@ -3,7 +3,7 @@
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $capLabel = fn($c) => t('ai_cloud.cap_' . $c);
 $langNames = ['tr' => t('ai_cloud.lang_tr'), 'de' => t('ai_cloud.lang_de'), 'en' => t('ai_cloud.lang_en')];
-$jobNames = ['tts' => t('ai_cloud.job_tts'), 'stt' => t('ai_cloud.job_stt')];
+$jobNames = ['tts' => t('ai_cloud.job_tts'), 'stt' => t('ai_cloud.job_stt'), 'llm' => t('ai_cloud.job_llm')];
 $configured = array_column(array_filter($providers, fn($p) => $p['configured']), null, 'id');
 ?>
 <div class="card">
@@ -54,6 +54,19 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
         <?php endforeach; ?>
         </tbody></table></div>
         <button type="submit" name="save_engines" value="1" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-voicemail u-primary"></i> <?php echo t('ai_cloud.vm_title'); ?></div>
+    </div>
+    <form method="POST" style="padding: 0 20px 20px;">
+        <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_cloud.vm_help'); ?></p>
+        <label class="u-check-label u-mb-10" style="display: block;"><input type="checkbox" class="u-accent" name="ai_vm_transcribe" value="1" <?php echo $vm_transcribe ? 'checked' : ''; ?>> <?php echo t('ai_cloud.vm_transcribe'); ?></label>
+        <label class="u-check-label u-mb-10" style="display: block;"><input type="checkbox" class="u-accent" name="ai_vm_summary" value="1" <?php echo $vm_summary ? 'checked' : ''; ?>> <?php echo t('ai_cloud.vm_summary'); ?></label>
+        <button type="submit" name="save_vm_ai" value="1" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
     </form>
 </div>
 

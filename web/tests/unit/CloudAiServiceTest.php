@@ -110,4 +110,52 @@ final class CloudAiServiceTest extends TestCase
         $this->assertSame('', $page['fields'][0]['value']);
         $this->assertNotSame('', $page['fields'][0]['masked']);
     }
+
+    public function testOpenAiCompatibleChats(): void
+    {
+        // NVIDIA: fixed address, model from the account (default when empty).
+        CloudAiService::save('nvidia', ['api_key' => 'nvapi-test-123']);
+        $this->fake(['choices' => [['message' => ['content' => ' Merhaba ']]], 'usage' => ['total_tokens' => 7]]);
+        $this->assertSame('Merhaba', CloudAiService::chat('nvidia', 'hi'));
+        $c = end($this->calls);
+        $this->assertSame('https://integrate.api.nvidia.com/v1/chat/completions', $c['url']);
+        $this->assertSame('Bearer nvapi-test-123', $c['headers']['Authorization']);
+        $this->assertSame('meta/llama-3.3-70b-instruct', json_decode($c['body'], true)['model']);
+
+        // Qwen: the default (international) endpoint and the model typed in.
+        CloudAiService::save('qwen', ['api_key' => 'sk-qwen-123', 'model' => 'qwen-turbo']);
+        CloudAiService::chat('qwen', 'hi');
+        $c = end($this->calls);
+        $this->assertSame(CloudAiService::QWEN_ENDPOINT . '/chat/completions', $c['url']);
+        $this->assertSame('qwen-turbo', json_decode($c['body'], true)['model']);
+
+        // Own address without a key (e.g. Ollama): no Authorization header.
+        CloudAiService::save('openai_compat', ['base_url' => 'http://10.0.0.5:11434/v1/', 'model' => 'qwen2.5:7b']);
+        $this->assertTrue(CloudAiService::configured('openai_compat'));
+        CloudAiService::chat('openai_compat', 'hi');
+        $c = end($this->calls);
+        $this->assertSame('http://10.0.0.5:11434/v1/chat/completions', $c['url']);
+        $this->assertArrayNotHasKey('Authorization', $c['headers']);
+        $this->assertSame(['provider' => 'openai_compat', 'api_key' => '', 'model' => 'qwen2.5:7b', 'base_url' => 'http://10.0.0.5:11434/v1'],
+            CloudAiService::llmSettings('openai_compat'));
+    }
+
+    public function testOpenAiSpeechModelIsNotTheLanguageModel(): void
+    {
+        CloudAiService::save('openai', ['api_key' => 'sk-test-1234567890', 'model' => 'gpt-4o-mini-tts']);
+        $this->assertSame(['provider' => 'openai', 'api_key' => 'sk-test-1234567890'], CloudAiService::llmSettings('openai'));
+        $this->fake(['choices' => [['message' => ['content' => 'ok']]]]);
+        CloudAiService::chat('openai', 'hi');
+        $this->assertSame('gpt-4.1-mini', json_decode(end($this->calls)['body'], true)['model']);
+    }
+
+    public function testBaseUrlAndModelChecked(): void
+    {
+        $this->assertSame('https://api.deepseek.com/v1', CloudAiService::validBaseUrl('https://api.deepseek.com/v1/'));
+        foreach (['ftp://x/v1', 'http://user:pw@x/v1', 'https://x/v1?a=1', 'javascript:alert(1)', ''] as $bad) {
+            $this->assertNull(CloudAiService::validBaseUrl($bad), $bad);
+        }
+        $this->expectException(CloudAiException::class);
+        CloudAiService::save('openai_compat', ['base_url' => 'https://x/v1', 'model' => 'bad model']);
+    }
 }

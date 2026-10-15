@@ -78,6 +78,9 @@ foreach (VoicemailService::getVoicemailMessages($ext) as $m) {
         'time' => $m['origtime'] > 0 ? date('c', $m['origtime']) : '',
         'duration' => (int) $m['duration'],
         'has_audio' => (bool) $m['has_audio'],
+        // Voicemail as text (server 1.24+), empty when not made.
+        'summary' => (string) ($m['summary'] ?? ''),
+        'transcript' => (string) ($m['transcript'] ?? ''),
     ];
 }
 mobileJson([

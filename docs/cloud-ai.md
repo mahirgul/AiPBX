@@ -20,6 +20,9 @@ chooses, for each job and language, which engine AI features use: a local model 
 | Deepgram | | ✓ (Nova-3) | | | ✓ |
 | Groq | | ✓ (Whisper large v3 turbo) | ✓ (Llama, Gemma, …) | | ✓ |
 | OpenRouter | | | ✓ (hundreds of models) | | some models |
+| NVIDIA NIM (build.nvidia.com) | | | ✓ (Llama, Nemotron, Qwen, DeepSeek …) | | trial credits |
+| Qwen (Alibaba Cloud Model Studio) | | | ✓ (qwen-plus, qwen-turbo, qwen-max …) | | ✓ (new accounts) |
+| OpenAI-compatible (own address) | | | ✓ (any service with the OpenAI chat API) | | — |
 
 Each card has the key fields, a link to get a key, a **Test** button (a cheap authenticated call
 that shows the provider's own error when the key is wrong) and this month's use: minutes of audio
@@ -31,8 +34,8 @@ status of its providers and links here; changing keys needs the admin role.
 
 ## Engine for each job
 
-For speech and speech to text in Turkish, German and English, choose a running or downloaded
-local model or a configured cloud provider (`ai_engine.<job>.<lang>` in `sys_settings`, values
+For speech, speech to text and the **language model** in Turkish, German and English, choose a
+running or downloaded local model or a configured cloud provider (`ai_engine.<job>.<lang>` in `sys_settings`, values
 `local:<model id>` or `cloud:<provider>`). AI features that come later (AI applications, voice
 requests) use these choices, so switching between local and cloud needs no other change.
 
@@ -44,5 +47,39 @@ and the time each engine needs.
 
 ## Language models
 
-Gemini, Gemma (Google AI Studio, Groq, OpenRouter), GPT and others are configured and tested here
-already; they are used by the AI applications that follow (roadmap 5).
+Large language models are not run on the PBX itself (most servers cannot carry them); they come
+from the providers above. They are used by:
+
+- **AI applications** — routing by speech and voice requests with *Understanding: cloud model*
+  ([AI applications](ai-apps.md#understanding)),
+- **voicemail as text** — the one-sentence summary (below).
+
+The model of Google AI, OpenAI, Groq and OpenRouter is fixed (a small, fast one: gemini-2.5-flash,
+gpt-4.1-mini, llama-3.3-70b-versatile, google/gemini-2.5-flash). For the three providers below the
+card has a **Model** field; *Test* sends one tiny chat request, so a wrong model name shows at once.
+
+| Provider | Address | Model (default) |
+|----------|---------|-----------------|
+| NVIDIA NIM | `https://integrate.api.nvidia.com/v1` | `meta/llama-3.3-70b-instruct`; any model of build.nvidia.com, e.g. `qwen/qwen3-235b-a22b` |
+| Qwen (Alibaba Cloud Model Studio) | international `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` (default); mainland China `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
+| OpenAI-compatible | your address ending in `/v1`, e.g. `https://api.deepseek.com/v1`, `https://api.mistral.ai/v1`, `http://10.0.0.5:11434/v1` (Ollama on another server) | required; the key is optional |
+
+## Voicemail as text
+
+*AI → Cloud services → Voicemail as text*: a new voicemail is written down with the
+**speech-to-text** engine of the PBX's prompt language (a small local model such as Vosk or
+Whisper, or a cloud provider) and, if *summary* is ticked, summarised in one sentence by the
+**language model** of that language ("John Smith wants to move tomorrow's 10:00 meeting to Friday").
+
+- The **voicemail e-mail** gets both under the list of details: template variable `{ai_text}` of
+  the *voicemail* template (*E-mail → Templates*; a changed template needs `{ai_text}` added).
+- The **app notification** shows the summary (or the start of the transcript) under the caller
+  (Android 1.0.66).
+- *My Phone → Voicemail* and the mobile apps' voicemail list show it next to the message.
+
+Each message is processed once (table `voicemail_ai`); the e-mail comes first and the push uses the
+result. Voicemail is handled by Asterisk's own user, which cannot read the AI keys, so the work is
+done by the portal on the same server (`api/voicemail_ai.php`, only from 127.0.0.1, signed).
+Nothing here can hold back the e-mail or the notification: when the engine fails, they go out
+without the text. With a cloud engine the recording (speech to text) or its text (summary) is sent
+to that provider.

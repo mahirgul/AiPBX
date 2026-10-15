@@ -25,6 +25,47 @@ class CloudAiService
 {
     public const CAPS = ['tts', 'stt', 'llm', 'embed'];
     public const LANGS = ['tr' => 'tr-TR', 'de' => 'de-DE', 'en' => 'en-US'];
+    /** Language models used when the account names none (cloud_llm.DEFAULT_MODELS). */
+    public const LLM_DEFAULTS = ['nvidia' => 'meta/llama-3.3-70b-instruct', 'qwen' => 'qwen-plus'];
+    /** International (Singapore) endpoint; mainland China: https://dashscope.aliyuncs.com/compatible-mode/v1 */
+    public const QWEN_ENDPOINT = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
+    /** Accounts whose Model / address fields are for their language model. */
+    public const LLM_FIELDS_OWN = ['nvidia', 'qwen', 'openai_compat'];
+
+    /**
+     * Address of an OpenAI-compatible chat API, or null: http(s), no
+     * credentials or fragments in it, at most 200 characters.
+     */
+    public static function validBaseUrl(string $url): ?string
+    {
+        $url = rtrim(trim($url), '/');
+        if ($url === '' || strlen($url) > 200 || !preg_match('~^https?://[^\s/?#@]+(/[^\s?#]*)?$~', $url)
+            || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+        return $url;
+    }
+
+    /**
+     * What the AI service needs to ask a provider's language model:
+     * provider, key and, where the account has them, model and address.
+     */
+    public static function llmSettings(string $id): array
+    {
+        $cfg = self::config($id);
+        $out = ['provider' => $id, 'api_key' => (string) ($cfg['api_key'] ?? '')];
+        // Only these accounts' "Model" field names a language model; OpenAI's
+        // and ElevenLabs' name their speech model (Cloud TTS).
+        if (!in_array($id, self::LLM_FIELDS_OWN, true)) {
+            return $out;
+        }
+        foreach (['model', 'base_url'] as $k) {
+            if (trim((string) ($cfg[$k] ?? '')) !== '') {
+                $out[$k] = trim((string) $cfg[$k]);
+            }
+        }
+        return $out;
+    }
 
     /**
      * Providers: title, capabilities, settings fields, sign-up page.
@@ -34,6 +75,7 @@ class CloudAiService
     {
         $tts = fn(string $cls) => $cls::fields();
         $key = [['key' => 'api_key', 'label' => 'API key', 'secret' => true]];
+        $model = fn(string $default) => ['key' => 'model', 'label' => 'Model', 'secret' => false, 'optional' => true, 'default' => $default];
         return [
             'google_ai' => ['title' => 'Google AI Studio (Gemini, Gemma)', 'caps' => ['stt', 'llm', 'embed'], 'fields' => $key,
                             'url' => 'https://aistudio.google.com/apikey', 'free' => true],
@@ -53,6 +95,20 @@ class CloudAiService
                        'url' => 'https://console.groq.com/keys', 'free' => true],
             'openrouter' => ['title' => 'OpenRouter', 'caps' => ['llm'], 'fields' => $key,
                              'url' => 'https://openrouter.ai/keys', 'free' => true],
+            // OpenAI-compatible chat APIs (cloud_llm.py in the AI service talks to them).
+            'nvidia' => ['title' => 'NVIDIA NIM (build.nvidia.com)', 'caps' => ['llm'],
+                         'fields' => [$key[0], $model(self::LLM_DEFAULTS['nvidia'])],
+                         'url' => 'https://build.nvidia.com/settings/api-keys', 'free' => true],
+            'qwen' => ['title' => 'Qwen (Alibaba Cloud Model Studio)', 'caps' => ['llm'],
+                       'fields' => [$key[0], $model(self::LLM_DEFAULTS['qwen']),
+                                    ['key' => 'base_url', 'label' => 'Endpoint', 'secret' => false, 'optional' => true,
+                                     'default' => self::QWEN_ENDPOINT]],
+                       'url' => 'https://modelstudio.console.alibabacloud.com/', 'free' => true],
+            'openai_compat' => ['title' => 'OpenAI-compatible (own address)', 'caps' => ['llm'],
+                                'fields' => [['key' => 'base_url', 'label' => 'Base URL (…/v1)', 'secret' => false],
+                                             ['key' => 'model', 'label' => 'Model', 'secret' => false],
+                                             ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true]],
+                                'url' => 'https://platform.openai.com/docs/api-reference/chat', 'free' => false],
         ];
     }
 
@@ -135,6 +191,12 @@ class CloudAiService
             if ($v !== '' && !empty($f['json']) && $id === 'google') {
                 $v = GoogleTts::validateServiceAccount($v);
             }
+            if ($v !== '' && $f['key'] === 'base_url') {
+                $v = self::validBaseUrl($v) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
+            }
+            if ($v !== '' && $f['key'] === 'model' && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#', $v)) {
+                throw new CloudAiException(t('ai_cloud.err_model'));
+            }
             if ($f['secret']) {
                 if ($v !== '') {
                     $set->execute([$key, SecretBox::encrypt($v)]);
@@ -168,6 +230,10 @@ class CloudAiService
             case 'openrouter':
                 $d = self::json(TtsHttp::request('GET', 'https://openrouter.ai/api/v1/key', ['Authorization' => 'Bearer ' . $k], null, 20), $id);
                 return t('ai_cloud.test_ok') . (isset($d['data']['limit_remaining']) ? ' · ' . $d['data']['limit_remaining'] : '');
+            case 'nvidia':
+            case 'qwen':
+            case 'openai_compat':
+                return self::testChat($id);
             case 'deepgram':
                 $d = self::json(TtsHttp::request('GET', 'https://api.deepgram.com/v1/projects', ['Authorization' => 'Token ' . $k], null, 20), $id);
                 return sprintf(t('ai_cloud.test_projects'), count($d['projects'] ?? []));
@@ -176,6 +242,28 @@ class CloudAiService
                 $voices = AiTtsService::voices($id, true);
                 return sprintf(t('ai_tts.test_ok'), count($voices));
         }
+    }
+
+    /**
+     * One tiny chat request: proves address, key and model together
+     * (listing models would not show a wrong model name).
+     */
+    private static function testChat(string $id): string
+    {
+        [$base, $model, $key] = self::llmTarget($id);
+        $headers = ['Content-Type' => 'application/json'];
+        if ($key !== '') {
+            $headers['Authorization'] = 'Bearer ' . $key;
+        }
+        $started = microtime(true);
+        $d = self::json(TtsHttp::request('POST', $base . '/chat/completions', $headers, (string) json_encode([
+            'model' => $model, 'max_tokens' => 5, 'temperature' => 0,
+            'messages' => [['role' => 'user', 'content' => 'Reply with OK.']],
+        ]), 30), $id);
+        if (!isset($d['choices'][0]['message'])) {
+            throw new CloudAiException(t('ai_cloud.err_no_answer'));
+        }
+        return sprintf(t('ai_cloud.test_chat'), $model, (int) round((microtime(true) - $started) * 1000));
     }
 
     private static function json(array $r, string $id): array
@@ -247,6 +335,51 @@ class CloudAiService
         return ['text' => trim($text), 'ms' => (int) round((microtime(true) - $started) * 1000), 'seconds' => round($seconds, 2)];
     }
 
+    // ------------------------------------------------------------ language models
+
+    /** Chat endpoint and model of a provider's language model. */
+    private static function llmTarget(string $id): array
+    {
+        $s = self::llmSettings($id);
+        $fixed = ['openai' => ['https://api.openai.com/v1', 'gpt-4.1-mini'],
+                  'groq' => ['https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'],
+                  'openrouter' => ['https://openrouter.ai/api/v1', 'google/gemini-2.5-flash'],
+                  'nvidia' => ['https://integrate.api.nvidia.com/v1', self::LLM_DEFAULTS['nvidia']],
+                  'qwen' => [self::QWEN_ENDPOINT, self::LLM_DEFAULTS['qwen']]];
+        [$base, $model] = $fixed[$id] ?? ['', ''];
+        return [$s['base_url'] ?? $base, $s['model'] ?? $model, $s['api_key']];
+    }
+
+    /**
+     * One answer of a cloud language model (temperature 0). Google AI uses
+     * Gemini's own API, every other provider the OpenAI chat API.
+     */
+    public static function chat(string $id, string $prompt, int $maxTokens = 300, int $timeout = 30): string
+    {
+        if (!in_array('llm', self::provider($id)['caps'], true) || !self::configured($id)) {
+            throw new CloudAiException(t('ai_cloud.err_no_llm'));
+        }
+        if ($id === 'google_ai') {
+            $d = self::json(TtsHttp::request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+                ['x-goog-api-key' => self::config($id)['api_key'] ?? '', 'Content-Type' => 'application/json'],
+                (string) json_encode(['contents' => [['parts' => [['text' => $prompt]]]],
+                                      'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => $maxTokens]]), $timeout), $id);
+            self::count($id, 'llm_tokens', (float) ($d['usageMetadata']['totalTokenCount'] ?? 0));
+            return trim((string) ($d['candidates'][0]['content']['parts'][0]['text'] ?? ''));
+        }
+        [$base, $model, $key] = self::llmTarget($id);
+        $headers = ['Content-Type' => 'application/json'];
+        if ($key !== '') {
+            $headers['Authorization'] = 'Bearer ' . $key;
+        }
+        $d = self::json(TtsHttp::request('POST', $base . '/chat/completions', $headers, (string) json_encode([
+            'model' => $model, 'temperature' => 0, 'max_tokens' => $maxTokens,
+            'messages' => [['role' => 'user', 'content' => $prompt]],
+        ]), $timeout), $id);
+        self::count($id, 'llm_tokens', (float) ($d['usage']['total_tokens'] ?? 0));
+        return trim((string) ($d['choices'][0]['message']['content'] ?? ''));
+    }
+
     /** @return array{0: string, 1: string} body and Content-Type */
     private static function multipart(array $fields, string $fileField, string $fileName, string $data): array
     {
@@ -316,6 +449,7 @@ class CloudAiService
         foreach (array_keys(self::LANGS) as $lang) {
             $out[] = ['job' => 'tts', 'lang' => $lang];
             $out[] = ['job' => 'stt', 'lang' => $lang];
+            $out[] = ['job' => 'llm', 'lang' => $lang];
         }
         return $out;
     }

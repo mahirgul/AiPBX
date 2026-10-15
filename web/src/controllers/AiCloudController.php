@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/ai/CloudAiService.php';
 require_once __DIR__ . '/../services/LocalAiService.php';
+require_once __DIR__ . '/../services/VoicemailAiService.php';
 
 /**
  * /ai-cloud — AI → Cloud services (admin only): provider accounts with what
@@ -30,6 +31,9 @@ class AiCloudController extends BaseController
                     } elseif (isset($_POST['save_engines'])) {
                         CloudAiService::saveEngines($_POST);
                         $message = t('ai_cloud.msg_engines_saved');
+                    } elseif (isset($_POST['save_vm_ai'])) {
+                        VoicemailAiService::save($_POST);
+                        $message = t('ai_cloud.msg_engines_saved');
                     }
                 } catch (\Throwable $e) {
                     $error = $e->getMessage();
@@ -44,6 +48,8 @@ class AiCloudController extends BaseController
         static::renderPage('ai_cloud/index', [
             'providers' => CloudAiService::forPage(),
             'engines' => $engines,
+            'vm_transcribe' => VoicemailAiService::transcribeOn(),
+            'vm_summary' => getSystemSetting('ai_vm_summary', '0') === '1',
             'local_models' => LocalAiService::models(),
             'csrf_token' => getCSRFToken(),
         ], ['title' => t('ai_cloud.title'), 'message' => $message, 'error' => $error]);
