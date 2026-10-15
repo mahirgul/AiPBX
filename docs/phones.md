@@ -50,7 +50,7 @@ is the phone's:
 | Snom | `snom<model>-<MAC>.htm` (plug and play) or `snom-<mac>.xml` (setting URL) | `snom<model>.htm` |
 | Cisco SPA | `spa<mac>.xml` | `spa<model>.cfg` |
 | Poly | `<mac>.cfg` (master file, names the next one) and `phone<mac>.cfg` (settings) | `000000000000.cfg` |
-| NEC | `dt-<mac>.cfg` | `dt-000000000000.cfg`, `dt-sip.cfg` |
+| NEC | `dt-<mac>.cfg`, `dt-<mac>-local.cfg` | `dt-000000000000.cfg`, `dt-sip.cfg` |
 
 Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, so zero touch
 (below) needs the Profile Rule set once.
@@ -73,7 +73,7 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 | **SIP server (registration)** | the registrar in every vendor's file |
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
 | **Provisioning address** | where phones fetch their files, e.g. `10.23.3.70` (no scheme: HTTP), `10.23.3.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
-| **NTP server** | a name or an IP address (NEC: IP address only) |
+| **NTP server** | a name or an IP address (NEC: IP address only); this server's IP with [NTP server](network-services.md#ntp-server-time) on under Network services |
 | **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [PBX → Phone logs](network-services.md#syslog-phone-logs) |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
@@ -162,6 +162,10 @@ Limits in this first version:
   takes digits only, so it keeps its own (`6633222` by default). Telnet stays on. Keys are not
   written (the phone keeps its own line key layout). The phone's firmware files are NEC's and are
   not part of AiPBX. Turkish is not among the phone's languages, English is used instead.
+  Line ends are Windows (CRLF), as in NEC's own files. Next to the data file the phone reads
+  `dt-<mac>-local.cfg`, its *local override* (settings changed on the phone's menu); AiPBX writes
+  it too, in the phone's own format with the same values, so an old local file cannot override
+  AiPBX's settings and the phone does not log a missing file.
   The file server (where the phone fetches `dt-<mac>.cfg`) cannot be set from the file: set it in
   the phone's menu (FTP, user `NECSDT700`) or by DHCP.
 

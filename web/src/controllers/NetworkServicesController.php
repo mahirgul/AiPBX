@@ -31,6 +31,8 @@ class NetworkServicesController extends BaseController
             'settings' => $settings,
             'status' => $settings['netsvc_mode'] === 'off' ? 'inactive' : NetworkServicesService::status(),
             'ftpStatus' => $settings['netsvc_ftp'] === '1' ? NetworkServicesService::ftpStatus() : 'inactive',
+            'ntpStatus' => $settings['netsvc_ntp_server'] === '1' ? NetworkServicesService::ntpStatus() : 'inactive',
+            'serverIp' => $serverIp,
             'syslogStatus' => $settings['netsvc_syslog'] === '1' ? NetworkServicesService::syslogStatus() : 'inactive',
             'interfaces' => $interfaces,
             'leases' => $leases,

@@ -360,6 +360,20 @@ final class PhoneProvisionTest extends TestCase
         $this->assertStringContainsString('line.1.authentication.password="' . self::$sipPassword . '"', $res['body']);
         $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9ef609f.cfg', '192.0.2.10', '')['status']);
         $this->assertSame(404, PhoneProvisionService::handleRequest(null, 'dt-000000000000.cfg', '192.0.2.10', '')['status']);
+
+        // Windows line ends; the local override file next to it.
+        $this->assertStringContainsString("\r\n", $res['body']);
+        $this->assertStringNotContainsString("\r\r", $res['body']);
+        $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f-local.cfg', '192.0.2.10', '');
+        $this->assertSame(200, $local['status']);
+        $xml = simplexml_load_string($local['body']);
+        $this->assertNotFalse($xml);
+        $this->assertSame('PHONE_CONFIG', $xml->getName());
+        $data = $xml->NEC_Override->DT_PHONE_CONFIG_DATA->attributes();
+        $this->assertSame(self::EXT, (string) $data['line.1.extension']);
+        $this->assertSame(self::$sipPassword, (string) $data['line.1.authentication.password']);
+        $this->assertSame('+3', trim((string) $data['network.gmt.offset']));
+        $this->assertSame(['dt-0060b9ef609f.cfg', 'dt-0060b9ef609f-local.cfg'], (new NecTemplate())->exportFiles('0060b9ef609f'));
     }
 
     public static function fileNames(): array
@@ -386,7 +400,7 @@ final class PhoneProvisionTest extends TestCase
             ['nec', 'dt-0060b9ef609f.cfg', '0060b9ef609f'],
             ['nec', 'dt-0060B9EF609F.cfg', '0060b9ef609f'],
             ['nec', 'dt-000000000000.cfg', ''],
-            ['nec', 'dt-0060b9ef609f-local.cfg', ''],
+            ['nec', 'dt-0060b9ef609f-local.cfg', '0060b9ef609f'],
             ['nec', 'dt-sip.cfg', ''],
         ];
     }

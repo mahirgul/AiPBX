@@ -269,4 +269,17 @@ final class NetworkServicesTest extends TestCase
         $this->assertContains('net=10.0.0.0/8', $args);
         $this->assertSame(['netsvc', 'syslog-off'], NetworkServicesService::syslogArgs(['netsvc_syslog' => '0'] + $v, []));
     }
+
+    public function testNtpServerArgs(): void
+    {
+        $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_ntp_server' => '1']), self::IFACES, ['10.0.0.0/8']);
+        $this->assertSame('1', $v['netsvc_ntp_server']);
+        $args = NetworkServicesService::ntpArgs($v, ['10.0.0.0/8']);
+        $this->assertSame(['netsvc', 'ntp-on'], array_slice($args, 0, 2));
+        $this->assertContains('net=10.0.0.0/8', $args);
+        $this->assertSame(['netsvc', 'ntp-off'], NetworkServicesService::ntpArgs(['netsvc_ntp_server' => '0'] + $v, []));
+        // Without allowed networks (and no DHCP) there is nobody to serve.
+        $this->expectException(\Exception::class);
+        NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ntp_server' => '1'], self::IFACES, []);
+    }
 }

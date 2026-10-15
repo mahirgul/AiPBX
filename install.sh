@@ -962,7 +962,7 @@ InaccessiblePaths=
 InaccessiblePaths=/boot /root -/etc/ssh -/etc/apt -/etc/.git -/etc/.svn
 # ProtectSystem=full makes /etc read-only for Apache and for aipbx-priv run
 # through sudo inside it: "Apply" could not write any Asterisk config.
-ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d
+ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d -/etc/chrony/conf.d
 APACHEOVERRIDE
 systemctl daemon-reload
 
@@ -1526,6 +1526,8 @@ NTPSRC
 # AI PBX: with NTS unreachable, "mix"/"prefer" never select plain NTP sources
 authselectmode ignore
 NTPCONF
+    # aipbx-ntp-server.conf (allow lines for the phones) is written by
+    # aipbx-priv netsvc ntp-on when Network services -> NTP server is on.
     systemctl restart chrony 2>/dev/null || true
 fi
 

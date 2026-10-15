@@ -5,6 +5,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.28.0
+
+- **NTP server** (*Network services → NTP server (time)*): phones take their time
+  from AiPBX (UDP 123, allowed networks only), also when the phone network has no
+  internet. The server's own chrony serves it and keeps a time while its internet
+  sources are unreachable. In DHCP mode option 42 names this server when no NTP
+  server is entered. Enter this server's IP as *NTP server* under *Phones →
+  Provisioning settings* (NEC phones take an IP only).
+- **NEC phones:** the data file is written with Windows line ends (CRLF), as NEC's
+  own files, and AiPBX also writes `dt-<mac>-local.cfg`, the phone's local override
+  file, in the phone's own format with the same values (served over HTTP and written
+  to the TFTP/FTP folder, shown in *Show the phone's file*).
+- See [Network services → NTP server](docs/network-services.md#ntp-server-time).
+
 ## 1.27.1
 
 - *Network services → TFTP files* shows the folder on the server
