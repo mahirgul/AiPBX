@@ -4171,6 +4171,7 @@ return [
     'netsvc.never' => 'никога',
     'netsvc.tftp_title' => 'TFTP файлове',
     'netsvc.tftp_help' => 'Файлове, които TFTP сървърът предоставя, напр. boot файлове или фърмуер. Конфигурационните файлове с име по MAC адрес се отказват: те съдържат SIP паролата и се предоставят само през HTTPS.',
+    'netsvc.tftp_folder' => 'Папка на сървъра: %s — TFTP и FTP обслужват една и съща папка.',
     'netsvc.tftp_empty' => 'Няма файлове',
     'netsvc.col_file' => 'Файл',
     'netsvc.col_size' => 'Размер',

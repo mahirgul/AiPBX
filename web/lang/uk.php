@@ -4171,6 +4171,7 @@ return [
     'netsvc.never' => 'ніколи',
     'netsvc.tftp_title' => 'Файли TFTP',
     'netsvc.tftp_help' => 'Файли, які роздає TFTP-сервер, напр. boot-файли або прошивки. Конфігураційні файли з MAC-адресою в назві відхиляються: вони містять пароль SIP і віддаються лише через HTTPS.',
+    'netsvc.tftp_folder' => 'Тека на сервері: %s — TFTP і FTP роздають одну й ту саму теку.',
     'netsvc.tftp_empty' => 'Немає файлів',
     'netsvc.col_file' => 'Файл',
     'netsvc.col_size' => 'Розмір',
