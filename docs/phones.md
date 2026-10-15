@@ -73,7 +73,8 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 | **SIP server (registration)** | the registrar in every vendor's file |
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
 | **Provisioning address** | where phones fetch their files, e.g. `10.23.3.70` (no scheme: HTTP), `10.23.3.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
-| **NTP server** | a name or an IP address |
+| **NTP server** | a name or an IP address (NEC: IP address only) |
+| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC) |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
 (no redirect to HTTPS), for phones that cannot do HTTPS to an IP address or do not follow a
@@ -152,10 +153,17 @@ Limits in this first version:
 - **Poly:** keys use line key reassignment; BLF keys watch the number, speed dial and park keys
   are *automata* entries of the same list (they dial without a lamp). Expansion module keys follow
   the phone's own keys.
-- **NEC:** account, server, transport, voicemail number, codecs, time zone, language and admin
-  password are written; keys are not (the phone keeps its own line key layout). The phone's
-  firmware files are NEC's and are not part of AiPBX. Turkish is not among the phone's languages,
-  English is used instead.
+- **NEC:** the file follows NEC's data file template for DT700/DT800 group by group. The phone
+  checks every value against its schema and rejects the **whole file** when one is out of range
+  (syslog: *XmlConfig: configuration is invalid*, then it restarts), so AiPBX keeps to the schema:
+  the NTP and syslog servers are written only as IP addresses (a name is left empty), the display
+  name is the extension (no spaces allowed), all six codecs get a distinct rank, the time zone is
+  whole hours with daylight saving off. The admin password is **not** written: the phone's menu
+  takes digits only, so it keeps its own (`6633222` by default). Telnet stays on. Keys are not
+  written (the phone keeps its own line key layout). The phone's firmware files are NEC's and are
+  not part of AiPBX. Turkish is not among the phone's languages, English is used instead.
+  The file server (where the phone fetches `dt-<mac>.cfg`) cannot be set from the file: set it in
+  the phone's menu (FTP, user `NECSDT700`) or by DHCP.
 
 ## Logging and protection
 
