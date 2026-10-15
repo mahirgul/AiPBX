@@ -4171,6 +4171,7 @@ return [
     'netsvc.never' => 'ποτέ',
     'netsvc.tftp_title' => 'Αρχεία TFTP',
     'netsvc.tftp_help' => 'Αρχεία που δίνει ο διακομιστής TFTP, π.χ. αρχεία εκκίνησης ή firmware. Αρχεία ρυθμίσεων με όνομα διεύθυνσης MAC απορρίπτονται: περιέχουν τον κωδικό SIP και εξυπηρετούνται μόνο μέσω HTTPS.',
+    'netsvc.tftp_folder' => 'Φάκελος στον διακομιστή: %s — Τα TFTP και FTP εξυπηρετούν τον ίδιο φάκελο.',
     'netsvc.tftp_empty' => 'Δεν υπάρχουν αρχεία',
     'netsvc.col_file' => 'Αρχείο',
     'netsvc.col_size' => 'Μέγεθος',

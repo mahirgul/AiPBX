@@ -1,6 +1,6 @@
 <?php
 /** @var string $csrf @var array $settings @var string $status @var array $interfaces @var array $leases
- *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus @var string $syslogStatus */
+ *  @var array $tftpFiles @var array $tftpNetworks @var array $hints @var string $provisioningUrl @var string $ftpStatus @var string $syslogStatus @var string $tftpDir */
 $mode = $settings['netsvc_mode'];
 // Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
 $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
@@ -235,6 +235,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     <div class="card-header">
         <div class="card-title"><i class="fas fa-folder-open u-primary"></i> <?php echo t('netsvc.tftp_title'); ?></div>
     </div>
+    <div style="padding: 0 20px 4px;" class="u-fs-12"><i class="fas fa-folder u-muted"></i> <?php echo sprintf(t('netsvc.tftp_folder'), '<code>' . $h($tftpDir) . '</code>'); ?></div>
     <div style="padding: 0 20px 8px;" class="u-muted u-fs-12"><?php echo t('netsvc.tftp_help'); ?></div>
     <div class="table-responsive">
         <table class="data-table">
