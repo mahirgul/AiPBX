@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Camera</string>
     <string name="btn_switch_camera">Camera wisselen</string>
+    <string name="btn_hide_controls">Knoppen verbergen</string>
+    <string name="btn_show_controls">Knoppen tonen</string>
     <string name="err_camera_permission_video">Geen cameratoestemming: het gesprek gaat verder met alleen geluid.</string>
     <string name="err_camera_unavailable">Camera niet beschikbaar: het gesprek gaat verder met alleen geluid.</string>
     <string name="contacts_extensions_listed">toestellen weergegeven</string>

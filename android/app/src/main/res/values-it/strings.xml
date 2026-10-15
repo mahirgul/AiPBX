@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Fotocamera</string>
     <string name="btn_switch_camera">Cambia fotocamera</string>
+    <string name="btn_hide_controls">Nascondi i pulsanti</string>
+    <string name="btn_show_controls">Mostra i pulsanti</string>
     <string name="err_camera_permission_video">Nessun permesso per la fotocamera: la chiamata continua solo con l\'audio.</string>
     <string name="err_camera_unavailable">Fotocamera non disponibile: la chiamata continua solo con l\'audio.</string>
     <string name="contacts_extensions_listed">interni elencati</string>

@@ -77,6 +77,7 @@
 
         <!-- Row 1: Mute, Keypad, Speaker -->
         <LinearLayout
+            android:id="@+id/rowButtons1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
@@ -182,6 +183,7 @@
 
         <!-- Row 2: Hold, Transfer -->
         <LinearLayout
+            android:id="@+id/rowButtons2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="36dp"
@@ -318,18 +320,39 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Red Hangup Button -->
-        <ImageButton
-            android:id="@+id/btnHangup"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/call_btn_red"
-            android:contentDescription="@string/btn_hangup"
-            android:elevation="6dp"
-            android:outlineProvider="background"
-            android:src="@drawable/ic_call_end"
-            app:tint="#FFFFFF" />
+        <!-- Red Hangup Button; in a video call the show/hide controls button beside it -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <ImageButton
+                android:id="@+id/btnHangup"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_gravity="center"
+                android:background="@drawable/call_btn_red"
+                android:contentDescription="@string/btn_hangup"
+                android:elevation="6dp"
+                android:outlineProvider="background"
+                android:src="@drawable/ic_call_end"
+                app:tint="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btnToggleControls"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="24dp"
+                android:background="@drawable/card_rounded_bg"
+                android:backgroundTint="#B31E293B"
+                android:contentDescription="@string/btn_hide_controls"
+                android:padding="14dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_visibility_off"
+                android:visibility="gone"
+                app:tint="#FFFFFF" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- DTMF Keypad Overlay Container (shown on click) -->

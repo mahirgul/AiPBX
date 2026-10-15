@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Vídeo</string>
     <string name="btn_camera">Câmara</string>
     <string name="btn_switch_camera">Mudar de câmara</string>
+    <string name="btn_hide_controls">Ocultar botões</string>
+    <string name="btn_show_controls">Mostrar botões</string>
     <string name="err_camera_permission_video">Sem permissão da câmara: a chamada continua só com áudio.</string>
     <string name="err_camera_unavailable">Câmara indisponível: a chamada continua só com áudio.</string>
     <string name="contacts_extensions_listed">extensões listadas</string>

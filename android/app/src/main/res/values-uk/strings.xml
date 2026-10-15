@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Відео</string>
     <string name="btn_camera">Камера</string>
     <string name="btn_switch_camera">Змінити камеру</string>
+    <string name="btn_hide_controls">Сховати кнопки</string>
+    <string name="btn_show_controls">Показати кнопки</string>
     <string name="err_camera_permission_video">Немає дозволу на камеру: розмова триває лише зі звуком.</string>
     <string name="err_camera_unavailable">Камера недоступна: розмова триває лише зі звуком.</string>
     <string name="contacts_extensions_listed">внутрішніх номерів</string>

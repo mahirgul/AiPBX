@@ -52,6 +52,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
     private var isSpeakerOn = false
     private var isHold = false
     private var isVideoMode = false
+    /** Video call: the button rows and the caller's name are hidden to see the picture. */
+    private var controlsHidden = false
     private var isCameraOn = true
 
     private var callSeconds = 0
@@ -411,6 +413,10 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
             binding.layoutKeypadControls.visibility = View.VISIBLE
         }
 
+        // SHOW / HIDE THE BUTTONS (video call); tapping the picture does the same
+        binding.btnToggleControls.setOnClickListener { setControlsHidden(!controlsHidden) }
+        binding.callContent.setOnClickListener { if (isVideoMode) setControlsHidden(!controlsHidden) }
+
         // HIDE KEYPAD
         binding.btnHideKeypad.setOnClickListener {
             binding.layoutKeypadControls.visibility = View.GONE
@@ -626,7 +632,20 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         binding.layoutCallerInfo.setPadding(pad, pad, pad, pad)
         binding.btnCamera.visibility = View.VISIBLE
         binding.btnSwitchCamera.visibility = View.VISIBLE
+        binding.btnToggleControls.visibility = View.VISIBLE
         if (!isSpeakerOn) setSpeakerphone(true)
+    }
+
+    /** Hides or shows the button rows and the caller info; hang up and this toggle stay. */
+    private fun setControlsHidden(hidden: Boolean) {
+        controlsHidden = hidden
+        val v = if (hidden) View.INVISIBLE else View.VISIBLE
+        binding.rowButtons1.visibility = v
+        binding.rowButtons2.visibility = v
+        binding.layoutCallerInfo.visibility = v
+        binding.btnToggleControls.setImageResource(if (hidden) R.drawable.ic_visibility else R.drawable.ic_visibility_off)
+        binding.btnToggleControls.contentDescription =
+            getString(if (hidden) R.string.btn_show_controls else R.string.btn_hide_controls)
     }
 
     private fun exitVideoMode() {
@@ -640,6 +659,8 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         binding.layoutCallerInfo.setPadding(0, 0, 0, 0)
         binding.btnCamera.visibility = View.GONE
         binding.btnSwitchCamera.visibility = View.GONE
+        binding.btnToggleControls.visibility = View.GONE
+        setControlsHidden(false)
     }
 
     override fun onDestroy() {

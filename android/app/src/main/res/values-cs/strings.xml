@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Video</string>
     <string name="btn_camera">Kamera</string>
     <string name="btn_switch_camera">Přepnout kameru</string>
+    <string name="btn_hide_controls">Skrýt tlačítka</string>
+    <string name="btn_show_controls">Zobrazit tlačítka</string>
     <string name="err_camera_permission_video">Chybí oprávnění ke kameře: hovor pokračuje jen se zvukem.</string>
     <string name="err_camera_unavailable">Kamera není dostupná: hovor pokračuje jen se zvukem.</string>
     <string name="contacts_extensions_listed">linek v seznamu</string>

@@ -413,6 +413,8 @@
     <string name="btn_answer_video">Видео</string>
     <string name="btn_camera">Камера</string>
     <string name="btn_switch_camera">Сменить камеру</string>
+    <string name="btn_hide_controls">Скрыть кнопки</string>
+    <string name="btn_show_controls">Показать кнопки</string>
     <string name="err_camera_permission_video">Нет доступа к камере: разговор продолжается только со звуком.</string>
     <string name="err_camera_unavailable">Камера недоступна: разговор продолжается только со звуком.</string>
     <string name="contacts_extensions_listed">внутренних номеров</string>
