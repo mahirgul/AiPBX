@@ -7,18 +7,42 @@ require_once __DIR__ . '/PhoneTemplate.php';
  * (<DT_PHONE_CONFIG_DATA> with one element per group, settings as attributes).
  * dt-000000000000.cfg is the shared default file and is not served.
  *
- * The phone takes the settings straight from dt-<mac>.cfg, as in NEC's sample
- * per-phone files. Keys are not written (the line key layout stays the
- * phone's default).
+ * The file follows NEC's "Data Configuration File" template for DT700/DT800
+ * group by group, with every setting of the template, as a file proven on
+ * DT710 (ITL-6DE, firmware 2.3.82.21). The phone checks each value against
+ * its schema and rejects the whole file when one is out of range ("XmlConfig:
+ * configuration is invalid", then it restarts), so values follow the schema
+ * ("SIP Phone 2.3 XML Schema Configuration Parameters"):
+ *
+ * - network.sntp.address and network.syslog.address take an IP address only;
+ *   a name is left out (empty).
+ * - line.1.displayname allows no spaces or special characters: the extension.
+ * - phone.audio.*.pref: all six codecs get a distinct rank.
+ * - network.gmt.offset: whole hours (-12 to +13); daylight saving is off
+ *   (dst.start.month 0), as the offset is the zone's current one.
+ * - security.admin.password is not written: the phone's admin menu takes
+ *   digits only, so the phone keeps its own (6633222 by default).
+ *
+ * The boot server (where the phone fetches this file) cannot be set from the
+ * file: it comes from DHCP or the phone's menu. Keys are not written (the line
+ * key layout stays the phone's default).
  */
 final class NecTemplate extends PhoneTemplate
 {
-    /** phone.audio.<name>.pref: 1 = preferred first. */
+    /** phone.audio.<name>.pref ranks, PBX codecs first. */
     private const CODECS = ['g722' => 'g722', 'pcma' => 'pcma', 'pcmu' => 'pcmu', 'g729' => 'g729'];
+    private const OTHER_CODECS = ['g7221.24kbps', 'g7221.32kbps'];
 
     private const LANGUAGES = [
         'en' => 'en_UK', 'nl' => 'nl_NL', 'it' => 'it_IT', 'de' => 'de_DE', 'da' => 'da_DK',
         'sv' => 'sv_SE', 'es' => 'es_ES', 'pt' => 'pt_PT', 'fr' => 'fr_BE',
+    ];
+
+    /** The language menu of NEC's template (label => value). */
+    private const LANGUAGE_MENU = [
+        'English (UK)' => 'en_UK', 'Nederlands (Dutch)' => 'nl_NL', 'Italiano (Italian)' => 'it_IT',
+        'Deutsch (German)' => 'de_DE', 'Danske (Danish)' => 'da_DK', 'Svenka (Swedish)' => 'sv_SE',
+        'Espanol (Spanish)' => 'es_ES', 'Portugues (Portuguese)' => 'pt_PT', 'Francais (French)' => 'fr_BE',
     ];
 
     public function vendor(): string
@@ -57,52 +81,125 @@ final class NecTemplate extends PhoneTemplate
 
     public function render(array $ctx): string
     {
-        $ext = self::xml($ctx['extension']);
+        $ext = self::xml($ctx['extension'], 31);
         $srtp = (int) $ctx['srtp'];
+        $proxy = self::xml($ctx['proxy'], 255);
 
         $groups = [
             'DT_LINE_DATA' => [
                 'line.1.extension' => $ext,
-                'line.1.displayname' => self::xml($ctx['display_name']),
+                'line.1.displayname' => $ext,
                 'line.1.primary.address' => self::xml($ctx['server'], 255),
                 'line.1.primary.port' => (string) (int) $ctx['port'],
-                'line.1.outboundproxy.address' => self::xml($ctx['proxy'], 255),
-                'line.1.outboundproxy.port' => $ctx['proxy'] !== '' ? (string) (int) $ctx['port'] : '',
+                'line.1.secondary.address' => '',
+                'line.1.secondary.port' => '',
+                'line.1.outboundproxy.address' => $proxy,
+                'line.1.outboundproxy.port' => $proxy !== '' ? (string) (int) $ctx['port'] : '',
                 'line.1.authentication.username' => $ext,
-                'line.1.authentication.password' => self::xml($ctx['sip_password'], 128),
+                'line.1.authentication.password' => self::xml($ctx['sip_password'], 31),
                 // Anything dialled is sent after the inter-digit timeout or #.
                 'line.1.digitmap' => 'x.T|[*]x.T|[#]x.T',
                 'line.1.digitmap.impossiblematch' => '1',
                 'line.1.maxcalls' => '3',
                 'line.1.srtp.mode' => $srtp > 0 ? '1' : '0',
+                'line.1.srtp.authentication' => '1',
+                'line.1.pin.code.hiding' => '0',
+                'line.1.sip.ip.mode' => '0',
             ],
             'DT_SIP_DATA' => [
                 'sip.reg.expiry' => '300',
-                // 1 = UDP, 3 = TLS
-                'sip.transport' => $ctx['transport'] === 'tls' ? '3' : '1',
+                // 1 = UDP, 4 = TLS
+                'sip.transport' => $ctx['transport'] === 'tls' ? '4' : '1',
                 'sip.mwi.mode' => '1',
                 'sip.prack.mode' => '2',
+                'sip.hold.reinvite' => '0',
+                'sip.looserouting' => '1',
                 'sip.local.port' => '5060',
+                'sip.sessiontimer.mode' => '0',
+                'sip.sessiontimer.refresh.interval' => '1800',
+                'sip.sessiontimer.minse' => '90',
                 'sip.subscription.expiry' => '3600',
             ],
-            'DT_PHONE_DATA' => [
-                'phone.voicemail.extension' => self::xml($ctx['voicemail']),
-                'phone.show.registration.name' => '1',
-                'phone.dial.interdigit.timeout' => '4',
-            ],
             'DT_PHONE_NETWORK_DATA' => [
-                'network.sntp.address' => self::xml($ctx['ntp'], 255),
-                'network.gmt.offset' => self::offsetHours((int) $ctx['utc_offset']),
+                'network.sntp.address' => self::ipOnly($ctx['ntp']),
+                'network.sntp.address2' => '',
+                'network.sntp.address3' => '',
+                'network.gmt.offset' => self::wholeHours((int) $ctx['utc_offset']),
+                'network.syslog.address' => self::ipOnly($ctx['syslog'] ?? ''),
+                'network.syslog.address2' => '',
+                'network.syslog.address3' => '',
+                'network.syslog.port' => '514',
+                'network.syslog.level' => '5',
+                'network.lanport.l2.vlan.priority' => '6',
+                'network.lanport.l3.callcontrol.priority' => '48',
+                'network.lanport.l3.voice.priority' => '46',
+                'network.pcport.mode' => '0',
+                'network.pcport.speed' => '1',
+                'network.pcport.vlan.mode' => '1',
+                'network.pcport.vlan.id' => '1',
+                'network.pcport.vlan.priority' => '5',
+                'network.lldp.mode' => '0',
+                'network.lldp.power.priority' => '0',
+                'network.rtp.base.port' => '49000',
+                'network.srtp.base.port' => '31000',
+                'network.ipm.self.port' => '3530',
+                'network.http.user.agent.name' => '',
+                'network.file.transfer.timeout' => '90',
+                'network.vpn.gateway.address' => '',
+                'network.vpn.mode' => '0',
+                'network.vpn.ip.address' => '',
+                'network.nat.keep.alive' => '20',
+                'network.nat.port' => '4500',
+                'network.ip.mode' => '2',
+                'network.ip.preference' => '0',
+                'network.ipv6.slaac' => '0',
+                'network.tftp.timeout' => '',
+            ],
+            'DT_PHONE_DST_DATA' => [
+                // 0 = no daylight saving: the offset above is the zone's current one.
+                'dst.start.month' => '0', 'dst.end.month' => '10',
+                'dst.start.dayofmonth' => '0', 'dst.end.dayofmonth' => '0',
+                'dst.start.weekday' => '1', 'dst.end.weekday' => '1',
+                'dst.start.occurence' => '2', 'dst.end.occurence' => '1',
+                'dst.start.last' => '1', 'dst.end.last' => '1',
+                'dst.start.change.time' => '120', 'dst.end.change.time' => '180',
+                'dst.time.adjustment' => '60',
             ],
             'DT_PHONE_SECURITY_DATA' => [
-                'security.admin.password' => self::xml($ctx['admin_password'], 128),
+                'security.telnet.mode' => '1',
+                'security.snmp.mode' => '0',
+                'security.ipphn.mgr.mode' => '1',
+                'security.push.access' => '1',
+                'security.push.server.address' => '',
+                'security.push.server.port' => '82',
+                'security.8021x.enable' => '0',
+                'security.usb.access' => '1',
+                'security.signed.fw.updates' => '1',
+            ],
+            'DT_PHONE_DATA' => [
+                'phone.voicemail.extension' => self::xml($ctx['voicemail'], 31),
+                'phone.show.registration.name' => '1',
+                'phone.ring.during.dialing' => '1',
+                'phone.dial.firstdigit.timeout' => '60',
+                'phone.dial.interdigit.timeout' => '4',
+                'phone.dial.openended.timeout' => '4',
+                'phone.dial.waitonhook.timeout' => '4',
+                'phone.audio.rfc2833.payload' => '96',
+                'phone.audio.rfc2833.dtmf.relay' => '0',
+            ],
+            'DT_PHONE_FEATURE_DATA' => [
+                'feature.hotline.support' => '0',
+                'feature.dnd.support' => '0',
+                'feature.pickup.support' => '0',
+                'feature.voicemail.support' => '1',
+                'feature.ipdial.support' => '0',
             ],
             'DT_USER_DATA' => [
                 'user.lang.value' => self::LANGUAGES[$ctx['language']] ?? 'en_UK',
             ],
         ];
 
-        // Codecs in the PBX's order; the others after them.
+        // Codecs in the PBX's order, then the phone's others: six distinct ranks.
         $rank = 1;
         $prefs = [];
         foreach ($ctx['codecs'] as $c) {
@@ -110,11 +207,17 @@ final class NecTemplate extends PhoneTemplate
                 $prefs[self::CODECS[$c]] = $rank++;
             }
         }
-        foreach (self::CODECS as $name) {
+        foreach ([...array_values(self::CODECS), ...self::OTHER_CODECS] as $name) {
             $prefs[$name] = $prefs[$name] ?? $rank++;
         }
         foreach ($prefs as $name => $p) {
             $groups['DT_PHONE_DATA']["phone.audio.{$name}.pref"] = (string) $p;
+        }
+        $i = 1;
+        foreach (self::LANGUAGE_MENU as $label => $value) {
+            $groups['DT_USER_DATA']["user.lang.menu.label.$i"] = $label;
+            $groups['DT_USER_DATA']["user.lang.menu.value.$i"] = $value;
+            $i++;
         }
 
         $xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
@@ -123,10 +226,24 @@ final class NecTemplate extends PhoneTemplate
         foreach ($groups as $group => $attrs) {
             $xml .= "  <{$group}";
             foreach ($attrs as $name => $value) {
-                $xml .= "\n    {$name}=\"{$value}\"";
+                $xml .= " {$name}=\"{$value}\"";
             }
             $xml .= " />\n";
         }
         return $xml . "</DT_PHONE_CONFIG_DATA>\n";
+    }
+
+    /** An IPv4 address, or '' (the phone takes no names here). */
+    private static function ipOnly(string $value): string
+    {
+        $value = trim($value);
+        return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false ? $value : '';
+    }
+
+    /** network.gmt.offset: whole hours, "+3" / "-5", within -12 .. +13. */
+    private static function wholeHours(int $minutes): string
+    {
+        $h = max(-12, min(13, (int) round($minutes / 60)));
+        return ($h < 0 ? '-' : '+') . abs($h);
     }
 }
