@@ -72,7 +72,7 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 |-------|-----------------------|
 | **SIP server (registration)** | the registrar in every vendor's file |
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
-| **Provisioning address** | where phones fetch their files, e.g. `http://10.23.3.70`: the per-phone URLs on the page and DHCP option 66/160 |
+| **Provisioning address** | where phones fetch their files, e.g. `10.23.3.70` (no scheme: HTTP), `10.23.3.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
 | **NTP server** | a name or an IP address |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**

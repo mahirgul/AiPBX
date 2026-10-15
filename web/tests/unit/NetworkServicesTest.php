@@ -74,9 +74,15 @@ final class NetworkServicesTest extends TestCase
     public function testDhcpWithoutTftpHasNoNetworks(): void
     {
         $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_tftp' => '']), self::IFACES, []);
-        $args = NetworkServicesService::privArgs($v, ['10.0.0.0/8'], 'http://not-https/provision/');
+        $args = NetworkServicesService::privArgs($v, ['10.0.0.0/8'], 'ftp://wrong/provision/');
         $this->assertContains('tftp=0', $args);
         $this->assertEmpty(array_filter($args, fn($a) => str_starts_with($a, 'net=') || str_starts_with($a, 'url=')));
+    }
+
+    public function testPlainHttpAddressGoesToOption66(): void
+    {
+        $v = NetworkServicesService::validate($this->dhcpForm([]), self::IFACES, []);
+        $this->assertContains('url=http://10.23.3.70/provision/', NetworkServicesService::privArgs($v, [], 'http://10.23.3.70/provision/'));
     }
 
     /** @return array<string, array{0: array<string, string>}> */

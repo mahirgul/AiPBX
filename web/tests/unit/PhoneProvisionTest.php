@@ -625,6 +625,8 @@ final class PhoneProvisionTest extends TestCase
             $set->execute(['provision_base_url', 'http://10.23.3.70']);
             $this->assertSame('10.23.3.70', PhoneProvisionService::sipServer());
             $this->assertSame('http://10.23.3.70/provision/', NetworkServicesService::provisioningUrl());
+            $set->execute(['provision_base_url', '10.23.3.70:8080']);           // no scheme: http
+            $this->assertSame('http://10.23.3.70:8080/provision/', NetworkServicesService::provisioningUrl());
         } finally {
             getDB()->exec("DELETE FROM sys_settings WHERE setting_key IN ('provision_sip_server', 'provision_base_url')");
         }
@@ -645,5 +647,19 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(['0004f2aabbcc.cfg', 'phone0004f2aabbcc.cfg'], array_column($poly, 'name'));
         $id = PhoneProvisionService::upsertPhone(0, '001565aabbdd', 'yealink-t46u', 0);
         $this->assertNull(PhoneProvisionService::previewFiles(PhoneProvisionService::getPhone($id)));
+    }
+
+    public function testProvisioningAddressNeedsNoScheme(): void
+    {
+        $s = PhoneProvisionService::settings();
+        $s['provision_codecs'] = explode(',', $s['provision_codecs']);
+        foreach (['10.23.3.70', '10.23.3.70:8080', 'pbx.example.com', 'HTTP://10.23.3.70', 'https://pbx.example.com:8443/'] as $ok) {
+            $r = PhoneProvisionService::saveSettings(['csrf_token' => 'phones-test-csrf', 'provision_base_url' => $ok] + $s);
+            $this->assertTrue($r['success'], $ok . ': ' . $r['message']);
+        }
+        foreach (['10.23.3.70/provision', 'ftp://10.23.3.70', 'http://', '10.23.3.70:'] as $bad) {
+            $r = PhoneProvisionService::saveSettings(['csrf_token' => 'phones-test-csrf', 'provision_base_url' => $bad] + $s);
+            $this->assertFalse($r['success'], $bad);
+        }
     }
 }

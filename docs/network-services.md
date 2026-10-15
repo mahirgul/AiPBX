@@ -24,12 +24,13 @@ ticked.
 
 Interface, first and last address, netmask, gateway, DNS servers (up to 3), NTP servers (option 42,
 up to 3), lease time. The range must lie in the network of the chosen interface and must not
-contain the server's own address. The phones get:
+contain the server's own address. The provisioning address is the one on *PBX → Phones → Provisioning
+settings* (else the portal's address). The phones get:
 
 | Option | Value | For |
 |--------|-------|-----|
-| 66 | `https://<portal>/provision/` | Yealink, Grandstream, Fanvil, Snom, Cisco |
-| 160 | `https://<portal>/provision/` | Poly |
+| 66 | `<provisioning address>/provision/` (http or https) | Yealink, Grandstream, Fanvil, Snom, Cisco |
+| 160 | `<provisioning address>/provision/` | Poly |
 | 150 | this server (when TFTP is on) | Cisco SPA |
 | 42 | the NTP servers entered | all phones |
 
