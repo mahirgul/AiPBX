@@ -140,6 +140,9 @@ class SipWebRtcEngine(private val context: Context) {
                     val crashed = detail?.didCrash() ?: false
                     Log.e(TAG, "WebView render process gone! didCrash=$crashed. Recreating engine...")
                     isEngineReady = false
+                    // The SIP stack lived in that process: nothing is registered any more.
+                    currentConnectionStatus = ConnectionStatus.DISCONNECTED
+                    listener?.onConnectionStatusChanged(ConnectionStatus.DISCONNECTED)
                     try {
                         webView?.destroy()
                     } catch (e: Exception) {
@@ -218,10 +221,11 @@ class SipWebRtcEngine(private val context: Context) {
         }
     }
 
-    fun reRegister() {
+    /** [force]: send a REGISTER even when the engine believes it is registered (watchdog). */
+    fun reRegister(force: Boolean = false) {
         handler.post {
-            Log.d(TAG, "Triggering reRegister in WebView")
-            webView?.evaluateJavascript("reRegister();", null)
+            Log.d(TAG, "Triggering reRegister in WebView (force=$force)")
+            webView?.evaluateJavascript("reRegister($force);", null)
         }
     }
 

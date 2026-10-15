@@ -712,13 +712,16 @@
             }
         }
 
-        function reRegister() {
-            log("reRegister requested from native watchdog");
+        // force (native watchdog): REGISTER even when registered. A socket that died
+        // without an event still claims to be registered; the request then times out,
+        // registrationFailed reports DISCONNECTED and the app connects again.
+        function reRegister(force) {
+            log("reRegister requested from native watchdog (force=" + !!force + ")");
             if (ua) {
                 try {
                     if (ua.isConnected && ua.isConnected()) {
-                        if (!ua.isRegistered || !ua.isRegistered()) {
-                            log("ua connected but not registered, triggering ua.register()");
+                        if (force || !ua.isRegistered || !ua.isRegistered()) {
+                            log("triggering ua.register()");
                             ua.register();
                         } else {
                             log("ua is already registered and connected; keeping alive");
