@@ -22,6 +22,23 @@ class PhoneController extends BaseController
                 : ['success' => true, 'password' => PhoneProvisionService::adminPassword($phone)]);
         }
 
+        // In-page request: the file(s) the phone gets now, passwords hidden unless asked for.
+        if (static::isPost() && ($_POST['action'] ?? '') === 'preview') {
+            $reveal = !empty($_POST['reveal']);
+            static::requireAjaxAccess('phones', $reveal ? 'edit' : 'view', t('auth.no_edit_module'), t('common.invalid_csrf'));
+            $phone = PhoneProvisionService::getPhone((int) ($_POST['phone_id'] ?? 0));
+            if ($phone === null) {
+                static::json(['success' => false, 'message' => t('phones.err_not_found')]);
+            }
+            if ($reveal) {
+                writeAuditLog('phones', 'phone', (int) $phone['id'], PhoneModels::formatMac((string) $phone['mac']), 'show_file_passwords', $_SESSION['user_id'] ?? null);
+            }
+            $files = PhoneProvisionService::previewFiles($phone, $reveal);
+            static::json($files === null
+                ? ['success' => false, 'message' => t('phones.preview_unassigned')]
+                : ['success' => true, 'files' => $files, 'revealed' => $reveal]);
+        }
+
         $csrf = static::csrfToken();
         $notices = static::handlePost([
             'save_phone' => fn() => PhoneProvisionService::savePhone($_POST),

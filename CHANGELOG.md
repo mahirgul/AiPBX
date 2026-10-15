@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.25.1
+
+- **Show the phone's file** (*PBX → Phones*, the file icon in a phone's row): a
+  dialog shows exactly what AiPBX writes for that phone, one tab per file, with a
+  copy button. Passwords are hidden; users who may edit phones can show them
+  (written to the audit log).
+- See [Desk phones → What is written to the phone](docs/phones.md#what-is-written-to-the-phone).
+
 ## 1.25.0
 
 - **Server addresses for phone networks without DNS** (*PBX → Phones →

@@ -834,6 +834,32 @@ class PhoneProvisionService
         return $port > 0 ? $port : ($tls ? 5061 : 5060);
     }
 
+    /**
+     * The files this phone gets, as the phone would receive them now (the
+     * page's "show file" button). Passwords are replaced by dots unless
+     * $reveal. null when the phone has no active user (it gets no file).
+     * @return list<array{name: string, content: string}>|null
+     */
+    public static function previewFiles(array $phone, bool $reveal = false): ?array
+    {
+        $tpl = PhoneTemplates::forModel((string) $phone['model']);
+        $user = $phone['user_id'] ? self::userRow((int) $phone['user_id']) : null;
+        if ($tpl === null || $user === null || (int) $user['is_active'] !== 1) {
+            return null;
+        }
+        $ctx = self::buildContext($phone, $user);
+        $secrets = $reveal ? [] : array_values(array_filter([$ctx['sip_password'], $ctx['admin_password']], fn($s) => strlen((string) $s) >= 4));
+        $out = [];
+        foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
+            $content = $tpl->renderFile($name, $ctx);
+            foreach ($secrets as $s) {
+                $content = str_replace((string) $s, '••••••••', $content);
+            }
+            $out[] = ['name' => $name, 'content' => $content];
+        }
+        return $out;
+    }
+
     /** The web admin password of a phone (shown on the page on request). */
     public static function adminPassword(array $phone): string
     {
