@@ -30,12 +30,12 @@ $only_in_tr = array_diff(array_keys($tr), array_keys($en));
 $only_in_en = array_diff(array_keys($en), array_keys($tr));
 
 if (!empty($only_in_tr)) {
-    echo "Sadece tr.php'de olan anahtarlar (" . count($only_in_tr) . "):\n";
+    echo "Keys only in tr.php (" . count($only_in_tr) . "):\n";
     foreach ($only_in_tr as $k) echo "  - $k\n";
     $problems += count($only_in_tr);
 }
 if (!empty($only_in_en)) {
-    echo "Sadece en.php'de olan anahtarlar (" . count($only_in_en) . "):\n";
+    echo "Keys only in en.php (" . count($only_in_en) . "):\n";
     foreach ($only_in_en as $k) echo "  - $k\n";
     $problems += count($only_in_en);
 }

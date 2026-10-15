@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/FaxMailSettingsService.php';
 
+/**
+ * Fax Mail page (/fax-mail-settings).
+ * Renders templates/views/fax_mail_settings/index.php.
+ * Logic: FaxMailSettingsRepository, FaxMailSettingsService.
+ * POST actions: save_fax_email_settings.
+ * Admins only.
+ */
 class FaxMailSettingsController extends BaseController
 {
     public static function index(): void

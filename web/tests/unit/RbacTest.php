@@ -23,12 +23,12 @@ require_once dirname(__DIR__, 2) . '/auth.php';
  */
 final class RbacTest extends TestCase
 {
-    private const KILITLI = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'phones', 'web_widgets'];
+    private const LOCKED = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'phones', 'web_widgets'];
 
     protected function setUp(): void
     {
         if (DB_NAME !== 'asterisk_test') {
-            $this->fail('testler yalnizca asterisk_test uzerinde kosmali');
+            $this->fail('tests must run only on asterisk_test');
         }
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
@@ -45,56 +45,56 @@ final class RbacTest extends TestCase
             'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
              VALUES (?, ?, 1, 1, 1, 1)'
         );
-        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $rol) {
-            foreach (self::KILITLI as $modul) {
-                $stmt->execute([$rol, $modul]);
+        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $role_key) {
+            foreach (self::LOCKED as $module) {
+                $stmt->execute([$role_key, $module]);
             }
         }
     }
 
-    public static function kilitliModuller(): array
+    public static function lockedModules(): array
     {
         return [['roles'], ['system_users'], ['firewall'], ['fail2ban'], ['mail_settings'], ['phones'], ['web_widgets']];
     }
 
-    #[DataProvider('kilitliModuller')]
-    public function testDbdeACIKCA_IZIN_VERILSE_BILE_adminDisindakiRollerReddedilir(string $modul): void
+    #[DataProvider('lockedModules')]
+    public function testNonAdminRolesAreRefusedEvenIfTheDatabaseAllows(string $module): void
     {
-        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $rol) {
-            $_SESSION['user_role'] = $rol;
+        foreach (['read_only_admin', 'cc_agent', 'cc_manager', 'fax_user', 'user'] as $role_key) {
+            $_SESSION['user_role'] = $role_key;
 
             $this->assertFalse(
-                hasModulePermission($modul, 'access'),
-                "'{$rol}' rolu '{$modul}' modulune erisebiliyor — DEVRE KESICI GEVSEMIS! "
-                . 'Bu, yetki yukseltmesine acik bir durum.'
+                hasModulePermission($module, 'access'),
+                "role '{$role_key}' can access module '{$module}' — THE CIRCUIT BREAKER IS LOOSE! "
+                . 'This allows privilege escalation.'
             );
         }
     }
 
-    #[DataProvider('kilitliModuller')]
-    public function testAdminKilitliModulleriHerZamanGorebilir(string $modul): void
+    #[DataProvider('lockedModules')]
+    public function testAdminAlwaysSeesLockedModules(string $module): void
     {
         $_SESSION['user_role'] = 'admin';
 
         $this->assertTrue(
-            hasModulePermission($modul, 'access'),
-            "admin '{$modul}' modulune erisemiyor — kendini disarida birakma (kilitlenme) riski!"
+            hasModulePermission($module, 'access'),
+            "admin cannot access module '{$module}' — risk of locking yourself out!"
         );
     }
 
-    public function testBilinmeyenRolKilitliModulleriGoremez(): void
+    public function testUnknownRoleCannotSeeLockedModules(): void
     {
-        $_SESSION['user_role'] = '__olmayan_rol__';
-        foreach (self::KILITLI as $modul) {
-            $this->assertFalse(hasModulePermission($modul, 'access'));
+        $_SESSION['user_role'] = '__missing_role__';
+        foreach (self::LOCKED as $module) {
+            $this->assertFalse(hasModulePermission($module, 'access'));
         }
     }
 
-    public function testOturumsuzKullaniciKilitliModulleriGoremez(): void
+    public function testUserWithoutSessionCannotSeeLockedModules(): void
     {
         unset($_SESSION['user_role']);
-        foreach (self::KILITLI as $modul) {
-            $this->assertFalse(hasModulePermission($modul, 'access'));
+        foreach (self::LOCKED as $module) {
+            $this->assertFalse(hasModulePermission($module, 'access'));
         }
     }
 
@@ -103,7 +103,7 @@ final class RbacTest extends TestCase
      * it can NEVER edit ('edit') or delete ('delete') in any module, even when
      * the DB explicitly allows it. It must stay a viewer only.
      */
-    public function testReadOnlyAdminHicbirModuldeDuzenlemeVeSilmeYapamaz(): void
+    public function testReadOnlyAdminCannotEditOrDeleteAnywhere(): void
     {
         $_SESSION['user_role'] = 'read_only_admin';
         $modules = ['trunks', 'extensions', 'queues', 'asterisk_settings', 'brand_settings', 'pending_sync', 'push_settings', 'fax_send', 'fax_sent', 'my_phone', 'chat'];
@@ -111,16 +111,16 @@ final class RbacTest extends TestCase
         foreach ($modules as $m) {
             $this->assertFalse(
                 hasModulePermission($m, 'edit'),
-                "read_only_admin '{$m}' modulunde edit yapabiliyor — Izleyici ayar yapamamali!"
+                "read_only_admin can edit in module '{$m}' — a viewer must not change settings!"
             );
             $this->assertFalse(
                 hasModulePermission($m, 'delete'),
-                "read_only_admin '{$m}' modulunde delete yapabiliyor — Izleyici silme yapamamali!"
+                "read_only_admin can delete in module '{$m}' — a viewer must not delete!"
             );
         }
     }
 
-    public function testIsPostDeleteRequestAlgilama(): void
+    public function testIsPostDeleteRequestDetection(): void
     {
         $_POST = [];
         $_GET = [];
@@ -147,7 +147,7 @@ final class RbacTest extends TestCase
         $_GET = [];
     }
 
-    public function testUiDeleteFormVeUiRowActionsSilmeYetkisiYoksaGorunmez(): void
+    public function testDeleteControlsAreHiddenWithoutDeletePermission(): void
     {
         require_once dirname(__DIR__, 2) . '/src/ui_helpers.php';
 
@@ -165,7 +165,7 @@ final class RbacTest extends TestCase
 
         // can_delete=0, so uiDeleteForm must return empty
         $html = uiDeleteForm(1, 'trunk_id', 'delete_trunk');
-        $this->assertSame('', $html, 'can_delete=0 olan kullaniciya uiDeleteForm silme butonu basmamali!');
+        $this->assertSame('', $html, 'uiDeleteForm must not print a delete button for a user with can_delete=0!');
 
         // uiRowActions must not contain the delete button either
         $actionsHtml = uiRowActions(['id' => 1], 'openEditTrunkModal', 'trunk_id', 'delete_trunk');

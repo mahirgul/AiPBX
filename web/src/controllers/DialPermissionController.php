@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/DialPermissionService.php';
 
+/**
+ * Calling Permissions page (/dial-permissions).
+ * Renders templates/views/dial_permissions/index.php with assets/js/dial_permissions.js.
+ * Logic: DialPermissionService.
+ * POST actions: delete_group, delete_rule, save_group, save_rule.
+ * Admins only.
+ */
 class DialPermissionController extends BaseController
 {
     public static function index(): void

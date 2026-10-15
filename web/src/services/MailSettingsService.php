@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../file_helper.php';
 require_once __DIR__ . '/../priv_helper.php';
 
+/**
+ * Admin → E-mail: SMTP relay settings. The portal does not send mail itself:
+ * syncPostfix() configures the local Postfix as a relay through aipbx-priv (postfix
+ * relay/tls/sasl/postmap, relay-clear), and every mail of AiPBX goes through Postfix.
+ * sendTestEmail() follows the test message in the Postfix log (aipbx-priv postfix trace) to report
+ * whether the relay accepted it.
+ */
 class MailSettingsService
 {
     const SASL_PASSWD = '/etc/postfix/sasl_passwd';

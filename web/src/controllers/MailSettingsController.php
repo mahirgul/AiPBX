@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/MailSettingsService.php';
 
+/**
+ * E-Mail page (/mail-settings).
+ * Renders templates/views/mail_settings/index.php.
+ * Logic: MailSettingsRepository, MailSettingsService.
+ * POST actions: save_mail_settings, send_test_email.
+ * Admins only.
+ */
 class MailSettingsController extends BaseController
 {
     public static function index(): void

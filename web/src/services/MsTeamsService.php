@@ -2,6 +2,11 @@
 
 require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
 
+/**
+ * Integration → Microsoft Teams: Direct Routing settings (SBC address, TLS
+ * certificate check), the call notification webhook, and a PowerShell script for the
+ * Microsoft 365 side generated from the user mappings.
+ */
 class MsTeamsService
 {
     /**

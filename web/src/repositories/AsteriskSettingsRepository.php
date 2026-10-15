@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the PBX Settings page.
+ * Tables: sys_settings (PBX settings), pbx_announcements (sound choices).
+ * Used by AsteriskSettingsController.
+ */
 class AsteriskSettingsRepository extends BaseRepository
 {
     protected static string $table = 'sys_settings';

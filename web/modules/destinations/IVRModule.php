@@ -1,6 +1,11 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'ivr': an IVR menu (pbx_ivrs).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class IVRModule implements PBXDestinationInterface {
     public function getKey(): string { return 'ivr'; }
     public function getName(): string { return '🎙️ ' . \t('dest.ivr'); }

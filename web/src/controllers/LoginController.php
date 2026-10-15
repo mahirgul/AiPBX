@@ -2,6 +2,12 @@
 require_once __DIR__ . '/../services/LoginService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
 
+/**
+ * Sign-in page (/login), public: password with a small sum captcha, Google and passkey
+ * sign-in; LoginService locks out after 5 failures in 15 minutes and continues to
+ * /login-2fa (two-factor) or /force-reset (password must be changed).
+ * Logic: GoogleAuthService, LoginService.
+ */
 class LoginController extends BaseController
 {
     public static function index(): void

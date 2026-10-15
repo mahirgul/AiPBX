@@ -32,7 +32,7 @@ chdir($SMOKE_ROOT);
 $ROUTES = require $SMOKE_ROOT . '/src/routes.php';
 if (!isset($ROUTES[$path]) || !is_array($ROUTES[$path])) {
     file_put_contents($outfile, json_encode([
-        'path' => $path, 'status' => 'skip', 'error' => 'array-olmayan rota',
+        'path' => $path, 'status' => 'skip', 'error' => 'non-array route',
     ]));
     exit(0);
 }
@@ -89,7 +89,7 @@ register_shutdown_function(function () use ($path, $lang, $role, $outfile) {
         $error = $last['message'] . ' @ ' . $last['file'] . ':' . $last['line'];
     }
 
-    $sonuc = [
+    $result = [
         'path'   => $path,
         'lang'   => $lang,
         'role'   => $role,
@@ -108,14 +108,14 @@ register_shutdown_function(function () use ($path, $lang, $role, $outfile) {
         'output'     => mb_strcut($html, 0, 200000, 'UTF-8'),
     ];
 
-    $json = json_encode($sonuc);
+    $json = json_encode($result);
     if ($json === false) {
         // NO SILENT FAILURE: if the encoding is still broken, drop the output
         // but always write the result itself, otherwise the error looks like
         // "produced no result" and the real cause is hidden.
-        $sonuc['output'] = '';
-        $sonuc['error']  = trim($sonuc['error'] . ' [cikti JSON\'a kodlanamadi: ' . json_last_error_msg() . ']');
-        $json = json_encode($sonuc);
+        $result['output'] = '';
+        $result['error']  = trim($result['error'] . ' [cikti JSON\'a kodlanamadi: ' . json_last_error_msg() . ']');
+        $json = json_encode($result);
     }
     file_put_contents($outfile, $json);
 });

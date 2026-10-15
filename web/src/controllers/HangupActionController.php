@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Terminator page (/end-call).
+ * Renders templates/views/end_call/index.php with assets/js/end_call.js.
+ * Logic: HangupActionRepository, HangupActionService.
+ * POST actions: delete_hangup_action, save_hangup_action.
+ * Admins only.
+ */
 class HangupActionController extends BaseController
 {
     public static function index(): void

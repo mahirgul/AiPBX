@@ -6,6 +6,11 @@
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
 
+/**
+ * Voicemail of a user: settings, the message list read from Asterisk's spool
+ * (/var/spool/asterisk/voicemail/default/<ext>/<folder>), playing, marking heard and
+ * deleting; heard messages moved to S3 storage are listed from voicemail_archive.
+ */
 class VoicemailService {
     public static function getUserVoicemailSettings($userId) {
         $db = getDB();

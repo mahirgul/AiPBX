@@ -29,13 +29,13 @@ def upload_feature():
         # Check existing listings to find languages
         listings = service.edits().listings().list(packageName=PACKAGE_NAME, editId=edit_id).execute()
         languages = [item['language'] for item in listings.get('listings', [])]
-        print(f"Mevcut Magaza Dilleri: {languages}")
+        print(f"Store languages: {languages}")
 
         if not languages:
             languages = ['tr-TR']
 
         for lang in languages:
-            print(f"'{lang}' dili icin Feature Graphic yukleniyor...")
+            print(f"Uploading the feature graphic for language '{lang}'...")
             # First delete existing if any
             try:
                 service.edits().images().deleteall(
@@ -45,7 +45,7 @@ def upload_feature():
                     imageType='featureGraphic'
                 ).execute()
             except Exception as del_err:
-                print(f"   (Eski resim silme uyarisi: {del_err})")
+                print(f"   (warning while deleting the old image: {del_err})")
 
             media = MediaFileUpload(GRAPHIC_PATH, mimetype='image/png')
             res = service.edits().images().upload(
@@ -55,19 +55,19 @@ def upload_feature():
                 imageType='featureGraphic',
                 media_body=media
             ).execute()
-            print(f"   Basarili! Resim ID: {res['image']['id']}")
+            print(f"   Done. Image ID: {res['image']['id']}")
 
         service.edits().commit(packageName=PACKAGE_NAME, editId=edit_id).execute()
-        print("Tebrikler! Feature Graphic basariyla kaydedildi.")
+        print("Done: feature graphic saved.")
 
     except HttpError as e:
-        print(f"HTTP Hatasi: {e.resp.status}")
+        print(f"HTTP error: {e.resp.status}")
         try:
             print(json.loads(e.content.decode('utf-8')))
         except Exception:
             print(e.content)
     except Exception as ex:
-        print(f"Hata: {ex}")
+        print(f"Error: {ex}")
 
 if __name__ == '__main__':
     upload_feature()

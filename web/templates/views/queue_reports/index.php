@@ -46,10 +46,10 @@ $barChart = function (array $rows, array $series, string $ariaLabel, int $width 
     foreach ($rows as $label => $vals) {
         $x = $left + $i * $step + ($step - $barW) / 2;
         $y = 8 + $plotH;
-        $tip = [$label];
+        $type = [$label];
         foreach ($series as [$key, $sLabel, $color]) {
             $v = (int) ($vals[$key] ?? 0);
-            $tip[] = $sLabel . ': ' . $v;
+            $type[] = $sLabel . ': ' . $v;
             if ($v <= 0) {
                 continue;
             }
@@ -59,7 +59,7 @@ $barChart = function (array $rows, array $series, string $ariaLabel, int $width 
             $svg .= '<rect x="' . $x . '" y="' . ($y + 1) . '" width="' . $barW . '" height="' . max(1, $bh - 2) . '" rx="2" style="fill: ' . $color . ';"/>';
         }
         // Hit target: the whole column, bigger than the bar.
-        $svg .= '<rect x="' . ($left + $i * $step) . '" y="8" width="' . $step . '" height="' . $plotH . '" fill="transparent"><title>' . $h(implode("\n", $tip)) . '</title></rect>';
+        $svg .= '<rect x="' . ($left + $i * $step) . '" y="8" width="' . $step . '" height="' . $plotH . '" fill="transparent"><title>' . $h(implode("\n", $type)) . '</title></rect>';
         if ($i % $labelEvery === 0) {
             $svg .= '<text x="' . ($left + $i * $step + $step / 2) . '" y="' . ($height - 6) . '" text-anchor="middle" font-size="10" style="fill: var(--text-muted);">' . $h($label) . '</text>';
         }

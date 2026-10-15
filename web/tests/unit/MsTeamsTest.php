@@ -11,7 +11,7 @@ final class MsTeamsTest extends TestCase
     protected function setUp(): void
     {
         if (DB_NAME !== 'asterisk_test') {
-            $this->fail('Testler yalnizca asterisk_test uzerinde kosmali');
+            $this->fail('tests must run only on asterisk_test');
         }
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();

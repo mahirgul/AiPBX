@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../services/TwoFactorService.php';
 
+/**
+ * Second sign-in step (/login-2fa): the TOTP code or a single-use recovery code after
+ * the password, for users with two-factor authentication.
+ * Logic: TwoFactorService.
+ */
 class TwoFactorLoginController extends BaseController
 {
     public static function index(): void

@@ -3,6 +3,12 @@ require_once __DIR__ . '/../services/TwoFactorService.php';
 require_once __DIR__ . '/../services/PasskeyService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
 
+/**
+ * /security.
+ * Renders templates/views/security/index.php with assets/js/security.js.
+ * Logic: GoogleAuthService, PasskeyService, TwoFactorService.
+ * Access by role module (getModuleKeyForPage() in auth.php, Admin → Roles).
+ */
 class SecurityController extends BaseController
 {
     public static function index(): void

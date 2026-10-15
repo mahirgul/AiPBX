@@ -3,6 +3,13 @@
 require_once __DIR__ . '/../services/PushSettingsService.php';
 require_once __DIR__ . '/../repositories/PushSettingsRepository.php';
 
+/**
+ * Push page (/push-settings).
+ * Renders templates/views/push_settings/index.php with assets/js/push_settings.js.
+ * Logic: PushSettingsRepository, PushSettingsService.
+ * POST actions: save_push_settings.
+ * Admins only.
+ */
 class PushSettingsController extends BaseController
 {
     public static function index(): void

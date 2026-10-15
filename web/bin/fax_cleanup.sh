@@ -55,7 +55,7 @@ if [ "$RETENTION_DAYS" -gt 0 ]; then
         done
 
         $MYSQL_CMD -e "DELETE FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND status != 'PENDING';" 2>/dev/null
-        log "$TABLE: $COUNT eski kayit silindi (retention=${RETENTION_DAYS}d)"
+        log "$TABLE: $COUNT old records deleted (retention=${RETENTION_DAYS}d)"
     done
 else
     log "Retention sinirsiz (0), arsiv temizligi atlandi"
@@ -70,6 +70,6 @@ for DIR in /var/spool/asterisk/fax /var/spool/asterisk/fax/incoming /var/spool/a
         SPOOL_REMOVED=$((SPOOL_REMOVED + 1))
     done < <(find "$DIR" -maxdepth 1 -type f \( -name '*.tif' -o -name '*.pdf' -o -name '*.call' \) -mtime "+${SPOOL_DAYS}" -print0 2>/dev/null)
 done
-log "Spool temizligi: $SPOOL_REMOVED dosya silindi (>${SPOOL_DAYS}d)"
+log "Spool cleanup: $SPOOL_REMOVED files removed (>${SPOOL_DAYS}d)"
 
 log "=== Cleanup complete ==="

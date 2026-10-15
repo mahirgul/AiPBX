@@ -107,7 +107,7 @@ function requireMobileAuth(): array
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'success' => false,
-            'error' => 'Yetkisiz erişim! Geçersiz veya süresi dolmuş oturum tokenı.'
+            'error' => 'Unauthorized: invalid or expired session token.'
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

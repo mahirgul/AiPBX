@@ -1,6 +1,11 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'conference': a conference room (pbx_conferences).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class ConferenceModule implements PBXDestinationInterface {
     public function getKey(): string { return 'conference'; }
     public function getName(): string { return '👥 ' . \t('dest.conference'); }

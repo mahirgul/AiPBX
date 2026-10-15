@@ -1,6 +1,11 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'time_condition': a time condition (pbx_time_conditions).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class TimeConditionModule implements PBXDestinationInterface {
     public function getKey(): string { return 'time_condition'; }
     public function getName(): string { return '⏰ ' . \t('dest.time_condition'); }

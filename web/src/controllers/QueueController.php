@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 
+/**
+ * Queues page (/queues).
+ * Renders templates/views/queues/index.php with assets/js/queues.js.
+ * Logic: QueueRepository, QueueService.
+ * POST actions: delete_queue, save_queue, toggle_status.
+ * Admins only.
+ */
 class QueueController extends BaseController
 {
     public static function index(): void

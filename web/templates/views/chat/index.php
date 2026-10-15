@@ -65,7 +65,7 @@ $delete_window = (int) ($delete_window ?? 0);
         <!-- LEFT PANEL: CONVERSATIONS AND DIRECTORY -->
         <div id="chat-sidebar" class="chat-sidebar">
             
-            <!-- Sidebar Header & Arama -->
+            <!-- Sidebar header & search -->
             <div class="chat-sidebar-header">
                 <!-- Tabs: Chats / Contacts -->
                 <div class="chat-sidebar-tabs">
@@ -77,7 +77,7 @@ $delete_window = (int) ($delete_window ?? 0);
                     </button>
                 </div>
 
-                <!-- Arama Kutusu -->
+                <!-- Search box -->
                 <div class="chat-search-wrap">
                     <i class="fas fa-search"></i>
                     <input type="text" id="chat-search-input" placeholder="<?php echo t('chat.search_ph'); ?>" oninput="filterChatList(this.value)">
@@ -134,7 +134,7 @@ $delete_window = (int) ($delete_window ?? 0);
                 <!-- Active chat header -->
                 <div id="chat-header" style="padding: 12px 18px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; min-width: 0; flex: 1;">
-                        <!-- Mobilde Geri Butonu -->
+                        <!-- Back button on mobile -->
                         <button type="button" id="chat-mobile-back-btn" class="chat-mobile-back-btn" onclick="closeActiveChatMobile()" title="<?php echo t('common.back'); ?>">
                             <i class="fas fa-arrow-left"></i>
                         </button>
@@ -202,7 +202,7 @@ $delete_window = (int) ($delete_window ?? 0);
                         <i class="fas fa-camera"></i>
                     </button>
 
-                    <!-- Metin Girdisi -->
+                    <!-- Text input -->
                     <div style="flex: 1; position: relative; min-width: 0;">
                         <textarea id="chat-input-textarea" rows="1" placeholder="<?php echo t('chat.message_ph'); ?>" style="width: 100%; resize: none; max-height: 120px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 13.5px; outline: none; line-height: 1.4; box-sizing: border-box;" onkeydown="handleInputKeydown(event)" oninput="handleInputTyping()"></textarea>
                     </div>

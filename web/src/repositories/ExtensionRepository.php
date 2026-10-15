@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Database access for the Extensions page.
+ * Tables: sys_users (extensions are users), pbx_permission_groups, pbx_boss_secretary_groups.
+ * Used by ExtensionController.
+ */
 class ExtensionRepository extends BaseRepository
 {
     protected static string $table = 'sys_users';

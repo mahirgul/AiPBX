@@ -110,7 +110,7 @@ $formatDuration = function(int $seconds): string {
             <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
             <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('queue_logs.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
         </div>
-        <input type="hidden" name="boyut" value="<?php echo (int)$sayfa_boyutu; ?>">
+        <input type="hidden" name="size" value="<?php echo (int)$page_size; ?>">
 
         <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($event_filter) || !empty($agent_filter) || !empty($search_query) || $date_filter !== 'today' || $view_mode !== 'grouped'): ?>
@@ -120,7 +120,7 @@ $formatDuration = function(int $seconds): string {
 
     <div class="table-responsive">
         <?php
-            $page_size = $sayfa_boyutu;
+            $page_size = $page_size;
             require dirname(__DIR__, 2) . '/pagination_controls.php';
         ?>
         <?php if ($view_mode === 'grouped'): ?>
@@ -350,9 +350,9 @@ $formatDuration = function(int $seconds): string {
     </div>
 
     <?php
-        $page = $sayfa;
-        $page_size = $sayfa_boyutu;
-        $total_pages = $toplam_sayfa;
+        $page = $current_page;
+        $page_size = $page_size;
+        $total_pages = $total_pages;
         $total_rows = $total_records;
         require dirname(__DIR__, 2) . '/pagination.php';
     ?>

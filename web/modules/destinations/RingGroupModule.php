@@ -1,6 +1,11 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'ring_group': a ring group (pbx_ring_groups).
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class RingGroupModule implements PBXDestinationInterface {
     public function getKey(): string { return 'ring_group'; }
     public function getName(): string { return '🔔 ' . \t('dest.ring_group'); }

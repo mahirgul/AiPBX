@@ -34,16 +34,16 @@ if ($total_rows <= 0 && $total_pages <= 1) {
     return;
 }
 
-$sayfa_url = static function (int $n): string {
+$page_url = static function (int $n): string {
     $qs = $_GET;
     $qs['page'] = $n;
     return '?' . http_build_query($qs);
 };
 
 
-$ilk = max(1, $page - 2);
-$son = min($total_pages, $ilk + 4);
-$ilk = max(1, $son - 4);
+$first = max(1, $page - 2);
+$last = min($total_pages, $first + 4);
+$first = max(1, $last - 4);
 ?>
 <div class="dt-pagination-bar">
 
@@ -61,17 +61,17 @@ $ilk = max(1, $son - 4);
 
     <div class="dt-pagination-nav">
         <?php if ($total_pages > 1): ?>
-            <a class="dt-page-btn" href="<?php echo htmlspecialchars($sayfa_url(max(1, $page - 1))); ?>"
+            <a class="dt-page-btn" href="<?php echo htmlspecialchars($page_url(max(1, $page - 1))); ?>"
                <?php echo $page <= 1 ? 'aria-disabled="true"' : ''; ?>>
                 <i class="fas fa-chevron-left"></i>
             </a>
 
-            <?php for ($n = $ilk; $n <= $son; $n++): ?>
+            <?php for ($n = $first; $n <= $last; $n++): ?>
                 <a class="dt-page-btn<?php echo $n === $page ? ' active' : ''; ?>"
-                   href="<?php echo htmlspecialchars($sayfa_url($n)); ?>"><?php echo $n; ?></a>
+                   href="<?php echo htmlspecialchars($page_url($n)); ?>"><?php echo $n; ?></a>
             <?php endfor; ?>
 
-            <a class="dt-page-btn" href="<?php echo htmlspecialchars($sayfa_url(min($total_pages, $page + 1))); ?>"
+            <a class="dt-page-btn" href="<?php echo htmlspecialchars($page_url(min($total_pages, $page + 1))); ?>"
                <?php echo $page >= $total_pages ? 'aria-disabled="true"' : ''; ?>>
                 <i class="fas fa-chevron-right"></i>
             </a>

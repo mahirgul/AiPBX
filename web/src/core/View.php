@@ -7,18 +7,19 @@
 class View
 {
     /** Page sizes the pagination component accepts. */
-    public const SAYFA_BOYUTLARI = [10, 25, 50, 100];
+    public const PAGE_SIZES = [10, 25, 50, 100];
 
     /**
      * Reads the valid page size from the request.
      *
      * Free numbers are not accepted: this prevents fetching the whole table
-     * with ?boyut=100000. A value not on the list falls back to the default.
+     * with ?size=100000. A value not on the list falls back to the default.
      */
-    public static function sayfaBoyutu(int $default_value = 50): int
+    public static function pageSize(int $default_value = 50): int
     {
-        $b = intval($_GET['boyut'] ?? $default_value);
-        return in_array($b, self::SAYFA_BOYUTLARI, true) ? $b : $default_value;
+        // ?size= (?boyut= is still read: links and bookmarks made before the rename).
+        $b = intval($_GET['size'] ?? $_GET['boyut'] ?? $default_value);
+        return in_array($b, self::PAGE_SIZES, true) ? $b : $default_value;
     }
 
     public static function render(string $view, array $data = []): void

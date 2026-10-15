@@ -393,7 +393,7 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 		convID = conv.ID
 	}
 	if convID <= 0 {
-		return nil, &sendError{http.StatusBadRequest, "conversation_id veya target_ext zorunludur."}
+		return nil, &sendError{http.StatusBadRequest, "conversation_id or target_ext is required."}
 	}
 
 	// CH-2: participant check (prevents IDOR)

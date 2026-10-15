@@ -7,6 +7,11 @@ require_once __DIR__ . '/../asterisk_sync.php';
 use App\Services\Push\PushService;
 use App\Services\Push\FcmPushProvider;
 
+/**
+ * Admin → Push: Firebase (FCM, Android) and APNs (iOS) settings, validated and
+ * stored in sys_settings (the keys encrypted), and the test push. Without a provider
+ * the apps rely on their own connection (see docs/system-map.md, mobile apps).
+ */
 class PushSettingsService
 {
     /**

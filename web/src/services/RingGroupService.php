@@ -7,6 +7,10 @@ require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
 
+/**
+ * PBX → Ring groups: save/delete; marks ring_groups and internal_numbers for Apply
+ * (SyncRingGroups writes extensions_ringgroups.conf).
+ */
 class RingGroupService {
     public static function getRingGroups() {
         $db = getDB();

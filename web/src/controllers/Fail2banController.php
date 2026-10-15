@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../services/Fail2banService.php';
 
+/**
+ * Fail2ban page (/fail2ban).
+ * Renders templates/views/fail2ban/index.php.
+ * Logic: Fail2banService.
+ * POST actions: add_ignoreip, remove_ignoreip, unban_ip, update_jail_config.
+ * Admins only.
+ */
 class Fail2banController extends BaseController
 {
     public static function index(): void

@@ -9,6 +9,11 @@ require_once __DIR__ . '/ApnsPushProvider.php';
 require_once __DIR__ . '/CompositePushProvider.php';
 require_once __DIR__ . '/../../../config.php';
 
+/**
+ * Picks the push provider from the settings: FCM (Android) and/or APNs (iOS),
+ * combined when both are on, NullPushProvider otherwise. isEnabled() tells the
+ * dialplan whether to wake mobile devices before ringing them.
+ */
 class PushService
 {
     private static ?PushProviderInterface $providerInstance = null;

@@ -5,6 +5,13 @@ require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.ph
 
 use PBX\Destinations\DestinationRegistry;
 
+/**
+ * Ring Groups page (/ring-groups).
+ * Renders templates/views/ring_groups/index.php with assets/js/ring_groups.js.
+ * Logic: RingGroupService.
+ * POST actions: delete_ring_group, save_ring_group.
+ * Admins only.
+ */
 class RingGroupController extends BaseController
 {
     public static function index(): void

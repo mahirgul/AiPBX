@@ -44,7 +44,7 @@ try {
 
         $chk->execute([$ts, $call_id, $event, $agent]);
         if ($chk->fetchColumn()) {
-            continue; // zaten senkronize
+            continue; // already synced
         }
 
         $stmt->execute([

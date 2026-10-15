@@ -8,6 +8,12 @@ use Exception;
 require_once __DIR__ . '/PushProviderInterface.php';
 require_once __DIR__ . '/../../../config.php';
 
+/**
+ * Sends Firebase Cloud Messaging (HTTP v1) pushes to the Android app. The OAuth
+ * token comes from the service account (signed JWT) and is cached in the temp
+ * directory; a token Firebase reports as unregistered/invalid is deactivated in
+ * sys_mobile_devices.
+ */
 class FcmPushProvider implements PushProviderInterface
 {
     private string $projectId;

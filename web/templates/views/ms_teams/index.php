@@ -68,7 +68,7 @@ if (!$cert['exists']) {
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKME 1: Direct Routing (SBC / SIP)       -->
+    <!-- TAB 1: Direct Routing (SBC / SIP)       -->
     <!-- ========================================== -->
     <div id="tab-direct_routing" class="teams-tab-pane <?php echo $active_tab === 'direct_routing' ? 'active' : ''; ?>">
         <form method="POST" autocomplete="off">
@@ -262,7 +262,7 @@ if (!$cert['exists']) {
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKME 3: Webhook & Bildirimler            -->
+    <!-- TAB 3: Webhook & notifications            -->
     <!-- ========================================== -->
     <div id="tab-webhooks" class="teams-tab-pane <?php echo $active_tab === 'webhooks' ? 'active' : ''; ?>">
         <form method="POST" autocomplete="off">

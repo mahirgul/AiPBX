@@ -1,6 +1,12 @@
 <?php
 namespace PBX\Destinations;
 
+/**
+ * Destination type 'hangup': ending the call: hang up, busy or congestion tone, or a
+ * hang-up action of pbx_hangup_actions.
+ * Offered in the destination pickers (DestinationRegistry, /api/destinations.php); the
+ * dialplan lines are built by buildDestinationLines() in web/src/sync/DialplanBuilders.php.
+ */
 class HangupModule implements PBXDestinationInterface {
     public function getKey(): string { return 'hangup'; }
     public function getName(): string { return '🛑 ' . \t('dest.hangup'); }
