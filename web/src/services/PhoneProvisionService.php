@@ -69,8 +69,75 @@ class PhoneProvisionService
         return $out;
     }
 
+    /**
+     * The addresses desk phones are told and the networks they may come from.
+     * They are edited on Network → Network settings (roadmap 13) together with
+     * the server's own addresses; the provisioning form keeps the rest.
+     */
+    public const ADDRESS_KEYS = ['provision_sip_server', 'provision_sip_proxy', 'provision_base_url',
+        'provision_syslog', 'provision_ntp', 'provision_allowed_networks'];
+
+    /** @return array<string, string> the address settings (ADDRESS_KEYS) */
+    public static function addressSettings(): array
+    {
+        $all = self::settings();
+        return array_intersect_key($all, array_flip(self::ADDRESS_KEYS));
+    }
+
+    /** Checks and stores the address settings, then refreshes the phone files. */
+    public static function saveAddressSettings(array $data): void
+    {
+        $v = self::validateAddresses($data);
+        $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        foreach ($v as $k => $val) {
+            $stmt->execute([$k, $val]);
+        }
+        writeAuditLog('phones', 'settings', 0, 'Addresses for desk phones', 'update', $_SESSION['user_id'] ?? null);
+        self::exportTftpQuietly();
+    }
+
+    /** @return array<string, string> the address settings of $data, checked */
+    private static function validateAddresses(array $data): array
+    {
+        $ntp = trim((string) ($data['provision_ntp'] ?? ''));
+        if ($ntp === '' || !preg_match('/^[A-Za-z0-9.-]{1,255}$/', $ntp)) {
+            throw new \Exception(t('phones.err_ntp'));
+        }
+        $networks = self::parseNetworks((string) ($data['provision_allowed_networks'] ?? ''), $bad);
+        if ($bad !== []) {
+            throw new \Exception(sprintf(t('phones.err_networks'), implode(', ', $bad)));
+        }
+        $host = function (string $key, string $err) use ($data): string {
+            $v = trim((string) ($data[$key] ?? ''));
+            if ($v !== '' && !preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$/', $v)) {
+                throw new \Exception(t($err));
+            }
+            return $v;
+        };
+        $sipServer = $host('provision_sip_server', 'phones.err_sip_server');
+        $sipProxy = $host('provision_sip_proxy', 'phones.err_sip_proxy');
+        $syslog = trim((string) ($data['provision_syslog'] ?? ''));
+        if ($syslog !== '' && filter_var($syslog, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            throw new \Exception(t('phones.err_syslog'));
+        }
+        $baseUrl = rtrim(trim((string) ($data['provision_base_url'] ?? '')), '/');
+        if ($baseUrl !== '' && !preg_match('~^(https?://)?[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~i', $baseUrl)) {
+            throw new \Exception(t('phones.err_base_url'));
+        }
+        return [
+            'provision_sip_server' => $sipServer,
+            'provision_sip_proxy' => $sipProxy,
+            'provision_base_url' => $baseUrl,
+            'provision_syslog' => $syslog,
+            'provision_ntp' => $ntp,
+            'provision_allowed_networks' => implode("\n", $networks),
+        ];
+    }
+
     public static function saveSettings(array $data): array
     {
+        // The address fields moved to Network settings: a form without them keeps the stored values.
+        $data += self::addressSettings();
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $transport = ($data['provision_transport'] ?? '') === 'tls' ? 'tls' : 'udp';
             $srtp = (string) max(0, min(2, (int) ($data['provision_srtp'] ?? 0)));
@@ -78,10 +145,7 @@ class PhoneProvisionService
             if (empty($codecs)) {
                 throw new \Exception(t('phones.err_codecs'));
             }
-            $ntp = trim((string) ($data['provision_ntp'] ?? ''));
-            if ($ntp === '' || !preg_match('/^[A-Za-z0-9.-]{1,255}$/', $ntp)) {
-                throw new \Exception(t('phones.err_ntp'));
-            }
+            $addr = self::validateAddresses($data);
             $tz = (string) ($data['provision_timezone'] ?? '');
             if (!in_array($tz, \DateTimeZone::listIdentifiers(), true)) {
                 throw new \Exception(t('phones.err_timezone'));
@@ -90,44 +154,16 @@ class PhoneProvisionService
             if (!isset(UI_LANGUAGES[$lang])) {
                 $lang = 'en';
             }
-            $networks = self::parseNetworks((string) ($data['provision_allowed_networks'] ?? ''), $bad);
-            if ($bad !== []) {
-                throw new \Exception(sprintf(t('phones.err_networks'), implode(', ', $bad)));
-            }
             $rate = max(5, min(1000, (int) ($data['provision_rate_limit'] ?? 60)));
-            $host = function (string $key, string $err) use ($data): string {
-                $v = trim((string) ($data[$key] ?? ''));
-                if ($v !== '' && !preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$/', $v)) {
-                    throw new \Exception(t($err));
-                }
-                return $v;
-            };
-            $sipServer = $host('provision_sip_server', 'phones.err_sip_server');
-            $sipProxy = $host('provision_sip_proxy', 'phones.err_sip_proxy');
-            $syslog = trim((string) ($data['provision_syslog'] ?? ''));
-            if ($syslog !== '' && filter_var($syslog, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-                throw new \Exception(t('phones.err_syslog'));
-            }
-            $baseUrl = rtrim(trim((string) ($data['provision_base_url'] ?? '')), '/');
-            if ($baseUrl !== '' && !preg_match('~^(https?://)?[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?(:[0-9]{1,5})?$~i', $baseUrl)) {
-                throw new \Exception(t('phones.err_base_url'));
-            }
-
             $values = [
                 'provision_transport' => $transport,
                 'provision_srtp' => $srtp,
                 'provision_codecs' => implode(',', $codecs),
-                'provision_ntp' => $ntp,
                 'provision_timezone' => $tz,
                 'provision_language' => $lang,
-                'provision_allowed_networks' => implode("\n", $networks),
                 'provision_rate_limit' => (string) $rate,
-                'provision_sip_server' => $sipServer,
-                'provision_sip_proxy' => $sipProxy,
-                'provision_base_url' => $baseUrl,
-                'provision_syslog' => $syslog,
                 'provision_tftp_export' => !empty($data['provision_tftp_export']) ? '1' : '0',
-            ];
+            ] + $addr;
             $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
             foreach ($values as $k => $v) {
                 $stmt->execute([$k, $v]);

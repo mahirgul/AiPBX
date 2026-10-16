@@ -54,7 +54,7 @@ fail2ban bans the address after repeated failures. Check `fail2ban-client status
 ## The mobile app does not ring
 
 A call to an extension rings its mobile app only while the app is registered (or, with push set
-up under *Admin → Push*, after the push wakes it). Check the registration:
+up under *System → Push*, after the push wakes it). Check the registration:
 
 ```
 asterisk -rx "pjsip show contacts" | grep <ext>-mob-webrtc
@@ -73,7 +73,7 @@ grep '<ext>-mob-webrtc' /var/log/asterisk/security.log | tail
 ## No notification for a new voicemail in the app
 
 The notification needs the Android app 1.0.63 or newer (older versions ignore it) and, while the app
-is not connected, push set up under **Admin → Push**. Every new message writes one line saying what
+is not connected, push set up under **System → Push**. Every new message writes one line saying what
 happened:
 
 ```bash

@@ -1,6 +1,6 @@
 # Desk phones (provisioning)
 
-**PBX → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
+**Network & devices → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
 configuration over HTTPS from AiPBX and registers with the right extension, keys and settings.
 Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
 on the page).
@@ -55,7 +55,7 @@ is the phone's:
 Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, so zero touch
 (below) needs the Profile Rule set once.
 
-**Zero touch (DHCP option 66).** Fill **Allowed networks** in *Provisioning settings* with your
+**Zero touch (DHCP option 66).** Fill **Allowed networks** in *Network settings* with your
 phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision/` (or the
 *provisioning address*, below) as option 66.
 Phones inside these networks then ask for their MAC-based file directly; a known MAC gets its
@@ -66,7 +66,7 @@ DHCP server: see [Network services](network-services.md).
 ## Server addresses (networks without DNS)
 
 Phone networks often have no DNS or no internet access, so a phone cannot resolve the PBX's name.
-*Provisioning settings → Server addresses* takes IP addresses instead (empty: the domain):
+*Network & devices → Network settings → Addresses for desk phones* takes IP addresses instead (empty: the domain):
 
 | Field | Written to / used for |
 |-------|-----------------------|
@@ -74,7 +74,7 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
 | **Provisioning address** | where phones fetch their files, e.g. `10.23.3.70` (no scheme: HTTP), `10.23.3.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
 | **NTP server** | a name or an IP address (NEC: IP address only); this server's IP with [NTP server](network-services.md#ntp-server-time) on under Network services |
-| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [PBX → Phone logs](network-services.md#syslog-phone-logs) |
+| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [Network & devices → Phone logs](network-services.md#syslog-phone-logs) |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
 (no redirect to HTTPS), for phones that cannot do HTTPS to an IP address or do not follow a

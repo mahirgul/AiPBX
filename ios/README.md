@@ -39,7 +39,7 @@ The session (server + 30-day token) is kept in the Keychain; when iOS starts the
 it is closed, it signs in again through `/api/mobile/refresh.php`. Signing out removes the tokens
 from the server.
 
-**What Apple requires (entered in the portal, *Admin → Push → APNs*):**
+**What Apple requires (entered in the portal, *System → Push → APNs*):**
 
 1. Apple Developer → Keys → a **.p8 key** with "Apple Push Notifications service (APNs)"; its
    **Key ID** and the **Team ID**.

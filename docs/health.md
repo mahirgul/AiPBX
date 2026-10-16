@@ -1,6 +1,6 @@
 # Health checks
 
-**Admin → Health checks** watches the server and e-mails the chosen people when something stops
+**System → Health checks** watches the server and e-mails the chosen people when something stops
 working — and again when it works again. Every morning it can send a **daily summary** for
 managers: yesterday's calls and faxes and the state of every check.
 
@@ -19,6 +19,7 @@ managers: yesterday's calls and faxes and the state of every check.
 | Pending changes | 1 h | changes not applied for over an hour |
 | Outgoing faxes | 1 h | faxes waiting to be sent for over an hour |
 | DHCP / TFTP / FTP | 15 min | switched on, but the service does not run |
+| Server address | 60 min | a stored address (server, phones, coturn, mDNS) is not this server's any more: see [Network settings](network-settings.md#when-the-servers-ip-address-changed) |
 | Local AI service | 15 min | installed and enabled, but not running |
 | TLS certificate | daily | warning 14 days before it ends, failed 3 days before |
 | Daily backup | daily | the newest file in `/var/backups/aipbx-daily` is older than 26 h |

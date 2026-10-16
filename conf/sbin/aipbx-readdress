@@ -1,0 +1,6 @@
+#!/bin/bash
+# aipbx-readdress OLD_IP NEW_IP [--yes] — moves the server's address everywhere
+# AiPBX keeps it (Network → Network settings, roadmap 12). Without --yes it
+# only shows what would change.
+[ "$(id -u)" = 0 ] || { echo "run as root: sudo aipbx-readdress OLD_IP NEW_IP [--yes]" >&2; exit 1; }
+exec php /var/www/html/bin/readdress.php "$@"

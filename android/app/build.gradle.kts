@@ -31,6 +31,9 @@ android {
             "AllowAllHostnameVerifier",
             "InsecureBaseConfiguration"
         )
+        // New texts are added in English first and translated later; a
+        // missing translation shows the English text.
+        warning += "MissingTranslation"
         abortOnError = true
         checkReleaseBuilds = true
     }

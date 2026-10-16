@@ -98,8 +98,9 @@ class AsteriskSettingsService {
         $new_settings = [
             'pjsip_wss_port' => trim($post['pjsip_wss_port'] ?? '8089'),
             'pjsip_udp_port' => trim($post['pjsip_udp_port'] ?? '5060'),
-            'pjsip_external_ip' => trim($post['pjsip_external_ip'] ?? ''),
-            'pjsip_local_net' => trim($post['pjsip_local_net'] ?? '192.168.1.0/24'),
+            // Edited on Network → Network settings (validated there); this form keeps them.
+            'pjsip_external_ip' => (string) getSystemSetting('pjsip_external_ip', ''),
+            'pjsip_local_net' => (string) getSystemSetting('pjsip_local_net', '192.168.1.0/24'),
             'pjsip_codecs' => $submitted_codecs,
             'pjsip_wired_codecs' => $submitted_wired_codecs,
             // SIP User-Agent/Server header (pjsip.conf [global] user_agent) —

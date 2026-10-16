@@ -91,7 +91,7 @@ final class TrunkRouteBehaviorTest extends TestCase
 
     public function testRemovingALocalNetworkRemovesItFromTheTransports(): void
     {
-        $save = fn(string $nets) => AsteriskSettingsService::saveSettings(['csrf_token' => self::CSRF, 'pjsip_local_net' => $nets]);
+        $save = fn(string $nets) => NetworkSettingsService::saveServer(['csrf_token' => self::CSRF, 'pjsip_local_net' => $nets]);
 
         $this->assertTrue($save('10.23.3.0/24,10.8.0.0/24')['success'] ?? false);
         $this->assertTrue($save('10.0.0.0/8')['success'] ?? false);

@@ -56,6 +56,7 @@ return [
     '/help'            => ['controller' => HelpController::class, 'action' => 'index', 'module' => 'help.php'],
     '/phone-logs'      => ['controller' => PhoneLogController::class, 'action' => 'index', 'module' => 'phone_logs.php'],
     '/network-services' => ['controller' => NetworkServicesController::class, 'action' => 'index', 'module' => 'network_services.php'],
+    '/network-settings' => ['controller' => NetworkSettingsController::class, 'action' => 'index', 'module' => 'network_settings.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],
     '/system-update'   => ['controller' => SystemUpdateController::class, 'action' => 'index', 'module' => 'system_update.php'],

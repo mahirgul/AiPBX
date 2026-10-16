@@ -130,6 +130,7 @@ function getModuleKeyForPage($page = null) {
         'phone_keys.php'        => 'phones',
         // DHCP/TFTP for desk phones: admin-only like the Phones page.
         'network_services.php'  => 'phones',
+        'network_settings.php'  => 'phones',
         'phone_logs.php'        => 'phones',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',

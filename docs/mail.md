@@ -5,7 +5,7 @@ invitations, password resets and 2FA messages.
 
 ## Relay
 
-Most networks do not let servers deliver mail directly. Set a relay on **Admin → E-Mail**:
+Most networks do not let servers deliver mail directly. Set a relay on **System → E-Mail**:
 
 | Field | Example |
 |-------|---------|
@@ -23,7 +23,7 @@ same page.
 
 ## Templates
 
-**Admin → E-Mail → Templates** holds the text of every e-mail AiPBX sends: the account invitation,
+**System → E-Mail → Templates** holds the text of every e-mail AiPBX sends: the account invitation,
 the sign-in / password link, password reset, new voicemail, fax received, fax delivered, fax not
 delivered and the test e-mail.
 

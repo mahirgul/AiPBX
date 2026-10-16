@@ -5,7 +5,7 @@ default**: video uses many times the bandwidth of audio.
 
 ## Switching them on
 
-1. **Admin → Asterisk settings → Video**: *Video calls* on, then the **video codec**, the maximum
+1. **System → Asterisk settings → Video**: *Video calls* on, then the **video codec**, the maximum
    resolution and frame rate. *Apply* the change.
 2. Each user needs the **video** phone mode (*Users* or *My Phone → Call settings*); it is on by
    default.
