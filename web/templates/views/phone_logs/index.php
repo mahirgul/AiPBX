@@ -55,7 +55,7 @@ $tabs = ['syslog' => ['fa-scroll', 'Syslog'], 'http' => ['fa-lock', 'HTTPS'], 'f
                     <td><a href="<?php echo $h('/phone-logs?' . http_build_query(['tab' => $tab, 'who' => $e['ip']])); ?>"><?php echo $h($e['ip']); ?></a></td>
                     <td><?php if ($e['mac'] !== ''): ?><a href="<?php echo $h('/phone-logs?' . http_build_query(['tab' => $tab, 'who' => $e['mac']])); ?>"><code><?php echo $h($e['mac']); ?></code></a>
                         <?php if (isset($labels[$e['mac']])): ?><span class="u-muted"> · <?php echo $h($labels[$e['mac']]); ?></span><?php endif; ?><?php endif; ?></td>
-                    <td><span class="badge <?php echo $e['ok'] ? 'badge-success' : 'badge-danger'; ?>" style="font-size: 10px;"><?php echo $h($e['result']); ?></span></td>
+                    <td><span class="badge <?php echo $e['ok'] ? 'badge-success' : 'badge-danger'; ?>" style="font-size: 10px;"><?php echo $h($tab === 'http' ? t('phones.result_' . $e['result'], $e['result']) : $e['result']); ?></span></td>
                     <td><code><?php echo $h($e['file']); ?></code></td>
                     <td class="u-muted" style="word-break: break-all;"><?php echo $h($e['detail']); ?></td>
                 </tr>

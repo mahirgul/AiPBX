@@ -75,7 +75,6 @@ class PhoneController extends BaseController
             'waiting' => PhoneProvisionService::listWaiting(),
             'users' => PhoneProvisionService::assignableUsers(),
             'settings' => PhoneProvisionService::settings(),
-            'log' => PhoneProvisionService::recentLog(50),
             'macBaseUrl' => ForgotPasswordService::portalUrl() . '/provision/',
         ], ['title' => t('phones.title')] + $notices);
     }

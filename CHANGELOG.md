@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.31.1
+
+- *PBX → Phones*: the "Recent configuration requests" list is gone; the same
+  requests (and FTP, TFTP, DHCP) are on *PBX → Phone logs*, linked from the page.
+  The HTTPS tab there shows the results translated.
+
 ## 1.31.0
 
 - **Phone logs in one place:** *PBX → Phone logs* has tabs for Syslog, HTTPS
