@@ -17,6 +17,9 @@ welcome there.
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
 | 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](network-services.md) | | medium |
 | 11 | [Visual IVR editor](#11-visual-ivr-editor) (later) | [#16](https://github.com/mahirgul/AiPBX/issues/16) | large |
+| 12 | [Server address change in one step](#12-server-address-change-in-one-step) | | medium |
+| 13 | [Network settings page](#13-network-settings-page) | | medium |
+| 14 | [Menu reorganisation](#14-menu-reorganisation) (with 12 and 13) | | small |
 
 Done recently: website call widget with the call-back form and a WordPress plugin ([Website call widget](web-widgets.md)); phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
@@ -362,3 +365,78 @@ Planned for later. Since 1.8.0 each IVR has a read-only **Call flow** view (the 
 tree: keys, no input, invalid key, sub-menus, time conditions and announcements). The next step
 is editing on that view: dragging destinations onto keys, adding sub-menus and announcements in
 place, and seeing the changes before Apply. Until then keys are edited in the IVR dialogs.
+
+## 12. Server address change in one step
+
+Planned 2026-10-16. Today the server's IP address is written into many places, at install time or
+by hand, and nothing notices when it changes (a new DHCP lease, a move to another network, a
+cloned VM). Calls then break in ways that are hard to trace: TURN has no audio, desk phones
+register to the old address, the portal's certificate no longer matches.
+
+**Where the address lives today**
+
+| Place | Written by | Holds |
+|---|---|---|
+| `sys_settings.server_ip` | Asterisk settings | RTP `ice_host_candidates` (SyncRtpSettings) |
+| `pjsip_external_ip`, `pjsip_local_net` | Asterisk settings | NAT: public address, local networks of every transport |
+| `provision_sip_server`, `provision_base_url`, `provision_syslog`, `provision_ntp` | Phones → Provisioning settings | what desk phones are told (SIP server, files, syslog, time) |
+| `provision_allowed_networks`, `netsvc_*` | Phones, Network services | allowed networks, DHCP range, gateway, option 66 URL |
+| `/etc/turnserver.conf` | `install.sh` | `relay-ip`, `allowed-peer-ip` (1.32.0) |
+| self-signed certificate | `install.sh` / `aipbx-cert` | IP in the subject alternative name |
+| `aipbx-mdns` unit | `install.sh` | mDNS alias → address |
+| the phones themselves | phone menu or DHCP | boot / file server (NEC), until the next provisioning |
+
+**Plan**
+
+1. **Notice it.** A health check compares the addresses of `hostname -I` with the stored ones
+   (`server_ip`, coturn `relay-ip`, provisioning addresses) and raises an alarm (mail, banner on
+   the portal): "the server's address changed from A to B".
+2. **One action applies it everywhere**: *Apply new address* on the portal and
+   `sudo aipbx-readdress <old> <new>` on the command line, both through `aipbx-priv`.
+   - First a **preview**: every setting and file that holds the old address, and what it becomes.
+   - Then: replace it in the settings above; rewrite coturn's `relay-ip` / `allowed-peer-ip`;
+     re-issue a self-signed certificate that names the IP; update the mDNS alias; regenerate PJSIP
+     transports, RTP, provisioning and TFTP/FTP phone files; DHCP options when DHCP runs here.
+   - Reloads that keep calls (PJSIP, dialplan); coturn restarts only at zero calls.
+   - Written to the audit log.
+3. **Not changed automatically**, shown as a to-do list instead: the public address behind NAT (its
+   own field), DNS records, router port forwards, and phones that were set up by hand with the old
+   address (Phone logs shows which phones still fetch from it).
+
+## 13. Network settings page
+
+Planned 2026-10-16. Network settings are spread over *Asterisk settings* (external IP, local
+networks, RTP ports), *Phones → Provisioning settings* (addresses for the phones, allowed networks)
+and *Network services*. One page collects them:
+
+- **Shows** interfaces, addresses, gateway, DNS servers, host name / FQDN, the detected public
+  address and whether the server is behind NAT, and the networks AiPBX treats as local.
+- **Edits** AiPBX's own network settings in one place: public address, local networks, RTP port
+  range, the address phones get, allowed networks. The fields move here from the other pages.
+- **Optionally the server's own network** (static address or DHCP, gateway, DNS through
+  netplan): with an automatic roll-back, as `netplan try` does: the old settings come back after
+  2 minutes unless the change is confirmed from the new address. Changing the address here runs
+  item 12.
+
+## 14. Menu reorganisation
+
+Planned 2026-10-16, to do together with 12 and 13. The *PBX* group holds 16 entries, network and
+desk-phone pages sit between ring groups and IVRs, and *Admin* mixes users, settings and system
+pages. Proposed groups:
+
+| Group | Entries |
+|---|---|
+| Panel | Overview, My phone, Chat, Reports |
+| Lines | Trunks, Inbound routes, Outbound routes, Dial permissions |
+| PBX | Extensions, IVR, Time plans, Ring groups, Queues, Conferences, Boss–secretary, Hangup actions, Sounds, Feature codes, Active codes |
+| **Network & devices** (new) | Network settings (13), Network services, Phones (provisioning), Phone logs |
+| Call centre | unchanged |
+| Fax | unchanged |
+| AI | unchanged |
+| Integrations | unchanged |
+| Security | Firewall, Fail2ban, Certificates, Audit log |
+| System (was Admin) | Users, Roles, Asterisk settings, Appearance, Push, E-mail, Fax e-mail, File storage, Pending changes, System update, Health checks, Help |
+
+Old addresses keep working (the routes do not change, only the menu). The role matrix and the
+module keys stay as they are.
+
