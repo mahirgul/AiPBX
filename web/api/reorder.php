@@ -3,6 +3,7 @@
  * Saves a drag-and-drop row order: POST entity=trunks|outbound_routes, ids[]=...
  */
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../src/asterisk_sync.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -42,5 +43,15 @@ foreach ($ids as $pos => $id) {
     $stmt->execute([$pos + 1, $id]);
 }
 $db->commit();
+
+// The order of outbound routes is the order the dialplan tries them
+// (SyncOutboundDialplan, ORDER BY sort_order): it must wait for Apply like any
+// other change, or Asterisk keeps the old order without the admin noticing.
+// The order of trunks is only how the list is shown; it is logged.
+if ($_POST['entity'] === 'outbound_routes') {
+    markPendingSync('outbound_dialplan', 'outbound_route', 'order', 'Outbound routes reordered', 'update', $_SESSION['user_id'] ?? null);
+} else {
+    writeAuditLog('trunks', 'trunk', 'order', 'Trunks reordered', 'update', $_SESSION['user_id'] ?? null);
+}
 
 echo json_encode(['success' => true]);

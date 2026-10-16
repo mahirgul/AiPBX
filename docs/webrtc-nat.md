@@ -55,6 +55,15 @@ coturn relays on the server's own address (`relay-ip` in `/etc/turnserver.conf`,
 installer). TURNS connections that arrive through the 443 edge come from `127.0.0.1`; without
 `relay-ip` coturn opened the relay on loopback, where Asterisk's media never arrived.
 
+coturn relays **only to this server**: `/etc/turnserver.conf` denies private, link-local and CGNAT
+ranges (`denied-peer-ip`) and allows the server's own addresses (`allowed-peer-ip`, every address of
+`hostname -I` at install time). Every AiPBX call goes through Asterisk, so the far end of a relay
+is always this server; TURN credentials also go to anonymous visitors of websites with the call
+widget, and without the rule a relay could reach other hosts of the network. Loopback is denied by
+coturn itself. After the server gets a new IP address run `sudo bash /opt/aipbx/install.sh --upgrade`,
+or calls that need TURN have no audio. Check it in `/var/log/turnserver/turnserver.log`: a refused
+relay shows `peer IP … denied in the range`.
+
 ### 3. A trusted certificate
 
 TURNS is TLS: browsers refuse a self-signed certificate or one for another name **without any visible
