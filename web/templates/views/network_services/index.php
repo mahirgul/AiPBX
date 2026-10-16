@@ -38,6 +38,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 <input type="checkbox" name="netsvc_tftp" value="1" class="u-accent netsvc-switch" id="netsvc_tftp_on" <?php echo $tftpOn ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_tftp'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_tftp_desc'); ?></span>
+                <span class="u-fs-12 u-warning" style="display: block; margin-left: 24px;"><i class="fas fa-triangle-exclamation"></i> <?php echo t('netsvc.tftp_warning'); ?></span>
             </label>
             <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
                 <input type="checkbox" name="netsvc_ftp" value="1" class="u-accent netsvc-switch" id="netsvc_ftp_on" <?php echo $settings['netsvc_ftp'] === '1' ? 'checked' : ''; ?>>
@@ -66,7 +67,17 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         </div>
 
         <div class="netsvc-ftp">
-            <p class="u-fs-12" style="margin: 0 0 8px;"><?php echo sprintf(t('netsvc.ftp_fixed_user'), '<code>' . NetworkServicesService::FTP_FIXED_USER . '</code>'); ?></p>
+            <p class="u-fs-12" style="margin: 0 0 8px;"><?php echo sprintf(t('netsvc.ftp_fixed_user'), '<code>' . NetworkServicesService::FTP_FIXED_USER . '</code>', '<code>' . NetworkServicesService::FTP_FIXED_DEFAULT_PASSWORD . '</code>'); ?>
+                <span class="badge <?php echo $settings['netsvc_ftp_fixed_hash'] === '' ? 'badge-warning' : 'badge-success'; ?>" style="font-size: 11px;"><?php echo t($settings['netsvc_ftp_fixed_hash'] === '' ? 'netsvc.ftp_fixed_is_default' : 'netsvc.ftp_fixed_is_custom'); ?></span></p>
+            <div class="form-group" style="max-width: 360px;">
+                <label class="form-label"><?php echo sprintf(t('netsvc.ftp_fixed_password'), NetworkServicesService::FTP_FIXED_USER); ?></label>
+                <input type="password" name="netsvc_ftp_fixed_password" class="form-control" maxlength="64" autocomplete="new-password" placeholder="<?php echo $h(t('netsvc.ftp_fixed_keep')); ?>">
+            </div>
+            <label class="u-check-label-6" style="display: block; margin-bottom: 8px;">
+                <input type="checkbox" name="netsvc_ftp_anonymous" value="1" class="u-accent" <?php echo $settings['netsvc_ftp_anonymous'] === '1' ? 'checked' : ''; ?>>
+                <strong><?php echo t('netsvc.ftp_anonymous'); ?></strong>
+                <span class="u-muted u-fs-12">· <?php echo t('netsvc.ftp_anonymous_desc'); ?></span>
+            </label>
             <?php $ftpUsers = NetworkServicesService::ftpUsers($settings['netsvc_ftp_users']); ?>
             <?php if ($ftpUsers !== []): ?>
                 <label class="form-label"><?php echo t('netsvc.ftp_users'); ?></label>

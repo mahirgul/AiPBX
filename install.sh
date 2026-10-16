@@ -1023,10 +1023,9 @@ systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
 systemctl disable --now vsftpd.service >/dev/null 2>&1 || true
 systemctl mask vsftpd.service >/dev/null 2>&1 || true
 cat > /etc/pam.d/aipbx-ftp << 'FTPPAM'
-# AiPBX read-only FTP (PBX -> Network services). NECSDT700, the user NEC DT700/
-# DT800 phones log in with, needs no password; the extra FTP users added on the
-# page are checked against their password file. No system account can log in.
-auth    sufficient pam_succeed_if.so quiet user = NECSDT700
+# AiPBX read-only FTP (PBX -> Network services). Every FTP user, NECSDT700 (the
+# user of NEC DT700/DT800 phones) included, is checked against the password file
+# written by aipbx-priv. No system account can log in.
 auth    required   pam_pwdfile.so pwdfile=/var/lib/aipbx-netsvc/ftp.passwd
 account required   pam_permit.so
 FTPPAM
@@ -1046,6 +1045,13 @@ RestartSec=5
 WantedBy=multi-user.target
 FTPUNIT
 systemctl daemon-reload
+# Up to 1.30.1 NECSDT700 and anonymous logins needed no password. Write the FTP
+# configuration again from the portal's settings, so a running FTP server asks
+# for passwords right after the upgrade (and NECSDT700 is in the password file).
+if [[ -f /var/lib/aipbx-netsvc/vsftpd.conf ]]; then
+    ( cd "$INSTALL_DIR/web" && php bin/netsvc_ftp_reapply.php ) \
+        || warn "FTP settings could not be applied again: save PBX → Network services once"
+fi
 systemctl try-restart aipbx-vsftpd.service 2>/dev/null || true
 
 # Phone logs (PBX -> Phone logs): desk phones send syslog (UDP 514) to
