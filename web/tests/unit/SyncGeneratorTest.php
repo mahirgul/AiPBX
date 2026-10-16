@@ -188,6 +188,42 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    /**
+     * Star codes hand values to a shell (System). Every one must be digits only:
+     * a "." pattern also matches other characters, so "*81;rm -rf /" would
+     * otherwise reach the shell as the asterisk user (review of 2026-10-16).
+     */
+    public function testFeatureCodeShellArgumentsAreDigitsOnly(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/SyncFeatureCodes.php';
+        $db = getDB();
+        $added = [];
+        try {
+            foreach ([['queue_login', '*81'], ['queue_logout', '*80'], ['queue_pause', '*22'], ['cf_set', '*72'], ['dnd_toggle', '*78']] as [$key, $code]) {
+                if (!(bool) $db->query("SELECT COUNT(*) FROM pbx_feature_codes WHERE feature_key = " . $db->quote($key))->fetchColumn()) {
+                    $db->prepare('INSERT INTO pbx_feature_codes (feature_key, title, code, allowed_roles, is_active) VALUES (?, ?, ?, NULL, 1)')->execute([$key, $key, $code]);
+                    $added[] = $key;
+                }
+            }
+            syncFeatureCodes();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_featurecodes.conf');
+            $this->assertStringContainsString('System(', $conf);
+            foreach (explode("\n", $conf) as $line) {
+                if (!str_contains($line, 'System(')) {
+                    continue;
+                }
+                $bare = (string) preg_replace('/\$\{FILTER\(0-9,\$\{[^}]+\}\)\}/', '', $line);
+                $this->assertDoesNotMatchRegularExpression('/\$\{(CALLERID|EXTEN)/', $bare, 'unfiltered value in: ' . $line);
+            }
+            $this->assertStringContainsString('Set(QID=${FILTER(0-9,${EXTEN:3})})', $conf);
+            $this->assertStringContainsString('Set(CFTARGET=${FILTER(0-9,${CFTARGET})})', $conf);
+        } finally {
+            foreach ($added as $key) {
+                $db->prepare('DELETE FROM pbx_feature_codes WHERE feature_key = ?')->execute([$key]);
+            }
+        }
+    }
+
     /** Desk phones get the voicemail lamp (MWI) when the box is enabled, only on the -sip endpoint. */
     public function testDeskPhoneEndpointHasVoicemailLamp(): void
     {

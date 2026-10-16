@@ -122,7 +122,8 @@ class ChatWebSocketManager private constructor() {
 
         val fullWsUrl = "$wsProto$cleanHost/chat/ws?token=$token&active=${if (appActive) 1 else 0}"
 
-        Log.i(TAG, "Connecting to Chat WS: $fullWsUrl")
+        // Never the token: these logs can be shared from the app's log viewer.
+        Log.i(TAG, "Connecting to Chat WS: ${fullWsUrl.replace(Regex("token=[^&]*"), "token=REDACTED")}")
 
         val request = Request.Builder()
             .url(fullWsUrl)

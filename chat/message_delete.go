@@ -136,7 +136,7 @@ func DeleteMessage(msgID int64, ext string, windowMinutes int) (int, time.Time, 
 
 	// The same participant check as reading and sending: a member who left a
 	// group (or a deleted group) can no longer change its history.
-	if isPart, err := IsParticipant(m.ConversationID, ext); err != nil || !isPart {
+	if isPart, err := isParticipantQ(tx, m.ConversationID, ext); err != nil || !isPart {
 		return 0, time.Time{}, "", &sendError{http.StatusForbidden, "You are not a participant of this conversation."}
 	}
 	if e := checkDeleteAllowed(&m, ext, windowMinutes, time.Now()); e != nil {

@@ -1469,6 +1469,18 @@ fi
 # ============================================================================
 step "12. Configuring coturn"
 
+# TURN may relay only to this server. Every AiPBX call goes through Asterisk,
+# so the far end of a relay is always one of this server's addresses; private
+# and link-local networks are denied otherwise. TURN credentials are handed to
+# anonymous website visitors (call widget), and without this a relay could
+# reach other hosts of the company network (review of 2026-10-16). Loopback
+# is denied by coturn itself. Public addresses stay allowed: the server's own
+# public address (NAT) can be a candidate too.
+TURN_ALLOWED=""
+for ip in $(hostname -I); do
+    TURN_ALLOWED+="allowed-peer-ip=${ip}"$'\n'
+done
+
 cat > /etc/turnserver.conf << TURNCONF
 listening-port=3478
 tls-listening-port=5349
@@ -1491,6 +1503,17 @@ max-port=65535
 # in on: a loopback relay that Asterisk's media never matched, so calls that
 # needed TURN had no audio.
 relay-ip=${SERVER_IP}
+denied-peer-ip=0.0.0.0-0.255.255.255
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=100.64.0.0-100.127.255.255
+denied-peer-ip=169.254.0.0-169.254.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.0.0.0-192.0.0.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+denied-peer-ip=198.18.0.0-198.19.255.255
+denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+${TURN_ALLOWED}
 TURNCONF
 
 # coturn's certificate (/etc/coturn/aipbx.*) is the copy aipbx-cert wrote in step 7.
