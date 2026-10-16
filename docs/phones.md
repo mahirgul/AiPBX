@@ -165,10 +165,15 @@ Limits in this first version:
   The phone reads three files: `dt-<mac>.cfg` is its **master file** (as NEC's
   `dt-000000000000.cfg`) and only names the data file `dt-<mac>-phone.cfg`, which holds the
   settings; a data file under the master name is not applied (the phone logs *data config file
-  name is unavailable*). Line ends are Windows (CRLF), as in NEC's own files. After the data file the phone reads
-  `dt-<mac>-local.cfg`, its *local override* (settings changed on the phone's menu); AiPBX writes
-  it too, in the phone's own format with the same values, so an old local file cannot override
-  AiPBX's settings and the phone does not log a missing file.
+  name is unavailable*). Line ends are Unix (LF); the phones read them as well as NEC's CRLF. After
+  the data file the phone reads `dt-<mac>-local.cfg`, its *local override* (settings changed on the
+  phone's menu); AiPBX writes it too, in the phone's own format with the same values, so an old
+  local file cannot override AiPBX's settings and the phone does not log a missing file.
+  The local file starts with `<VERSION Version="n"/>`: the phone applies it only when `n` is higher
+  than the version it applied last. AiPBX keeps `n` per phone and raises it by one whenever any of
+  the three files changes (a setting, the SIP password, the server address …); an unchanged file
+  keeps its number. Numbering starts at 3, above the version-2 files the first phones were set up
+  with. When files are copied to another file server by hand, copy all three after every change.
   The file server (where the phone fetches `dt-<mac>.cfg`) cannot be set from the file: set it in
   the phone's menu (FTP, user `NECSDT700`) or by DHCP.
 

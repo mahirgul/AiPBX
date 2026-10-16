@@ -367,9 +367,9 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9ef609f.cfg', '192.0.2.10', '')['status']);
         $this->assertSame(404, PhoneProvisionService::handleRequest(null, 'dt-000000000000.cfg', '192.0.2.10', '')['status']);
 
-        // Windows line ends; the local override file next to it.
-        $this->assertStringContainsString("\r\n", $res['body']);
-        $this->assertStringNotContainsString("\r\r", $res['body']);
+        // Unix line ends (the phones read them); the local override file next to it.
+        $this->assertStringNotContainsString("\r", $res['body']);
+        $this->assertStringNotContainsString("\r", $master['body']);
         $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f-local.cfg', '192.0.2.10', '');
         $this->assertSame(200, $local['status']);
         $xml = simplexml_load_string($local['body']);
@@ -380,6 +380,30 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(self::$sipPassword, (string) $data['line.1.authentication.password']);
         $this->assertSame('+3', trim((string) $data['network.gmt.offset']));
         $this->assertSame(['dt-0060b9ef609f.cfg', 'dt-0060b9ef609f-phone.cfg', 'dt-0060b9ef609f-local.cfg'], (new NecTemplate())->exportFiles('0060b9ef609f'));
+    }
+
+    /** The local file's <VERSION> rises with each change of the files, and only then. */
+    public function testNecLocalVersionRisesOnlyWhenTheFilesChange(): void
+    {
+        $phone = $this->addPhone('0060b9ef6100', 'nec-dt830');
+        $this->setSetting('provision_allowed_networks', '192.0.2.0/24');
+        $version = function (): string {
+            $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef6100-local.cfg', '192.0.2.10', '');
+            $this->assertSame(200, $local['status']);
+            return (string) simplexml_load_string($local['body'])->VERSION['Version'];
+        };
+        // Starts above 2, the version the phones in use were set up with.
+        $this->assertSame('3', $version());
+        // Fetching again, or the other files, changes nothing.
+        PhoneProvisionService::handleRequest(null, 'dt-0060b9ef6100-phone.cfg', '192.0.2.10', '');
+        $this->assertSame('3', $version());
+
+        // The preview shows the next number without taking it.
+        $this->setSetting('provision_ntp', '192.0.2.123');
+        $preview = PhoneProvisionService::previewFiles(PhoneProvisionService::getPhone((int) $phone['id']));
+        $this->assertStringContainsString('<VERSION Version="4"/>', $preview[2]['content']);
+        $this->assertSame('4', $version());
+        $this->assertSame('4', $version());
     }
 
     public static function fileNames(): array
