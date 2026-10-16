@@ -85,7 +85,8 @@ final class NetworkSettingsService
         foreach (explode("\n", (string) @shell_exec('resolvectl dns 2>/dev/null')) as $line) {
             if (preg_match('/:\s*(.+)$/', $line, $m)) {
                 foreach (preg_split('/\s+/', trim($m[1])) ?: [] as $ip) {
-                    if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    // Link-local IPv6 (fe80::) is no use to anyone reading the page.
+                    if (filter_var($ip, FILTER_VALIDATE_IP) && stripos($ip, 'fe80:') !== 0) {
                         $out[] = $ip;
                     }
                 }
@@ -327,6 +328,8 @@ final class NetworkSettingsService
         try {
             syncTransports();
             syncRtpSettings();
+            // Both were just generated from the database: nothing of theirs waits for Apply.
+            $db->exec("DELETE FROM sys_pending_sync WHERE domain IN ('transports', 'rtp')");
         } catch (\Throwable $e) {
             $synced = false;
         }
