@@ -137,8 +137,11 @@ Fax-to-e-mail, voicemail notifications and invitations are sent through postfix.
 ### 3.7 Backups
 `aipbx-backup` runs every night at 02:30 (`/etc/cron.d/aipbx`) and writes
 `/var/backups/aipbx-daily/aipbx-YYYYmmdd-HHMM/` with a full database dump (`db.sql.gz`) and
-`config.tgz` (`/etc/ai-pbx.env`, `/etc/asterisk`, uploaded sounds, music on hold, certificates).
-Backups older than 14 days are removed. Optional settings in `/etc/ai-pbx.env`:
+`config.tgz` (`/etc/ai-pbx.env`, `/etc/asterisk`, uploaded sounds, music on hold, certificates,
+the settings key `/var/lib/aipbx/settings.key` and the AI service token `/etc/aipbx/ai.token`).
+The settings key decrypts the secrets kept in the database (cloud AI and TTS keys, S3, mail): restore
+it together with the database, or those secrets have to be entered again. The backup is readable by
+root only; keep off-server copies just as private. Backups older than 14 days are removed. Optional settings in `/etc/ai-pbx.env`:
 
 | Setting | Default | Purpose |
 |---------|---------|---------|
@@ -148,7 +151,7 @@ Backups older than 14 days are removed. Optional settings in `/etc/ai-pbx.env`:
 
 Run one by hand with `sudo aipbx-backup`; results are logged to `/var/log/aipbx/backup.log`.
 Call recordings are not included — copy `/var/spool/asterisk/monitor` separately. Restore a database
-with `zcat db.sql.gz | sudo mysql`. Other databases on the same server are not backed up.
+with `zcat db.sql.gz | sudo mysql` and the files with `sudo tar xzf config.tgz -C /`. Other databases on the same server are not backed up.
 
 ### 3.8 Next Steps
 Trunks, routes, roles, recordings, sounds and troubleshooting: [documentation](docs/README.md).

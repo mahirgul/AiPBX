@@ -5,6 +5,8 @@
 #   <dir>/aipbx-YYYYmmdd-HHMM/db.sql.gz     full dump of the AiPBX database
 #   <dir>/aipbx-YYYYmmdd-HHMM/config.tgz    /etc/ai-pbx.env, /etc/asterisk, uploaded
 #                                            sounds and music on hold, certificates
+#                                            (Let's Encrypt and /etc/ssl/aipbx), the
+#                                            settings key and the AI service token
 # and removes backups older than the retention period.
 #
 # Optional settings in /etc/ai-pbx.env:
@@ -51,7 +53,12 @@ if ! mysqldump --single-transaction --routines --triggers --events --hex-blob --
 fi
 
 paths=()
-for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt; do
+# var/lib/aipbx/settings.key decrypts the secrets stored in the database (cloud
+# AI/TTS keys, S3, mail): a database restored without it cannot read them.
+# etc/ssl/aipbx holds uploaded or self-signed certificates, etc/aipbx the AI
+# service token. The archive is root-only (umask 077 above).
+for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt \
+         var/lib/aipbx/settings.key etc/ssl/aipbx etc/aipbx; do
     [[ -e "/$p" ]] && paths+=("$p")
 done
 if ! tar czf "$WORK/config.tgz" -C / "${paths[@]}" 2>>"$LOG_FILE"; then

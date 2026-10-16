@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.70",
+  "version": "1.0.71",
   "notes": {
-    "en-US": "Fix: after a video call the phone could stop receiving calls until the app was restarted. The app now keeps its connection and repairs itself if it gets stuck. Video calls: answer with video straight from the notification, and a video button in the call history.",
-    "tr-TR": "Düzeltme: görüntülü görüşmeden sonra telefon, uygulama yeniden başlatılana kadar arama almayabiliyordu. Uygulama artık bağlantısını korur, takılırsa kendini onarır. Görüntülü arama: bildirimden doğrudan görüntülü cevap ve arama geçmişinde video düğmesi."
+    "en-US": "Security: the session key is no longer kept in a plain backup file on the phone and no longer appears in the app's log. Includes 1.0.70: after a video call the phone keeps receiving calls, video answer from the notification, video button in the call history.",
+    "tr-TR": "Güvenlik: oturum anahtarı artık telefondaki şifresiz yedek dosyada tutulmuyor ve uygulama günlüğünde görünmüyor. 1.0.70 ile gelenler: görüntülü görüşmeden sonra telefon arama almaya devam eder, bildirimden görüntülü cevap, arama geçmişinde video düğmesi."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

@@ -120,3 +120,6 @@ web/assets/images/brand/
 
 # === Translation work files (scripts/i18n.py) ===
 .i18n-work/
+
+# === Local review notes (not part of the project) ===
+antigravity/

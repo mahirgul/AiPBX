@@ -171,15 +171,15 @@ final class QueueMembershipTest extends TestCase
 
         // *22 default pause
         $this->assertStringContainsString('exten => *22,1,NoOp(Feature Code queue_pause (default)', $conf);
-        $this->assertStringContainsString('feature_code_action.php queue_pause ${CALLERID(num)} 1', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_pause ${FILTER(0-9,${CALLERID(num)})} 1', $conf);
 
         // *22<id> custom break reason
         $this->assertStringContainsString('exten => _*22.,1,NoOp(Feature Code queue_pause', $conf);
-        $this->assertStringContainsString('Set(REASON_ID=${EXTEN:3})', $conf);
-        $this->assertStringContainsString('feature_code_action.php queue_pause ${CALLERID(num)} ${REASON_ID}', $conf);
+        $this->assertStringContainsString('Set(REASON_ID=${FILTER(0-9,${EXTEN:3})})', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_pause ${FILTER(0-9,${CALLERID(num)})} ${REASON_ID}', $conf);
 
         // *23 unpause
         $this->assertStringContainsString('exten => *23,1,NoOp(Feature Code queue_unpause', $conf);
-        $this->assertStringContainsString('feature_code_action.php queue_unpause ${CALLERID(num)}', $conf);
+        $this->assertStringContainsString('feature_code_action.php queue_unpause ${FILTER(0-9,${CALLERID(num)})}', $conf);
     }
 }

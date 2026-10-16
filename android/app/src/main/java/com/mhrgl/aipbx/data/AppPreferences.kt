@@ -251,7 +251,6 @@ class AppPreferences(context: Context) {
 
             appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
                 putString(KEY_SERVER_URL, serverUrl)
-                putString(KEY_TOKEN, response.token)
                 putString(KEY_USERNAME, u.username)
                 putString(KEY_FULL_NAME, u.fullName)
                 putString(KEY_EXTENSION, u.extension)
@@ -260,7 +259,11 @@ class AppPreferences(context: Context) {
                     putString(KEY_DOMAIN, s.domain)
                     putString(KEY_WS_URL, s.wsUrl)
                 }
-                // T-5 / M17: for security, passwords and TURN secrets are never written to plain-text storage.
+                // T-5 / M17: for security, passwords, TURN secrets and the session token are never
+                // written to plain-text storage. The token was, until 1.0.71: with it the SIP and TURN
+                // passwords could be fetched again (/api/mobile/refresh.php). After a lost keystore
+                // the user signs in once more instead.
+                remove(KEY_TOKEN)
                 remove(KEY_SIP_PASSWORD)
                 remove(KEY_TURN_PASS)
                 remove(KEY_TURN_USER)
@@ -398,11 +401,26 @@ class AppPreferences(context: Context) {
                     Log.i("AppPreferences", "Successfully restored ${fallbackData.size} items to new EncryptedSharedPreferences after Keystore recovery.")
                 }
 
+                dropTokenFromFallback(context)
                 newSecurePrefs
             } catch (recoveryEx: Exception) {
                 Log.e("AppPreferences", "Keystore recovery failed, falling back to standard fallback storage", recoveryEx)
                 recordKeystoreError(context, recoveryEx)
                 context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE)
+            }
+        }
+
+        /**
+         * Removes a session token that versions up to 1.0.70 left in the plain-text fallback
+         * file. Only called once the encrypted store works: when it cannot be opened at all,
+         * the fallback file is the store, and removing the token would sign the user out.
+         */
+        private fun dropTokenFromFallback(context: Context) {
+            try {
+                val fallback = context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE)
+                if (fallback.contains(KEY_TOKEN)) fallback.edit().remove(KEY_TOKEN).apply()
+            } catch (e: Exception) {
+                Log.w("AppPreferences", "Could not clean the fallback preferences", e)
             }
         }
 
@@ -426,7 +444,7 @@ class AppPreferences(context: Context) {
                 if (allOld.isNotEmpty()) {
                     val editor = securePrefs.edit()
                     val fallbackEditor = context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit()
-                    val sensitiveKeys = setOf(KEY_SIP_PASSWORD, KEY_TURN_PASS, KEY_TURN_USER, KEY_FCM_API_KEY)
+                    val sensitiveKeys = setOf(KEY_TOKEN, KEY_SIP_PASSWORD, KEY_TURN_PASS, KEY_TURN_USER, KEY_FCM_API_KEY)
                     for ((k, v) in allOld) {
                         when (v) {
                             is String -> {
@@ -456,6 +474,7 @@ class AppPreferences(context: Context) {
                     oldPrefs.edit().clear().apply()
                     Log.i("AppPreferences", "Legacy preferences migrated to EncryptedSharedPreferences and mirrored to fallback.")
                 }
+                dropTokenFromFallback(context)
                 securePrefs
             } catch (e: Exception) {
                 Log.e("AppPreferences", "Failed to initialize EncryptedSharedPreferences on first attempt", e)
