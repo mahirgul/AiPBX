@@ -29,7 +29,7 @@ refreshes them every 30 minutes, so a call-centre tab that stays open all day ke
 
 When the server sits behind NAT (a cloud VM with a private address, a server behind the office
 router), set **External IP Address** and list your **Local Network & VPN Subnets** under
-**Admin → PBX Settings**, then *Apply*. AiPBX writes:
+**System → PBX Settings**, then *Apply*. AiPBX writes:
 
 - `external_media_address` / `external_signaling_address` and `local_net` on every PJSIP transport —
   desk phones and trunks outside the local networks are given the public address, phones inside keep

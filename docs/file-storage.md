@@ -1,6 +1,6 @@
 # File storage
 
-**Admin → File storage** (admin only) decides where the chat service keeps chat files: message
+**System → File storage** (admin only) decides where the chat service keeps chat files: message
 attachments, their thumbnails and group pictures.
 
 | Storage | Where |
@@ -61,7 +61,7 @@ reads.
    }
    ```
 
-2. On **Admin → File storage** choose *S3-compatible storage* and fill in:
+2. On **System → File storage** choose *S3-compatible storage* and fill in:
 
    | Field | Value |
    |-------|-------|

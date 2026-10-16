@@ -1,6 +1,6 @@
 # Network services (DHCP, TFTP, FTP, NTP and syslog for desk phones)
 
-**PBX → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
+**Network & devices → Network services** lets desk phones find AiPBX by themselves: the DHCP server hands out
 the provisioning address (option 66), and TFTP serves boot files or firmware to phones that need
 them. The configuration of each phone (with its SIP password) is always fetched over HTTPS from
 `/provision/` (see [Desk phones](phones.md)), never over TFTP.
@@ -24,7 +24,7 @@ ticked.
 
 Interface, first and last address, netmask, gateway, DNS servers (up to 3), NTP servers (option 42,
 up to 3), lease time. The range must lie in the network of the chosen interface and must not
-contain the server's own address. The provisioning address is the one on *PBX → Phones → Provisioning
+contain the server's own address. The provisioning address is the one on *Network & devices → Phones → Provisioning
 settings* (else the portal's address). The phones get:
 
 | Option | Value | For |
@@ -42,7 +42,7 @@ phone does not ask for them (dnsmasq `dhcp-option-force`). Quotes, `#`, backslas
 breaks are refused: the dnsmasq file is written as root.
 
 For the MAC-based `/provision/` address to answer, the phone network must be in **Allowed
-networks** of the provisioning settings (*PBX → Phones*).
+networks** of the provisioning settings (*Network & devices → Phones*).
 
 **Leases** lists every device that got an address. Phones among them (recognised by the MAC
 prefix) that are not known yet appear under **Waiting phones** on the Phones page, so they can be
@@ -54,7 +54,7 @@ TFTP serves the files uploaded under *TFTP files* on the page (boot files, firmw
 names that contain a MAC address are refused for upload: those would be per-phone configuration
 files. Shared files such as `y000000000108.cfg` or `000000000000.cfg` are allowed. The per-phone
 files are written into the folder by AiPBX itself when *Also write the phones' files into the
-TFTP/FTP folder* is ticked on *PBX → Phones → Provisioning settings* (see
+TFTP/FTP folder* is ticked on *Network & devices → Phones → Provisioning settings* (see
 [Desk phones](phones.md#server-addresses-networks-without-dns)).
 
 TFTP answers only the **Allowed networks** of the provisioning settings (plus, in DHCP mode, the
@@ -95,7 +95,7 @@ folder as TFTP:
 
 **NTP server (time)** lets the phones take their time from this server (NTP, UDP 123), from the same
 networks as TFTP and FTP — useful on phone networks without internet access. Enter this server's IP
-as *NTP server* under *PBX → Phones → Provisioning settings* (NEC phones take an IP address only);
+as *NTP server* under *Network & devices → Phones → Provisioning settings* (NEC phones take an IP address only);
 in DHCP mode, option 42 names this server when the DHCP *NTP servers* field is empty.
 
 The server's own time sync (chrony) does the work: switching it on writes
@@ -105,7 +105,7 @@ restarts chrony. Switching it off removes the file and the firewall rules again.
 
 ## Phone logs: one page for every service
 
-**PBX → Phone logs** has a tab for every way a desk phone talks to this server, so one page
+**Network & devices → Phone logs** has a tab for every way a desk phone talks to this server, so one page
 answers "did the phone get its file, and if not, why":
 
 | Tab | Shows | Source |
@@ -126,8 +126,8 @@ match (see FTP above).
 ## Syslog (phone logs)
 
 **Syslog (phone logs)** receives what desk phones log (syslog, UDP 514) from the same networks as
-TFTP and FTP; read it on **PBX → Phone logs**. Set this server's IP as *Syslog server* on
-*PBX → Phones → Provisioning settings* (NEC phones get it with their file; other phones in their
+TFTP and FTP; read it on **Network & devices → Phone logs**. Set this server's IP as *Syslog server* on
+*Network & devices → Phones → Provisioning settings* (NEC phones get it with their file; other phones in their
 own menu or web page).
 
 The page shows the newest 500 lines and, with *Live* on, follows new ones every 3 seconds. Type an

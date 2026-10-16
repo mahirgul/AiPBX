@@ -17,9 +17,9 @@ welcome there.
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
 | 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](network-services.md) | | medium |
 | 11 | [Visual IVR editor](#11-visual-ivr-editor) (later) | [#16](https://github.com/mahirgul/AiPBX/issues/16) | large |
-| 12 | [Server address change in one step](#12-server-address-change-in-one-step) | | medium |
-| 13 | [Network settings page](#13-network-settings-page) | | medium |
-| 14 | [Menu reorganisation](#14-menu-reorganisation) (with 12 and 13) | | small |
+| 12 | [Server address change in one step](#12-server-address-change-in-one-step): done (1.33.0), see [Network settings](network-settings.md) | | done |
+| 13 | [Network settings page](#13-network-settings-page): done (1.33.0) except changing the server's own address (netplan) | | medium |
+| 14 | [Menu reorganisation](#14-menu-reorganisation): done (1.33.0) | | done |
 
 Done recently: website call widget with the call-back form and a WordPress plugin ([Website call widget](web-widgets.md)); phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
@@ -306,7 +306,7 @@ phones also get no voicemail lamp: their endpoints have no `mailboxes=`.
 **Goal.** A new desk phone works within a minute: plug it in, it fetches its configuration from
 AiPBX and registers with the right extension, keys and settings, without anyone typing on it.
 
-**Admin page** (*PBX → Phones*):
+**Admin page** (*Network & devices → Phones*):
 
 - **Phone list:** MAC address, model, assigned extension, IP, firmware, last configuration
   download, registration state.
@@ -337,7 +337,7 @@ needed.
 **Goal.** Phones find the provisioning server by themselves: the DHCP server tells them its
 address (option 66), and TFTP serves the files of phones that need it.
 
-**Admin page** (*PBX → Network services*):
+**Admin page** (*Network & devices → Network services*):
 
 - **Off by default.** A second DHCP server on a network breaks it, so it has to be switched on
   deliberately, with a clear warning and a check for another DHCP server already answering.
@@ -368,7 +368,8 @@ place, and seeing the changes before Apply. Until then keys are edited in the IV
 
 ## 12. Server address change in one step
 
-Planned 2026-10-16. Today the server's IP address is written into many places, at install time or
+**Done in 1.33.0**: health check *Server address*, *Network settings → Apply new address* and
+`sudo aipbx-readdress`; see [Network settings](network-settings.md). Planned 2026-10-16. Today the server's IP address is written into many places, at install time or
 by hand, and nothing notices when it changes (a new DHCP lease, a move to another network, a
 cloned VM). Calls then break in ways that are hard to trace: TURN has no audio, desk phones
 register to the old address, the portal's certificate no longer matches.
@@ -405,7 +406,8 @@ register to the old address, the portal's certificate no longer matches.
 
 ## 13. Network settings page
 
-Planned 2026-10-16. Network settings are spread over *Asterisk settings* (external IP, local
+**Done in 1.33.0** (*Network & devices → Network settings*), except the last point: changing the
+server's own address, gateway and DNS with a roll-back is still open. Planned 2026-10-16. Network settings are spread over *Asterisk settings* (external IP, local
 networks, RTP ports), *Phones → Provisioning settings* (addresses for the phones, allowed networks)
 and *Network services*. One page collects them:
 
@@ -420,7 +422,7 @@ and *Network services*. One page collects them:
 
 ## 14. Menu reorganisation
 
-Planned 2026-10-16, to do together with 12 and 13. The *PBX* group holds 16 entries, network and
+**Done in 1.33.0** as below (Lines and Panel kept their entries). Planned 2026-10-16, to do together with 12 and 13. The *PBX* group holds 16 entries, network and
 desk-phone pages sit between ring groups and IVRs, and *Admin* mixes users, settings and system
 pages. Proposed groups:
 

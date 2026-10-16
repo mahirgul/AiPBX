@@ -79,7 +79,7 @@ sudo aipbx-update --check   # installed vs. latest release
 sudo aipbx-update           # update to the latest release
 ```
 
-Or from the portal: **Admin → System Update** (admin only) shows the installed and latest version, the
+Or from the portal: **System → System Update** (admin only) shows the installed and latest version, the
 release notes and an **Update** button with live progress. A new release is also checked for every night.
 
 Every update:
