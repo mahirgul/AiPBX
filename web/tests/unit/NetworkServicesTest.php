@@ -188,18 +188,36 @@ final class NetworkServicesTest extends TestCase
         $this->assertContains('tftp=0', NetworkServicesService::privArgs($v, [], 'https://pbx.example.com/provision/'));
     }
 
-    public function testFtpNeedsNoPasswordAndCarriesOnlyHashes(): void
+    public function testFtpNeedsPasswordsAndCarriesOnlyHashes(): void
     {
-        // On without any user: NECSDT700 and anonymous need nothing.
+        // On without any user: NECSDT700 with NEC's default password, no anonymous login.
         $v = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1'], self::IFACES, ['192.168.10.0/24', '2001:db8::/32']);
-        $this->assertSame(['netsvc', 'ftp-on', 'net=192.168.10.0/24'], NetworkServicesService::ftpArgs($v, ['192.168.10.0/24', '2001:db8::/32']));
+        $args = NetworkServicesService::ftpArgs($v, ['192.168.10.0/24', '2001:db8::/32']);
+        $this->assertSame(['netsvc', 'ftp-on'], array_slice($args, 0, 2));
+        $this->assertMatchesRegularExpression('#^user=NECSDT700:\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$#', $args[2]);
+        $this->assertTrue(password_verify('NECSdt700', substr($args[2], strlen('user=NECSDT700:'))));
+        $this->assertSame(['net=192.168.10.0/24'], array_slice($args, 3));
+        $this->assertNotContains('anonymous=1', $args);
+        $this->assertSame('', $v['netsvc_ftp_fixed_hash']);
 
-        // An extra user goes over as name:hash only.
+        // Anonymous login only when switched on.
+        $v = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1', 'netsvc_ftp_anonymous' => '1'], self::IFACES, ['192.168.10.0/24']);
+        $this->assertContains('anonymous=1', NetworkServicesService::ftpArgs($v, ['192.168.10.0/24']));
+
+        // An own NECSDT700 password is stored as a hash and kept by an empty field.
+        $v = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1', 'netsvc_ftp_fixed_password' => 'Phone-77'], self::IFACES, ['192.168.10.0/24']);
+        $this->assertTrue(password_verify('Phone-77', $v['netsvc_ftp_fixed_hash']));
+        $kept = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1'], self::IFACES, ['192.168.10.0/24'], [], $v['netsvc_ftp_fixed_hash']);
+        $this->assertSame($v['netsvc_ftp_fixed_hash'], $kept['netsvc_ftp_fixed_hash']);
+        $this->assertSame('user=NECSDT700:' . $v['netsvc_ftp_fixed_hash'], NetworkServicesService::ftpArgs($kept, ['192.168.10.0/24'])[2]);
+        $this->assertStringNotContainsString('Phone-77', implode(' ', NetworkServicesService::ftpArgs($kept, ['192.168.10.0/24'])));
+
+        // An extra user goes over as name:hash only, after NECSDT700.
         $v = NetworkServicesService::validate(['netsvc_mode' => 'off', 'netsvc_ftp' => '1',
             'netsvc_ftp_new_user' => 'yealink', 'netsvc_ftp_new_password' => 'Secret123'], self::IFACES, ['192.168.10.0/24']);
         $args = NetworkServicesService::ftpArgs($v, ['192.168.10.0/24']);
-        $this->assertMatchesRegularExpression('#^user=yealink:\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$#', $args[2], 'the form aipbx-priv accepts');
-        $this->assertTrue(password_verify('Secret123', substr($args[2], strlen('user=yealink:'))));
+        $this->assertMatchesRegularExpression('#^user=yealink:\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$#', $args[3], 'the form aipbx-priv accepts');
+        $this->assertTrue(password_verify('Secret123', substr($args[3], strlen('user=yealink:'))));
         $this->assertStringNotContainsString('Secret123', implode(' ', $args));
 
         // Kept on the next save, removed when ticked, password replaced by the same name.
@@ -221,7 +239,7 @@ final class NetworkServicesTest extends TestCase
         $this->assertSame(['netsvc', 'ftp-off'], NetworkServicesService::ftpArgs($v, []));
         // The phone network of DHCP mode is enough for FTP.
         $v = NetworkServicesService::validate($this->dhcpForm(['netsvc_ftp' => '1']), self::IFACES, []);
-        $this->assertSame(['netsvc', 'ftp-on', 'net=192.168.10.0/24'], NetworkServicesService::ftpArgs($v, []));
+        $this->assertSame('net=192.168.10.0/24', array_slice(NetworkServicesService::ftpArgs($v, []), -1)[0]);
 
         foreach ([
             ['netsvc_ftp_new_user' => 'x', 'netsvc_ftp_new_password' => 'abc'],        // too short
@@ -230,6 +248,8 @@ final class NetworkServicesTest extends TestCase
             ['netsvc_ftp_new_user' => "x\nnet=0.0.0.0/0", 'netsvc_ftp_new_password' => 'pass1234'],
             ['netsvc_ftp_new_user' => 'NECSDT700', 'netsvc_ftp_new_password' => 'pass1234'],
             ['netsvc_ftp_new_user' => 'anonymous', 'netsvc_ftp_new_password' => 'pass1234'],
+            ['netsvc_ftp_fixed_password' => 'abc'],                                       // too short
+            ['netsvc_ftp_fixed_password' => "pa ss\nword"],
         ] as $over) {
             try {
                 NetworkServicesService::validate($over + ['netsvc_mode' => 'off', 'netsvc_ftp' => '1'], self::IFACES, ['192.168.10.0/24']);
