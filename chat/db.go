@@ -606,11 +606,27 @@ func GetParticipants(convID int) ([]string, error) {
 // A deleted conversation has no participants: deleting a group only sets
 // is_deleted, so without this check its members could still read and post.
 func IsParticipant(convID int, ext string) (bool, error) {
-	if convID <= 0 || ext == "" || db == nil {
+	if db == nil {
+		return false, nil
+	}
+	return isParticipantQ(db, convID, ext)
+}
+
+// rowQuerier is *sql.DB or *sql.Tx.
+type rowQuerier interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+// isParticipantQ runs the participant check on q: inside a transaction it must
+// use that transaction's connection. Asking the pool for a second one while the
+// transaction holds the first deadlocks once every pooled connection sits in
+// such a transaction (review of 2026-10-16).
+func isParticipantQ(q rowQuerier, convID int, ext string) (bool, error) {
+	if convID <= 0 || ext == "" {
 		return false, nil
 	}
 	var exists int
-	err := db.QueryRow(`
+	err := q.QueryRow(`
 		SELECT 1 FROM chat_participants p
 		JOIN chat_conversations c ON c.id = p.conversation_id AND c.is_deleted = 0
 		WHERE p.conversation_id = ? AND p.extension = ? AND p.left_at IS NULL

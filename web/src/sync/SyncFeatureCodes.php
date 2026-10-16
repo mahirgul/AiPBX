@@ -48,7 +48,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(allowed_{$key}_base),NoOp(Permission verified: \${USER_ROLE})\n";
             }
-            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} all &)\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${FILTER(0-9,\${CALLERID(num)})} all &)\n";
             $conf .= " same => n,Answer()\n";
             if ($key === 'queue_login') {
                 $conf .= " same => n,Playback(queue-agentlogin-success)\n";
@@ -77,9 +77,11 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(allowed_{$key}_pat),NoOp(Permission verified: \${USER_ROLE})\n";
             }
-            $conf .= " same => n,Set(QID=\${EXTEN:{$prefix_len}})\n";
+            // Digits only: "." also matches other characters, and the value goes
+            // into a shell command (System). Same for every value passed below.
+            $conf .= " same => n,Set(QID=\${FILTER(0-9,\${EXTEN:{$prefix_len}})})\n";
             $conf .= " same => n,GotoIf(\$[\"\${QID}\" = \"\"]?{$key}_empty)\n";
-            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${CALLERID(num)} \${QID} &)\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php {$action} \${FILTER(0-9,\${CALLERID(num)})} \${QID} &)\n";
             $conf .= " same => n,Answer()\n";
             if ($key === 'queue_login') {
                 $conf .= " same => n,Playback(queue-agentlogin-success)\n";
@@ -117,7 +119,7 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(allowed_{$key}_base),NoOp(Permission verified: \${USER_ROLE})\n";
             }
-            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} 1 &)\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${FILTER(0-9,\${CALLERID(num)})} 1 &)\n";
             $conf .= " same => n,Answer()\n";
             $conf .= " same => n,Playback(beep)\n";
             $conf .= " same => n,Wait(0.2)\n";
@@ -137,8 +139,8 @@ function __syncFeatureCodesBody() {
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(allowed_{$key}_pat),NoOp(Permission verified: \${USER_ROLE})\n";
             }
-            $conf .= " same => n,Set(REASON_ID=\${EXTEN:{$prefix_len}})\n";
-            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${CALLERID(num)} \${REASON_ID} &)\n";
+            $conf .= " same => n,Set(REASON_ID=\${FILTER(0-9,\${EXTEN:{$prefix_len}})})\n";
+            $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_pause \${FILTER(0-9,\${CALLERID(num)})} \${REASON_ID} &)\n";
             $conf .= " same => n,Answer()\n";
             $conf .= " same => n,Playback(beep)\n";
             $conf .= " same => n,Wait(0.2)\n";
@@ -163,7 +165,7 @@ function __syncFeatureCodesBody() {
 
         switch ($key) {
             case 'dnd_toggle':
-                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php dnd_toggle \${CALLERID(num)} &)\n";
+                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php dnd_toggle \${FILTER(0-9,\${CALLERID(num)})} &)\n";
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
@@ -172,8 +174,9 @@ function __syncFeatureCodesBody() {
             case 'cf_set':
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Read(CFTARGET,,10,,3,10)\n";
+                $conf .= " same => n,Set(CFTARGET=\${FILTER(0-9,\${CFTARGET})})\n";
                 $conf .= " same => n,GotoIf(\$[\"\${CFTARGET}\" = \"\"]?cfset_empty)\n";
-                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_set \${CALLERID(num)} \${CFTARGET} &)\n";
+                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_set \${FILTER(0-9,\${CALLERID(num)})} \${CFTARGET} &)\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
                 $conf .= " same => n(cfset_empty),Playback(beep)\n";
@@ -181,7 +184,7 @@ function __syncFeatureCodesBody() {
                 break;
 
             case 'cf_cancel':
-                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_cancel \${CALLERID(num)} &)\n";
+                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_cancel \${FILTER(0-9,\${CALLERID(num)})} &)\n";
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Hangup()\n";
@@ -254,7 +257,7 @@ function __syncFeatureCodesBody() {
                 break;
 
             case 'queue_unpause':
-                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_unpause \${CALLERID(num)} &)\n";
+                $conf .= " same => n,System(/usr/local/bin/feature_code_action.php queue_unpause \${FILTER(0-9,\${CALLERID(num)})} &)\n";
                 $conf .= " same => n,Answer()\n";
                 $conf .= " same => n,Playback(beep)\n";
                 $conf .= " same => n,Wait(1)\n";

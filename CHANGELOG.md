@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.32.0
+
+Security fixes from a code review (2026-10-16):
+
+- **Star codes:** the queue, break and call-forwarding codes passed the dialled
+  digits to a shell command unfiltered; a SIP user could run commands as the
+  `asterisk` user by dialling e.g. `*81` followed by other characters. Every value
+  is now reduced to digits first.
+- **Backups:** the nightly backup now includes the settings key
+  (`/var/lib/aipbx/settings.key`), without which the secrets stored in the
+  database (cloud AI/TTS keys, S3, mail) cannot be read after a restore, plus
+  uploaded certificates and the AI service token.
+- **TURN:** coturn relays only to this server; private and link-local networks
+  are refused (TURN credentials also go to visitors of websites with the call
+  widget). After the server gets a new IP address, run `install.sh --upgrade`.
+- **Outbound routes:** reordering routes by drag and drop now asks for *Apply*
+  (Asterisk kept the old order until then); reordering trunks is logged.
+- **Chat service:** deleting a message could deadlock the database pool under
+  load; push notifications for large groups started one PHP process per member
+  at once, now at most 8 at a time with a time limit.
+- **Android 1.0.71:** the session key is no longer kept in the plain-text
+  fallback file and no longer written to the app's log.
+
 ## 1.31.1
 
 - *PBX → Phones*: the "Recent configuration requests" list is gone; the same
