@@ -327,11 +327,6 @@ $userOptions = function () use ($users) {
                 </div>
                 <div class="u-grid-2">
                     <div class="form-group">
-                        <label class="form-label"><?php echo t('phones.ntp'); ?></label>
-                        <input type="text" name="provision_ntp" class="form-control" value="<?php echo htmlspecialchars($settings['provision_ntp']); ?>" required>
-                        <div class="text-muted u-fs-11"><?php echo t('phones.ntp_help'); ?></div>
-                    </div>
-                    <div class="form-group">
                         <label class="form-label"><?php echo t('phones.timezone'); ?></label>
                         <select name="provision_timezone" class="form-control">
                             <?php foreach (DateTimeZone::listIdentifiers() as $tz): ?>
@@ -354,33 +349,10 @@ $userOptions = function () use ($users) {
                         <input type="number" name="provision_rate_limit" class="form-control" min="5" max="1000" value="<?php echo (int) $settings['provision_rate_limit']; ?>">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label"><?php echo t('phones.allowed_networks'); ?></label>
-                    <textarea name="provision_allowed_networks" class="form-control" rows="3" placeholder="192.168.1.0/24&#10;10.0.0.0/8"><?php echo htmlspecialchars($settings['provision_allowed_networks']); ?></textarea>
-                    <div class="text-muted u-fs-11"><?php echo t('phones.allowed_networks_help'); ?></div>
-                </div>
-                <h4 class="u-mt-12 u-mb-0"><i class="fas fa-server u-primary"></i> <?php echo t('phones.addresses_title'); ?></h4>
-                <p class="text-muted u-fs-11 u-mt-4"><?php echo t('phones.addresses_help'); ?></p>
-                <div class="u-grid-2">
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('phones.sip_server'); ?></label>
-                        <input type="text" name="provision_sip_server" class="form-control" maxlength="255" value="<?php echo htmlspecialchars($settings['provision_sip_server']); ?>" placeholder="<?php echo htmlspecialchars(PhoneProvisionService::sipServer() === $settings['provision_sip_server'] ? '' : PhoneProvisionService::sipServer()); ?>">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('phones.sip_proxy'); ?></label>
-                        <input type="text" name="provision_sip_proxy" class="form-control" maxlength="255" value="<?php echo htmlspecialchars($settings['provision_sip_proxy']); ?>" placeholder="<?php echo htmlspecialchars(t('phones.sip_proxy_none')); ?>">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label"><?php echo t('phones.syslog'); ?></label>
-                    <input type="text" name="provision_syslog" class="form-control" maxlength="15" value="<?php echo htmlspecialchars($settings['provision_syslog']); ?>" placeholder="<?php echo htmlspecialchars(t('phones.sip_proxy_none')); ?>">
-                    <div class="text-muted u-fs-11"><?php echo t('phones.syslog_help'); ?></div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label"><?php echo t('phones.base_url'); ?></label>
-                    <input type="text" name="provision_base_url" class="form-control" maxlength="300" value="<?php echo htmlspecialchars($settings['provision_base_url']); ?>" placeholder="<?php echo htmlspecialchars(ForgotPasswordService::portalUrl()); ?>">
-                    <div class="text-muted u-fs-11"><?php echo t('phones.base_url_help'); ?></div>
-                </div>
+                <!-- Addresses for the phones (SIP server, proxy, files, syslog, NTP) and the allowed
+                     networks are on Network -> Network settings, next to the server's own addresses. -->
+                <div class="alert alert-info u-fs-12" style="margin: 8px 0 12px;"><i class="fas fa-network-wired"></i> <?php echo t('netset.moved_phones'); ?>
+                    <a href="/network-settings"><?php echo t('sidebar.item_network_settings'); ?></a></div>
                 <div class="form-group">
                     <label class="u-check-label"><input type="checkbox" class="u-accent" name="provision_tftp_export" value="1" <?php echo $settings['provision_tftp_export'] === '1' ? 'checked' : ''; ?>> <?php echo t('phones.tftp_export'); ?></label>
                     <div class="text-muted u-fs-11"><?php echo t('phones.tftp_export_help'); ?></div>
