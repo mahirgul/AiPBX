@@ -21,10 +21,15 @@
  * administrator uploads (boot files, firmware).
  *
  * FTP (netsvc_ftp, independent of the mode): vsftpd serves the same folder
- * read-only, from the same networks as TFTP, to anonymous logins, to the fixed
- * user NECSDT700 without a password (NEC DT700/DT800 phones log in with it)
- * and to extra FTP users added on the page (netsvc_ftp_users: name + SHA-512
- * hash; aipbx-priv gets only the hashes). None of them is a system account.
+ * read-only, from the same networks as TFTP, to the fixed user NECSDT700 (NEC
+ * DT700/DT800 phones log in with it, by default with password NECSdt700) and
+ * to extra FTP users added on the page (netsvc_ftp_users: name + SHA-512 hash;
+ * aipbx-priv gets only the hashes). None of them is a system account.
+ * Every login needs a password (since 1.30.2): the folder holds the phones'
+ * files, and with them their SIP passwords. Anonymous login (no password) is
+ * off unless the administrator turns it on (netsvc_ftp_anonymous). TFTP has
+ * no logins at all (the protocol has none); it serves the same folder to the
+ * allowed networks only.
  *
  * Syslog (netsvc_syslog, independent of the mode): aipbx-syslogd receives the
  * phones' logs (UDP 514) from the same networks into PhoneLogService::FILE,
@@ -63,13 +68,23 @@ class NetworkServicesService
         'netsvc_tftp' => '1',
         'netsvc_ftp' => '0',
         'netsvc_ftp_users' => '[]',
+        // SHA-512 crypt of NECSDT700's FTP password; '' = NEC's default (FTP_FIXED_DEFAULT_PASSWORD).
+        'netsvc_ftp_fixed_hash' => '',
+        // Anonymous FTP login without a password: off unless switched on on the page.
+        'netsvc_ftp_anonymous' => '0',
         'netsvc_syslog' => '0',
         'netsvc_ntp_server' => '0',
         'netsvc_dhcp_options' => '',
     ];
 
-    /** FTP user of NEC DT700/DT800 phones: always there while FTP is on, no password. */
+    /** FTP user of NEC DT700/DT800 phones: always there while FTP is on. */
     public const FTP_FIXED_USER = 'NECSDT700';
+
+    /**
+     * The password NEC phones send for FTP_FIXED_USER unless it was changed in
+     * the phone's menu (seen in their syslog: LoginName=NECSDT700, Password=NECSdt700).
+     */
+    public const FTP_FIXED_DEFAULT_PASSWORD = 'NECSdt700';
 
     public const MAX_FTP_USERS = 20;
     public const MAX_DHCP_OPTIONS = 20;
@@ -146,7 +161,7 @@ class NetworkServicesService
      * @param array<string, array{ip: string, prefix: int}> $interfaces
      * @return array<string, string>
      */
-    public static function validate(array $data, array $interfaces, array $tftpNetworks, array $ftpUsers = []): array
+    public static function validate(array $data, array $interfaces, array $tftpNetworks, array $ftpUsers = [], string $fixedHash = ''): array
     {
         // The page has two switches; netsvc_mode is still what is stored.
         if (!isset($data['netsvc_mode'])) {
@@ -167,6 +182,8 @@ class NetworkServicesService
         $v['netsvc_syslog'] = !empty($data['netsvc_syslog']) ? '1' : '0';
         $v['netsvc_ntp_server'] = !empty($data['netsvc_ntp_server']) ? '1' : '0';
         $v['netsvc_ftp_users'] = json_encode(self::ftpUsersFromForm($data, $ftpUsers));
+        $v['netsvc_ftp_fixed_hash'] = self::fixedHashFromForm($data, $fixedHash);
+        $v['netsvc_ftp_anonymous'] = !empty($data['netsvc_ftp_anonymous']) ? '1' : '0';
         $v['netsvc_dhcp_options'] = implode("\n", array_map(fn($o) => $o[0] . ',' . $o[1], self::dhcpOptions((string) ($data['netsvc_dhcp_options'] ?? ''))));
         if (($v['netsvc_ftp'] === '1' || $v['netsvc_syslog'] === '1' || $v['netsvc_ntp_server'] === '1') && $tftpNetworks === [] && $mode !== 'dhcp') {
             throw new \Exception(t('netsvc.err_tftp_networks'));
@@ -288,8 +305,8 @@ class NetworkServicesService
     }
 
     /**
-     * Arguments for `aipbx-priv netsvc ftp-on` / `ftp-off`: the extra users as
-     * name:SHA-512-hash (NECSDT700 needs none: PAM lets it in without a password).
+     * Arguments for `aipbx-priv netsvc ftp-on` / `ftp-off`: NECSDT700 and the
+     * extra users as name:SHA-512-hash.
      *
      * @param array<string, string> $v validated settings
      * @return string[]
@@ -299,7 +316,10 @@ class NetworkServicesService
         if ($v['netsvc_ftp'] !== '1') {
             return ['netsvc', 'ftp-off'];
         }
-        $args = ['netsvc', 'ftp-on'];
+        $args = ['netsvc', 'ftp-on', 'user=' . self::FTP_FIXED_USER . ':' . self::fixedHash($v['netsvc_ftp_fixed_hash'] ?? '')];
+        if (($v['netsvc_ftp_anonymous'] ?? '0') === '1') {
+            $args[] = 'anonymous=1';
+        }
         foreach (self::ftpUsers($v['netsvc_ftp_users']) as $u) {
             $args[] = 'user=' . $u['user'] . ':' . $u['hash'];
         }
@@ -358,6 +378,36 @@ class NetworkServicesService
         return $out;
     }
 
+    /** NECSDT700's stored hash, or the hash of NEC's default password. */
+    public static function fixedHash(string $stored): string
+    {
+        return self::isSha512Crypt($stored) ? $stored : self::sha512Crypt(self::FTP_FIXED_DEFAULT_PASSWORD);
+    }
+
+    /** A new NECSDT700 password from the form, or the stored hash ('' = default). */
+    private static function fixedHashFromForm(array $data, string $current): string
+    {
+        $password = (string) ($data['netsvc_ftp_fixed_password'] ?? '');
+        if ($password === '') {
+            return self::isSha512Crypt($current) ? $current : '';
+        }
+        if (!preg_match('/^[\x21-\x7E]{4,64}$/', $password)) {
+            throw new \Exception(t('netsvc.err_ftp_password'));
+        }
+        return self::sha512Crypt($password);
+    }
+
+    private static function isSha512Crypt(string $hash): bool
+    {
+        return (bool) preg_match('/^\$6\$[A-Za-z0-9.\/]{1,16}\$[A-Za-z0-9.\/]{86}$/', $hash);
+    }
+
+    private static function sha512Crypt(string $password): string
+    {
+        $salt = substr(strtr(base64_encode(random_bytes(12)), '+', '.'), 0, 16);
+        return crypt($password, '$6$' . $salt . '$');
+    }
+
     /**
      * The extra FTP users after the form: ticked ones removed, a new one added
      * (or an existing one given a new password).
@@ -380,9 +430,8 @@ class NetworkServicesService
         if (!preg_match('/^[\x21-\x7E]{4,64}$/', $password)) {
             throw new \Exception(t('netsvc.err_ftp_password'));
         }
-        $salt = substr(strtr(base64_encode(random_bytes(12)), '+', '.'), 0, 16);
         $users = array_values(array_filter($users, fn($u) => $u['user'] !== $name));
-        $users[] = ['user' => $name, 'hash' => crypt($password, '$6$' . $salt . '$')];
+        $users[] = ['user' => $name, 'hash' => self::sha512Crypt($password)];
         if (count($users) > self::MAX_FTP_USERS) {
             throw new \Exception(sprintf(t('netsvc.err_ftp_too_many'), self::MAX_FTP_USERS));
         }
@@ -420,7 +469,8 @@ class NetworkServicesService
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $interfaces = self::interfaces();
             $tftpNets = self::tftpNetworks();
-            $v = self::validate($data, $interfaces, $tftpNets, self::ftpUsers((string) getSystemSetting('netsvc_ftp_users', '[]')));
+            $v = self::validate($data, $interfaces, $tftpNets, self::ftpUsers((string) getSystemSetting('netsvc_ftp_users', '[]')),
+                (string) getSystemSetting('netsvc_ftp_fixed_hash', ''));
 
             if ($v['netsvc_mode'] === 'dhcp' && empty($data['netsvc_force'])) {
                 $others = self::otherDhcpServers($v['netsvc_interface'], $interfaces);
@@ -469,6 +519,20 @@ class NetworkServicesService
                 . ($v['netsvc_syslog'] === '1' ? ' ' . t('netsvc.saved_syslog') : '')
                 . ($v['netsvc_ntp_server'] === '1' ? ' ' . t('netsvc.saved_ntp_server') : '');
         });
+    }
+
+    /**
+     * Applies the stored FTP settings again (install.sh --upgrade, as root):
+     * after an upgrade changed how FTP logins are checked, the running FTP
+     * server must get the new configuration and password file.
+     */
+    public static function reapplyFtp(): array
+    {
+        if (getSystemSetting('netsvc_ftp', '0') !== '1') {
+            return ['success' => true, 'output' => 'FTP is off'];
+        }
+        $v = self::settings();
+        return PrivHelper::run(self::ftpArgs($v, self::tftpNetworks()));
     }
 
     // ------------------------------------------------------------ DHCP check

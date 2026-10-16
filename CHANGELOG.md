@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.30.2
+
+- **FTP for desk phones needs a password:** anonymous login and `NECSDT700`
+  without a password are gone; the folder holds the phones' files with their SIP
+  passwords. `NECSDT700` logs in with NEC's default password `NECSdt700` (what the
+  phones send) or one set under *PBX → Network services*. Anonymous login can be
+  switched on there for phones that need it (not recommended). The upgrade writes
+  the FTP configuration again, so the change applies at once.
+- **TFTP:** a warning next to the switch: TFTP has no logins, anybody on the
+  allowed networks can download the folder's files.
+
 ## 1.30.1
 
 - **NEC phones:** the local override file now carries a version number that rises

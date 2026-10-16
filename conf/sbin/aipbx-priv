@@ -518,18 +518,22 @@ case "$cmd" in
                 exec systemctl restart aipbx-dnsmasq.service
                 ;;
             ftp-on)
-                # netsvc ftp-on [user=NAME:CRYPT]... net=CIDR...
+                # netsvc ftp-on [user=NAME:CRYPT]... [anonymous=0|1] net=CIDR...
                 # Read-only FTP (vsftpd, unit aipbx-vsftpd) of the TFTP folder for
                 # phones that fetch their files over FTP (e.g. NEC DT700: user
-                # NECSDT700). Anonymous login and the one FTP user may only read;
-                # the user is not a system account (pam_pwdfile, guest = ftp).
-                ftpusers=(); nets=()
+                # NECSDT700). Every user, NECSDT700 included, logs in with a
+                # password from ftp.passwd (pam_pwdfile, guest = ftp; no system
+                # accounts) and may only read. Anonymous login (no password) only
+                # with anonymous=1 (the page's switch, off by default): the folder
+                # holds the phones' files with their SIP passwords.
+                ftpusers=(); nets=(); anon=0
                 for kv in "$@"; do
                     k="${kv%%=*}"; v="${kv#*=}"
                     [ "$k" != "$kv" ] || die "expected KEY=VALUE: $kv"
                     case "$k" in
                         user) match "$v" '^[A-Za-z0-9._-]{1,32}:\$6\$[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}$'
-                            [ "${#ftpusers[@]}" -lt 20 ] || die "too many FTP users"; ftpusers+=("$v") ;;
+                            [ "${#ftpusers[@]}" -lt 21 ] || die "too many FTP users"; ftpusers+=("$v") ;;
+                        anonymous) case "$v" in 0|1) anon="$v" ;; *) die "invalid anonymous: $v" ;; esac ;;
                         net) match "$v" "$RE_IPV4_CIDR"; [ "${#nets[@]}" -lt 32 ] || die "too many networks"; nets+=("$v") ;;
                         *) die "unknown key: $k" ;;
                     esac
@@ -542,7 +546,7 @@ case "$cmd" in
                 [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
                 install -d -o root -g root -m 0755 /var/run/vsftpd/empty
                 umask 077
-                # Extra FTP users (NECSDT700 is let in by PAM without a password).
+                # FTP users with their password hashes (NECSDT700 and the extra ones).
                 : > "$NETSVC_DIR/ftp.passwd.tmp"
                 [ "${#ftpusers[@]}" -eq 0 ] || printf '%s\n' "${ftpusers[@]}" > "$NETSVC_DIR/ftp.passwd.tmp"
                 install -o root -g root -m 0600 "$NETSVC_DIR/ftp.passwd.tmp" "$NETSVC_DIR/ftp.passwd"
@@ -554,16 +558,17 @@ listen=YES
 listen_ipv6=NO
 background=NO
 ftpd_banner=AiPBX
-# Read only, for everybody.
+# Read only. Anonymous login only when switched on (the folder holds the
+# phones' SIP passwords).
 write_enable=NO
+anonymous_enable=NO
 anon_upload_enable=NO
 anon_mkdir_write_enable=NO
 anon_other_write_enable=NO
-anonymous_enable=YES
 no_anon_password=YES
 anon_root=/var/lib/aipbx/tftp
 anon_world_readable_only=YES
-# The phone user: checked against ftp.passwd (PAM aipbx-ftp), then mapped to "ftp".
+# The users: checked against ftp.passwd (PAM aipbx-ftp), then mapped to "ftp".
 local_enable=YES
 guest_enable=YES
 guest_username=ftp
@@ -578,6 +583,7 @@ pasv_max_port=40049
 xferlog_enable=YES
 vsftpd_log_file=/var/log/aipbx-ftp.log
 FTPCONF
+                [ "$anon" = 1 ] && sed -i 's/^anonymous_enable=NO$/anonymous_enable=YES/' "$NETSVC_DIR/vsftpd.conf.tmp"
                 install -o root -g root -m 0644 "$NETSVC_DIR/vsftpd.conf.tmp" "$NETSVC_DIR/vsftpd.conf"
                 rm -f "$NETSVC_DIR/vsftpd.conf.tmp"
 
