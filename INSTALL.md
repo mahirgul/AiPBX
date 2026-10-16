@@ -97,7 +97,7 @@ sudo aipbx-update --check   # installed vs. latest version
 sudo aipbx-update           # update to the latest release
 ```
 
-or from the portal: **Admin → System Update** (admin only). The update:
+or from the portal: **System → System Update** (admin only). The update:
 1. refuses to run while calls are active (`--allow-calls` to force) or when files under `/opt/aipbx` were edited by hand;
 2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
 3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;
@@ -132,7 +132,7 @@ A self-signed certificate breaks WebRTC TURNS — see [docs/certificates.md](doc
 
 ### 3.6 E-mail Relay
 Fax-to-e-mail, voicemail notifications and invitations are sent through postfix. Set your relay on
-**Admin → E-Mail** — see [docs/mail.md](docs/mail.md).
+**System → E-Mail** — see [docs/mail.md](docs/mail.md).
 
 ### 3.7 Backups
 `aipbx-backup` runs every night at 02:30 (`/etc/cron.d/aipbx`) and writes

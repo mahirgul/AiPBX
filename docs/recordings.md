@@ -33,7 +33,7 @@ For telephone audio 16 kbps is normally enough. If recordings sound muffled, rai
 
 ## In an S3 bucket
 
-With an S3-compatible bucket on **Admin → File storage** (AWS S3, Wasabi, Backblaze B2, Cloudflare R2,
+With an S3-compatible bucket on **System → File storage** (AWS S3, Wasabi, Backblaze B2, Cloudflare R2,
 MinIO …), tick **Call recordings in the bucket too**. Then:
 
 - every finished MP3 is uploaded by the same 5-minute job and removed from this server's disk; the

@@ -977,6 +977,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/s
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
 # Daily database/configuration backup (cron below).
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local/sbin/aipbx-backup
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-readdress" /usr/local/sbin/aipbx-readdress
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
 

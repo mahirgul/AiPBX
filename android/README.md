@@ -33,7 +33,7 @@ is optional.
   `ResurrectionReceiver`) reconnects when the app has not been registered for 45 s and refreshes the
   registration. Exempting the app from battery optimisation (`util/BatteryPrompt.kt`) makes this
   reliable.
-- **Push (optional):** with Firebase configured on the server (*Admin → Push*),
+- **Push (optional):** with Firebase configured on the server (*System → Push*),
   `AiPbxFirebaseMessagingService` wakes the app for calls and messages when it is not connected.
   Without it, the foreground service connection is the only path (the default).
 

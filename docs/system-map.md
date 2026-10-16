@@ -57,7 +57,7 @@ describe --tags`). Updates replace it; do not edit files there by hand.
 | `asterisk-config/` | Static Asterisk files installed once (the generated ones are in `/etc/asterisk/pbx/`) |
 | `sounds/` | Sound lists and helpers |
 | `android/`, `ios/` | Mobile apps (not used on the server) |
-| `docs/` | These documents (also shown in the portal: *Admin → Help*) |
+| `docs/` | These documents (also shown in the portal: *System → Help*) |
 
 ### From a page to its code
 
@@ -68,7 +68,7 @@ Take the URL of the page (e.g. `/phones`) and follow:
 3. `web/src/services/PhoneProvisionService.php` → the logic; vendor files in `web/src/services/phones/`
 4. `web/templates/views/phones/index.php` → the HTML; `web/assets/js/phones.js` → the buttons' script
 5. Texts: search the shown text in `web/lang/en.php` to get its key, then the key in the code
-6. Who may open it: `getModuleKeyForPage()` in `web/auth.php` and *Admin → Roles*
+6. Who may open it: `getModuleKeyForPage()` in `web/auth.php` and *System → Roles*
 
 `grep -rn "something" /opt/aipbx/web/src` finds the rest; error messages in the logs name the file
 and line.
@@ -89,7 +89,7 @@ and line.
 | `chrony` | Time sync; NTP server for phones when switched on | 123 udp | `chronyc tracking`, `chronyc clients` |
 | `aipbx-dnsmasq` | DHCP/TFTP for desk phones (*Network services*) | 67, 69 udp | `journalctl -u aipbx-dnsmasq` |
 | `aipbx-vsftpd` | Read-only FTP for desk phones | 21, 40000–40049 | `/var/log/aipbx-ftp.log` |
-| `aipbx-syslog` | Phone log receiver (*PBX → Phone logs*) | 514 udp | `/var/log/aipbx-phones/phones.log` |
+| `aipbx-syslog` | Phone log receiver (*Network & devices → Phone logs*) | 514 udp | `/var/log/aipbx-phones/phones.log` |
 | `aipbx-mdns` | `aipbx.local` name on the LAN | 5353 udp | `journalctl -u aipbx-mdns` |
 
 `systemctl status <unit>` shows whether it runs; `journalctl -u <unit> -n 100` its recent log.
@@ -144,10 +144,10 @@ Never paste `/etc/ai-pbx.env` or `settings.key` into a ticket: they hold every s
 | `/var/log/apache2/aipbx_ssl_access.log` | Every web/API request (a WebSocket line is written when it closes) |
 | `/var/log/aipbx/update.log` | Updates; `backup.log` backups; `web_login_failures.log` failed portal logins |
 | `/var/log/fax_incoming.log`, `fax_outgoing.log` | Fax processing |
-| `/var/log/aipbx-phones/phones.log` | Desk phone syslog (*PBX → Phone logs*) |
+| `/var/log/aipbx-phones/phones.log` | Desk phone syslog (*Network & devices → Phone logs*) |
 | `/var/log/aipbx-ftp.log` | FTP transfers of desk phones |
 | `journalctl -t aipbx-voicemail` | Voicemail notifications (push, mail) |
-| Portal: *Admin → Audit log* | Who changed what in the portal, and Apply errors |
+| Portal: *Security → Audit log* | Who changed what in the portal, and Apply errors |
 
 ## 5. Apply: from the database to Asterisk
 
@@ -225,7 +225,8 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 | `aipbx-update [--yes] [--check]` | Updates to the latest release: backup, `git checkout`, `install.sh --upgrade`, migrations; rolls back by itself on failure. Restarts Asterisk (drops calls) |
 | `aipbx-backup` | Database and configuration backup to `/var/backups/aipbx-daily` |
 | `aipbx-cert` | Certificate handling (self-signed, Let's Encrypt, uploaded) |
-| `aipbx-priv` | The portal's only way to root: fixed subcommands with validated arguments (`service`, `postfix`, `fw`, `f2b`, `cert`, `update`, `sounds`, `asterisk-lang`, `netsvc`, `ai`). Read it to see exactly what a page may do as root |
+| `aipbx-priv` | The portal's only way to root: fixed subcommands with validated arguments (`service`, `postfix`, `fw`, `f2b`, `cert`, `update`, `sounds`, `asterisk-lang`, `netsvc`, `net`, `ai`). Read it to see exactly what a page may do as root |
+| `aipbx-readdress <old> <new> [--yes]` | Moves every setting and file from the old server address to the new one (preview first); same as *Network settings → Apply new address* |
 | `aipbx-sounds` | Downloads and installs sound packs |
 | `aipbx-ai-setup` | Installs or removes the local AI runtime |
 | `aipbx-dhcp-probe <iface>` | Lists DHCP servers answering on a network |
@@ -241,7 +242,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 3. Follow the page to its code (section 2).
 
 ### Apply fails or a change does nothing
-1. The error is shown on Apply and kept in *Admin → Audit log*.
+1. The error is shown on Apply and kept in *Security → Audit log*.
 2. `php /opt/aipbx/web/src/asterisk_sync.php` regenerates everything and prints errors.
 3. `asterisk -rx "dialplan reload"` / `asterisk -rx "module reload res_pjsip.so"` and check
    `messages.log` for syntax errors in `/etc/asterisk/pbx/`.
@@ -261,15 +262,15 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 4. App push and background: [Troubleshooting → notifications](troubleshooting.md).
 
 ### Desk phone does not get its configuration
-1. *PBX → Phones*: the download log at the bottom (who asked, what was answered); *Show the phone's
-   file* shows exactly what it gets.
-2. *PBX → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
+1. *Network & devices → Phones*: *Show the phone's file* shows exactly what it gets; *Network settings*
+   shows the addresses the phones are told.
+2. *Network & devices → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
    by IP or MAC.
 3. On the server: `journalctl -u aipbx-dnsmasq`, `/var/log/aipbx-ftp.log`, files in
    `/var/lib/aipbx/tftp`.
 
 ### Mail is not sent
-`mailq` (queue), `journalctl -u postfix -n 50`; settings: *Admin → Mail settings*.
+`mailq` (queue), `journalctl -u postfix -n 50`; settings: *System → Mail settings*.
 
 ### Fax
 `/var/log/fax_incoming.log`, `/var/log/fax_outgoing.log`, `asterisk -rx "fax show sessions"`.
@@ -294,6 +295,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 | IVR, time conditions | `IvrController`, `TimeConditionController`, `SyncIVRs.php`, `SyncTimeConditions.php` |
 | Queues, call center | `QueueController`, `CcAgentController`, `CcSupervisorController`, `web/src/queue_helper.php` |
 | Desk phones | `PhoneController`, `PhoneProvisionService`, `web/src/services/phones/<Vendor>Template.php`, `ProvisionController` (`/provision/`) |
+| Network settings, address change | `NetworkSettingsController`, `NetworkSettingsService`, `aipbx-priv net`, `web/bin/readdress.php` |
 | Network services, phone logs | `NetworkServicesService`, `PhoneLogService`, `aipbx-priv netsvc` |
 | Web phone (browser) | `MyPhoneController`, `web/assets/js/header_phone.js` (top bar phone), `my_phone.js` |
 | Mobile app API | `web/api/mobile/` |

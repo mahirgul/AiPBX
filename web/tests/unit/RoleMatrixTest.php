@@ -21,7 +21,7 @@ final class RoleMatrixTest extends TestCase
 
     /** Sidebar group id => matrix group. */
     private const SIDEBAR_GROUPS = [
-        'group-dashboard' => 'General', 'group-trunks' => 'Outbound Line Management', 'group-pbx' => 'PBX Management',
+        'group-dashboard' => 'General', 'group-trunks' => 'Outbound Line Management', 'group-pbx' => 'PBX Management', 'group-network' => 'Network & Devices',
         'group-admin' => 'Administration', 'group-security' => 'Security', 'group-integrations' => 'Integrations', 'group-ai' => 'AI',
         'group-fax' => 'Fax System', 'group-cc' => 'Call Center',
     ];

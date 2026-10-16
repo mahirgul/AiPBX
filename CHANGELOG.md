@@ -3,7 +3,30 @@
 Each release is published with `scripts/release.sh X.Y.Z`: the section below becomes
 the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
-`sudo aipbx-update` (or portal → Admin → System Update).
+`sudo aipbx-update` (or portal → System → System Update).
+
+## 1.33.0
+
+Network settings and a tidier menu:
+
+- **Network settings page** (*Network & devices → Network settings*): shows the
+  server's interfaces, addresses, gateway, DNS and host name, and keeps AiPBX's
+  own network settings in one place: server address, public address, local
+  networks, and the addresses desk phones are told (SIP server, file server,
+  syslog, time server, allowed networks). These fields moved here from
+  *Asterisk settings* and *Phones*.
+- **Server address change in one step:** a new health check notices when the
+  server's IP address no longer matches the settings, coturn, the mDNS name or
+  the self-signed certificate. *Apply new address* (or
+  `sudo aipbx-readdress OLD NEW`) shows every place first, then changes them
+  all: settings, PJSIP and RTP (reload, calls stay up), coturn (restarted when
+  no call is running), mDNS, the self-signed certificate and the phone files.
+  Changing the server's own address from the portal is still planned.
+- **Menu:** new groups *Network & devices* (Network settings, Network services,
+  Phones, Phone logs) and *Security* now also holds the audit log; *Admin* is
+  now *System*. Page addresses did not change.
+- **Asterisk settings:** the local networks are now checked before they are
+  written to the PJSIP configuration.
 
 ## 1.32.0
 
