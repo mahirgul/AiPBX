@@ -4538,6 +4538,7 @@ return [
     'dest.ring_group' => 'Ομάδα κλήσης',
     'dest.time_condition' => 'Χρονική συνθήκη',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Διευθύνσεις για τα επιτραπέζια τηλέφωνα',
     'roles.group_network' => 'Δίκτυο και συσκευές',
     'sidebar.group_network' => 'Δίκτυο και συσκευές',
     'sidebar.group_system' => 'Σύστημα',

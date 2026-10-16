@@ -4538,6 +4538,7 @@ Ihr Telefon wird klingeln.',
     'dest.ring_group' => 'Rufgruppe',
     'dest.time_condition' => 'Zeitbedingung',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adressen für Tischtelefone',
     'roles.group_network' => 'Netzwerk & Geräte',
     'sidebar.group_network' => 'Netzwerk & Geräte',
     'sidebar.group_system' => 'System',

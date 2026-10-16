@@ -4538,6 +4538,7 @@ Telefonen din vil ringe.',
     'dest.ring_group' => 'Ringegruppe',
     'dest.time_condition' => 'Tidsbetingelse',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adresser for bordtelefoner',
     'roles.group_network' => 'Nettverk og enheter',
     'sidebar.group_network' => 'Nettverk og enheter',
     'sidebar.group_system' => 'System',

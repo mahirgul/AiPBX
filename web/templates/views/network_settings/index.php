@@ -23,7 +23,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
 </datalist>
 
 <?php if ($stale !== []): ?>
-<div class="alert alert-warning" style="margin-bottom: 16px;">
+<div class="card"><div class="alert alert-warning" style="margin: 16px 20px;">
     <strong><i class="fas fa-triangle-exclamation"></i> <?php echo t('netset.stale_title'); ?></strong>
     <ul style="margin: 6px 0 8px 18px;">
         <?php foreach ($stale as $s): ?>
@@ -31,7 +31,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
         <?php endforeach; ?>
     </ul>
     <?php echo sprintf(t('netset.stale_help'), '<code>' . $h(implode(', ', $localIps)) . '</code>'); ?>
-</div>
+</div></div>
 <?php endif; ?>
 
 <div class="card">
@@ -48,7 +48,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
         <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.primary'); ?></span><br><strong><?php echo $h($system['primary'] ?: '-'); ?></strong></div>
     </div>
     <div class="table-responsive" style="padding: 12px 20px 20px;">
-        <table class="table">
+        <table class="data-table no-dt">
             <thead><tr><th><?php echo t('netset.interface'); ?></th><th><?php echo t('netset.addresses'); ?></th><th>MAC</th><th><?php echo t('netset.state'); ?></th></tr></thead>
             <tbody>
             <?php foreach ($system['interfaces'] as $if): ?>
@@ -96,7 +96,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
 
 <div class="card">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-phone u-primary"></i> <?php echo t('phones.addresses_title'); ?></div>
+        <div class="card-title"><i class="fas fa-phone u-primary"></i> <?php echo t('netset.phones_title'); ?></div>
     </div>
     <div style="padding: 0 20px 6px;" class="u-muted u-fs-12"><?php echo t('phones.addresses_help'); ?></div>
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">
@@ -162,7 +162,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
             <?php if ($preview['changes'] === []): ?>
                 <p class="u-muted"><?php echo sprintf(t('netset.preview_none'), $h($preview['old'])); ?></p>
             <?php else: ?>
-                <table class="table">
+                <table class="data-table no-dt">
                     <thead><tr><th><?php echo t('netset.col_where'); ?></th><th><?php echo t('netset.col_now'); ?></th><th><?php echo t('netset.col_after'); ?></th></tr></thead>
                     <tbody>
                     <?php foreach ($preview['changes'] as $c): ?>
@@ -183,7 +183,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
     <?php endif; ?>
     <div class="table-responsive" style="padding: 0 20px 20px;">
         <div class="u-muted u-fs-12 u-mb-4"><?php echo t('netset.files_title'); ?></div>
-        <table class="table">
+        <table class="data-table no-dt">
             <tbody>
                 <tr><td><?php echo $h($whereLabel('coturn_relay')); ?></td><td><code><?php echo $h($files['coturn_relay'] ?? '-'); ?></code></td></tr>
                 <tr><td><?php echo t('netset.coturn_allowed'); ?></td><td><code><?php echo $h($files['coturn_allowed'] ?? '-'); ?></code></td></tr>

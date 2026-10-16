@@ -4672,6 +4672,7 @@ Your phone will ring.',
     'dest.ring_group' => 'Ring group',
     'dest.time_condition' => 'Time condition',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Addresses for desk phones',
     'roles.group_network' => 'Network & devices',
     'sidebar.group_network' => 'Network & devices',
     'sidebar.group_system' => 'System',

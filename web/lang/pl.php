@@ -4538,6 +4538,7 @@ Telefon zadzwoni.',
     'dest.ring_group' => 'Grupa dzwonienia',
     'dest.time_condition' => 'Warunek czasowy',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adresy dla telefonów biurkowych',
     'roles.group_network' => 'Sieć i urządzenia',
     'sidebar.group_network' => 'Sieć i urządzenia',
     'sidebar.group_system' => 'System',

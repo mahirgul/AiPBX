@@ -4538,6 +4538,7 @@ Vaš telefon će zazvoniti.',
     'dest.ring_group' => 'Grupa zvonjenja',
     'dest.time_condition' => 'Vremenski uslov',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Адресе за стоне телефоне',
     'roles.group_network' => 'Мрежа и уређаји',
     'sidebar.group_network' => 'Мрежа и уређаји',
     'sidebar.group_system' => 'Систем',

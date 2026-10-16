@@ -4538,6 +4538,7 @@ Je telefoon gaat over.',
     'dest.ring_group' => 'Belgroep',
     'dest.time_condition' => 'Tijdvoorwaarde',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adressen voor bureautelefoons',
     'roles.group_network' => 'Netwerk en apparaten',
     'sidebar.group_network' => 'Netwerk en apparaten',
     'sidebar.group_system' => 'Systeem',

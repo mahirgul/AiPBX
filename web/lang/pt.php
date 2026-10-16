@@ -4538,6 +4538,7 @@ O seu telefone vai tocar.',
     'dest.ring_group' => 'Grupo de toque',
     'dest.time_condition' => 'Condição horária',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Endereços para os telefones de secretária',
     'roles.group_network' => 'Rede e dispositivos',
     'sidebar.group_network' => 'Rede e dispositivos',
     'sidebar.group_system' => 'Sistema',

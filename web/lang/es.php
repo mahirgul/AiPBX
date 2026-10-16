@@ -4538,6 +4538,7 @@ Su teléfono sonará.',
     'dest.ring_group' => 'Grupo de timbrado',
     'dest.time_condition' => 'Condición horaria',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Direcciones para los teléfonos de escritorio',
     'roles.group_network' => 'Red y dispositivos',
     'sidebar.group_network' => 'Red y dispositivos',
     'sidebar.group_system' => 'Sistema',

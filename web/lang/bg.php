@@ -4538,6 +4538,7 @@ return [
     'dest.ring_group' => 'Група за звънене',
     'dest.time_condition' => 'Времево условие',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Адреси за настолните телефони',
     'roles.group_network' => 'Мрежа и устройства',
     'sidebar.group_network' => 'Мрежа и устройства',
     'sidebar.group_system' => 'Система',

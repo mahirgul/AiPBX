@@ -4538,6 +4538,7 @@ Votre téléphone va sonner.',
     'dest.ring_group' => 'Groupe de sonnerie',
     'dest.time_condition' => 'Condition horaire',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adresses des téléphones de bureau',
     'roles.group_network' => 'Réseau et appareils',
     'sidebar.group_network' => 'Réseau et appareils',
     'sidebar.group_system' => 'Système',

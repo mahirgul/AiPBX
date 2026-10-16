@@ -4538,6 +4538,7 @@ A telefonja csörögni fog.',
     'dest.ring_group' => 'Csengetési csoport',
     'dest.time_condition' => 'Időfeltétel',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Az asztali telefonok címei',
     'roles.group_network' => 'Hálózat és eszközök',
     'sidebar.group_network' => 'Hálózat és eszközök',
     'sidebar.group_system' => 'Rendszer',
