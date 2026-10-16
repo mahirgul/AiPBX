@@ -263,8 +263,10 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 ### Desk phone does not get its configuration
 1. *PBX → Phones*: the download log at the bottom (who asked, what was answered); *Show the phone's
    file* shows exactly what it gets.
-2. *PBX → Phone logs*: the phone's own log by IP or MAC (syslog server = this server).
-3. TFTP/FTP: `journalctl -u aipbx-dnsmasq`, `/var/log/aipbx-ftp.log`, files in `/var/lib/aipbx/tftp`.
+2. *PBX → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
+   by IP or MAC.
+3. On the server: `journalctl -u aipbx-dnsmasq`, `/var/log/aipbx-ftp.log`, files in
+   `/var/lib/aipbx/tftp`.
 
 ### Mail is not sent
 `mailq` (queue), `journalctl -u postfix -n 50`; settings: *Admin → Mail settings*.

@@ -608,6 +608,19 @@ FTPCONF
                 ftp_fw_clear
                 exit 0
                 ;;
+            log)
+                # netsvc log ftp|tftp|dhcp — the newest lines of what the phones
+                # fetched (PBX -> Phone logs). Read only: FTP's transfer log
+                # (root 0600), TFTP and DHCP from dnsmasq's journal.
+                [ $# -eq 1 ] || die "usage: netsvc log ftp|tftp|dhcp"
+                case "$1" in
+                    ftp) [ -f /var/log/aipbx-ftp.log ] || exit 0
+                         exec tail -n 2000 /var/log/aipbx-ftp.log ;;
+                    tftp) exec journalctl -u aipbx-dnsmasq.service -t dnsmasq-tftp -n 2000 -o short-iso --no-pager -q ;;
+                    dhcp) exec journalctl -u aipbx-dnsmasq.service -t dnsmasq-dhcp -n 2000 -o short-iso --no-pager -q ;;
+                    *) die "invalid log: $1" ;;
+                esac
+                ;;
             ftp-status)
                 [ $# -eq 0 ] || die "usage: netsvc ftp-status"
                 systemctl is-active aipbx-vsftpd.service 2>/dev/null
