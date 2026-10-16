@@ -1,7 +1,7 @@
 <?php
 /**
- * Checks the key consistency between lang/tr.php and lang/en.php + that every
- * key called with t() in the code really exists in the files.
+ * Checks that every key called with t() in the code exists in lang/en.php and
+ * that tr.php has no keys English lacks (texts not translated yet are listed).
  *
  * t() itself does NOT THROW on a missing key (it falls back to
  * $default ?? $key) — a deliberate design (the page never breaks), but the
@@ -34,10 +34,11 @@ if (!empty($only_in_tr)) {
     foreach ($only_in_tr as $k) echo "  - $k\n";
     $problems += count($only_in_tr);
 }
+// New texts are written in English only and translated later (t() shows the
+// English text meanwhile), so keys tr.php lacks are reported, not an error.
 if (!empty($only_in_en)) {
-    echo "Keys only in en.php (" . count($only_in_en) . "):\n";
-    foreach ($only_in_en as $k) echo "  - $k\n";
-    $problems += count($only_in_en);
+    echo "Keys not translated in tr.php yet (" . count($only_in_en) . ", English is shown):\n";
+    foreach (array_slice($only_in_en, 0, 20) as $k) echo "  - $k\n";
 }
 
 // 2) Does every key called with t('...') / t("...") in the code exist in both files?
@@ -85,7 +86,7 @@ foreach ($scan_paths as $path) {
 
 $missing = [];
 foreach ($used_keys as $key => $files) {
-    if (!array_key_exists($key, $tr) || !array_key_exists($key, $en)) {
+    if (!array_key_exists($key, $en)) {
         $missing[$key] = $files;
     }
 }
@@ -160,7 +161,7 @@ if (count($coverage) > 1) {
 }
 
 echo "\n" . ($problems === 0
-    ? "CLEAN: tr/en have the same number of keys (" . count($tr) . "); all " . count($used_keys) . " fixed keys used in the code exist in both files.\n"
+    ? "CLEAN: all " . count($used_keys) . " fixed keys used in the code exist in en.php.\n"
     : "PROBLEMS FOUND: $problems item(s) listed above.\n");
 
 exit($problems === 0 ? 0 : 1);
