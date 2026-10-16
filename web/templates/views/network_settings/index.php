@@ -48,7 +48,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
         <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.primary'); ?></span><br><strong><?php echo $h($system['primary'] ?: '-'); ?></strong></div>
     </div>
     <div class="table-responsive" style="padding: 12px 20px 20px;">
-        <table class="data-table">
+        <table class="table">
             <thead><tr><th><?php echo t('netset.interface'); ?></th><th><?php echo t('netset.addresses'); ?></th><th>MAC</th><th><?php echo t('netset.state'); ?></th></tr></thead>
             <tbody>
             <?php foreach ($system['interfaces'] as $if): ?>
@@ -162,7 +162,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
             <?php if ($preview['changes'] === []): ?>
                 <p class="u-muted"><?php echo sprintf(t('netset.preview_none'), $h($preview['old'])); ?></p>
             <?php else: ?>
-                <table class="data-table">
+                <table class="table">
                     <thead><tr><th><?php echo t('netset.col_where'); ?></th><th><?php echo t('netset.col_now'); ?></th><th><?php echo t('netset.col_after'); ?></th></tr></thead>
                     <tbody>
                     <?php foreach ($preview['changes'] as $c): ?>
@@ -183,7 +183,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
     <?php endif; ?>
     <div class="table-responsive" style="padding: 0 20px 20px;">
         <div class="u-muted u-fs-12 u-mb-4"><?php echo t('netset.files_title'); ?></div>
-        <table class="data-table">
+        <table class="table">
             <tbody>
                 <tr><td><?php echo $h($whereLabel('coturn_relay')); ?></td><td><code><?php echo $h($files['coturn_relay'] ?? '-'); ?></code></td></tr>
                 <tr><td><?php echo t('netset.coturn_allowed'); ?></td><td><code><?php echo $h($files['coturn_allowed'] ?? '-'); ?></code></td></tr>
