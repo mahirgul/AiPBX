@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
+## 1.30.1
+
+- **NEC phones:** the local override file now carries a version number that rises
+  by one whenever the phone's files change (`<VERSION Version="n"/>`). The phones
+  ignore a changed file with an unchanged number, so a new setting never reached
+  them. Unchanged files keep their number. The files use Unix line ends (LF).
+- **Android 1.0.70:** after a video call a phone could stop receiving calls (it
+  still showed "connected") until the app was restarted; the app now keeps its
+  connection and restarts its SIP engine by itself if it gets stuck. An incoming
+  video call can be answered with video from the notification, and the call
+  history has a video button (#83).
+- Documentation: "The mobile app does not ring" in Troubleshooting.
+
 ## 1.30.0
 
 - **Admin → Help:** the documentation is now inside the portal, for administrators
