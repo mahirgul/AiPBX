@@ -103,6 +103,26 @@ The server's own time sync (chrony) does the work: switching it on writes
 phones keep a time while the internet sources are unreachable), opens UDP 123 to those networks and
 restarts chrony. Switching it off removes the file and the firewall rules again.
 
+## Phone logs: one page for every service
+
+**PBX → Phone logs** has a tab for every way a desk phone talks to this server, so one page
+answers "did the phone get its file, and if not, why":
+
+| Tab | Shows | Source |
+|-----|-------|--------|
+| Syslog | the phone's own log, followed live (below) | `/var/log/aipbx-phones/phones.log` |
+| HTTPS | configuration files fetched from `/provision/` and the answer | the provisioning log (90 days) |
+| FTP | logins (OK / FAIL) and downloads | `/var/log/aipbx-ftp.log` |
+| TFTP | files sent, not found, errors | dnsmasq's journal (`dnsmasq-tftp`) |
+| DHCP | DISCOVER / OFFER / REQUEST / ACK / NAK per phone | dnsmasq's journal (`dnsmasq-dhcp`) |
+
+Every tab filters by **IP** or **MAC address** (also part of an address) and text; a click on an
+address or MAC shows that phone only. The phone column comes from the MAC in the file name
+(`dt-<mac>.cfg`) or in the DHCP line. FTP, TFTP and DHCP show their newest 500 lines; they are read
+through `aipbx-priv netsvc log ftp|tftp|dhcp` (the files are root's), DHCP and TFTP only from
+AiPBX's own dnsmasq. A failed FTP login usually means the phone's FTP user or password does not
+match (see FTP above).
+
 ## Syslog (phone logs)
 
 **Syslog (phone logs)** receives what desk phones log (syslog, UDP 514) from the same networks as

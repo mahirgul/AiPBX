@@ -5,8 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → Admin → System Update).
 
-## 1.30.2
+## 1.31.0
 
+- **Phone logs in one place:** *PBX → Phone logs* has tabs for Syslog, HTTPS
+  (provisioning requests), FTP (logins and downloads), TFTP (files sent or not
+  found) and DHCP, each filtered by the phone's IP or MAC. A failed FTP login
+  shows at once that the phone's FTP user or password is wrong.
 - **FTP for desk phones needs a password:** anonymous login and `NECSDT700`
   without a password are gone; the folder holds the phones' files with their SIP
   passwords. `NECSDT700` logs in with NEC's default password `NECSdt700` (what the
