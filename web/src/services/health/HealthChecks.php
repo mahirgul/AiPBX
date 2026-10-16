@@ -28,6 +28,7 @@ final class HealthChecks
         'pending_changes' => 60,
         'fax_queue' => 60,
         'network_services' => 15,
+        'server_address' => 60,
         'local_ai' => 15,
         'certificate' => 1440,
         'backup' => 1440,
@@ -54,6 +55,7 @@ final class HealthChecks
                 'pending_changes' => self::pendingChanges(),
                 'fax_queue' => self::faxQueue(),
                 'network_services' => self::networkServices(),
+                'server_address' => self::serverAddress(),
                 'local_ai' => self::localAi(),
                 'certificate' => self::certificate(),
                 'backup' => self::backup(),
@@ -239,6 +241,22 @@ final class HealthChecks
             $down[] = 'NTP';
         }
         return $down ? ['fail', sprintf(t('health.msg_netsvc_down'), implode(', ', $down))] : ['ok', t('health.msg_netsvc_ok')];
+    }
+
+    /**
+     * The server's address still matches the stored ones (roadmap 12). A new
+     * DHCP lease, a cloned VM or a move to another network otherwise goes
+     * unnoticed until TURN has no audio and phones register to the old IP.
+     */
+    private static function serverAddress(): array
+    {
+        require_once dirname(__DIR__) . '/NetworkSettingsService.php';
+        $stale = NetworkSettingsService::staleAddresses();
+        if ($stale === []) {
+            return ['ok', t('health.msg_address_ok')];
+        }
+        $list = implode(', ', array_unique(array_map(fn($s) => $s['value'], $stale)));
+        return ['warn', sprintf(t('health.msg_address_stale'), $list, implode(', ', NetworkSettingsService::localIps()))];
     }
 
     private static function localAi(): array

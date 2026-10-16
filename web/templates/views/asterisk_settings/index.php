@@ -56,19 +56,9 @@
             </div>
         </div>
 
-        <div class="u-grid-2 u-mt-12">
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-globe"></i> <?php echo t('asterisk_settings.field_external_ip'); ?></label>
-                <input type="text" name="pjsip_external_ip" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_external_ip']); ?>" placeholder="203.0.113.10">
-                <small class="u-hint"><?php echo t('asterisk_settings.external_ip_help'); ?></small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.field_local_net'); ?></label>
-                <input type="text" name="pjsip_local_net" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_local_net']); ?>" placeholder="192.168.1.0/24,10.0.0.0/24">
-                <small class="u-hint"><?php echo t('asterisk_settings.local_net_help'); ?></small>
-            </div>
-        </div>
+        <!-- The public address and the local networks are on Network -> Network settings. -->
+        <div class="alert alert-info u-fs-12 u-mt-12"><i class="fas fa-network-wired"></i> <?php echo t('netset.moved_asterisk'); ?>
+            <a href="/network-settings"><?php echo t('sidebar.item_network_settings'); ?></a></div>
 
         <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_codecs'); ?></label>
