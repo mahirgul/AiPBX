@@ -4538,6 +4538,7 @@ Puhelimesi soi.',
     'dest.ring_group' => 'Soittoryhmä',
     'dest.time_condition' => 'Aikaehto',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Pöytäpuhelimien osoitteet',
     'roles.group_network' => 'Verkko ja laitteet',
     'sidebar.group_network' => 'Verkko ja laitteet',
     'sidebar.group_system' => 'Järjestelmä',

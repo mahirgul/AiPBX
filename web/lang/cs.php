@@ -4538,6 +4538,7 @@ Váš telefon zazvoní.',
     'dest.ring_group' => 'Vyzváněcí skupina',
     'dest.time_condition' => 'Časová podmínka',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adresy pro stolní telefony',
     'roles.group_network' => 'Síť a zařízení',
     'sidebar.group_network' => 'Síť a zařízení',
     'sidebar.group_system' => 'Systém',

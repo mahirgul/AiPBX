@@ -4671,6 +4671,7 @@ Telefonunuz çaldırılacak.',
     'dest.ring_group' => 'Çalma grubu',
     'dest.time_condition' => 'Zaman koşulu',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Masa telefonlarına verilen adresler',
     'roles.group_network' => 'Ağ ve cihazlar',
     'sidebar.group_network' => 'Ağ ve cihazlar',
     'sidebar.group_system' => 'Sistem',

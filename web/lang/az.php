@@ -4538,6 +4538,7 @@ Telefonunuz çalacaq.',
     'dest.ring_group' => 'Zəng qrupu',
     'dest.time_condition' => 'Vaxt şərti',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Masaüstü telefonlara verilən ünvanlar',
     'roles.group_network' => 'Şəbəkə və cihazlar',
     'sidebar.group_network' => 'Şəbəkə və cihazlar',
     'sidebar.group_system' => 'Sistem',

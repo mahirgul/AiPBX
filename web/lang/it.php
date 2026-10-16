@@ -4538,6 +4538,7 @@ Il suo telefono squillerà.',
     'dest.ring_group' => 'Gruppo di squillo',
     'dest.time_condition' => 'Condizione oraria',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Indirizzi per i telefoni fissi',
     'roles.group_network' => 'Rete e dispositivi',
     'sidebar.group_network' => 'Rete e dispositivi',
     'sidebar.group_system' => 'Sistema',

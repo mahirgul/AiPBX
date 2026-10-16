@@ -4538,6 +4538,7 @@ Telefonul dvs. va suna.',
     'dest.ring_group' => 'Grup de apel',
     'dest.time_condition' => 'Condiție de timp',
     // Network settings (roadmap 12-14)
+    'netset.phones_title' => 'Adrese pentru telefoanele de birou',
     'roles.group_network' => 'Rețea și dispozitive',
     'sidebar.group_network' => 'Rețea și dispozitive',
     'sidebar.group_system' => 'Sistem',
