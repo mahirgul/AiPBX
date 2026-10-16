@@ -639,7 +639,7 @@ class PhoneProvisionService
                 if ($tpl === null || $user === null || (int) $user['is_active'] !== 1) {
                     continue;
                 }
-                $ctx = self::buildContext($phone, $user);
+                $ctx = self::withConfigVersion($phone, $tpl, self::buildContext($phone, $user), true);
                 foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
                     if (!preg_match('/^[A-Za-z0-9._-]{1,120}$/', $name)) {
                         continue;
@@ -759,7 +759,7 @@ class PhoneProvisionService
             self::log((int) $phone['id'], $phone['mac'], $file, 'unassigned', $ip, $ua);
             return self::answer(404, 'unassigned');
         }
-        $body = $tpl->renderFile($file, self::buildContext($phone, $user));
+        $body = $tpl->renderFile($file, self::withConfigVersion($phone, $tpl, self::buildContext($phone, $user), true));
         getDB()->prepare('UPDATE pbx_phones SET last_fetch_at = NOW(), last_ip = ?, last_user_agent = ? WHERE id = ?')
             ->execute([$ip, $ua, $phone['id']]);
         self::log((int) $phone['id'], $phone['mac'], $file, 'served', $ip, $ua);
@@ -848,6 +848,46 @@ class PhoneProvisionService
     }
 
     /**
+     * Adds 'config_version' to $ctx: a number that goes up by one whenever the
+     * phone's files change, and stays the same otherwise.
+     *
+     * Why: NEC phones apply their local override file only when its
+     * <VERSION Version="n"/> is higher than the last one they applied, and
+     * silently keep the old settings when the number is unchanged. The number
+     * must not go up without a change either, or each fetch would look new.
+     *
+     * The files are hashed with the version left at 0, so the number itself
+     * never counts as a change. $commit: store the new version (serving or
+     * exporting the files); false only computes it (the page's preview).
+     */
+    public static function withConfigVersion(array $phone, PhoneTemplate $tpl, array $ctx, bool $commit): array
+    {
+        $ctx['config_version'] = 0;
+        $files = '';
+        foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
+            $files .= $name . "\0" . $tpl->renderFile($name, $ctx) . "\0";
+        }
+        $hash = hash('sha256', $files);
+        $version = (int) ($phone['config_version'] ?? 2);
+        if (($phone['config_hash'] ?? null) !== $hash) {
+            $version++;
+            if ($commit && isset($phone['id'])) {
+                // Only the request that sees the old hash raises the number (a phone
+                // fetches its files one after the other, the export runs in parallel).
+                $stmt = getDB()->prepare('UPDATE pbx_phones SET config_version = ?, config_hash = ? WHERE id = ? AND config_version = ?');
+                $stmt->execute([$version, $hash, $phone['id'], $version - 1]);
+                if ($stmt->rowCount() === 0) {
+                    $row = getDB()->prepare('SELECT config_version FROM pbx_phones WHERE id = ?');
+                    $row->execute([$phone['id']]);
+                    $version = (int) ($row->fetchColumn() ?: $version);
+                }
+            }
+        }
+        $ctx['config_version'] = $version;
+        return $ctx;
+    }
+
+    /**
      * The files this phone gets, as the phone would receive them now (the
      * page's "show file" button). Passwords are replaced by dots unless
      * $reveal. null when the phone has no active user (it gets no file).
@@ -860,7 +900,8 @@ class PhoneProvisionService
         if ($tpl === null || $user === null || (int) $user['is_active'] !== 1) {
             return null;
         }
-        $ctx = self::buildContext($phone, $user);
+        // The number the phone gets at its next fetch; showing it changes nothing.
+        $ctx = self::withConfigVersion($phone, $tpl, self::buildContext($phone, $user), false);
         $secrets = $reveal ? [] : array_values(array_filter([$ctx['sip_password'], $ctx['admin_password']], fn($s) => strlen((string) $s) >= 4));
         $out = [];
         foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
