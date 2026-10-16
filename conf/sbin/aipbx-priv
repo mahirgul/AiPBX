@@ -785,7 +785,24 @@ FTPCONF
                 exit 0
                 ;;
             readdress)
-                # net readdress old=IP new=IP — puts the new address where the old
+                # net readdress old=IP new=IP — runs readdress-run below in a
+                # transient unit: Apache's sandbox (ProtectSystem=full) keeps /etc
+                # read-only for the portal and for this script started by it, so
+                # coturn, the mDNS unit and the certificate could not be written
+                # from the portal (they could from the command line).
+                for kv in "$@"; do
+                    case "${kv%%=*}" in old|new) ipv4 "${kv#*=}" ;; *) die "unknown key: ${kv%%=*}" ;; esac
+                done
+                [ $# -eq 2 ] || die "usage: net readdress old=IP new=IP"
+                if systemctl is-active --quiet aipbx-readdress.service; then
+                    die "an address change is already running"
+                fi
+                systemctl reset-failed aipbx-readdress.service >/dev/null 2>&1 || true
+                exec systemd-run --quiet --wait --pipe --collect --unit=aipbx-readdress \
+                    --description="AiPBX: server address change" /usr/local/sbin/aipbx-priv net readdress-run "$@"
+                ;;
+            readdress-run)
+                # net readdress-run old=IP new=IP — puts the new address where the old
                 # one was: coturn relay-ip (and allowed-peer-ip = every address of
                 # this server), the mDNS alias, a self-signed certificate naming the
                 # old IP. coturn restarts once no call is up (a restart drops calls
