@@ -6,7 +6,6 @@
  * @var array $waiting
  * @var array $users
  * @var array $settings
- * @var array $log
  * @var string $macBaseUrl
  */
 $canEdit = hasModulePermission('phones', 'edit');
@@ -202,39 +201,9 @@ $userOptions = function () use ($users) {
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-list u-primary"></i> <?php echo t('phones.log_title'); ?></div>
-    </div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('phones.col_time'); ?></th>
-                    <th><?php echo t('phones.col_mac'); ?></th>
-                    <th><?php echo t('phones.col_file'); ?></th>
-                    <th><?php echo t('phones.col_result'); ?></th>
-                    <th><?php echo t('phones.col_ip'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($log)): ?>
-                    <?php echo uiTableEmptyRow(5, t('phones.log_empty'), 'fa-list'); ?>
-                <?php else: ?>
-                    <?php foreach ($log as $row): ?>
-                        <tr>
-                            <td class="u-fs-11"><?php echo htmlspecialchars($row['created_at']); ?></td>
-                            <td><code><?php echo $row['mac'] !== '' ? htmlspecialchars(PhoneModels::formatMac($row['mac'])) : '-'; ?></code></td>
-                            <td class="u-fs-11"><?php echo htmlspecialchars($row['file']); ?></td>
-                            <td><?php echo uiStatusBadge($row['result'], ['served' => 'success', 'unknown' => 'warning', 'denied' => 'danger', 'bad_token' => 'danger', 'mac_mismatch' => 'danger'], 'secondary', t('phones.result_' . $row['result'], $row['result'])); ?></td>
-                            <td class="u-fs-11"><?php echo htmlspecialchars($row['ip']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
+<!-- The phones' requests (HTTPS, FTP, TFTP, DHCP) are on PBX -> Phone logs, one tab each. -->
+<p class="u-muted u-fs-12" style="margin: 0 0 16px;"><i class="fas fa-scroll"></i> <?php echo t('phones.log_moved'); ?>
+    <a href="/phone-logs?tab=http"><?php echo t('phonelogs.title'); ?></a></p>
 
 <?php if ($canEdit): ?>
 <!-- Modal: add / edit phone -->
