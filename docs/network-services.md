@@ -61,14 +61,26 @@ TFTP answers only the **Allowed networks** of the provisioning settings (plus, i
 phone network itself): the firewall opens UDP 69 for these networks only. In DHCP mode TFTP
 listens on the chosen interface only.
 
+TFTP has **no logins**: the protocol knows no user or password. Anybody on the allowed networks
+can download every file in the folder, including the per-phone files with their SIP passwords
+when they are written there. The page warns about this next to the switch. Phones that can use
+FTP (NEC) or HTTPS should.
+
 ## FTP
 
 Some phones fetch their files over FTP instead of TFTP, e.g. NEC DT700/DT800 (user `NECSDT700`).
 **FTP server (read only)** is switched on separately from DHCP and TFTP and serves the same
 folder as TFTP:
 
-- **Anonymous** login and the fixed user **`NECSDT700`** work without a password (NEC phones log
-  in with it; any password they send is accepted).
+- The fixed user **`NECSDT700`** logs in with a password. NEC DT700/DT800 phones send
+  `NECSdt700` unless it was changed in their menu (their syslog shows
+  `LoginName=NECSDT700, Password=NECSdt700`); that is the default. Set another one under
+  *New password for NECSDT700* when the phones use another one; the badge shows whether NEC's
+  default or an own password is set.
+- **Anonymous** login (no password) is **off**. *Allow anonymous login without a password* turns
+  it on for phones that need it; not recommended, as anybody on the allowed networks can then
+  download the phones' files with their SIP passwords. Up to 1.30.1 anonymous login and
+  `NECSDT700` without a password were always on; the upgrade writes the FTP configuration again.
 - **Extra FTP users** can be added on the page with a password (at most 20); tick one to remove it,
   or enter an existing name to set a new password. Only a SHA-512 hash of the password is stored.
 - Everybody may only list and download. Nothing can be uploaded, changed or deleted, and nobody
@@ -120,9 +132,10 @@ Lines are kept in `/var/log/aipbx-phones/phones.log`, rotated at 20 MB with 4 ol
   UDP 69 (the `tftp` service) for the allowed networks; *Off* removes both again.
 - FTP is vsftpd (packages `vsftpd`, `libpam-pwdfile`) in its own unit `aipbx-vsftpd`; the
   package's own `vsftpd` unit is masked. `aipbx-priv netsvc ftp-on` writes
-  `/var/lib/aipbx-netsvc/vsftpd.conf` and the password file `ftp.passwd` of the extra users
-  (root only, SHA-512 hashes; the portal hands over only the hashes). The PAM service
-  `/etc/pam.d/aipbx-ftp` lets `NECSDT700` in and checks everybody else against that file only.
+  `/var/lib/aipbx-netsvc/vsftpd.conf` and the password file `ftp.passwd` of all FTP users,
+  `NECSDT700` included (root only, SHA-512 hashes; the portal hands over only the hashes). The
+  PAM service `/etc/pam.d/aipbx-ftp` checks every login against that file only.
+  `install.sh --upgrade` applies the FTP settings again (`web/bin/netsvc_ftp_reapply.php`).
   Transfers are logged in `/var/log/aipbx-ftp.log`.
 - Syslog is `/usr/local/sbin/aipbx-syslogd` (Python, standard library) in its own unit
   `aipbx-syslog`, as the system user `aipbx-syslog` (group `www-data`, so the portal can read the
