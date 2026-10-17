@@ -22,7 +22,9 @@ Fixes from a third code review.
 - **Sign-in tokens:** the mobile and chat tokens are no longer signed with the
   database password when no token key is set (the service refuses to start
   instead); a QR code can be used only once even when scanned twice at the
-  same moment.
+  same moment. The tokens get their own key (`CHAT_JWT_SECRET`, added by the
+  update; they were signed with the TURN key): **every mobile app and the web
+  chat sign in again once after this update.**
 - **Chat:** a direct chat can be started only with an active chat user (not
   any number, not a fax-only user); internal errors are logged instead of
   being sent to the app; the web page no longer replaces the safe

@@ -525,6 +525,13 @@ if is_upgrade; then
     # The environment file belongs to the installation (admins edit it):
     # only keys added by newer releases are appended.
     env_ensure ODBC_DB_PASS "$ODBC_PASS"
+    # Own key for the mobile/chat sign-in tokens (they were signed with
+    # TURN_SECRET). Added once: every app signs in again after this upgrade.
+    if [[ -z "$(env_get CHAT_JWT_SECRET)" ]]; then
+        sed -i '/^CHAT_JWT_SECRET=$/d' /etc/ai-pbx.env
+        echo "CHAT_JWT_SECRET=$(gen_hex 32)" >> /etc/ai-pbx.env
+        ok "CHAT_JWT_SECRET added (mobile apps and chat sign in again)"
+    fi
     # Older installs sent clients coturn's own port; TURNS goes through the
     # 443 multiplexer now, which also passes networks that only allow 443.
     if [[ "$(env_get TURNS_PORT)" == 5349 ]]; then
@@ -579,6 +586,8 @@ MAIL_FROM_NAME=AI PBX Portal
 # --- WebRTC TURN (coturn) ---
 TURN_HOST=${PORTAL_DOMAIN}
 TURN_SECRET=${TURN_SECRET}
+# Signs the mobile/chat sign-in tokens (own key, not shared with TURN).
+CHAT_JWT_SECRET=$(gen_hex 32)
 # Port given to clients for turns:. coturn listens on 5349; nginx on 443 hands
 # TURNS (no ALPN / "stun.turn") to it, so calls work where only 443 is open.
 TURNS_PORT=443
