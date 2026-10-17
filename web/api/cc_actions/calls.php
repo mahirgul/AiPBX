@@ -15,13 +15,20 @@ if ($action === 'originate') {
     $outbound_grp = max(1, intval($user['outbound_group'] ?? 1));
     $outbound_context = ($outbound_grp > 1) ? "from-internal-g{$outbound_grp}" : 'cc-internal';
 
-    $cmd = "Action: Originate\r\n" .
-           "Channel: Local/$user_ext@cc-internal\r\n" .
-           "Context: $outbound_context\r\n" .
-           "Exten: $to\r\n" .
-           "Priority: 1\r\n" .
-           "CallerID: Agent $user_ext <$user_ext>\r\n" .
-           "Variable: __SAVED_DST=$to\r\n\r\n";
+    // The permission group travels with the Originate: the Local leg has no
+    // endpoint variables, and an empty group passes the dial-permission
+    // check (it is what inbound calls have), so restrictions were skipped.
+    // getCurrentUser() does not select the column, so read it when needed.
+    $perm_grp = 1;
+    if (!empty($user['permission_group_id'])) {
+        $perm_grp = max(1, intval($user['permission_group_id']));
+    } elseif (!empty($user['id'])) {
+        $perm_grp = max(1, intval($db->query(
+            'SELECT permission_group_id FROM sys_users WHERE id = ' . intval($user['id'])
+        )->fetchColumn() ?: 1));
+    }
+
+    $cmd = buildOriginateCommand($user_ext, $to, $outbound_context, $perm_grp);
 
     $res = sendAMICommand($cmd);
     if (!$res || strpos($res, 'Response: Success') === false) {

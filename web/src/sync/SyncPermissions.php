@@ -16,6 +16,12 @@ function __syncPermissionsBody() {
     $conf .= "[sub-check-dial-permission]\n";
     $conf .= "exten => s,1,NoOp(Dial Permission Check for Caller \${ARG1} -> Target \${ARG2} (Group: \${PERMISSION_GROUP_ID}))\n";
     $conf .= " same => n,Set(PERM_GROUP=\${PERMISSION_GROUP_ID})\n";
+    // An empty group is allowed: calls from a trunk carry no group, and an
+    // inbound call that goes out again must keep working (forwarding to a
+    // mobile, an external DID/IVR destination, an external ring-group
+    // member, trunk-to-trunk). Every channel started by a user carries its
+    // group instead: endpoints (set_var), click-to-call (Originate) and
+    // ring-group legs (inherited), so it cannot be skipped by them.
     $conf .= " same => n,GotoIf(\$[\"\${PERM_GROUP}\" = \"\" | \"\${PERM_GROUP}\" = \"1\"]?perm_allow)\n";
     $conf .= " same => n,Goto(perm-group-\${PERM_GROUP},\${ARG2},1)\n";
     $conf .= " same => n(perm_allow),Return()\n\n";

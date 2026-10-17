@@ -300,6 +300,10 @@ class UserService {
 
             $u_ext = DBHelper::fetchColumn("SELECT extension FROM sys_users WHERE id = ?", [$user_id]);
             if (!empty($u_ext) && !empty($new_sip_password)) {
+                // SyncExtensions prefers sip.secret over sys_users.sip_password:
+                // without this the reset never reaches the PJSIP endpoint and
+                // the old secret stays valid despite the rotation.
+                SIPHelper::setSettings($u_ext, ['secret' => $new_sip_password]);
                 markPendingSync('extensions', 'extension', $u_ext, "Extension: {$u_ext} (SIP password changed)", 'update', $_SESSION['user_id'] ?? null);
                 return t('srv_user.pw_updated_apply');
             }
