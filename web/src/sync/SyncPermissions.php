@@ -16,9 +16,15 @@ function __syncPermissionsBody() {
     $conf .= "[sub-check-dial-permission]\n";
     $conf .= "exten => s,1,NoOp(Dial Permission Check for Caller \${ARG1} -> Target \${ARG2} (Group: \${PERMISSION_GROUP_ID}))\n";
     $conf .= " same => n,Set(PERM_GROUP=\${PERMISSION_GROUP_ID})\n";
-    $conf .= " same => n,GotoIf(\$[\"\${PERM_GROUP}\" = \"\" | \"\${PERM_GROUP}\" = \"1\"]?perm_allow)\n";
+    // An empty group must DENY, not allow: channels that never received a
+    // group (click-to-call Local legs, inbound trunk hairpins) used to sail
+    // through here. Every PJSIP endpoint always carries a group (min 1), so
+    // a missing value means "unchecked", never "unrestricted".
+    $conf .= " same => n,GotoIf(\$[\"\${PERM_GROUP}\" = \"\"]?perm_deny)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${PERM_GROUP}\" = \"1\"]?perm_allow)\n";
     $conf .= " same => n,Goto(perm-group-\${PERM_GROUP},\${ARG2},1)\n";
-    $conf .= " same => n(perm_allow),Return()\n\n";
+    $conf .= " same => n(perm_allow),Return()\n";
+    $conf .= " same => n(perm_deny),Goto(sub-permission-denied,s,1)\n\n";
 
     $conf .= "[sub-permission-denied]\n";
     $conf .= "exten => s,1,NoOp(Dial permission restriction: destination not allowed!)\n";
