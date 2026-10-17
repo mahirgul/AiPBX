@@ -50,12 +50,12 @@ final class RingGroupRoutingTest extends TestCase
         return (string) file_get_contents($path);
     }
 
-    private function addGroup(string $number, string $members): int
+    private function addGroup(string $number, string $members, string $strategy = 'ringall'): int
     {
         $this->db->prepare(
             'INSERT INTO pbx_ring_groups (group_number, internal_number, name, numbers_list, ring_strategy, is_active)
              VALUES (?, ?, ?, ?, ?, 1)'
-        )->execute([$number, $number, 'Routing Test ' . $number, $members, 'ringall']);
+        )->execute([$number, $number, 'Routing Test ' . $number, $members, $strategy]);
         return (int) $this->db->lastInsertId();
     }
 
@@ -96,6 +96,38 @@ final class RingGroupRoutingTest extends TestCase
             $conf,
             'external member legs must inherit the caller group for the permission check'
         );
+    }
+
+    public function testRandomPicksOneTargetPerCall(): void
+    {
+        // "Pick a target at random": one member per call, chosen in the
+        // dialplan — never everybody at once, never a frozen sync-time order.
+        $this->addGroup('7491', '3001, 3002, 3003', 'random');
+        $conf = $this->read();
+
+        $start = strpos($conf, '[app-ringgroup-');
+        $this->assertNotFalse($start);
+        $ctx = substr($conf, $start);
+        $this->assertStringContainsString('Set(RG_PICK_', $ctx);
+        $this->assertStringContainsString('${RAND(1,3)}', $ctx);
+        $this->assertStringContainsString('(rg_rand_', $ctx);
+        $this->assertDoesNotMatchRegularExpression(
+            '/Dial\(Local\/3001.*&.*Local\/3002/',
+            $ctx,
+            'random must not ring everybody at once like ringall'
+        );
+    }
+
+    public function testRingallStillRingsEverybodyAtOnce(): void
+    {
+        $this->addGroup('7491', '3001, 3002', 'ringall');
+        $conf = $this->read();
+
+        $start = strpos($conf, '[app-ringgroup-');
+        $this->assertNotFalse($start);
+        $ctx = substr($conf, $start);
+        $this->assertMatchesRegularExpression('/Dial\(Local\/3001[^)]*&[^)]*Local\/3002/', $ctx);
+        $this->assertStringNotContainsString('RG_PICK_', $ctx);
     }
 
     public function testDeleteBlockedByIvrReference(): void
