@@ -123,3 +123,6 @@ web/assets/images/brand/
 
 # === Local review notes (not part of the project) ===
 antigravity/
+RAPOR*.md
+/REPORT*.md
+/*_RAPOR*.md
