@@ -16,8 +16,8 @@ if ($action === 'originate') {
     $outbound_context = ($outbound_grp > 1) ? "from-internal-g{$outbound_grp}" : 'cc-internal';
 
     // The permission group travels with the Originate: the Local leg has no
-    // endpoint variables, and an empty group used to pass the dial-permission
-    // check unchallenged (now it denies, so this line is load-bearing).
+    // endpoint variables, and an empty group passes the dial-permission
+    // check (it is what inbound calls have), so restrictions were skipped.
     // getCurrentUser() does not select the column, so read it when needed.
     $perm_grp = 1;
     if (!empty($user['permission_group_id'])) {

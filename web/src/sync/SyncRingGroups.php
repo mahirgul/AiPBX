@@ -30,8 +30,8 @@ function __syncRingGroupsBody() {
         $conf .= " same => n,Set(CDR(direction)=internal)\n";
         // Carry the caller's permission group onto the Local legs below: the
         // endpoint variable does not cross channels, but a __-prefixed copy
-        // does. Without it every external member dialled with an empty group
-        // (and empty now denies instead of allowing).
+        // does. Without it an internal caller's restrictions did not apply
+        // to the external members (an inbound call has no group: allowed).
         $conf .= " same => n,Set(__PERMISSION_GROUP_ID=\${PERMISSION_GROUP_ID})\n";
 
         if ($cid_prefix !== '') {

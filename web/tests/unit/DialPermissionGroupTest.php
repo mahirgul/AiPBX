@@ -8,14 +8,14 @@ require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 require_once dirname(__DIR__, 2) . '/api/cc_actions/cc_lib.php';
 
 /**
- * An empty permission group must DENY, not allow.
+ * Dial restrictions follow the user on every channel the user starts.
  *
- * sub-check-dial-permission used to jump to perm_allow when the group was
- * empty or 1. Endpoint channels always carry a group (min 1), so an empty
- * value means "unchecked" — click-to-call Local legs and inbound trunk
- * hairpins sailed through every restriction.
+ * sub-check-dial-permission allows an empty group (inbound trunk calls), so
+ * a channel started by a user must carry the user's group: click-to-call
+ * Local legs did not, and a restricted extension could call barred numbers
+ * through the API.
  */
-final class PermissionDenyEmptyTest extends TestCase
+final class DialPermissionGroupTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -29,26 +29,13 @@ final class PermissionDenyEmptyTest extends TestCase
         return (string) file_get_contents($path);
     }
 
-    public function testEmptyGroupIsDenied(): void
+    public function testEmptyGroupIsAllowedForInboundCalls(): void
     {
+        // Calls from a trunk have no group; forwarding them to a mobile or an
+        // external destination must keep working.
         syncPermissions();
         $conf = $this->read('extensions_permissions.conf');
-
-        $start = strpos($conf, "[sub-check-dial-permission]\n");
-        $this->assertNotFalse($start, 'sub-check-dial-permission missing');
-        $sub = substr($conf, $start, strpos($conf, "\n\n", $start) - $start);
-
-        $this->assertStringContainsString('?perm_deny', $sub, 'empty group must route to perm_deny');
-        $this->assertStringContainsString(
-            'n(perm_deny),Goto(sub-permission-denied,s,1)',
-            $sub,
-            'perm_deny must end in the restriction handler'
-        );
-        $this->assertDoesNotMatchRegularExpression(
-            '/=\s*""\s*\|\s*"\$\{PERM_GROUP\}"\s*=\s*"1"\s*\]\?perm_allow/',
-            $sub,
-            'empty-or-1 fail-open is back'
-        );
+        $this->assertMatchesRegularExpression('/GotoIf\(\$\["\$\{PERM_GROUP\}" = "" \| "\$\{PERM_GROUP\}" = "1"\]\?perm_allow\)/', $conf);
     }
 
     public function testGroupOneStillAllowed(): void
