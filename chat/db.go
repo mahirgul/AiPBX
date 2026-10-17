@@ -295,6 +295,15 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		&cv.LastMessageText, &lastMsgAt, &createdAt)
 
 	if err == nil {
+		// Reopening checks the same membership as creating: a user who was
+		// deactivated or converted to fax since stays unreachable, instead of
+		// sliding back in through the old conversation.
+		for _, ext := range []string{ext1, ext2} {
+			u, err := GetUserByExt(ext)
+			if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
+				return nil, fmt.Errorf("%w: %s", errNotChatUser, ext)
+			}
+		}
 		// Ensure both participants are active (left_at is cleared)
 		_, _ = db.Exec("UPDATE chat_participants SET left_at = NULL WHERE conversation_id = ? AND extension IN (?, ?)", cv.ID, ext1, ext2)
 
