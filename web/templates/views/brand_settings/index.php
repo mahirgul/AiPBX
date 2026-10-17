@@ -225,7 +225,7 @@
     </div>
 
     <?php if (hasModulePermission('brand_settings', 'edit')): ?>
-        <button type="submit" form="brandResetForm" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px; margin-bottom: 10px; font-weight: 600;" onclick="return confirm('<?php echo htmlspecialchars(t('brand_settings.reset_all_confirm'), ENT_QUOTES); ?>');">
+        <button type="submit" form="brandResetForm" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px; margin-bottom: 10px; font-weight: 600;" onclick="return confirm(<?php echo jsArg(t('brand_settings.reset_all_confirm')); ?>);">
             <i class="fas fa-undo"></i> <?php echo t('brand_settings.reset_all'); ?>
         </button>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('brand_settings.save'); ?>">

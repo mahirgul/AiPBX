@@ -47,7 +47,7 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
             </div>
             <div class="u-muted u-fs-11 u-mb-10"><?php echo sprintf(t('ai_tts.provider_hint_' . $p['id']), number_format($p['max_chars'], 0, ',', '.')); ?></div>
             <?php if ($p['configured'] && $can_edit): ?>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="ttsTest('<?php echo $h($p['id']); ?>', this)"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="ttsTest(<?php echo jsArg($p['id']); ?>, this)"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>

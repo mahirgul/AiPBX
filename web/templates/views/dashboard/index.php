@@ -184,7 +184,7 @@ window.DASHBOARD_PAGE = {
             </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-            <form method="POST" autocomplete="off" onsubmit="return confirm('<?php echo htmlspecialchars(t('dashboard.confirm_restart_asterisk'), ENT_QUOTES); ?>');">
+            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_asterisk')); ?>);">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="asterisk">
@@ -193,7 +193,7 @@ window.DASHBOARD_PAGE = {
                 </button>
             </form>
 
-            <form method="POST" autocomplete="off" onsubmit="return confirm('<?php echo htmlspecialchars(t('dashboard.confirm_restart_httpd'), ENT_QUOTES); ?>');">
+            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_httpd')); ?>);">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="apache2">
@@ -202,7 +202,7 @@ window.DASHBOARD_PAGE = {
                 </button>
             </form>
 
-            <form method="POST" autocomplete="off" onsubmit="return confirm('<?php echo htmlspecialchars(t('dashboard.confirm_restart_mariadb'), ENT_QUOTES); ?>');">
+            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_mariadb')); ?>);">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="mariadb">
@@ -211,7 +211,7 @@ window.DASHBOARD_PAGE = {
                 </button>
             </form>
 
-            <form method="POST" autocomplete="off" onsubmit="return confirm('<?php echo htmlspecialchars(t('dashboard.confirm_restart_postfix'), ENT_QUOTES); ?>');">
+            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_postfix')); ?>);">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="restart_service">
                 <input type="hidden" name="service_name" value="postfix">

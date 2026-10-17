@@ -88,7 +88,7 @@ func (s *Server) HandleMe(w http.ResponseWriter, r *http.Request, user *User) {
 func (s *Server) HandleContacts(w http.ResponseWriter, r *http.Request, user *User) {
 	contacts, err := GetContacts(user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Could not load the contacts: "+err.Error())
+		writeInternalError(w, "Could not load the contacts", err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (s *Server) HandleContacts(w http.ResponseWriter, r *http.Request, user *Us
 func (s *Server) HandleConversations(w http.ResponseWriter, r *http.Request, user *User) {
 	convs, err := GetConversations(user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Could not load the conversations: "+err.Error())
+		writeInternalError(w, "Could not load the conversations", err)
 		return
 	}
 
@@ -139,8 +139,12 @@ func (s *Server) HandleCreateDirectConversation(w http.ResponseWriter, r *http.R
 	}
 
 	conv, err := GetOrCreateDirectConversation(user.Extension, targetExt, user.Extension)
+	if errors.Is(err, errNotChatUser) {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Could not create the conversation: "+err.Error())
+		writeInternalError(w, "Could not create the conversation", err)
 		return
 	}
 
@@ -182,7 +186,7 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 
 	messages, err := GetMessages(convID, limit, beforeID)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Could not load the messages: "+err.Error())
+		writeInternalError(w, "Could not load the messages", err)
 		return
 	}
 
@@ -365,7 +369,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	store := files.Primary()
 	if err := store.Put(ctx, subDir+"/"+savedFileName, file, fileSize, detectedMime); err != nil {
 		log.Printf("[Upload] Could not store %s/%s (%s): %v", subDir, savedFileName, store.Name(), err)
-		writeJSONError(w, http.StatusInternalServerError, "Dosya kaydedilemedi: "+err.Error())
+		writeInternalError(w, "Dosya kaydedilemedi", err)
 		return
 	}
 
@@ -515,6 +519,13 @@ func makeThumbnail(file io.ReadSeeker, ext string) ([]byte, bool) {
 	return buf.Bytes(), true
 }
 
+// writeInternalError logs the cause and gives the client only the message:
+// database and storage errors named tables, paths and hosts.
+func writeInternalError(w http.ResponseWriter, msg string, err error) {
+	log.Printf("[HTTP] %s: %v", msg, err)
+	writeJSONError(w, http.StatusInternalServerError, msg+".")
+}
+
 // files returns where chat files are kept (the local folder when main.go
 // set no storage, as in tests).
 func (s *Server) files() *Storage {
@@ -652,7 +663,7 @@ func (s *Server) HandleGetGroupDetails(w http.ResponseWriter, r *http.Request, u
 
 	conv, err := GetGroupDetails(convID, user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Could not load the group details: "+err.Error())
+		writeInternalError(w, "Could not load the group details", err)
 		return
 	}
 
@@ -1007,7 +1018,7 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 
 	err = DeleteGroup(body.ConversationID, user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Grup silinemedi: "+err.Error())
+		writeInternalError(w, "Grup silinemedi", err)
 		return
 	}
 

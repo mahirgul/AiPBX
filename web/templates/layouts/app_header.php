@@ -96,7 +96,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         // The SIP password is not embedded in the page source; it is fetched from /api/sip_credentials.php when needed
         window.ALLOWED_PHONE_MODE = "<?php echo htmlspecialchars($user['allowed_phone_mode'] ?? 'both'); ?>";
         window.USER_PHONE_MODES = <?php echo json_encode(parsePhoneModes($user['allowed_phone_mode'] ?? 'both')); ?>;
-        window.SYSTEM_EXTENSIONS = <?php echo json_encode($db->query("SELECT extension, full_name FROM sys_users WHERE extension IS NOT NULL AND extension != '' ORDER BY full_name ASC")->fetchAll(PDO::FETCH_ASSOC)); ?>;
+        window.SYSTEM_EXTENSIONS = <?php echo json_encode($db->query("SELECT extension, full_name FROM sys_users WHERE extension IS NOT NULL AND extension != '' ORDER BY full_name ASC")->fetchAll(PDO::FETCH_ASSOC), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         // Softphone ring/ringback tone — if none is chosen in the admin panel, header_phone.js uses its own default
         <?php $ring_in = getSystemSetting('webrtc_ring_incoming', ''); $ring_out = getSystemSetting('webrtc_ring_outgoing', ''); ?>
         window.WEBRTC_RING_INCOMING_URL = "<?php echo $ring_in !== '' ? '/api/sound_play.php?file=' . urlencode($ring_in) : ''; ?>";

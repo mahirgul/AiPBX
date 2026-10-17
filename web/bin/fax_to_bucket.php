@@ -9,6 +9,10 @@
  * A file is moved only when no fax that uses it is still pending or younger
  * than an hour (a fax sent again reuses the same TIFF and PDF).
  */
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/FaxStorage.php';
 

@@ -5,6 +5,32 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.33.3
+
+Fixes from a third code review.
+
+- **Configuration injection:** a fax destination (IVR, time condition, ring
+  group, announcement fallback), a queue recording format, a voicemail e-mail
+  address and a ring-group caller-name prefix were written into Asterisk's
+  configuration as typed. A line break in them could add lines of its own,
+  including commands run by Asterisk. Each is now limited to what it can
+  contain; a comma in a name no longer shifts the voicemail fields.
+- **My phone:** the "Call" button of the call history put the caller's number
+  into the page unescaped; a crafted caller ID could run script in the
+  browser. Every inline button now passes its values safely (`jsArg()`),
+  which also fixes confirmation dialogs whose translation has an apostrophe.
+- **Sign-in tokens:** the mobile and chat tokens are no longer signed with the
+  database password when no token key is set (the service refuses to start
+  instead); a QR code can be used only once even when scanned twice at the
+  same moment.
+- **Chat:** a direct chat can be started only with an active chat user (not
+  any number, not a fax-only user); internal errors are logged instead of
+  being sent to the app; the web page no longer replaces the safe
+  `escapeHtml()` with a weaker one.
+- Hardening: the command-line tools in `web/bin` refuse to run over HTTP (the
+  folder is already closed by the web server); the extension list in the page
+  header is encoded for a script block.
+
 ## 1.33.2
 
 Fixes from a second code review, and two follow-ups by **@tomck** (#110).

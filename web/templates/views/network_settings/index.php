@@ -170,7 +170,7 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-                <form method="POST" action="/network-settings" class="u-mt-12" onsubmit="return confirm('<?php echo $h(t('netset.apply_confirm')); ?>');">
+                <form method="POST" action="/network-settings" class="u-mt-12" onsubmit="return confirm(<?php echo jsArg(t('netset.apply_confirm')); ?>);">
                     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                     <input type="hidden" name="readdress_apply" value="1">
                     <input type="hidden" name="old_ip" value="<?php echo $h($preview['old']); ?>">

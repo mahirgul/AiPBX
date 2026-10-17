@@ -8,6 +8,10 @@
  * MixMonitor keeps touching the file while the call lasts. Header-only WAVs
  * (calls that were never bridged) are removed together with their CDR link.
  */
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/RecordingStorage.php';
 
