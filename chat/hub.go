@@ -22,8 +22,11 @@ const (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	// Any origin: the token comes from the Authorization header or ?token=,
+	// never from a cookie (ExtractToken), so a foreign page has nothing to
+	// open a socket with.
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Auth is checked via Bearer token before upgrade
+		return true
 	},
 }
 

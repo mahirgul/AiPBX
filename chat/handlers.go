@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"mime"
@@ -479,11 +480,25 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 	_, _ = io.Copy(w, rc)
 }
 
+// maxThumbPixels: larger images are stored without a thumbnail (40 MP covers
+// any phone camera).
+const maxThumbPixels = 40_000_000
+
 // makeThumbnail returns the image scaled to fit 300x300, encoded like the
 // original; false when the format cannot be decoded or encoded (webp).
 func makeThumbnail(file io.ReadSeeker, ext string) ([]byte, bool) {
 	format, err := imaging.FormatFromExtension(ext)
 	if err != nil {
+		return nil, false
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return nil, false
+	}
+	// The decoder allocates width x height from the header before reading the
+	// pixels: a small file claiming 60000x60000 asked for ~14 GB and the
+	// out-of-memory crash took the whole chat service down.
+	cfg, _, err := image.DecodeConfig(file)
+	if err != nil || cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > maxThumbPixels {
 		return nil, false
 	}
 	if _, err := file.Seek(0, io.SeekStart); err != nil {

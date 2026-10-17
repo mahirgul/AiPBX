@@ -31,6 +31,16 @@ func TestExtractToken(t *testing.T) {
 		t.Fatalf("Expected cookie-token-456, got %s", tok)
 	}
 
+	// 2b. Cookie is ignored outside /media/: a page on another site makes the
+	// browser send it (cross-site WebSocket hijacking, CSRF on the API)
+	for _, p := range []string{"/chat/ws", "/ws", "/api/messages"} {
+		r, _ := http.NewRequest("GET", p, nil)
+		r.AddCookie(&http.Cookie{Name: "chat_token", Value: "cookie-token-456"})
+		if tok := ExtractToken(r); tok != "" {
+			t.Fatalf("cookie must not authenticate %s, got %s", p, tok)
+		}
+	}
+
 	// 3. Query param for /ws (Allowed)
 	req3, _ := http.NewRequest("GET", "/chat/ws?token=ws-token-789", nil)
 	if tok := ExtractToken(req3); tok != "ws-token-789" {

@@ -103,7 +103,7 @@ function __syncAllExtensionsBody() {
     // Fax users (extension_type='fax') never register over SIP (an incoming
     // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
-    $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     // Video codecs only while video calls are on (Admin -> Asterisk -> Video).
     $video_codecs = pbxVideoCodecs();
@@ -205,6 +205,8 @@ function __syncAllExtensionsBody() {
         return str_replace(['.', '-'], ['\\.', '\\-'], $h);
     }, $identify_hosts));
 
+    $active_perm_groups = array_flip(array_map('intval', $db->query('SELECT id FROM pbx_permission_groups WHERE is_active = 1')->fetchAll(PDO::FETCH_COLUMN)));
+
     foreach ($users as $u) {
         $ext = preg_replace('/[^0-9]/', '', (string)$u['extension']);
         if ($ext === '') continue;
@@ -243,7 +245,12 @@ function __syncAllExtensionsBody() {
         $cid_internal = toCleanAscii($u['cid_internal'] ?? '');
         $cid_external = toCleanAscii($u['cid_external'] ?? '');
         $role = trim($u['role'] ?? '');
-        $perm_group = max(1, intval($u['permission_group_id'] ?? 1));
+        // Only an active group has its perm-group-N context (SyncPermissions);
+        // a disabled or deleted group means no restriction, not a dead end.
+        $perm_group = intval($u['permission_group_id'] ?? 1);
+        if (!isset($active_perm_groups[$perm_group])) {
+            $perm_group = 1;
+        }
         $set_vars = "set_var=CID_INTERNAL={$cid_internal}\nset_var=CID_EXTERNAL={$cid_external}\nset_var=__CID_INTERNAL={$cid_internal}\nset_var=__CID_EXTERNAL={$cid_external}\nset_var=USER_ROLE={$role}\nset_var=PERMISSION_GROUP_ID={$perm_group}\n";
 
         // For group pickup: extensions in the same pickup_group can pick up
