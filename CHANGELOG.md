@@ -5,6 +5,35 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.33.1
+
+Fixes from two code reviews. Thanks to **@tomck** for the review and fixes in
+#107 / #108.
+
+- **SIP password:** a password changed on the Extensions page or by a reset
+  now reaches Asterisk. Before, the old password stayed valid and the mobile
+  app, which got the new one, could not register (@tomck).
+- **Call restrictions:** click-to-call (call center) and the external members
+  of a ring group now follow the caller's restrictions; click-to-call could
+  reach barred numbers (@tomck). Inbound calls forwarded to a mobile or an
+  external destination work as before.
+- **Ring groups:** a 6-digit extension in a ring group is rung as an extension,
+  not dialled out; a ring group used by an IVR, time condition, announcement
+  or fallback can no longer be deleted (@tomck).
+- **Local AI:** removing a model waits for a running synthesis or
+  transcription; it could crash the AI service during a call.
+- **Phones:** the file preview also hides passwords with `&`, `<` or `>` and
+  NEC's shortened password; phones imported from CSV get their TFTP/FTP files
+  at once instead of within 5 minutes.
+- **Update and scripts:** command-line scripts exit with an error when the
+  database is unreachable (they reported success); a rolled-back update also
+  restores `/etc/asterisk` from its backup; configuration sync locks are
+  shared by the portal, cron and root (`/var/lib/aipbx/sync-locks`).
+- **HTTP:** the redirect to HTTPS checks the resolved path (hardening; such
+  requests were already refused).
+- Translations: new texts can be added in English first; the other languages
+  show English until they are translated.
+
 ## 1.33.0
 
 Network settings and a tidier menu:

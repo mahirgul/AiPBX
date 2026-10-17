@@ -179,6 +179,13 @@ rollback() {
         log "WARNING: backup looks incomplete, database left untouched: $BACKUP_DIR"
     fi
     cp -p "$BACKUP_DIR/ai-pbx.env" /etc/ai-pbx.env
+    # install.sh below rewrites most of /etc/asterisk again; the backup also
+    # brings back files it does not write (keys, hand-edited files).
+    if [[ -s "$BACKUP_DIR/etc-asterisk.tgz" ]]; then
+        tar xzf "$BACKUP_DIR/etc-asterisk.tgz" -C / 2>>"$LOG_FILE" \
+            && log "Asterisk configuration restored from backup" \
+            || log "WARNING: /etc/asterisk restore failed — by hand: tar xzf $BACKUP_DIR/etc-asterisk.tgz -C /"
+    fi
     bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 \
         || log "WARNING: could not re-apply the previous release's system settings"
     log "===== Rolled back to $CURRENT ($1) ====="

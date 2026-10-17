@@ -84,6 +84,19 @@ final class PhoneProvisionTest extends TestCase
 
     // ------------------------------------------------------------ templates
 
+    public function testPreviewHidesEveryFormOfThePassword(): void
+    {
+        $forms = PhoneProvisionService::secretForms(['P@ss&<1234', str_repeat('a', 40), 'abc']);
+        $this->assertContains('P@ss&<1234', $forms);
+        $this->assertContains('P@ss&amp;&lt;1234', $forms, 'XML-escaped form');
+        $this->assertContains(str_repeat('a', 31), $forms, 'cut to 31 (NEC)');
+        $this->assertNotContains('abc', $forms, 'too short to mask');
+        $lengths = array_map('strlen', $forms);
+        $sorted = $lengths;
+        rsort($sorted);
+        $this->assertSame($sorted, $lengths, 'longest first');
+    }
+
     public function testYealinkRendersAccountKeysAndExpansionModule(): void
     {
         $out = (new YealinkTemplate())->render($this->context('yealink-t46u', [
