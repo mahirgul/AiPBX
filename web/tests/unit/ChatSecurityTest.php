@@ -75,9 +75,7 @@ final class ChatSecurityTest extends TestCase
     public function testValidateMobileTokenWithSecretKey(): void
     {
         $payload = '1:' . (time() + 3600);
-        $secretKey = (defined('CHAT_JWT_SECRET') && CHAT_JWT_SECRET !== '')
-            ? CHAT_JWT_SECRET
-            : ((defined('TURN_SECRET') && TURN_SECRET !== '') ? TURN_SECRET : DB_PASS);
+        $secretKey = getMobileTokenSecret();
         $sig = hash_hmac('sha256', $payload, $secretKey);
         $token = base64_encode($payload . ':' . $sig);
 
