@@ -1,3 +1,4 @@
 "NSMicrophoneUsageDescription" = "Mikrofonin käyttöoikeus tarvitaan vaihdepuheluihin ja äänikeskusteluihin.";
 "NSCameraUsageDescription" = "Kameran käyttöoikeus tarvitaan vaihteen QR-koodilla kirjautumiseen ja kuvien lähettämiseen chatissa.";
 "NSPhotoLibraryUsageDescription" = "Kuvakirjaston käyttöoikeus tarvitaan kuvien ja tiedostojen jakamiseen chatissa.";
+"NSContactsUsageDescription" = "Yhteystietojen käyttöoikeus tarvitaan puhelimen yhteystietojen näyttämiseen ja soittamiseen sovelluksesta.";

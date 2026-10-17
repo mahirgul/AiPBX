@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Brak uprawnień do kamery: rozmowa trwa tylko z dźwiękiem.</string>
     <string name="err_camera_unavailable">Kamera niedostępna: rozmowa trwa tylko z dźwiękiem.</string>
     <string name="contacts_extensions_listed">numerów wewnętrznych</string>
+    <string name="api_fcm_token_failed">Nie udało się wysłać tokenu FCM (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Nie udało się usunąć grupy (HTTP %1$s)</string>
 </resources>

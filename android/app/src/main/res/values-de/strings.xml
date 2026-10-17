@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Keine Kameraberechtigung: Das Gespräch läuft nur mit Ton weiter.</string>
     <string name="err_camera_unavailable">Kamera nicht verfügbar: Das Gespräch läuft nur mit Ton weiter.</string>
     <string name="contacts_extensions_listed">Nebenstellen aufgelistet</string>
+    <string name="api_fcm_token_failed">FCM-Token konnte nicht gesendet werden (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Gruppe konnte nicht gelöscht werden (HTTP %1$s)</string>
 </resources>

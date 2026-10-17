@@ -2,3 +2,4 @@
 "NSMicrophoneUsageDescription" = "Pristup mikrofonu je potreban za pozive preko centrale i glasovne razgovore.";
 "NSCameraUsageDescription" = "Pristup kameri je potreban za prijavu QR kodom centrale i za slanje fotografija u ćaskanju.";
 "NSPhotoLibraryUsageDescription" = "Pristup biblioteci fotografija je potreban za deljenje fotografija i datoteka u ćaskanju.";
+"NSContactsUsageDescription" = "Pristup kontaktima je potreban za prikaz i pozivanje kontakata sa telefona iz aplikacije.";

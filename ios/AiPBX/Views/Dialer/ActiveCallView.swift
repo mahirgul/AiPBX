@@ -1,16 +1,40 @@
 import SwiftUI
+import WebKit
+
+private struct WebRtcVideoContainerView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let container = UIView()
+        container.backgroundColor = .black
+        if let wv = SipWebRtcEngine.shared.webView {
+            wv.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(wv)
+            NSLayoutConstraint.activate([
+                wv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                wv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                wv.topAnchor.constraint(equalTo: container.topAnchor),
+                wv.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            ])
+        }
+        return container
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
 
 public struct ActiveCallView: View {
     @EnvironmentObject private var appState: AppState
+    @ObservedObject private var sipEngine = SipWebRtcEngine.shared
     @State private var callDurationSeconds: Int = 0
     @State private var timer: Timer? = nil
     @State private var showDtmfKeypad: Bool = false
+    @State private var showTransferAlert: Bool = false
+    @State private var transferTarget: String = ""
 
     public init() {}
 
     public var body: some View {
         ZStack {
-            // Dark gradient backdrop
+            // Dark gradient backdrop or active WebRTC video view
             LinearGradient(
                 colors: [Color(red: 0.08, green: 0.12, blue: 0.20), Color(red: 0.02, green: 0.04, blue: 0.08)],
                 startPoint: .top,
@@ -18,16 +42,23 @@ public struct ActiveCallView: View {
             )
             .ignoresSafeArea()
 
+            if sipEngine.isVideoActive {
+                WebRtcVideoContainerView()
+                    .ignoresSafeArea()
+            }
+
             VStack(spacing: 32) {
                 Spacer(minLength: 20)
 
                 // Caller Info Header
                 VStack(spacing: 12) {
-                    AvatarView(name: appState.activeCallerName.isEmpty ? L("PBX") : appState.activeCallerName, size: 96)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.15), lineWidth: 2)
-                        )
+                    if !sipEngine.isVideoActive {
+                        AvatarView(name: appState.activeCallerName.isEmpty ? L("PBX") : appState.activeCallerName, size: 96)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 2)
+                            )
+                    }
 
                     Text(appState.activeCallerName.isEmpty ? L("PBX") : appState.activeCallerName)
                         .font(.system(size: 26, weight: .bold))
@@ -67,9 +98,9 @@ public struct ActiveCallView: View {
                     }
                     .transition(.scale.combined(with: .opacity))
                 } else {
-                    // Call Action Buttons (Mute, DTMF, Speaker, Hold)
+                    // Call Action Buttons (Mute, DTMF, Speaker, Hold, Transfer, Camera)
                     if appState.callStatus != .ringingIncoming {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 24) {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 24) {
                             CallActionButton(
                                 icon: appState.isMuted ? "mic.slash.fill" : "mic.fill",
                                 title: appState.isMuted ? L("Muted") : L("Mute"),
@@ -98,13 +129,40 @@ public struct ActiveCallView: View {
 
                             CallActionButton(
                                 icon: appState.callStatus == .onHold ? "play.fill" : "pause.fill",
-                                title: appState.callStatus == .onHold ? "Devam Et" : "Beklet",
+                                title: appState.callStatus == .onHold ? L("Resume") : L("Hold"),
                                 isActive: appState.callStatus == .onHold
                             ) {
                                 appState.toggleHold()
                             }
+
+                            CallActionButton(
+                                icon: "arrowshape.turn.up.right.fill",
+                                title: L("Transfer"),
+                                isActive: false
+                            ) {
+                                transferTarget = ""
+                                showTransferAlert = true
+                            }
+
+                            if sipEngine.isVideoActive {
+                                CallActionButton(
+                                    icon: sipEngine.isCameraEnabled ? "video.fill" : "video.slash.fill",
+                                    title: L("Camera"),
+                                    isActive: !sipEngine.isCameraEnabled
+                                ) {
+                                    appState.toggleCamera()
+                                }
+
+                                CallActionButton(
+                                    icon: "arrow.triangle.2.circlepath.camera.fill",
+                                    title: L("Switch camera"),
+                                    isActive: false
+                                ) {
+                                    appState.switchCamera()
+                                }
+                            }
                         }
-                        .padding(.horizontal, 48)
+                        .padding(.horizontal, 28)
                     }
                 }
 
@@ -112,7 +170,7 @@ public struct ActiveCallView: View {
 
                 // Bottom Call Controls (Accept / Decline / Hangup)
                 if appState.callStatus == .ringingIncoming {
-                    HStack(spacing: 60) {
+                    HStack(spacing: 40) {
                         // Decline Button
                         Button(action: {
                             appState.endCall()
@@ -121,7 +179,7 @@ public struct ActiveCallView: View {
                                 ZStack {
                                     Circle()
                                         .fill(Color.red)
-                                        .frame(width: 76, height: 76)
+                                        .frame(width: 72, height: 72)
                                     Image(systemName: "phone.down.fill")
                                         .font(.title)
                                         .foregroundColor(.white)
@@ -132,15 +190,15 @@ public struct ActiveCallView: View {
                             }
                         }
 
-                        // Accept Button
+                        // Accept Button (Audio)
                         Button(action: {
-                            appState.answerCall()
+                            appState.answerCall(withVideo: false)
                         }) {
                             VStack(spacing: 8) {
                                 ZStack {
                                     Circle()
                                         .fill(Color.green)
-                                        .frame(width: 76, height: 76)
+                                        .frame(width: 72, height: 72)
                                     Image(systemName: "phone.fill")
                                         .font(.title)
                                         .foregroundColor(.white)
@@ -148,6 +206,27 @@ public struct ActiveCallView: View {
                                 Text(L("Answer"))
                                     .font(.footnote.bold())
                                     .foregroundColor(.white)
+                            }
+                        }
+
+                        // Accept Video Button (if incoming offer has video)
+                        if sipEngine.incomingHasVideo && appState.isVideoCallsEnabled {
+                            Button(action: {
+                                appState.answerCall(withVideo: true)
+                            }) {
+                                VStack(spacing: 8) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.blue)
+                                            .frame(width: 72, height: 72)
+                                        Image(systemName: "video.fill")
+                                            .font(.title)
+                                            .foregroundColor(.white)
+                                    }
+                                    Text(L("Video"))
+                                        .font(.footnote.bold())
+                                        .foregroundColor(.white)
+                                }
                             }
                         }
                     }
@@ -185,6 +264,19 @@ public struct ActiveCallView: View {
                 stopDurationTimer()
             }
         }
+        .alert(L("Transfer Call"), isPresented: $showTransferAlert) {
+            TextField(L("e.g. 1002 or 9998"), text: $transferTarget)
+                .keyboardType(.phonePad)
+            Button(L("Transfer")) {
+                let target = transferTarget.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !target.isEmpty {
+                    appState.transferCall(to: target)
+                }
+            }
+            Button(L("Cancel"), role: .cancel) {}
+        } message: {
+            Text(L("Enter the extension to transfer to:"))
+        }
     }
 
     private var callStatusDisplay: String {
@@ -193,7 +285,7 @@ public struct ActiveCallView: View {
         case .connecting: return L("Calling...")
         case .ringingOutgoing: return L("Ringing...")
         case .ringingIncoming: return L("Incoming Call...")
-        case .onHold: return "Beklemede"
+        case .onHold: return L("On hold")
         case .ended: return L("Call Ended")
         case .active:
             let min = callDurationSeconds / 60

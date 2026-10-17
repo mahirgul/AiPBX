@@ -140,9 +140,51 @@ public enum CallStatus: String, Codable {
         case .ringingOutgoing: return L("Ringing...")
         case .ringingIncoming: return L("Incoming Call...")
         case .active: return L("In Call")
-        case .onHold: return "Beklemede"
+        case .onHold: return L("On hold")
         case .ended: return L("Call Ended")
         }
+    }
+}
+
+// MARK: - Voicemail Models
+
+public struct VoicemailMessage: Codable, Identifiable, Equatable {
+    public var id: String
+    public var isNew: Bool
+    public let callerName: String?
+    public let callerNumber: String?
+    public let time: String?
+    public let duration: Int
+    public let hasAudio: Bool
+    public let summary: String?
+    public let transcript: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case isNew = "new"
+        case callerName = "caller_name"
+        case callerNumber = "caller_number"
+        case time
+        case duration
+        case hasAudio = "has_audio"
+        case summary
+        case transcript
+    }
+}
+
+public struct VoicemailResponse: Codable {
+    public let success: Bool
+    public let messages: [VoicemailMessage]?
+    public let newCount: Int?
+    public let id: String?
+    public let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case messages
+        case newCount = "new_count"
+        case id
+        case error
     }
 }
 
@@ -232,7 +274,7 @@ public struct ContactsResponse: Codable {
 }
 
 public struct ContactItem: Codable, Identifiable, Hashable {
-    public var id: String { extensionNumber }
+    public var id: String { "\(name)_\(extensionNumber)" }
     public let extensionNumber: String
     public let name: String
     public let role: String?
@@ -242,6 +284,26 @@ public struct ContactItem: Codable, Identifiable, Hashable {
     public let sipStatus: String?
     public let webrtcStatus: String?
     public let mobWebrtcStatus: String?
+
+    public init(
+        extensionNumber: String,
+        name: String,
+        role: String? = nil,
+        roleName: String? = nil,
+        status: String = "offline",
+        sipStatus: String? = nil,
+        webrtcStatus: String? = nil,
+        mobWebrtcStatus: String? = nil
+    ) {
+        self.extensionNumber = extensionNumber
+        self.name = name
+        self.role = role
+        self.roleName = roleName
+        self.status = status
+        self.sipStatus = sipStatus
+        self.webrtcStatus = webrtcStatus
+        self.mobWebrtcStatus = mobWebrtcStatus
+    }
 
     public var isOnline: Bool {
         return status.lowercased() == "online" ||
@@ -271,6 +333,12 @@ public struct FeaturesResponse: Codable {
     public let features: FeatureSettings?
 }
 
+public struct VideoSettings: Codable, Equatable {
+    public let enabled: Bool
+    public let resolution: String?
+    public let fps: Int?
+}
+
 public struct FeatureSettings: Codable {
     public let extensionNumber: String
     public var dndEnabled: Bool
@@ -279,6 +347,7 @@ public struct FeatureSettings: Codable {
     public var cfNoAnswerNumber: String?
     public var cfNoAnswerTimeout: Int?
     public var allowedPhoneMode: String?
+    public var video: VideoSettings?
 
     enum CodingKeys: String, CodingKey {
         case extensionNumber = "extension"
@@ -288,6 +357,7 @@ public struct FeatureSettings: Codable {
         case cfNoAnswerNumber = "cf_noanswer_number"
         case cfNoAnswerTimeout = "cf_noanswer_timeout"
         case allowedPhoneMode = "allowed_phone_mode"
+        case video
     }
 }
 
@@ -323,7 +393,7 @@ public struct ChatConversation: Codable, Identifiable, Hashable {
 
     public var displayTitle: String {
         if isGroup {
-            return title ?? "Grup #\(id)"
+            return title ?? L("Group Chat")
         }
         if let tName = targetName, !tName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return tName
@@ -485,4 +555,10 @@ public struct GenericActionResponse: Codable {
     public let success: Bool
     public let error: String?
     public let message: String?
+}
+
+public struct GroupMembersAddedResponse: Codable {
+    public let success: Bool
+    public let added: [String]?
+    public let error: String?
 }

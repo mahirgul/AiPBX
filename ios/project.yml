@@ -30,3 +30,5 @@ targets:
       - sdk: CallKit.framework
       - sdk: UserNotifications.framework
       - sdk: PushKit.framework
+      - sdk: Contacts.framework
+      - sdk: PhotosUI.framework

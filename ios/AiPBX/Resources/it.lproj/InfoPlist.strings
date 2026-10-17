@@ -1,3 +1,4 @@
 "NSMicrophoneUsageDescription" = "L'accesso al microfono è necessario per le chiamate del centralino e le conversazioni vocali.";
 "NSCameraUsageDescription" = "L'accesso alla fotocamera è necessario per accedere con il codice QR del centralino e per inviare foto in chat.";
 "NSPhotoLibraryUsageDescription" = "L'accesso alla libreria foto è necessario per condividere foto e file in chat.";
+"NSContactsUsageDescription" = "L'accesso ai contatti è necessario per elencare e chiamare i contatti del telefono dall'app.";

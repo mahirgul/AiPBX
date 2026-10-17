@@ -1,6 +1,8 @@
 import SwiftUI
+import UIKit
 
 public struct ChatMessageBubbleView: View {
+    @EnvironmentObject private var appState: AppState
     public let message: ChatMessage
     public let isGroup: Bool
     /// Set for the user's own messages that can be deleted.
@@ -24,6 +26,16 @@ public struct ChatMessageBubbleView: View {
         let colors: [Color] = [.blue, .purple, .pink, .orange, .teal, .green]
         let hash = abs(message.senderName.hashValue)
         return colors[hash % colors.count]
+    }
+
+    private var attachmentFullUrl: URL? {
+        guard let raw = message.attachmentUrl, !raw.isEmpty else { return nil }
+        if raw.hasPrefix("http://") || raw.hasPrefix("https://") {
+            return URL(string: raw)
+        }
+        let cleanBase = appState.baseUrl.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "/+$", with: "", options: .regularExpression)
+        let cleanPath = raw.hasPrefix("/") ? raw : "/\(raw)"
+        return URL(string: cleanBase + cleanPath)
     }
 
     public var body: some View {
@@ -62,22 +74,56 @@ public struct ChatMessageBubbleView: View {
                                 .font(.system(size: 14))
                                 .italic()
                                 .foregroundColor(.secondary)
-                        } else if let text = message.message, !text.isEmpty {
-                            Text(text)
-                                .font(.system(size: 15))
-                                .foregroundColor(isMe ? .white : .primary)
+                        } else {
+                            if message.msgType == "image", let url = attachmentFullUrl {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(maxWidth: 220, maxHeight: 220)
+                                            .cornerRadius(10)
+                                            .onTapGesture {
+                                                UIApplication.shared.open(url)
+                                            }
+                                    case .failure:
+                                        Text(L("Could not load the photo"))
+                                            .font(.caption)
+                                            .foregroundColor(isMe ? .white.opacity(0.8) : .secondary)
+                                    case .empty:
+                                        ProgressView()
+                                            .frame(width: 120, height: 80)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            }
+
+                            if let text = message.message, !text.isEmpty {
+                                Text(text)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(isMe ? .white : .primary)
+                            }
                         }
 
                         // Attachment preview if present
-                        if !isDeleted, let fileName = message.fileName {
-                            HStack(spacing: 6) {
-                                Image(systemName: "doc.fill")
-                                Text(fileName)
-                                    .font(.caption)
-                                    .lineLimit(1)
+                        if !isDeleted, let fileName = message.fileName, message.msgType != "image" {
+                            Button(action: {
+                                if let url = attachmentFullUrl {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "doc.fill")
+                                    Text(fileName)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                }
+                                .foregroundColor(isMe ? .white.opacity(0.9) : .blue)
+                                .padding(.top, 2)
                             }
-                            .foregroundColor(isMe ? .white.opacity(0.9) : .blue)
-                            .padding(.top, 2)
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .padding(.horizontal, 12)

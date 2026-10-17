@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Χωρίς άδεια κάμερας: η κλήση συνεχίζεται μόνο με ήχο.</string>
     <string name="err_camera_unavailable">Η κάμερα δεν είναι διαθέσιμη: η κλήση συνεχίζεται μόνο με ήχο.</string>
     <string name="contacts_extensions_listed">εσωτερικά στη λίστα</string>
+    <string name="api_fcm_token_failed">Δεν ήταν δυνατή η αποστολή του διακριτικού FCM (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Δεν ήταν δυνατή η διαγραφή της ομάδας (HTTP %1$s)</string>
 </resources>

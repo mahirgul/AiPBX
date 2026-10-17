@@ -496,7 +496,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                 if (response.isSuccessful && result != null && result.success) {
                     Result.success(result)
                 } else {
-                    Result.failure(Exception("FCM token kaydedilemedi (HTTP ${response.code})"))
+                    Result.failure(Exception(L10n.str(R.string.api_fcm_token_failed, response.code)))
                 }
             }
         } catch (e: Exception) {
@@ -990,7 +990,7 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
                     if (response.isSuccessful && res != null && res.success) {
                         Result.success(true)
                     } else {
-                        Result.failure(Exception(res?.error ?: "Grup silinemedi (HTTP ${response.code})"))
+                        Result.failure(Exception(res?.error ?: L10n.str(R.string.api_group_delete_failed, response.code)))
                     }
                 }
             } catch (e: Exception) {

@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Kamera icazəsi yoxdur: zəng yalnız səslə davam edir.</string>
     <string name="err_camera_unavailable">Kamera açılmadı: zəng yalnız səslə davam edir.</string>
     <string name="contacts_extensions_listed">daxili nömrə siyahıda</string>
+    <string name="api_fcm_token_failed">FCM token göndərilə bilmədi (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Qrup silinə bilmədi (HTTP %1$s)</string>
 </resources>

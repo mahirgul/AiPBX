@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Ei kameran lupaa: puhelu jatkuu vain äänellä.</string>
     <string name="err_camera_unavailable">Kamera ei ole käytettävissä: puhelu jatkuu vain äänellä.</string>
     <string name="contacts_extensions_listed">alanumeroa listattu</string>
+    <string name="api_fcm_token_failed">FCM-tunnistetta ei voitu lähettää (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Ryhmää ei voitu poistaa (HTTP %1$s)</string>
 </resources>

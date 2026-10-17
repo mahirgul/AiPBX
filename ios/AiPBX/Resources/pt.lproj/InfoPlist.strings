@@ -2,3 +2,4 @@
 "NSMicrophoneUsageDescription" = "É necessário acesso ao microfone para chamadas do PBX e conversas de voz.";
 "NSCameraUsageDescription" = "É necessário acesso à câmara para iniciar sessão com o código QR do PBX e enviar fotografias no chat.";
 "NSPhotoLibraryUsageDescription" = "É necessário acesso à fototeca para partilhar fotografias e ficheiros no chat.";
+"NSContactsUsageDescription" = "O acesso aos contactos é necessário para listar e ligar para os contactos do seu telefone a partir da aplicação.";

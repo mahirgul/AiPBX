@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Geen cameratoestemming: het gesprek gaat verder met alleen geluid.</string>
     <string name="err_camera_unavailable">Camera niet beschikbaar: het gesprek gaat verder met alleen geluid.</string>
     <string name="contacts_extensions_listed">toestellen weergegeven</string>
+    <string name="api_fcm_token_failed">Kon FCM-token niet verzenden (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Kon de groep niet verwijderen (HTTP %1$s)</string>
 </resources>

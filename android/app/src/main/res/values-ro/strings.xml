@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Fără permisiune pentru cameră: apelul continuă doar cu sunet.</string>
     <string name="err_camera_unavailable">Camera nu este disponibilă: apelul continuă doar cu sunet.</string>
     <string name="contacts_extensions_listed">interioare listate</string>
+    <string name="api_fcm_token_failed">Nu s-a putut trimite tokenul FCM (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Nu s-a putut șterge grupul (HTTP %1$s)</string>
 </resources>

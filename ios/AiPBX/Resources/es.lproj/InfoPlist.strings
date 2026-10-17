@@ -1,3 +1,4 @@
 "NSMicrophoneUsageDescription" = "Se necesita acceso al micrófono para las llamadas y conversaciones de voz de la centralita.";
 "NSCameraUsageDescription" = "Se necesita acceso a la cámara para iniciar sesión con el código QR de la centralita y enviar fotos en el chat.";
 "NSPhotoLibraryUsageDescription" = "Se necesita acceso a la fototeca para compartir fotos y archivos en el chat.";
+"NSContactsUsageDescription" = "Se necesita acceso a los contactos para mostrar y llamar a los contactos de tu teléfono desde la aplicación.";

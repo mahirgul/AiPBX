@@ -1,3 +1,4 @@
 "NSMicrophoneUsageDescription" = "Microphone access is needed for PBX calls and voice conversations.";
 "NSCameraUsageDescription" = "Camera access is needed to sign in with the PBX QR code and to send photos in chat.";
 "NSPhotoLibraryUsageDescription" = "Photo library access is needed to share photos and files in chat.";
+"NSContactsUsageDescription" = "Contacts access is needed to list and call your phone contacts from the app.";

@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Немає дозволу на камеру: розмова триває лише зі звуком.</string>
     <string name="err_camera_unavailable">Камера недоступна: розмова триває лише зі звуком.</string>
     <string name="contacts_extensions_listed">внутрішніх номерів</string>
+    <string name="api_fcm_token_failed">Не вдалося надіслати FCM-токен (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Не вдалося видалити групу (HTTP %1$s)</string>
 </resources>

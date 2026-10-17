@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
 
 public struct ChatRoomView: View {
     @EnvironmentObject private var appState: AppState
@@ -11,6 +13,9 @@ public struct ChatRoomView: View {
     @State private var showGroupDetails: Bool = false
     @State private var messageToDelete: ChatMessage? = nil
     @State private var deleteError: String? = nil
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var showFileImporter: Bool = false
+    @State private var isUploading: Bool = false
 
     public init(conversation: ChatConversation) {
         self.conversation = conversation
@@ -43,6 +48,20 @@ public struct ChatRoomView: View {
                 }
             }
 
+            if isUploading {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text(L("Preparing and uploading the file..."))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray6))
+            }
+
             // Typing Indicator Banner
             if let typing = typingUser {
                 HStack(spacing: 6) {
@@ -61,6 +80,21 @@ public struct ChatRoomView: View {
 
             // Input Bar
             HStack(spacing: 10) {
+                Menu {
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(L("Choose from gallery"), systemImage: "photo.on.rectangle")
+                    }
+                    Button(action: { showFileImporter = true }) {
+                        Label(L("Attach File"), systemImage: "doc")
+                    }
+                } label: {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.blue)
+                        .padding(6)
+                }
+                .disabled(isUploading)
+
                 TextField(L("Type a message..."), text: $inputText)
                     .textFieldStyle(PlainTextFieldStyle())
                     .padding(10)
@@ -91,8 +125,51 @@ public struct ChatRoomView: View {
             appState.activeConversationId = nil
         }
         .sheet(isPresented: $showGroupDetails) {
-            GroupDetailsView(conversation: conversation)
-                .environmentObject(appState)
+            NavigationView {
+                GroupDetailsView(conversation: conversation)
+                    .environmentObject(appState)
+            }
+        }
+        .onChange(of: selectedPhotoItem) { newItem in
+            guard let item = newItem else { return }
+            selectedPhotoItem = nil
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+                    let mime = item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
+                    let fileName = "photo_\(Int(Date().timeIntervalSince1970)).\(ext)"
+                    await uploadAndSend(fileData: data, fileName: fileName, mimeType: mime)
+                } else {
+                    await MainActor.run {
+                        deleteError = L("Could not read the file.")
+                    }
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer {
+                    if accessed { url.stopAccessingSecurityScopedResource() }
+                }
+                if let data = try? Data(contentsOf: url) {
+                    let fileName = url.lastPathComponent
+                    let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+                    Task {
+                        await uploadAndSend(fileData: data, fileName: fileName, mimeType: mime)
+                    }
+                } else {
+                    deleteError = L("Could not read the file.")
+                }
+            case .failure(let error):
+                deleteError = L("Upload error: %@", error.localizedDescription)
+            }
         }
         .onReceive(appState.chatMessageReceived) { msg in
             receive(msg)
@@ -151,7 +228,12 @@ public struct ChatRoomView: View {
         guard msg.conversationId == conversation.id,
               !messages.contains(where: { $0.id == msg.id }) else { return }
         if (msg.isMe ?? false),
-           let idx = messages.firstIndex(where: { $0.isLocal && $0.message == msg.message }) {
+           let idx = messages.firstIndex(where: {
+               $0.isLocal && (
+                   ($0.attachmentUrl != nil && $0.attachmentUrl == msg.attachmentUrl) ||
+                   ($0.attachmentUrl == nil && $0.message == msg.message)
+               )
+           }) {
             messages[idx] = msg
             return
         }
@@ -190,6 +272,71 @@ public struct ChatRoomView: View {
         }
     }
 
+    private func uploadAndSend(fileData: Data, fileName: String, mimeType: String) async {
+        guard let token = appState.token else { return }
+        await MainActor.run { isUploading = true }
+        let captionText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let uploaded = try await ApiClient.shared.uploadChatFile(
+                baseUrl: appState.baseUrl,
+                token: token,
+                convId: conversation.id,
+                fileData: fileData,
+                fileName: fileName,
+                mimeType: mimeType
+            )
+            await MainActor.run {
+                self.isUploading = false
+                self.inputText = ""
+                let msgType = uploaded.msgType ?? (mimeType.hasPrefix("image/") ? "image" : "file")
+                let url = uploaded.attachmentUrl ?? ""
+                let name = uploaded.fileName ?? fileName
+                let size = uploaded.fileSize ?? Int64(fileData.count)
+                let mime = uploaded.mimeType ?? mimeType
+
+                ChatWebSocketManager.shared.sendAttachment(
+                    conversationId: conversation.id,
+                    message: captionText,
+                    msgType: msgType,
+                    attachmentUrl: url,
+                    fileName: name,
+                    fileSize: size,
+                    mimeType: mime
+                )
+
+                let myExt = appState.userProfile?.extensionNumber ?? ""
+                let myName = appState.userProfile?.displayName ?? L("You")
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                let nowStr = df.string(from: Date())
+
+                let optimisticMsg = ChatMessage(
+                    id: Int64(Date().timeIntervalSince1970 * 1000),
+                    conversationId: conversation.id,
+                    senderExt: myExt,
+                    senderName: myName,
+                    msgType: msgType,
+                    message: captionText.isEmpty ? nil : captionText,
+                    attachmentUrl: url,
+                    fileName: name,
+                    fileSize: size,
+                    mimeType: mime,
+                    createdAt: nowStr,
+                    isMe: true,
+                    systemEvent: nil,
+                    systemMeta: nil,
+                    isLocal: true
+                )
+                self.messages.append(optimisticMsg)
+            }
+        } catch {
+            await MainActor.run {
+                self.isUploading = false
+                self.deleteError = L("Upload error: %@", error.localizedDescription)
+            }
+        }
+    }
+
     private func sendCurrentMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
@@ -199,7 +346,7 @@ public struct ChatRoomView: View {
 
         // Optimistic local append
         let myExt = appState.userProfile?.extensionNumber ?? ""
-        let myName = appState.userProfile?.displayName ?? "Ben"
+        let myName = appState.userProfile?.displayName ?? L("You")
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let nowStr = df.string(from: Date())

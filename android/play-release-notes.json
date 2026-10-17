@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.71",
+  "version": "1.0.72",
   "notes": {
-    "en-US": "Security: the session key is no longer kept in a plain backup file on the phone and no longer appears in the app's log. Includes 1.0.70: after a video call the phone keeps receiving calls, video answer from the notification, video button in the call history.",
-    "tr-TR": "Güvenlik: oturum anahtarı artık telefondaki şifresiz yedek dosyada tutulmuyor ve uygulama günlüğünde görünmüyor. 1.0.70 ile gelenler: görüntülü görüşmeden sonra telefon arama almaya devam eder, bildirimden görüntülü cevap, arama geçmişinde video düğmesi."
+    "en-US": "Security & stability: sign-in tokens and SIP credentials are stored encrypted on the device; server setup, QR sign-in and deep-link sign-in require HTTPS and ask for confirmation before switching to another PBX server.",
+    "tr-TR": "Güvenlik ve kararlılık: oturum anahtarları ve SIP bilgileri cihazda şifreli olarak saklanır; sunucu kurulumu, QR ile giriş ve bağlantı ile giriş HTTPS zorunluluğu uygular ve farklı bir santral sunucusuna geçmeden önce onay ister."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

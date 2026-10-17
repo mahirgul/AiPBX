@@ -31,6 +31,11 @@ public final class ApiClient {
 
     public static let shared = ApiClient()
 
+    /// Called when a 401 triggers a reactive token refresh so AppState can update its in-memory token.
+    public var onTokenRefreshed: ((LoginResponse) -> Void)?
+    /// Called when refresh.php rejects the saved session with 401/403.
+    public var onSessionRejected: (() -> Void)?
+
     private let session: URLSession
 
     private init() {
@@ -42,6 +47,32 @@ public final class ApiClient {
 
     private func cleanUrl(_ baseUrl: String) -> String {
         return baseUrl.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    /// Executes an authenticated request and reactively refreshes the token once on HTTP 401.
+    private func performAuthenticated(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse,
+           http.statusCode == 401,
+           let saved = SessionStore.load(),
+           !saved.token.isEmpty {
+            do {
+                let refreshed = try await refreshSession(baseUrl: saved.baseUrl, token: saved.token)
+                if let newToken = refreshed.token, !newToken.isEmpty {
+                    SessionStore.save(baseUrl: saved.baseUrl, token: newToken)
+                    onTokenRefreshed?(refreshed)
+                    var retry = request
+                    retry.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+                    return try await session.data(for: retry)
+                }
+            } catch ApiError.serverError(let code, _) where code == 401 || code == 403 {
+                SessionStore.clear()
+                onSessionRejected?()
+            } catch {
+                // Keep original 401 response on transient refresh errors
+            }
+        }
+        return (data, response)
     }
 
     // MARK: - Server Ping & Login
@@ -189,6 +220,67 @@ public final class ApiClient {
         }
     }
 
+    // MARK: - Voicemail
+
+    public func getVoicemail(baseUrl: String, token: String) async throws -> VoicemailResponse {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/voicemail.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(VoicemailResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Voicemail could not be loaded"))
+        }
+        return res
+    }
+
+    public func voicemailAction(baseUrl: String, token: String, action: String, id: String) async throws -> VoicemailResponse {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/api/mobile/voicemail.php") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["action": action, "id": id])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(VoicemailResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Voicemail could not be loaded"))
+        }
+        return res
+    }
+
+    public func downloadVoicemail(baseUrl: String, token: String, id: String) async throws -> Data {
+        let base = cleanUrl(baseUrl)
+        let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? id
+        guard let url = URL(string: "\(base)/api/mobile/voicemail.php?action=play&id=\(encodedId)") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        guard (200...299).contains(status), !data.isEmpty else {
+            throw ApiError.custom(L("The message could not be played"))
+        }
+        return data
+    }
+
     // MARK: - Call History
 
     // The endpoint on the server is call_history.php (same as Android); there was no history.php (404).
@@ -202,7 +294,7 @@ public final class ApiClient {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not load history"))
         }
@@ -222,7 +314,7 @@ public final class ApiClient {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not load contacts"))
         }
@@ -243,7 +335,7 @@ public final class ApiClient {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get settings"))
         }
@@ -275,7 +367,7 @@ public final class ApiClient {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Update failed"))
         }
@@ -296,7 +388,7 @@ public final class ApiClient {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get chats"))
         }
@@ -319,7 +411,7 @@ public final class ApiClient {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not get messages"))
         }
@@ -344,7 +436,7 @@ public final class ApiClient {
         let body = ["target_extension": targetExt]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not create the chat"))
         }
@@ -354,6 +446,36 @@ public final class ApiClient {
             return conv
         }
         throw ApiError.custom(res.error ?? L("Could not open the direct chat"))
+    }
+
+    public func uploadChatFile(baseUrl: String, token: String, fileData: Data, fileName: String, mimeType: String) async throws -> ChatUploadResponse {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/upload") else {
+            throw ApiError.invalidUrl
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        let safeFileName = fileName.replacingOccurrences(of: "\"", with: "_")
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(safeFileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(ChatUploadResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Could not upload the file (HTTP %@)", "\(status)"))
+        }
+        return res
     }
 
     public func createGroupChat(baseUrl: String, token: String, title: String, members: [String], description: String = "") async throws -> ChatConversation {
@@ -374,7 +496,7 @@ public final class ApiClient {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not create the group"))
         }
@@ -384,6 +506,144 @@ public final class ApiClient {
             return conv
         }
         throw ApiError.custom(res.error ?? L("Could not create the group chat"))
+    }
+
+    public func getGroupDetails(baseUrl: String, token: String, convId: Int) async throws -> ChatConversation {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group?conversation_id=\(convId)") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GroupChatResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success, let conv = res.conversation else {
+            throw ApiError.custom(res?.error ?? L("Could not get group details (HTTP %@)", "\(status)"))
+        }
+        return conv
+    }
+
+    public func updateGroupInfo(baseUrl: String, token: String, convId: Int, title: String, description: String = "") async throws -> ChatConversation {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/update") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "conversation_id": convId,
+            "title": title,
+            "description": description
+        ])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GroupChatResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success, let conv = res.conversation else {
+            throw ApiError.custom(res?.error ?? L("Could not update the group (HTTP %@)", "\(status)"))
+        }
+        return conv
+    }
+
+    public func addGroupMembers(baseUrl: String, token: String, convId: Int, extensions: [String]) async throws -> [String] {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/members/add") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "conversation_id": convId,
+            "extensions": extensions
+        ])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GroupMembersAddedResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Could not add members (HTTP %@)", "\(status)"))
+        }
+        return res.added ?? []
+    }
+
+    public func removeGroupMember(baseUrl: String, token: String, convId: Int, extensionNumber: String) async throws -> Bool {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/members/remove") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "conversation_id": convId,
+            "extension": extensionNumber
+        ])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GenericActionResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Could not remove the member (HTTP %@)", "\(status)"))
+        }
+        return true
+    }
+
+    public func updateGroupMemberRole(baseUrl: String, token: String, convId: Int, extensionNumber: String, role: String) async throws -> Bool {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/members/role") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "conversation_id": convId,
+            "extension": extensionNumber,
+            "role": role
+        ])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GenericActionResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Could not change the role (HTTP %@)", "\(status)"))
+        }
+        return true
+    }
+
+    public func deleteGroup(baseUrl: String, token: String, convId: Int) async throws -> Bool {
+        let base = cleanUrl(baseUrl)
+        guard let url = URL(string: "\(base)/chat/api/conversations/group/delete") else {
+            throw ApiError.invalidUrl
+        }
+
+        var request = makeRequest(url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["conversation_id": convId])
+
+        let (data, response) = try await performAuthenticated(request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 500
+        let res = try? JSONDecoder().decode(GenericActionResponse.self, from: data)
+        guard (200...299).contains(status), let res = res, res.success else {
+            throw ApiError.custom(res?.error ?? L("Could not delete the group (HTTP %@)", "\(status)"))
+        }
+        return true
     }
 
     public func leaveGroup(baseUrl: String, token: String, convId: Int) async throws -> Bool {
@@ -400,7 +660,7 @@ public final class ApiClient {
         let body = ["conversation_id": convId]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performAuthenticated(request)
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             throw ApiError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500, message: L("Could not leave the group"))
         }
