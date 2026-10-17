@@ -2,7 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 
-define('CC_DISPATCH_ACTIVE', true);
+if (!defined('CC_DISPATCH_ACTIVE')) define('CC_DISPATCH_ACTIVE', true);
 require_once dirname(__DIR__, 2) . '/api/cc_actions/cc_lib.php';
 
 /**

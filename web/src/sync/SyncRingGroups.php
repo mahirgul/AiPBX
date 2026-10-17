@@ -28,6 +28,11 @@ function __syncRingGroupsBody() {
         $conf .= "[app-ringgroup-{$id}]\n";
         $conf .= "exten => s,1,NoOp(Ring Group {$id}: {$name} - Group Number: {$num})\n";
         $conf .= " same => n,Set(CDR(direction)=internal)\n";
+        // Carry the caller's permission group onto the Local legs below: the
+        // endpoint variable does not cross channels, but a __-prefixed copy
+        // does. Without it an internal caller's restrictions did not apply
+        // to the external members (an inbound call has no group: allowed).
+        $conf .= " same => n,Set(__PERMISSION_GROUP_ID=\${PERMISSION_GROUP_ID})\n";
 
         if ($cid_prefix !== '') {
             $clean_prefix = toCleanAscii($cid_prefix);
@@ -44,13 +49,27 @@ function __syncRingGroupsBody() {
 
         // Parse numbers list (comma/space/newline separated)
         $raw_numbers = preg_split('/[\s,;]+/', trim($rg['numbers_list'] ?? ''));
+        $ext_check = $db->prepare('SELECT 1 FROM sys_users WHERE extension = ?');
         $channels = [];
         foreach ($raw_numbers as $entry) {
             $entry = preg_replace('/[^0-9+]/', '', trim($entry));
             if ($entry === '') continue;
 
-            // Extension number check (up to 5 digits or registered in the extension database)
-            if (strlen($entry) <= 5 && !str_starts_with($entry, '0')) {
+            // A registered extension is always internal, whatever its length:
+            // the old length-only heuristic sent 6-digit and 0-leading
+            // extensions out through the outbound routes. Short unregistered
+            // numbers keep the old internal routing (a typo rings nothing
+            // instead of placing an outbound call).
+            $is_extension = false;
+            if (str_starts_with($entry, '+')) {
+                $is_extension = false;
+            } elseif (strlen($entry) <= 5 && !str_starts_with($entry, '0')) {
+                $is_extension = true;
+            } else {
+                $ext_check->execute([$entry]);
+                $is_extension = (bool) $ext_check->fetchColumn();
+            }
+            if ($is_extension) {
                 $channels[] = "Local/{$entry}@from-internal-pbx-ortak/n";
             } else {
                 // External number (through the outbound routes)

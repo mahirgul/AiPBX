@@ -110,7 +110,20 @@ class ExtensionService {
                     'cid_external' => $cid_external,
                     'is_active' => $is_active
                 ], 'id', $user_id);
-                SIPHelper::setSettings($extension, ['auth_digest' => $sip_auth_digest ? 'yes' : 'no']);
+                // The SIP secret must follow the panel password: SyncExtensions
+                // prefers sip.secret over sys_users.sip_password, so writing
+                // only auth_digest here left the PJSIP endpoint on the OLD
+                // secret (and the old secret stayed valid). A non-SIP (fax)
+                // extension has no endpoint, so any leftover row is removed.
+                if ($extension_type === 'sip') {
+                    SIPHelper::setSettings($extension, [
+                        // Without digest auth the password may be empty: keep the old one.
+                        'secret' => $sip_password !== '' ? $sip_password : null,
+                        'auth_digest' => $sip_auth_digest ? 'yes' : 'no',
+                    ]);
+                } else {
+                    SIPHelper::deleteSettings($extension);
+                }
                 if ($old_ext && $old_ext !== $extension) {
                     SIPHelper::deleteSettings($old_ext);
                     markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (number changed, removed)", 'delete', $_SESSION['user_id'] ?? null);
