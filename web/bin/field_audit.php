@@ -3,6 +3,10 @@
 // configuration. record_call was a bug of this kind: it sat in the DB,
 // SyncInboundDialplan never read it; it looked ticked in the panel but no audio
 // file was ever created. Run: php web/bin/field_audit.php
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once __DIR__ . '/../config.php';
 $db = getDB();
 

@@ -3,6 +3,10 @@
  * CLI Push Notification Sender for AI-PBX Chat
  * Usage: php /var/www/html/bin/send_chat_push.php <extension> <title> <body> [action] [extra_json]
  */
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../src/services/push/PushService.php';
 

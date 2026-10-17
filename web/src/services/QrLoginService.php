@@ -298,9 +298,13 @@ class QrLoginService
             return ['success' => false, 'error' => t('mobile_api.no_extension_assigned'), 'code' => 400];
         }
 
-        // Mark the token as used
-        $upd = $db->prepare('UPDATE sys_user_qr_tokens SET used_at = NOW(), device_name = ?, ip_address = ? WHERE id = ?');
+        // Mark the token as used, atomically: two scans at the same moment
+        // both passed the used_at check above and both got a session.
+        $upd = $db->prepare('UPDATE sys_user_qr_tokens SET used_at = NOW(), device_name = ?, ip_address = ? WHERE id = ? AND used_at IS NULL');
         $upd->execute([$deviceName, $clientIp, $record['token_id']]);
+        if ($upd->rowCount() !== 1) {
+            return ['success' => false, 'error' => t('srv_qr.err_used'), 'code' => 401];
+        }
 
         // Log the sign-in attempt
         if (function_exists('logLoginAttempt')) {

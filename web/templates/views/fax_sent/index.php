@@ -76,7 +76,7 @@
                                         <span class="u-muted u-fs-11"><?php echo t('fax_sent.no_file'); ?></span>
                                     <?php endif; ?>
                                     <?php if ($fax['status'] === 'FAILED' && hasModulePermission('fax_sent', 'edit')): ?>
-                                        <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fax_sent.resend_confirm'), ENT_QUOTES); ?>');">
+                                        <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('fax_sent.resend_confirm')); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="resend_sent_fax" value="1">
                                             <input type="hidden" name="fax_id" value="<?php echo $fax['id']; ?>">
@@ -86,7 +86,7 @@
                                         </form>
                                     <?php endif; ?>
                                     <?php if (hasModulePermission('fax_sent', 'delete')): ?>
-                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fax_sent.delete_confirm'), ENT_QUOTES); ?>');">
+                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('fax_sent.delete_confirm')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_sent_fax" value="1">
                                         <input type="hidden" name="fax_id" value="<?php echo $fax['id']; ?>">

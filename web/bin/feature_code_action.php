@@ -10,6 +10,10 @@
  *
  * Usage: feature_code_action.php <dnd_toggle|cf_set|cf_cancel|queue_login|queue_logout> <extension> [target|queue_id]
  */
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/asterisk_sync.php';
 require_once dirname(__DIR__) . '/src/queue_helper.php';

@@ -415,6 +415,21 @@ function asset(string $path): string {
     return $cache[$path];
 }
 
+/** Queue recording formats (MixMonitor file extension); written into the dialplan. */
+const QUEUE_RECORD_FORMATS = ['wav', 'wav49', 'gsm', 'ulaw', 'alaw', 'sln', 'g722'];
+
+/**
+ * A PHP value as a JavaScript string literal for an inline handler
+ * (onclick="f(<?php echo jsArg($v); ?>)"). htmlspecialchars() alone is not
+ * enough there: the browser turns &#039; back into ' before the script runs,
+ * so a quote in the value ended the string (a caller number or a title could
+ * run script; a translation with an apostrophe broke the dialog).
+ */
+function jsArg($value): string {
+    $json = json_encode((string) $value, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    return htmlspecialchars($json === false ? '""' : $json, ENT_QUOTES, 'UTF-8');
+}
+
 function toCleanAscii($str) {
     if ($str === null || $str === '') return '';
 

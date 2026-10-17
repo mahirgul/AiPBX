@@ -274,7 +274,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                             <td style="font-family: monospace;"><?php echo $h($f['name']); ?></td>
                             <td class="u-muted u-fs-12"><?php echo $h(number_format($f['size'] / 1024, 1) . ' KB'); ?></td>
                             <td class="u-text-right">
-                                <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo $h(t('netsvc.tftp_delete_confirm')); ?>');">
+                                <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('netsvc.tftp_delete_confirm')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                                     <input type="hidden" name="delete_tftp" value="1">
                                     <input type="hidden" name="name" value="<?php echo $h($f['name']); ?>">

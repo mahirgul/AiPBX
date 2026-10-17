@@ -34,8 +34,10 @@ function __syncRingGroupsBody() {
         // to the external members (an inbound call has no group: allowed).
         $conf .= " same => n,Set(__PERMISSION_GROUP_ID=\${PERMISSION_GROUP_ID})\n";
 
-        if ($cid_prefix !== '') {
-            $clean_prefix = toCleanAscii($cid_prefix);
+        // Letters, digits, space and . _ - only: quotes or brackets broke the
+        // ExecIf() expression around it.
+        $clean_prefix = trim((string) preg_replace('/[^A-Za-z0-9 ._-]/', '', toCleanAscii($cid_prefix)));
+        if ($clean_prefix !== '') {
             $conf .= " same => n,ExecIf(\$[\"\${CALLERID(name)}\" != \"\"]?Set(CALLERID(name)={$clean_prefix} \${CALLERID(name)}):Set(CALLERID(name)={$clean_prefix} \${CALLERID(num)}))\n";
         }
 

@@ -246,7 +246,7 @@ if (!$cert['exists']) {
                                                 </button>
                                             <?php endif; ?>
                                             <?php if ($can_delete): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, '<?php echo htmlspecialchars($m['extension'], ENT_QUOTES); ?>')" title="<?php echo t('ms_teams.btn_delete'); ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, <?php echo jsArg($m['extension']); ?>)" title="<?php echo t('ms_teams.btn_delete'); ?>">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php endif; ?>

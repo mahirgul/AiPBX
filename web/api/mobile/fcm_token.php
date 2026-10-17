@@ -49,7 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$existing && $fcmToken !== null) {
-        // If the same FCM token is registered to ANOTHER user, that row is NOT TAKEN OVER.
+        // The same FCM token under ANOTHER user: an FCM token belongs to one app
+        // install, so that phone now signs in as this user. The other row is not
+        // taken over (its history stays) but switched off: otherwise the previous
+        // user's calls and messages would still ring on this phone.
         $stmt = $db->prepare("SELECT id, user_id, fcm_token, push_type, voip_token FROM sys_mobile_devices WHERE fcm_token = ? LIMIT 1");
         $stmt->execute([$fcmToken]);
         $foreign = $stmt->fetch(PDO::FETCH_ASSOC);

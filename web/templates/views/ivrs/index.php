@@ -259,7 +259,7 @@
                                     <strong style="font-size: 12px; min-width: 54px;"><?php echo t('ivr.key_label'); ?> <?php echo htmlspecialchars($en_l['digit']); ?>:</strong>
                                     <span class="u-fs-12 u-flex-1"><?php echo IvrRepository::destBadge($en_l['dest_type'], $en_l['dest_id'], $destResolveCache); ?></span>
                                     <form method="POST" autocomplete="off" class="u-m-0 u-inline"
-                                          onsubmit="return confirm('<?php echo htmlspecialchars(sprintf(t('ivr.entry_delete_confirm'), $en_l['digit']), ENT_QUOTES); ?>');">
+                                          onsubmit="return confirm(<?php echo jsArg(sprintf(t('ivr.entry_delete_confirm'), $en_l['digit'])); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_ivr_entry" value="1">
                                         <input type="hidden" name="entry_id" value="<?php echo (int) $en_l['id']; ?>">
