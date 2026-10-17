@@ -96,7 +96,7 @@ use PBX\Destinations\DestinationRegistry;
                             <td class="text-right">
                                 <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
                                     <div style="display: inline-flex; gap: 4px;">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditBsModal(<?php echo json_encode($g); ?>)' title="<?php echo t('common.edit'); ?>">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditBsModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('boss_secretary.confirm_delete')), ENT_QUOTES); ?>);">

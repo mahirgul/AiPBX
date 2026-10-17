@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.33.4
+
+Fixes from a full security and reliability review across the web portal, dialplan, chat, local AI, mobile apps and system helpers, plus three fixes by **@tomck** (#113).
+
+- **Dial permissions in priority order:** group rules now run as an ordered `REGEX()` chain so the first matching rule in priority order wins instead of Asterisk's most-specific-match; a prefix rule also matches the bare prefix itself (@tomck, #113).
+- **Ring groups (`random`):** the `random` strategy now picks a target per call in the dialplan (`RAND()`) instead of freezing a sync-time shuffle that rang everybody at once (@tomck, #113).
+- **Direct chat reopen check:** reopening an existing direct conversation enforces the same active, non-fax user check as creating a new one (@tomck, #113).
+- **Boss–secretary & call forwarding:** blind and attended transfers from a secretary or whitelisted extension reach the boss without looping back to the secretary; a secretary's personal voicemail no longer intercepts the boss's call (`__SKIP_VM`); call-forwarding legs carry the forwarding extension's permission group and outbound route group (`from-internal-gN`).
+- **Sign-in & account security:** passkey and Google sign-in honour mandatory password resets (`/force-reset`) and build redirect/RP URLs from the configured portal domain instead of `Host` / `X-Forwarded-Host` headers; passkey registration and deletion require POST + CSRF; QR sign-in status checks are scoped to the signed-in user; WebRTC and mobile login only hand out SIP credentials when the corresponding phone mode (`web` / `mobil`) is enabled.
+- **Call center & CDRs:** call notes and CDR deletions verify that the call belongs to the agent's extension unless the user has full CDR access; active-call draft notes are claimed with a CSRF header check.
+- **MS Teams & webhooks:** test webhooks validate that the target resolves to a public IPv4/IPv6 address and pin resolution (`CURLOPT_RESOLVE`); PowerShell script generation strips control characters and escapes single quotes.
+- **Chat & local AI hardening:** internal chat endpoints require `X-AiPBX-Internal`; group leave and last-admin checks run transactionally; S3 upload failures roll back cleanly; local AI serialises model downloads, checks magic bytes before extracting archives, bounds cloud LLM/STT responses and cleans up temporary WAV files.
+- **System helpers (`aipbx-priv`, `aipbx-cert`, `aipbx-update`):** Postfix SASL credentials are staged through `/var/lib/aipbx/sasl_passwd` (`0600`) and validated before `postmap`; custom certificates verify key match before staging; update status files are written atomically without following symlinks.
+- **Mobile apps (Android & iOS):** server setup, deep links and QR sign-in require `https://` and ask for confirmation before switching to a different PBX server; Android encrypts stored tokens and SIP passwords with `EncryptedSharedPreferences`.
+
 ## 1.33.3
 
 Fixes from a third code review.

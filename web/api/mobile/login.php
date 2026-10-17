@@ -19,7 +19,7 @@ if (checkBruteForceLockout($client_ip, $username)) {
     mobileError(t('mobile_api.too_many_attempts'), 429);
 }
 
-$user = findLoginUser($username, 'id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active, two_factor_enabled, two_factor_secret');
+$user = findLoginUser($username, 'id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, two_factor_enabled, two_factor_secret');
 
 if (!$user || !verifyLoginPassword($password, (string) $user['password_hash'])) {
     logLoginAttempt($client_ip, $username, 'FAILED');
@@ -53,6 +53,10 @@ if (!empty($user['two_factor_enabled'])) {
                 : t('mobile_api.otp_invalid')
         ], 401);
     }
+}
+
+if (!in_array('mobil', parsePhoneModes($user['allowed_phone_mode'] ?? null), true)) {
+    $user['sip_password'] = '';
 }
 
 // Sign-in succeeded: log the attempt

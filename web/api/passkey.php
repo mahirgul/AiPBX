@@ -63,11 +63,7 @@ switch ($action) {
     // REGISTRATION: get the register options (must be signed in)
     // -------------------------------------------------------------
     case 'register-options':
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
-            exit;
-        }
+        requireLogin();
 
         $user = getCurrentUser();
         if (!$user) {
@@ -89,9 +85,16 @@ switch ($action) {
     // REGISTRATION: verify and store the browser's passkey creation response
     // -------------------------------------------------------------
     case 'register-verify':
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
+        requireLogin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => t('api.err_post_only')]);
+            exit;
+        }
+        $csrf = $inputData['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!verifyCSRFToken($csrf)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')]);
             exit;
         }
 
@@ -118,9 +121,10 @@ switch ($action) {
     // DELETE: delete a registered passkey
     // -------------------------------------------------------------
     case 'delete':
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => t('api.err_login_required')]);
+        requireLogin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => t('api.err_post_only')]);
             exit;
         }
 

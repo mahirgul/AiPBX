@@ -21,6 +21,9 @@ func TestAttachmentOwnership(t *testing.T) {
 	if attachmentOwnedBy("other-secret", "/chat/media/images/"+base+".jpg", "3001") {
 		t.Fatal("the signature must depend on the server key")
 	}
+	if attachmentOwnedBy(secret, "/chat/media/images/extra/"+base+".jpg", "3001") {
+		t.Fatal("extra path segments must be rejected by attachmentOwnedBy")
+	}
 }
 
 func TestValidMediaURL(t *testing.T) {
@@ -29,7 +32,16 @@ func TestValidMediaURL(t *testing.T) {
 			t.Fatalf("must be valid: %s", u)
 		}
 	}
-	for _, u := range []string{"https://evil.example/p.png", "javascript:alert(1)", "/chat/media/images/../../x", "/etc/passwd"} {
+	for _, u := range []string{
+		"https://evil.example/p.png",
+		"javascript:alert(1)",
+		"/chat/media/images/../../x",
+		"/etc/passwd",
+		"/chat/media/images/sub/a.jpg",
+		"/chat/media/images/",
+		"/chat/media/images/.hidden.jpg",
+		"/chat/media/images/a.jpg?x=1",
+	} {
 		if validMediaURL(u) {
 			t.Fatalf("reddedilmeli: %s", u)
 		}

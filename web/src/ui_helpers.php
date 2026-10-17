@@ -102,8 +102,8 @@ function uiEditButton(array $row, $editJsFn, $title = null, $icon = 'fa-edit', $
         $title = t('common.view');
         $icon = 'fa-eye';
     }
-    $rowJson = json_encode($row, JSON_HEX_APOS | JSON_HEX_QUOT);
-    return '<button class="btn ' . htmlspecialchars($btnClass) . ' btn-sm" onclick=\'' . $editJsFn . '(' . $rowJson . ')\' title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '"></i></button>';
+    $safeFn = preg_replace('/[^a-zA-Z0-9_$.]/', '', (string) $editJsFn);
+    return '<button class="btn ' . htmlspecialchars($btnClass) . ' btn-sm" onclick=\'' . $safeFn . '(' . jsArg($row) . ')\' title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '"></i></button>';
 }
 
 /**

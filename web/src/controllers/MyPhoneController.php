@@ -29,14 +29,16 @@ class MyPhoneController extends BaseController
                 $forwardNoAnswer = preg_replace('/[^0-9+*#]/', '', trim($_POST['cf_noanswer_number'] ?? ''));
                 $noAnswerTimeout = max(5, min(120, intval($_POST['cf_noanswer_timeout'] ?? 20)));
 
-                if (isset($_POST['phone_modes']) && is_array($_POST['phone_modes'])) {
-                    $mode = formatPhoneModes($_POST['phone_modes']);
-                } elseif (isset($_POST['allowed_phone_modes']) && is_array($_POST['allowed_phone_modes'])) {
-                    $mode = formatPhoneModes($_POST['allowed_phone_modes']);
-                } elseif (isset($_POST['allowed_phone_mode'])) {
-                    $mode = formatPhoneModes(parsePhoneModes($_POST['allowed_phone_mode']));
-                } else {
-                    $mode = 'web';
+                $currentExtDetails = MyPhoneRepository::getUserExtensionDetails($userId) ?: [];
+                $mode = $currentExtDetails['allowed_phone_mode'] ?? ($user['allowed_phone_mode'] ?? 'web');
+                if (($_SESSION['user_role'] ?? '') === 'admin') {
+                    if (isset($_POST['phone_modes']) && is_array($_POST['phone_modes'])) {
+                        $mode = formatPhoneModes($_POST['phone_modes']);
+                    } elseif (isset($_POST['allowed_phone_modes']) && is_array($_POST['allowed_phone_modes'])) {
+                        $mode = formatPhoneModes($_POST['allowed_phone_modes']);
+                    } elseif (isset($_POST['allowed_phone_mode'])) {
+                        $mode = formatPhoneModes(parsePhoneModes($_POST['allowed_phone_mode']));
+                    }
                 }
 
                 MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout);

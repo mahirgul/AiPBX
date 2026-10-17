@@ -426,7 +426,8 @@ const QUEUE_RECORD_FORMATS = ['wav', 'wav49', 'gsm', 'ulaw', 'alaw', 'sln', 'g72
  * run script; a translation with an apostrophe broke the dialog).
  */
 function jsArg($value): string {
-    $json = json_encode((string) $value, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $val = (is_array($value) || is_object($value)) ? $value : (string) $value;
+    $json = json_encode($val, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     return htmlspecialchars($json === false ? '""' : $json, ENT_QUOTES, 'UTF-8');
 }
 

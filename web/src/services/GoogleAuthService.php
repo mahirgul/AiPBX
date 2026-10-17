@@ -46,12 +46,8 @@ class GoogleAuthService
             return $customUri;
         }
 
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
-        if (strpos($host, ',') !== false) {
-            $host = trim(explode(',', $host)[0]);
-        }
-        return $scheme . '://' . $host . '/auth/google/callback';
+        require_once __DIR__ . '/ForgotPasswordService.php';
+        return rtrim(ForgotPasswordService::portalUrl(), '/') . '/auth/google/callback';
     }
 
     /**
@@ -291,6 +287,19 @@ class GoogleAuthService
             session_start();
         }
 
+        if (!empty($user['must_reset_password'])) {
+            session_regenerate_id(true);
+            $_SESSION['pending_reset_user_id'] = $user['id'];
+            unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
+            if (function_exists('logLoginAttempt')) {
+                logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
+            }
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with Google, required to reset password.", 'google_login', (int)$user['id']);
+            }
+            return '/force-reset';
+        }
+
         session_regenerate_id(true);
 
         $_SESSION['user_id'] = $user['id'];
@@ -311,7 +320,7 @@ class GoogleAuthService
             logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
         }
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in with Google ({$user['email']}).", 'google_login');
+            writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with Google ({$user['email']}).", 'google_login', (int)$user['id']);
         }
 
         return roleHomePath($user['role']);

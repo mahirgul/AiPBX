@@ -52,9 +52,17 @@ function aipbx_cw_parse_embed($code)
 function aipbx_cw_sanitize($input)
 {
     // WordPress runs the callback a second time on the first save, with the
-    // already sanitized value (no 'embed' field): keep it as it is.
+    // already sanitized value (no 'embed' field): validate and keep it.
     if (is_array($input) && !isset($input['embed']) && isset($input['base'], $input['widget'])) {
-        return $input;
+        $base = (string) $input['base'];
+        $widget = (string) $input['widget'];
+        $everywhere = !empty($input['everywhere']);
+        if ($base !== '' && $widget !== ''
+            && preg_match('#^https://[A-Za-z0-9.-]+(?::\d+)?$#', $base)
+            && preg_match('#^w_[a-z0-9]{8,20}$#', $widget)) {
+            return ['base' => $base, 'widget' => $widget, 'everywhere' => $everywhere];
+        }
+        return ['base' => '', 'widget' => '', 'everywhere' => $everywhere];
     }
     $old = aipbx_cw_settings();
     $out = ['base' => $old['base'], 'widget' => $old['widget'], 'everywhere' => !empty($input['everywhere'])];

@@ -170,9 +170,22 @@ class FaxSendService {
         // picked another fax unit; for a regular fax user senderExt is their
         // own extension anyway, same behaviour as the old code).
         $db = getDB();
-        $stmt = $db->prepare("SELECT full_name, cid_external FROM sys_users WHERE extension = ?");
+        $stmt = $db->prepare("SELECT full_name, cid_external, permission_group_id, outbound_group FROM sys_users WHERE extension = ?");
         $stmt->execute([$senderExt]);
         $sender_row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $perm_grp = (int)($sender_row['permission_group_id'] ?? 0);
+        $out_grp = max(1, (int)($sender_row['outbound_group'] ?? 1));
+        if (empty($sender_row) && !empty($_SESSION['user_id'])) {
+            $uStmt = $db->prepare("SELECT permission_group_id, outbound_group FROM sys_users WHERE id = ?");
+            $uStmt->execute([(int)$_SESSION['user_id']]);
+            $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+            if ($uRow) {
+                $perm_grp = (int)($uRow['permission_group_id'] ?? 0);
+                $out_grp = max(1, (int)($uRow['outbound_group'] ?? 1));
+            }
+        }
+        $dial_context = $out_grp > 1 ? "from-internal-g{$out_grp}" : 'from-internal-pbx';
 
         $sender_name = trim(preg_replace('/[\r\n]+/', ' ', $sender_row['full_name'] ?? ''));
         $sender_name_var = $sender_name !== '' ? "{$sender_name} ({$senderExt})" : $senderExt;
@@ -197,7 +210,7 @@ class FaxSendService {
         // over a native Local channel (Local/$dest@from-internal-pbx/n).
         $dest_dial = preg_replace('/[^0-9+*#]/', '', trim($destNumber));
 
-        $call_file_content = "Channel: Local/$dest_dial@from-internal-pbx/n\n" .
+        $call_file_content = "Channel: Local/$dest_dial@$dial_context/n\n" .
                              "CallerID: $caller_id_line\n" .
                              "MaxRetries: $max_retries\n" .
                              "RetryTime: $retry_time\n" .
@@ -205,6 +218,7 @@ class FaxSendService {
                              "Context: outbound-fax\n" .
                              "Extension: s\n" .
                              "Priority: 1\n" .
+                             ($perm_grp > 0 ? "SetVar: __PERMISSION_GROUP_ID=$perm_grp\n" : '') .
                              "SetVar: FAX_TIF_PATH=$tifPath\n" .
                              "SetVar: FAX_DEST=$destNumber\n" .
                              "SetVar: FAX_SENDER=$senderExt\n" .

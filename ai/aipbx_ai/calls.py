@@ -63,6 +63,7 @@ import urllib.request
 import uuid
 from collections import deque
 
+from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
@@ -93,6 +94,7 @@ SPEED_MIN, SPEED_MAX = 0.5, 2.0
 
 LOOKUP_TIMEOUT = 2.0
 LOOKUP_MAX_BYTES = 64 * 1024
+ALLOW_PRIVATE_LOOKUP = False
 
 SESSION_TTL = 30.0           # a prepared call nobody connects to expires
 FINISHED_KEEP = 50
@@ -191,6 +193,7 @@ def fetch_values(url, timeout=LOOKUP_TIMEOUT):
 
     def run():
         try:
+            assert_public_url(url, resolve=True, allow_private=ALLOW_PRIVATE_LOOKUP, allow_loopback=ALLOW_PRIVATE_LOOKUP)
             req = urllib.request.Request(url, headers={"Accept": "application/json",
                                                        "User-Agent": "aipbx-ai"})
             with _OPENER.open(req, timeout=timeout) as resp:
@@ -294,6 +297,10 @@ def _lookup(form):
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise Refused("lookup must be an http(s) URL")
+    try:
+        assert_public_url(url, resolve=True, allow_private=ALLOW_PRIVATE_LOOKUP, allow_loopback=ALLOW_PRIVATE_LOOKUP)
+    except ValueError as e:
+        raise Refused(str(e)) from None
     return url
 
 
@@ -858,7 +865,11 @@ class VoiceRequestsCall:
         i = 0
         try:
             while not self._stop_pump.is_set():
-                wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - time.monotonic()
+                now = time.monotonic()
+                wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - now
+                if wait < -LEAD_SECONDS:
+                    t0 = now - i * FRAME_SECONDS
+                    wait = 0.0
                 if wait > 0 and (self._stop_pump.wait(wait) or self.reader.gone.is_set()):
                     return
                 if self.reader.gone.is_set():
@@ -881,6 +892,8 @@ class VoiceRequestsCall:
                     self.session.sent_bytes += len(chunk)
                 i += 1
         except OSError:
+            pass
+        finally:
             self._broken.set()
 
     def gone(self):
@@ -900,6 +913,8 @@ class VoiceRequestsCall:
             self.reply_started = cur["started"]
         # Wait until the caller has heard the end (the pump sends 60 ms ahead).
         while time.monotonic() < cur["ends"]:
+            if self.gone():
+                return False
             if self.reader.gone.wait(min(0.05, max(0.0, cur["ends"] - time.monotonic()))):
                 return False
         return not self.gone()
@@ -1015,10 +1030,16 @@ class VoiceRequestsCall:
             except Exception as e:  # noqa: BLE001
                 box["error"] = type(e).__name__
         started = time.monotonic()
+        deadline = started + 30.0
         t = threading.Thread(target=run, name="call-stt", daemon=True)
         t.start()
-        t.join(30.0)
+        while t.is_alive() and time.monotonic() < deadline:
+            if self.gone():
+                break
+            t.join(min(0.1, max(0.0, deadline - time.monotonic())))
         ms = int((time.monotonic() - started) * 1000)
+        if self.gone() and t.is_alive():
+            return "", ms
         if "error" in box or t.is_alive():
             log.warning("call app=%d: transcription failed (%s)", self.session.app, box.get("error", "timeout"))
         text = box.get("text") or ""

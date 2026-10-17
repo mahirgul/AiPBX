@@ -70,13 +70,14 @@ function refreshLiveMembers() {
                 html += '<div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">' + escapeHtml(m.channel) + '</div>';
                 html += '</div>';
 
+                const safeChan = escapeJsAttr(m.channel);
                 html += '<div style="display: inline-flex; gap: 6px;">';
                 if (m.is_muted) {
-                    html += '<button type="button" class="btn btn-secondary btn-sm" onclick="toggleMuteMember(\'' + m.channel + '\', false)" title="' + __('js.conf.unmute') + '"><i class="fas fa-microphone"></i> ' + __('js.conf.unmute') + '</button>';
+                    html += '<button type="button" class="btn btn-secondary btn-sm" onclick="toggleMuteMember(\'' + safeChan + '\', false)" title="' + __('js.conf.unmute') + '"><i class="fas fa-microphone"></i> ' + __('js.conf.unmute') + '</button>';
                 } else {
-                    html += '<button type="button" class="btn btn-warning btn-sm" onclick="toggleMuteMember(\'' + m.channel + '\', true)" title="' + __('js.conf.mute') + '"><i class="fas fa-microphone-slash"></i> ' + __('js.conf.mute') + '</button>';
+                    html += '<button type="button" class="btn btn-warning btn-sm" onclick="toggleMuteMember(\'' + safeChan + '\', true)" title="' + __('js.conf.mute') + '"><i class="fas fa-microphone-slash"></i> ' + __('js.conf.mute') + '</button>';
                 }
-                html += '<button type="button" class="btn btn-danger btn-sm" onclick="kickMember(\'' + m.channel + '\')" title="' + __('js.conf.kick_title') + '"><i class="fas fa-user-times"></i> ' + __('js.conf.kick') + '</button>';
+                html += '<button type="button" class="btn btn-danger btn-sm" onclick="kickMember(\'' + safeChan + '\')" title="' + __('js.conf.kick_title') + '"><i class="fas fa-user-times"></i> ' + __('js.conf.kick') + '</button>';
                 html += '</div>';
                 html += '</div>';
             });

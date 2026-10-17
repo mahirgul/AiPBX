@@ -1,6 +1,0 @@
-[general]
-dateformat=%F %T
-
-[logfiles]
-console => notice,warning,error
-messages => notice,warning,error,debug

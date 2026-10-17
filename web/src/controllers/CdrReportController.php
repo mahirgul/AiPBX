@@ -28,7 +28,7 @@ class CdrReportController extends BaseController
 
         // Handle Delete CDR Submission
         if (static::isPost() && isset($_POST['delete_cdr_id'])) {
-            $deleted = CdrReportService::deleteCdr($_POST['delete_cdr_id'], $_POST['csrf_token'] ?? '', $can_delete_cdr);
+            $deleted = CdrReportService::deleteCdr($_POST['delete_cdr_id'], $_POST['csrf_token'] ?? '', $can_delete_cdr, $can_view_all, (string)$user_ext);
             if ($deleted) {
                 static::redirect('/cdr-reports');
             }

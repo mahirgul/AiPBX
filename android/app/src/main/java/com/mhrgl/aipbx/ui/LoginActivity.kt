@@ -113,7 +113,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding.btnGoogleLogin.setOnClickListener {
             val serverUrl = prefs.serverUrl.trim().trimEnd('/')
-            if (serverUrl.isEmpty()) {
+            if (!serverUrl.startsWith("https://", ignoreCase = true)) {
                 showError(getString(R.string.err_set_server_first))
                 return@setOnClickListener
             }
@@ -147,7 +147,7 @@ class LoginActivity : AppCompatActivity() {
             if (type == "aipbx_qr_login") {
                 val serverUrl = json.optString("server").trim().trimEnd('/')
                 val qrToken = json.optString("qr_token")
-                if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
+                if (serverUrl.startsWith("https://", ignoreCase = true) && qrToken.isNotEmpty()) {
                     // Ask when connecting to a server different from the saved one:
                     // a random QR must not connect the app to another PBX.
                     if (serverUrl.equals(prefs.serverUrl.trim().trimEnd('/'), ignoreCase = true)) {
@@ -210,7 +210,7 @@ class LoginActivity : AppCompatActivity() {
             "login" -> {
                 val serverUrl = uri.getQueryParameter("server")?.trim()?.trimEnd('/') ?: ""
                 val token = uri.getQueryParameter("token")?.trim() ?: ""
-                val validServer = serverUrl.startsWith("https://", true) || serverUrl.startsWith("http://", true)
+                val validServer = serverUrl.startsWith("https://", ignoreCase = true)
                 if (!validServer || token.isEmpty()) {
                     showError(getString(R.string.err_login_link))
                     return

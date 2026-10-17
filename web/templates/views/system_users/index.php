@@ -458,7 +458,7 @@
                                 <td class="u-strong"><?php echo htmlspecialchars($r_item['role_name']); ?></td>
                                 <td class="text-muted"><?php echo htmlspecialchars($r_item['description'] ?: '-'); ?></td>
                                 <td class="text-right">
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick='editSystemRole(<?php echo json_encode($r_item, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)' title="<?php echo t('system_users.edit_tooltip'); ?>">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick='editSystemRole(<?php echo jsArg($r_item); ?>)' title="<?php echo t('system_users.edit_tooltip'); ?>">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </td>

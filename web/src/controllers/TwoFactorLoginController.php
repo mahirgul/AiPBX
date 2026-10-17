@@ -100,7 +100,7 @@ class TwoFactorLoginController extends BaseController
                         logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
                     }
                     if (function_exists('writeAuditLog')) {
-                        writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in with 2FA.", 'two_factor_login');
+                        writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with 2FA.", 'two_factor_login', (int)$user['id']);
                     }
 
                     static::redirect(roleHomePath($user['role']));

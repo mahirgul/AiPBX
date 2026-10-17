@@ -129,16 +129,19 @@ class EmbeddingBackend:
             part = self.dir / (name + ".part")
             url = f"{REPO_URL}{src['repo']}/resolve/{src['revision']}/{info['path']}"
             req = urllib.request.Request(url, headers={"User-Agent": "aipbx-ai"})
-            with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
-                while block := resp.read(1 << 16):
-                    out.write(block)
-                    done += len(block)
-                    progress(min(99, 99 * done // total))
-            got = _sha256(part)
-            if got != info["sha256"]:
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+                    while block := resp.read(1 << 16):
+                        out.write(block)
+                        done += len(block)
+                        progress(min(99, 99 * done // total))
+                got = _sha256(part)
+                if got != info["sha256"]:
+                    raise RuntimeError(f"{name}: checksum mismatch ({got[:12]}…)")
+                os.replace(part, self.dir / name)
+            except BaseException:
                 part.unlink(missing_ok=True)
-                raise RuntimeError(f"{name}: checksum mismatch ({got[:12]}…)")
-            os.replace(part, self.dir / name)
+                raise
         progress(100)
 
     def delete_files(self):

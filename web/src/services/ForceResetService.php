@@ -34,9 +34,8 @@ class ForceResetService {
         $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?');
         $upd->execute([$token, $expires, $user_id]);
 
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
+        require_once __DIR__ . '/ForgotPasswordService.php';
+        $resetUrl = rtrim(ForgotPasswordService::portalUrl(), '/') . '/reset-password?token=' . $token;
 
         $lang = MailTemplateService::languageFor(null, $user_id);
         $res = MailTemplateService::send('password_reset', $user['email'], $lang, [

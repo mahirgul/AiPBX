@@ -36,7 +36,7 @@ func LoadConfig() (*Config, error) {
 		Timezone:     "Europe/Istanbul",
 	}
 
-	var chatJwtSecret, turnSecret string
+	var chatJwtSecret string
 
 	envFile := "/etc/ai-pbx.env"
 	f, err := os.Open(envFile)
@@ -65,10 +65,6 @@ func LoadConfig() (*Config, error) {
 					if v != "" {
 						chatJwtSecret = v
 					}
-				case "TURN_SECRET":
-					if v != "" {
-						turnSecret = v
-					}
 				case "PORTAL_DOMAIN":
 					cfg.PortalDomain = v
 				case "CHAT_PORT":
@@ -86,15 +82,14 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	if chatJwtSecret != "" {
-		cfg.SecretKey = chatJwtSecret
-	} else if turnSecret != "" {
-		cfg.SecretKey = turnSecret
-	} else {
-		// No fallback to the database password: whoever knew it could sign
-		// a token for any user.
-		return nil, fmt.Errorf("CHAT_JWT_SECRET or TURN_SECRET must be set in /etc/ai-pbx.env")
+	if chatJwtSecret == "" {
+		chatJwtSecret = strings.TrimSpace(os.Getenv("CHAT_JWT_SECRET"))
 	}
+	if len(chatJwtSecret) < 32 {
+		// No fallback to TURN_SECRET or database password: CHAT_JWT_SECRET must be a dedicated secret >= 32 bytes.
+		return nil, fmt.Errorf("CHAT_JWT_SECRET must be set in /etc/ai-pbx.env (at least 32 bytes)")
+	}
+	cfg.SecretKey = chatJwtSecret
 
 	if envPort := os.Getenv("CHAT_PORT"); envPort != "" {
 		cfg.Port = envPort

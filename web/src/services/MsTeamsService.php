@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
+require_once __DIR__ . '/ForgotPasswordService.php';
 
 /**
  * Integration → Microsoft Teams: Direct Routing settings (SBC address, TLS
@@ -9,6 +10,86 @@ require_once __DIR__ . '/../repositories/MsTeamsRepository.php';
  */
 class MsTeamsService
 {
+    /**
+     * Validates that a webhook URL is a valid HTTPS URL whose host resolves exclusively
+     * to public IP addresses (rejects loopback, private, link-local, and reserved ranges).
+     *
+     * @param array<int, string>|null $curlResolve Populated with host:port:ip for CURLOPT_RESOLVE
+     */
+    public static function validatePublicWebhookUrl(string $webhookUrl, ?array &$curlResolve = null, bool $requireDnsResolution = true): bool
+    {
+        $curlResolve = [];
+        if ($webhookUrl === '' || !str_starts_with($webhookUrl, 'https://') || !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        $parts = parse_url($webhookUrl);
+        if (!is_array($parts) || strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
+            return false;
+        }
+        $host = trim((string)($parts['host'] ?? ''), '[]');
+        if ($host === '' || isset($parts['user']) || isset($parts['pass'])) {
+            return false;
+        }
+        $lowerHost = strtolower($host);
+        if ($lowerHost === 'localhost' || str_ends_with($lowerHost, '.localhost') || str_ends_with($lowerHost, '.local') || str_ends_with($lowerHost, '.internal')) {
+            return false;
+        }
+        $port = isset($parts['port']) ? (int)$parts['port'] : 443;
+        if ($port < 1) {
+            return false;
+        }
+
+        $isPublicIp = static function (string $ip): bool {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                return false;
+            }
+            if (str_starts_with($ip, '169.254.') || str_starts_with($ip, '127.') || $ip === '::1') {
+                return false;
+            }
+            $lowerIp = strtolower($ip);
+            if (str_starts_with($lowerIp, 'fe80:') || str_starts_with($lowerIp, 'fc') || str_starts_with($lowerIp, 'fd')) {
+                return false;
+            }
+            return true;
+        };
+
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return $isPublicIp($host);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}$/', $host)) {
+            return false;
+        }
+
+        $ips = [];
+        $records = @dns_get_record($host, DNS_A + DNS_AAAA);
+        if (is_array($records)) {
+            foreach ($records as $rec) {
+                if (!empty($rec['ip']) && is_string($rec['ip'])) {
+                    $ips[] = $rec['ip'];
+                } elseif (!empty($rec['ipv6']) && is_string($rec['ipv6'])) {
+                    $ips[] = $rec['ipv6'];
+                }
+            }
+        }
+        if (empty($ips)) {
+            $v4s = @gethostbynamel($host);
+            if (is_array($v4s)) {
+                $ips = $v4s;
+            }
+        }
+        if (empty($ips)) {
+            return !$requireDnsResolution;
+        }
+        foreach ($ips as $ip) {
+            if (!$isPublicIp($ip)) {
+                return false;
+            }
+        }
+        $curlResolve = ["{$host}:{$port}:" . $ips[0]];
+        return true;
+    }
+
     /**
      * Validates and saves the Direct Routing settings.
      */
@@ -64,11 +145,8 @@ class MsTeamsService
             return ['success' => false, 'error' => t('ms_teams.msg_err_webhook_required')];
         }
 
-        if ($webhookUrl !== '' && !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
-            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
-        }
-
-        if ($webhookUrl !== '' && !str_starts_with($webhookUrl, 'https://')) {
+        $dummyResolve = [];
+        if ($webhookUrl !== '' && !self::validatePublicWebhookUrl($webhookUrl, $dummyResolve, false)) {
             return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
         }
 
@@ -96,7 +174,8 @@ class MsTeamsService
      */
     public static function sendTestWebhook(string $webhookUrl): array
     {
-        if ($webhookUrl === '' || !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+        $curlResolve = [];
+        if (!self::validatePublicWebhookUrl($webhookUrl, $curlResolve)) {
             return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
         }
 
@@ -125,18 +204,24 @@ class MsTeamsService
                     '@type'   => 'OpenURI',
                     'name'    => 'AiPBX Paneline Git',
                     'targets' => [
-                        ['os' => 'default', 'uri' => 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/ms-teams'],
+                        ['os' => 'default', 'uri' => ForgotPasswordService::portalUrl() . '/ms-teams'],
                     ],
                 ],
             ],
         ];
 
-        $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $jsonPayload = (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         $ch = curl_init($webhookUrl);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        if (!empty($curlResolve)) {
+            curl_setopt($ch, CURLOPT_RESOLVE, $curlResolve);
+        }
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Content-Length: ' . strlen($jsonPayload),
@@ -145,11 +230,11 @@ class MsTeamsService
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
         $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErrno = curl_errno($ch);
 
-        if ($curlError) {
-            return ['success' => false, 'error' => t('ms_teams.msg_err_curl') . $curlError];
+        if ($curlErrno !== 0) {
+            return ['success' => false, 'error' => rtrim(t('ms_teams.msg_err_curl'), ': ')];
         }
 
         if ($httpCode === 200 || trim((string)$response) === '1') {
@@ -158,7 +243,7 @@ class MsTeamsService
 
         return [
             'success' => false,
-            'error'   => t('ms_teams.msg_err_teams_response') . "(HTTP {$httpCode}): " . htmlspecialchars((string)$response),
+            'error'   => rtrim(t('ms_teams.msg_err_teams_response'), ': ') . " (HTTP {$httpCode})",
         ];
     }
 
@@ -232,8 +317,13 @@ class MsTeamsService
      */
     public static function generatePowerShellScript(array $settings, array $mappings): string
     {
-        $domain = !empty($settings['teams_domain']) ? $settings['teams_domain'] : 'sbc.aipbx.com';
-        $port = !empty($settings['teams_sip_port']) ? $settings['teams_sip_port'] : '5061';
+        $psSingleQuote = static fn(string $val): string => str_replace("'", "''", preg_replace('/[\x00-\x1F\x7F]+/', '', $val) ?? '');
+        $psComment = static fn(string $val): string => trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', ' ', $val) ?? '');
+
+        $rawDomain = !empty($settings['teams_domain']) ? (string)$settings['teams_domain'] : 'sbc.aipbx.com';
+        $domain = $psSingleQuote(preg_replace('/[^a-zA-Z0-9.\-]/', '', $rawDomain) ?: 'sbc.aipbx.com');
+        $portInt = !empty($settings['teams_sip_port']) ? (int)$settings['teams_sip_port'] : 5061;
+        $port = (string)(($portInt >= 1 && $portInt <= 65535) ? $portInt : 5061);
         $pstnUsage = 'AiPBX-PSTN';
         $voiceRoute = 'AiPBX-DirectRoute';
         $voicePolicy = 'AiPBX-VoicePolicy';
@@ -299,9 +389,14 @@ class MsTeamsService
         } else {
             foreach ($mappings as $m) {
                 if (empty($m['direct_routing_enabled'])) continue;
-                $upn = $m['teams_upn'];
-                $ext = $m['extension'];
-                $phone = !empty($m['phone_number']) ? $m['phone_number'] : "+{$ext}";
+                $upn = $psSingleQuote((string)($m['teams_upn'] ?? ''));
+                $ext = $psSingleQuote(preg_replace('/[^0-9]/', '', (string)($m['extension'] ?? '')) ?? '');
+                $rawPhone = !empty($m['phone_number']) ? (string)$m['phone_number'] : "+{$ext}";
+                $phone = $psSingleQuote(preg_replace('/[^0-9+]/', '', $rawPhone) ?? '');
+                $displayName = $psComment((string)($m['display_name'] ?? $m['full_name'] ?? ''));
+                if ($displayName !== '') {
+                    $output[] = "# {$displayName} (Extension: {$ext})";
+                }
 
                 $output[] = "Write-Host 'Assigning user: {$upn} (extension: {$ext})' -ForegroundColor Green";
                 $output[] = "Grant-CsOnlineVoiceRoutingPolicy -Identity '{$upn}' -PolicyName '{$voicePolicy}'";

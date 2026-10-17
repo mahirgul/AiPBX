@@ -13,6 +13,10 @@
  * Usage: php bin/lint_lang.php
  * Exit code: 0 = clean, 1 = problems found.
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 
 $root = dirname(__DIR__);
 $tr = require $root . '/lang/tr.php';

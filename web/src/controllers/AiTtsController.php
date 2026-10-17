@@ -37,6 +37,9 @@ class AiTtsController extends BaseController
                         $message = t(!empty($_POST['clear']) ? 'ai_tts.msg_provider_cleared' : 'ai_tts.msg_provider_saved');
                         $tab = 'providers';
                     } elseif (isset($_POST['delete_tts_id'])) {
+                        if (!hasModulePermission('ai_tts', 'delete')) {
+                            throw new \RuntimeException(t('auth.no_delete_module'));
+                        }
                         AiTtsService::delete((int) $_POST['delete_tts_id']);
                         $message = t('ai_tts.msg_deleted');
                     }

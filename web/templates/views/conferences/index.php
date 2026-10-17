@@ -97,11 +97,11 @@
                             </td>
                             <td class="text-right">
                                 <div style="display: inline-flex; gap: 4px;">
-                                    <button type="button" class="btn btn-info btn-sm" onclick="showLiveMembers('<?php echo htmlspecialchars($cf['room_number']); ?>', '<?php echo htmlspecialchars(addslashes($cf['title'])); ?>')" title="<?php echo t('conferences.live_members'); ?>">
+                                    <button type="button" class="btn btn-info btn-sm" onclick="showLiveMembers(<?php echo jsArg($cf['room_number']); ?>, <?php echo jsArg($cf['title']); ?>)" title="<?php echo t('conferences.live_members'); ?>">
                                         <i class="fas fa-users-viewfinder"></i> <?php echo t('conferences.live'); ?>
                                     </button>
                                     <?php if (hasModulePermission('conferences', 'edit')): ?>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditConfModal(<?php echo json_encode($cf); ?>)' title="<?php echo t('common.edit'); ?>">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditConfModal(<?php echo jsArg($cf); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('conferences.confirm_delete')), ENT_QUOTES); ?>);">

@@ -58,6 +58,22 @@ func TestExtractToken(t *testing.T) {
 	if tok := ExtractToken(req5); tok != "" {
 		t.Fatalf("CH-10 violation: token query param must be rejected for /api/, got %s", tok)
 	}
+
+	// 6. Base64 '+' character preserved in query param, header, and cookie (DÜŞÜK-8)
+	req6, _ := http.NewRequest("GET", "/chat/ws?token=abc%2Bdef%3D", nil)
+	if tok := ExtractToken(req6); tok != "abc+def=" {
+		t.Fatalf("Expected abc+def= for URL-encoded query param, got %q", tok)
+	}
+	req7, _ := http.NewRequest("GET", "/api/messages", nil)
+	req7.Header.Set("Authorization", "Bearer abc+def%3D")
+	if tok := ExtractToken(req7); tok != "abc+def=" {
+		t.Fatalf("Expected abc+def= for header with + and %%3D, got %q", tok)
+	}
+	req8, _ := http.NewRequest("GET", "/chat/media/images/pic.jpg", nil)
+	req8.AddCookie(&http.Cookie{Name: "chat_token", Value: "abc+def%3D"})
+	if tok := ExtractToken(req8); tok != "abc+def=" {
+		t.Fatalf("Expected abc+def= for cookie with + and %%3D, got %q", tok)
+	}
 }
 
 func TestUploadExtensionWhitelist(t *testing.T) {
@@ -125,7 +141,7 @@ func TestHandleUploadRejectsDisallowedFiles(t *testing.T) {
 }
 
 func TestAttachmentUrlValidationInSendMessage(t *testing.T) {
-	srv := &Server{}
+	srv := &Server{hub: NewHub()}
 	user := &User{ID: 1, Extension: "19000", FullName: "Test Admin"}
 
 	maliciousUrls := []string{
@@ -134,6 +150,7 @@ func TestAttachmentUrlValidationInSendMessage(t *testing.T) {
 		"http://attacker.com/evil.jpg",
 		"https://evil.com/xss.png",
 		"data:text/html;base64,PHNjcmlwdD4=",
+		"/chat/media/images/extra/1_a_b.jpg",
 	}
 
 	for _, badURL := range maliciousUrls {
@@ -147,6 +164,54 @@ func TestAttachmentUrlValidationInSendMessage(t *testing.T) {
 		if rr.Code != http.StatusBadRequest && rr.Code != http.StatusForbidden {
 			t.Fatalf("CH-4 violation: Expected rejection (400 or 403) for attachment_url %q, got HTTP %d", badURL, rr.Code)
 		}
+	}
+}
+
+func TestSendMessageRejectsSystemAndInvalidMessages(t *testing.T) {
+	srv := &Server{hub: NewHub()}
+	user := &User{ID: 1, Extension: "19000", FullName: "Test Admin"}
+
+	cases := []struct {
+		name string
+		body string
+	}{
+		{"spoofed system msg_type", `{"conversation_id":1,"msg_type":"system","message":"fake system"}`},
+		{"unknown msg_type", `{"conversation_id":1,"msg_type":"video","message":"x"}`},
+		{"empty text message", `{"conversation_id":1,"msg_type":"text","message":"   "}`},
+		{"oversized text message", `{"conversation_id":1,"msg_type":"text","message":"` + strings.Repeat("a", 17000) + `"}`},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest("POST", "/api/messages", strings.NewReader(tc.body))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		srv.HandleSendMessage(rr, req, user)
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("%s: expected 400 Bad Request, got %d (%s)", tc.name, rr.Code, rr.Body.String())
+		}
+	}
+}
+
+func TestWebSocketCheckOrigin(t *testing.T) {
+	// Empty origin (native mobile apps): allowed
+	req := httptest.NewRequest("GET", "http://127.0.0.1:8086/ws", nil)
+	if !upgrader.CheckOrigin(req) {
+		t.Fatal("empty Origin should be allowed")
+	}
+
+	// Same host via X-Forwarded-Host (behind Apache reverse proxy): allowed
+	req = httptest.NewRequest("GET", "http://127.0.0.1:8086/ws", nil)
+	req.Header.Set("Origin", "https://pbx.example.com")
+	req.Header.Set("X-Forwarded-Host", "pbx.example.com")
+	if !upgrader.CheckOrigin(req) {
+		t.Fatal("same X-Forwarded-Host Origin should be allowed")
+	}
+
+	// Foreign origin: rejected
+	req = httptest.NewRequest("GET", "http://127.0.0.1:8086/ws", nil)
+	req.Header.Set("Origin", "https://evil.example.com")
+	req.Header.Set("X-Forwarded-Host", "pbx.example.com")
+	if upgrader.CheckOrigin(req) {
+		t.Fatal("foreign Origin must be rejected")
 	}
 }
 

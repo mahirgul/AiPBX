@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import re
+import threading
 import time
 import urllib.request
 from dataclasses import asdict
@@ -47,35 +48,37 @@ class Catalog:
     def __init__(self, data_dir, fetch=_get):
         self.data_dir = Path(data_dir)
         self.fetch = fetch
+        self._mu = threading.Lock()
         self._index = None
         self._index_time = 0.0
 
     # ---- Piper index ---------------------------------------------------
 
     def _piper_index(self):
-        cache = self.data_dir / "cache" / "piper-voices.json"
-        now = time.time()
-        if self._index is not None and now - self._index_time < INDEX_MAX_AGE:
-            return self._index
-        try:
-            if cache.is_file() and now - cache.stat().st_mtime < INDEX_MAX_AGE:
-                self._index = json.loads(cache.read_text())
-                self._index_time = cache.stat().st_mtime
+        with self._mu:
+            cache = self.data_dir / "cache" / "piper-voices.json"
+            now = time.time()
+            if self._index is not None and now - self._index_time < INDEX_MAX_AGE:
                 return self._index
-        except (OSError, ValueError):
-            pass
-        try:
-            raw = self.fetch(f"{HUB}/{PIPER_REPO}/resolve/main/voices.json")
-            index = json.loads(raw)
-        except Exception as e:  # noqa: BLE001
-            raise CatalogError(f"the voice list could not be loaded: {e}") from None
-        try:
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_bytes(raw)
-        except OSError:
-            pass
-        self._index, self._index_time = index, now
-        return index
+            try:
+                if cache.is_file() and now - cache.stat().st_mtime < INDEX_MAX_AGE:
+                    self._index = json.loads(cache.read_text())
+                    self._index_time = cache.stat().st_mtime
+                    return self._index
+            except (OSError, ValueError):
+                pass
+            try:
+                raw = self.fetch(f"{HUB}/{PIPER_REPO}/resolve/main/voices.json")
+                index = json.loads(raw)
+            except Exception as e:  # noqa: BLE001
+                raise CatalogError(f"the voice list could not be loaded: {e}") from None
+            try:
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                cache.write_bytes(raw)
+            except OSError:
+                pass
+            self._index, self._index_time = index, now
+            return index
 
     def piper_voices(self, known=None):
         """Every voice of the index; `known` maps a model file path to the id of a

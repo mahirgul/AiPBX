@@ -290,16 +290,20 @@ public struct LoginView: View {
                let type = json["type"] as? String, type == "aipbx_qr_login",
                let server = json["server"] as? String,
                let qrToken = json["qr_token"] as? String {
-                let normalized = server.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                let normalized = server.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                guard normalized.lowercased().hasPrefix("https://"), !qrToken.isEmpty else {
+                    appState.errorMessage = L("Invalid or incompatible AiPBX QR code.")
+                    return
+                }
                 let current = appState.baseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 if normalized.caseInsensitiveCompare(current) != .orderedSame {
                     // A PBX different from the saved server: ask the user first.
                     appState.pendingLinkLogin = AppState.PendingLinkLogin(serverUrl: normalized, token: qrToken)
                     return
                 }
-                self.serverUrl = server
+                self.serverUrl = normalized
                 Task {
-                    let success = await appState.loginWithQr(serverUrl: server, qrToken: qrToken)
+                    let success = await appState.loginWithQr(serverUrl: normalized, qrToken: qrToken)
                     if !success && appState.errorMessage == nil {
                         appState.errorMessage = L("QR code sign-in failed.")
                     }
@@ -321,7 +325,7 @@ public struct LoginView: View {
 
     private func performGoogleLogin() {
         let cleanBase = serverUrl.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard !cleanBase.isEmpty, let authUrl = URL(string: "\(cleanBase)/auth/google?mobile=1&platform=ios") else {
+        guard cleanBase.lowercased().hasPrefix("https://"), let authUrl = URL(string: "\(cleanBase)/auth/google?mobile=1&platform=ios") else {
             appState.errorMessage = L("Please enter a valid PBX server address.")
             return
         }

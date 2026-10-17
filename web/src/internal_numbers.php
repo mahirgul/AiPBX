@@ -117,8 +117,8 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
     if ($number === '') return null;
     $db = getDB();
 
-    // While a user is being edited, their own extension is not a conflict ($skipSource = 'user').
-    if ($skipSource === 'user' && $skipId > 0) {
+    // While a user is being edited, their own extension is not a conflict ($skipSource = 'user' or 'sys_users').
+    if (($skipSource === 'user' || $skipSource === 'sys_users') && $skipId > 0) {
         $u = $db->prepare("SELECT full_name, extension_type FROM sys_users WHERE extension = ? AND id != ? LIMIT 1");
         $u->execute([$number, $skipId]);
     } else {

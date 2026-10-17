@@ -112,6 +112,7 @@ class Lookup(BaseHTTPRequestHandler):
 class CallsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        calls.ALLOW_PRIVATE_LOOKUP = True
         cls.lookup = ThreadingHTTPServer(("127.0.0.1", 0), Lookup)
         cls.lookup.daemon_threads = True
         threading.Thread(target=cls.lookup.serve_forever, daemon=True).start()
@@ -119,6 +120,7 @@ class CallsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        calls.ALLOW_PRIVATE_LOOKUP = False
         cls.lookup.shutdown()
         cls.lookup.server_close()
 

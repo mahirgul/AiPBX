@@ -12,6 +12,10 @@
  * Asterisk waits for this command, so the sending part runs detached
  * (--send) and this call returns at once.
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 
 $args = $_SERVER['argv'] ?? [];
@@ -81,9 +85,11 @@ function voicemailNotifySend(string $ext, int $newCount): void
     $data = ['caller' => $caller, 'duration' => $duration, 'new_count' => $newCount, 'text' => $text];
 
     // 1. Connected apps: the chat service's live connection.
+    require_once dirname(__DIR__) . '/src/services/FileStorageService.php';
+    $internalTok = FileStorageService::internalToken();
     $ctx = stream_context_create(['http' => [
         'method' => 'POST', 'timeout' => 2, 'ignore_errors' => true,
-        'header' => "Content-Type: application/json\r\n",
+        'header' => "Content-Type: application/json\r\nX-AiPBX-Internal: {$internalTok}\r\n",
         'content' => json_encode(['extension' => $ext, 'event' => 'voicemail', 'data' => $data]),
     ]]);
     $port = preg_replace('/[^0-9]/', '', (string) portalEnv('CHAT_PORT')) ?: '8086';

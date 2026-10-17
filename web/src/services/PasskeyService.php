@@ -18,14 +18,21 @@ class PasskeyService
      */
     public static function getRpId(): string
     {
-        $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
-        if (strpos($host, ',') !== false) {
-            $host = trim(explode(',', $host)[0]);
+        $rawHost = $_SERVER['HTTP_HOST'] ?? '';
+        if (strpos($rawHost, ':') !== false) {
+            $rawHost = explode(':', $rawHost)[0];
         }
-        if (strpos($host, ':') !== false) {
-            $host = explode(':', $host)[0];
+        $cleanHost = preg_replace('/[^A-Za-z0-9.-]/', '', $rawHost);
+        if ($cleanHost === 'localhost' || $cleanHost === '127.0.0.1') {
+            return $cleanHost;
         }
-        return $host;
+        require_once __DIR__ . '/ForgotPasswordService.php';
+        $portal = ForgotPasswordService::portalUrl();
+        $host = parse_url($portal, PHP_URL_HOST);
+        if (!empty($host) && $host !== 'localhost') {
+            return $host;
+        }
+        return !empty($cleanHost) ? $cleanHost : 'localhost';
     }
 
     /**
@@ -142,7 +149,7 @@ class PasskeyService
                 $uStmt = $db->prepare('SELECT username FROM sys_users WHERE id = ?');
                 $uStmt->execute([$userId]);
                 $un = $uStmt->fetchColumn() ?: (string)$userId;
-                writeAuditLog($userId, 'sys_user_passkeys', $insertedId, "User '{$un}' added a passkey: {$cleanDeviceName}", 'passkey_register');
+                writeAuditLog('security', 'sys_user_passkeys', (string)$insertedId, "User '{$un}' added a passkey: {$cleanDeviceName}", 'passkey_register', (int)$userId);
             }
 
             return ['success' => true, 'id' => $insertedId];
@@ -279,6 +286,19 @@ class PasskeyService
             $upd = $db->prepare('UPDATE sys_user_passkeys SET counter = ?, last_used_at = NOW() WHERE id = ?');
             $upd->execute([$newCounter, $passkey['passkey_id']]);
 
+            if (!empty($passkey['must_reset_password'])) {
+                session_regenerate_id(true);
+                $_SESSION['pending_reset_user_id'] = $passkey['user_id'];
+                unset($_SESSION['webauthn_auth_challenge'], $_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
+                if (function_exists('logLoginAttempt')) {
+                    logLoginAttempt($clientIp, $passkey['username'], 'SUCCESS');
+                }
+                if (function_exists('writeAuditLog')) {
+                    writeAuditLog('security', 'sys_users', (string)$passkey['user_id'], "User '{$passkey['username']}' signed in with a passkey, required to reset password.", 'passkey_login', (int)$passkey['user_id']);
+                }
+                return ['success' => true, 'redirect' => '/force-reset'];
+            }
+
             // Sign-in succeeded: create the session
             session_regenerate_id(true);
 
@@ -301,7 +321,7 @@ class PasskeyService
                 logLoginAttempt($clientIp, $passkey['username'], 'SUCCESS');
             }
             if (function_exists('writeAuditLog')) {
-                writeAuditLog($passkey['user_id'], 'sys_users', $passkey['user_id'], "User '{$passkey['username']}' signed in with a passkey ({$passkey['device_name']}).", 'passkey_login');
+                writeAuditLog('security', 'sys_users', (string)$passkey['user_id'], "User '{$passkey['username']}' signed in with a passkey ({$passkey['device_name']}).", 'passkey_login', (int)$passkey['user_id']);
             }
 
             $redirect = roleHomePath($passkey['role']);
@@ -344,7 +364,7 @@ class PasskeyService
         $del->execute([$passkeyId, $userId]);
 
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($userId, 'sys_user_passkeys', $passkeyId, "User deleted the passkey '{$row['device_name']}'.", 'passkey_delete');
+            writeAuditLog('security', 'sys_user_passkeys', (string)$passkeyId, "User deleted the passkey '{$row['device_name']}'.", 'passkey_delete', (int)$userId);
         }
 
         return true;

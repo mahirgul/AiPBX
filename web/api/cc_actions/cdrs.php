@@ -9,7 +9,9 @@ if ($action === 'my_cdrs') {
     // Link the "pending" note entered during the active call (by agent_extension, call_id IS NULL)
     // to this agent's most recently finished call (its CDR). A pending note entered in the last
     // 2 hours is looked for; anything older (a forgotten draft) is not linked automatically.
-    if (!empty($user_ext)) {
+    $can_claim_note = ($user['role'] !== 'read_only_admin')
+        && ($_SERVER['REQUEST_METHOD'] === 'POST' || verifyCSRFToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_GET['csrf_token'] ?? ''));
+    if (!empty($user_ext) && $can_claim_note) {
         // agent_extension can now also show the CALLED side on calls not
         // routed through a queue (see the cdrs view update) — calls this agent
         // started show up in caller_num, so both are checked.
@@ -41,7 +43,7 @@ if ($action === 'my_cdrs') {
     foreach ($cdrs as &$c) {
         $has_rec = (!empty($c['recording_path']) && (str_starts_with($c['recording_path'], 's3:') || file_exists($c['recording_path'])));
         $c['has_recording'] = $has_rec;
-        $c['can_listen'] = $can_listen || ($user_ext !== '' && ($c['agent_extension'] === $user_ext || $c['caller_num'] === $user_ext));
+        $c['can_listen'] = $can_listen || (!empty($user_ext) && ($c['agent_extension'] === $user_ext || $c['caller_num'] === $user_ext));
         $c['audio_url'] = $has_rec ? '/api/cc_audio.php?id=' . $c['id'] : null;
     }
     unset($c);

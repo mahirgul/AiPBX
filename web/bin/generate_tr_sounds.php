@@ -12,6 +12,10 @@
  * silence trimmed, peak -6 dBFS, 150 ms tail. Names given on the command line
  * limit the run to those prompts.
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/AiTtsService.php';
 

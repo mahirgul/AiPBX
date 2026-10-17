@@ -28,11 +28,18 @@ func signedUploadBase(secret, ext, base string) string {
 
 // attachmentOwnedBy checks that the file in the URL was uploaded by this extension.
 func attachmentOwnedBy(secret, url, ext string) bool {
-	name := path.Base(url)
+	if secret == "" || ext == "" || url == "" {
+		return false
+	}
+	rel := strings.TrimPrefix(strings.TrimPrefix(url, "/chat/media/"), "/media/")
+	if strings.Contains(rel, "/") && !validMediaKey(rel) {
+		return false
+	}
+	name := path.Base(rel)
 	name = strings.TrimSuffix(name, path.Ext(name))
 	name = strings.TrimSuffix(name, "_thumb")
 	i := strings.LastIndex(name, "_")
-	if i <= 0 || ext == "" {
+	if i <= 0 {
 		return false
 	}
 	base, sig := name[:i], name[i+1:]
@@ -41,11 +48,17 @@ func attachmentOwnedBy(secret, url, ext string) bool {
 
 // validMediaURL: only our own server's media paths (prevents XSS/tracking pixels).
 func validMediaURL(u string) bool {
-	for _, p := range []string{"/chat/media/images/", "/chat/media/docs/", "/chat/media/thumbs/", "/chat/media/avatars/",
-		"/media/images/", "/media/docs/", "/media/thumbs/", "/media/avatars/"} {
-		if strings.HasPrefix(u, p) {
-			return !strings.Contains(u, "..")
-		}
+	var key string
+	switch {
+	case strings.HasPrefix(u, "/chat/media/"):
+		key = strings.TrimPrefix(u, "/chat/media/")
+	case strings.HasPrefix(u, "/media/"):
+		key = strings.TrimPrefix(u, "/media/")
+	default:
+		return false
 	}
-	return false
+	if strings.Contains(u, "..") || strings.ContainsAny(key, " \t\r\n?#") {
+		return false
+	}
+	return validMediaKey(key)
 }

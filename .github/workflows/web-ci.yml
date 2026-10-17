@@ -56,7 +56,9 @@ jobs:
       DB_USER: aipbx_test
       DB_PASS: ci-test
       # Signs the sign-in tokens (no fallback to DB_PASS any more).
-      CHAT_JWT_SECRET: ci-token-key
+      CHAT_JWT_SECRET: ci-token-key-0123456789abcdef0123456789
+      # Key used by SecretBox (AiTtsServiceTest & smoke.php).
+      AIPBX_SETTINGS_KEY: test-settings-key
       # No step sends a command to a real Asterisk.
       AIPBX_NO_ASTERISK: '1'
 

@@ -151,11 +151,34 @@ func DeleteMessage(msgID int64, ext string, windowMinutes int) (int, time.Time, 
 		return 0, time.Time{}, "", &sendError{http.StatusInternalServerError, "The message could not be deleted."}
 	}
 
-	// The conversation list shows the last message: do not keep the deleted text there.
+	// The conversation list shows the last message: restore the previous non-deleted message preview.
 	var lastID int64
 	_ = tx.QueryRow("SELECT COALESCE(MAX(id), 0) FROM chat_messages WHERE conversation_id = ?", m.ConversationID).Scan(&lastID)
 	if lastID == msgID {
-		_, _ = tx.Exec("UPDATE chat_conversations SET last_message_text = '', updated_at = NOW() WHERE id = ?", m.ConversationID)
+		var prevType, prevMsg, prevFile string
+		var prevAt time.Time
+		err := tx.QueryRow(`
+			SELECT msg_type, COALESCE(message, ''), COALESCE(file_name, ''), created_at
+			FROM chat_messages
+			WHERE conversation_id = ? AND is_deleted = 0
+			ORDER BY id DESC
+			LIMIT 1`, m.ConversationID).Scan(&prevType, &prevMsg, &prevFile, &prevAt)
+		if err == nil {
+			prevPreview := prevMsg
+			switch prevType {
+			case "image":
+				prevPreview = "📷 [Fotoğraf]"
+			case "file":
+				prevPreview = "📎 [Dosya] " + prevFile
+			case "audio":
+				prevPreview = "🎤 [Ses Kaydı]"
+			}
+			prevPreview = truncateRunes(prevPreview, 250)
+			_, _ = tx.Exec("UPDATE chat_conversations SET last_message_text = ?, last_message_at = ?, updated_at = NOW() WHERE id = ?",
+				prevPreview, prevAt, m.ConversationID)
+		} else {
+			_, _ = tx.Exec("UPDATE chat_conversations SET last_message_text = '', updated_at = NOW() WHERE id = ?", m.ConversationID)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -165,13 +188,18 @@ func DeleteMessage(msgID int64, ext string, windowMinutes int) (int, time.Time, 
 }
 
 // attachmentStillUsed: the same upload can be attached to more than one
-// message (only by its uploader); its file stays while any of them is live.
+// message or used as a group avatar (only by its uploader); its file stays
+// while any of them is live.
 func attachmentStillUsed(url string) bool {
 	if url == "" || db == nil {
 		return false
 	}
 	var one int
-	err := db.QueryRow("SELECT 1 FROM chat_messages WHERE attachment_url = ? AND is_deleted = 0 LIMIT 1", url).Scan(&one)
+	err := db.QueryRow(`
+		SELECT 1 FROM chat_messages WHERE attachment_url = ? AND is_deleted = 0
+		UNION ALL
+		SELECT 1 FROM chat_conversations WHERE avatar_url = ? AND is_deleted = 0
+		LIMIT 1`, url, url).Scan(&one)
 	return err == nil
 }
 
@@ -227,6 +255,7 @@ func (s *Server) HandleDeleteMessage(w http.ResponseWriter, r *http.Request, use
 		writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		MessageID int64 `json:"message_id"`
 	}

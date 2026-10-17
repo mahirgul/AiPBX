@@ -81,10 +81,10 @@
                             <?php echo uiStatusToggleForm($ivr['id'], $ivr['is_active'], 'ivr_id'); ?>
                         </td>
                         <td style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-                            <button class="btn btn-secondary btn-sm" onclick='openIvrFlowModal(<?php echo (int) $ivr['id']; ?>, "<?php echo htmlspecialchars($ivr['title'], ENT_QUOTES); ?>")' title="<?php echo htmlspecialchars(t('ivr_flow.title')); ?>">
+                            <button class="btn btn-secondary btn-sm" onclick='openIvrFlowModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr_flow.title')); ?>">
                                 <i class="fas fa-project-diagram"></i>
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick='openIvrEntriesModal(<?php echo $ivr['id']; ?>, "<?php echo htmlspecialchars($ivr['title'], ENT_QUOTES); ?>")' title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>">
+                            <button class="btn btn-secondary btn-sm" onclick='openIvrEntriesModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>">
                                 <i class="fas fa-th"></i>
                             </button>
                             <?php echo uiEditButton($ivr, 'openEditIvrModal'); ?>

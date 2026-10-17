@@ -61,16 +61,19 @@ class PiperBackend:
                 continue
             part = self.dir / (name + ".part")
             req = urllib.request.Request(base + remote, headers={"User-Agent": "aipbx-ai"})
-            with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
-                while block := resp.read(1 << 16):
-                    out.write(block)
-                    done += len(block)
-                    progress(min(99, 100 * done // total))
-            got = _sha256(part)
-            if got != sha:
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+                    while block := resp.read(1 << 16):
+                        out.write(block)
+                        done += len(block)
+                        progress(min(99, 100 * done // total))
+                got = _sha256(part)
+                if got != sha:
+                    raise RuntimeError(f"{remote.rsplit('/', 1)[-1]}: checksum mismatch ({got[:12]}…), not loaded")
+                os.replace(part, target)
+            except BaseException:
                 part.unlink(missing_ok=True)
-                raise RuntimeError(f"{remote.rsplit('/', 1)[-1]}: checksum mismatch ({got[:12]}…), not loaded")
-            os.replace(part, target)
+                raise
         progress(100)
 
     def delete_files(self):

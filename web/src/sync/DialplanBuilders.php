@@ -139,7 +139,7 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
  * include chain).
  */
 function buildDndCfCheckLines($ext, $db) {
-    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number FROM sys_users WHERE extension = ?");
+    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, permission_group_id, outbound_group FROM sys_users WHERE extension = ?");
     $stmt->execute([$ext]);
     $u = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -155,12 +155,19 @@ function buildDndCfCheckLines($ext, $db) {
 
     $cf_target = preg_replace('/[^0-9]/', '', trim($u['call_forward_number'] ?? ''));
     if ($cf_target !== '') {
+        $perm_grp = (int)($u['permission_group_id'] ?? 0);
+        $out_grp = max(1, (int)($u['outbound_group'] ?? 1));
+        $cf_ctx = $out_grp > 1 ? "from-internal-g{$out_grp}" : 'from-internal-pbx';
+        $cf_lines = [
+            " same => n,NoOp(Call forwarding on - {$ext} -> {$cf_target})",
+        ];
+        if ($perm_grp > 0) {
+            $cf_lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$perm_grp})";
+        }
+        $cf_lines[] = " same => n,Goto({$cf_ctx},{$cf_target},1)";
         return [
             'terminal' => true,
-            'lines' => [
-                " same => n,NoOp(Call forwarding on - {$ext} -> {$cf_target})",
-                " same => n,Goto(from-internal-pbx,{$cf_target},1)"
-            ]
+            'lines' => $cf_lines
         ];
     }
 
@@ -190,7 +197,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $seq++;
     $lbl = ($labelPrefix !== '' ? $labelPrefix . '_' : '') . $ext . '_' . $seq;
 
-    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode, voicemail_enabled, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always FROM sys_users WHERE extension = ?");
+    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode, voicemail_enabled, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always, permission_group_id, outbound_group FROM sys_users WHERE extension = ?");
     $stmt->execute([$ext]);
     $u = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -202,6 +209,9 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if ($cfTimeout < 5 || $cfTimeout > 120) {
         $cfTimeout = 20;
     }
+    $permGrp = (int)($u['permission_group_id'] ?? 0);
+    $outGrp = max(1, (int)($u['outbound_group'] ?? 1));
+    $cfContext = $outGrp > 1 ? "from-internal-g{$outGrp}" : 'from-internal-pbx';
 
     $globalTimeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30')) ?: 30;
     $dialTimeout = ($cfNoAnswer !== '') ? $cfTimeout : $globalTimeout;
@@ -218,14 +228,15 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         ];
     }
 
-    // 1.1 Unconditional voicemail forwarding on: straight to voicemail
+    // 1.1 Unconditional voicemail forwarding on: straight to voicemail (unless SKIP_VM=1)
     if (!empty($u['voicemail_enabled']) && !empty($u['vm_always'])) {
         return [
             'terminal' => true,
             'lines' => [
                 " same => n,NoOp(Unconditional voicemail forwarding on - {$ext})",
+                " same => n,GotoIf(\$[\"\${SKIP_VM}\" = \"1\" & \"\${BLINDTRANSFER}\" = \"\"]?vm_skip_always_{$lbl})",
                 " same => n,VoiceMail({$ext}@default,u)",
-                " same => n,Hangup()"
+                " same => n(vm_skip_always_{$lbl}),Hangup(17)"
             ]
         ];
     }
@@ -241,7 +252,10 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if ($cfAlways !== '') {
         $lines[] = " same => n,NoOp(Unconditional forwarding on - {$ext} -> {$cfAlways})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
-        $lines[] = " same => n,Goto(from-internal-pbx,{$cfAlways},1)";
+        if ($permGrp > 0) {
+            $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+        }
+        $lines[] = " same => n,Goto({$cfContext},{$cfAlways},1)";
         $lines[] = " same => n(cf_loop_{$lbl}),NoOp(Call forwarding loop blocked - {$ext})";
         $lines[] = " same => n,Hangup(17)";
         return [
@@ -326,11 +340,15 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if ($cfBusy !== '') {
         $lines[] = " same => n,NoOp(Forward on busy on - {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
-        $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
+        if ($permGrp > 0) {
+            $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+        }
+        $lines[] = " same => n,Goto({$cfContext},{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_busy'])) {
         $lines[] = " same => n,NoOp(Voicemail on busy - {$ext})";
+        $lines[] = " same => n,GotoIf(\$[\"\${SKIP_VM}\" = \"1\" & \"\${BLINDTRANSFER}\" = \"\"]?vm_skip_busy_{$lbl})";
         $lines[] = " same => n,VoiceMail({$ext}@default,b)";
-        $lines[] = " same => n,Hangup()";
+        $lines[] = " same => n(vm_skip_busy_{$lbl}),Hangup(17)";
     } else {
         $lines[] = " same => n,Hangup(17)";
     }
@@ -340,11 +358,15 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Forward on no answer on - {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
-        $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
+        if ($permGrp > 0) {
+            $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+        }
+        $lines[] = " same => n,Goto({$cfContext},{$cfNoAnswer},1)";
     } elseif (!empty($u['voicemail_enabled']) && !empty($u['vm_on_noanswer'])) {
         $lines[] = " same => n,NoOp(Voicemail on no answer - {$ext})";
+        $lines[] = " same => n,GotoIf(\$[\"\${SKIP_VM}\" = \"1\" & \"\${BLINDTRANSFER}\" = \"\"]?vm_skip_noans_{$lbl})";
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
-        $lines[] = " same => n,Hangup()";
+        $lines[] = " same => n(vm_skip_noans_{$lbl}),Hangup()";
     } else {
         $lines[] = " same => n,Hangup()";
     }
@@ -354,15 +376,22 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Unreachable -> forward on no answer: {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
-        $lines[] = " same => n,Goto(from-internal-pbx,{$cfNoAnswer},1)";
+        if ($permGrp > 0) {
+            $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+        }
+        $lines[] = " same => n,Goto({$cfContext},{$cfNoAnswer},1)";
     } elseif ($cfBusy !== '') {
         $lines[] = " same => n,NoOp(Unreachable -> forward on busy: {$ext} -> {$cfBusy})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
-        $lines[] = " same => n,Goto(from-internal-pbx,{$cfBusy},1)";
+        if ($permGrp > 0) {
+            $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+        }
+        $lines[] = " same => n,Goto({$cfContext},{$cfBusy},1)";
     } elseif (!empty($u['voicemail_enabled']) && (!empty($u['vm_on_unavail']) || !empty($u['vm_on_noanswer']))) {
         $lines[] = " same => n,NoOp(Unreachable -> voicemail - {$ext})";
+        $lines[] = " same => n,GotoIf(\$[\"\${SKIP_VM}\" = \"1\" & \"\${BLINDTRANSFER}\" = \"\"]?vm_skip_unavail_{$lbl})";
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
-        $lines[] = " same => n,Hangup()";
+        $lines[] = " same => n(vm_skip_unavail_{$lbl}),Hangup()";
     } else {
         $lines[] = " same => n,Hangup()";
     }

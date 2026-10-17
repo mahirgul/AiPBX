@@ -23,16 +23,13 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.i(TAG, "FCM Message received from: ${remoteMessage.from}, data=${remoteMessage.data}")
-
         val data = remoteMessage.data
         val action = data["action"] ?: "incoming_call"
+        Log.i(TAG, "FCM Message received from: ${remoteMessage.from}, action=$action")
 
         when (action) {
             "incoming_call" -> {
-                val callerId = data["caller_id"] ?: ""
-                val callerName = data["caller_name"] ?: ""
-                Log.i(TAG, "Waking up PbxForegroundService for incoming call from $callerId ($callerName)...")
+                Log.i(TAG, "Waking up PbxForegroundService for incoming call...")
 
                 // Ensure foreground service is running and reconnects SIP to receive the incoming INVITE
                 PbxForegroundService.startWithAction(this, PbxForegroundService.ACTION_RECONNECT)
@@ -49,9 +46,12 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
                 showTestNotification(title, body)
             }
             "new_message", "group_created", "group_member_added" -> {
+                val convId = data["conversation_id"]?.toIntOrNull() ?: 0
+                if (convId > 0 && com.mhrgl.aipbx.ui.ChatActivity.activeConversationId == convId) {
+                    return
+                }
                 val title = data["title"] ?: L10n.str(R.string.push_new_message_title)
                 val body = data["body"] ?: L10n.str(R.string.push_new_message)
-                val convId = data["conversation_id"]?.toIntOrNull() ?: 0
                 val convType = data["conversation_type"] ?: "direct"
                 val isGroup = convType == "group"
                 val senderExt = data["sender_ext"] ?: ""

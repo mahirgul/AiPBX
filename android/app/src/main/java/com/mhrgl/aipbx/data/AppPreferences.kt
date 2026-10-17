@@ -13,13 +13,28 @@ class AppPreferences(context: Context) {
     private val appContext: Context = context.applicationContext
     private val prefs: SharedPreferences by lazy { createEncryptedPreferences(appContext) }
 
+    @Volatile private var memoryToken: String? = null
+    @Volatile private var memorySipPassword: String? = null
+    @Volatile private var memoryTurnUser: String? = null
+    @Volatile private var memoryTurnPass: String? = null
+    @Volatile private var memoryFcmApiKey: String? = null
+
     var serverUrl: String
         get() = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trim().trimEnd('/')).apply()
 
     var token: String?
-        get() = prefs.getString(KEY_TOKEN, null)
-        set(value) = prefs.edit().putString(KEY_TOKEN, value).apply()
+        get() {
+            val p = prefs
+            return if (isEncrypted) p.getString(KEY_TOKEN, null) else memoryToken
+        }
+        set(value) {
+            val p = prefs
+            memoryToken = value
+            if (isEncrypted) {
+                p.edit().putString(KEY_TOKEN, value).apply()
+            }
+        }
 
     var username: String?
         get() = prefs.getString(KEY_USERNAME, null)
@@ -50,8 +65,17 @@ class AppPreferences(context: Context) {
         set(value) = prefs.edit().putString(KEY_SIP_USERNAME, value).apply()
 
     var sipPassword: String?
-        get() = prefs.getString(KEY_SIP_PASSWORD, null)
-        set(value) = prefs.edit().putString(KEY_SIP_PASSWORD, value).apply()
+        get() {
+            val p = prefs
+            return if (isEncrypted) p.getString(KEY_SIP_PASSWORD, null) else memorySipPassword
+        }
+        set(value) {
+            val p = prefs
+            memorySipPassword = value
+            if (isEncrypted) {
+                p.edit().putString(KEY_SIP_PASSWORD, value).apply()
+            }
+        }
 
     var wsUrl: String?
         get() = prefs.getString(KEY_WS_URL, null)
@@ -62,12 +86,30 @@ class AppPreferences(context: Context) {
         set(value) = prefs.edit().putString(KEY_DOMAIN, value).apply()
 
     var turnUsername: String?
-        get() = prefs.getString(KEY_TURN_USER, null)
-        set(value) = prefs.edit().putString(KEY_TURN_USER, value).apply()
+        get() {
+            val p = prefs
+            return if (isEncrypted) p.getString(KEY_TURN_USER, null) else memoryTurnUser
+        }
+        set(value) {
+            val p = prefs
+            memoryTurnUser = value
+            if (isEncrypted) {
+                p.edit().putString(KEY_TURN_USER, value).apply()
+            }
+        }
 
     var turnCredential: String?
-        get() = prefs.getString(KEY_TURN_PASS, null)
-        set(value) = prefs.edit().putString(KEY_TURN_PASS, value).apply()
+        get() {
+            val p = prefs
+            return if (isEncrypted) p.getString(KEY_TURN_PASS, null) else memoryTurnPass
+        }
+        set(value) {
+            val p = prefs
+            memoryTurnPass = value
+            if (isEncrypted) {
+                p.edit().putString(KEY_TURN_PASS, value).apply()
+            }
+        }
 
     var turnUrl: String?
         get() = prefs.getString(KEY_TURN_URL, null)
@@ -96,14 +138,28 @@ class AppPreferences(context: Context) {
         val s = response.sip ?: return
         val rawSipUser = s.sipUsername.ifEmpty { "${u.extension}-mob-webrtc" }
         val finalSipUser = if (rawSipUser.endsWith("-mob-webrtc")) rawSipUser else "${u.extension}-mob-webrtc"
-        prefs.edit().apply {
-            putString(KEY_TOKEN, response.token)
+        val p = prefs
+        memoryToken = response.token
+        if (!s.sipPassword.isNullOrEmpty()) {
+            memorySipPassword = s.sipPassword
+        }
+        s.turn?.let { turn ->
+            if (!turn.username.isNullOrEmpty()) memoryTurnUser = turn.username
+            if (!turn.credential.isNullOrEmpty()) memoryTurnPass = turn.credential
+        }
+        response.pushConfig?.let { pc ->
+            memoryFcmApiKey = pc.fcmApiKey
+        }
+        p.edit().apply {
+            if (isEncrypted) {
+                putString(KEY_TOKEN, response.token)
+            }
             putString(KEY_USERNAME, u.username)
             putString(KEY_FULL_NAME, u.fullName)
             putString(KEY_EXTENSION, u.extension)
             putString(KEY_SIP_USERNAME, finalSipUser)
             // T-6: never overwrite the existing non-empty password with an empty one from the server
-            if (!s.sipPassword.isNullOrEmpty()) {
+            if (isEncrypted && !s.sipPassword.isNullOrEmpty()) {
                 putString(KEY_SIP_PASSWORD, s.sipPassword)
             }
             if (!s.domain.isNullOrEmpty()) {
@@ -113,16 +169,18 @@ class AppPreferences(context: Context) {
                 putString(KEY_WS_URL, s.wsUrl)
             }
             s.turn?.let { turn ->
-                if (!turn.username.isNullOrEmpty()) putString(KEY_TURN_USER, turn.username)
-                if (!turn.credential.isNullOrEmpty()) putString(KEY_TURN_PASS, turn.credential)
+                if (isEncrypted && !turn.username.isNullOrEmpty()) putString(KEY_TURN_USER, turn.username)
+                if (isEncrypted && !turn.credential.isNullOrEmpty()) putString(KEY_TURN_PASS, turn.credential)
                 if (!turn.urls.isNullOrEmpty()) putString(KEY_TURN_URL, turn.urls.firstOrNull())
             }
-            response.pushConfig?.let { p ->
-                putString(KEY_PUSH_PROVIDER, if (p.enabled) p.provider else "none")
-                putString(KEY_FCM_PROJECT_ID, p.fcmProjectId)
-                putString(KEY_FCM_APP_ID, p.fcmAppId)
-                putString(KEY_FCM_API_KEY, p.fcmApiKey)
-                putString(KEY_FCM_SENDER_ID, p.fcmSenderId)
+            response.pushConfig?.let { pc ->
+                putString(KEY_PUSH_PROVIDER, if (pc.enabled) pc.provider else "none")
+                putString(KEY_FCM_PROJECT_ID, pc.fcmProjectId)
+                putString(KEY_FCM_APP_ID, pc.fcmAppId)
+                if (isEncrypted) {
+                    putString(KEY_FCM_API_KEY, pc.fcmApiKey)
+                }
+                putString(KEY_FCM_SENDER_ID, pc.fcmSenderId)
             }
             apply()
         }
@@ -146,8 +204,17 @@ class AppPreferences(context: Context) {
         set(value) = prefs.edit().putString(KEY_FCM_APP_ID, value).apply()
 
     var fcmApiKey: String?
-        get() = prefs.getString(KEY_FCM_API_KEY, null)
-        set(value) = prefs.edit().putString(KEY_FCM_API_KEY, value).apply()
+        get() {
+            val p = prefs
+            return if (isEncrypted) p.getString(KEY_FCM_API_KEY, null) else memoryFcmApiKey
+        }
+        set(value) {
+            val p = prefs
+            memoryFcmApiKey = value
+            if (isEncrypted) {
+                p.edit().putString(KEY_FCM_API_KEY, value).apply()
+            }
+        }
 
     var fcmSenderId: String?
         get() = prefs.getString(KEY_FCM_SENDER_ID, null)
@@ -219,6 +286,11 @@ class AppPreferences(context: Context) {
         set(value) = prefs.edit().putLong(KEY_LAST_TOKEN_REFRESH_TIME, value).apply()
 
     fun clearAuth() {
+        memoryToken = null
+        memorySipPassword = null
+        memoryTurnUser = null
+        memoryTurnPass = null
+        memoryFcmApiKey = null
         prefs.edit().apply {
             remove(KEY_TOKEN)
             remove(KEY_USERNAME)
@@ -280,6 +352,9 @@ class AppPreferences(context: Context) {
         const val DEFAULT_BRAND_TITLE = "AiPBX"
         // Empty: the screens show R.string.default_brand_sub (localized).
         const val DEFAULT_BRAND_SUB = ""
+
+        @Volatile
+        private var isEncrypted: Boolean = true
 
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_BRAND_TITLE = "brand_title"
@@ -388,7 +463,9 @@ class AppPreferences(context: Context) {
 
                 if (fallbackData.isNotEmpty()) {
                     val editor = newSecurePrefs.edit()
+                    val sensitiveKeys = setOf(KEY_TOKEN, KEY_SIP_PASSWORD, KEY_TURN_PASS, KEY_TURN_USER, KEY_FCM_API_KEY)
                     for ((k, v) in fallbackData) {
+                        if (sensitiveKeys.contains(k)) continue
                         when (v) {
                             is String -> editor.putString(k, v)
                             is Boolean -> editor.putBoolean(k, v)
@@ -402,23 +479,30 @@ class AppPreferences(context: Context) {
                 }
 
                 dropTokenFromFallback(context)
+                isEncrypted = true
                 newSecurePrefs
             } catch (recoveryEx: Exception) {
                 Log.e("AppPreferences", "Keystore recovery failed, falling back to standard fallback storage", recoveryEx)
                 recordKeystoreError(context, recoveryEx)
+                isEncrypted = false
+                dropTokenFromFallback(context)
                 context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE)
             }
         }
 
         /**
-         * Removes a session token that versions up to 1.0.70 left in the plain-text fallback
-         * file. Only called once the encrypted store works: when it cannot be opened at all,
-         * the fallback file is the store, and removing the token would sign the user out.
+         * Removes any secrets that older versions may have left in the plain-text fallback file.
          */
         private fun dropTokenFromFallback(context: Context) {
             try {
                 val fallback = context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE)
-                if (fallback.contains(KEY_TOKEN)) fallback.edit().remove(KEY_TOKEN).apply()
+                fallback.edit()
+                    .remove(KEY_TOKEN)
+                    .remove(KEY_SIP_PASSWORD)
+                    .remove(KEY_TURN_PASS)
+                    .remove(KEY_TURN_USER)
+                    .remove(KEY_FCM_API_KEY)
+                    .apply()
             } catch (e: Exception) {
                 Log.w("AppPreferences", "Could not clean the fallback preferences", e)
             }
@@ -475,6 +559,7 @@ class AppPreferences(context: Context) {
                     Log.i("AppPreferences", "Legacy preferences migrated to EncryptedSharedPreferences and mirrored to fallback.")
                 }
                 dropTokenFromFallback(context)
+                isEncrypted = true
                 securePrefs
             } catch (e: Exception) {
                 Log.e("AppPreferences", "Failed to initialize EncryptedSharedPreferences on first attempt", e)

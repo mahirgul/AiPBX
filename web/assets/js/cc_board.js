@@ -122,7 +122,7 @@ function renderWaitingCalls(calls, queueFilter) {
                 <td><span class="badge badge-info">${escapeHtml(c.queue_title || c.queue)}</span></td>
                 <td style="font-weight: 700; color: var(--warning); font-family: monospace;">${escapeHtml(c.wait_time)} ${__('js.common.sec')}</td>
                 <td class="text-right">
-                    <button class="btn btn-success btn-sm" onclick="pickupCall('${escapeHtml(c.channel)}')" style="font-weight: 600; padding: 4px 8px; font-size: 12px;">
+                    <button class="btn btn-success btn-sm" onclick="pickupCall('${escapeJsAttr(c.channel)}')" style="font-weight: 600; padding: 4px 8px; font-size: 12px;">
                         <i class="fas fa-hand-holding-medical"></i> ${__('js.cc.pickup')}
                     </button>
                 </td>
@@ -174,7 +174,7 @@ function renderAgentsStatus(agents, queueFilter) {
 
         let actions = '';
         if (CAN_SPY && a.is_in_call) {
-            const ext = escapeHtml(a.extension);
+            const ext = escapeJsAttr(a.extension);
             actions = `
                 <div style="display: inline-flex; gap: 4px;">
                     <button class="btn btn-outline-info btn-sm" onclick="spyCall('${ext}', 'spy')" title="${__('js.cc.spy_title')}" style="padding: 2px 8px; font-size: 11px;"><i class="fas fa-headphones"></i> ${__('js.cc.spy')}</button>

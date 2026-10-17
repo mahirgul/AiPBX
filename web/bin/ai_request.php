@@ -13,13 +13,13 @@
  * Runs as the asterisk user, which cannot read the API token: the service
  * accepts the dialplan key for this call's details.
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/ai/AiAppService.php';
 require_once dirname(__DIR__) . '/src/services/MailTemplateService.php';
-
-if (php_sapi_name() !== 'cli') {
-    exit(1);
-}
 $appId = (int) ($argv[1] ?? 0);
 $uuid = strtolower((string) ($argv[2] ?? ''));
 $key = strtolower((string) ($argv[3] ?? ''));

@@ -78,6 +78,26 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
                 self?.endCall()
             }
         }
+
+        CallKitManager.shared.onSetMute = { muted in
+            Task { @MainActor in
+                SipWebRtcEngine.shared.setMute(muted)
+            }
+        }
+
+        CallKitManager.shared.onSetHold = { held in
+            Task { @MainActor in
+                SipWebRtcEngine.shared.setHold(held)
+            }
+        }
+
+        CallKitManager.shared.onPlayDTMF = { digits in
+            Task { @MainActor in
+                for ch in digits {
+                    SipWebRtcEngine.shared.sendDTMF(String(ch))
+                }
+            }
+        }
     }
 
     // MARK: - Login & Logout
@@ -182,7 +202,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
             let server = (param("server") ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let token = param("token") ?? ""
             let lower = server.lowercased()
-            guard (lower.hasPrefix("https://") || lower.hasPrefix("http://")), !token.isEmpty else {
+            guard lower.hasPrefix("https://"), !token.isEmpty else {
                 errorMessage = L("The sign-in link is missing or broken.")
                 return
             }

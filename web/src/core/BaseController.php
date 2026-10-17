@@ -120,7 +120,14 @@ abstract class BaseController
         // requireRole/requireModule check, the page's module permission
         // (RBAC matrix).
         requireLogin();
-        requireModulePermission(getModuleKeyForPage(), 'view');
+        $module = getModuleKeyForPage();
+        if ($module === 'cdr_reports') {
+            if (!hasModulePermission('cdr_reports', 'view') && !hasModulePermission('cc_reports', 'view')) {
+                requireModulePermission('cdr_reports', 'view');
+            }
+        } else {
+            requireModulePermission($module, 'view');
+        }
 
         // Names the layout templates expect.
         $page_title = $page['title'] ?? '';
