@@ -55,6 +55,8 @@ jobs:
       DB_NAME: asterisk_test
       DB_USER: aipbx_test
       DB_PASS: ci-test
+      # Signs the sign-in tokens (no fallback to DB_PASS any more).
+      CHAT_JWT_SECRET: ci-token-key
       # No step sends a command to a real Asterisk.
       AIPBX_NO_ASTERISK: '1'
 

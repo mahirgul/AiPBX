@@ -44,7 +44,7 @@ final class MobileApiTest extends TestCase
     public function testValidateMobileTokenWithExpiredToken(): void
     {
         $payload = self::$testUserId . ':' . (time() - 3600); // 1 hour ago
-        $secretKey = defined('TURN_SECRET') && TURN_SECRET !== '' ? TURN_SECRET : DB_PASS;
+        $secretKey = getMobileTokenSecret();
         $sig = hash_hmac('sha256', $payload, $secretKey);
         $token = base64_encode($payload . ':' . $sig);
 
@@ -56,7 +56,7 @@ final class MobileApiTest extends TestCase
         $userId = self::$testUserId;
         $expiresAt = time() + 3600;
         $payload = $userId . ':' . $expiresAt;
-        $secretKey = defined('TURN_SECRET') && TURN_SECRET !== '' ? TURN_SECRET : DB_PASS;
+        $secretKey = getMobileTokenSecret();
         $sig = hash_hmac('sha256', $payload, $secretKey);
         $validToken = base64_encode($payload . ':' . $sig);
 

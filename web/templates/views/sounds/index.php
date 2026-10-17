@@ -60,7 +60,7 @@
                         ?>
                             <tr>
                                 <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $anc['id']; ?></td>
-                                <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')">
+                                <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
                                     <i class="fas fa-volume-up u-primary u-mr-6"></i> <?php echo htmlspecialchars($anc['title']); ?>
                                 </td>
                                 <td class="col-hide-mobile">
@@ -69,7 +69,7 @@
                                         : t('internal_number.none'); ?>
                                 </td>
                                 <td>
-                                    <span class="sound-badge" style="cursor: pointer;" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')">
+                                    <span class="sound-badge" style="cursor: pointer;" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
                                         <code><?php echo htmlspecialchars($anc['audio_file']); ?></code>
                                     </span>
                                 </td>
@@ -87,7 +87,7 @@
                                     <?php echo uiStatusToggleForm($anc['id'], $anc['is_active'] ?? 1, 'anc_id'); ?>
                                 </td>
                                 <td class="u-text-right u-nowrap">
-                                    <button class="btn btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement('<?php echo htmlspecialchars($file_name); ?>', '<?php echo htmlspecialchars($anc['title'], ENT_QUOTES); ?>')" title="<?php echo t('sounds.listen_tooltip'); ?>">
+                                    <button class="btn btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)" title="<?php echo t('sounds.listen_tooltip'); ?>">
                                         <i class="fas fa-play"></i>
                                     </button>
                                     <a href="/api/sound_play.php?file=<?php echo htmlspecialchars($file_name); ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('sounds.download_tooltip'); ?>">
@@ -161,7 +161,7 @@
                                 ?>
                             </td>
                             <td class="u-text-right u-nowrap">
-                                <button class="btn btn-secondary btn-sm" onclick="openMohUploadModal('<?php echo htmlspecialchars($mc['name'], ENT_QUOTES); ?>')" title="<?php echo t('sounds.upload_music_tooltip'); ?>">
+                                <button class="btn btn-secondary btn-sm" onclick="openMohUploadModal(<?php echo jsArg($mc['name']); ?>)" title="<?php echo t('sounds.upload_music_tooltip'); ?>">
                                     <i class="fas fa-upload"></i>
                                 </button>
                                 <?php if ($mc['name'] !== 'default'): ?>

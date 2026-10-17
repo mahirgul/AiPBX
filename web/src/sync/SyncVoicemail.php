@@ -55,8 +55,14 @@ function __syncVoicemailBody() {
         $pin = !empty($u['voicemail_pin']) ? preg_replace('/[^0-9]/', '', (string)$u['voicemail_pin']) : $ext;
         if ($pin === '') $pin = $ext;
 
-        $name = toCleanAscii($u['full_name']);
+        // One line per mailbox, fields split by commas: a comma or line break
+        // in a value shifted the fields or added lines of its own (e.g. a
+        // [general] mailcmd, which runs a command).
+        $name = str_replace(',', ' ', toCleanAscii($u['full_name']));
         $email = trim($u['voicemail_email'] ?? '') ?: trim($u['email'] ?? '');
+        if ($email !== '' && (filter_var($email, FILTER_VALIDATE_EMAIL) === false || preg_match('/[,|\s]/', $email))) {
+            $email = '';
+        }
         // E-mail notification switched off: no address, Asterisk sends no mail.
         if (isset($u['voicemail_email_notify']) && intval($u['voicemail_email_notify']) === 0) {
             $email = '';

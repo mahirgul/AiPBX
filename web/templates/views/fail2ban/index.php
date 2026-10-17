@@ -49,7 +49,7 @@
                                 <td style="font-family: monospace;"><?php echo htmlspecialchars($ip); ?></td>
                                 <td class="u-text-right">
                                     <?php if (hasModulePermission('fail2ban', 'edit')): ?>
-                                        <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.unban_confirm'), ENT_QUOTES); ?>');">
+                                        <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('fail2ban.unban_confirm')); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                             <input type="hidden" name="unban_ip" value="1">
                                             <input type="hidden" name="jail" value="<?php echo htmlspecialchars($j['name']); ?>">
@@ -104,7 +104,7 @@
                             <?php if ($is_protected): ?>
                                 <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('fail2ban.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
                             <?php elseif (hasModulePermission('fail2ban', 'edit')): ?>
-                                <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('fail2ban.remove_ignoreip_confirm'), ENT_QUOTES); ?>');">
+                                <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('fail2ban.remove_ignoreip_confirm')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                     <input type="hidden" name="remove_ignoreip" value="1">
                                     <input type="hidden" name="ip" value="<?php echo htmlspecialchars($ip); ?>">

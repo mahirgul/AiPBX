@@ -79,7 +79,7 @@ function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = null, $
     foreach ($extraHidden as $name => $val) {
         $extraHtml .= '<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($val) . '">';
     }
-    return '<form method="POST" autocomplete="off" style="' . htmlspecialchars($formStyle) . '" onsubmit="return confirm(\'' . htmlspecialchars($confirmMessage, ENT_QUOTES) . '\');">'
+    return '<form method="POST" autocomplete="off" style="' . htmlspecialchars($formStyle) . '" onsubmit="return confirm(' . jsArg($confirmMessage) . ');">'
         . '<input type="hidden" name="csrf_token" value="' . getCSRFToken() . '">'
         . '<input type="hidden" name="' . htmlspecialchars($deleteField) . '" value="1">'
         . '<input type="hidden" name="' . htmlspecialchars($idFieldName) . '" value="' . htmlspecialchars($id) . '">'

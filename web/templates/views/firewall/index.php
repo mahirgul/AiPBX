@@ -44,7 +44,7 @@
                                 <?php if ($is_protected): ?>
                                     <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('firewall.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
                                 <?php elseif (hasModulePermission('firewall', 'delete') || hasModulePermission('firewall', 'edit')): ?>
-                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('firewall.remove_confirm'), ENT_QUOTES); ?>');">
+                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('firewall.remove_confirm')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="remove_port_rule" value="1">
                                         <input type="hidden" name="port" value="<?php echo htmlspecialchars($p['port']); ?>">
@@ -62,7 +62,7 @@
                                 <?php if ($is_protected): ?>
                                     <span class="badge badge-warning" title="<?php echo htmlspecialchars(t('firewall.protected_tooltip')); ?>"><i class="fas fa-lock"></i></span>
                                 <?php elseif (hasModulePermission('firewall', 'delete') || hasModulePermission('firewall', 'edit')): ?>
-                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm('<?php echo htmlspecialchars(t('firewall.remove_confirm'), ENT_QUOTES); ?>');">
+                                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('firewall.remove_confirm')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="remove_rich_rule" value="1">
                                         <input type="hidden" name="rule" value="<?php echo htmlspecialchars($rule); ?>">

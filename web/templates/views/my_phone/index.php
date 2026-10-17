@@ -333,7 +333,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="callTargetNumber('<?php echo $party; ?>')" title="<?php echo htmlspecialchars(sprintf(t('my_phone.call_number'), $party)); ?>" style="border-radius: 6px; padding: 4px 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="callTargetNumber(<?php echo jsArg($party); ?>)" title="<?php echo htmlspecialchars(sprintf(t('my_phone.call_number'), $party)); ?>" style="border-radius: 6px; padding: 4px 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                                                 <i class="fas fa-phone"></i> <?php echo t('my_phone.btn_call'); ?>
                                             </button>
                                         </div>
@@ -802,7 +802,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteVoicemailMessage('<?php echo htmlspecialchars($vm['id']); ?>')" title="<?php echo t('common.delete'); ?>">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteVoicemailMessage(<?php echo jsArg($vm['id']); ?>)" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>

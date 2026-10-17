@@ -123,9 +123,8 @@ final class VoicemailAiService
     /** Signature of the internal request (same secret as the mobile tokens). */
     public static function internalToken(): string
     {
-        $secret = (defined('CHAT_JWT_SECRET') && CHAT_JWT_SECRET !== '') ? CHAT_JWT_SECRET
-            : ((defined('TURN_SECRET') && TURN_SECRET !== '') ? TURN_SECRET : (defined('DB_PASS') ? DB_PASS : ''));
-        return hash_hmac('sha256', 'internal:voicemail-ai', (string) $secret);
+        require_once __DIR__ . '/../../api/mobile/auth_helper.php';
+        return hash_hmac('sha256', 'internal:voicemail-ai', getMobileTokenSecret());
     }
 
     /** The stored result of a message, or null. */

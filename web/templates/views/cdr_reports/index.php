@@ -344,7 +344,7 @@ $filter_url = function (array $override) {
                                 <?php endif; ?>
 
                                 <?php if ($can_delete_cdr): ?>
-                                    <form method="POST" autocomplete="off" style="display: inline-block; margin-left: 4px;" onsubmit="return confirm('<?php echo htmlspecialchars(t('cdr_reports.delete_confirm'), ENT_QUOTES); ?>');">
+                                    <form method="POST" autocomplete="off" style="display: inline-block; margin-left: 4px;" onsubmit="return confirm(<?php echo jsArg(t('cdr_reports.delete_confirm')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_cdr_id" value="<?php echo $c['id']; ?>">
                                         <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('cdr_reports.delete_tooltip'); ?>">

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -391,7 +392,11 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	if convID <= 0 && in.TargetExt != "" {
 		conv, err := GetOrCreateDirectConversation(user.Extension, in.TargetExt, user.Extension)
 		if err != nil {
-			return nil, &sendError{http.StatusInternalServerError, "Could not start the conversation: " + err.Error()}
+			if errors.Is(err, errNotChatUser) {
+				return nil, &sendError{http.StatusBadRequest, err.Error()}
+			}
+			log.Printf("[Hub] direct conversation %s -> %s: %v", user.Extension, in.TargetExt, err)
+			return nil, &sendError{http.StatusInternalServerError, "Could not start the conversation."}
 		}
 		convID = conv.ID
 	}
@@ -425,7 +430,8 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 
 	saved, err := SaveMessage(convID, user.Extension, msgType, textMsg, in.AttachmentURL, in.FileName, in.FileSize, in.MimeType)
 	if err != nil {
-		return nil, &sendError{http.StatusInternalServerError, "Mesaj kaydedilemedi: " + err.Error()}
+		log.Printf("[Hub] message not saved (conversation %d): %v", convID, err)
+		return nil, &sendError{http.StatusInternalServerError, "The message could not be saved."}
 	}
 
 	participants, _ := GetParticipants(convID)
