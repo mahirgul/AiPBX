@@ -106,12 +106,18 @@ class DialPermissionService {
         });
     }
 
-    public static function deleteRule($ruleId, $csrf_token = '') {
-        return PBXHelper::handleAction($csrf_token, function() use ($ruleId) {
+    public static function deleteRule($ruleId, $groupId, $csrf_token = '') {
+        return PBXHelper::handleAction($csrf_token, function() use ($ruleId, $groupId) {
             $ruleId = intval($ruleId);
+            $groupId = intval($groupId);
             $db = getDB();
-            $del = $db->prepare("DELETE FROM pbx_permission_rules WHERE id = ?");
-            $del->execute([$ruleId]);
+            // Scoped like the update in saveRule(): a rule id from another
+            // group must not be deletable by naming it.
+            $del = $db->prepare("DELETE FROM pbx_permission_rules WHERE id = ? AND group_id = ?");
+            $del->execute([$ruleId, $groupId]);
+            if ($del->rowCount() === 0) {
+                throw new \Exception(t('common.not_found'));
+            }
 
             markPendingSync('permissions', 'rule', $ruleId, "Kural #{$ruleId}", 'delete', $_SESSION['user_id'] ?? null);
             return t('srv_dialperm.rule_deleted');

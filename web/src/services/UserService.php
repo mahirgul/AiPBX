@@ -277,6 +277,15 @@ class UserService {
                 throw new \Exception(t('srv_user.err_no_password'));
             }
 
+            // Same floor as the Extensions page: with digest auth on, a SIP
+            // secret shorter than 6 characters must not be set anywhere.
+            if (!empty($new_sip_password)) {
+                $digest = (int) (DBHelper::fetchColumn('SELECT sip_auth_digest FROM sys_users WHERE id = ?', [$user_id]) ?? 1);
+                if ($digest === 1 && strlen($new_sip_password) < 6) {
+                    throw new \Exception(t('srv_ext.err_password'));
+                }
+            }
+
             $up_fields = [];
             if (!empty($new_password)) {
                 $up_fields['password_hash'] = password_hash($new_password, PASSWORD_DEFAULT);

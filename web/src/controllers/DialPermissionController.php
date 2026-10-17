@@ -19,7 +19,7 @@ class DialPermissionController extends BaseController
             'save_group' => fn() => DialPermissionService::saveGroup($_POST),
             'delete_group' => fn() => DialPermissionService::deleteGroup($_POST['group_id'] ?? 0, static::csrfToken()),
             'save_rule' => fn() => DialPermissionService::saveRule($_POST),
-            'delete_rule' => fn() => DialPermissionService::deleteRule($_POST['rule_id'] ?? 0, static::csrfToken()),
+            'delete_rule' => fn() => DialPermissionService::deleteRule($_POST['rule_id'] ?? 0, $_POST['group_id'] ?? 0, static::csrfToken()),
         ]);
 
         $groups = DialPermissionService::getGroups();

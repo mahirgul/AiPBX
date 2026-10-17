@@ -194,6 +194,7 @@ if (!$selected_group && !empty($groups)) {
                                                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                                 <input type="hidden" name="delete_rule" value="1">
                                                 <input type="hidden" name="rule_id" value="<?php echo $r['id']; ?>">
+                                                <input type="hidden" name="group_id" value="<?php echo (int) $selected_group_id; ?>">
                                                 <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
