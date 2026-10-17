@@ -12,8 +12,12 @@ log() {
 }
 
 # Environment fallbacks — no static values in code (rule: AGENTS.md)
+# Read KEY=value lines; the file is not sourced: values such as
+# "SITE_NAME=AI PBX Portal" are not shell syntax ("PBX: command not found").
 if [ -r /etc/ai-pbx.env ]; then
-    . /etc/ai-pbx.env
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ "$line" =~ ^([A-Z_][A-Z0-9_]*)=(.*)$ ]] && export "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+    done < /etc/ai-pbx.env
 fi
 
 TIF_FILE="$1"
@@ -81,7 +85,7 @@ MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
 MYSQL_QUERY="$MYSQL_EXEC -N -s"
 
 # 3. Insert record into MySQL 'asterisk' database (use archived paths)
-$MYSQL_EXEC <<EOF 2>/dev/null
+$MYSQL_EXEC <<EOF 2>>"$LOGFILE" || log "ERROR: could not save the fax in the database"
 INSERT INTO fax_received (did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, is_read, email_sent)
 VALUES ('$EXTEN', '$CALLERID', $PAGES, '$ARCHIVE_TIF', '$ARCHIVE_PDF', $FILE_SIZE, '$FAX_STATUS', 0, 0);
 EOF
@@ -89,7 +93,7 @@ EOF
 FAX_DB_ID=$($MYSQL_QUERY -e \
   "SELECT id FROM fax_received WHERE pdf_path = '$ARCHIVE_PDF' ORDER BY id DESC LIMIT 1;" 2>/dev/null)
 
-log "DB Record ID: #$FAX_DB_ID"
+log "DB Record ID: #${FAX_DB_ID:-none}"
 
 # 4. Fetch dynamic mail configuration from sys_settings
 RX_ENABLED=$($MYSQL_QUERY -e \
@@ -171,8 +175,8 @@ if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ 
     MAIL_STATUS=$?
 
     if [ $MAIL_STATUS -eq 0 ]; then
-        $MYSQL_QUERY -e \
-          "UPDATE fax_received SET email_sent = 1 WHERE id = $FAX_DB_ID;" 2>/dev/null
+        [[ "$FAX_DB_ID" =~ ^[0-9]+$ ]] && $MYSQL_QUERY -e \
+          "UPDATE fax_received SET email_sent = 1 WHERE id = $FAX_DB_ID;" 2>>"$LOGFILE"
         log "SUCCESS: Email sent to $NOTIFY_EMAIL (FAX #$FAX_DB_ID)"
     else
         log "ERROR: Email send failed (exit code: $MAIL_STATUS) to $NOTIFY_EMAIL"

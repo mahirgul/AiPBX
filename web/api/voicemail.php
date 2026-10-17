@@ -10,7 +10,8 @@ $role = $_SESSION['user_role'] ?? 'user';
 $userExt = trim($user['extension'] ?? '');
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
-$targetExt = trim($_GET['ext'] ?? ($_POST['ext'] ?? $userExt));
+// Digits only: the number becomes part of a spool path below (admins may name any).
+$targetExt = preg_replace('/[^0-9]/', '', (string) ($_GET['ext'] ?? ($_POST['ext'] ?? $userExt)));
 
 // Only the own extension can be listened to/managed, unless the user has the admin role
 if ($role !== 'admin' && ($targetExt === '' || $targetExt !== $userExt)) {

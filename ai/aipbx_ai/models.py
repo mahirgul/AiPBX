@@ -290,6 +290,7 @@ class ModelManager:
         make = backend_factory or (lambda spec: spec.backend(spec, data_dir))
         self._make = make
         self._mu = threading.Lock()
+        self._stopped_mu = threading.Lock()   # _set_stopped runs with and without _mu
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
         self._stopped = self._read_stopped()
@@ -315,13 +316,14 @@ class ModelManager:
             log.warning("could not save %s", self._state_file)
 
     def _set_stopped(self, model_id, stopped):
-        changed = (model_id in self._stopped) != stopped
-        if stopped:
-            self._stopped.add(model_id)
-        else:
-            self._stopped.discard(model_id)
-        if changed:
-            self._write_stopped()
+        with self._stopped_mu:
+            changed = (model_id in self._stopped) != stopped
+            if stopped:
+                self._stopped.add(model_id)
+            else:
+                self._stopped.discard(model_id)
+            if changed:
+                self._write_stopped()
 
     # ---- queries ---------------------------------------------------------
 
@@ -369,15 +371,27 @@ class ModelManager:
             "note": spec.note, "gender": spec.gender, "custom": spec.custom,
         }
 
+    def _snapshot(self):
+        """The entries now: add()/remove() change the dict under _mu, and
+        iterating it meanwhile raised "dictionary changed size"."""
+        with self._mu:
+            return list(self._entries.values())
+
     def describe_all(self):
-        return [self.describe(i) for i in self._entries]
+        out = []
+        for entry in self._snapshot():
+            try:
+                out.append(self.describe(entry.spec.id))
+            except UnknownModel:    # removed meanwhile
+                pass
+        return out
 
     def files_present(self, model_id):
         return self._entry(model_id).backend.installed()
 
     def disk(self):
         used = 0
-        for entry in self._entries.values():
+        for entry in self._snapshot():
             try:
                 used += entry.backend.disk_bytes()
             except OSError:
@@ -392,7 +406,7 @@ class ModelManager:
         A model whose earlier format is still on disk (its licence accepted
         then) is downloaded again in the current format.
         """
-        for entry in self._entries.values():
+        for entry in self._snapshot():
             pending = getattr(entry.backend, "migration_pending", None)
             if pending is not None and pending():
                 log.info("%s: earlier model format found, downloading the current one", entry.spec.id)
@@ -538,7 +552,7 @@ class ModelManager:
 
     def ready_embedding(self):
         """Id of a running sentence-meaning model, or None."""
-        for entry in self._entries.values():
+        for entry in self._snapshot():
             if entry.spec.kind == "embedding":
                 with self._mu:
                     if self._state(entry) == READY:
