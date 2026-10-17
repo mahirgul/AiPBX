@@ -2,6 +2,27 @@
 // Shared helpers for the call-center API actions (loaded by the dispatcher)
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 
+/**
+ * Builds the AMI Originate command for click-to-call.
+ *
+ * The Local channel leg carries no endpoint variables, so the caller's
+ * permission group must travel as an inheriting (__-prefixed) variable:
+ * without it sub-check-dial-permission saw an empty group and let every
+ * restricted extension call barred destinations through this API.
+ */
+function buildOriginateCommand(string $user_ext, string $to, string $outbound_context, int $perm_group): string
+{
+    $perm_group = max(1, $perm_group);
+    return "Action: Originate\r\n" .
+           "Channel: Local/$user_ext@cc-internal\r\n" .
+           "Context: $outbound_context\r\n" .
+           "Exten: $to\r\n" .
+           "Priority: 1\r\n" .
+           "CallerID: Agent $user_ext <$user_ext>\r\n" .
+           "Variable: __SAVED_DST=$to\r\n" .
+           "Variable: __PERMISSION_GROUP_ID=$perm_group\r\n\r\n";
+}
+
 function parseAsteriskQueuesOutput($raw_output) {
     $queues = [];
     $current_queue = null;
