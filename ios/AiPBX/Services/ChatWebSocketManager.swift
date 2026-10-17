@@ -7,6 +7,7 @@ public protocol ChatWebSocketDelegate: AnyObject {
     func webSocketDidReceiveMessageDeleted(conversationId: Int, messageId: Int64)
     func webSocketDidReceivePresence(extensionNumber: String, isOnline: Bool)
     func webSocketDidReceiveTyping(conversationId: Int, senderName: String, isTyping: Bool)
+    func webSocketDidReceiveVoicemail(newCount: Int)
 }
 
 public final class ChatWebSocketManager: NSObject, ObservableObject, URLSessionWebSocketDelegate {
@@ -91,6 +92,29 @@ public final class ChatWebSocketManager: NSObject, ObservableObject, URLSessionW
             "conversation_id": conversationId,
             "message": message,
             "msg_type": "text"
+        ]
+        sendJson(payload)
+    }
+
+    public func sendAttachment(
+        conversationId: Int,
+        msgType: String,
+        message: String,
+        attachmentUrl: String,
+        fileName: String,
+        fileSize: Int64,
+        mimeType: String
+    ) {
+        guard isConnected else { return }
+        let payload: [String: Any] = [
+            "action": "send_message",
+            "conversation_id": conversationId,
+            "msg_type": msgType,
+            "message": message,
+            "attachment_url": attachmentUrl,
+            "file_name": fileName,
+            "file_size": fileSize,
+            "mime_type": mimeType
         ]
         sendJson(payload)
     }
@@ -237,6 +261,14 @@ public final class ChatWebSocketManager: NSObject, ObservableObject, URLSessionW
                let typing = json["is_typing"] as? Bool {
                 DispatchQueue.main.async {
                     self.delegate?.webSocketDidReceiveTyping(conversationId: convId, senderName: name, isTyping: typing)
+                }
+            }
+
+        case "voicemail":
+            let d = (json["data"] as? [String: Any]) ?? json
+            if let newCount = (d["new_count"] as? NSNumber)?.intValue {
+                DispatchQueue.main.async {
+                    self.delegate?.webSocketDidReceiveVoicemail(newCount: newCount)
                 }
             }
 

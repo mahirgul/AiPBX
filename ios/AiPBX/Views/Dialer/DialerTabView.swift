@@ -82,28 +82,67 @@ public struct DialerTabView: View {
 
                     Spacer(minLength: 16)
 
-                    // Call Button
-                    Button(action: {
-                        if !dialedNumber.isEmpty {
-                            appState.makeCall(to: dialedNumber)
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(dialedNumber.isEmpty ? Color.gray.opacity(0.4) : Color.green)
-                                .frame(width: 72, height: 72)
-                                .shadow(color: dialedNumber.isEmpty ? .clear : .green.opacity(0.4), radius: 8, y: 4)
+                    // Call & Video Call Buttons
+                    HStack(spacing: 32) {
+                        Button(action: {
+                            if !dialedNumber.isEmpty {
+                                appState.makeCall(to: dialedNumber, withVideo: false)
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(dialedNumber.isEmpty ? Color.gray.opacity(0.4) : Color.green)
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: dialedNumber.isEmpty ? .clear : .green.opacity(0.4), radius: 8, y: 4)
 
-                            Image(systemName: "phone.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .disabled(dialedNumber.isEmpty)
+
+                        if appState.isVideoCallsEnabled {
+                            Button(action: {
+                                if !dialedNumber.isEmpty {
+                                    appState.makeCall(to: dialedNumber, withVideo: true)
+                                }
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(dialedNumber.isEmpty ? Color.gray.opacity(0.4) : Color.blue)
+                                        .frame(width: 60, height: 60)
+                                        .shadow(color: dialedNumber.isEmpty ? .clear : .blue.opacity(0.4), radius: 8, y: 4)
+
+                                    Image(systemName: "video.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            .disabled(dialedNumber.isEmpty)
+                            .accessibilityLabel(L("Video call"))
                         }
                     }
-                    .disabled(dialedNumber.isEmpty)
                     .padding(.bottom, 24)
                 }
             }
             .navigationBarTitle(L("Keypad"), displayMode: .inline)
+            .navigationBarItems(trailing: NavigationLink(destination: VoicemailView()) {
+                HStack(spacing: 4) {
+                    Image(systemName: "recordingtape")
+                    Text(L("Voicemail"))
+                        .font(.footnote.weight(.medium))
+                    if appState.newVoicemailCount > 0 {
+                        Text("\(appState.newVoicemailCount)")
+                            .font(.caption2.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.red)
+                            .clipShape(Capsule())
+                    }
+                }
+            })
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }

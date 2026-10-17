@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Ingen kamerabehörighet: samtalet fortsätter med bara ljud.</string>
     <string name="err_camera_unavailable">Kameran är inte tillgänglig: samtalet fortsätter med bara ljud.</string>
     <string name="contacts_extensions_listed">anknytningar listade</string>
+    <string name="api_fcm_token_failed">Kunde inte skicka FCM-token (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Kunde inte ta bort gruppen (HTTP %1$s)</string>
 </resources>

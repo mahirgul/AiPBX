@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Kamera izni yok: görüşme yalnızca sesli devam ediyor.</string>
     <string name="err_camera_unavailable">Kamera açılamadı: görüşme yalnızca sesli devam ediyor.</string>
     <string name="contacts_extensions_listed">dahili listelendi</string>
+    <string name="api_fcm_token_failed">FCM Token gönderilemedi (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Grup silinemedi (HTTP %1$s)</string>
 </resources>

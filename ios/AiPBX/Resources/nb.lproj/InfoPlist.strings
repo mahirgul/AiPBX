@@ -1,3 +1,4 @@
 "NSMicrophoneUsageDescription" = "Tilgang til mikrofonen trengs for sentralbordsamtaler og talesamtaler.";
 "NSCameraUsageDescription" = "Tilgang til kameraet trengs for å logge inn med QR-koden fra sentralbordet og for å sende bilder i chat.";
 "NSPhotoLibraryUsageDescription" = "Tilgang til bildebiblioteket trengs for å dele bilder og filer i chat.";
+"NSContactsUsageDescription" = "Tilgang til kontakter er nødvendig for å vise og ringe telefonkontaktene dine fra appen.";

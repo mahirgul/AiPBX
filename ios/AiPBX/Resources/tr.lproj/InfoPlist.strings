@@ -2,3 +2,4 @@
 "NSMicrophoneUsageDescription" = "Kurumsal santral aramaları ve sesli görüşmeler için mikrofon erişimi gereklidir.";
 "NSCameraUsageDescription" = "Santral QR kodu ile hızlı giriş yapmak ve sohbette fotoğraf göndermek için kamera erişimi gereklidir.";
 "NSPhotoLibraryUsageDescription" = "Sohbette fotoğraf ve dosya paylaşmak için galeri erişimi gereklidir.";
+"NSContactsUsageDescription" = "Telefon rehberinizdeki kişileri uygulamada listelemek ve aramak için rehber erişimi gereklidir.";

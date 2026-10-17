@@ -3,10 +3,21 @@
 <head>
     <meta charset="utf-8">
     <title>AI PBX Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="jssip.min.js"></script>
+    <style>
+        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+        /* Shown only while the call screen holds this WebView (video calls). */
+        #remoteVideo { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+        #localVideo { position: fixed; right: 12px; top: 12px; width: 28vw; max-width: 160px; aspect-ratio: 3 / 4; object-fit: cover;
+                      border-radius: 10px; border: 2px solid rgba(255,255,255,0.7); background: #111; display: none; }
+        #localVideo.mirror { transform: scaleX(-1); }
+    </style>
 </head>
 <body>
     <audio id="remoteAudio" autoplay playsinline></audio>
+    <video id="remoteVideo" autoplay playsinline muted></video>
+    <video id="localVideo" class="mirror" autoplay playsinline muted></video>
 
     <script>
         // iOS WebKit bridge shim
@@ -17,6 +28,9 @@
                 onStatusChanged: function(s) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onStatusChanged', status: s }); },
                 onCallStatusChanged: function(s) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onCallStatusChanged', status: s }); },
                 onIncomingCall: function(name, num) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onIncomingCall', name: name, number: num }); },
+                setIncomingVideo: function(v) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'setIncomingVideo', hasVideo: !!v }); },
+                onVideoActive: function(active) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onVideoActive', active: !!active }); },
+                onCameraUnavailable: function() { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onCameraUnavailable' }); },
                 onCallProgress: function() { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onCallProgress' }); },
                 onCallConfirmed: function() { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onCallConfirmed' }); },
                 onCallEnded: function(cause) { window.webkit.messageHandlers.iosBridge.postMessage({ action: 'onCallEnded', cause: cause }); },
@@ -101,6 +115,7 @@
                     remoteAudio.srcObject = null;
                 } catch (e) {}
             }
+            clearVideo();
             log("Media cleanup finished.");
         }
 
@@ -114,9 +129,6 @@
             pc.addEventListener('connectionstatechange', function() {
                 log("PeerConnection State: " + pc.connectionState);
             });
-            // The gathering TIME is logged too: when a call starts late, look here
-            // first (exactly this was missing when 4-5 s / 30 s delays were
-            // diagnosed on 2026-09-05).
             var iceGatherT0 = Date.now();
             pc.addEventListener('icegatheringstatechange', function() {
                 var gecen = ((Date.now() - iceGatherT0) / 1000).toFixed(2);
@@ -157,8 +169,11 @@
                 log("Error checking existing receivers: " + err);
             }
 
-            // Standard track event only: onaddstream was removed, attaching the stream twice made the audio stutter
             pc.addEventListener('track', function(event) {
+                if (event.track.kind === 'video') {
+                    attachRemoteVideo(event.track);
+                    return;
+                }
                 log("Received remote audio track: " + event.track.kind + " (enabled=" + event.track.enabled + ", readyState=" + event.track.readyState + ")");
                 var remoteAudio = document.getElementById('remoteAudio');
                 if (remoteAudio) {
@@ -180,13 +195,120 @@
                 }
             });
         }
+
+        // ---- Video calls ----
+        var videoActive = false;
+        var cameraFacing = 'user';
+
+        function videoConstraint(video) {
+            if (!video) return false;
+            return {
+                facingMode: cameraFacing,
+                width: { ideal: video.w, max: video.w },
+                height: { ideal: video.h, max: video.h },
+                frameRate: { ideal: video.fps, max: video.fps }
+            };
+        }
+
+        function videoCallStream(video) {
+            return navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraint(video) })
+                .catch(function(err) {
+                    log("Camera unavailable, audio only: " + err);
+                    if (window.AndroidBridge && window.AndroidBridge.onCameraUnavailable) window.AndroidBridge.onCameraUnavailable();
+                    return navigator.mediaDevices.getUserMedia({ audio: true });
+                });
+        }
+
+        function offerHasVideo(request) {
+            var body = request ? String(request.body || '') : '';
+            return /(^|\n)m=video [1-9]/.test(body);
+        }
+
+        function setVideoActive(active) {
+            if (videoActive === active) return;
+            videoActive = active;
+            log("Video active: " + active);
+            if (window.AndroidBridge && window.AndroidBridge.onVideoActive) window.AndroidBridge.onVideoActive(active);
+        }
+
+        function localVideoSender() {
+            var pc = currentSession && currentSession.connection;
+            if (!pc || !pc.getSenders) return null;
+            var found = null;
+            pc.getSenders().forEach(function(s) { if (s.track && s.track.kind === 'video') found = s; });
+            return found;
+        }
+
+        function updateLocalPreview() {
+            var sender = localVideoSender();
+            var el = document.getElementById('localVideo');
+            if (!sender || !el) return;
+            el.srcObject = new MediaStream([sender.track]);
+            el.style.display = 'block';
+            el.className = cameraFacing === 'user' ? 'mirror' : '';
+            el.play().catch(function() {});
+            setVideoActive(true);
+        }
+
+        function attachRemoteVideo(track) {
+            var show = function() {
+                var el = document.getElementById('remoteVideo');
+                if (!el) return;
+                el.srcObject = new MediaStream([track]);
+                el.play().catch(function() {});
+                setVideoActive(true);
+            };
+            if (track.muted) track.addEventListener('unmute', show, { once: true });
+            else show();
+        }
+
+        function clearVideo() {
+            ['remoteVideo', 'localVideo'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) { try { el.srcObject = null; } catch (e) {} }
+            });
+            var lv = document.getElementById('localVideo');
+            if (lv) { lv.style.display = 'none'; lv.style.opacity = '1'; }
+            cameraFacing = 'user';
+            setVideoActive(false);
+        }
+
+        function toggleCamera(enabled) {
+            var sender = localVideoSender();
+            if (!sender) return;
+            sender.track.enabled = !!enabled;
+            var el = document.getElementById('localVideo');
+            if (el) el.style.opacity = enabled ? '1' : '0.25';
+        }
+
+        function switchCamera() {
+            var sender = localVideoSender();
+            if (!sender) return;
+            var old = sender.track;
+            var next = cameraFacing === 'user' ? 'environment' : 'user';
+            var settings = old.getSettings ? old.getSettings() : {};
+            navigator.mediaDevices.getUserMedia({ video: {
+                facingMode: { exact: next },
+                width: settings.width ? { ideal: settings.width } : undefined,
+                height: settings.height ? { ideal: settings.height } : undefined,
+                frameRate: settings.frameRate ? { ideal: settings.frameRate } : undefined
+            } }).then(function(stream) {
+                var track = stream.getVideoTracks()[0];
+                track.enabled = old.enabled;
+                return sender.replaceTrack(track).then(function() {
+                    old.stop();
+                    cameraFacing = next;
+                    updateLocalPreview();
+                });
+            }).catch(function(e) { log("switchCamera failed: " + e); });
+        }
+
         var currentConfigKey = "";
 
         function initUA(wsUrl, sipUsername, password, domain, displayName, turnUrl, turnUser, turnPass) {
             try {
                 var configKey = wsUrl + "|" + sipUsername + "|" + domain;
 
-                // If the UA already runs with the same settings and is connected, do not stop it for nothing.
                 if (ua && currentConfigKey === configKey) {
                     if (ua.isConnected && ua.isConnected()) {
                         if (ua.isRegistered && ua.isRegistered()) {
@@ -222,7 +344,6 @@
                         credential: turnPass
                     });
                 }
-                // The public STUN server is added ONLY when there is no TURN server (2026-09-05).
                 if (!turnVar) {
                     globalIceServers.push({ urls: "stun:stun.l.google.com:19302" });
                 }
@@ -234,7 +355,7 @@
                     password: password,
                     display_name: displayName || sipUsername,
                     register: true,
-                    register_expires: 300, // 5 min: keeps mobile NAT bindings fresh
+                    register_expires: 300,
                     session_timers: true,
                     session_timers_refresh_method: 'update',
                     connection_recovery_min_interval: 2,
@@ -291,6 +412,7 @@
                         log("Incoming call from: " + callerName + " (" + callerNumber + ")");
 
                         if (window.AndroidBridge) {
+                            if (window.AndroidBridge.setIncomingVideo) window.AndroidBridge.setIncomingVideo(offerHasVideo(data.request));
                             window.AndroidBridge.onIncomingCall(callerName, callerNumber);
                         }
                     } else {
@@ -315,8 +437,11 @@
                 if (window.AndroidBridge) window.AndroidBridge.onCallProgress();
             });
 
+            session.on('connecting', function() { updateLocalPreview(); });
+
             session.on('confirmed', function() {
                 log("Call confirmed/answered");
+                updateLocalPreview();
                 if (window.AndroidBridge) window.AndroidBridge.onCallConfirmed();
             });
 
@@ -339,7 +464,7 @@
             });
         }
 
-        function makeCall(target, domain, turnUrl, turnUser, turnPass) {
+        function makeCall(target, domain, turnUrl, turnUser, turnPass, video) {
             try {
                 if (!ua) {
                     log("makeCall error: UA not initialized");
@@ -347,7 +472,6 @@
                     return;
                 }
 
-                // Clean up any previous session or media left over before a new call
                 if (currentSession) {
                     log("makeCall: Cleaning up previous session before placing new call");
                     try {
@@ -380,7 +504,6 @@
                         });
                     }
                 }
-                // With TURN the public STUN server is NOT added; the reason is in the note in initUA.
                 var hasTurn = iceServers.some(function(s) {
                     var u = s.urls;
                     if (!u) return false;
@@ -393,7 +516,7 @@
                 }
 
                 var options = {
-                    mediaConstraints: { audio: true, video: false },
+                    mediaConstraints: { audio: true, video: videoConstraint(video) },
                     pcConfig: { iceServers: iceServers },
                     sessionTimersExpires: 120,
                     eventHandlers: {
@@ -403,6 +526,27 @@
                     }
                 };
 
+                if (video) {
+                    videoCallStream(video).then(function(stream) {
+                        delete options.mediaConstraints;
+                        options.mediaStream = stream;
+                        placeCall(targetUri, options);
+                    }).catch(function(err) {
+                        log("makeCall: no microphone: " + err);
+                        if (window.AndroidBridge) window.AndroidBridge.onCallEnded("NO_MEDIA");
+                    });
+                    return;
+                }
+                placeCall(targetUri, options);
+            } catch (err) {
+                log("Exception in makeCall: " + err.message);
+                cleanupMedia();
+                if (window.AndroidBridge) window.AndroidBridge.onCallEnded(err.message || "EXCEPTION");
+            }
+        }
+
+        function placeCall(targetUri, options) {
+            try {
                 currentSession = ua.call(targetUri, options);
                 if (currentSession) {
                     bindSessionEvents(currentSession);
@@ -415,20 +559,35 @@
                     if (window.AndroidBridge) window.AndroidBridge.onCallEnded("CALL FAILED");
                 }
             } catch (err) {
-                log("Exception in makeCall: " + err.message);
+                log("Exception in placeCall: " + err.message);
                 cleanupMedia();
                 if (window.AndroidBridge) window.AndroidBridge.onCallEnded(err.message || "EXCEPTION");
             }
         }
 
-        function answerCall() {
+        function answerCall(video) {
+            if (video && currentSession && currentSession.direction === 'incoming') {
+                var session = currentSession;
+                videoCallStream(video).then(function(stream) {
+                    if (session !== currentSession || session.isEnded()) {
+                        stream.getTracks().forEach(function(t) { t.stop(); });
+                        return;
+                    }
+                    answerWith({ mediaStream: stream, pcConfig: { iceServers: globalIceServers } });
+                }).catch(function(err) {
+                    log("answerCall: no microphone: " + err);
+                    answerWith({ mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: globalIceServers } });
+                });
+                return;
+            }
+            answerWith({ mediaConstraints: { audio: true, video: false }, pcConfig: { iceServers: globalIceServers } });
+        }
+
+        function answerWith(answerOptions) {
             try {
                 if (currentSession && currentSession.direction === 'incoming') {
-                    log("Answering incoming call");
-                    currentSession.answer({
-                        mediaConstraints: { audio: true, video: false },
-                        pcConfig: { iceServers: globalIceServers }
-                    });
+                    log("Answering incoming call" + (answerOptions.mediaStream ? " with own stream" : ""));
+                    currentSession.answer(answerOptions);
                     if (currentSession.connection) {
                         attachPeerConnectionHandlers(currentSession.connection);
                     }

@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Sem permissão da câmara: a chamada continua só com áudio.</string>
     <string name="err_camera_unavailable">Câmara indisponível: a chamada continua só com áudio.</string>
     <string name="contacts_extensions_listed">extensões listadas</string>
+    <string name="api_fcm_token_failed">Não foi possível enviar o token FCM (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Não foi possível eliminar o grupo (HTTP %1$s)</string>
 </resources>

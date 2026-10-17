@@ -2,3 +2,4 @@
 "NSMicrophoneUsageDescription" = "Dostęp do mikrofonu jest potrzebny do połączeń przez centralę i rozmów głosowych.";
 "NSCameraUsageDescription" = "Dostęp do aparatu jest potrzebny do logowania kodem QR centrali i wysyłania zdjęć na czacie.";
 "NSPhotoLibraryUsageDescription" = "Dostęp do biblioteki zdjęć jest potrzebny do udostępniania zdjęć i plików na czacie.";
+"NSContactsUsageDescription" = "Dostęp do kontaktów jest potrzebny do wyświetlania kontaktów z telefonu i dzwonienia do nich z aplikacji.";

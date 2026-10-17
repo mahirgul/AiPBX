@@ -84,8 +84,10 @@
     <string name="api_chats_failed">Could not get chats (HTTP %1$s)</string>
     <string name="api_contacts_failed">Could not get contacts (HTTP %1$s)</string>
     <string name="api_features_failed">Could not get features (HTTP %1$s)</string>
+    <string name="api_fcm_token_failed">Could not send FCM token (HTTP %1$s)</string>
     <string name="api_google_failed">Google sign-in failed (HTTP %1$s)</string>
     <string name="api_group_create_failed">Could not create the group (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Could not delete the group (HTTP %1$s)</string>
     <string name="api_group_details_failed">Could not get group details (HTTP %1$s)</string>
     <string name="api_group_update_failed">Could not update the group (HTTP %1$s)</string>
     <string name="api_history_failed">Could not get call history (HTTP %1$s)</string>

@@ -36,6 +36,8 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     @Published public var contacts: [ContactItem] = []
     @Published public var conversations: [ChatConversation] = []
     @Published public var features: FeatureSettings? = nil
+    @Published public var voicemailMessages: [VoicemailMessage] = []
+    @Published public var newVoicemailCount: Int = 0
 
     /// An aipbx://login link or a QR from another server: waiting for the user's confirmation.
     public struct PendingLinkLogin: Identifiable {
@@ -56,6 +58,26 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
     private init() {
         SipWebRtcEngine.shared.delegate = self
         ChatWebSocketManager.shared.delegate = self
+
+        ApiClient.shared.onTokenRefreshed = { [weak self] res in
+            Task { @MainActor in
+                if let newTok = res.token, !newTok.isEmpty {
+                    self?.token = newTok
+                }
+                if let user = res.user {
+                    self?.userProfile = user
+                }
+                if let sip = res.sip {
+                    self?.sipCredentials = sip
+                }
+            }
+        }
+
+        ApiClient.shared.onSessionRejected = { [weak self] in
+            Task { @MainActor in
+                self?.logout()
+            }
+        }
 
         AudioSessionManager.shared.$isSpeakerOn
             .receive(on: DispatchQueue.main)
@@ -266,6 +288,8 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         contacts.removeAll()
         conversations.removeAll()
         features = nil
+        voicemailMessages.removeAll()
+        newVoicemailCount = 0
         callStatus = .idle
         isCallSheetPresented = false
     }
@@ -330,6 +354,7 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         async let contactsTask = ApiClient.shared.getContacts(baseUrl: baseUrl, token: token)
         async let convsTask = ApiClient.shared.getChatConversations(baseUrl: baseUrl, token: token)
         async let featTask = ApiClient.shared.getFeatures(baseUrl: baseUrl, token: token)
+        async let vmTask = ApiClient.shared.getVoicemail(baseUrl: baseUrl, token: token)
 
         if let historyRes = try? await histTask {
             self.callHistory = historyRes.calls ?? []
@@ -342,6 +367,20 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
         }
         if let featRes = try? await featTask {
             self.features = featRes
+        }
+        if let vmRes = try? await vmTask {
+            let msgs = vmRes.messages ?? []
+            self.voicemailMessages = msgs
+            self.newVoicemailCount = vmRes.newCount ?? msgs.filter { $0.isNew }.count
+        }
+    }
+
+    public func refreshVoicemail() async {
+        guard let token = token else { return }
+        if let vmRes = try? await ApiClient.shared.getVoicemail(baseUrl: baseUrl, token: token) {
+            let msgs = vmRes.messages ?? []
+            self.voicemailMessages = msgs
+            self.newVoicemailCount = vmRes.newCount ?? msgs.filter { $0.isNew }.count
         }
     }
 
@@ -367,16 +406,36 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
     // MARK: - Call Handling
 
-    public func makeCall(to target: String) {
+    public var isVideoCallsEnabled: Bool {
+        return features?.video?.enabled ?? false
+    }
+
+    public func makeCall(to target: String, withVideo: Bool = false) {
         guard !target.isEmpty else { return }
         self.activeCallerName = target
         self.activeCallerNumber = target
         self.isCallSheetPresented = true
-        SipWebRtcEngine.shared.makeCall(target: target)
+        let videoCfg = withVideo ? (features?.video ?? VideoSettings(enabled: true, resolution: "1280x720", fps: 24)) : nil
+        SipWebRtcEngine.shared.makeCall(target: target, video: videoCfg)
     }
 
-    public func answerCall() {
-        SipWebRtcEngine.shared.answerCall()
+    public func answerCall(withVideo: Bool = false) {
+        let videoCfg = withVideo ? (features?.video ?? VideoSettings(enabled: true, resolution: "1280x720", fps: 24)) : nil
+        SipWebRtcEngine.shared.answerCall(video: videoCfg)
+    }
+
+    public func transferCall(to target: String) {
+        let clean = target.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return }
+        SipWebRtcEngine.shared.transferCall(target: clean)
+    }
+
+    public func toggleCamera() {
+        SipWebRtcEngine.shared.toggleCamera()
+    }
+
+    public func switchCamera() {
+        SipWebRtcEngine.shared.switchCamera()
     }
 
     public func endCall() {
@@ -478,5 +537,12 @@ public final class AppState: ObservableObject, SipWebRtcEngineDelegate, ChatWebS
 
     nonisolated public func webSocketDidReceiveTyping(conversationId: Int, senderName: String, isTyping: Bool) {
         // Handled in ChatRoomView
+    }
+
+    nonisolated public func webSocketDidReceiveVoicemail(newCount: Int) {
+        Task { @MainActor in
+            self.newVoicemailCount = newCount
+            await self.refreshVoicemail()
+        }
     }
 }

@@ -418,4 +418,6 @@
     <string name="err_camera_permission_video">Nincs kameraengedély: a hívás csak hanggal folytatódik.</string>
     <string name="err_camera_unavailable">A kamera nem érhető el: a hívás csak hanggal folytatódik.</string>
     <string name="contacts_extensions_listed">mellék listázva</string>
+    <string name="api_fcm_token_failed">Nem sikerült elküldeni az FCM tokent (HTTP %1$s)</string>
+    <string name="api_group_delete_failed">Nem sikerült törölni a csoportot (HTTP %1$s)</string>
 </resources>
