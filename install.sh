@@ -454,9 +454,11 @@ mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/lib/aipbx
-# Configuration sync locks, shared by the portal, cron and root (asterisk_sync.php).
-install -d -o www-data -g www-data -m 1777 /var/lib/aipbx/sync-locks
-chmod 0666 /var/lib/aipbx/sync-locks/*.lock 2>/dev/null || true
+# Configuration sync locks, shared by the portal (www-data), feature codes
+# (asterisk) and root (asterisk_sync.php): group asterisk, no one else.
+install -d -o www-data -g asterisk -m 2770 /var/lib/aipbx/sync-locks
+chgrp asterisk /var/lib/aipbx/sync-locks/*.lock 2>/dev/null || true
+chmod 0660 /var/lib/aipbx/sync-locks/*.lock 2>/dev/null || true
 # Logo / favicon uploads (Appearance → Branding). The code checkout belongs to
 # root, so without this folder the portal could not save an uploaded logo.
 mkdir -p "$INSTALL_DIR/web/assets/images/brand"

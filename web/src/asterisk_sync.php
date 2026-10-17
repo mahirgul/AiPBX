@@ -93,18 +93,21 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
  * it falls back to the old (lock-free) behaviour.
  */
 function withSyncLock($lock_name, callable $fn) {
-    // One directory for Apache, cron and root: /tmp does not work (Apache
-    // has its own PrivateTmp, and a directory root made with 0700 locked
-    // www-data out, which then ran without a lock).
+    // One directory for Apache (www-data), Asterisk's feature codes (asterisk)
+    // and root: /tmp does not work (Apache has its own PrivateTmp, and a
+    // directory root made with 0700 locked www-data out, which then ran
+    // without a lock). Group asterisk, which www-data is in (install.sh);
+    // closed to every other user, who could otherwise hold a lock forever.
     $lock_dir = is_dir('/var/lib/aipbx') ? '/var/lib/aipbx/sync-locks' : sys_get_temp_dir() . '/aipbx_sync_locks';
-    if (!is_dir($lock_dir) && @mkdir($lock_dir, 0777, true)) {
-        @chmod($lock_dir, 01777);
+    if (!is_dir($lock_dir) && @mkdir($lock_dir, 0770, true)) {
+        @chgrp($lock_dir, 'asterisk');
+        @chmod($lock_dir, 02770);   // setgid: lock files get the group too
     }
     $lock_file = $lock_dir . '/' . preg_replace('/[^a-z0-9_]/', '', $lock_name) . '.lock';
     $created = !file_exists($lock_file);
     $lock_fp = @fopen($lock_file, 'c');
     if ($lock_fp !== false && $created) {
-        @chmod($lock_file, 0666);
+        @chmod($lock_file, 0660);
     }
     if ($lock_fp === false) {
         $lock_fp = @fopen($lock_file, 'r');   // flock() works on a read-only handle too

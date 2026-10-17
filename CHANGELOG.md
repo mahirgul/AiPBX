@@ -5,6 +5,34 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.33.2
+
+Fixes from a second code review, and two follow-ups by **@tomck** (#110).
+
+- **Call restrictions now work on phones:** the dial-permission group of a
+  user never reached the phone's endpoint, so every phone, softphone and web
+  phone call was unrestricted, whatever group the user was in. A user in a
+  disabled or deleted group has no restriction (as before).
+- **Certificates:** the certificate tool (root) wrote its status through a
+  fixed temporary file in a folder the web server can write; a planted link
+  could make it overwrite another file. A failed copy of the certificate is
+  now reported as an error instead of "OK".
+- **Chat:** an image that claims a huge size gets no thumbnail (it could
+  exhaust the memory of the chat service); the sign-in cookie is only used
+  for media, so another website cannot open a chat connection or call the
+  chat API as the signed-in user; expired sign-in cache entries are dropped.
+- **Local AI:** the model list no longer fails while a model is added or
+  removed.
+- **Fax:** a failed database update is logged as an error instead of
+  "Updated"; the settings file is read without running it as a script (no
+  more "PBX: command not found" in the fax logs).
+- **Dial permissions:** a rule is deleted only within its own group; a SIP
+  password reset needs at least 6 characters, as on the Extensions page
+  (@tomck, #110).
+- Hardening: voicemail takes only digits as the extension number; network
+  addresses for TFTP/FTP/syslog/NTP/DHCP are checked strictly
+  (0-255, /0-32); the sync lock folder is open only to the PBX's own users.
+
 ## 1.33.1
 
 Fixes from two code reviews. Thanks to **@tomck** for the review and fixes in

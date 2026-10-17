@@ -20,8 +20,23 @@ type cachedAuth struct {
 }
 
 var (
-	authCache sync.Map
+	authCache      sync.Map
+	authCacheSweep sync.Once
 )
+
+// sweepAuthCache drops expired entries; they were only removed when the same
+// token came back, so the cache grew with every token ever seen.
+func sweepAuthCache() {
+	for range time.Tick(time.Minute) {
+		now := time.Now()
+		authCache.Range(func(k, v any) bool {
+			if !now.Before(v.(cachedAuth).expiresAt) {
+				authCache.Delete(k)
+			}
+			return true
+		})
+	}
+}
 
 func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 	tokenStr = strings.TrimSpace(tokenStr)
@@ -34,6 +49,8 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 			tokenStr = unescaped
 		}
 	}
+
+	authCacheSweep.Do(func() { go sweepAuthCache() })
 
 	// Check cache
 	if val, ok := authCache.Load(tokenStr); ok {
@@ -133,7 +150,14 @@ func ExtractToken(r *http.Request) string {
 		}
 	}
 
-	// 3. Cookie (if any, especially for /media/ in <img> tags)
+	// 3. Cookie: ONLY for /media/ (<img> tags cannot send a header). A browser
+	// adds the cookie to requests any page makes, and a WebSocket handshake
+	// has no CORS: with the cookie on /ws or /api/ another site could act as
+	// the user (cross-site WebSocket hijacking, CSRF). Every client sends the
+	// token in the Authorization header or ?token= there.
+	if !strings.Contains(path, "/media/") {
+		return ""
+	}
 	if cookie, err := r.Cookie("chat_token"); err == nil && cookie.Value != "" {
 		val := cookie.Value
 		if strings.Contains(val, "%") {

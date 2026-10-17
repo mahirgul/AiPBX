@@ -41,9 +41,12 @@ record() {
     local ok="$1" msg="$2"
     mkdir -p "$(dirname "$STATUS_FILE")"
     msg="$(printf '%s' "$msg" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g' | cut -c1-500)"
+    # /var/lib/aipbx belongs to www-data: a fixed temporary name there could be
+    # a symlink planted to make root overwrite another file, so mktemp.
+    local tmpf; tmpf="$(mktemp "$STATUS_FILE.XXXXXX")" || return 1
     printf '{"action":"%s","ok":%s,"at":"%s","message":"%s"}\n' \
-        "$ACTION" "$ok" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$msg" > "$STATUS_FILE.tmp" \
-        && chmod 644 "$STATUS_FILE.tmp" && mv -f "$STATUS_FILE.tmp" "$STATUS_FILE"
+        "$ACTION" "$ok" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$msg" > "$tmpf" \
+        && chmod 644 "$tmpf" && mv -f "$tmpf" "$STATUS_FILE" || rm -f "$tmpf"
 }
 
 die() {
@@ -91,25 +94,28 @@ do_deploy() {
     openssl x509 -noout -in "$crt" 2>/dev/null || die "not a certificate: $crt"
     key_matches "$crt" "$key" || die "the private key does not belong to the certificate"
 
-    mkdir -p "$TLS_DIR" /etc/coturn /etc/asterisk/keys
+    # Every step is checked: a failed copy used to end in "OK" anyway.
+    mkdir -p "$TLS_DIR" /etc/coturn /etc/asterisk/keys || die "cannot create the certificate folders"
     # Copy to a temporary name first so a reader never sees a half-written pair.
-    install -o root -g root -m 0644 "$crt" "$ACTIVE_CRT.new"
-    install -o root -g root -m 0600 "$key" "$ACTIVE_KEY.new"
-    mv -f "$ACTIVE_CRT.new" "$ACTIVE_CRT"
-    mv -f "$ACTIVE_KEY.new" "$ACTIVE_KEY"
+    install -o root -g root -m 0644 "$crt" "$ACTIVE_CRT.new" \
+        && install -o root -g root -m 0600 "$key" "$ACTIVE_KEY.new" \
+        && mv -f "$ACTIVE_CRT.new" "$ACTIVE_CRT" \
+        && mv -f "$ACTIVE_KEY.new" "$ACTIVE_KEY" \
+        || die "could not write the active certificate to $TLS_DIR"
 
     # coturn runs as "turnserver" and Asterisk as "asterisk": they read copies.
     # The whole chain goes to coturn: Let's Encrypt's chain needs its
     # cross-signs for clients that do not trust the newer roots yet.
-    install -m 0644 "$crt" /etc/coturn/aipbx.crt
-    install -m 0640 "$key" /etc/coturn/aipbx.key
+    install -m 0644 "$crt" /etc/coturn/aipbx.crt \
+        && install -m 0640 "$key" /etc/coturn/aipbx.key \
+        || die "could not copy the certificate for coturn"
     chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
-    install -m 0640 "$crt" /etc/asterisk/keys/fullchain.pem
-    install -m 0640 "$key" /etc/asterisk/keys/privkey.pem
+    install -m 0640 "$crt" /etc/asterisk/keys/fullchain.pem \
+        && install -m 0640 "$key" /etc/asterisk/keys/privkey.pem \
+        || die "could not copy the certificate for Asterisk"
     chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem 2>/dev/null || true
 
-    echo "$mode" > "$MODE_FILE"
-    chmod 644 "$MODE_FILE"
+    { echo "$mode" > "$MODE_FILE" && chmod 644 "$MODE_FILE"; } || die "could not write $MODE_FILE"
     [ "$reload" = 1 ] && reload_services
     echo "OK: active certificate ($mode) deployed to Apache, coturn and Asterisk"
 }
