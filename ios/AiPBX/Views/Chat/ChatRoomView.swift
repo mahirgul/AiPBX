@@ -295,8 +295,8 @@ public struct ChatRoomView: View {
 
                 ChatWebSocketManager.shared.sendAttachment(
                     conversationId: conversation.id,
-                    message: captionText,
                     msgType: msgType,
+                    message: captionText,
                     attachmentUrl: url,
                     fileName: name,
                     fileSize: size,
