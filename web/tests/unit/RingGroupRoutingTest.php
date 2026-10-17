@@ -107,15 +107,22 @@ final class RingGroupRoutingTest extends TestCase
             "INSERT INTO pbx_ivr_entries (ivr_id, digit, dest_type, dest_id) VALUES (?, '5', 'ring_group', ?)"
         )->execute([$ivrId, (string) $id]);
 
-        try {
-            RingGroupService::deleteRingGroup($id, 'test-token');
-            $this->fail('deleting a ring group referenced by an IVR entry must throw');
-        } catch (Exception $e) {
-            $this->assertStringContainsString('estination', $e->getMessage());
-        }
+        // handleAction() converts the throw into an error result (the real
+        // contract, as the panel sees it): the group must survive.
+        $res = RingGroupService::deleteRingGroup($id, 'test-token');
+        $this->assertFalse($res['success'], 'a referenced group must not be deleted');
+        $this->assertStringContainsString('estination', $res['error'] ?? '');
+        $this->assertNotFalse(
+            $this->db->query("SELECT 1 FROM pbx_ring_groups WHERE id = {$id}")->fetchColumn(),
+            'the blocked delete must leave the group in place'
+        );
+    }
 
-        $this->db->exec("DELETE FROM pbx_ivr_entries WHERE dest_type = 'ring_group'");
+    public function testDeleteSucceedsWhenUnreferenced(): void
+    {
+        $id = $this->addGroup('7492', '3001');
         $res = RingGroupService::deleteRingGroup($id, 'test-token');
         $this->assertTrue($res['success'], $res['error'] ?? '');
+        $this->assertFalse($this->db->query("SELECT 1 FROM pbx_ring_groups WHERE id = {$id}")->fetchColumn());
     }
 }
