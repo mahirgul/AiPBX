@@ -105,16 +105,18 @@ final class CatchAllPatternTest extends TestCase
 
     public function testPermissionDefaultStillAppliesToEveryNumber(): void
     {
+        // The group is an ordered REGEX() chain now (no per-number exten
+        // lines): with no rules, every number falls through to the default.
         foreach (['allow' => 'Return()', 'deny' => 'Goto(sub-permission-denied,s,1)'] as $default => $app) {
             $gid = $this->addPermissionGroup($default);
             syncPermissions();
             $ctx = $this->context($this->read('extensions_permissions.conf'), "perm-group-{$gid}");
 
-            foreach (self::NUMBERS as $number) {
-                $block = $this->blockFor($ctx, $number);
-                $this->assertNotNull($block, "perm-group-{$gid} ({$default}) does not match {$number}");
-                $this->assertStringContainsString($app, $block);
-            }
+            $this->assertStringContainsString(
+                "n(p{$gid}_default),{$app}",
+                $ctx,
+                "perm-group-{$gid} ({$default}) has no default tail"
+            );
             $this->tearDown();
         }
     }

@@ -88,11 +88,26 @@ function __syncRingGroupsBody() {
                 $conf .= " same => n,Dial({$chan},{$step_timeout},tT)\n";
                 $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?rg_done_{$id})\n";
             }
-        } else {
-            // 'ringall' or 'random' (default: ring all targets at the same time)
-            if ($strategy === 'random') {
-                shuffle($channels);
+        } elseif ($strategy === 'random' && count($channels) > 1) {
+            // Random means one target picked per call ("pick a target at
+            // random"). Shuffling here would freeze the order until the next
+            // resync, and dialling everybody at once is ringall, not random —
+            // so the choice happens in the dialplan, once per call.
+            $n = count($channels);
+            $conf .= " same => n,Set(RG_PICK_{$id}=\${RAND(1,{$n})})\n";
+            foreach ($channels as $idx => $chan) {
+                $pick = $idx + 1;
+                $conf .= " same => n,GotoIf(\$[\${RG_PICK_{$id}} = {$pick}]?rg_rand_{$id}_{$pick})\n";
             }
+            foreach ($channels as $idx => $chan) {
+                $pick = $idx + 1;
+                $conf .= " same => n(rg_rand_{$id}_{$pick}),Dial({$chan},{$timeout},tT)\n";
+                $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?rg_done_{$id})\n";
+                $conf .= " same => n,Goto(rg_missed_{$id})\n";
+            }
+            $conf .= " same => n(rg_missed_{$id}),NoOp(Ring group {$id} random pick not answered)\n";
+        } else {
+            // 'ringall' (default: ring all targets at the same time)
             $dial_str = implode('&', $channels);
             $conf .= " same => n,Dial({$dial_str},{$timeout},tT)\n";
             $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?rg_done_{$id})\n";
