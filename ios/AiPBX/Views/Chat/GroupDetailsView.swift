@@ -345,7 +345,7 @@ public struct GroupDetailsView: View {
                     baseUrl: appState.baseUrl,
                     token: token,
                     convId: conversation.id,
-                    targetExt: member.extensionNumber,
+                    extensionNumber: member.extensionNumber,
                     role: newRole
                 )
                 loadGroupDetails()
@@ -365,7 +365,7 @@ public struct GroupDetailsView: View {
                     baseUrl: appState.baseUrl,
                     token: token,
                     convId: conversation.id,
-                    targetExt: member.extensionNumber
+                    extensionNumber: member.extensionNumber
                 )
                 loadGroupDetails()
             } catch {

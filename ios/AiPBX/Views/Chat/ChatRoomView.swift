@@ -280,7 +280,6 @@ public struct ChatRoomView: View {
             let uploaded = try await ApiClient.shared.uploadChatFile(
                 baseUrl: appState.baseUrl,
                 token: token,
-                convId: conversation.id,
                 fileData: fileData,
                 fileName: fileName,
                 mimeType: mimeType
