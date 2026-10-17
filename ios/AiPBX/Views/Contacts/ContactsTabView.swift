@@ -138,7 +138,7 @@ public struct ContactsTabView: View {
                             ContactItem(
                                 extensionNumber: cleaned,
                                 name: displayName,
-                                isOnline: false,
+                                online: false,
                                 role: "device",
                                 roleName: L("Phone Contact")
                             )
