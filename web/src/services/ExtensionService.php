@@ -117,7 +117,8 @@ class ExtensionService {
                 // extension has no endpoint, so any leftover row is removed.
                 if ($extension_type === 'sip') {
                     SIPHelper::setSettings($extension, [
-                        'secret' => $sip_password,
+                        // Without digest auth the password may be empty: keep the old one.
+                        'secret' => $sip_password !== '' ? $sip_password : null,
                         'auth_digest' => $sip_auth_digest ? 'yes' : 'no',
                     ]);
                 } else {
