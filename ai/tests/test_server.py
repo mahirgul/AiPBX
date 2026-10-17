@@ -232,6 +232,22 @@ class ApiTest(unittest.TestCase):
         self.wait_state("ready")
         self.assertTrue(self.fake.loaded)
 
+    def test_remove_waits_for_a_running_job(self):
+        self.request("POST", "/v1/models/ema-lightning/install", {"accept_license": True})
+        self.wait_state("ready")
+        self.fake.synth_gate.clear()
+        tts = threading.Thread(target=self.request, args=("POST", "/v1/tts", {"model": "ema-lightning", "text": "Merhaba"}))
+        tts.start()
+        self.assertTrue(self.fake.synth_started.wait(5))
+        remover = threading.Thread(target=self.request, args=("POST", "/v1/models/ema-lightning/remove"))
+        remover.start()
+        time.sleep(0.3)
+        self.assertTrue(self.fake.files, "files deleted while a synthesis was running")
+        self.fake.synth_gate.set()
+        tts.join(10)
+        remover.join(10)
+        self.assertFalse(self.fake.files)
+
     def test_run_needs_files(self):
         status, body, _ = self.request("POST", "/v1/models/ema-lightning/run", {})
         self.assertEqual((status, body["error"]), (409, "the model is not downloaded"))

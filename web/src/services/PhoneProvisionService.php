@@ -462,6 +462,9 @@ class PhoneProvisionService
             return ['success' => false, 'error' => t('phones.err_csv_empty')];
         }
         $r = self::importCsv($csv);
+        if ($r['added'] + $r['updated'] > 0) {
+            self::exportTftpQuietly();   // TFTP/FTP phones get their files now, not at the next cron run
+        }
         $msg = sprintf(t('phones.import_done'), $r['added'], $r['updated']);
         if ($r['errors'] !== []) {
             return ['success' => false, 'error' => $msg . ' ' . implode(' ', array_slice($r['errors'], 0, 10))];
@@ -708,6 +711,32 @@ class PhoneProvisionService
         return ['written' => $written, 'removed' => $removed, 'files' => count(array_unique($new))];
     }
 
+    /**
+     * Every form a password can take in a phone file, longest first, so the
+     * preview hides each: as typed, XML-escaped (a & or < in it), and cut to
+     * the length a template allows (NEC: 31).
+     *
+     * @param list<string> $passwords
+     * @return list<string>
+     */
+    public static function secretForms(array $passwords): array
+    {
+        $forms = [];
+        foreach ($passwords as $p) {
+            $p = trim((string) preg_replace('/[\x00-\x1F\x7F]/u', '', $p));
+            if (strlen($p) < 4) {
+                continue;
+            }
+            foreach ([$p, mb_substr($p, 0, 31)] as $v) {
+                $forms[] = $v;
+                $forms[] = htmlspecialchars($v, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            }
+        }
+        $forms = array_values(array_unique($forms));
+        usort($forms, fn($a, $b) => strlen($b) <=> strlen($a));
+        return $forms;
+    }
+
     /** exportTftp() after a change on the page; a failure must not fail the change. */
     public static function exportTftpQuietly(): void
     {
@@ -938,7 +967,7 @@ class PhoneProvisionService
         }
         // The number the phone gets at its next fetch; showing it changes nothing.
         $ctx = self::withConfigVersion($phone, $tpl, self::buildContext($phone, $user), false);
-        $secrets = $reveal ? [] : array_values(array_filter([$ctx['sip_password'], $ctx['admin_password']], fn($s) => strlen((string) $s) >= 4));
+        $secrets = $reveal ? [] : self::secretForms([(string) $ctx['sip_password'], (string) $ctx['admin_password']]);
         $out = [];
         foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
             $content = $tpl->renderFile($name, $ctx);
