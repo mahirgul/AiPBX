@@ -111,9 +111,10 @@ do_deploy() {
         || die "could not copy the certificate for coturn"
     chown turnserver:turnserver /etc/coturn/aipbx.crt /etc/coturn/aipbx.key 2>/dev/null || true
     install -m 0640 "$crt" /etc/asterisk/keys/fullchain.pem \
-        && install -m 0640 "$key" /etc/asterisk/keys/privkey.pem \
+        && install -m 0600 "$key" /etc/asterisk/keys/privkey.pem \
         || die "could not copy the certificate for Asterisk"
-    chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem /etc/asterisk/keys/privkey.pem 2>/dev/null || true
+    chown asterisk:asterisk /etc/asterisk/keys/fullchain.pem 2>/dev/null || true
+    chown asterisk:root /etc/asterisk/keys/privkey.pem 2>/dev/null || true
 
     { echo "$mode" > "$MODE_FILE" && chmod 644 "$MODE_FILE"; } || die "could not write $MODE_FILE"
     [ "$reload" = 1 ] && reload_services

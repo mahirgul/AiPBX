@@ -82,7 +82,7 @@ if (!$selected_group && !empty($groups)) {
                         <span><i class="fas fa-phone-alt"></i> <?php echo (int)$g['users_count']; ?> <?php echo t('dial_permissions.members'); ?></span>
                         <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
                             <div style="display: inline-flex; gap: 4px;" onclick="event.stopPropagation();">
-                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 10px;" onclick='openEditGroupModal(<?php echo json_encode($g); ?>)' title="<?php echo t('common.edit'); ?>">
+                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 10px;" onclick='openEditGroupModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <?php if (!$isDefault): ?>
@@ -187,7 +187,7 @@ if (!$selected_group && !empty($groups)) {
                                 <td class="text-right">
                                     <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
                                         <div style="display: inline-flex; gap: 4px;">
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRuleModal(<?php echo json_encode($r); ?>)' title="<?php echo t('common.edit'); ?>">
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRuleModal(<?php echo jsArg($r); ?>)' title="<?php echo t('common.edit'); ?>">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('dial_permissions.confirm_delete_rule')), ENT_QUOTES); ?>);">

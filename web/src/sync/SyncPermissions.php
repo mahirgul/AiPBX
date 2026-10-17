@@ -28,10 +28,11 @@ function permissionPatternToRegex(string $pattern, bool $isExact): string
         $c = $pattern[$i];
         if ($c === '[') {
             $j = strpos($pattern, ']', $i + 1);
-            $j = ($j === false) ? $n - 1 : $j;
-            $out .= substr($pattern, $i, $j - $i + 1);
-            $i = $j;
-            continue;
+            if ($j !== false) {
+                $out .= substr($pattern, $i, $j - $i + 1);
+                $i = $j;
+                continue;
+            }
         }
         $out .= match (strtoupper($c)) {
             'N' => '[2-9]',

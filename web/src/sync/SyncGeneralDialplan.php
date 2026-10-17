@@ -73,7 +73,11 @@ function __syncGeneralDialplanBody() {
                 foreach ($allowed as $ac) {
                     $ac_clean = preg_replace('/[^0-9]/', '', $ac);
                     if ($ac_clean !== '') {
+                        $pjsipPrefix = "PJSIP/{$ac_clean}-";
+                        $pjsipLen = strlen($pjsipPrefix);
                         $condParts[] = "\"\${CALLERID(num)}\" = \"{$ac_clean}\"";
+                        $condParts[] = "\"\${REDIRECTING(from-num)}\" = \"{$ac_clean}\"";
+                        $condParts[] = "\"\${BLINDTRANSFER:0:{$pjsipLen}}\" = \"{$pjsipPrefix}\"";
                     }
                 }
                 if (!empty($condParts)) {
@@ -93,6 +97,7 @@ function __syncGeneralDialplanBody() {
                 $bg_strategy = $bg['ring_strategy'] ?? 'ringall';
 
                 if (!empty($sec_channels)) {
+                    $conf .= " same => n,Set(__SKIP_VM=1)\n";
                     if ($bg_strategy === 'sequential') {
                         $sec_step = max(5, intval($bg_timeout / max(1, count($sec_channels))));
                         foreach ($sec_channels as $sc) {
@@ -104,12 +109,14 @@ function __syncGeneralDialplanBody() {
                         $conf .= " same => n,Dial({$sec_dial_str},{$bg_timeout},tT)\n";
                         $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?sec_ans_{$ext})\n";
                     }
+                    $conf .= " same => n,Set(__SKIP_VM=0)\n";
                 }
 
                 $conf .= " same => n,NoOp(Secretary did not answer -> fallback)\n";
                 $conf .= buildDestinationLines($bg['fallback_dest_type'] ?? 'hangup', $bg['fallback_dest_id'] ?? 'busy') . "\n";
                 $conf .= " same => n(sec_ans_{$ext}),Hangup()\n";
                 $conf .= " same => n(allow_boss_{$ext}),NoOp(Caller allowed to reach the boss)\n";
+                $conf .= " same => n,Set(__SKIP_VM=0)\n";
             }
 
             $extDial = buildExtensionDialLines($ext, $db, 'direct');

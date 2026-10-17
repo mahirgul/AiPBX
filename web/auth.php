@@ -353,7 +353,37 @@ function requireRole($allowed_roles) {
     // by default when there is no row), so admin goes through the general
     // flow below as well; no separate shortcut needed.
 
+    if (!is_array($allowed_roles)) {
+        $allowed_roles = [$allowed_roles];
+    }
+
     $module_key = getModuleKeyForPage();
+    if ($module_key === 'cc') {
+        if ($user_role === 'read_only_admin' && !in_array('read_only_admin', $allowed_roles, true)) {
+            http_response_code(403);
+            exit;
+        }
+        $cc_modules = ['cc_agent', 'queue_monitor', 'cc_board', 'cc_reports'];
+        foreach ($cc_modules as $cm) {
+            if (hasModulePermission($cm, 'access') || hasModulePermission($cm, 'view')) {
+                return;
+            }
+        }
+        $role_perm_map = getRolePermissionsMap($user_role);
+        foreach ($cc_modules as $cm) {
+            if (isset($role_perm_map[$cm])) {
+                http_response_code(403);
+                echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+                echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
+                echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
+                echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
+                echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
+                echo '</div></body></html>';
+                exit;
+            }
+        }
+    }
+
     if (hasModulePermission($module_key, 'access')) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isPostDeleteRequest()) {
@@ -393,10 +423,6 @@ function requireRole($allowed_roles) {
         exit;
     }
 
-    if (!is_array($allowed_roles)) {
-        $allowed_roles = [$allowed_roles];
-    }
-
     if (!in_array($user_role, $allowed_roles)) {
         http_response_code(403);
         echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
@@ -412,7 +438,7 @@ function requireRole($allowed_roles) {
 function getCurrentUser() {
     if (!isset($_SESSION['user_id'])) return null;
     $db = getDB();
-    $stmt = $db->prepare('SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.role, u.can_listen_recordings, u.can_view_all_cdrs, u.can_view_queue_monitor, u.allowed_phone_mode, u.theme_preference, COALESCE(r.role_name, u.role) as role_display_name FROM sys_users u LEFT JOIN sys_roles r ON u.role = r.role_key WHERE u.id = ?');
+    $stmt = $db->prepare('SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.role, u.can_listen_recordings, u.can_view_all_cdrs, u.can_view_queue_monitor, u.allowed_phone_mode, u.outbound_group, u.permission_group_id, u.theme_preference, COALESCE(r.role_name, u.role) as role_display_name FROM sys_users u LEFT JOIN sys_roles r ON u.role = r.role_key WHERE u.id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     return $stmt->fetch();
 }

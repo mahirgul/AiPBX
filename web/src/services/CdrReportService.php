@@ -15,7 +15,7 @@ class CdrReportService {
      * failure (NO redirect/exit); that behaviour is kept through the
      * true/false return value.
      */
-    public static function deleteCdr($del_id, $csrf_token, bool $canDeleteCdr): bool
+    public static function deleteCdr($del_id, $csrf_token, bool $canDeleteCdr, bool $canViewAll = true, string $userExt = ''): bool
     {
         if (!$canDeleteCdr) {
             notify(t('srv_cdr.err_no_delete'), 'danger');
@@ -27,7 +27,17 @@ class CdrReportService {
         }
 
         $del_id = intval($del_id);
-        $cdr = DBHelper::fetchOne("SELECT recording_path, caller_num, start_time, coalesce(nullif(linkedid, ''), call_id) AS linkedid FROM cdrs WHERE id = ?", [$del_id]);
+        $cdr = DBHelper::fetchOne("SELECT recording_path, caller_num, agent_extension, start_time, coalesce(nullif(linkedid, ''), call_id) AS linkedid FROM cdrs WHERE id = ?", [$del_id]);
+        if (!$cdr) {
+            notify(t('srv_cdr.err_no_delete'), 'danger');
+            return false;
+        }
+        if (!$canViewAll) {
+            if ($userExt === '' || (($cdr['agent_extension'] ?? '') !== $userExt && ($cdr['caller_num'] ?? '') !== $userExt)) {
+                notify(t('srv_cdr.err_no_delete'), 'danger');
+                return false;
+            }
+        }
         $rec_path = $cdr['recording_path'] ?? null;
 
         if ($rec_path && str_starts_with($rec_path, 's3:')) {

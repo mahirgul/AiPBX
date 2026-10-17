@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -55,7 +56,7 @@ func (s *Server) authMiddleware(next func(http.ResponseWriter, *http.Request, *U
 
 		user, err := ValidateBearerToken(token, s.cfg.SecretKey)
 		if err != nil {
-			writeJSONError(w, http.StatusUnauthorized, "Invalid session: "+err.Error())
+			writeJSONError(w, http.StatusUnauthorized, "Invalid or expired session.")
 			return
 		}
 
@@ -124,6 +125,7 @@ func (s *Server) HandleConversations(w http.ResponseWriter, r *http.Request, use
 
 // POST /chat/api/conversations/direct
 func (s *Server) HandleCreateDirectConversation(w http.ResponseWriter, r *http.Request, user *User) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		TargetExtension string `json:"target_extension"`
 	}
@@ -140,11 +142,11 @@ func (s *Server) HandleCreateDirectConversation(w http.ResponseWriter, r *http.R
 
 	conv, err := GetOrCreateDirectConversation(user.Extension, targetExt, user.Extension)
 	if errors.Is(err, errNotChatUser) {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeJSONError(w, http.StatusBadRequest, errNotChatUser.Error()+".")
 		return
 	}
 	if err != nil {
-		writeInternalError(w, "Could not create the conversation", err)
+		writeActionError(w, "Could not create the conversation", err)
 		return
 	}
 
@@ -210,6 +212,7 @@ func (s *Server) HandleGetMessages(w http.ResponseWriter, r *http.Request, user 
 
 // POST /chat/api/messages
 func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user *User) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var in InMessage
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "Invalid request body.")
@@ -229,6 +232,7 @@ func (s *Server) HandleSendMessage(w http.ResponseWriter, r *http.Request, user 
 
 // POST /chat/api/read
 func (s *Server) HandleMarkRead(w http.ResponseWriter, r *http.Request, user *User) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int   `json:"conversation_id"`
 		LastMessageID  int64 `json:"last_message_id"`
@@ -296,7 +300,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "No file to upload: "+err.Error())
+		writeJSONError(w, http.StatusBadRequest, "No file to upload.")
 		return
 	}
 	defer file.Close()
@@ -312,15 +316,18 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	}
 
 	// CH-8: content MIME detection (first 512 bytes)
-	buf := make([]byte, 512)
-	n, _ := file.Read(buf)
+	sniffBuf := make([]byte, 512)
+	n, _ := file.Read(sniffBuf)
 	if n == 0 {
 		writeJSONError(w, http.StatusBadRequest, "The uploaded file is empty.")
 		return
 	}
-	detectedMime := http.DetectContentType(buf[:n])
+	detectedMime := http.DetectContentType(sniffBuf[:n])
+	var reader io.Reader = io.MultiReader(bytes.NewReader(sniffBuf[:n]), file)
 	if seeker, ok := file.(io.Seeker); ok {
-		_, _ = seeker.Seek(0, io.SeekStart)
+		if _, err := seeker.Seek(0, io.SeekStart); err == nil {
+			reader = file
+		}
 	}
 
 	lowerMime := strings.ToLower(detectedMime)
@@ -332,6 +339,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	}
 
 	isImage := ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".gif"
+	isAudio := ext == ".ogg" || ext == ".mp3" || ext == ".m4a" || ext == ".wav"
 	if isImage && !strings.HasPrefix(lowerMime, "image/") {
 		writeJSONError(w, http.StatusBadRequest, "Invalid image content.")
 		return
@@ -339,7 +347,11 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 
 	randBytes := make([]byte, 8)
 	_, _ = rand.Read(randBytes)
-	uniqueBase := signedUploadBase(s.cfg.SecretKey, user.Extension, fmt.Sprintf("%d_%s", time.Now().Unix(), hex.EncodeToString(randBytes)))
+	secretKey := ""
+	if s.cfg != nil {
+		secretKey = s.cfg.SecretKey
+	}
+	uniqueBase := signedUploadBase(secretKey, user.Extension, fmt.Sprintf("%d_%s", time.Now().Unix(), hex.EncodeToString(randBytes)))
 	savedFileName := uniqueBase + ext
 
 	var subDir string
@@ -367,7 +379,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	}
 
 	store := files.Primary()
-	if err := store.Put(ctx, subDir+"/"+savedFileName, file, fileSize, detectedMime); err != nil {
+	if err := store.Put(ctx, subDir+"/"+savedFileName, reader, fileSize, detectedMime); err != nil {
 		log.Printf("[Upload] Could not store %s/%s (%s): %v", subDir, savedFileName, store.Name(), err)
 		writeInternalError(w, "Dosya kaydedilemedi", err)
 		return
@@ -391,6 +403,8 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	msgType := "file"
 	if isImage {
 		msgType = "image"
+	} else if isAudio || uploadType == "audio" {
+		msgType = "audio"
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -432,14 +446,20 @@ func (s *Server) HandleMedia(w http.ResponseWriter, r *http.Request, user *User)
 		lookupName = strings.Replace(lookupName, "_thumb.", ".", 1)
 	}
 
-	// The caller must be an active participant of one of the chats that
-	// contain the file (a message attachment or a group picture). Exact name
-	// match: LIKE '%name%' + LIMIT 1 looked at the first chat it found and '_'
-	// was a wildcard.
-	ok, err := CanAccessAttachment(lookupName, user.Extension)
-	if err != nil || !ok {
-		http.Error(w, "Forbidden: you have no access to this media", http.StatusForbidden)
-		return
+	// The uploader may view their own signed file (e.g. group avatar preview
+	// before the group is saved), or the caller must be an active participant
+	// of one of the chats that contain the file (a message attachment or a
+	// group picture).
+	secretKey := ""
+	if s.cfg != nil {
+		secretKey = s.cfg.SecretKey
+	}
+	if !attachmentOwnedBy(secretKey, key, user.Extension) {
+		ok, err := CanAccessAttachment(lookupName, user.Extension)
+		if err != nil || !ok {
+			http.Error(w, "Forbidden: you have no access to this media", http.StatusForbidden)
+			return
+		}
 	}
 
 	ext := strings.ToLower(path.Ext(key))
@@ -526,6 +546,21 @@ func writeInternalError(w http.ResponseWriter, msg string, err error) {
 	writeJSONError(w, http.StatusInternalServerError, msg+".")
 }
 
+// writeActionError sends a 400 response when err is a known validation error
+// (userError), and otherwise logs the internal/DB error and sends a generic 500.
+func writeActionError(w http.ResponseWriter, fallbackMsg string, err error) {
+	var ue userError
+	if errors.As(err, &ue) {
+		writeJSONError(w, http.StatusBadRequest, ue.Error())
+		return
+	}
+	if errors.Is(err, errNotChatUser) {
+		writeJSONError(w, http.StatusBadRequest, errNotChatUser.Error()+".")
+		return
+	}
+	writeInternalError(w, fallbackMsg, err)
+}
+
 // files returns where chat files are kept (the local folder when main.go
 // set no storage, as in tests).
 func (s *Server) files() *Storage {
@@ -551,7 +586,7 @@ func (s *Server) HandleWS(w http.ResponseWriter, r *http.Request) {
 	user, err := ValidateBearerToken(token, s.cfg.SecretKey)
 	if err != nil {
 		log.Printf("[WS Auth Failed] Invalid token for %s: %v (remote: %s)", r.URL.Path, err, r.RemoteAddr)
-		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Unauthorized: invalid or expired session", http.StatusUnauthorized)
 		return
 	}
 
@@ -584,6 +619,7 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		Title       string   `json:"title"`
 		AvatarURL   string   `json:"avatar_url"`
@@ -608,7 +644,7 @@ func (s *Server) HandleCreateGroup(w http.ResponseWriter, r *http.Request, user 
 
 	conv, sysMsg, err := CreateGroupConversation(body.Title, user.Extension, body.AvatarURL, body.Description, body.Members)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not create the group", err)
 		return
 	}
 
@@ -690,6 +726,7 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int    `json:"conversation_id"`
 		Title          string `json:"title"`
@@ -722,7 +759,7 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 
 	sysMsg, err := UpdateGroupInfo(body.ConversationID, user.Extension, body.Title, body.AvatarURL, body.Description)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not update the group", err)
 		return
 	}
 
@@ -761,6 +798,7 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int      `json:"conversation_id"`
 		Extensions     []string `json:"extensions"`
@@ -779,7 +817,7 @@ func (s *Server) HandleAddGroupMembers(w http.ResponseWriter, r *http.Request, u
 
 	added, sysMsg, err := AddGroupMembers(body.ConversationID, user.Extension, body.Extensions)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not add the members", err)
 		return
 	}
 
@@ -831,6 +869,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int    `json:"conversation_id"`
 		Extension      string `json:"extension"`
@@ -849,7 +888,7 @@ func (s *Server) HandleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 
 	sysMsg, err := RemoveGroupMember(body.ConversationID, user.Extension, body.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not remove the member", err)
 		return
 	}
 
@@ -888,6 +927,7 @@ func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int    `json:"conversation_id"`
 		Extension      string `json:"extension"`
@@ -907,7 +947,7 @@ func (s *Server) HandleUpdateGroupMemberRole(w http.ResponseWriter, r *http.Requ
 
 	err = UpdateGroupMemberRole(body.ConversationID, user.Extension, body.Extension, body.Role)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not update the member role", err)
 		return
 	}
 
@@ -937,6 +977,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int `json:"conversation_id"`
 	}
@@ -954,7 +995,7 @@ func (s *Server) HandleLeaveGroup(w http.ResponseWriter, r *http.Request, user *
 
 	sysMsg, err := LeaveGroup(body.ConversationID, user.Extension)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeActionError(w, "Could not leave the group", err)
 		return
 	}
 
@@ -998,6 +1039,7 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body struct {
 		ConversationID int `json:"conversation_id"`
 	}
@@ -1038,6 +1080,21 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 	})
 }
 
+// internalRequestAllowed verifies a direct local loopback request and, when a
+// server secret key is configured, the X-AiPBX-Internal HMAC token.
+func (s *Server) internalRequestAllowed(r *http.Request) bool {
+	if !localInternalRequest(r) {
+		return false
+	}
+	if s.cfg != nil && s.cfg.SecretKey != "" {
+		tok := r.Header.Get("X-AiPBX-Internal")
+		if !hmac.Equal([]byte(tok), []byte(internalToken(s.cfg.SecretKey))) {
+			return false
+		}
+	}
+	return true
+}
+
 // internalNotifyEvents: what the PBX may push to the apps over this endpoint.
 var internalNotifyEvents = map[string]bool{"voicemail": true}
 
@@ -1045,7 +1102,7 @@ var internalNotifyEvents = map[string]bool{"voicemail": true}
 // sends {"event": ..., "data": ...} to every connected device of the extension
 // (bin/voicemail_notify.php: a new voicemail while the app is connected).
 func (s *Server) HandleInternalNotify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost || !localInternalRequest(r) {
+	if r.Method != http.MethodPost || !s.internalRequestAllowed(r) {
 		writeJSONError(w, http.StatusForbidden, "Access denied.")
 		return
 	}
@@ -1068,14 +1125,12 @@ func (s *Server) HandleInternalNotify(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/internal/presence (Internal only)
 func (s *Server) HandleInternalPresence(w http.ResponseWriter, r *http.Request) {
-	remoteIP := r.RemoteAddr
 	// The Apache reverse proxy connects from 127.0.0.1 too: looking only at
 	// the address opened this endpoint to anyone without a session through
 	// /chat/api/internal/presence (the list of online extensions). A request
 	// via the proxy carries X-Forwarded-For; PHP (api/mobile/contacts.php)
-	// connects directly.
-	if r.Header.Get("X-Forwarded-For") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
-		(!strings.HasPrefix(remoteIP, "127.0.0.1:") && !strings.HasPrefix(remoteIP, "[::1]:")) {
+	// connects directly with X-AiPBX-Internal.
+	if !s.internalRequestAllowed(r) {
 		writeJSONError(w, http.StatusForbidden, "Access denied.")
 		return
 	}

@@ -177,11 +177,12 @@ class TwoFactorService
 
             if (function_exists('writeAuditLog')) {
                 writeAuditLog(
-                    $userId,
+                    'security',
                     'sys_users',
-                    $userId,
+                    (string)$userId,
                     "User '{$user['username']}' signed in with a 2FA recovery code. Recovery codes left: " . count($updatedList),
-                    'login_recovery_code'
+                    'login_recovery_code',
+                    (int)$userId
                 );
             }
 
@@ -239,7 +240,7 @@ class TwoFactorService
             $uStmt = $db->prepare('SELECT username FROM sys_users WHERE id = ?');
             $uStmt->execute([$userId]);
             $un = $uStmt->fetchColumn() ?: (string)$userId;
-            writeAuditLog($userId, 'sys_users', $userId, "User '{$un}' enabled two-factor authentication (2FA).", 'two_factor_enable');
+            writeAuditLog('security', 'sys_users', (string)$userId, "User '{$un}' enabled two-factor authentication (2FA).", 'two_factor_enable', (int)$userId);
         }
 
         return [
@@ -277,7 +278,7 @@ class TwoFactorService
             $msg = $isAdminReset
                 ? "2FA of user '{$user['username']}' was reset by an admin."
                 : "User '{$user['username']}' disabled 2FA.";
-            writeAuditLog($actorId, 'sys_users', $userId, $msg, 'two_factor_disable');
+            writeAuditLog('security', 'sys_users', (string)$userId, $msg, 'two_factor_disable', (int)$actorId);
         }
 
         return ['success' => true];
@@ -309,7 +310,7 @@ class TwoFactorService
         $upd->execute([$hashedCodes, $userId]);
 
         if (function_exists('writeAuditLog')) {
-            writeAuditLog($userId, 'sys_users', $userId, "User '{$user['username']}' created new 2FA recovery codes.", 'two_factor_regen_codes');
+            writeAuditLog('security', 'sys_users', (string)$userId, "User '{$user['username']}' created new 2FA recovery codes.", 'two_factor_regen_codes', (int)$userId);
         }
 
         return [

@@ -61,10 +61,21 @@ if ($action === 'save_call_note') {
     if ($call_id !== '') {
         // A note for a finished call (from the CDR list): upsert by call_id.
         // Ownership check: apart from admin/can_view_all_cdrs, a user can only
-        // update a note they WROTE THEMSELVES — otherwise another agent's note
-        // could be overwritten by guessing call_id. Without an own note (e.g.
-        // noting this call for the first time) a new row is added normally.
+        // note a call that belongs to their own extension — otherwise another
+        // agent's note could be overwritten or shadowed by guessing call_id.
         $can_edit_all = ($user['role'] === 'admin' || !empty($user['can_view_all_cdrs']));
+        if (!$can_edit_all) {
+            if ($user_ext === '') {
+                echo json_encode(['success' => false, 'error' => t('api_cc.err_note_ext')]);
+                exit;
+            }
+            $ownsCdr = DBHelper::fetchColumn('SELECT 1 FROM cdrs WHERE call_id = ? AND (agent_extension = ? OR caller_num = ?) LIMIT 1', [$call_id, $user_ext, $user_ext]);
+            if (!$ownsCdr) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => t('auth.forbidden')]);
+                exit;
+            }
+        }
         if ($can_edit_all) {
             $stmt = $db->prepare('SELECT id FROM callcenter_notes WHERE call_id = ? ORDER BY id DESC LIMIT 1');
             $stmt->execute([$call_id]);

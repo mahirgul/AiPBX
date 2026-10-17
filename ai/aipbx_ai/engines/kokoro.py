@@ -70,6 +70,7 @@ What happens around the model follows these references:
 Japanese and Mandarin voices need misaki's G2P and are not supported.
 """
 import re
+import threading
 from pathlib import Path
 
 from .. import textnorm
@@ -300,6 +301,7 @@ class KokoroVoice:
         self.sample_rate = SAMPLE_RATE
         self.languages = sorted({dialect(name)[1] for name in self.packs})
         self.missing = {}
+        self._lock = threading.Lock()
 
         so = ort.SessionOptions()
         if threads:
@@ -318,21 +320,36 @@ class KokoroVoice:
     def add_voice(self, name, path):
         """Loads one more voice pack (.bin) for this model."""
         dialect(name)
-        self.packs = dict(self.packs, **load_voice_packs({name: path}))
-        self.languages = sorted({dialect(n)[1] for n in self.packs})
+        loaded = load_voice_packs({name: path})
+        lock = getattr(self, "_lock", None)
+        if lock is not None:
+            with lock:
+                self.packs = dict(self.packs, **loaded)
+                self.languages = sorted({dialect(n)[1] for n in self.packs})
+        else:
+            self.packs = dict(self.packs, **loaded)
+            self.languages = sorted({dialect(n)[1] for n in self.packs})
 
     def remove_voice(self, name):
-        self.packs = {k: v for k, v in self.packs.items() if k != name}
-        self.languages = sorted({dialect(n)[1] for n in self.packs})
+        lock = getattr(self, "_lock", None)
+        if lock is not None:
+            with lock:
+                self.packs = {k: v for k, v in self.packs.items() if k != name}
+                self.languages = sorted({dialect(n)[1] for n in self.packs})
+        else:
+            self.packs = {k: v for k, v in self.packs.items() if k != name}
+            self.languages = sorted({dialect(n)[1] for n in self.packs})
 
     def _pack(self, voice):
+        lock = getattr(self, "_lock", None)
+        packs = self.packs if lock is None else dict(self.packs)
         if voice is None:
-            if len(self.packs) != 1:
+            if len(packs) != 1:
                 raise ValueError("several voices are loaded: name one")
-            voice = next(iter(self.packs))
-        if voice not in self.packs:
+            voice = next(iter(packs))
+        if voice not in packs:
             raise ValueError(f"unknown voice {voice!r}")
-        return voice, self.packs[voice]
+        return voice, packs[voice]
 
     # ---- text -> runs -------------------------------------------------
 
@@ -347,7 +364,18 @@ class KokoroVoice:
         return sentences_from_clauses(ipa, [t for _, t in clauses], espeak_voice)
 
     def runs(self, text, voice):
-        return make_runs(self.phonemize(text, voice), self.vocab, self.missing)
+        local_missing = {}
+        out = make_runs(self.phonemize(text, voice), self.vocab, local_missing)
+        if local_missing:
+            lock = getattr(self, "_lock", None)
+            if lock is not None:
+                with lock:
+                    for ch, count in local_missing.items():
+                        self.missing[ch] = self.missing.get(ch, 0) + count
+            else:
+                for ch, count in local_missing.items():
+                    self.missing[ch] = self.missing.get(ch, 0) + count
+        return out
 
     def synthesize_tokens(self, tokens, pack, speed):
         ids = [self.vocab[p] for p in tokens]

@@ -36,7 +36,8 @@ class ChatWebSocketManager private constructor() {
     private val gson = Gson()
     private val listeners = CopyOnWriteArrayList<ChatEventListener>()
     @Volatile private var webSocket: WebSocket? = null
-    @Volatile private var isConnected = false
+    @Volatile var isConnected = false
+        private set
     /** So a second connect() call during the handshake does not open a new socket. */
     @Volatile private var isConnecting = false
     private var isManuallyClosed = false

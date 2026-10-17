@@ -56,9 +56,8 @@ class UserInvitationService
         $upd->execute([$token, $expires, $userId]);
 
         // Build the link URL
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
-        $resetUrl = $scheme . '://' . $host . '/reset-password?token=' . $token;
+        require_once __DIR__ . '/ForgotPasswordService.php';
+        $resetUrl = rtrim(ForgotPasswordService::portalUrl(), '/') . '/reset-password?token=' . $token;
 
         // Direct sign-in link for the mobile app (7 days, single use).
         // On a phone it opens the app and signs in; on a computer it shows a QR.

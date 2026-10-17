@@ -234,7 +234,7 @@ step "2. Generating Secure Random Credentials"
 # Generate strong random password (reads limited bytes from /dev/urandom to avoid SIGPIPE under pipefail)
 gen_pass() {
     local len="${1:-20}"
-    head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9!@#%^&*' | head -c "$len"
+    head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9!@#%^*' | head -c "$len"
 }
 
 # Generate hex secret
@@ -370,10 +370,19 @@ systemctl reload nginx 2>/dev/null || true
 # ============================================================================
 step "4. Creating Directory Structure"
 
-if [[ "$SCRIPT_DIR" != "$INSTALL_DIR" ]]; then
+if [[ "$(realpath "$SCRIPT_DIR")" != "$(realpath "$INSTALL_DIR")" ]]; then
     mkdir -p "$INSTALL_DIR"
-    cp -a "$SCRIPT_DIR"/* "$INSTALL_DIR"/
-    cp -a "$SCRIPT_DIR"/.gitignore "$INSTALL_DIR"/ 2>/dev/null || true
+    rsync -a \
+        --exclude='/android' \
+        --exclude='/ios' \
+        --exclude='/.git' \
+        --exclude='/.claude' \
+        --exclude='/rapor' \
+        --exclude='*.jks' \
+        --exclude='keystore.properties' \
+        "$SCRIPT_DIR"/ "$INSTALL_DIR"/
+    rm -rf "$INSTALL_DIR/android" "$INSTALL_DIR/ios" "$INSTALL_DIR/rapor" "$INSTALL_DIR/.claude" 2>/dev/null || true
+    find "$INSTALL_DIR" \( -name '*.jks' -o -name 'keystore.properties' \) -delete 2>/dev/null || true
 fi
 
 rm -rf /var/www/html
@@ -898,7 +907,7 @@ info "Applying database migrations..."
 mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
 
 if ! is_upgrade; then
-ADMIN_HASH=$(php -r "echo password_hash('${ADMIN_PASS}', PASSWORD_BCRYPT);")
+ADMIN_HASH=$(php -r 'echo password_hash($argv[1], PASSWORD_BCRYPT);' -- "$ADMIN_PASS")
 ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
 if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
     mysql asterisk -e "
@@ -979,7 +988,7 @@ ProtectProc=default
 InaccessiblePaths=
 InaccessiblePaths=/boot /root -/etc/ssh -/etc/apt -/etc/.git -/etc/.svn
 # ProtectSystem=full makes /etc read-only for Apache and for aipbx-priv run
-# through sudo inside it: "Apply" could not write any Asterisk config.
+# through sudo inside it: "Apply" writes generated dialplan/endpoint files under /etc/asterisk/pbx and settings in /etc/asterisk.
 ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d -/etc/chrony/conf.d
 APACHEOVERRIDE
 systemctl daemon-reload
@@ -1157,17 +1166,18 @@ for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.co
     fi
 done
 # res_odbc.conf ships with a ${ODBC_PASS} placeholder (no secret in the repo).
-sed -i "s/\${ODBC_PASS}/${ODBC_PASS}/" /etc/asterisk/res_odbc.conf
-chown asterisk:asterisk /etc/asterisk/res_odbc.conf
-chmod 640 /etc/asterisk/res_odbc.conf
+escaped_odbc_pass="$(printf '%s\n' "$ODBC_PASS" | sed 's/[&/\]/\\&/g')"
+sed -i "s/\${ODBC_PASS}/${escaped_odbc_pass}/" /etc/asterisk/res_odbc.conf
+chown asterisk:root /etc/asterisk/res_odbc.conf
+chmod 600 /etc/asterisk/res_odbc.conf
 
 # ODBC data source "asterisk" used by res_odbc.conf (MariaDB Connector/ODBC).
 cat > /etc/odbc.ini << 'ODBCINI'
 [asterisk]
 Description = AI PBX MariaDB (Asterisk CDR / queue_log)
 Driver      = MariaDB Unicode
-Server      = localhost
 Socket      = /run/mysqld/mysqld.sock
+Server      = localhost
 Database    = asterisk
 Charset     = utf8mb4
 ODBCINI
@@ -1189,6 +1199,8 @@ read = originate,call,agent
 write = originate,call,agent
 writetimeout = 5000
 MANAGER
+chown asterisk:root /etc/asterisk/manager.conf
+chmod 600 /etc/asterisk/manager.conf
 
 # Install Asterisk Sound Prompts (Turkish & WebRTC/IVR custom sounds)
 info "Installing Asterisk sound prompts (Turkish & WebRTC/IVR sounds)..."
@@ -1287,12 +1299,16 @@ else
     fi
 fi
 chown -R asterisk:asterisk /etc/asterisk/
-# The portal (www-data, in the asterisk group) writes rtp.conf, udptl.conf,
-# voicemail.conf and asterisk.conf atomically (temp file + rename in the same
-# directory): without group write on /etc/asterisk those settings never applied.
-chmod 775 /etc/asterisk
-chmod -R 775 /etc/asterisk/pbx
+chown asterisk:asterisk /etc/asterisk && chmod 1775 /etc/asterisk
+chown -R asterisk:asterisk /etc/asterisk/pbx
+chmod 2775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
+for secret_conf in /etc/asterisk/manager.conf /etc/asterisk/res_odbc.conf /etc/asterisk/keys/privkey.pem /etc/asterisk/keys/asterisk.key /etc/asterisk/keys/asterisk.pem; do
+    if [[ -f "$secret_conf" ]]; then
+        chown asterisk:root "$secret_conf"
+        chmod 600 "$secret_conf"
+    fi
+done
 
 # Voicemail/recording files created by Asterisk are group-writable (UMask 0002)
 # so the portal (www-data, group asterisk) can delete voicemail; with 0022

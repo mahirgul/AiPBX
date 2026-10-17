@@ -76,7 +76,7 @@ function __syncOutboundDialplanBody() {
             $trunks_raw = !empty($r['trunks_json']) ? (json_decode($r['trunks_json'], true) ?: []) : [];
             $trunk_chain = [];
             foreach ($trunks_raw as $t) {
-                $tn = trim($t['trunk_name'] ?? '');
+                $tn = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($t['trunk_name'] ?? ''));
                 if ($tn === '') continue;
                 $trunk_chain[] = ['trunk_name' => $tn, 'callerid_override' => trim($t['callerid_override'] ?? ''), 'max_channels' => intval($trunk_limits[$tn] ?? 0)];
             }
@@ -117,7 +117,7 @@ function __syncOutboundDialplanBody() {
             $conf .= buildTrunkCallerIdLine($trunk_chain[0], $is_internal);
             $conf .= buildTrunkCidNormalizeLine($trunk_cid_norm[$trunk_chain[0]['trunk_name']] ?? null);
 
-            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${CALLERID(num)}_to_{$dial_num}.wav)\n";
+            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
             $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";

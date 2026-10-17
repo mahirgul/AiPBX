@@ -20,8 +20,12 @@ CloudLlmError and the caller falls back to the local matching.
 The key is stored with the app config ($AIPBX_AI_DATA/apps/<id>.json, mode
 0600) like the cloud speech-to-text key, and never returned by the API.
 """
+import ipaddress
 import json
 import re
+import socket
+import urllib.error
+import urllib.parse
 import urllib.request
 
 # OpenAI-compatible chat completions, and Google's Gemini API. NVIDIA NIM and
@@ -55,6 +59,60 @@ PROVIDERS = tuple(ENDPOINTS)
 _BASE_URL = re.compile(r"^https?://[^\s/?#@]+(/[^\s?#]*)?$")
 TIMEOUT = 6           # the caller is waiting on the line
 _MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
+ALLOW_PRIVATE_URLS = False
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+
+
+def _is_forbidden_ip(ip, allow_private=False, allow_loopback=False):
+    if getattr(ip, "ipv4_mapped", None) is not None:
+        ip = ip.ipv4_mapped
+    if not allow_loopback and ip.is_loopback:
+        return True
+    if ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+        return True
+    if not allow_private and (ip.is_private or not ip.is_global):
+        return True
+    return False
+
+
+def assert_public_url(url, *, resolve=True, allow_private=False, allow_loopback=False):
+    """Validates an http(s) URL and rejects loopback, link-local, or reserved hosts."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError("URL must be an http(s) URL")
+    if parts.username is not None or parts.password is not None:
+        raise ValueError("URL must not contain credentials")
+    host = parts.hostname.strip(".").lower().split("%", 1)[0]
+    if not allow_loopback and (not host or host in ("localhost", "localhost.localdomain") or host.endswith((".localhost", ".local", ".internal"))):
+        raise ValueError("private or local address is not allowed")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None:
+        if _is_forbidden_ip(ip, allow_private=allow_private, allow_loopback=allow_loopback):
+            raise ValueError("private or local address is not allowed")
+        return url
+    if resolve:
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+        try:
+            infos = socket.getaddrinfo(parts.hostname, port, type=socket.SOCK_STREAM)
+        except OSError as e:
+            raise ValueError("hostname could not be resolved") from e
+        if not infos:
+            raise ValueError("hostname could not be resolved")
+        for _, _, _, _, sockaddr in infos:
+            resolved_ip = ipaddress.ip_address(sockaddr[0].split("%", 1)[0])
+            if _is_forbidden_ip(resolved_ip, allow_private=allow_private, allow_loopback=allow_loopback):
+                raise ValueError("private or local address is not allowed")
+    return url
 
 
 class CloudLlmError(Exception):
@@ -81,6 +139,10 @@ def validate(cfg):
     if provider in OWN_ADDRESS and base:
         if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
             raise ValueError("llm_cloud.base_url is not valid")
+        try:
+            assert_public_url(base.rstrip("/"), resolve=True, allow_private=(ALLOW_PRIVATE_URLS or provider == "openai_compat"))
+        except ValueError:
+            raise ValueError("llm_cloud.base_url is not valid") from None
         out["base_url"] = base.rstrip("/")
     elif provider == "openai_compat":
         raise ValueError("llm_cloud.base_url is missing")
@@ -109,13 +171,15 @@ def prompt(transcript, intents):
 
 
 def _post(url, headers, body):
-    req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"),
-                                 headers=dict(headers, **{"Content-Type": "application/json", "User-Agent": "aipbx-ai"}),
-                                 method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        assert_public_url(url, resolve=True, allow_private=ALLOW_PRIVATE_URLS)
+        req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"),
+                                     headers=dict(headers, **{"Content-Type": "application/json", "User-Agent": "aipbx-ai"}),
+                                     method="POST")
+        with _OPENER.open(req, timeout=TIMEOUT) as resp:
             return json.loads(resp.read(1024 * 1024).decode("utf-8"))
     except urllib.error.HTTPError as e:
+        e.close()
         raise CloudLlmError(f"{e.code}") from None
     except (urllib.error.URLError, TimeoutError, ValueError, OSError) as e:
         raise CloudLlmError(type(e).__name__) from None

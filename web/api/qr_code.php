@@ -19,13 +19,16 @@ if (empty($_SESSION['user_id'])) {
 $action = trim($_REQUEST['action'] ?? 'generate');
 
 if ($action === 'generate') {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-        if (!verifyCSRFToken($csrf)) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'error' => t('api.err_post_only')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!verifyCSRFToken($csrf)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     $res = QrLoginService::generateQr((int)$_SESSION['user_id'], 600);
@@ -42,7 +45,7 @@ if ($action === 'generate') {
         exit;
     }
 
-    $status = QrLoginService::checkStatus($token);
+    $status = QrLoginService::checkStatus($token, (int)$_SESSION['user_id']);
     echo json_encode(['success' => true, 'data' => $status], JSON_UNESCAPED_UNICODE);
     exit;
 } else {

@@ -31,6 +31,8 @@ public final class CallKitManager: NSObject, CXProviderDelegate {
     public var onAnswerCall: (() -> Void)?
     public var onEndCall: (() -> Void)?
     public var onSetMute: ((Bool) -> Void)?
+    public var onSetHold: ((Bool) -> Void)?
+    public var onPlayDTMF: ((String) -> Void)?
 
     private override init() {
         let configuration = CXProviderConfiguration()
@@ -220,6 +222,18 @@ public final class CallKitManager: NSObject, CXProviderDelegate {
         AppLogManager.shared.info("CallKit", "User toggled mute: \(action.isMuted)")
         AudioSessionManager.shared.setMuted(enabled: action.isMuted)
         onSetMute?(action.isMuted)
+        action.fulfill()
+    }
+
+    public func provider(_ provider: CXProvider, perform action: CXSetHeldCallAction) {
+        AppLogManager.shared.info("CallKit", "User toggled hold: \(action.isOnHold)")
+        onSetHold?(action.isOnHold)
+        action.fulfill()
+    }
+
+    public func provider(_ provider: CXProvider, perform action: CXPlayDTMFCallAction) {
+        AppLogManager.shared.info("CallKit", "User sent DTMF via CallKit: \(action.digits)")
+        onPlayDTMF?(action.digits)
         action.fulfill()
     }
 

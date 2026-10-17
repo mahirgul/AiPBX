@@ -97,7 +97,9 @@ const UIHelper = {
      * GET from /api/cc.php?action=X (optionally with an extra query string suffix)
      */
     ccGet(action, extraQuery = '') {
-        return fetch('/api/cc.php?action=' + action + extraQuery).then(res => res.json());
+        return fetch('/api/cc.php?action=' + action + extraQuery, {
+            headers: { 'X-CSRF-Token': window.CSRF_TOKEN || '' }
+        }).then(res => res.json());
     },
 
     /**

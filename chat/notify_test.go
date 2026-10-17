@@ -56,3 +56,43 @@ func TestInternalNotifyIsLocalAndWhitelisted(t *testing.T) {
 		}
 	}
 }
+
+func TestInternalNotifyAndPresenceRequireHMACWhenConfigured(t *testing.T) {
+	srv := NewServer(&Config{SecretKey: "chat-secret"}, NewHub())
+	tok := internalToken("chat-secret")
+
+	// Without X-AiPBX-Internal header: forbidden
+	rr := httptest.NewRecorder()
+	srv.HandleInternalNotify(rr, notifyRequest(`{"extension":"1001","event":"voicemail"}`, "127.0.0.1:5555", false))
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 without HMAC token on notify, got %d", rr.Code)
+	}
+
+	// With valid X-AiPBX-Internal header: OK
+	req := notifyRequest(`{"extension":"1001","event":"voicemail"}`, "127.0.0.1:5555", false)
+	req.Header.Set("X-AiPBX-Internal", tok)
+	rr = httptest.NewRecorder()
+	srv.HandleInternalNotify(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 with valid HMAC token on notify, got %d", rr.Code)
+	}
+
+	// Presence without token: forbidden
+	preq := httptest.NewRequest(http.MethodGet, "/api/internal/presence", nil)
+	preq.RemoteAddr = "127.0.0.1:5555"
+	rr = httptest.NewRecorder()
+	srv.HandleInternalPresence(rr, preq)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 without HMAC token on presence, got %d", rr.Code)
+	}
+
+	// Presence with valid token: OK
+	preq = httptest.NewRequest(http.MethodGet, "/api/internal/presence", nil)
+	preq.RemoteAddr = "127.0.0.1:5555"
+	preq.Header.Set("X-AiPBX-Internal", tok)
+	rr = httptest.NewRecorder()
+	srv.HandleInternalPresence(rr, preq)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 with valid HMAC token on presence, got %d", rr.Code)
+	}
+}

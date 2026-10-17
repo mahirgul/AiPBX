@@ -8,12 +8,12 @@
  * Prints "OK|<caller name>" or "DENY|<reason>" without a newline (read with
  * SHELL() and CUT() in the dialplan).
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/WebWidgetService.php';
-
-if (php_sapi_name() !== 'cli') {
-    exit(1);
-}
 
 $widgetId = (int) ($argv[1] ?? 0);
 $token = strtolower((string) ($argv[2] ?? ''));

@@ -9,6 +9,10 @@
  *                              when one fails (aipbx-selftest, CI, after installing)
  *   aipbx_health.php --all --no-mail   the same without sending e-mails
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/helpers.php';
 require_once dirname(__DIR__) . '/src/audit_log.php';

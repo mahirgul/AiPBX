@@ -86,7 +86,6 @@ public struct ChatRoomView: View {
         .onAppear {
             appState.activeConversationId = conversation.id
             loadMessages()
-            markRead()
         }
         .onDisappear {
             appState.activeConversationId = nil
@@ -181,6 +180,7 @@ public struct ChatRoomView: View {
                 await MainActor.run {
                     self.messages = msgs
                     self.isLoadingMessages = false
+                    self.markRead()
                 }
             } catch {
                 await MainActor.run {

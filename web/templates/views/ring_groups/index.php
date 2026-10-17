@@ -98,7 +98,7 @@ use PBX\Destinations\DestinationRegistry;
                             <td class="text-right">
                                 <?php if (hasModulePermission('ring_groups', 'edit')): ?>
                                     <div style="display: inline-flex; gap: 4px;">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo json_encode($rg); ?>)' title="<?php echo t('common.edit'); ?>">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo jsArg($rg); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('ring_groups.confirm_delete')), ENT_QUOTES); ?>);">

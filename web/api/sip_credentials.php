@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $db = getDB();
-$stmt = $db->prepare('SELECT extension, sip_password, extension_type, is_active FROM sys_users WHERE id = ?');
+$stmt = $db->prepare('SELECT extension, sip_password, extension_type, is_active, allowed_phone_mode FROM sys_users WHERE id = ?');
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 
@@ -30,7 +30,8 @@ if (!$user) {
     exit;
 }
 
-if (($user['extension_type'] ?? '') !== 'sip' || empty($user['is_active'])) {
+$allowed_modes = parsePhoneModes($user['allowed_phone_mode'] ?? null);
+if (($user['extension_type'] ?? '') !== 'sip' || empty($user['is_active']) || !in_array('web', $allowed_modes, true)) {
     echo json_encode([
         'success' => false,
         'disabled' => true,

@@ -14,10 +14,13 @@ $pjsipStatuses = AsteriskHelper::getPJSIPStatuses();
 // Get the online user list from the chat service (aipbx-chat)
 $chatOnline = [];
 try {
+    require_once __DIR__ . '/../../src/services/FileStorageService.php';
+    $internalTok = FileStorageService::internalToken();
     $ctx = stream_context_create([
         'http' => [
             'timeout' => 0.5,
-            'ignore_errors' => true
+            'ignore_errors' => true,
+            'header' => "X-AiPBX-Internal: {$internalTok}\r\n"
         ]
     ]);
     $chatResp = @file_get_contents('http://127.0.0.1:8086/api/internal/presence', false, $ctx);

@@ -65,7 +65,8 @@ class BossSecretaryService {
                 $id = (int)$db->lastInsertId();
             }
 
-            // Sync user group assignment
+            // Sync user group assignment (clear previous members first)
+            $db->prepare("UPDATE sys_users SET boss_secretary_group_id = NULL, boss_secretary_role = 'none' WHERE boss_secretary_group_id = ?")->execute([$id]);
             $db->prepare("UPDATE sys_users SET boss_secretary_group_id = ?, boss_secretary_role = 'boss' WHERE extension = ?")->execute([$id, $boss_extension]);
             foreach ($secretaries as $s_ext) {
                 $db->prepare("UPDATE sys_users SET boss_secretary_group_id = ?, boss_secretary_role = 'secretary' WHERE extension = ?")->execute([$id, $s_ext]);

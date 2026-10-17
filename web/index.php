@@ -37,7 +37,7 @@ if ($path === '/set-language') {
         $stmt->execute([$lang, $_SESSION['user_id']]);
     }
     $redirect = $_GET['redirect'] ?? '/';
-    if (!is_string($redirect) || $redirect === '' || $redirect[0] !== '/' || (isset($redirect[1]) && $redirect[1] === '/')) {
+    if (!is_string($redirect) || $redirect === '' || $redirect[0] !== '/' || (isset($redirect[1]) && ($redirect[1] === '/' || $redirect[1] === '\\'))) {
         $redirect = '/';
     }
     header('Location: ' . $redirect);

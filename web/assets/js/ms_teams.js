@@ -46,6 +46,16 @@ function closeMappingModal() {
     document.getElementById('mappingModal').style.display = 'none';
 }
 
+function setTeamsAlertBox(el, className, iconClass, messageText) {
+    el.className = className;
+    el.textContent = '';
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    el.appendChild(icon);
+    el.appendChild(document.createTextNode(' ' + (messageText || '')));
+    el.style.display = 'block';
+}
+
 function submitMappingForm(e) {
     e.preventDefault();
     const form = document.getElementById('mappingForm');
@@ -68,17 +78,13 @@ function submitMappingForm(e) {
         if (data.success) {
             window.location.href = '/ms-teams?tab=users';
         } else {
-            alertBox.className = 'alert alert-danger';
-            alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.conn_error);
-            alertBox.style.display = 'block';
+            setTeamsAlertBox(alertBox, 'alert alert-danger', 'fas fa-exclamation-circle', data.error || data.message || window.MS_TEAMS_I18N.conn_error);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save"></i> ' + window.MS_TEAMS_I18N.btn_save;
-        alertBox.className = 'alert alert-danger';
-        alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
-        alertBox.style.display = 'block';
+        setTeamsAlertBox(alertBox, 'alert alert-danger', 'fas fa-exclamation-circle', window.MS_TEAMS_I18N.conn_error + err);
     });
 }
 
@@ -136,21 +142,16 @@ function testTeamsWebhook() {
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
-        resBox.style.display = 'block';
         if (data.success) {
-            resBox.className = 'alert alert-success';
-            resBox.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+            setTeamsAlertBox(resBox, 'alert alert-success', 'fas fa-check-circle', data.message);
         } else {
-            resBox.className = 'alert alert-danger';
-            resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || data.message || window.MS_TEAMS_I18N.test_failed);
+            setTeamsAlertBox(resBox, 'alert alert-danger', 'fas fa-exclamation-triangle', data.error || data.message || window.MS_TEAMS_I18N.test_failed);
         }
     })
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + window.MS_TEAMS_I18N.btn_test;
-        resBox.style.display = 'block';
-        resBox.className = 'alert alert-danger';
-        resBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + window.MS_TEAMS_I18N.conn_error + err;
+        setTeamsAlertBox(resBox, 'alert alert-danger', 'fas fa-exclamation-triangle', window.MS_TEAMS_I18N.conn_error + err);
     });
 }
 

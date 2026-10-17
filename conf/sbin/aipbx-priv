@@ -87,7 +87,29 @@ case "$cmd" in
                 ;;
             postmap)
                 [ $# -eq 0 ] || die "usage: postfix postmap"
-                exec postmap /etc/postfix/sasl_passwd
+                src=/etc/postfix/sasl_passwd
+                [ -f /var/lib/aipbx/sasl_passwd ] && src=/var/lib/aipbx/sasl_passwd
+                [ -f "$src" ] && [ ! -L "$src" ] || die "sasl_passwd missing or invalid"
+                [ "$(stat -c %s "$src")" -le 4096 ] || die "sasl_passwd too large"
+                ! tr -d '\n' < "$src" | LC_ALL=C grep -q '[[:cntrl:]]' || die "control characters in sasl_passwd"
+                lines="$(grep -cve '^[[:space:]]*$' "$src" || true)"
+                [ "${lines:-0}" -le 1 ] || die "sasl_passwd may only contain a single relay entry"
+                if [ "${lines:-0}" -eq 1 ]; then
+                    line="$(grep -m1 -ve '^[[:space:]]*$' "$src")"
+                    [[ "$line" =~ ^\[[A-Za-z0-9.:_-]{1,253}\]:[0-9]{1,5}\ [^[:space:][:cntrl:]]+:[^[:cntrl:]]+$ ]] \
+                        || die "invalid sasl_passwd entry format"
+                fi
+                if [ "$src" != /etc/postfix/sasl_passwd ]; then
+                    install -o root -g root -m 0600 "$src" /etc/postfix/sasl_passwd
+                    rm -f "$src"
+                else
+                    chown root:root /etc/postfix/sasl_passwd
+                    chmod 0600 /etc/postfix/sasl_passwd
+                fi
+                postmap /etc/postfix/sasl_passwd || exit $?
+                chown root:root /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db 2>/dev/null || true
+                chmod 0600 /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db 2>/dev/null || true
+                exit 0
                 ;;
             trace)
                 # postfix trace TOKEN — delivery result of the message whose
@@ -462,9 +484,10 @@ case "$cmd" in
 
                 user=nobody
                 id -u dnsmasq >/dev/null 2>&1 && user=dnsmasq
-                mkdir -p "$NETSVC_DIR"
+                mkdir -p "$NETSVC_DIR" "$NETSVC_DIR/leases"
                 [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
                 chown root:root "$NETSVC_DIR"; chmod 0755 "$NETSVC_DIR"
+                chown "$user:" "$NETSVC_DIR/leases"; chmod 0755 "$NETSVC_DIR/leases"
                 tmp="$(mktemp "$NETSVC_DIR/.dnsmasq.XXXXXX")" || exit 1
                 trap 'rm -f "$tmp"' EXIT
                 {
@@ -475,7 +498,7 @@ case "$cmd" in
                         echo "interface=$iface"
                         echo "bind-dynamic"
                         echo "dhcp-range=$start,$end,$mask,${lease}h"
-                        echo "dhcp-leasefile=$NETSVC_DIR/dnsmasq.leases"
+                        echo "dhcp-leasefile=$NETSVC_DIR/leases/dnsmasq.leases"
                         [ -n "$gw" ] && [ -z "${optcode[3]:-}" ] && echo "dhcp-option=option:router,$gw"
                         [ -n "$dns" ] && [ -z "${optcode[6]:-}" ] && echo "dhcp-option=option:dns-server,$dns"
                         [ -n "$ntp" ] && [ -z "${optcode[42]:-}" ] && echo "dhcp-option=option:ntp-server,$ntp"

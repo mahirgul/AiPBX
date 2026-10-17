@@ -3,6 +3,10 @@
  * Extension Service
  */
 
+require_once __DIR__ . '/../helpers.php';
+require_once __DIR__ . '/../internal_numbers.php';
+require_once __DIR__ . '/../sip_helper.php';
+
 class ExtensionService {
     public static function saveExtension($data) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
@@ -34,7 +38,8 @@ class ExtensionService {
                 throw new \Exception(t('srv_ext.err_password'));
             }
 
-            // The extension number must be unique
+            // The extension number must not collide with other internal numbers or extensions
+            internalNumberValidate($extension, 'user', $user_id);
             $stmt = $db->prepare('SELECT id FROM sys_users WHERE extension = ? AND id != ?');
             $stmt->execute([$extension, $user_id]);
             if ($stmt->fetch()) {
@@ -194,6 +199,7 @@ class ExtensionService {
             }
             // Remove the extension (the user account is kept)
             DBHelper::update('sys_users', ['extension' => null, 'sip_password' => null], 'id', $user_id);
+            SIPHelper::deleteSettings($old_ext);
             markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (removed)", 'delete', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);

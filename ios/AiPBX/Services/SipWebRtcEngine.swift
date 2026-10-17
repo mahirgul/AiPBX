@@ -52,13 +52,13 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
     }
 
     private func loadHtml() {
-        guard let url = Bundle.main.url(forResource: "phone_engine", withExtension: "html") else {
+        guard let htmlUrl = Bundle.main.url(forResource: "phone_engine", withExtension: "html") else {
             AppLogManager.shared.error("SipEngine", "phone_engine.html not found in bundle")
             return
         }
 
-        let accessUrl = url.deletingLastPathComponent()
-        webView?.loadFileURL(url, allowingReadAccessTo: accessUrl)
+        let accessUrl = htmlUrl.deletingLastPathComponent()
+        webView?.loadFileURL(htmlUrl, allowingReadAccessTo: accessUrl)
         AppLogManager.shared.info("SipEngine", "Loading phone_engine.html...")
     }
 
@@ -134,7 +134,7 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
     }
 
     public func terminateCall() {
-        evaluateJs("terminateCall();")
+        evaluateJs("hangupCall();")
         CallKitManager.shared.endCall()
         AudioSessionManager.shared.endAudioSession()
 
@@ -153,21 +153,23 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
         AppLogManager.shared.info("SipEngine", "Call terminated")
     }
 
-    public func toggleMute() {
-        let newMute = !isMuted
-        evaluateJs("mute(\(newMute ? "true" : "false"));")
+    public func setMute(_ muted: Bool) {
+        evaluateJs("toggleMute(\(muted ? "true" : "false"));")
         DispatchQueue.main.async {
-            self.isMuted = newMute
-            AudioSessionManager.shared.setMuted(enabled: newMute)
+            self.isMuted = muted
+            AudioSessionManager.shared.setMuted(enabled: muted)
         }
     }
 
-    public func toggleHold() {
-        let newHold = !isHeld
-        evaluateJs("hold(\(newHold ? "true" : "false"));")
+    public func toggleMute() {
+        setMute(!isMuted)
+    }
+
+    public func setHold(_ held: Bool) {
+        evaluateJs("toggleHold(\(held ? "true" : "false"));")
         DispatchQueue.main.async {
-            self.isHeld = newHold
-            if newHold {
+            self.isHeld = held
+            if held {
                 self.callStatus = .onHold
             } else {
                 self.callStatus = .active
@@ -176,13 +178,18 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
         }
     }
 
+    public func toggleHold() {
+        setHold(!isHeld)
+    }
+
     public func sendDTMF(_ tone: String) {
-        evaluateJs("sendDTMF('\(escapeForJs(tone))');")
+        let escaped = escapeForJs(tone)
+        evaluateJs("sendDtmf('\(escaped)');")
         AppLogManager.shared.debug("SipEngine", "DTMF sent: \(tone)")
     }
 
     public func unregister() {
-        evaluateJs("unregister();")
+        evaluateJs("destroyUA();")
         DispatchQueue.main.async {
             self.connectionStatus = .disconnected
             self.delegate?.engineDidUpdateConnectionStatus(.disconnected)
@@ -205,6 +212,8 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
             .replacingOccurrences(of: "'", with: "\\'")
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "")
+            .replacingOccurrences(of: "\u{2028}", with: "\\u2028")
+            .replacingOccurrences(of: "\u{2029}", with: "\\u2029")
     }
 
     // MARK: - WKScriptMessageHandler
@@ -290,7 +299,7 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
                 // Answered on the CallKit screen while the INVITE was on its way.
                 answerCall()
             case .reject:
-                evaluateJs("terminateCall();")
+                evaluateJs("rejectCall();")
                 DispatchQueue.main.async {
                     self.callStatus = .idle
                     self.delegate?.engineDidUpdateCallStatus(.idle)

@@ -3,6 +3,8 @@
  * User & Extension Service
  */
 
+require_once __DIR__ . '/../sip_helper.php';
+
 class UserService {
     /**
      * Readable temporary password shown to the admin once (no confusable
@@ -178,6 +180,10 @@ class UserService {
                 $db = getDB();
                 $cur_pass = DBHelper::fetchColumn("SELECT sip_password FROM sys_users WHERE extension = ?", [$extension]);
                 $effective_sip_pass = !empty($sip_password) ? $sip_password : (!empty($cur_pass) ? $cur_pass : SIPHelper::generateStrongSIPPassword());
+                if (empty($cur_pass) && !empty($effective_sip_pass)) {
+                    $updPass = $db->prepare("UPDATE sys_users SET sip_password = ? WHERE id = ?");
+                    $updPass->execute([$effective_sip_pass, $user_id]);
+                }
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $effective_sip_pass);
                 markPendingSync('extensions', 'extension', $extension, "Extension: {$extension} ({$full_name})", 'update', $uid);
                 markPendingSync('general_dialplan', 'extension', $extension, "Extension dialplan: {$extension}", 'update', $uid);

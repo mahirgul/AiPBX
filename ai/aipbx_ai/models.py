@@ -278,6 +278,7 @@ class _Entry:
         self.spec = spec
         self.backend = backend
         self.state = None        # None: derived from the disk (absent/installed)
+        self.unloading = False
         self.progress = 0
         self.error = None
         self.job_lock = threading.Lock()   # one synthesis/benchmark at a time
@@ -290,6 +291,7 @@ class ModelManager:
         make = backend_factory or (lambda spec: spec.backend(spec, data_dir))
         self._make = make
         self._mu = threading.Lock()
+        self._cond = threading.Condition(self._mu)
         self._stopped_mu = threading.Lock()   # _set_stopped runs with and without _mu
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
@@ -398,6 +400,21 @@ class ModelManager:
                 pass
         return {"used_mb": round(used / (1024 * 1024)), "limit_mb": self.disk_limit_mb}
 
+    def _reserved_disk_mb(self):
+        """Caller holds self._mu. Disk used on disk plus in-flight DOWNLOADING models."""
+        used = 0
+        downloading_mb = 0
+        for entry in self._entries.values():
+            try:
+                b = entry.backend.disk_bytes()
+            except OSError:
+                b = 0
+            if entry.state == DOWNLOADING:
+                downloading_mb += max(round(b / (1024 * 1024)), entry.spec.download_mb)
+            else:
+                used += b
+        return round(used / (1024 * 1024)) + downloading_mb
+
     # ---- lifecycle -------------------------------------------------------
 
     def start(self):
@@ -421,40 +438,44 @@ class ModelManager:
     def install(self, model_id):
         """Starts download + load; idempotent. Returns the state after the call."""
         entry = self._entry(model_id)
-        with self._mu:
+        with self._cond:
+            while entry.unloading:
+                self._cond.wait()
+            if model_id not in self._entries:
+                raise UnknownModel(model_id)
             state = self._state(entry)
             if state in (DOWNLOADING, LOADING, READY):
                 return state
             download = not entry.backend.installed()
-        if download and self.disk()["used_mb"] + entry.spec.download_mb > self.disk_limit_mb:
-            raise DiskLimit(model_id)
-        self._set_stopped(model_id, False)
-        with self._mu:
-            state = self._state(entry)
-            if state in (DOWNLOADING, LOADING, READY):
-                return state
+            if download and self._reserved_disk_mb() + entry.spec.download_mb > self.disk_limit_mb:
+                raise DiskLimit(model_id)
             entry.state = DOWNLOADING if download else LOADING
             entry.progress, entry.error = 0, None
             state = entry.state
+        self._set_stopped(model_id, False)
         self._spawn(entry, download)
         return state
 
     def stop(self, model_id):
         """Unloads a running model (files stay); it stays stopped after restarts."""
         entry = self._entry(model_id)
-        with self._mu:
+        with self._cond:
             state = self._state(entry)
-            if state in (DOWNLOADING, LOADING):
+            if state in (DOWNLOADING, LOADING) or entry.unloading:
                 raise ModelBusy(model_id)
             self._set_stopped(model_id, True)
             if state != READY:
                 return state
-            entry.state = LOADING   # no new jobs while it unloads
-        with entry.job_lock:        # a running synthesis finishes first
-            entry.backend.unload()
-        with self._mu:
-            entry.state, entry.memory_mb = None, 0
-            return self._state(entry)
+            entry.unloading = True   # no new jobs while it unloads
+        try:
+            with entry.job_lock:     # a running synthesis finishes first
+                entry.backend.unload()
+        finally:
+            with self._cond:
+                entry.state, entry.memory_mb, entry.unloading = None, 0, False
+                self._cond.notify_all()
+                state = self._state(entry)
+        return state
 
     def add(self, spec):
         """Registers a model added by the administrator (catalogue search)."""
@@ -472,19 +493,20 @@ class ModelManager:
 
     def remove(self, model_id):
         entry = self._entry(model_id)
-        with self._mu:
-            if self._state(entry) in (DOWNLOADING, LOADING):
+        with self._cond:
+            if self._state(entry) in (DOWNLOADING, LOADING) or entry.unloading:
                 raise ModelBusy(model_id)
-            entry.state = LOADING  # blocks a parallel install/remove meanwhile
+            entry.unloading = True  # blocks a parallel install/remove meanwhile
         try:
             with entry.job_lock:    # a running job finishes before its files go
                 entry.backend.unload()
                 entry.backend.delete_files()
         finally:
-            with self._mu:
-                entry.state, entry.progress, entry.error, entry.memory_mb = None, 0, None, 0
+            with self._cond:
+                entry.state, entry.progress, entry.error, entry.memory_mb, entry.unloading = None, 0, None, 0, False
                 if entry.spec.custom:       # its manifest went with its folder
                     del self._entries[model_id]
+                self._cond.notify_all()
             self._set_stopped(model_id, False)
         return ABSENT if entry.spec.custom else self.state(model_id)
 
@@ -529,7 +551,7 @@ class ModelManager:
         if kind and entry.spec.kind != kind:
             raise WrongKind(model_id)
         with self._mu:
-            if self._state(entry) != READY:
+            if self._state(entry) != READY or entry.unloading:
                 raise NotReady(model_id)
             if entry.pending > MAX_WAITING:   # one running + MAX_WAITING waiting
                 raise ServiceBusy(model_id)
@@ -537,7 +559,7 @@ class ModelManager:
         try:
             with entry.job_lock:
                 with self._mu:
-                    if self._state(entry) != READY:
+                    if self._state(entry) != READY or entry.unloading:
                         raise NotReady(model_id)
                 return fn(entry.backend)
         finally:
@@ -555,7 +577,7 @@ class ModelManager:
         for entry in self._snapshot():
             if entry.spec.kind == "embedding":
                 with self._mu:
-                    if self._state(entry) == READY:
+                    if self._state(entry) == READY and not entry.unloading:
                         return entry.spec.id
         return None
 

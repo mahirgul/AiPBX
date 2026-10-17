@@ -163,12 +163,15 @@ func GetUserByID(id int) (*User, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 LIMIT 1", id)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 AND role != 'fax_user' LIMIT 1", id)
 	var u User
 	var active int
 	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active, &u.TokenEpoch)
 	if err != nil {
 		return nil, err
+	}
+	if u.Role == "fax_user" {
+		return nil, fmt.Errorf("fax_user cannot use chat")
 	}
 	u.IsActive = active == 1
 	if u.FullName == "" {
@@ -198,10 +201,10 @@ func GetContacts(currentExt string) ([]Contact, error) {
 		       COALESCE((
 		           SELECT COUNT(m.id) 
 		           FROM chat_participants p 
-		           JOIN chat_conversations c ON c.id = p.conversation_id AND c.type = 'direct'
+		           JOIN chat_conversations c ON c.id = p.conversation_id AND c.type = 'direct' AND c.is_deleted = 0
 		           JOIN chat_participants p2 ON p2.conversation_id = c.id AND p2.extension = u.extension
-		           JOIN chat_messages m ON m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext = u.extension
-		           WHERE p.extension = ?
+		           JOIN chat_messages m ON m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext = u.extension AND m.is_deleted = 0
+		           WHERE p.extension = ? AND p.left_at IS NULL
 		       ), 0) AS unread_count
 		FROM sys_users u
 		WHERE u.is_active = 1 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ? AND u.role != 'fax_user'
@@ -228,7 +231,7 @@ func GetConversations(ext string) ([]Conversation, error) {
 		SELECT c.id, c.type, COALESCE(c.direct_key, ''), COALESCE(c.title, ''),
 		       COALESCE(c.avatar_url, ''), COALESCE(c.description, ''), c.created_by,
 		       COALESCE(c.last_message_text, ''), c.last_message_at, c.created_at,
-		       (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext != p.extension) AS unread_count,
+		       (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext != p.extension AND m.is_deleted = 0) AS unread_count,
 		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT p2.extension FROM chat_participants p2 WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_ext,
 		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT COALESCE(u.full_name, u.username, p2.extension) FROM chat_participants p2 JOIN sys_users u ON u.extension = p2.extension WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_name,
 		       (SELECT COUNT(*) FROM chat_participants cp WHERE cp.conversation_id = c.id AND cp.left_at IS NULL) AS member_count,
@@ -271,9 +274,23 @@ func GetConversations(ext string) ([]Conversation, error) {
 // errNotChatUser: the other side of a direct chat is not an active chat user.
 var errNotChatUser = errors.New("Invalid or inactive user extension")
 
+// userError marks a validation error whose message is safe to return to the client.
+type userError string
+
+func (e userError) Error() string { return string(e) }
+
 func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation, error) {
 	if ext1 == ext2 {
-		return nil, fmt.Errorf("cannot create conversation with oneself")
+		return nil, userError("You cannot start a conversation with yourself")
+	}
+
+	// Validate both participants are active chat users (not inactive or fax_user)
+	// before returning an existing conversation or creating a new one (CH-G2 / YÜKSEK-8b).
+	for _, ext := range []string{ext1, ext2} {
+		u, err := GetUserByExt(ext)
+		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
+			return nil, fmt.Errorf("%w: %s", errNotChatUser, ext)
+		}
 	}
 
 	directKey := ext1 + ":" + ext2
@@ -295,15 +312,6 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		&cv.LastMessageText, &lastMsgAt, &createdAt)
 
 	if err == nil {
-		// Reopening checks the same membership as creating: a user who was
-		// deactivated or converted to fax since stays unreachable, instead of
-		// sliding back in through the old conversation.
-		for _, ext := range []string{ext1, ext2} {
-			u, err := GetUserByExt(ext)
-			if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
-				return nil, fmt.Errorf("%w: %s", errNotChatUser, ext)
-			}
-		}
 		// Ensure both participants are active (left_at is cleared)
 		_, _ = db.Exec("UPDATE chat_participants SET left_at = NULL WHERE conversation_id = ? AND extension IN (?, ?)", cv.ID, ext1, ext2)
 
@@ -323,15 +331,6 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		cv.MemberCount = 2
 		cv.MyRole = "member"
 		return &cv, nil
-	}
-
-	// Not found: only with a real chat user (same check as group members,
-	// CH-G2). Any string used to become a participant, a fax-only user too.
-	for _, ext := range []string{ext1, ext2} {
-		u, err := GetUserByExt(ext)
-		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
-			return nil, fmt.Errorf("%w: %s", errNotChatUser, ext)
-		}
 	}
 
 	// Create in a transaction
@@ -677,7 +676,7 @@ func CanAccessAttachment(filename, ext string) (bool, error) {
 		SELECT 1 FROM chat_messages m
 		JOIN chat_participants p ON p.conversation_id = m.conversation_id AND p.extension = ? AND p.left_at IS NULL
 		JOIN chat_conversations mc ON mc.id = m.conversation_id AND mc.is_deleted = 0
-		WHERE SUBSTRING_INDEX(m.attachment_url, '/', -1) = ?
+		WHERE m.is_deleted = 0 AND SUBSTRING_INDEX(m.attachment_url, '/', -1) = ?
 		UNION ALL
 		SELECT 1 FROM chat_conversations c
 		JOIN chat_participants p ON p.conversation_id = c.id AND p.extension = ? AND p.left_at IS NULL
@@ -694,7 +693,7 @@ func CanAccessAttachment(filename, ext string) (bool, error) {
 
 func GetConversationByID(convID int) (*Conversation, error) {
 	if convID <= 0 || db == nil {
-		return nil, fmt.Errorf("Invalid conversation ID")
+		return nil, userError("Invalid conversation ID")
 	}
 	var cv Conversation
 	var lastMsgAt sql.NullTime
@@ -726,7 +725,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 	title = strings.ReplaceAll(title, "\r", "")
 	title = strings.ReplaceAll(title, "\n", "")
 	if title == "" {
-		return nil, nil, fmt.Errorf("The group name cannot be empty")
+		return nil, nil, userError("The group name cannot be empty")
 	}
 	title = clipRunes(title, 100)
 	description = clipRunes(strings.TrimSpace(description), 255)
@@ -745,14 +744,14 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 
 	// CH-G3: at most 256 members
 	if len(memberMap) > 256 {
-		return nil, nil, fmt.Errorf("A group can have at most 256 members")
+		return nil, nil, userError("A group can have at most 256 members")
 	}
 
 	// CH-G2: sys_users validation
 	for m := range memberMap {
 		u, err := GetUserByExt(m)
 		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
-			return nil, nil, fmt.Errorf("Invalid or inactive user extension: %s", m)
+			return nil, nil, userError(fmt.Sprintf("Invalid or inactive user extension: %s", m))
 		}
 	}
 
@@ -867,7 +866,7 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 		return nil, err
 	}
 	if conv.Type != "group" {
-		return nil, fmt.Errorf("This conversation is not a group")
+		return nil, userError("This conversation is not a group")
 	}
 
 	rows, err := db.Query(`
@@ -905,18 +904,20 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, nil, fmt.Errorf("You must be a group admin to add members")
+		return nil, nil, userError("You must be a group admin to add members")
 	}
 
 	var currentCount int
 	_ = db.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND left_at IS NULL", convID).Scan(&currentCount)
 
+	seen := make(map[string]bool)
 	var validExts []string
 	for _, e := range exts {
 		e = strings.TrimSpace(e)
-		if e == "" {
+		if e == "" || seen[e] {
 			continue
 		}
+		seen[e] = true
 		u, err := GetUserByExt(e)
 		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
 			continue
@@ -930,11 +931,11 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 
 	if len(validExts) == 0 {
-		return nil, nil, fmt.Errorf("No valid new user to add")
+		return nil, nil, userError("No valid new user to add")
 	}
 
 	if currentCount+len(validExts) > 256 {
-		return nil, nil, fmt.Errorf("A group can have at most 256 members")
+		return nil, nil, userError("A group can have at most 256 members")
 	}
 
 	tx, err := db.Begin()
@@ -956,7 +957,7 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 
 	if len(added) == 0 {
-		return nil, nil, fmt.Errorf("Could not add the members")
+		return nil, nil, userError("Could not add the members")
 	}
 
 	actorName := actorExt
@@ -1014,10 +1015,10 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, fmt.Errorf("You must be a group admin to remove members")
+		return nil, userError("You must be a group admin to remove members")
 	}
 	if actorExt == targetExt {
-		return nil, fmt.Errorf("You cannot remove yourself; use leave group instead")
+		return nil, userError("You cannot remove yourself; use leave group instead")
 	}
 
 	res, err := db.Exec(`
@@ -1030,7 +1031,7 @@ func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error)
 	}
 	rowsAff, _ := res.RowsAffected()
 	if rowsAff == 0 {
-		return nil, fmt.Errorf("The user is not an active member of the group")
+		return nil, userError("The user is not an active member of the group")
 	}
 
 	actorName := actorExt
@@ -1056,15 +1057,21 @@ func RemoveGroupMember(convID int, actorExt, targetExt string) (*Message, error)
 func LeaveGroup(convID int, ext string) (*Message, error) {
 	isPart, err := IsParticipant(convID, ext)
 	if err != nil || !isPart {
-		return nil, fmt.Errorf("You are not an active member of this group")
+		return nil, userError("You are not an active member of this group")
 	}
 	// Leaving is for groups only: on a direct chat the "no admin left" step
 	// below would make the other person admin of the private conversation.
 	if conv, err := GetConversationByID(convID); err != nil || conv.Type != "group" {
-		return nil, fmt.Errorf("This conversation is not a group")
+		return nil, userError("This conversation is not a group")
 	}
 
-	_, err = db.Exec(`
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`
 		UPDATE chat_participants
 		SET left_at = NOW()
 		WHERE conversation_id = ? AND extension = ? AND left_at IS NULL
@@ -1072,26 +1079,44 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	if aff, _ := res.RowsAffected(); aff == 0 {
+		return nil, userError("You are not an active member of this group")
+	}
 
 	var remainingCount int
-	_ = db.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND left_at IS NULL", convID).Scan(&remainingCount)
+	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND left_at IS NULL", convID).Scan(&remainingCount); err != nil {
+		return nil, err
+	}
 
 	if remainingCount == 0 {
-		_, _ = db.Exec("UPDATE chat_conversations SET is_deleted = 1, updated_at = NOW() WHERE id = ?", convID)
+		if _, err := tx.Exec("UPDATE chat_conversations SET is_deleted = 1, updated_at = NOW() WHERE id = ?", convID); err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
 		return nil, nil
 	}
 
 	// If the last admin leaves, make the oldest member admin
 	var adminCount int
-	_ = db.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL", convID).Scan(&adminCount)
+	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL", convID).Scan(&adminCount); err != nil {
+		return nil, err
+	}
 	if adminCount == 0 {
-		_, _ = db.Exec(`
+		if _, err := tx.Exec(`
 			UPDATE chat_participants
 			SET role = 'admin'
 			WHERE conversation_id = ? AND left_at IS NULL
 			ORDER BY joined_at ASC
 			LIMIT 1
-		`, convID)
+		`, convID); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	userName := ext
@@ -1109,14 +1134,14 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string) (*Message, error) {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return nil, fmt.Errorf("You must be a group admin to update the group")
+		return nil, userError("You must be a group admin to update the group")
 	}
 
 	title = strings.TrimSpace(title)
 	title = strings.ReplaceAll(title, "\r", "")
 	title = strings.ReplaceAll(title, "\n", "")
 	if title == "" {
-		return nil, fmt.Errorf("The group name cannot be empty")
+		return nil, userError("The group name cannot be empty")
 	}
 	title = clipRunes(title, 100)
 	description = clipRunes(strings.TrimSpace(description), 255)
@@ -1145,32 +1170,56 @@ func UpdateGroupInfo(convID int, actorExt, title, avatarURL, description string)
 func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) error {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return fmt.Errorf("You must be a group admin to change roles")
+		return userError("You must be a group admin to change roles")
 	}
 	if newRole != "admin" && newRole != "member" {
-		return fmt.Errorf("Invalid role: %s", newRole)
+		return userError(fmt.Sprintf("Invalid role: %s", newRole))
 	}
 
-	res, err := db.Exec(`
+	var currentRole string
+	err = db.QueryRow(`
+		SELECT COALESCE(role, 'member')
+		FROM chat_participants
+		WHERE conversation_id = ? AND extension = ? AND left_at IS NULL
+		LIMIT 1
+	`, convID, targetExt).Scan(&currentRole)
+	if err == sql.ErrNoRows {
+		return userError("The user is not an active member of the group")
+	}
+	if err != nil {
+		return err
+	}
+	if currentRole == newRole {
+		return nil
+	}
+
+	if newRole == "member" && currentRole == "admin" {
+		var otherAdmins int
+		if err := db.QueryRow(`
+			SELECT COUNT(*)
+			FROM chat_participants
+			WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL AND extension != ?
+		`, convID, targetExt).Scan(&otherAdmins); err != nil {
+			return err
+		}
+		if otherAdmins == 0 {
+			return userError("The group must have at least one admin")
+		}
+	}
+
+	_, err = db.Exec(`
 		UPDATE chat_participants
 		SET role = ?
 		WHERE conversation_id = ? AND extension = ? AND left_at IS NULL
 	`, newRole, convID, targetExt)
-	if err != nil {
-		return err
-	}
-	rowsAff, _ := res.RowsAffected()
-	if rowsAff == 0 {
-		return fmt.Errorf("The user is not an active member of the group")
-	}
-	return nil
+	return err
 }
 
 // DeleteGroup soft-deletes a group conversation
 func DeleteGroup(convID int, actorExt string) error {
 	isAdmin, err := IsGroupAdmin(convID, actorExt)
 	if err != nil || !isAdmin {
-		return fmt.Errorf("You must be a group admin to delete the group")
+		return userError("You must be a group admin to delete the group")
 	}
 
 	_, err = db.Exec("UPDATE chat_conversations SET is_deleted = 1, updated_at = NOW() WHERE id = ?", convID)

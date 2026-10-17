@@ -9,6 +9,10 @@
  * voicemail lamp and listening from a desk phone stay as they are); archived
  * ones are played and deleted in the portal and the apps only.
  */
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/BucketFiles.php';
 

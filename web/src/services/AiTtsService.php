@@ -258,10 +258,28 @@ class AiTtsService
         return self::audioDir() . '/' . $id . '.mp3';
     }
 
+    private static function scopedUserId(): ?int
+    {
+        $role = $_SESSION['user_role'] ?? '';
+        if ($role === 'admin') {
+            return null;
+        }
+        if ($role === '' && empty($_SESSION['user_id']) && PHP_SAPI === 'cli') {
+            return null;
+        }
+        return (int) ($_SESSION['user_id'] ?? 0);
+    }
+
     public static function get(int $id): ?array
     {
-        $stmt = getDB()->prepare('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by WHERE h.id = ?');
-        $stmt->execute([$id]);
+        $uid = self::scopedUserId();
+        if ($uid !== null) {
+            $stmt = getDB()->prepare('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by WHERE h.id = ? AND h.created_by = ?');
+            $stmt->execute([$id, $uid]);
+        } else {
+            $stmt = getDB()->prepare('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by WHERE h.id = ?');
+            $stmt->execute([$id]);
+        }
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
@@ -269,12 +287,23 @@ class AiTtsService
     /** @return list<array<string, mixed>> */
     public static function history(int $limit = 50): array
     {
-        $stmt = getDB()->query('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by ORDER BY h.id DESC LIMIT ' . max(1, min(500, $limit)));
+        $lim = max(1, min(500, $limit));
+        $uid = self::scopedUserId();
+        if ($uid !== null) {
+            $stmt = getDB()->prepare('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by WHERE h.created_by = ? ORDER BY h.id DESC LIMIT ' . $lim);
+            $stmt->execute([$uid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $stmt = getDB()->query('SELECT h.*, u.full_name AS created_by_name FROM ai_tts_history h LEFT JOIN sys_users u ON u.id = h.created_by ORDER BY h.id DESC LIMIT ' . $lim);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function delete(int $id): void
     {
+        $row = self::get($id);
+        if (!$row) {
+            return;
+        }
         getDB()->prepare('DELETE FROM ai_tts_history WHERE id = ?')->execute([$id]);
         @unlink(self::audioPath($id));
     }

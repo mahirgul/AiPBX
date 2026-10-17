@@ -109,14 +109,21 @@ class MsTeamsRepository extends BaseRepository
         $id = !empty($data['id']) ? (int)$data['id'] : 0;
         $extension = trim($data['extension'] ?? '');
         $teams_upn = trim($data['teams_upn'] ?? '');
+        $display_name = trim($data['display_name'] ?? '');
         $phone_number = trim($data['phone_number'] ?? '');
         $direct_routing_enabled = !empty($data['direct_routing_enabled']) ? 1 : 0;
         $notes = trim($data['notes'] ?? '');
 
-        if ($extension === '') {
+        if ($extension === '' || !preg_match('/^[0-9]{1,20}$/', $extension)) {
             return ['success' => false, 'error' => t('ms_teams.msg_err_ext_required')];
         }
-        if ($teams_upn === '' || !filter_var($teams_upn, FILTER_VALIDATE_EMAIL)) {
+        if ($teams_upn === '' || !filter_var($teams_upn, FILTER_VALIDATE_EMAIL) || preg_match('/[\x00-\x1F\x7F\'"`$]/', $teams_upn)) {
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
+        }
+        if ($display_name !== '' && preg_match('/[\x00-\x1F\x7F\'"`$]/', $display_name)) {
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
+        }
+        if ($phone_number !== '' && !preg_match('/^\+?[0-9]{3,20}$/', $phone_number)) {
             return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_upn')];
         }
 

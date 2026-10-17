@@ -135,7 +135,7 @@ function validateMobileToken(?string $token): ?array
 
     // DB user check - T-6: sip_password added so refresh.php does not return an empty password
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, is_active, token_epoch FROM sys_users WHERE id = ?');
+    $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, token_epoch FROM sys_users WHERE id = ?');
     $stmt->execute([(int)$userId]);
     $user = $stmt->fetch();
 
@@ -180,9 +180,11 @@ function buildMobileLoginResponse(array $user): array
     $webrtc_suffix = getSystemSetting('webrtc_username_suffix', '-webrtc');
     $ws_path = getSystemSetting('pjsip_ws_path', '/ws');
 
+    $mobil_allowed = in_array('mobil', parsePhoneModes($user['allowed_phone_mode'] ?? null), true);
+
     // Coturn TURNS (TLS/TCP)
     $turn = null;
-    if (defined('TURN_SECRET') && TURN_SECRET !== '') {
+    if ($mobil_allowed && defined('TURN_SECRET') && TURN_SECRET !== '') {
         $turn_username = (time() + 2592000) . ':' . $user['extension'];
         $turn_password = base64_encode(hash_hmac('sha1', $turn_username, TURN_SECRET, true));
         $turn_host = defined('TURN_HOST') && TURN_HOST !== '' ? TURN_HOST : ($_SERVER['HTTP_HOST'] ?? '127.0.0.1');
@@ -225,7 +227,7 @@ function buildMobileLoginResponse(array $user): array
             'sip_username' => $user['extension'] . '-mob-webrtc',
             'native_sip_username' => $user['extension'],
             'webrtc_username' => $user['extension'] . '-mob-webrtc',
-            'sip_password' => $user['sip_password'] ?? '',
+            'sip_password' => $mobil_allowed ? ($user['sip_password'] ?? '') : '',
             'domain' => $domain,
             'sip_port' => 5060,
             'ws_url' => 'wss://' . $domain . $ws_path,

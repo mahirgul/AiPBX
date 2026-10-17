@@ -202,9 +202,8 @@ class QrLoginService
 
     private static function serverUrl(): string
     {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
-        return $scheme . '://' . $host;
+        require_once __DIR__ . '/ForgotPasswordService.php';
+        return ForgotPasswordService::portalUrl();
     }
 
     /** JSON payload the app reads from the QR (Android/iOS handleScannedQr). */
@@ -225,15 +224,20 @@ class QrLoginService
     /**
      * Checks whether the QR code has been scanned (for status polling on the web side).
      */
-    public static function checkStatus(string $token): array
+    public static function checkStatus(string $token, ?int $userId = null): array
     {
         if (empty($token)) {
             return ['used' => false, 'expired' => true];
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT used_at, expires_at, device_name FROM sys_user_qr_tokens WHERE token = ? LIMIT 1');
-        $stmt->execute([$token]);
+        if ($userId !== null && $userId > 0) {
+            $stmt = $db->prepare('SELECT used_at, expires_at, device_name FROM sys_user_qr_tokens WHERE token = ? AND user_id = ? LIMIT 1');
+            $stmt->execute([$token, $userId]);
+        } else {
+            $stmt = $db->prepare('SELECT used_at, expires_at, device_name FROM sys_user_qr_tokens WHERE token = ? LIMIT 1');
+            $stmt->execute([$token]);
+        }
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$row) {

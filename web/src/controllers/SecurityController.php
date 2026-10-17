@@ -105,7 +105,7 @@ class SecurityController extends BaseController
                         $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, token_epoch = token_epoch + 1 WHERE id = ?');
                         $upd->execute([$newHash, $userId]);
                         if (function_exists('writeAuditLog')) {
-                            writeAuditLog($userId, 'sys_users', $userId, "User '{$user['username']}' changed their web password.", 'password_change');
+                            writeAuditLog('security', 'sys_users', (string)$userId, "User '{$user['username']}' changed their web password.", 'password_change', (int)$userId);
                         }
                         $message = t('security.password_changed_success');
                     }

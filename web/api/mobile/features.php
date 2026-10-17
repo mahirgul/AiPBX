@@ -43,12 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             : (int)($currentDetails['cf_noanswer_timeout'] ?? 20));
 
     $mode = $currentDetails['allowed_phone_mode'] ?? 'web,mobil,sip,video';
-    if (isset($json['phone_modes']) && is_array($json['phone_modes'])) {
-        $mode = formatPhoneModes($json['phone_modes']);
-    } elseif (isset($json['allowed_phone_mode'])) {
-        $mode = formatPhoneModes(parsePhoneModes($json['allowed_phone_mode']));
-    } elseif (isset($_POST['allowed_phone_mode'])) {
-        $mode = formatPhoneModes(parsePhoneModes($_POST['allowed_phone_mode']));
+    if (($user['role'] ?? '') === 'admin') {
+        if (isset($json['phone_modes']) && is_array($json['phone_modes'])) {
+            $mode = formatPhoneModes($json['phone_modes']);
+        } elseif (isset($json['allowed_phone_mode'])) {
+            $mode = formatPhoneModes(parsePhoneModes($json['allowed_phone_mode']));
+        } elseif (isset($_POST['allowed_phone_mode'])) {
+            $mode = formatPhoneModes(parsePhoneModes($_POST['allowed_phone_mode']));
+        }
     }
 
     MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forward, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout);

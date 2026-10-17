@@ -99,7 +99,7 @@ class ServerSetupActivity : AppCompatActivity() {
 
         binding.btnConnect.setOnClickListener {
             val url = binding.etServerUrl.text.toString().trim()
-            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            if (!url.startsWith("https://", ignoreCase = true)) {
                 showError(getString(R.string.err_invalid_url))
                 return@setOnClickListener
             }
@@ -155,10 +155,10 @@ class ServerSetupActivity : AppCompatActivity() {
             val json = JSONObject(qrData)
             val type = json.optString("type")
             if (type == "aipbx_qr_login") {
-                val serverUrl = json.optString("server")
+                val serverUrl = json.optString("server").trim().trimEnd('/')
                 val qrToken = json.optString("qr_token")
-                if (serverUrl.isNotEmpty() && qrToken.isNotEmpty()) {
-                    performQrLogin(serverUrl, qrToken)
+                if (serverUrl.startsWith("https://", ignoreCase = true) && qrToken.isNotEmpty()) {
+                    confirmServerThen(serverUrl) { performQrLogin(serverUrl, qrToken) }
                 } else {
                     showError(getString(R.string.err_qr_missing_params))
                 }
@@ -168,6 +168,17 @@ class ServerSetupActivity : AppCompatActivity() {
         } catch (e: Exception) {
             showError(getString(R.string.err_qr_decode, e.message))
         }
+    }
+
+    private fun confirmServerThen(serverUrl: String, onConfirmed: () -> Unit) {
+        val host = Uri.parse(serverUrl).host ?: serverUrl
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.mobile_login_title))
+            .setMessage(getString(R.string.confirm_server_login, host))
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.btn_login)) { _, _ -> onConfirmed() }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
     }
 
     private fun performQrLogin(serverUrl: String, qrToken: String) {

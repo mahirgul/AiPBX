@@ -61,7 +61,9 @@ if ($is_spa_request) {
     if (!empty($all_notifications)) {
         echo '<script>';
         foreach ($all_notifications as $item) {
-            echo 'if (typeof showFooterToast === "function") showFooterToast(' . json_encode($item['message']) . ', ' . json_encode($item['type']) . ');';
+            echo 'if (typeof showFooterToast === "function") showFooterToast('
+                . json_encode($item['message'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ', '
+                . json_encode($item['type'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ');';
         }
         echo '</script>';
     }
@@ -161,7 +163,7 @@ if ($is_spa_request) {
 <?php if (!empty($all_notifications)): ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const notifications = <?php echo json_encode($all_notifications); ?>;
+        const notifications = <?php echo json_encode($all_notifications, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         notifications.forEach(function(item, index) {
             setTimeout(function() {
                 if (window.notify) {

@@ -12,6 +12,7 @@ require_once __DIR__ . '/../priv_helper.php';
 class MailSettingsService
 {
     const SASL_PASSWD = '/etc/postfix/sasl_passwd';
+    const SASL_STAGE = '/var/lib/aipbx/sasl_passwd';
 
     /** Seconds the test e-mail waits for postfix to report the delivery result. */
     const TEST_WAIT = 20;
@@ -116,12 +117,17 @@ class MailSettingsService
             }
             $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
-                // Written in place: install.sh makes the file root:www-data 0660,
-                // but www-data cannot create files in /etc/postfix, so the atomic
-                // temp-file write of FileHelper always failed — silently, and
-                // postfix relayed without logging in.
+                // Stage in /var/lib/aipbx/sasl_passwd (0600) so `aipbx-priv postfix postmap`
+                // can validate and install it as root:root 0600 into /etc/postfix/sasl_passwd
+                // without locking www-data out on subsequent saves.
                 $line = $relay_spec . ' ' . $user . ':' . $pass . "\n";
-                if (@file_put_contents(self::SASL_PASSWD, $line, LOCK_EX) === false) {
+                $target = (is_dir(dirname(self::SASL_STAGE)) && is_writable(dirname(self::SASL_STAGE)))
+                    ? self::SASL_STAGE
+                    : self::SASL_PASSWD;
+                $oldUmask = umask(0077);
+                $written = @file_put_contents($target, $line, LOCK_EX);
+                umask($oldUmask);
+                if ($written === false) {
                     return ['success' => false, 'error' => sprintf(t('srv_mail.err_sasl_write'), self::SASL_PASSWD)];
                 }
                 $steps[] = ['postfix', 'postmap'];

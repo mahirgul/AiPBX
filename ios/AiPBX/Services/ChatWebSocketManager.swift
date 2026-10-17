@@ -9,7 +9,7 @@ public protocol ChatWebSocketDelegate: AnyObject {
     func webSocketDidReceiveTyping(conversationId: Int, senderName: String, isTyping: Bool)
 }
 
-public final class ChatWebSocketManager: NSObject, ObservableObject {
+public final class ChatWebSocketManager: NSObject, ObservableObject, URLSessionWebSocketDelegate {
     public static let shared = ChatWebSocketManager()
 
     @Published public private(set) var isConnected: Bool = false
@@ -26,7 +26,7 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
     private override init() {
         super.init()
         let config = URLSessionConfiguration.default
-        self.session = URLSession(configuration: config, delegate: nil, delegateQueue: OperationQueue())
+        self.session = URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue())
     }
 
     public func connect(baseUrl: String, token: String) {
@@ -58,23 +58,21 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
             return
         }
 
-        AppLogManager.shared.info("ChatWS", "Connecting to WS: \(wsUrl.absoluteString)")
+        let maskedUrl = wsUrl.absoluteString.replacingOccurrences(of: "token=[^&]+", with: "token=REDACTED", options: .regularExpression)
+        AppLogManager.shared.info("ChatWS", "Connecting to WS: \(maskedUrl)")
         webSocketTask = session?.webSocketTask(with: wsUrl)
         webSocketTask?.resume()
 
         listenForMessages()
         schedulePing()
-
-        DispatchQueue.main.async {
-            self.isConnected = true
-            self.delegate?.webSocketDidUpdateConnectionState(true)
-        }
     }
 
     public func disconnect(manual: Bool = true) {
         isManuallyClosed = manual
-        pingTimer?.invalidate()
-        pingTimer = nil
+        DispatchQueue.main.async {
+            self.pingTimer?.invalidate()
+            self.pingTimer = nil
+        }
 
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
         webSocketTask = nil
@@ -136,6 +134,13 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
             guard let self = self else { return }
             switch result {
             case .success(let message):
+                self.reconnectAttempts = 0
+                DispatchQueue.main.async {
+                    if !self.isConnected {
+                        self.isConnected = true
+                        self.delegate?.webSocketDidUpdateConnectionState(true)
+                    }
+                }
                 switch message {
                 case .string(let text):
                     self.handleIncomingText(text)
@@ -158,6 +163,24 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
                     self.reconnect()
                 }
             }
+        }
+    }
+
+    public func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        guard webSocketTask === self.webSocketTask else { return }
+        reconnectAttempts = 0
+        schedulePing()
+        DispatchQueue.main.async {
+            self.isConnected = true
+            self.delegate?.webSocketDidUpdateConnectionState(true)
+        }
+    }
+
+    public func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        guard webSocketTask === self.webSocketTask else { return }
+        DispatchQueue.main.async {
+            self.isConnected = false
+            self.delegate?.webSocketDidUpdateConnectionState(false)
         }
     }
 
@@ -223,20 +246,25 @@ public final class ChatWebSocketManager: NSObject, ObservableObject {
     }
 
     private func schedulePing() {
-        pingTimer?.invalidate()
-        pingTimer = Timer.scheduledTimer(withTimeInterval: 25.0, repeats: true) { [weak self] _ in
-            self?.webSocketTask?.sendPing { error in
-                if let error = error {
-                    AppLogManager.shared.warn("ChatWS", "Ping failed: \(error.localizedDescription)")
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.pingTimer?.invalidate()
+            let timer = Timer(timeInterval: 25.0, repeats: true) { [weak self] _ in
+                self?.webSocketTask?.sendPing { error in
+                    if let error = error {
+                        AppLogManager.shared.warn("ChatWS", "Ping failed: \(error.localizedDescription)")
+                    }
                 }
             }
+            RunLoop.main.add(timer, forMode: .common)
+            self.pingTimer = timer
         }
     }
 
     private func reconnect() {
         reconnectAttempts += 1
         let delay = min(Double(reconnectAttempts * 2), 20.0)
-        DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self = self, !self.isManuallyClosed else { return }
             self.connect(baseUrl: self.currentBaseUrl, token: self.currentToken)
         }

@@ -61,6 +61,7 @@ class KokoroBackend:
         self.dir = self.models_dir / spec.id
         self.shared_dir = self.models_dir / SHARED_DIR
         self._voice = None
+        self._voice_lock = None
         self._np = None
 
     # ---- files -----------------------------------------------------------
@@ -179,13 +180,15 @@ class KokoroBackend:
             if shared is None:
                 # The voice pack is named after the voice (its prefix selects the dialect).
                 voice = KokoroVoice(str(self.model_path), {name: pack}, str(self.dir / CONFIG_FILE))
-                shared = _engines[self.model_sha] = {"voice": voice, "users": set()}
+                shared = _engines[self.model_sha] = {"voice": voice, "users": set(), "lock": threading.Lock()}
             else:
-                shared["voice"].add_voice(name, pack)
+                with shared["lock"]:
+                    shared["voice"].add_voice(name, pack)
             shared["users"].add(self.spec.id)
-            self._np, self._voice = np, shared["voice"]
+            self._np, self._voice, self._voice_lock = np, shared["voice"], shared["lock"]
         try:
-            self._voice.say(WARMUP_TEXT, sample_rate=8000, voice=name)
+            with self._voice_lock:
+                self._voice.say(WARMUP_TEXT, sample_rate=8000, voice=name)
         except Exception:
             self.unload()
             raise
@@ -198,18 +201,21 @@ class KokoroBackend:
             if shared is not None:
                 shared["users"].discard(self.spec.id)
                 if shared["users"]:
-                    shared["voice"].remove_voice(self.spec.source["voice_name"])
+                    with shared["lock"]:
+                        shared["voice"].remove_voice(self.spec.source["voice_name"])
                 else:
                     del _engines[self.model_sha]
             self._voice = None
+            self._voice_lock = None
         gc.collect()
 
     # ---- inference -------------------------------------------------------
 
     def synthesize(self, text, speed, sample_rate, on_first_audio=None):
-        voice, np = self._voice, self._np
+        voice, lock, np = self._voice, self._voice_lock, self._np
         if voice is None:
             raise RuntimeError("model not loaded")
-        audio = voice.say(text, speed=speed, sample_rate=sample_rate, on_first_audio=on_first_audio,
-                          voice=self.spec.source["voice_name"])
+        with lock if lock is not None else _engine_lock:
+            audio = voice.say(text, speed=speed, sample_rate=sample_rate, on_first_audio=on_first_audio,
+                              voice=self.spec.source["voice_name"])
         return (np.clip(audio, -1.0, 1.0) * 32767.0).round().astype("<i2").tobytes()

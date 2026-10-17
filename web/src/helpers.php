@@ -113,6 +113,13 @@ class PBXHelper {
                 if ($table === 'pbx_outbound_routes') {
                     markPendingSync('ivrs', $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
                 }
+                if ($table === 'sys_users' && !empty($row['extension'])) {
+                    $uid = $_SESSION['user_id'] ?? null;
+                    $lbl = ($row['label'] ?: $id) . " ({$status_text}, ext {$row['extension']})";
+                    markPendingSync('general_dialplan', 'extension', $id, $lbl, 'update', $uid);
+                    markPendingSync('voicemail', 'extension', $id, $lbl, 'update', $uid);
+                    markPendingSync('ivrs', 'extension', $id, $lbl, 'update', $uid);
+                }
                 return sprintf(t('common.status_set_apply'), $status_text);
             }
             return sprintf(t('common.status_set'), $status_text);

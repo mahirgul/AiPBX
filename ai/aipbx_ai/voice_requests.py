@@ -226,11 +226,15 @@ def _atomic_write(path, data):
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
     # 0600: an app config may hold a cloud provider's key.
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "wb") as f:
-        f.write(data)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, path)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 class AppStore:
@@ -270,11 +274,11 @@ class AppStore:
 
     def put(self, app_id, data):
         config = validate_config(data, self.manager)
-        if self.dir is not None:
-            self.dir.mkdir(parents=True, exist_ok=True)
-            _atomic_write(self.dir / f"{app_id}.json",
-                          json.dumps(config, ensure_ascii=False, indent=1).encode("utf-8"))
+        encoded = json.dumps(config, ensure_ascii=False, indent=1).encode("utf-8")
         with self._mu:
+            if self.dir is not None:
+                self.dir.mkdir(parents=True, exist_ok=True)
+                _atomic_write(self.dir / f"{app_id}.json", encoded)
             self._counter += 1
             self._apps[app_id] = config
             self._version[app_id] = self._counter
@@ -286,12 +290,12 @@ class AppStore:
             existed = self._apps.pop(app_id, None) is not None
             self._version.pop(app_id, None)
             self._drop_cache(app_id)
-        if self.dir is not None:
-            try:
-                (self.dir / f"{app_id}.json").unlink()
-                existed = True
-            except FileNotFoundError:
-                pass
+            if self.dir is not None:
+                try:
+                    (self.dir / f"{app_id}.json").unlink()
+                    existed = True
+                except FileNotFoundError:
+                    pass
         return existed
 
     def _drop_cache(self, app_id):

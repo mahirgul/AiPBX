@@ -79,7 +79,7 @@ if (function_exists('logLoginAttempt')) {
     logLoginAttempt($client_ip, $user['username'], 'SUCCESS');
 }
 if (function_exists('writeAuditLog')) {
-    writeAuditLog($user['id'], 'sys_users', $user['id'], "User '{$user['username']}' signed in from the mobile app with Google ({$email}).", 'google_mobile_login');
+    writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in from the mobile app with Google ({$email}).", 'google_mobile_login', (int)$user['id']);
 }
 
 // Return the standard mobile sign-in response
