@@ -110,4 +110,33 @@ final class SipSecretRotationTest extends TestCase
             'a fax extension has no endpoint: the leftover row would shadow a later SIP reuse'
         );
     }
+
+    public function testShortPasswordRejectedWhenDigestOn(): void
+    {
+        $pw = 'Long-' . bin2hex(random_bytes(6));
+        $this->assertTrue($this->save(['sip_password' => $pw])['success']);
+
+        // Same floor as the Extensions page: digest auth needs 6+ characters.
+        $res = UserService::resetPassword([
+            'csrf_token' => 'test-token',
+            'user_id' => $this->userId(),
+            'new_sip_password' => 'abc',
+        ]);
+        $this->assertFalse($res['success'], 'a weak reset must not be accepted');
+        $this->assertSame($pw, $this->sipSecret(), 'a refused reset must leave the secret alone');
+    }
+
+    public function testShortPasswordAllowedWhenDigestOff(): void
+    {
+        $this->assertTrue($this->save(['sip_password' => 'abc', 'sip_auth_digest' => '0'])['success']);
+
+        // No digest, no floor — but the value must still reach the endpoint.
+        $res = UserService::resetPassword([
+            'csrf_token' => 'test-token',
+            'user_id' => $this->userId(),
+            'new_sip_password' => 'xyz',
+        ]);
+        $this->assertTrue($res['success'], $res['error'] ?? '');
+        $this->assertSame('xyz', $this->sipSecret());
+    }
 }
