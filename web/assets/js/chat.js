@@ -1095,12 +1095,9 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// escapeHtml() comes from ui_helper.js (loaded on every page). The copy that
+// was here did not escape quotes and, being global, replaced the safe one on
+// every page opened after the chat (SPA navigation).
 
 // 18. Group management and helper functions
 function getSenderColor(ext) {

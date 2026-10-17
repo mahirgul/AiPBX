@@ -7,6 +7,10 @@
  * Native columns: time (datetime string), callid, queuename, agent, event, data1..data5.
  * Target: `cc_queue_logs` — the table the portal reports read: time_id (epoch int), call_id, queue_name, ...
  */
+if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
+    http_response_code(404);
+    exit;
+}
 require_once dirname(__DIR__) . '/config.php';
 
 try {

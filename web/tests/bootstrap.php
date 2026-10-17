@@ -47,6 +47,7 @@ foreach (['sounds', 'tts'] as $d) {
 putenv('SOUNDS_CUSTOM_DIR=' . $tmpConf . '/sounds');
 putenv('AI_TTS_DIR=' . $tmpConf . '/tts');
 putenv('AIPBX_SETTINGS_KEY=test-settings-key');
+putenv('TURN_SECRET=test-turn-secret');   // signs the mobile/chat tokens
 
 // LOCK 3 — no CLI command may reach the live Asterisk.
 putenv('AIPBX_NO_ASTERISK=1');

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -90,7 +91,9 @@ func LoadConfig() (*Config, error) {
 	} else if turnSecret != "" {
 		cfg.SecretKey = turnSecret
 	} else {
-		cfg.SecretKey = cfg.DBPass
+		// No fallback to the database password: whoever knew it could sign
+		// a token for any user.
+		return nil, fmt.Errorf("CHAT_JWT_SECRET or TURN_SECRET must be set in /etc/ai-pbx.env")
 	}
 
 	if envPort := os.Getenv("CHAT_PORT"); envPort != "" {

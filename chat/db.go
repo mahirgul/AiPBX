@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -159,6 +160,9 @@ func InitDB(cfg *Config) error {
 }
 
 func GetUserByID(id int) (*User, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
 	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 LIMIT 1", id)
 	var u User
 	var active int
@@ -264,6 +268,9 @@ func GetConversations(ext string) ([]Conversation, error) {
 	return convs, nil
 }
 
+// errNotChatUser: the other side of a direct chat is not an active chat user.
+var errNotChatUser = errors.New("Invalid or inactive user extension")
+
 func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation, error) {
 	if ext1 == ext2 {
 		return nil, fmt.Errorf("cannot create conversation with oneself")
@@ -309,7 +316,16 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		return &cv, nil
 	}
 
-	// Not found, create in transaction
+	// Not found: only with a real chat user (same check as group members,
+	// CH-G2). Any string used to become a participant, a fax-only user too.
+	for _, ext := range []string{ext1, ext2} {
+		u, err := GetUserByExt(ext)
+		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
+			return nil, fmt.Errorf("%w: %s", errNotChatUser, ext)
+		}
+	}
+
+	// Create in a transaction
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, err

@@ -78,7 +78,7 @@ $action_label_map = [
                 }
                 </style>
                 <div class="pending-sync-submit-box" style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                    <button type="submit" class="btn btn-primary" onclick="return confirm('<?php echo htmlspecialchars(t('pending_sync.confirm_apply'), ENT_QUOTES); ?>');">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm(<?php echo jsArg(t('pending_sync.confirm_apply')); ?>);">
                         <i class="fas fa-paper-plane"></i> <?php echo t('pending_sync.submit_button'); ?>
                     </button>
                 </div>

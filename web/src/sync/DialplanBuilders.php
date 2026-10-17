@@ -404,7 +404,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $q_name = $q['queue_name'] ?? (is_numeric($dest_id) ? 'queue_cc' : preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$dest_id));
 
             if (!empty($q['record_enabled'] ?? 1)) {
-                $rec_format = $q['record_format'] ?? 'wav';
+                $rec_format = in_array($q['record_format'] ?? '', QUEUE_RECORD_FORMATS, true) ? $q['record_format'] : 'wav';
                 // Do not start a second recording if one is ALREADY running.
                 //
                 // When the inbound route has "mandatory recording" ticked,
@@ -473,7 +473,10 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
         case 'fax':
             // The Goto target must be the DID number itself; the [from-trunk-fax]
             // context matches the _X. pattern (single-digit sequence numbers would not).
-            $target = !empty($orig_did) ? $orig_did : (!empty($dest_id) ? $dest_id : 'default');
+            // Only number characters: the value comes from a form, and a line
+            // break in it would have added its own dialplan lines (System()).
+            $target = preg_replace('/[^0-9A-Za-z_.+*#-]/', '', (string) (!empty($orig_did) ? $orig_did : $dest_id));
+            $target = $target !== '' ? $target : 'default';
             $lines[] = " same => n,Goto(from-trunk-fax,{$target},1)";
             break;
 

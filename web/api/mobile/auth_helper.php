@@ -54,7 +54,9 @@ function getMobileTokenSecret(): string
     if (defined('TURN_SECRET') && TURN_SECRET !== '') {
         return TURN_SECRET;
     }
-    return DB_PASS;
+    // No fallback to the database password (it signed every token on an
+    // install without these keys; whoever knew it could sign in as anyone).
+    throw new \RuntimeException('CHAT_JWT_SECRET or TURN_SECRET must be set in /etc/ai-pbx.env');
 }
 
 /**
