@@ -454,6 +454,9 @@ mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/lib/aipbx
+# Configuration sync locks, shared by the portal, cron and root (asterisk_sync.php).
+install -d -o www-data -g www-data -m 1777 /var/lib/aipbx/sync-locks
+chmod 0666 /var/lib/aipbx/sync-locks/*.lock 2>/dev/null || true
 # Logo / favicon uploads (Appearance → Branding). The code checkout belongs to
 # root, so without this folder the portal could not save an uploaded logo.
 mkdir -p "$INSTALL_DIR/web/assets/images/brand"
@@ -754,9 +757,13 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     # cannot do HTTPS to an IP address or do not follow redirects, and phone
     # networks often have no DNS. The files are still limited to the allowed
     # networks and the per-phone token (PhoneProvisionService).
+    # The path is checked after Apache has resolved it (/provision/../login is
+    # /login); internal redirects to index.php (REDIRECT_STATUS set) are skipped,
+    # otherwise /provision/ would be redirected on its second pass.
     RewriteEngine On
     RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
-    RewriteCond %{THE_REQUEST} !\s/provision/
+    RewriteCond %{ENV:REDIRECT_STATUS} ^\$
+    RewriteCond %{REQUEST_URI} !^/provision/
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log

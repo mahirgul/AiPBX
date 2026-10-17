@@ -93,12 +93,22 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
  * it falls back to the old (lock-free) behaviour.
  */
 function withSyncLock($lock_name, callable $fn) {
-    $lock_dir = sys_get_temp_dir() . '/aipbx_sync_locks';
-    if (!is_dir($lock_dir)) {
-        @mkdir($lock_dir, 0700, true);
+    // One directory for Apache, cron and root: /tmp does not work (Apache
+    // has its own PrivateTmp, and a directory root made with 0700 locked
+    // www-data out, which then ran without a lock).
+    $lock_dir = is_dir('/var/lib/aipbx') ? '/var/lib/aipbx/sync-locks' : sys_get_temp_dir() . '/aipbx_sync_locks';
+    if (!is_dir($lock_dir) && @mkdir($lock_dir, 0777, true)) {
+        @chmod($lock_dir, 01777);
     }
     $lock_file = $lock_dir . '/' . preg_replace('/[^a-z0-9_]/', '', $lock_name) . '.lock';
+    $created = !file_exists($lock_file);
     $lock_fp = @fopen($lock_file, 'c');
+    if ($lock_fp !== false && $created) {
+        @chmod($lock_file, 0666);
+    }
+    if ($lock_fp === false) {
+        $lock_fp = @fopen($lock_file, 'r');   // flock() works on a read-only handle too
+    }
     if ($lock_fp === false) {
         return $fn();
     }

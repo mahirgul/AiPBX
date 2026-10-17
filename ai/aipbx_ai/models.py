@@ -463,8 +463,9 @@ class ModelManager:
                 raise ModelBusy(model_id)
             entry.state = LOADING  # blocks a parallel install/remove meanwhile
         try:
-            entry.backend.unload()
-            entry.backend.delete_files()
+            with entry.job_lock:    # a running job finishes before its files go
+                entry.backend.unload()
+                entry.backend.delete_files()
         finally:
             with self._mu:
                 entry.state, entry.progress, entry.error, entry.memory_mb = None, 0, None, 0

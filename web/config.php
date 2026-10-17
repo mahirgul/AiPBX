@@ -109,6 +109,12 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
     if ($logDetail !== '') {
         error_log('[AI PBX Fatal] ' . $logDetail);
     }
+    // Command line (cron, smoke test, aipbx-update): no HTML, and a non-zero
+    // exit code so the caller sees the failure (exit; returned 0).
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $title . ': ' . $message . "\n");
+        exit(1);
+    }
     http_response_code($httpCode);
 
     $isApi = (strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') === 0)
