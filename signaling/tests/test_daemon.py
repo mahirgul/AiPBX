@@ -159,31 +159,40 @@ class TestCaptureLoop(unittest.TestCase):
         """The real loop: bind, receive over UDP, flush to the store."""
         from aipbx_signaling.__main__ import serve
 
-        port = _free_port()
-        store = FakeStore()
-        capture = Capture(store, source_check=False)
-        thread = threading.Thread(
-            target=serve,
-            kwargs={"listen": "127.0.0.1:%d" % port, "source_check": False,
-                    "capture": capture},
-            daemon=True)
-        thread.start()
-        try:
-            self.assertTrue(_wait_for_port(port), "daemon never bound the port")
-            client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            client.sendto(hep_packet(INVITE.encode()), ("127.0.0.1", port))
-            client.sendto(hep_packet(INVITE.encode()), ("127.0.0.1", port))
-            client.close()
-            deadline = time.time() + 5
-            while store.rows_written < 2 and time.time() < deadline:
-                time.sleep(0.05)
-            self.assertEqual(2, store.rows_written)
-            self.assertEqual(2, capture.stats["received"])
-        finally:
-            # The same stop flag the SIGTERM handler sets.
-            capture.stop.set()
-            thread.join(timeout=5)
-            self.assertFalse(thread.is_alive())
+        # _free_port() finds a port by binding and closing a probe; the
+        # daemon binds it a moment later. Another binder (or the probe in
+        # _wait_for_port) can win that race, and serve() then exits without
+        # listening. A few fresh ports make the test deterministic without
+        # weakening what it checks.
+        for _attempt in range(3):
+            port = _free_port()
+            store = FakeStore()
+            capture = Capture(store, source_check=False)
+            thread = threading.Thread(
+                target=serve,
+                kwargs={"listen": "127.0.0.1:%d" % port, "source_check": False,
+                        "capture": capture},
+                daemon=True)
+            thread.start()
+            try:
+                if not _wait_for_port(port):
+                    continue          # lost the bind race; try another port
+                client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                client.sendto(hep_packet(INVITE.encode()), ("127.0.0.1", port))
+                client.sendto(hep_packet(INVITE.encode()), ("127.0.0.1", port))
+                client.close()
+                deadline = time.time() + 5
+                while store.rows_written < 2 and time.time() < deadline:
+                    time.sleep(0.05)
+                self.assertEqual(2, store.rows_written)
+                self.assertEqual(2, capture.stats["received"])
+                return
+            finally:
+                # The same stop flag the SIGTERM handler sets.
+                capture.stop.set()
+                thread.join(timeout=5)
+                self.assertFalse(thread.is_alive())
+        self.fail("daemon never bound a free port (3 attempts)")
 
     def test_batch_over_the_limit_is_written(self):
         from aipbx_signaling.db import BATCH_MAX

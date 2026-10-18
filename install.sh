@@ -990,43 +990,20 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
-
-# Connector agent (agent/README.md, docs/connector.md): lets a cloud
-# portal run the four allowlisted ops on this box. Outbound-only — it opens no
-# ports and is driven by a poll loop. Installed here but NOT enabled and NOT
-# configured: the node key comes from the portal, and the unit has a
-# ConditionPathExists so it stays inert (rather than crash-looping) until
-# /etc/aipbx/agent.conf exists. The ops the cloud may reach are sealed in
-# web/bin/aipbx_ops.php, symlinked to /usr/local/bin above.
-install -d -o root -g root -m 0755 /usr/local/lib/aipbx /etc/aipbx
-install -d -o root -g root -m 0700 /var/lib/aipbx
-install -o root -g root -m 0644 "$INSTALL_DIR/agent/aipbx_agent.py" /usr/local/lib/aipbx/aipbx_agent.py
-install -o root -g root -m 0644 "$INSTALL_DIR/VERSION" /usr/local/lib/aipbx/VERSION
-install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-agent" /usr/local/sbin/aipbx-agent
-cat > /etc/systemd/system/aipbx-agent.service << 'AGENTUNIT'
-[Unit]
-Description=AiPBX connector agent (outbound cloud node)
-Documentation=file:///usr/local/share/aipbx/agent/README.md
-After=network-online.target mariadb.service
-Wants=network-online.target
-# Inert until an administrator writes a node configuration.
-ConditionPathExists=/etc/aipbx/agent.conf
-
-[Service]
-Type=simple
-ExecStart=/usr/local/sbin/aipbx-agent run
-Restart=always
-RestartSec=30
-# No filesystem or privilege to gain: the agent only makes outbound HTTPS calls
-# and runs aipbx_ops.php, which enforces its own allowlist.
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
-AGENTUNIT
-systemctl daemon-reload >/dev/null 2>&1 || true
+# --- signaling capture (opt-in: asterisk-config/hep.conf decides whether
+# Asterisk sends HEP; the local daemon stores events for the portal's
+# Signaling page). Installed here on fresh installs AND by --upgrade, so
+# aipbx-update upgrades land the same components.
+if [ -d "$INSTALL_DIR/signaling" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+    fi
+    if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
+        systemctl daemon-reload >/dev/null 2>&1 || true
+        systemctl enable --now aipbx-signaling.service >/dev/null 2>&1 || true
+    fi
+fi
 
 # PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
 # off until the page writes a configuration. aipbx-priv writes it into this

@@ -29,7 +29,6 @@ import time
 
 from . import hep
 from .db import BATCH_MAX, Store
-from .report import REFRESH_SECONDS, Reporter, settings_from
 
 LOG = logging.getLogger("aipbx-signaling")
 
@@ -59,13 +58,9 @@ def parse_listen(value: str) -> tuple:
 
 
 class Capture:
-    def __init__(self, store: Store, source_check: bool = True,
-                 reporter: Reporter = None):
+    def __init__(self, store: Store, source_check: bool = True):
         self.store = store
         self.source_check = source_check
-        #: Set from the supervisor thread when an administrator turns
-        #: reporting on. None means nothing leaves this server.
-        self.reporter = reporter
         self.queue: list = []
         self.lock = threading.Lock()
         self.stop = threading.Event()
@@ -79,12 +74,6 @@ class Capture:
             # is the first. A datagram from anywhere else is counted, not read.
             self.stats["wrong_source"] += 1
             return
-        if self.reporter is not None:
-            # The RAW datagram is forwarded, not our parse of it: the
-            # endpoint does its own parsing, and nothing we fail to understand
-            # is withheld from it. Bounded and non-blocking, so capture and
-            # calls are never held up by a monitoring endpoint.
-            self.reporter.enqueue(data)
         event = hep.parse_event(data)
         if event is None:
             self.stats["dropped"] += 1
@@ -116,46 +105,7 @@ class Capture:
                 % (self.stats["received"], self.stats["parsed"],
                    self.stats["dropped"], self.stats["wrong_source"],
                    self.store.rows_written, self.store.write_errors))
-        if self.reporter is not None:
-            # The operator's only view of what is leaving the server.
-            line += (" | reported=%d report_errors=%d held=%d"
-                     % (self.reporter.sent_total, self.reporter.errors,
-                        len(self.reporter.queue)))
         LOG.info("%s", line)
-
-
-def supervise_reporting(capture: Capture, version: str = "",
-                        interval: float = REFRESH_SECONDS) -> threading.Thread:
-    """Starts and stops reporting as the portal's setting changes.
-
-    A thread of its own on purpose: reading the settings can wait on the
-    database, and waiting there would stall the receive loop (and drop
-    datagrams) for as long as the query takes.
-    """
-    def loop() -> None:
-        reporter = None
-        while not capture.stop.is_set():
-            enabled, endpoint, key = settings_from(capture.store)
-            changed = (reporter is not None
-                       and (reporter.endpoint != endpoint or reporter.node_key != key))
-            if enabled and (reporter is None or changed):
-                if reporter is not None:
-                    reporter.stop.set()
-                reporter = Reporter(endpoint, key, version=version)
-                reporter.start()
-                capture.reporter = reporter
-                LOG.info("reporting captured signaling to %s", endpoint)
-            elif not enabled and reporter is not None:
-                reporter.stop.set()
-                reporter = None
-                capture.reporter = None
-                LOG.info("reporting to a monitoring endpoint is off")
-            capture.stop.wait(interval)
-
-    thread = threading.Thread(target=loop, name="signaling-report-config",
-                              daemon=True)
-    thread.start()
-    return thread
 
 
 def serve(listen: str = "", source_check: bool = True, store: Store = None,
@@ -190,7 +140,6 @@ def serve(listen: str = "", source_check: bool = True, store: Store = None,
 
     LOG.info("listening for HEPv3 on %s:%d (source check: %s)",
              host, port, "on" if source_check else "off")
-    supervise_reporting(capture, os.environ.get("AIPBX_VERSION", ""))
 
     last_flush = time.monotonic()
     last_prune = time.monotonic()
@@ -225,10 +174,6 @@ def serve(listen: str = "", source_check: bool = True, store: Store = None,
             last_report = now
 
     capture.flush(time.time())
-    if capture.reporter is not None:
-        # Give the endpoint what is already queued before going quiet.
-        capture.reporter.send_batch(capture.reporter.take_batch())
-        capture.reporter.stop.set()
     sock.close()
     capture.report()
     return 0

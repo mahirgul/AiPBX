@@ -57,7 +57,7 @@ class EchoReporter
         ],
         'noanswer.hour' => [
             'title_key'   => 'echo.q_noanswer_hour',
-            'sql'         => "SELECT caller_num, dst, duration FROM cdrs
+            'sql'         => "SELECT caller_num, did, duration FROM cdrs
                               WHERE start_time >= (NOW() - INTERVAL 1 HOUR)
                                 AND billsec = 0
                               ORDER BY start_time DESC LIMIT 5",
