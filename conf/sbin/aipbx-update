@@ -220,6 +220,23 @@ status running "Updating the system (packages, database, services)"
 log "Running install.sh --upgrade..."
 bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 || rollback "install.sh --upgrade failed"
 
+# --- signaling capture components: kept explicit here so the update path
+# cannot skip them for any reason.
+if [ -d "$INSTALL_DIR/signaling" ]; then
+    if command -v apt-get >/dev/null 2>&1 && ! dpkg -s python3-pymysql >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql >>"$LOG_FILE" 2>&1 \
+            || rollback "python3-pymysql install failed"
+    fi
+    if [ -d /etc/systemd/system ] && [ -f "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" ]; then
+        if ! cmp -s "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service 2>/dev/null; then
+            install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
+            systemctl daemon-reload >>"$LOG_FILE" 2>&1
+        fi
+        systemctl enable aipbx-signaling.service >>"$LOG_FILE" 2>&1 || true
+        systemctl restart aipbx-signaling.service >>"$LOG_FILE" 2>&1 || true
+    fi
+fi
+
 # ------------------------------------------------------------------ verification
 status running "Verifying"
 sleep 3

@@ -1,0 +1,14 @@
+[Unit]
+Description=AiPBX signaling capture daemon (HEPv3 -> pbx_signaling_events)
+After=multi-user.target
+ConditionPathExists=/opt/aipbx/signaling
+
+[Service]
+WorkingDirectory=/opt/aipbx/signaling
+ExecStart=/usr/bin/python3 -m aipbx_signaling
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

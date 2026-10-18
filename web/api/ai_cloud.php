@@ -1,7 +1,7 @@
 <?php
 /**
  * AI → Cloud services API (admin only).
- *   POST action=test provider=   → a cheap authenticated call with the stored key
+ *   POST action=test provider=   → a cheap authenticated call; form fields typed but not yet saved override the stored account
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/ai/CloudAiService.php';
@@ -29,7 +29,7 @@ try {
     if (!CloudAiService::configured($id)) {
         throw new CloudAiException(t('ai_tts.not_configured'));
     }
-    echo json_encode(['success' => true, 'message' => CloudAiService::test($id)], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'message' => CloudAiService::test($id, $_POST)], JSON_UNESCAPED_UNICODE);
 } catch (\Throwable $e) {
     echo json_encode(['success' => false, 'error' => mb_substr($e->getMessage(), 0, 300)], JSON_UNESCAPED_UNICODE);
 }
