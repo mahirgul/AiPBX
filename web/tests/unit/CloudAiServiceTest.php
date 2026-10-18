@@ -158,4 +158,36 @@ final class CloudAiServiceTest extends TestCase
         $this->expectException(CloudAiException::class);
         CloudAiService::save('openai_compat', ['base_url' => 'https://x/v1', 'model' => 'bad model']);
     }
+
+    public function testTypedValuesReachTheTestCallBeforeBeingSaved(): void
+    {
+        CloudAiService::save('openai_compat', ['base_url' => 'https://saved.example/v1', 'model' => 'saved-model']);
+        $this->fake(['choices' => [['message' => ['content' => 'OK']]]]);
+
+        // Everything typed but not yet saved is what the Test button exercises.
+        CloudAiService::test('openai_compat', [
+            'base_url' => 'https://typed.example/v1/',
+            'model'    => 'typed/model-1',
+            'api_key'  => 'typed-key-123',
+        ]);
+        $c = end($this->calls);
+        $this->assertSame('https://typed.example/v1/chat/completions', $c['url']);
+        $this->assertSame('Bearer typed-key-123', $c['headers']['Authorization']);
+        $this->assertSame('typed/model-1', json_decode($c['body'], true)['model']);
+
+        // Blank fields fall back to the stored account (a later Test without
+        // the key in the field must not pretend the account has no key).
+        CloudAiService::test('openai_compat', []);
+        $c = end($this->calls);
+        $this->assertSame('https://saved.example/v1/chat/completions', $c['url']);
+        $this->assertArrayNotHasKey('Authorization', $c['headers']);
+
+        // A typed bad address is refused exactly as Save refuses it.
+        try {
+            CloudAiService::test('openai_compat', ['base_url' => 'javascript:alert(1)']);
+            $this->fail('invalid typed base_url must be refused');
+        } catch (CloudAiException $e) {
+            $this->assertSame(t('ai_cloud.err_base_url'), $e->getMessage());
+        }
+    }
 }

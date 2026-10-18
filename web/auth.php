@@ -176,6 +176,7 @@ function getModuleKeyForPage($page = null) {
         'ai_models.php'             => 'ai_models',
         'ai_cloud.php'              => 'ai_cloud',
         'ai_apps.php'               => 'ai_apps',
+        'assistant.php'             => 'assistant',
         'mail_settings.php'         => 'mail_settings',
         'file_storage.php'          => 'file_storage',
         'health.php'                => 'health',
@@ -252,7 +253,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'ai_cloud': holds the API keys of paid cloud AI services.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'health'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health'], true)) {
         return $role === 'admin';
     }
 

@@ -213,11 +213,21 @@ class CloudAiService
 
     // ------------------------------------------------------------ connection test
 
-    /** A cheap authenticated call; throws with the provider's own message. */
-    public static function test(string $id): string
+    /**
+     * A cheap authenticated call; throws with the provider's own message.
+     * $post is the provider form as typed: fields not yet saved are what gets
+     * tested. The old behaviour read only stored settings, so hitting Test
+     * with a freshly pasted key sent no key at all and the provider's own
+     * "no credentials" error read like a bad key.
+     */
+    public static function test(string $id, array $post = []): string
     {
         $cfg = self::config($id);
         $k = $cfg['api_key'] ?? '';
+        $typedKey = trim((string) ($post['api_key'] ?? ''));
+        if ($typedKey !== '') {
+            $k = $typedKey;
+        }
         switch ($id) {
             case 'google_ai':
                 $d = self::json(TtsHttp::request('GET', 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=50', ['x-goog-api-key' => $k], null, 20), $id);
@@ -234,7 +244,7 @@ class CloudAiService
             case 'nvidia':
             case 'qwen':
             case 'openai_compat':
-                return self::testChat($id);
+                return self::testChat($id, $post);
             case 'deepgram':
                 $d = self::json(TtsHttp::request('GET', 'https://api.deepgram.com/v1/projects', ['Authorization' => 'Token ' . $k], null, 20), $id);
                 return sprintf(t('ai_cloud.test_projects'), count($d['projects'] ?? []));
@@ -249,9 +259,9 @@ class CloudAiService
      * One tiny chat request: proves address, key and model together
      * (listing models would not show a wrong model name).
      */
-    private static function testChat(string $id): string
+    private static function testChat(string $id, array $post = []): string
     {
-        [$base, $model, $key] = self::llmTarget($id);
+        [$base, $model, $key] = self::llmTarget($id, $post);
         $headers = ['Content-Type' => 'application/json'];
         if ($key !== '') {
             $headers['Authorization'] = 'Bearer ' . $key;
@@ -350,7 +360,7 @@ class CloudAiService
     // ------------------------------------------------------------ language models
 
     /** Chat endpoint and model of a provider's language model. */
-    private static function llmTarget(string $id): array
+    private static function llmTarget(string $id, array $post = []): array
     {
         $s = self::llmSettings($id);
         $fixed = ['openai' => ['https://api.openai.com/v1', 'gpt-4.1-mini'],
@@ -359,7 +369,27 @@ class CloudAiService
                   'nvidia' => ['https://integrate.api.nvidia.com/v1', self::LLM_DEFAULTS['nvidia']],
                   'qwen' => [self::QWEN_ENDPOINT, self::LLM_DEFAULTS['qwen']]];
         [$base, $model] = $fixed[$id] ?? ['', ''];
-        return [$s['base_url'] ?? $base, $s['model'] ?? $model, $s['api_key']];
+        $base = $s['base_url'] ?? $base;
+        $model = $s['model'] ?? $model;
+        $key = $s['api_key'];
+        // Form fields typed but not yet saved win over the stored account,
+        // validated exactly as Save validates them.
+        $typedBase = trim((string) ($post['base_url'] ?? ''));
+        if ($typedBase !== '') {
+            $base = self::validBaseUrl($typedBase) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
+        }
+        $typedModel = trim((string) ($post['model'] ?? ''));
+        if ($typedModel !== '') {
+            if (!preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#', $typedModel)) {
+                throw new CloudAiException(t('ai_cloud.err_model'));
+            }
+            $model = $typedModel;
+        }
+        $typedKey = trim((string) ($post['api_key'] ?? ''));
+        if ($typedKey !== '') {
+            $key = $typedKey;
+        }
+        return [$base, $model, $key];
     }
 
     /**
