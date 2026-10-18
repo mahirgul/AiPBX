@@ -182,6 +182,17 @@ function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $acti
     // sys_pending_sync ROWS are DELETED after Apply — a permanent "who did
     // what and when" record goes to the separate, INSERT-only sys_audit_log.
     writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id);
+
+    if (is_file(__DIR__ . '/services/WebhookService.php')) {
+        require_once __DIR__ . '/services/WebhookService.php';
+        WebhookService::emit('config.pending_created', [
+            'domain'       => $domain,
+            'entity_type'  => $entity_type,
+            'entity_id'    => (string)$entity_id,
+            'entity_label' => $entity_label,
+            'action'       => $action,
+        ]);
+    }
 }
 
 // writeAuditLog() lives in src/audit_log.php (loaded by config.php for every
@@ -230,6 +241,13 @@ function applyPendingSync($user_id = null) {
     $db = getDB();
     $domains = $db->query("SELECT DISTINCT domain FROM sys_pending_sync")->fetchAll(PDO::FETCH_COLUMN);
 
+    if (is_file(__DIR__ . '/services/WebhookService.php')) {
+        require_once __DIR__ . '/services/WebhookService.php';
+    }
+    if (is_file(__DIR__ . '/core/PluginManager.php')) {
+        require_once __DIR__ . '/core/PluginManager.php';
+    }
+
     $results = [];
     foreach ($domains as $domain) {
         $fn = PENDING_SYNC_DOMAIN_MAP[$domain] ?? null;
@@ -239,10 +257,16 @@ function applyPendingSync($user_id = null) {
         }
         try {
             $fn();
+            if ($domain === 'general_dialplan' && class_exists('PluginManager')) {
+                PluginManager::syncAllEnabledPlugins();
+            }
             $del = $db->prepare("DELETE FROM sys_pending_sync WHERE domain = ?");
             $del->execute([$domain]);
             $results[$domain] = ['success' => true, 'error' => null];
             writeAuditLog($domain, 'sync_apply', $domain, $domain, 'apply', $user_id);
+            if (class_exists('WebhookService')) {
+                WebhookService::emit('config.sync_applied', ['domain' => $domain]);
+            }
         } catch (\Throwable $e) {
             $results[$domain] = ['success' => false, 'error' => $e->getMessage()];
             // 2026-08-25: only the domain name ("queues") used to be written
@@ -254,6 +278,9 @@ function applyPendingSync($user_id = null) {
             // it, so it is trimmed safely.
             $label = "{$domain}: " . mb_substr($e->getMessage(), 0, 230);
             writeAuditLog($domain, 'sync_apply', $domain, $label, 'apply_failed', $user_id);
+            if (class_exists('WebhookService')) {
+                WebhookService::emit('config.sync_failed', ['domain' => $domain, 'error' => $e->getMessage()]);
+            }
         }
     }
     return $results;
@@ -349,6 +376,10 @@ function syncEverything() {
     // that does not exist.
     syncInternalNumbers();
     syncGeneralDialplan();
+    if (is_file(__DIR__ . '/core/PluginManager.php')) {
+        require_once __DIR__ . '/core/PluginManager.php';
+        PluginManager::syncAllEnabledPlugins();
+    }
     syncAsteriskMOH();
     syncRtpSettings();
     syncUdptlSettings();

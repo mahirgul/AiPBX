@@ -115,7 +115,7 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     
     if [[ -d "$INSTALL_DIR/.git" ]]; then
         info "Existing repository found in $INSTALL_DIR, fetching..."
-        git -C "$INSTALL_DIR" fetch --quiet --tags --force origin
+        git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" fetch --quiet --tags --force origin
     else
         mkdir -p "$(dirname "$INSTALL_DIR")"
         # Full clone (not --depth 1): aipbx-update later checks out release tags.
@@ -124,12 +124,12 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     # Install the latest published release by default so that the installed
     # version matches VERSION/CHANGELOG and aipbx-update works from a known
     # release. AIPBX_REF=main (or any tag/commit) installs something else.
-    AIPBX_REF="${AIPBX_REF:-$(git -C "$INSTALL_DIR" tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)}"
+    AIPBX_REF="${AIPBX_REF:-$(git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)}"
     AIPBX_REF="${AIPBX_REF:-main}"
     if [[ "$AIPBX_REF" == main ]]; then
-        git -C "$INSTALL_DIR" checkout --quiet main && git -C "$INSTALL_DIR" reset --quiet --hard origin/main
+        git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" checkout --quiet main && git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" reset --quiet --hard origin/main
     else
-        git -C "$INSTALL_DIR" checkout --quiet --force --detach "$AIPBX_REF"
+        git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" checkout --quiet --force --detach "$AIPBX_REF"
     fi
     info "Installing AiPBX ${AIPBX_REF}"
     # Re-run the installer from the checked-out release (it may differ from this copy).
@@ -152,6 +152,13 @@ echo "  ╚═══════════════════════
 echo -e "${NC}"
 echo -e "  Source directory : ${YELLOW}$SCRIPT_DIR${NC}"
 echo -e "  Install directory: ${YELLOW}$INSTALL_DIR${NC}"
+echo ""
+echo -e "  ${YELLOW}${BOLD}NOTICE & DISCLAIMER (MIT License):${NC}"
+echo -e "  AiPBX is open-source software provided ${BOLD}\"AS IS\"${NC} without warranty of any kind."
+echo -e "  • ${BOLD}Emergency Calls (112/911):${NC} Not guaranteed; maintain an independent emergency line."
+echo -e "  • ${BOLD}SIP Security & Billing:${NC} You are solely responsible for securing trunks and toll costs."
+echo -e "  • ${BOLD}Privacy (GDPR/KVKK):${NC} Call recording and AI features require legal consent compliance."
+echo -e "  Full license & terms: ${CYAN}$INSTALL_DIR/LICENSE${NC}"
 echo ""
 
 # ============================================================================
@@ -456,13 +463,20 @@ fi
 mkdir -p /var/lib/aipbx/chat_files /var/lib/aipbx/tts
 # Key that encrypts cloud credentials stored in the database (AI → Cloud TTS).
 # Created here so it belongs to the web server: one made by root would lock it out.
-[[ -s /var/lib/aipbx/settings.key ]] || head -c 32 /dev/urandom > /var/lib/aipbx/settings.key
+[[ -L /var/lib/aipbx/settings.key ]] && rm -f /var/lib/aipbx/settings.key
+if [[ ! -s /var/lib/aipbx/settings.key ]]; then
+    tmp_settings_key="$(mktemp /var/lib/aipbx/.settings.key.XXXXXX)"
+    head -c 32 /dev/urandom > "$tmp_settings_key"
+    chmod 600 "$tmp_settings_key"
+    mv -f "$tmp_settings_key" /var/lib/aipbx/settings.key
+fi
 chmod 600 /var/lib/aipbx/settings.key
 mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
 mkdir -p /var/log/aipbx
 
 chown -R www-data:www-data /var/lib/aipbx
+chmod 1755 /var/lib/aipbx
 # Configuration sync locks, shared by the portal (www-data), feature codes
 # (asterisk) and root (asterisk_sync.php): group asterisk, no one else.
 install -d -o www-data -g asterisk -m 2770 /var/lib/aipbx/sync-locks
@@ -497,9 +511,10 @@ done
 chgrp -R asterisk /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
 chmod -R g+rX /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
 # Portal login failures (read by the aipbx-web fail2ban jail)
+[[ -L /var/log/aipbx/web_login_failures.log ]] && rm -f /var/log/aipbx/web_login_failures.log
 touch /var/log/aipbx/web_login_failures.log
 chown -R www-data:adm /var/log/aipbx
-chmod 750 /var/log/aipbx
+chmod 1750 /var/log/aipbx
 chmod 640 /var/log/aipbx/web_login_failures.log
 # The fax scripts run as the asterisk user (System()) and write these files;
 # they cannot create files in /var/log themselves, so nothing was ever logged.
@@ -629,7 +644,7 @@ systemctl enable mariadb
 mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # App users: created when missing, password (re)applied — safe to re-run
-mysql -e "
+mysql <<EOF
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
 ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
 GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO '${DB_USER}'@'localhost';
@@ -637,7 +652,7 @@ CREATE USER IF NOT EXISTS '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRAT
 ALTER USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
 GRANT ALL PRIVILEGES ON asterisk.* TO '${MIGRATOR_USER}'@'localhost';
 FLUSH PRIVILEGES;
-"
+EOF
 
 # Load schema and seed (fresh install only)
 # Schema, seed data and the admin user are applied after Composer is installed
@@ -837,7 +852,9 @@ cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
     AllowOverride All
     Require all granted
 
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/api/(v1|plugins)(/|$)
     RewriteRule ^(api|assets|modules)(/|$) - [L]
     RewriteRule ^chat/(ws|api|media)(/|$) - [L]
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -907,16 +924,18 @@ info "Applying database migrations..."
 mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
 
 if ! is_upgrade; then
-ADMIN_HASH=$(php -r 'echo password_hash($argv[1], PASSWORD_BCRYPT);' -- "$ADMIN_PASS")
+ADMIN_HASH=$(printf '%s' "$ADMIN_PASS" | php -r 'echo password_hash(stream_get_contents(STDIN), PASSWORD_BCRYPT);')
 ADMIN_EXISTS=$(mysql -sN asterisk -e "SELECT COUNT(*) FROM sys_users WHERE username='admin';" 2>/dev/null || echo "0")
 if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
-    mysql asterisk -e "
+    mysql asterisk <<EOF
     INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
     VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
-    "
+EOF
     ok "Admin user created"
 else
-    mysql asterisk -e "UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';" 2>/dev/null || true
+    mysql asterisk <<EOF 2>/dev/null || true
+    UPDATE sys_users SET password_hash='${ADMIN_HASH}' WHERE username='admin';
+EOF
     ok "Admin password updated in existing database"
 fi
 fi   # install mode — the admin password is never touched on upgrade
@@ -925,13 +944,13 @@ fi   # install mode — the admin password is never touched on upgrade
 # (extconfig → asteriskqueue) through ODBC; call reports, call history and
 # call-center reports read those tables. This user did not exist before, so
 # nothing was ever recorded.
-mysql -e "
+mysql <<EOF
 CREATE USER IF NOT EXISTS 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
 ALTER USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
 GRANT SELECT, INSERT ON asterisk.asteriskcdr TO 'asterisk_odbc'@'localhost';
 GRANT SELECT, INSERT ON asterisk.asteriskqueue TO 'asterisk_odbc'@'localhost';
 FLUSH PRIVILEGES;
-"
+EOF
 ok "Database schema migrated, seed data and ODBC user in place"
 
 # Nginx Stream Multiplexer on Port 443 (ALPN routing: HTTPS/WSS -> Apache 8443, TURNS -> coturn 5349)
@@ -1025,6 +1044,31 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/l
 # /var/lib/aipbx/tftp, never the per-phone configuration.
 install -d -o root -g root -m 0755 /var/lib/aipbx-netsvc
 install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
+install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/plugins
+install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/api-ratelimit
+
+cat > /etc/systemd/system/aipbx-webhook-worker.service << 'WEBHOOKUNIT'
+[Unit]
+Description=AiPBX Outbound Webhook & Plugin Event Worker
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+ExecStart=/usr/bin/php /var/www/html/bin/webhook_worker.php --daemon
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
+WEBHOOKUNIT
+systemctl daemon-reload
+systemctl enable aipbx-webhook-worker.service >/dev/null 2>&1 || true
+systemctl restart aipbx-webhook-worker.service 2>/dev/null || true
 cat > /etc/systemd/system/aipbx-dnsmasq.service << 'NETSVC'
 [Unit]
 Description=AiPBX DHCP/TFTP for desk phones (PBX -> Network services)
@@ -1160,7 +1204,7 @@ for f in "$INSTALL_DIR/asterisk-config/pbx/"*.conf; do
     [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
 done
 
-for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf; do
+for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf; do
     if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
@@ -1299,7 +1343,7 @@ else
     fi
 fi
 chown -R asterisk:asterisk /etc/asterisk/
-chown asterisk:asterisk /etc/asterisk && chmod 1775 /etc/asterisk
+chown asterisk:asterisk /etc/asterisk && chmod 0755 /etc/asterisk
 chown -R asterisk:asterisk /etc/asterisk/pbx
 chmod 2775 /etc/asterisk/pbx
 chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
@@ -1699,6 +1743,7 @@ fi
 # STEP 14: SAVE CREDENTIALS TO FILE
 # ============================================================================
 CREDS_FILE="/root/aipbx-credentials.txt"
+install -m 0600 -o root -g root /dev/null "$CREDS_FILE"
 
 cat > "$CREDS_FILE" << CREDS
 ================================================================

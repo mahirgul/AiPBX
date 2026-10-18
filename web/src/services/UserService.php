@@ -36,14 +36,17 @@ class UserService {
             $extension = trim($data['extension'] ?? '');
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
-            $pickup_group = trim($data['pickup_group'] ?? '');
-            $can_listen = isset($data['can_listen_recordings']) ? 1 : 0;
-            $can_view_cdrs = isset($data['can_view_all_cdrs']) ? 1 : 0;
-            $can_view_queue_monitor = isset($data['can_view_queue_monitor']) ? 1 : 0;
-            $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
+            $pickup_group = preg_replace('/[^A-Za-z0-9_-]/', '', trim($data['pickup_group'] ?? '')) ?? '';
+            $can_listen = PBXHelper::boolFlag($data, 'can_listen_recordings', 0);
+            $can_view_cdrs = PBXHelper::boolFlag($data, 'can_view_all_cdrs', 0);
+            $can_view_queue_monitor = PBXHelper::boolFlag($data, 'can_view_queue_monitor', 0);
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
 
             if (empty($username) || empty($full_name)) {
                 throw new \Exception(t('srv_user.err_required'));
+            }
+            if ($extension !== '' && !preg_match('/^\d{3,6}$/', $extension)) {
+                throw new \Exception(t('srv_ext.err_number'));
             }
 
             if (isset($data['allowed_phone_modes']) && is_array($data['allowed_phone_modes'])) {

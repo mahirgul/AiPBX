@@ -59,6 +59,10 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
     private enum class ChatFilter { ALL, DIRECT, GROUP }
     private var chatFilterMode = ChatFilter.ALL
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

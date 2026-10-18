@@ -19,3 +19,31 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-------------------------------------------------------------------------------
+ADDITIONAL TELECOMMUNICATIONS, EMERGENCY CALLING & PRIVACY NOTICE
+-------------------------------------------------------------------------------
+
+1. NO EMERGENCY CALLING GUARANTEE (112 / 911 / 999 / E911):
+   AiPBX is open-source software and is NOT a certified public emergency call
+   routing service. Power outages, internet/network disruptions, SIP trunk
+   failures, or dialplan misconfigurations may prevent emergency calls from
+   completing or from transmitting accurate location information. Always
+   maintain an independent landline or mobile path for emergency services.
+
+2. TELECOM BILLING, SECURITY & TOLL FRAUD RESPONSIBILITY:
+   Connecting a PBX to PSTN / SIP trunks carries inherent financial risk. The
+   person or entity deploying AiPBX is solely responsible for securing server
+   access, enforcing strong credentials, restricting firewall and outbound
+   routing rules, and monitoring call traffic. The authors and contributors
+   shall not be liable for any telecom charges, toll fraud, or unauthorized
+   call costs incurred through your SIP providers or carriers.
+
+3. CALL RECORDING, FAX & AI PROCESSING COMPLIANCE (GDPR / KVKK / PRIVACY LAWS):
+   Features such as call recording, voicemail transcription, signaling capture,
+   and cloud or local AI integrations process potentially sensitive personal
+   and communications data. Enabling and operating these features in compliance
+   with applicable telecommunications, wiretapping, caller-consent, and data
+   protection laws (including GDPR, KVKK, and local regulations) is the sole
+   responsibility of the system operator.
+

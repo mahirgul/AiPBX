@@ -101,7 +101,8 @@ def resample(audio, rate):
 
 class EmaOnnx:
     def __init__(self, model_dir, threads=0):
-        meta = json.load(open(f"{model_dir}/meta.json"))
+        with open(f"{model_dir}/meta.json", encoding="utf-8") as f:
+            meta = json.load(f)
         self.stoi = {ch: i for i, ch in enumerate(meta["vocab"])}
         self.steps = len(meta["times"])
         self.latent_dim = meta["latent_dim"]

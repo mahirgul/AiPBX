@@ -95,9 +95,15 @@ class AsteriskSettingsService {
             ? $filter_codecs($post['wired_codecs'], $allowed_audio, 'alaw,ulaw')
             : 'alaw,ulaw,g729';
 
+        $wss_port_val = filter_var(trim((string)($post['pjsip_wss_port'] ?? '8089')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        $udp_port_val = filter_var(trim((string)($post['pjsip_udp_port'] ?? '5060')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        if ($wss_port_val === false || $udp_port_val === false) {
+            return ['success' => false, 'error' => 'Invalid PJSIP port (1-65535).'];
+        }
+
         $new_settings = [
-            'pjsip_wss_port' => trim($post['pjsip_wss_port'] ?? '8089'),
-            'pjsip_udp_port' => trim($post['pjsip_udp_port'] ?? '5060'),
+            'pjsip_wss_port' => (string)$wss_port_val,
+            'pjsip_udp_port' => (string)$udp_port_val,
             // Edited on Network → Network settings (validated there); this form keeps them.
             'pjsip_external_ip' => (string) getSystemSetting('pjsip_external_ip', ''),
             'pjsip_local_net' => (string) getSystemSetting('pjsip_local_net', '192.168.1.0/24'),
@@ -109,8 +115,8 @@ class AsteriskSettingsService {
             // stripped: it goes into a raw SIP header, accepting line breaks
             // would allow header injection.
             'pjsip_user_agent' => preg_replace('/[\r\n]+/', ' ', trim($post['pjsip_user_agent'] ?? 'Asterisk PBX')),
-            'pjsip_direct_media' => trim($post['pjsip_direct_media'] ?? 'no'),
-            'pjsip_rtp_symmetric' => trim($post['pjsip_rtp_symmetric'] ?? 'yes'),
+            'pjsip_direct_media' => (($post['pjsip_direct_media'] ?? 'no') === 'yes') ? 'yes' : 'no',
+            'pjsip_rtp_symmetric' => (($post['pjsip_rtp_symmetric'] ?? 'yes') === 'no') ? 'no' : 'yes',
             'pjsip_qualify_frequency' => max(0, intval($post['pjsip_qualify_frequency'] ?? 60)),
             'pjsip_internal_dial_timeout' => max(5, min(120, intval($post['pjsip_internal_dial_timeout'] ?? 30))),
             'pjsip_external_dial_timeout' => max(5, min(180, intval($post['pjsip_external_dial_timeout'] ?? 60))),

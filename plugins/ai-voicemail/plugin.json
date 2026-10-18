@@ -1,0 +1,82 @@
+{
+    "slug": "ai-voicemail",
+    "name": "AI Voicemail Transcription & Executive Summary",
+    "name_i18n": {
+        "tr": "AI Sesli Posta Transkript ve Özetleyici",
+        "en": "AI Voicemail Transcription & Executive Summary"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX",
+    "category": "ai",
+    "icon": "fas fa-voicemail",
+    "icon_style": "color: #8b5cf6;",
+    "description": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint.",
+    "description_i18n": {
+        "tr": "Gelen sesli mesajları (`voicemail.received`) OpenAI veya OpenAI şeması uyumlu uzak AI sunucuları üzerinden otomatik metne döker ve özetler.",
+        "en": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint."
+    },
+    "scopes": ["voicemail:read", "ai:write"],
+    "hooks": {
+        "events": ["voicemail.received"],
+        "admin_page": {
+            "group": "ai"
+        }
+    },
+    "settings_schema": [
+        {
+            "key": "api_base_url",
+            "type": "text",
+            "default": "https://api.openai.com/v1",
+            "placeholder": "https://api.openai.com/v1",
+            "label": "OpenAI-Compatible API Base URL",
+            "label_i18n": {
+                "tr": "OpenAI Uyumlu API Sunucu Adresi (Base URL)"
+            },
+            "help": "Works with OpenAI, Groq (https://api.groq.com/openai/v1), or any remote vLLM/Ollama/Whisper server."
+        },
+        {
+            "key": "api_key",
+            "type": "password",
+            "secret": true,
+            "default": "",
+            "label": "API Key (Bearer Token)",
+            "label_i18n": {
+                "tr": "API Anahtarı (Bearer Token)"
+            }
+        },
+        {
+            "key": "stt_model",
+            "type": "text",
+            "default": "whisper-1",
+            "placeholder": "whisper-1 / whisper-large-v3",
+            "label": "Speech-to-Text (STT) Model",
+            "label_i18n": {
+                "tr": " Konuşmadan Metne (STT) Modeli"
+            }
+        },
+        {
+            "key": "llm_model",
+            "type": "text",
+            "default": "gpt-4o-mini",
+            "placeholder": "gpt-4o-mini / llama-3.3-70b-versatile",
+            "label": "Summarization LLM Model",
+            "label_i18n": {
+                "tr": "Özetleme LLM Modeli"
+            }
+        },
+        {
+            "key": "summary_language",
+            "type": "select",
+            "default": "tr",
+            "options": {
+                "tr": "Türkçe (Turkish)",
+                "en": "English (İngilizce)",
+                "auto": "Auto-detect (Otomatik)"
+            },
+            "label": "Summary Output Language",
+            "label_i18n": {
+                "tr": "Özet Çıktı Dili"
+            }
+        }
+    ]
+}

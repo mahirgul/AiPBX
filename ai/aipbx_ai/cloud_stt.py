@@ -44,12 +44,21 @@ def validate(cfg):
     return {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region}
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 def _request(url, headers, body):
     req = urllib.request.Request(url, data=body, headers=dict(headers, **{"User-Agent": "aipbx-ai"}), method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with _OPENER.open(req, timeout=TIMEOUT) as resp:
             return json.loads(resp.read(2 * 1024 * 1024).decode("utf-8"))
     except urllib.error.HTTPError as e:
+        e.close()
         raise CloudSttError(f"{e.code}") from None
     except (urllib.error.URLError, TimeoutError, ValueError, OSError) as e:
         raise CloudSttError(type(e).__name__) from None

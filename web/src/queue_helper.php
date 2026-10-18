@@ -191,6 +191,14 @@ class QueueHelper {
             @exec("asterisk -rx " . escapeshellarg("queue remove member PJSIP/$ext from $queue_name"));
         }
         self::refreshLamps();
+        try {
+            require_once __DIR__ . '/services/WebhookService.php';
+            WebhookService::emit($join ? 'queue.member_logged_in' : 'queue.member_logged_out', [
+                'extension'  => $ext,
+                'queue_name' => $queue_name,
+            ]);
+        } catch (\Throwable $e) {
+        }
         return true;
     }
 
@@ -225,6 +233,16 @@ class QueueHelper {
         $stmt_insert->execute([$ext, $agent_name, $reason_cli]);
 
         self::refreshLamps();
+        try {
+            require_once __DIR__ . '/services/WebhookService.php';
+            WebhookService::emit('queue.member_paused', [
+                'extension'  => $ext,
+                'paused'     => true,
+                'reason'     => $reason_cli,
+                'queue_name' => $queue_name,
+            ]);
+        } catch (\Throwable $e) {
+        }
         return true;
     }
 
@@ -290,6 +308,15 @@ class QueueHelper {
         $stmt_close->execute([$ext]);
 
         self::refreshLamps();
+        try {
+            require_once __DIR__ . '/services/WebhookService.php';
+            WebhookService::emit('queue.member_paused', [
+                'extension'  => $ext,
+                'paused'     => false,
+                'queue_name' => $queue_name,
+            ]);
+        } catch (\Throwable $e) {
+        }
         return true;
     }
 }

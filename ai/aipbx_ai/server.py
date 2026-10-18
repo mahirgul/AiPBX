@@ -96,7 +96,8 @@ class Handler(BaseHTTPRequestHandler):
     # ---- plumbing --------------------------------------------------------
 
     def log_message(self, fmt, *args):  # noqa: D401 - journal, no client data
-        log.info("%s %s", self.address_string(), fmt % args)
+        msg = re.sub(r"([?&]key=)[^&\s\"']+", r"\1***", fmt % args)
+        log.info("%s %s", self.address_string(), msg)
 
     def _send(self, status, body, content_type):
         self.send_response(status)

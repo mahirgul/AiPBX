@@ -367,6 +367,11 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
         case "onRemoteAudioPlaying":
             AppLogManager.shared.info("SipEngine", "Remote audio playback confirmed active")
 
+        case "onCallStatusChanged":
+            if let status = body["status"] as? String {
+                AppLogManager.shared.debug("SipEngine", "JS call status changed: \(status)")
+            }
+
         default:
             break
         }
@@ -380,8 +385,14 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
                         initiatedByFrame frame: WKFrameInfo,
                         type: WKMediaCaptureType,
                         decisionHandler: @escaping (WKPermissionDecision) -> Void) {
-        AppLogManager.shared.info("SipEngine", "Granting media capture permission for WebRTC in WKWebView")
-        decisionHandler(.grant)
+        let proto = origin.protocol.lowercased()
+        if origin.host.isEmpty || proto == "file" || proto == "about" {
+            AppLogManager.shared.info("SipEngine", "Granting media capture permission for bundled WebRTC engine")
+            decisionHandler(.grant)
+        } else {
+            AppLogManager.shared.warn("SipEngine", "Denied media capture permission for external origin: \(origin.host)")
+            decisionHandler(.deny)
+        }
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

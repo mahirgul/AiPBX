@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -138,8 +138,17 @@ func InitDB(cfg *Config) error {
 		log.Printf("[DB] Unknown TIMEZONE %q, falling back to system local time: %v", cfg.Timezone, err)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=true&loc=Local",
-		cfg.DBUser, cfg.DBPass, cfg.DBHost, cfg.DBName)
+	dsnCfg := mysql.NewConfig()
+	dsnCfg.User = cfg.DBUser
+	dsnCfg.Passwd = cfg.DBPass
+	dsnCfg.Net = "tcp"
+	dsnCfg.Addr = cfg.DBHost + ":3306"
+	dsnCfg.DBName = cfg.DBName
+	dsnCfg.Collation = "utf8mb4_general_ci"
+	dsnCfg.ParseTime = true
+	dsnCfg.Loc = time.Local
+	dsnCfg.Params = map[string]string{"charset": "utf8mb4"}
+	dsn := dsnCfg.FormatDSN()
 
 	var err error
 	db, err = sql.Open("mysql", dsn)

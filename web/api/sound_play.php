@@ -2,6 +2,14 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
 requireLogin();
+if (($_SESSION['user_role'] ?? '') !== 'admin'
+    && !hasModulePermission('sounds', 'view')
+    && !hasModulePermission('announcements', 'view')
+    && !hasModulePermission('ivrs', 'view')
+    && !hasModulePermission('queues', 'view')) {
+    http_response_code(403);
+    die('Forbidden');
+}
 
 $file = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['file'] ?? '');
 if (empty($file)) {

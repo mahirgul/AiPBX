@@ -16,6 +16,13 @@ class GoogleAuthService
      */
     public static function isEnabled(): bool
     {
+        if (is_file(dirname(__DIR__) . '/core/PluginManager.php')) {
+            require_once dirname(__DIR__) . '/core/PluginManager.php';
+            $installed = PluginManager::installedMap();
+            if (isset($installed['google-auth']) && empty($installed['google-auth']['enabled'])) {
+                return false;
+            }
+        }
         $enabled = function_exists('getSystemSetting') ? getSystemSetting('google_oauth_enabled', '0') : '0';
         return $enabled === '1' && !empty(self::getClientId());
     }

@@ -1,0 +1,26 @@
+{
+    "slug": "ai-apps",
+    "name": "AI Voice Applications (Conversational IVR Bots)",
+    "name_i18n": {
+        "tr": "AI Sesli Uygulamalar (Akıllı Karşılama Botları)",
+        "en": "AI Voice Applications (Conversational IVR Bots)"
+    },
+    "version": "1.2.0",
+    "author": "AiPBX",
+    "category": "ai",
+    "icon": "fas fa-robot",
+    "icon_style": "color: var(--purple);",
+    "description": "Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically.",
+    "description_i18n": {
+        "tr": "Arayanları sesli karşılayan, konuşmayı metne çevirip dış webhook/CRM sorgusu yapan ve çağrıyı dinamik yönlendiren AI sesli botlar oluşturur.",
+        "en": "Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically."
+    },
+    "scopes": ["pbx:write", "calls:read"],
+    "hooks": {
+        "sync_domain": "ai_apps",
+        "admin_page": {
+            "route": "/ai-apps",
+            "group": "ai"
+        }
+    }
+}

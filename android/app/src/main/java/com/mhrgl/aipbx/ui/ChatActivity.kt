@@ -107,6 +107,10 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         else Toast.makeText(this, getString(R.string.err_camera_permission), Toast.LENGTH_LONG).show()
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
+    }
+
     private fun showChatPhotoSourceMenu(anchor: View) {
         val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
         popup.menu.add(0, 1, 0, getString(R.string.menu_take_photo))

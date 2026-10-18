@@ -1,0 +1,26 @@
+{
+    "slug": "google-auth",
+    "name": "Google Sign-In (OAuth 2.0)",
+    "name_i18n": {
+        "tr": "Google ile Giriş (OAuth 2.0)",
+        "en": "Google Sign-In (OAuth 2.0)"
+    },
+    "version": "1.1.0",
+    "author": "AiPBX",
+    "category": "integration",
+    "icon": "fab fa-google",
+    "icon_style": "color: #ea4335;",
+    "description": "Allow portal and mobile users to sign in with their corporate Google Workspace or Gmail accounts via OAuth 2.0.",
+    "description_i18n": {
+        "tr": "Web paneli ve mobil uygulama kullanıcılarının kurumsal Google Workspace veya Gmail hesaplarıyla tek tıkla giriş yapmasını sağlar.",
+        "en": "Allow portal and mobile users to sign in with their corporate Google Workspace or Gmail accounts via OAuth 2.0."
+    },
+    "scopes": ["users:read"],
+    "hooks": {
+        "auth_provider": true,
+        "admin_page": {
+            "route": "/google-integration",
+            "group": "integrations"
+        }
+    }
+}

@@ -10,7 +10,7 @@ if ($action === 'my_cdrs') {
     // to this agent's most recently finished call (its CDR). A pending note entered in the last
     // 2 hours is looked for; anything older (a forgotten draft) is not linked automatically.
     $can_claim_note = ($user['role'] !== 'read_only_admin')
-        && ($_SERVER['REQUEST_METHOD'] === 'POST' || verifyCSRFToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_GET['csrf_token'] ?? ''));
+        && verifyCSRFToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '');
     if (!empty($user_ext) && $can_claim_note) {
         // agent_extension can now also show the CALLED side on calls not
         // routed through a queue (see the cdrs view update) — calls this agent

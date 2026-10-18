@@ -186,6 +186,12 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Teams channel notifications** (missed calls, voicemail, queue alarms, faxes)
 - **Generated PowerShell** setup scripts from your PBX configuration
 
+### 🔌 REST API v1, Outbound Webhooks & Plugin System
+- **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
+- **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
+- **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
+- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`ms-teams`, `ldap-directory`, `crm-webhook`, `homer-hep`, `ai-voicemail`, `ai-assistant`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+
 ### 🔐 Authentication & Security
 - **Two-factor authentication (TOTP)** with offline QR codes and single-use recovery codes — enforced
   for portal, mobile and Google sign-in
@@ -207,7 +213,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language
-- Turkish 🇹🇷 and English 🇬🇧 (2,000+ keys, parity checked in CI)
+- 23 interface languages including Turkish 🇹🇷 and English 🇬🇧 (4,693 keys per language, 100% parity checked in CI)
 
 ---
 
@@ -224,24 +230,29 @@ Internet ──443──▶ nginx (stream, ALPN, PROXY protocol)
 
 ```
 AiPBX/
-├── web/                    # PHP MVC portal
+├── web/                    # PHP MVC portal & REST API v1
 │   ├── src/
-│   │   ├── controllers/    # 53 page controllers
-│   │   ├── services/       # 45 services (business logic)
-│   │   ├── repositories/   # 33 repositories
-│   │   └── sync/           # 19 Asterisk configuration generators
-│   ├── templates/          # layouts + 51 views
-│   ├── api/                # JSON endpoints (call control, mobile, chat token, WebAuthn…)
-│   ├── lang/               # tr / en
+│   │   ├── core/           # Router, PluginManager, ApiRequestContext, ResourceNormalizer
+│   │   ├── controllers/    # Page controllers + ApiV1Controller
+│   │   ├── services/       # Business logic + ApiTokenService + WebhookService
+│   │   ├── repositories/   # Database repositories
+│   │   └── sync/           # Asterisk configuration generators
+│   ├── templates/          # Layouts + views (including /api-keys, /webhooks, /plugins)
+│   ├── api/                # Portal JSON endpoints + /api/v1/* rewrite
+│   ├── openapi.json        # OpenAPI 3.1 specification
+│   ├── lang/               # 23 interface languages (100% key parity)
 │   ├── db/migrations/      # Phinx migrations (the database schema)
 │   └── tests/              # PHPUnit
-├── chat/                   # Go WebSocket chat service
+├── plugins/                # Official first-class plugins (ms-teams, ldap-directory, crm-webhook, homer-hep, ai-voicemail, ai-assistant)
+├── ai/                     # Local & cloud AI service (aipbx-ai, Python)
+├── chat/                   # Go WebSocket chat service (aipbx-chat)
 ├── android/                # Kotlin app
 ├── ios/                    # SwiftUI app
+├── integrations/wordpress/ # WordPress click-to-call & callback plugin
 ├── asterisk-config/        # Asterisk base configuration
 ├── sounds/                 # bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
 ├── asterisk-core-sounds-tr-*.tar.xz  # Turkish prompts, one package per format (+ SHA256SUMS)
-├── docs/                   # administrator documentation
+├── docs/                   # administrator & developer documentation
 ├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
 ├── db/seed.sql             # initial roles, permissions, settings
 ├── scripts/release.sh      # publishes a release

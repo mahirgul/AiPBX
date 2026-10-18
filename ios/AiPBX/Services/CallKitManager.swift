@@ -192,6 +192,13 @@ public final class CallKitManager: NSObject, CXProviderDelegate {
         clearPushCall()
     }
 
+    public func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+        AppLogManager.shared.info("CallKit", "Performing outgoing call action via CallKit")
+        AudioSessionManager.shared.configureAudioSessionForCall()
+        provider.reportOutgoingCall(with: action.callUUID, startedConnectingAt: Date())
+        action.fulfill()
+    }
+
     public func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         AppLogManager.shared.info("CallKit", "User answered call via CallKit")
         AudioSessionManager.shared.configureAudioSessionForCall()

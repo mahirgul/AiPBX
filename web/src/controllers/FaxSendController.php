@@ -8,7 +8,7 @@ class FaxSendController extends BaseController
         static::requireRole(['admin', 'fax_user']);
 
         $user_id = $_SESSION['user_id'];
-        $user_ext = $_SESSION['extension'] ?? '8960';
+        $user_ext = (string)($_SESSION['extension'] ?? '');
         $user_role = $_SESSION['user_role'] ?? 'user';
 
         $notices = static::isPost()

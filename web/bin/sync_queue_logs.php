@@ -64,6 +64,19 @@ try {
             trim($r['data4'] ?? ''),
             trim($r['data5'] ?? ''),
         ]);
+        if ($event === 'ABANDON') {
+            try {
+                require_once dirname(__DIR__) . '/src/services/WebhookService.php';
+                WebhookService::emit('queue.caller_abandoned', [
+                    'queue_name'   => $queue_name,
+                    'call_id'      => $call_id,
+                    'position'     => (int)trim($r['data1'] ?? '0'),
+                    'orig_pos'     => (int)trim($r['data2'] ?? '0'),
+                    'wait_seconds' => (int)trim($r['data3'] ?? '0'),
+                ]);
+            } catch (\Throwable $e) {
+            }
+        }
         $inserted++;
     }
 

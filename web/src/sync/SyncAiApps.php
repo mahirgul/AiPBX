@@ -30,6 +30,13 @@ function syncAiApps() {
 function __syncAiAppsBody() {
     require_once dirname(__DIR__) . '/services/ai/AiAppService.php';
     $apps = getDB()->query('SELECT * FROM pbx_ai_apps WHERE is_active = 1 ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+    if (is_file(dirname(__DIR__) . '/core/PluginManager.php')) {
+        require_once dirname(__DIR__) . '/core/PluginManager.php';
+        $installed = PluginManager::installedMap();
+        if (isset($installed['ai-apps']) && empty($installed['ai-apps']['enabled'])) {
+            $apps = [];
+        }
+    }
     pushAiAppConfigs($apps);
     return writeConfWithRollback('extensions_ai_apps.conf', buildAiAppsDialplan($apps, AiAppService::dialplanKey()), function () {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_ai_apps'));

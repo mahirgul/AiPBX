@@ -104,9 +104,10 @@ class CloudAiService
                                     ['key' => 'base_url', 'label' => 'Endpoint', 'secret' => false, 'optional' => true,
                                      'default' => self::QWEN_ENDPOINT]],
                        'url' => 'https://modelstudio.console.alibabacloud.com/', 'free' => true],
-            'openai_compat' => ['title' => 'OpenAI-compatible (own address)', 'caps' => ['llm'],
+            'openai_compat' => ['title' => 'OpenAI-compatible (Cloud or Remote Server)', 'caps' => ['stt', 'llm', 'embed'],
                                 'fields' => [['key' => 'base_url', 'label' => 'Base URL (…/v1)', 'secret' => false],
-                                             ['key' => 'model', 'label' => 'Model', 'secret' => false],
+                                             ['key' => 'model', 'label' => 'LLM Model', 'secret' => false],
+                                             ['key' => 'stt_model', 'label' => 'STT / Whisper Model', 'secret' => false, 'optional' => true, 'default' => 'whisper-1'],
                                              ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true]],
                                 'url' => 'https://platform.openai.com/docs/api-reference/chat', 'free' => false],
         ];
@@ -297,6 +298,17 @@ class CloudAiService
                 $model = $id === 'openai' ? 'gpt-4o-mini-transcribe' : 'whisper-large-v3-turbo';
                 [$body, $type] = self::multipart(['model' => $model, 'language' => $lang, 'response_format' => 'json'], 'file', 'speech.wav', $wav);
                 $d = self::json(TtsHttp::request('POST', $url, ['Authorization' => 'Bearer ' . $k, 'Content-Type' => $type], $body, 120), $id);
+                $text = (string) ($d['text'] ?? '');
+                break;
+            case 'openai_compat':
+                $base = rtrim((string) ($cfg['base_url'] ?? ''), '/');
+                $model = trim((string) ($cfg['stt_model'] ?? '')) ?: (trim((string) ($cfg['model'] ?? '')) ?: 'whisper-1');
+                [$body, $type] = self::multipart(['model' => $model, 'language' => $lang, 'response_format' => 'json'], 'file', 'speech.wav', $wav);
+                $headers = ['Content-Type' => $type];
+                if ($k !== '') {
+                    $headers['Authorization'] = 'Bearer ' . $k;
+                }
+                $d = self::json(TtsHttp::request('POST', $base . '/audio/transcriptions', $headers, $body, 120), $id);
                 $text = (string) ($d['text'] ?? '');
                 break;
             case 'deepgram':

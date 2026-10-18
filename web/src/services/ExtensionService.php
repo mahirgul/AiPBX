@@ -21,10 +21,10 @@ class ExtensionService {
             // user does not land in a context that does not exist and become
             // unable to call out at all.
             $outbound_group = max(1, min(99, intval($data['outbound_group'] ?? 1)));
-            $sip_auth_digest = isset($data['sip_auth_digest']) ? (intval($data['sip_auth_digest']) ? 1 : 0) : 1;
+            $sip_auth_digest = PBXHelper::boolFlag($data, 'sip_auth_digest', 1);
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
-            $is_active = isset($data['is_active']) ? 1 : 0;
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
 
             if (!preg_match('/^\d{3,6}$/', $extension)) {
                 throw new \Exception(t('srv_ext.err_number'));

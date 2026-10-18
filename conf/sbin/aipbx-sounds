@@ -208,7 +208,10 @@ do_install() {
     fi
     tar -xf "$tmp/$PKG" --no-same-owner --no-same-permissions -C "$TARGET" 2>>"$LOG_FILE" \
         || fail "Extraction failed"
-    sed 's|^\./||' "$tmp/list" | grep -v '/$' | sort -u > "$MANIFEST"
+    sed 's|^\./||' "$tmp/list" | grep -v '/$' | sort -u > "$tmp/manifest"
+    chmod 644 "$tmp/manifest"
+    [[ -L "$MANIFEST" ]] && rm -f "$MANIFEST"
+    mv -f "$tmp/manifest" "$MANIFEST"
     chown -R asterisk:asterisk "$TARGET"
     find "$TARGET" -type d -exec chmod 755 {} +
     find "$TARGET" -type f -exec chmod 644 {} +

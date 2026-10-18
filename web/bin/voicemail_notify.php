@@ -84,6 +84,25 @@ function voicemailNotifySend(string $ext, int $newCount): void
     }
     $data = ['caller' => $caller, 'duration' => $duration, 'new_count' => $newCount, 'text' => $text];
 
+    try {
+        require_once dirname(__DIR__) . '/src/services/WebhookService.php';
+        WebhookService::emit('voicemail.created', [
+            'extension' => $ext,
+            'caller'    => $caller,
+            'duration'  => $duration,
+            'new_count' => $newCount,
+        ]);
+        if ($text !== '') {
+            WebhookService::emit('voicemail.transcribed', [
+                'extension' => $ext,
+                'caller'    => $caller,
+                'duration'  => $duration,
+                'summary'   => $text,
+            ]);
+        }
+    } catch (\Throwable $e) {
+    }
+
     // 1. Connected apps: the chat service's live connection.
     require_once dirname(__DIR__) . '/src/services/FileStorageService.php';
     $internalTok = FileStorageService::internalToken();
