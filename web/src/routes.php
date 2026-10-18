@@ -59,6 +59,7 @@ return [
     '/network-settings' => ['controller' => NetworkSettingsController::class, 'action' => 'index', 'module' => 'network_settings.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],
+    '/privacy'         => ['controller' => PrivacyController::class, 'action' => 'index', 'module' => 'privacy.php'],
     '/system-update'   => ['controller' => SystemUpdateController::class, 'action' => 'index', 'module' => 'system_update.php'],
     '/health'          => ['controller' => HealthController::class, 'action' => 'index', 'module' => 'health.php'],
     '/brand-settings'  => ['controller' => BrandSettingsController::class, 'action' => 'index', 'module' => 'brand_settings.php'],

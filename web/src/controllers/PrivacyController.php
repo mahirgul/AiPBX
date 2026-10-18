@@ -1,0 +1,70 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../services/PrivacyService.php';
+
+/**
+ * Security → GDPR & Data Privacy (EN) / KVKK ve Veri Gizliliği (TR).
+ */
+class PrivacyController extends BaseController
+{
+    public static function index(): void
+    {
+        static::requireRole('admin');
+
+        // JSON Subject Access Request (SAR) export download
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['export_subject'])) {
+            if (!verifyCSRFToken(static::csrfToken())) {
+                http_response_code(403);
+                exit('Invalid CSRF token.');
+            }
+            $rawSubject = trim((string)($_POST['subject_number'] ?? ''));
+            $info = PrivacyService::lookupSubject($rawSubject);
+            if ($info !== null) {
+                if (function_exists('logAudit')) {
+                    logAudit('PRIVACY_SAR_EXPORT', 'privacy', null, 'Exported SAR data package for ' . $info['query']);
+                }
+                $payload = [
+                    'generated_at'    => date('c'),
+                    'framework'       => getUserLanguage() === 'tr' ? 'KVKK (6698 Sayılı Kanun Madde 11)' : 'GDPR (EU 2016/679 Art. 15 & 20)',
+                    'subject_number'  => $info['query'],
+                    'cdr_count'       => $info['cdr_count'],
+                    'recording_files' => array_map('basename', $info['recording_files']),
+                    'voicemails'      => $info['voicemails'],
+                    'faxes'           => $info['faxes'],
+                    'signaling_events'=> $info['signaling_count'],
+                    'cdrs'            => $info['all_cdrs'],
+                ];
+                header('Content-Type: application/json; charset=utf-8');
+                header('Content-Disposition: attachment; filename="sar-export-' . preg_replace('/[^0-9]/', '', $info['digits']) . '-' . date('Ymd-His') . '.json"');
+                echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        $notices = static::handlePost([
+            'save_notice'     => fn() => PrivacyService::saveNotice($_POST),
+            'save_retention'  => fn() => PrivacyService::saveRetention($_POST),
+            'run_purge'       => function (): array {
+                $res = PrivacyService::runRetentionPurge();
+                return ['message' => sprintf(t('privacy.msg_purge_done'), $res['summary'])];
+            },
+            'erase_subject'   => fn() => PrivacyService::eraseSubject((string)($_POST['subject_number'] ?? '')),
+            'save_compliance' => fn() => PrivacyService::saveCompliance($_POST),
+        ]);
+
+        $subjectQuery = trim((string)($_GET['subject'] ?? $_POST['subject_number'] ?? ''));
+        $subjectResult = $subjectQuery !== '' ? PrivacyService::lookupSubject($subjectQuery) : null;
+
+        $settings = PrivacyService::settings();
+        $overview = PrivacyService::complianceOverview();
+
+        static::renderPage('privacy/index', [
+            'csrf'          => getCSRFToken(),
+            'settings'      => $settings,
+            'overview'      => $overview,
+            'subjectQuery'  => $subjectQuery,
+            'subjectResult' => $subjectResult,
+        ], ['title' => t('privacy.title')] + $notices);
+    }
+}

@@ -31,6 +31,7 @@ final class RbacTest extends TestCase
         'mail_settings',
         'system_update',
         'certificates',
+        'privacy',
         'phones',
         'web_widgets',
         'plugins',

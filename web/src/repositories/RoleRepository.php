@@ -78,6 +78,7 @@ class RoleRepository extends BaseRepository
             'firewall'           => ['title' => 'Firewall', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'fail2ban'           => ['title' => 'Fail2ban', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'certificates'       => ['title' => 'Certificates', 'group' => 'Security', 'actions' => self::VAE, 'admin_only' => true],
+            'privacy'            => ['title' => 'GDPR & Data Privacy', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'audit_log'          => ['title' => 'Audit Log', 'group' => 'Security', 'actions' => self::VA],
         ];
     }

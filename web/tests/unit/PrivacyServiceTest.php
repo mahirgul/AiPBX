@@ -1,0 +1,78 @@
+<?php
+declare(strict_types=1);
+
+use PHPUnit\Framework\TestCase;
+
+require_once dirname(__DIR__, 2) . '/auth.php';
+require_once dirname(__DIR__, 2) . '/src/services/PrivacyService.php';
+require_once dirname(__DIR__, 2) . '/src/services/ai/CloudAiService.php';
+
+final class PrivacyServiceTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        if (DB_NAME !== 'asterisk_test') {
+            $this->fail('tests must run only on asterisk_test');
+        }
+        $db = getDB();
+        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'privacy_%'");
+    }
+
+    public function testSaveRetentionAndRunPurge(): void
+    {
+        $res = PrivacyService::saveRetention([
+            'retention_enabled'   => '1',
+            'ret_recordings_days' => '90',
+            'ret_voicemail_days'  => '60',
+            'ret_fax_days'        => '120',
+            'ret_chat_days'       => '180',
+            'ret_cdr_days'        => '365',
+            'ret_cdr_action'      => 'anonymize',
+        ]);
+        $this->assertArrayHasKey('message', $res);
+
+        $cfg = PrivacyService::settings();
+        $this->assertTrue($cfg['retention_enabled']);
+        $this->assertSame(90, $cfg['ret_recordings_days']);
+        $this->assertSame(365, $cfg['ret_cdr_days']);
+        $this->assertSame('anonymize', $cfg['ret_cdr_action']);
+
+        $purge = PrivacyService::runRetentionPurge();
+        $this->assertArrayHasKey('counts', $purge);
+        $this->assertNotEmpty(PrivacyService::settings()['last_purge_at']);
+    }
+
+    public function testSubjectLookupAndRightToErasureAnonymizesCdrs(): void
+    {
+        $db = getDB();
+        $db->exec("DELETE FROM asteriskcdr WHERE uniqueid = 'test-privacy-sar-1'");
+        $stmt = $db->prepare(
+            "INSERT INTO asteriskcdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, duration, billsec, disposition, amaflags, accountcode, uniqueid, userfield)
+             VALUES (NOW(), '\"Test Caller\" <05329998877>', '05329998877', '1000', 'from-trunk-inbound', 'PJSIP/trunk-1', 'PJSIP/1000-1', 'Dial', 'PJSIP/1000', 45, 40, 'ANSWERED', 3, '', 'test-privacy-sar-1', '')"
+        );
+        $stmt->execute();
+
+        $lookup = PrivacyService::lookupSubject('05329998877');
+        $this->assertNotNull($lookup);
+        $this->assertGreaterThanOrEqual(1, $lookup['cdr_count']);
+
+        $erased = PrivacyService::eraseSubject('05329998877');
+        $this->assertArrayHasKey('message', $erased);
+
+        $row = $db->query("SELECT src, clid FROM asteriskcdr WHERE uniqueid = 'test-privacy-sar-1'")->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('REDACTED', $row['src']);
+        $this->assertSame('REDACTED', $row['clid']);
+
+        $db->exec("DELETE FROM asteriskcdr WHERE uniqueid = 'test-privacy-sar-1'");
+    }
+
+    public function testCrossBorderCloudAiLockBlocksCloudProviders(): void
+    {
+        PrivacyService::saveCompliance(['block_cloud_ai' => '1']);
+        $this->assertTrue(PrivacyService::settings()['block_cloud_ai']);
+        $this->assertFalse(CloudAiService::configured('openai'));
+
+        PrivacyService::saveCompliance([]);
+        $this->assertFalse(PrivacyService::settings()['block_cloud_ai']);
+    }
+}
