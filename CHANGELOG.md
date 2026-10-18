@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## Unreleased
+
+Remote monitoring and operations:
+
+- **Cloud connector** (`aipbx-agent`, [docs/connector.md](docs/connector.md)): this installation can
+  register as a node of an EchoGuard-compatible portal and be seen and operated from there.
+  Outbound-only (no inbound port, no port forwarding), four allowlisted operations — `snapshot`,
+  `diagnose`, `reload`, `module_reload` — checked both in the agent and in the op executor. `reload`
+  runs the portal's own apply path, so a remote change gets the same config rollback and the same
+  audit-log record as pressing **Apply**; `module_reload` accepts `core` and `pjsip` only and refuses
+  FreePBX-only module names (`ivr`, `queues`, …) with a reason instead of reporting success. No
+  sudoers entry and no new privileged helper. Off until `/etc/aipbx/agent.conf` is written.
+- **SIP signalling capture (HEP)** (`signaling/`): stores HEPv3 signalling events in
+  `pbx_signaling_events` and can forward them to the same portal. Off by default.
+
 ## 1.33.0
 
 Network settings and a tidier menu:
