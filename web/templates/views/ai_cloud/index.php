@@ -118,7 +118,13 @@ document.addEventListener('click', function (e) {
     var btn = e.target.closest('button[data-test]');
     if (!btn) return;
     btn.disabled = true;
-    var body = new URLSearchParams({ action: 'test', provider: btn.dataset.test, csrf_token: window.CSRF_TOKEN || '' });
+    // Send the card's fields as typed: Test must exercise what the admin is
+    // looking at, not only what is stored (an unsaved key used to be dropped
+    // silently and the provider's "no credentials" read like a bad key).
+    var body = new URLSearchParams();
+    new FormData(btn.closest('form')).forEach(function (v, k) { if (typeof v === 'string') body.append(k, v); });
+    body.set('action', 'test');
+    body.set('provider', btn.dataset.test);
     fetch('/api/ai_cloud.php', { method: 'POST', body: body }).then(function (r) { return r.json(); }).then(function (d) {
         btn.disabled = false;
         var msg = d.success ? d.message : (d.error || 'Error');
