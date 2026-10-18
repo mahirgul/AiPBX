@@ -40,7 +40,7 @@ $tabs = ['syslog' => ['fa-scroll', 'Syslog'], 'http' => ['fa-lock', 'HTTPS'], 'f
         <span class="text-muted u-fs-11"><?php echo sprintf(t('js.phonelogs.lines'), count($events)); ?></span>
     </form>
     <div class="table-responsive" style="padding: 0 20px 20px; max-height: 70vh; overflow: auto;">
-        <table class="table" style="font-size: 12px;">
+        <table class="data-table" style="font-size: 12px;">
             <thead><tr>
                 <th><?php echo t('phonelogs.col_time'); ?></th><th>IP</th><th><?php echo t('phonelogs.col_phone'); ?></th>
                 <th><?php echo t('phonelogs.col_result'); ?></th><th><?php echo t('phonelogs.col_file'); ?></th><th><?php echo t('phonelogs.col_detail'); ?></th>

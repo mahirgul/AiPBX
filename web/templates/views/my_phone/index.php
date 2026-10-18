@@ -188,7 +188,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
             <!-- Rich data table in the CDR style -->
             <div class="table-responsive">
-                <table class="data-table" data-no-dt="true">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th class="col-hide-mobile u-w-45">#</th>

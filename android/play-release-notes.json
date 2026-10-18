@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.73",
+  "version": "1.0.74",
   "notes": {
-    "en-US": "Fixed in-app language switching across all 23 supported languages (bundled directly in the app package) and preserved the active settings tab when switching languages.",
-    "tr-TR": "Desteklenen 23 dilin tamamında uygulama içi dil değiştirme sorunu düzeltildi (tüm dil paketleri doğrudan uygulamaya dahil edildi) ve dil değişiminde aktif sekmenin korunması sağlandı."
+    "en-US": "Added first-launch Open Source License, Emergency Calling (112/911/999) & Data Privacy notice and aligned multi-language support across all 23 languages.",
+    "tr-TR": "İlk açılışta Açık Kaynak Lisansı, Acil Çağrı (112/911/999) ve Veri Gizliliği bilgilendirme ekranı eklendi; 23 dil desteği ve kararlılık iyileştirmeleri yapıldı."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

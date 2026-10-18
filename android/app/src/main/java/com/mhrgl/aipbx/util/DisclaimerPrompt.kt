@@ -17,7 +17,7 @@ object DisclaimerPrompt {
         val sp = activity.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (sp.getBoolean(KEY_ACCEPTED, false)) return
 
-        val isTr = L10n.currentLanguage(activity).startsWith("tr", ignoreCase = true)
+        val isTr = L10n.current().startsWith("tr", ignoreCase = true)
 
         val title = if (isTr) {
             "Açık Kaynak Lisansı ve Sorumluluk Beyanı"

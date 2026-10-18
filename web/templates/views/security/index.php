@@ -169,7 +169,7 @@
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover u-m-0">
+                    <table class="data-table u-m-0">
                         <thead>
                             <tr>
                                 <th><?php echo t('security.col_device'); ?></th>

@@ -65,8 +65,8 @@ if ($path === '/accept-license' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'PO
     $stmt->execute(['license_accepted_at', $acceptedAt]);
     $stmt->execute(['license_accepted_by', $acceptedBy]);
     $stmt->execute(['license_accepted_version', defined('AIPBX_VERSION') ? AIPBX_VERSION : '']);
-    if (function_exists('logAudit')) {
-        logAudit('LICENSE_ACCEPTED', 'sys_settings', null, "Accepted MIT & Telecom Disclaimer by {$acceptedBy}");
+    if (function_exists('writeAuditLog')) {
+        writeAuditLog('security', 'license_acceptance', 'mit_disclaimer', "Accepted MIT & Telecom Disclaimer by {$acceptedBy}", 'update', $_SESSION['user_id'] ?? null);
     }
     echo json_encode(['success' => true, 'accepted_at' => $acceptedAt]);
     exit;

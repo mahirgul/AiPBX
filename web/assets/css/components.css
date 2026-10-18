@@ -150,16 +150,18 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
+    position: sticky;
+    left: 0;
 }
 
 .dt-search-box {
     position: relative;
-    flex: 1;
+    flex: 1 1 200px;
     max-width: 360px;
-    min-width: 220px;
+    min-width: 160px;
 }
 
 .dt-search-box i {
@@ -251,6 +253,8 @@
     flex-wrap: wrap;
     font-size: 12.5px;
     color: var(--text-muted);
+    position: sticky;
+    left: 0;
 }
 
 .dt-info {
@@ -1413,6 +1417,7 @@ body.auth-body > .auth-cards {
     .sidebar {
         position: fixed;
         left: -270px;
+        margin-left: 0 !important;
         /* .app-footer-bar is 1050 too: coming before it in the DOM, it stayed
            underneath at the same z-index and cut off the user badge. An open
            menu must always be on top. */
@@ -1422,6 +1427,7 @@ body.auth-body > .auth-cards {
 
     .sidebar.mobile-open {
         left: 0;
+        margin-left: 0 !important;
         width: 260px !important;
         min-width: 260px !important;
         max-width: 260px !important;
@@ -1605,10 +1611,81 @@ body.auth-body > .auth-cards {
         flex: 1 1 auto !important;
     }
 
-    /* Smooth horizontal table scrolling on mobile */
+    /* Card & header wrapping on mobile */
+    .card {
+        padding: 14px 12px;
+        border-radius: 12px;
+        margin-bottom: 14px;
+    }
+    .card-header {
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        padding-left: 10px;
+    }
+    .card-title {
+        font-size: 15px;
+        min-width: 0;
+    }
+
+    /* Compact table cells & sticky actions column on mobile */
     .table-responsive {
         -webkit-overflow-scrolling: touch;
         border-radius: 8px;
+    }
+    .data-table thead th,
+    .portal-table thead th,
+    .table thead th {
+        padding: 9px 10px;
+        font-size: 11px;
+    }
+    .data-table tbody td,
+    .portal-table tbody td,
+    .table tbody td {
+        padding: 9px 10px;
+        font-size: 12.5px;
+    }
+    .data-table th.text-right,
+    .data-table td.text-right,
+    .portal-table th.text-right,
+    .portal-table td.text-right {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    /* Mobile DataTable search & pagination controls */
+    .dt-controls-bar {
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .dt-search-box {
+        min-width: 140px;
+        max-width: none;
+        flex: 1 1 150px;
+    }
+    .dt-search-box input {
+        height: 36px;
+        font-size: 14px !important;
+    }
+    .dt-length-box select {
+        height: 36px;
+        font-size: 13px !important;
+        padding: 4px 8px;
+    }
+    .dt-pagination-bar {
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    .dt-pagination-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Keep header & footer popovers within viewport on small phones */
+    .header-sync-dropdown,
+    .user-profile-dropdown {
+        max-width: calc(100vw - 20px);
     }
 }
 
@@ -1622,6 +1699,11 @@ body.auth-body > .auth-cards {
    so the behaviour of the old inline style is kept. No !important. */
 .u-hint:not(#u):not(#u) { color: var(--text-muted); display: block; margin-top: 4px; }
 .u-grid-2:not(#u):not(#u) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 768px) {
+    .u-grid-2:not(#u):not(#u) { grid-template-columns: 1fr; gap: 12px; }
+    .u-flex-between:not(#u):not(#u) { flex-wrap: wrap; gap: 8px; }
+    .card-header .u-flex-gap:not(#u):not(#u) { flex-wrap: wrap; gap: 6px; }
+}
 .u-check-label:not(#u):not(#u) { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .u-check-label-6:not(#u):not(#u) { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .u-flex-between:not(#u):not(#u) { display: flex; align-items: center; justify-content: space-between; }

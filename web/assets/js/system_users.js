@@ -144,7 +144,10 @@ function resetRoleForm() {
 function toggleSelectAllUsers(master) {
     const checkboxes = document.querySelectorAll('.user-select-cb');
     checkboxes.forEach(cb => {
-        cb.checked = master.checked;
+        const tr = cb.closest('tr');
+        if (!master.checked || !tr || tr.style.display !== 'none') {
+            cb.checked = master.checked;
+        }
     });
     updateBulkActionState();
 }
@@ -168,9 +171,14 @@ function updateBulkActionState() {
     }
 
     const master = document.getElementById('selectAllUsers');
-    const all = document.querySelectorAll('.user-select-cb');
-    if (master && all.length > 0) {
-        master.checked = (count === all.length);
+    const visibleCbs = Array.from(document.querySelectorAll('.user-select-cb')).filter(cb => {
+        const tr = cb.closest('tr');
+        return !tr || tr.style.display !== 'none';
+    });
+    if (master && visibleCbs.length > 0) {
+        master.checked = visibleCbs.every(cb => cb.checked);
+    } else if (master) {
+        master.checked = false;
     }
 }
 

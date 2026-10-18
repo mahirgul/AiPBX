@@ -292,3 +292,5 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 4. **HSTS & TLS Hardening**: TLS 1.2 and TLS 1.3 only, modern cipher suites, and mandatory HTTP-to-HTTPS redirection.
 5. **Single Root Entry Point**: the portal reaches root only through `sudo /usr/local/sbin/aipbx-priv`, whose subcommands map to fixed operations with validated arguments.
 6. **Apache Sandbox**: Ubuntu's hardened `apache2.service` is kept; the installer's override only makes `/etc/sudoers*` readable and `/etc/asterisk`, `/etc/postfix`, `/etc/fail2ban/jail.d` writable.
+7. **Optional Global Privacy & Telecom Compliance Engine (`/privacy`)**: 100% opt-in compliance controls (`PrivacyService` + `PrivacyDataSubjectHelper`) supporting KVKK, GDPR, US CCPA/FCC, HIPAA, PCI-DSS v4.0, and LGPD presets, `[sub-privacy-consent]` pre-call disclosure/opt-in/opt-out dialplan generation, `MixMonitor B(n)` periodic recording beeps, live AGI/AI transcript Luhn payment card & PII redaction (`[REDACTED-CARD]`), nightly dual-DB (`asteriskcdr` + `cdrs`) retention purge (`privacy_purge.php`), SAR JSON export, Right to Erasure (`PRIVACY_ERASURE`), and Cross-Border Cloud AI Lock.
+

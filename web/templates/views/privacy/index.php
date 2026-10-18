@@ -332,7 +332,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
 
                 <?php if (!empty($subjectResult['cdrs'])): ?>
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th><?php echo htmlspecialchars(t('common.date')); ?></th>
@@ -389,7 +389,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
             <h3 style="margin-top:0;"><i class="fas fa-headphones u-primary"></i> <?php echo htmlspecialchars(t('privacy.listeners_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.listeners_help')); ?></p>
             <div class="table-responsive">
-                <table class="table">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th><?php echo htmlspecialchars(t('common.username')); ?></th>
@@ -417,7 +417,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.audit_empty')); ?></p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th><?php echo htmlspecialchars(t('common.date')); ?></th>

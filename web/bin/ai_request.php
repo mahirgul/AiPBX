@@ -20,6 +20,7 @@ if (PHP_SAPI !== 'cli') {
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/ai/AiAppService.php';
 require_once dirname(__DIR__) . '/src/services/MailTemplateService.php';
+require_once dirname(__DIR__) . '/src/services/PrivacyService.php';
 $appId = (int) ($argv[1] ?? 0);
 $uuid = strtolower((string) ($argv[2] ?? ''));
 $key = strtolower((string) ($argv[3] ?? ''));
@@ -53,7 +54,9 @@ try {
             $intent = $i;
         }
     }
-    $transcript = implode(' / ', array_filter(array_map('strval', (array) ($call['transcripts'] ?? []))));
+    $transcript = PrivacyService::redactTranscriptIfEnabled(
+        implode(' / ', array_filter(array_map('strval', (array) ($call['transcripts'] ?? []))))
+    );
     $caller = mb_substr((string) ($call['caller'] ?? ''), 0, 40);
     $callerName = mb_substr(trim(rawurldecode((string) ($argv[4] ?? ''))), 0, 80);
     getDB()->prepare('INSERT IGNORE INTO ai_requests (app_id, call_uuid, caller, caller_name, intent_id, intent_name, transcript, score)

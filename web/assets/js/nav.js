@@ -42,6 +42,7 @@ function toggleSidebar(e) {
 
     // On mobile screens (<=900px) open/close as a drawer
     if (window.innerWidth <= 900) {
+        sidebar.classList.remove('collapsed');
         const isMobileOpen = sidebar.classList.toggle('mobile-open');
         if (overlay) {
             if (isMobileOpen) overlay.classList.add('active');
@@ -89,7 +90,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('app-sidebar');
 
     if (sidebar) {
-        // Restore saved sidebar state
+        if (window.innerWidth <= 900) {
+            sidebar.classList.remove('collapsed');
+            updateSidebarToggleIcon(sidebar.classList.contains('mobile-open'));
+            return;
+        }
+        // Restore saved sidebar state on desktop
         const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
         if (isCollapsed) {
             sidebar.classList.add('collapsed');

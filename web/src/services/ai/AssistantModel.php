@@ -48,11 +48,50 @@ class AssistantModel
         if ($local !== null) {
             $out[] = $local;
         }
+        $plugin = self::pluginChat();
+        if ($plugin !== null) {
+            $out[] = $plugin;
+        }
         $cloud = self::cloudChat();
         if ($cloud !== null) {
             $out[] = $cloud;
         }
         return $out;
+    }
+
+    /**
+     * Model endpoint configured directly in the `ai-assistant` plugin settings
+     * (OpenAI, Groq, OpenRouter, or self-hosted Ollama/vLLM).
+     */
+    private static function pluginChat(): ?callable
+    {
+        try {
+            require_once dirname(__DIR__, 2) . '/core/PluginManager.php';
+            if (!PluginManager::isEnabled('ai-assistant')) {
+                return null;
+            }
+            $cfg = PluginManager::getAllSettings('ai-assistant', false);
+            $baseUrl = rtrim(trim((string)($cfg['api_base_url'] ?? '')), '/');
+            $apiKey = trim((string)($cfg['api_key'] ?? ''));
+            $model = trim((string)($cfg['model'] ?? 'gpt-4o-mini'));
+            if ($baseUrl === '' || $apiKey === '' || !filter_var($baseUrl, FILTER_VALIDATE_URL)) {
+                return null;
+            }
+            return function (string $prompt) use ($baseUrl, $apiKey, $model): ?string {
+                $body = json_encode([
+                    'model' => $model !== '' ? $model : 'gpt-4o-mini',
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                    'temperature' => 0.1,
+                    'max_tokens' => 300,
+                ]);
+                if (!is_string($body)) {
+                    return null;
+                }
+                return self::http($baseUrl . '/chat/completions', $body, ['Authorization: Bearer ' . $apiKey]);
+            };
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

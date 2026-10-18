@@ -18,8 +18,8 @@
         let tbody = table.querySelector('tbody');
         if (!tbody) return;
 
-        // Skip permission matrix tables or tables with bulk checkbox inputs in thead
-        if (table.querySelector('thead input[type="checkbox"]') || table.classList.contains('perm-matrix-table')) {
+        // Skip permission matrix tables
+        if (table.classList.contains('perm-matrix-table')) {
             return;
         }
 
@@ -30,11 +30,8 @@
         let rows = Array.from(tbody.children).filter(row => {
             if (row.tagName !== 'TR') return false;
             if (row.classList.contains('empty-row') || row.classList.contains('dt-no-match-row')) return false;
-            // uiTableEmptyRow() (config.php) produces this class on every empty
-            // list — the name was misspelled here (".table-empty-container") and
-            // never matched; on empty tables the single "no records" row was
-            // treated as real data and a needless search/paging bar was shown.
             if (row.querySelector('.empty-table-box')) return false;
+            if (headerCells.length > 1 && row.children.length === 1 && row.children[0].colSpan > 1) return false;
             return true;
         });
 
@@ -58,15 +55,14 @@
         // Create Controls Bar (Search + Length)
         const controlsBar = document.createElement('div');
         controlsBar.className = 'dt-controls-bar';
-        controlsBar.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;';
         controlsBar.innerHTML = `
-            <div class="dt-search-box" style="position: relative; flex: 1; max-width: 340px; min-width: 200px;">
-                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none;"></i>
-                <input type="text" class="form-control dt-search-input" placeholder="${__('js.dt.search')}" style="padding-left: 36px !important; height: 36px; font-size: 13px; border-radius: 8px; width: 100%;" value="">
+            <div class="dt-search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control dt-search-input" placeholder="${__('js.dt.search')}" value="">
             </div>
-            <div class="dt-length-box" style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); font-weight: 600;">
-                <span>${__('js.dt.show')}</span>
-                <select class="form-control dt-length-select" style="height: 36px; padding: 4px 10px; font-size: 12.5px; border-radius: 8px; cursor: pointer;">
+            <div class="dt-length-box">
+                <span class="dt-length-label">${__('js.dt.show')}</span>
+                <select class="form-control dt-length-select">
                     <option value="10">${__('js.dt.n_rows', 10)}</option>
                     <option value="25" selected>${__('js.dt.n_rows', 25)}</option>
                     <option value="50">${__('js.dt.n_rows', 50)}</option>
@@ -83,10 +79,9 @@
         // Create Pagination Bar directly below table
         const paginationBar = document.createElement('div');
         paginationBar.className = 'dt-pagination-bar';
-        paginationBar.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); flex-wrap: wrap; font-size: 12.5px; color: var(--text-muted);';
         paginationBar.innerHTML = `
-            <div class="dt-info" style="font-weight: 500;"></div>
-            <div class="dt-pagination-nav" style="display: flex; align-items: center; gap: 4px;"></div>
+            <div class="dt-info"></div>
+            <div class="dt-pagination-nav"></div>
         `;
         if (table.nextSibling) {
             tableParent.insertBefore(paginationBar, table.nextSibling);
@@ -110,7 +105,15 @@
         // Setup Header Click Sorting
         headerCells.forEach((th, colIndex) => {
             const thText = th.textContent.trim().toLowerCase();
-            const isActions = th.classList.contains('text-right') || thText === '' || thText === 'eylemler' || thText === 'eylem';
+            const isActions = th.classList.contains('text-right')
+                || th.classList.contains('u-text-right')
+                || th.classList.contains('row-drag-handle')
+                || !!th.querySelector('input[type="checkbox"]')
+                || thText === ''
+                || thText === 'eylemler'
+                || thText === 'eylem'
+                || thText === 'actions'
+                || thText === 'action';
             if (isActions || th.classList.contains('no-sort')) return;
 
             th.classList.add('sortable');
@@ -208,6 +211,11 @@
         }
 
         function render() {
+            if (allRowData.length === 0) {
+                infoEl.innerHTML = __('js.dt.no_results');
+                navEl.innerHTML = '';
+                return;
+            }
             filterRows();
             const visibleItems = allRowData.filter(item => item.visible);
 

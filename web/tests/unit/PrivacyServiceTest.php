@@ -16,6 +16,13 @@ final class PrivacyServiceTest extends TestCase
         }
         $db = getDB();
         $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'privacy_%'");
+        $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'privacy'");
+    }
+
+    protected function tearDown(): void
+    {
+        $db = getDB();
+        $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'privacy'");
     }
 
     public function testSaveRetentionAndRunPurge(): void
@@ -89,5 +96,29 @@ final class PrivacyServiceTest extends TestCase
 
         PrivacyService::saveCompliance([]);
         $this->assertFalse(PrivacyService::settings()['block_cloud_ai']);
+    }
+
+    public function testAllRulesOffByDefaultAndTranscriptRedaction(): void
+    {
+        $cfg = PrivacyService::settings();
+        $this->assertSame('off', $cfg['jurisdiction_profile']);
+        $this->assertSame('off', $cfg['notice_mode']);
+        $this->assertFalse($cfg['pci_pause_enabled']);
+        $this->assertFalse($cfg['retention_enabled']);
+        $this->assertFalse($cfg['block_cloud_ai']);
+        $this->assertSame(0, $cfg['recording_beep_sec']);
+
+        $raw = 'My card is 4532 0151 1283 0366, TCKN 12345678901, IBAN TR330006100519786457841326 and email test@example.com.';
+        // When profile is 'off' and pci_pause_enabled is false, transcript is untouched
+        $this->assertSame($raw, PrivacyService::redactTranscriptIfEnabled($raw));
+
+        // Enable KVKK or PCI-DSS -> transcript is automatically redacted
+        PrivacyService::applyProfile(['jurisdiction_profile' => 'kvkk']);
+        $redacted = PrivacyService::redactTranscriptIfEnabled($raw);
+        $this->assertStringContainsString('[REDACTED-CARD]', $redacted);
+        $this->assertStringContainsString('[REDACTED-ID]', $redacted);
+        $this->assertStringContainsString('[REDACTED-IBAN]', $redacted);
+        $this->assertStringContainsString('[REDACTED-EMAIL]', $redacted);
+        $this->assertStringNotContainsString('4532 0151 1283 0366', $redacted);
     }
 }

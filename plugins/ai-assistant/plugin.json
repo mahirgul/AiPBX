@@ -18,6 +18,7 @@
     "scopes": ["pbx:read", "pbx:write", "calls:read", "system:read", "system:write"],
     "hooks": {
         "admin_page": {
+            "route": "/assistant",
             "group": "ai"
         }
     },

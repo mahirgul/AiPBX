@@ -23,7 +23,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
         <p style="color: var(--warning); padding: 0 20px;"><i class="fas fa-triangle-exclamation"></i> <?php echo t('ai_apps.service_down'); ?> <a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a></p>
     <?php endif; ?>
     <div class="table-responsive" style="padding: 0 20px 20px;">
-        <table class="table">
+        <table class="data-table">
             <thead><tr>
                 <th><?php echo t('ai_apps.col_title'); ?></th><th><?php echo t('ai_apps.col_number'); ?></th>
                 <th><?php echo t('ai_apps.col_voice'); ?></th><th><?php echo t('ai_apps.col_dest'); ?></th>
@@ -164,7 +164,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('ai_apps.requests_title'); ?></div></div>
     <div class="table-responsive" style="padding: 0 20px 20px;">
-        <table class="table">
+        <table class="data-table">
             <thead><tr><th><?php echo t('ai_apps.col_time'); ?></th><th><?php echo t('ai_apps.col_caller'); ?></th><th><?php echo t('ai_apps.col_request'); ?></th>
                 <th><?php echo t('ai_apps.col_said'); ?></th><th></th><th><?php echo t('ai_apps.col_handled'); ?></th></tr></thead>
             <tbody>

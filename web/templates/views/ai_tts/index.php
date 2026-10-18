@@ -113,7 +113,7 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
 
     <div class="u-strong" style="margin: 24px 0 8px;"><i class="fas fa-clock-rotate-left"></i> <?php echo t('ai_tts.history'); ?></div>
     <div class="table-responsive">
-        <table class="data-table" data-no-dt="true">
+        <table class="data-table">
             <thead><tr>
                 <th><?php echo t('ai_tts.col_date'); ?></th><th><?php echo t('ai_tts.field_provider'); ?></th><th><?php echo t('ai_tts.field_voice'); ?></th>
                 <th><?php echo t('ai_tts.field_text'); ?></th><th><?php echo t('ai_tts.col_chars'); ?></th><th><?php echo t('ai_tts.col_duration'); ?></th>

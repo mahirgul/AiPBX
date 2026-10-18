@@ -37,6 +37,7 @@
 		884BBFC44919AAD61F272B64 /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DDD14B3F7E65597E2AE1D72 /* ActiveCallView.swift */; };
 		E060A3051960E7A4825A3493 /* DialKeypadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1142DD6BF8E2EE49D7080A42 /* DialKeypadView.swift */; };
 		1B5200A29D0BC06459C776C7 /* DialerTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0866EF5CC3E73118B035CA /* DialerTabView.swift */; };
+		9A92D3A83227CF1FDBFF5392 /* VoicemailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849EBABBDBCC5267EC21C311 /* VoicemailView.swift */; };
 		E08CFB36F753C9301E1A94B0 /* CallHistoryTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9EE438CFC0BC44299E468A /* CallHistoryTabView.swift */; };
 		2F5D312C482FD01346754BD2 /* CallRecordRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B4138F21780AE9244E4AB7B /* CallRecordRowView.swift */; };
 		AE7EFC983AABEF139DD4F1A2 /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70A1DAE57F278CE77101349 /* LogViewerView.swift */; };
@@ -85,6 +86,7 @@
 		6DDD14B3F7E65597E2AE1D72 /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActiveCallView.swift"; sourceTree = "<group>"; };
 		1142DD6BF8E2EE49D7080A42 /* DialKeypadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DialKeypadView.swift"; sourceTree = "<group>"; };
 		1B0866EF5CC3E73118B035CA /* DialerTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DialerTabView.swift"; sourceTree = "<group>"; };
+		849EBABBDBCC5267EC21C311 /* VoicemailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VoicemailView.swift"; sourceTree = "<group>"; };
 		8B9EE438CFC0BC44299E468A /* CallHistoryTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallHistoryTabView.swift"; sourceTree = "<group>"; };
 		0B4138F21780AE9244E4AB7B /* CallRecordRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallRecordRowView.swift"; sourceTree = "<group>"; };
 		A70A1DAE57F278CE77101349 /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LogViewerView.swift"; sourceTree = "<group>"; };
@@ -219,6 +221,7 @@
 				6DDD14B3F7E65597E2AE1D72 /* ActiveCallView.swift */,
 				1142DD6BF8E2EE49D7080A42 /* DialKeypadView.swift */,
 				1B0866EF5CC3E73118B035CA /* DialerTabView.swift */,
+				849EBABBDBCC5267EC21C311 /* VoicemailView.swift */,
 			);
 			name = "Dialer";
 			path = "Dialer";
@@ -525,6 +528,7 @@
 				884BBFC44919AAD61F272B64 /* ActiveCallView.swift in Sources */,
 				E060A3051960E7A4825A3493 /* DialKeypadView.swift in Sources */,
 				1B5200A29D0BC06459C776C7 /* DialerTabView.swift in Sources */,
+				9A92D3A83227CF1FDBFF5392 /* VoicemailView.swift in Sources */,
 				E08CFB36F753C9301E1A94B0 /* CallHistoryTabView.swift in Sources */,
 				2F5D312C482FD01346754BD2 /* CallRecordRowView.swift in Sources */,
 				AE7EFC983AABEF139DD4F1A2 /* LogViewerView.swift in Sources */,
@@ -585,7 +589,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 74;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AiPBX/Resources/Info.plist;
@@ -594,7 +598,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.74;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mhrgl.AiPBX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -609,7 +613,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 74;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AiPBX/Resources/Info.plist;
@@ -618,7 +622,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.74;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mhrgl.AiPBX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

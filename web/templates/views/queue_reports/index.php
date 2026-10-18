@@ -212,7 +212,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
 
     <?php elseif ($tab === 'queues'): ?>
         <div class="table-responsive">
-            <table class="data-table" data-no-dt="true">
+            <table class="data-table">
                 <thead><tr>
                     <th><?php echo t('queue_reports.col_queue'); ?></th><th><?php echo t('queue_reports.col_offered'); ?></th><th><?php echo t('queue_reports.answered'); ?></th>
                     <th><?php echo t('queue_reports.lost'); ?></th><th><?php echo sprintf(t('queue_reports.col_sl'), $sl); ?></th>
@@ -240,7 +240,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
             <div class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.empty'); ?></div>
         <?php else: $maxAnswered = max(1, max(array_column($by_agent, 'answered'))); ?>
         <div class="table-responsive">
-            <table class="data-table" data-no-dt="true">
+            <table class="data-table">
                 <thead><tr>
                     <th><?php echo t('queue_reports.col_agent'); ?></th>
                     <th><?php echo t('queue_reports.answered'); ?></th>
@@ -292,7 +292,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
             <span class="u-muted u-fs-12"><?php echo t('queue_reports.lost_hint'); ?></span>
         </div>
         <div class="table-responsive">
-            <table class="data-table" data-no-dt="true">
+            <table class="data-table">
                 <thead><tr>
                     <th><?php echo t('queue_reports.col_time'); ?></th><th><?php echo t('queue_reports.col_caller'); ?></th><th><?php echo t('queue_reports.col_queue'); ?></th>
                     <th><?php echo t('queue_reports.col_wait'); ?></th><th><?php echo t('queue_reports.col_reason'); ?></th><th><?php echo t('queue_reports.col_callback'); ?></th>
@@ -325,7 +325,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
     <?php elseif ($tab === 'repeat'): ?>
         <div class="u-muted u-fs-12 u-mb-10"><?php echo t('queue_reports.repeat_hint'); ?></div>
         <div class="table-responsive">
-            <table class="data-table" data-no-dt="true">
+            <table class="data-table">
                 <thead><tr>
                     <th><?php echo t('queue_reports.col_caller'); ?></th><th><?php echo t('queue_reports.col_calls'); ?></th><th><?php echo t('queue_reports.answered'); ?></th>
                     <th><?php echo t('queue_reports.lost'); ?></th><th><?php echo t('queue_reports.col_first'); ?></th><th><?php echo t('queue_reports.col_last'); ?></th>
@@ -357,7 +357,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
             <div class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.no_notes'); ?></div>
         <?php else: ?>
         <div class="table-responsive">
-            <table class="data-table" data-no-dt="true">
+            <table class="data-table">
                 <thead><tr>
                     <th><?php echo t('queue_reports.col_disposition'); ?></th>
                     <?php foreach ($exts as $e): ?><th><?php echo $h($agentLabel($e)); ?></th><?php endforeach; ?>

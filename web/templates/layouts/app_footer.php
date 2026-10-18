@@ -133,7 +133,7 @@ if ($is_spa_request) {
                         <?php // Interface language: a plain GET form, so it also works without the SPA router. ?>
                         <form action="/set-language" method="get" data-no-spa="true" class="user-lang-form" title="<?php echo t('sidebar.language_tooltip'); ?>">
                             <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/'); ?>">
-                            <select name="lang" onchange="this.form.submit()" aria-label="<?php echo t('sidebar.language_tooltip'); ?>">
+                            <select name="lang" onchange="if(this.form.elements['redirect']){this.form.elements['redirect'].value=window.location.pathname+window.location.search;}this.form.submit();" aria-label="<?php echo t('sidebar.language_tooltip'); ?>">
                                 <?php foreach (UI_LANGUAGES as $code => $label): ?>
                                     <option value="<?php echo htmlspecialchars($code); ?>"<?php echo $code === getUserLanguage() ? ' selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
                                 <?php endforeach; ?>

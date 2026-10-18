@@ -308,8 +308,14 @@
     }
 
     function updateActiveSidebarNav(url) {
-        const currentPath = new URL(url, window.location.origin).pathname;
+        const parsedUrl = new URL(url, window.location.origin);
+        const currentPath = parsedUrl.pathname;
         const navLinks = document.querySelectorAll('.nav-menu .nav-link');
+
+        // Keep footer language selector redirect input in sync after SPA navigations
+        document.querySelectorAll('.user-lang-form input[name="redirect"]').forEach(input => {
+            input.value = parsedUrl.pathname + parsedUrl.search;
+        });
 
         // Close mobile drawer overlay if open
         if (typeof closeMobileSidebar === 'function') {
