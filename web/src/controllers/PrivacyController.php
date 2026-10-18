@@ -24,9 +24,12 @@ class PrivacyController extends BaseController
                 if (function_exists('logAudit')) {
                     logAudit('PRIVACY_SAR_EXPORT', 'privacy', null, 'Exported SAR data package for ' . $info['query']);
                 }
+                $settings = PrivacyService::settings();
+                $profiles = PrivacyService::profiles();
+                $activeProfile = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GDPR / KVKK';
                 $payload = [
                     'generated_at'    => date('c'),
-                    'framework'       => getUserLanguage() === 'tr' ? 'KVKK (6698 Sayılı Kanun Madde 11)' : 'GDPR (EU 2016/679 Art. 15 & 20)',
+                    'framework'       => $activeProfile,
                     'subject_number'  => $info['query'],
                     'cdr_count'       => $info['cdr_count'],
                     'recording_files' => array_map('basename', $info['recording_files']),
@@ -43,6 +46,7 @@ class PrivacyController extends BaseController
         }
 
         $notices = static::handlePost([
+            'apply_profile'   => fn() => PrivacyService::applyProfile($_POST),
             'save_notice'     => fn() => PrivacyService::saveNotice($_POST),
             'save_retention'  => fn() => PrivacyService::saveRetention($_POST),
             'run_purge'       => function (): array {
@@ -62,6 +66,7 @@ class PrivacyController extends BaseController
         static::renderPage('privacy/index', [
             'csrf'          => getCSRFToken(),
             'settings'      => $settings,
+            'profiles'      => PrivacyService::profiles(),
             'overview'      => $overview,
             'subjectQuery'  => $subjectQuery,
             'subjectResult' => $subjectResult,
