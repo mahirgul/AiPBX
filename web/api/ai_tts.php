@@ -58,6 +58,13 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''
 if (!hasModulePermission('ai_tts', 'edit')) {
     aiTtsJson(['success' => false, 'error' => 'Unauthorized'], 403);
 }
+if (is_file(__DIR__ . '/../src/core/PluginManager.php')) {
+    require_once __DIR__ . '/../src/core/PluginManager.php';
+    $installedPlugins = PluginManager::installedMap();
+    if (isset($installedPlugins['ai-tts']) && empty($installedPlugins['ai-tts']['enabled'])) {
+        aiTtsJson(['success' => false, 'error' => 'AI TTS plugin is disabled.'], 403);
+    }
+}
 
 try {
     if ($action === 'synthesize') {

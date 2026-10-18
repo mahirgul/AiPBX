@@ -103,7 +103,7 @@ if (preg_match('#^/api/plugins/([a-z0-9][a-z0-9-]{1,48})(?:/(.*))?$#', $path, $_
 if (preg_match('#^/plugins/([a-z0-9][a-z0-9-]{1,48})$#', $path, $_pluginMatch)) {
     require_once __DIR__ . '/src/core/BaseController.php';
     require_once __DIR__ . '/src/controllers/PluginsController.php';
-    $_SERVER['PHP_SELF'] = '/plugins.php';
+    $_SERVER['PHP_SELF'] = '/plugin_' . $_pluginMatch[1] . '.php';
     PluginsController::detail($_pluginMatch[1]);
     exit;
 }

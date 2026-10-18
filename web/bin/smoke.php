@@ -166,7 +166,27 @@ if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
  */
 function check_rbac(): void
 {
-    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings', '/phones', '/phone-keys', '/web-widgets', '/plugins', '/api-keys', '/webhooks'];
+    $ADMIN_ONLY = [
+        '/roles',
+        '/system-users',
+        '/firewall',
+        '/fail2ban',
+        '/certificates',
+        '/asterisk-settings',
+        '/phones',
+        '/phone-keys',
+        '/web-widgets',
+        '/plugins',
+        '/api-keys',
+        '/webhooks',
+        '/google-integration',
+        '/ai-apps',
+        '/ai-models',
+        '/file-storage',
+        '/mail-settings',
+        '/system-update',
+        '/health',
+    ];
     $n = 0;
 
     // Told apart purely by size. Measured live (2026-09-01): a blocked request
