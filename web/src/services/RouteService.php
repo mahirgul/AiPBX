@@ -11,8 +11,8 @@ class RouteService {
             $title = trim($data['title'] ?? '');
             $dest_type = sanitizeDestType($data['dest_type'] ?? 'time_condition');
             $dest_id = trim($data['dest_id'] ?? '');
-            $record_call = isset($data['record_call']) ? 1 : 0;
-            $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
+            $record_call = PBXHelper::boolFlag($data, 'record_call', 0);
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
             $language = trim($data['language'] ?? '');
             if ($language !== '' && !in_array($language, getAvailableLanguages(), true)) {
                 $language = '';
@@ -58,12 +58,12 @@ class RouteService {
             $append = preg_replace('/[^0-9]/', '', trim($data['append'] ?? ''));
             $strip_front = intval($data['strip_front'] ?? 0);
             $strip_back = intval($data['strip_back'] ?? 0);
-            $is_internal = isset($data['is_internal']) ? 1 : 0;
+            $is_internal = PBXHelper::boolFlag($data, 'is_internal', 0);
             // Outbound route group: which user group may use this route.
             // 1 is the default; an invalid value falls back to 1 so the route
             // does not land in an unreachable group and silently vanish.
             $route_group = max(1, min(99, intval($data['route_group'] ?? 1)));
-            $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
 
             // Trunks: no primary/backup split — a list added one by one and tried in
             // order. Every row can have its own caller ID masking value.

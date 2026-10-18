@@ -14,8 +14,8 @@ android {
         applicationId = "com.mhrgl.AiPBX"
         minSdk = 26
         targetSdk = 36
-        versionCode = 72
-        versionName = "1.0.72"
+        versionCode = 73
+        versionName = "1.0.73"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -84,6 +84,14 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+
+    bundle {
+        language {
+            // Keep all 23 translations in the base APK so the in-app language
+            // switcher works even when Google Play installs from an App Bundle.
+            enableSplit = false
+        }
     }
 }
 

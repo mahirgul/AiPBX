@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.72",
+  "version": "1.0.73",
   "notes": {
-    "en-US": "Security & stability: sign-in tokens and SIP credentials are stored encrypted on the device; server setup, QR sign-in and deep-link sign-in require HTTPS and ask for confirmation before switching to another PBX server.",
-    "tr-TR": "Güvenlik ve kararlılık: oturum anahtarları ve SIP bilgileri cihazda şifreli olarak saklanır; sunucu kurulumu, QR ile giriş ve bağlantı ile giriş HTTPS zorunluluğu uygular ve farklı bir santral sunucusuna geçmeden önce onay ister."
+    "en-US": "Fixed in-app language switching across all 23 supported languages (bundled directly in the app package) and preserved the active settings tab when switching languages.",
+    "tr-TR": "Desteklenen 23 dilin tamamında uygulama içi dil değiştirme sorunu düzeltildi (tüm dil paketleri doğrudan uygulamaya dahil edildi) ve dil değişiminde aktif sekmenin korunması sağlandı."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

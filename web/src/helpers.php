@@ -24,6 +24,22 @@ require_once __DIR__ . '/services/HangupActionService.php';
 
 class PBXHelper {
     /**
+     * Normalises a boolean/checkbox field from either an HTML form POST
+     * (checkbox omitted = $default, or submitted as "1"/"on") or a JSON/DB
+     * payload (where the key is present with 0, "0", false, "false", "off", or null).
+     */
+    public static function boolFlag(array $data, string $key, int $default = 0): int {
+        if (!array_key_exists($key, $data)) {
+            return $default;
+        }
+        $val = $data[$key];
+        if ($val === false || $val === 0 || $val === '0' || $val === '' || $val === null || $val === 'false' || $val === 'off' || $val === 'no') {
+            return 0;
+        }
+        return 1;
+    }
+
+    /**
      * Unified Form Action Handler with CSRF Check & Exception Safety
      */
     public static function handleAction($csrf_token, callable $action) {

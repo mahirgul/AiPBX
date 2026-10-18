@@ -81,7 +81,14 @@ define('TURN_HOST', portalEnv('TURN_HOST', 'pbx.example.com'));
 define('TURNS_PORT', portalEnv('TURNS_PORT', '443'));
 
 // Hardened Session Configuration for Public Security
-if (session_status() === PHP_SESSION_NONE) {
+// Stateless /api/v1/* requests carrying an Authorization header use an in-memory
+// $_SESSION array so they never write session files or emit Set-Cookie headers.
+$_reqUriPath = (string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+if (str_starts_with($_reqUriPath, '/api/v1/') && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    if (!isset($_SESSION)) {
+        $_SESSION = [];
+    }
+} elseif (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_secure', '1');
     // Lax, not Strict: the browser must send the session cookie when Google
@@ -369,6 +376,15 @@ function logLoginAttempt($ip, $username, $status) {
         // for www-data (/etc/fail2ban/jail.d/aipbx-web.local watches this file).
         $log_line = sprintf("%s - [%s] FAILED_LOGIN user=%s\n", $ip, date(DATE_ATOM), $safe_username);
         @file_put_contents('/var/log/aipbx/web_login_failures.log', $log_line, FILE_APPEND);
+        try {
+            require_once __DIR__ . '/src/services/WebhookService.php';
+            WebhookService::emit('security.login_failed', [
+                'ip_address' => (string)$ip,
+                'username'   => (string)$safe_username,
+                'user_agent' => (string)$ua,
+            ]);
+        } catch (\Throwable $e) {
+        }
     }
 }
 

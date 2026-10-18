@@ -23,6 +23,9 @@ $canSuperviseQueues = !empty($user['can_view_queue_monitor'])
     || $can('queue_monitor')
     || CcBoardRepository::supervisesAnyQueue((string) ($user['extension'] ?? ''));
 
+require_once dirname(__DIR__) . '/src/core/PluginManager.php';
+$pluginOn = fn(string $slug) => PluginManager::isEnabled($slug);
+
 return [
     [
         'id' => 'dashboard', 'icon' => 'fas fa-chart-pie u-primary', 'label' => 'sidebar.group_dashboard',
@@ -32,6 +35,24 @@ return [
             ['href' => '/my-phone', 'icon' => 'fas fa-phone-volume', 'label' => 'sidebar.item_my_phone', 'show' => $can('my_phone'), 'pages' => ['my_phone.php']],
             ['href' => '/chat', 'icon' => 'fas fa-comments', 'label' => 'sidebar.item_chat', 'show' => $can('chat'), 'pages' => ['chat.php']],
             ['href' => '/cdr-reports', 'icon' => 'fas fa-file-audio', 'label' => 'sidebar.item_cdr_reports', 'show' => $can('cdr_reports') || $can('cc_reports'), 'pages' => ['cdr_reports.php', 'reports.php']],
+        ],
+    ],
+    [
+        'id' => 'admin', 'icon' => 'fas fa-user-shield u-warning', 'label' => 'sidebar.group_system',
+        'open_on' => ['fax_settings.php'],
+        'items' => [
+            ['href' => '/system-users', 'icon' => 'fas fa-users-cog', 'label' => 'sidebar.item_system_users', 'show' => $can('system_users'), 'pages' => ['system_users.php']],
+            ['href' => '/roles', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_roles', 'show' => $can('roles'), 'pages' => ['roles.php']],
+            ['href' => '/asterisk-settings', 'icon' => 'fas fa-cogs', 'label' => 'sidebar.item_asterisk_settings', 'show' => $can('asterisk_settings'), 'pages' => ['asterisk_settings.php']],
+            ['href' => '/brand-settings', 'icon' => 'fas fa-palette', 'label' => 'sidebar.item_brand_settings', 'show' => $can('brand_settings'), 'pages' => ['brand_settings.php']],
+            ['href' => '/push-settings', 'icon' => 'fas fa-bell', 'label' => 'sidebar.item_push_settings', 'show' => $can('push_settings'), 'pages' => ['push_settings.php']],
+            ['href' => '/mail-settings', 'icon' => 'fas fa-envelope-open-text', 'label' => 'sidebar.item_mail_settings', 'show' => $can('mail_settings'), 'pages' => ['mail_settings.php']],
+            ['href' => '/fax-mail-settings', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_mail_settings', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
+            ['href' => '/file-storage', 'icon' => 'fas fa-hard-drive', 'label' => 'sidebar.item_file_storage', 'show' => $can('file_storage'), 'pages' => ['file_storage.php']],
+            ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
+            ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],
+            ['href' => '/health', 'icon' => 'fas fa-heart-pulse', 'label' => 'sidebar.item_health', 'show' => $isAdmin, 'pages' => ['health.php']],
+            ['href' => '/help', 'icon' => 'fas fa-book', 'label' => 'sidebar.item_help', 'show' => $isAdmin, 'pages' => ['help.php']],
         ],
     ],
     [
@@ -91,18 +112,23 @@ return [
     [
         'id' => 'ai', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => 'sidebar.group_ai',
         'items' => [
-            ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts'), 'pages' => ['ai_tts.php']],
-            ['href' => '/ai-apps', 'icon' => 'fas fa-robot', 'label' => 'sidebar.item_ai_apps', 'show' => $isAdmin, 'pages' => ['ai_apps.php']],
-            ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin, 'pages' => ['ai_models.php']],
-            ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => 'sidebar.item_ai_cloud', 'show' => $isAdmin, 'pages' => ['ai_cloud.php']],
+            ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts') && $pluginOn('ai-tts'), 'pages' => ['ai_tts.php']],
+            ['href' => '/ai-apps', 'icon' => 'fas fa-robot', 'label' => 'sidebar.item_ai_apps', 'show' => $isAdmin && $pluginOn('ai-apps'), 'pages' => ['ai_apps.php']],
+            ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin && $pluginOn('ai-models'), 'pages' => ['ai_models.php']],
+            ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => 'sidebar.item_ai_cloud', 'show' => $isAdmin && $pluginOn('ai-cloud'), 'pages' => ['ai_cloud.php']],
+            ...PluginManager::dynamicSidebarItems($isAdmin, 'ai'),
         ],
     ],
     [
         'id' => 'integrations', 'icon' => 'fas fa-plug', 'icon_style' => 'color: #3b82f6;', 'label' => 'sidebar.group_integrations',
         'items' => [
-            ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => 'sidebar.item_google_integration', 'show' => $isAdmin, 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],
-            ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => 'sidebar.item_ms_teams', 'show' => $can('ms_teams'), 'pages' => ['ms_teams.php']],
-            ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets'), 'pages' => ['web_widgets.php']],
+            ['href' => '/plugins', 'icon' => 'fas fa-puzzle-piece', 'label' => 'sidebar.item_plugins', 'show' => $isAdmin, 'pages' => ['plugins.php'], 'uri' => '/plugins'],
+            ['href' => '/api-keys', 'icon' => 'fas fa-key', 'label' => 'sidebar.item_api_keys', 'show' => $isAdmin, 'pages' => ['api_keys.php'], 'uri' => '/api-keys'],
+            ['href' => '/webhooks', 'icon' => 'fas fa-satellite-dish', 'label' => 'sidebar.item_webhooks', 'show' => $isAdmin, 'pages' => ['webhooks.php'], 'uri' => '/webhooks'],
+            ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => 'sidebar.item_google_integration', 'show' => $isAdmin && $pluginOn('google-auth'), 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],
+            ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => 'sidebar.item_ms_teams', 'show' => $can('ms_teams') && $pluginOn('ms-teams'), 'pages' => ['ms_teams.php']],
+            ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets') && $pluginOn('web-widgets'), 'pages' => ['web_widgets.php']],
+            ...PluginManager::dynamicSidebarItems($isAdmin, 'integrations'),
         ],
     ],
     [
@@ -114,24 +140,6 @@ return [
             ['href' => '/fail2ban', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_fail2ban', 'show' => $isAdmin, 'pages' => ['fail2ban.php']],
             ['href' => '/certificates', 'icon' => 'fas fa-certificate', 'label' => 'sidebar.item_certificates', 'show' => $isAdmin, 'pages' => ['certificates.php']],
             ['href' => '/audit-log', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_audit_log', 'show' => $can('audit_log'), 'pages' => ['audit_log.php']],
-        ],
-    ],
-    [
-        'id' => 'admin', 'icon' => 'fas fa-user-shield u-warning', 'label' => 'sidebar.group_system',
-        'open_on' => ['fax_settings.php'],
-        'items' => [
-            ['href' => '/system-users', 'icon' => 'fas fa-users-cog', 'label' => 'sidebar.item_system_users', 'show' => $can('system_users'), 'pages' => ['system_users.php']],
-            ['href' => '/roles', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_roles', 'show' => $can('roles'), 'pages' => ['roles.php']],
-            ['href' => '/asterisk-settings', 'icon' => 'fas fa-cogs', 'label' => 'sidebar.item_asterisk_settings', 'show' => $can('asterisk_settings'), 'pages' => ['asterisk_settings.php']],
-            ['href' => '/brand-settings', 'icon' => 'fas fa-palette', 'label' => 'sidebar.item_brand_settings', 'show' => $can('brand_settings'), 'pages' => ['brand_settings.php']],
-            ['href' => '/push-settings', 'icon' => 'fas fa-bell', 'label' => 'sidebar.item_push_settings', 'show' => $can('push_settings'), 'pages' => ['push_settings.php']],
-            ['href' => '/mail-settings', 'icon' => 'fas fa-envelope-open-text', 'label' => 'sidebar.item_mail_settings', 'show' => $can('mail_settings'), 'pages' => ['mail_settings.php']],
-            ['href' => '/fax-mail-settings', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_mail_settings', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
-            ['href' => '/file-storage', 'icon' => 'fas fa-hard-drive', 'label' => 'sidebar.item_file_storage', 'show' => $can('file_storage'), 'pages' => ['file_storage.php']],
-            ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
-            ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],
-            ['href' => '/health', 'icon' => 'fas fa-heart-pulse', 'label' => 'sidebar.item_health', 'show' => $isAdmin, 'pages' => ['health.php']],
-            ['href' => '/help', 'icon' => 'fas fa-book', 'label' => 'sidebar.item_help', 'show' => $isAdmin, 'pages' => ['help.php']],
         ],
     ],
 ];

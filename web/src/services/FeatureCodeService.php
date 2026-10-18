@@ -18,7 +18,7 @@ class FeatureCodeService {
             $roles_in = array_filter(array_map('trim', explode(',', $data['allowed_roles'] ?? '')));
             $roles_in = array_values(array_intersect($roles_in, $valid_role_keys));
             $allowed_roles = !empty($roles_in) ? implode(',', $roles_in) : null;
-            $is_active = isset($data['is_active']) ? 1 : 0;
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
 
             // Normal codes start with '*' (e.g. *78). Codes with a variable parameter (e.g. *81/*80
             // with a queue ID dialed) start with '_*' in Asterisk pattern syntax (e.g. _*81.).

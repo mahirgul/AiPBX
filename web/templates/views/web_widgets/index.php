@@ -27,7 +27,10 @@ $resultBadges = [
             <i class="fas fa-headset u-primary"></i> <?php echo t('web_widgets.title'); ?>
             <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($widgets); ?></span>
         </div>
-        <div class="u-flex-center">
+        <div class="u-flex-center" style="gap: 8px;">
+            <a href="/web-widgets?download=wordpress" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('web_widgets.help_wordpress', 'WordPress')); ?>">
+                <i class="fab fa-wordpress"></i> WordPress (.zip)
+            </a>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('webWidgetsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>

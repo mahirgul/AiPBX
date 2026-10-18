@@ -56,6 +56,13 @@ and [troubleshooting](troubleshooting.md) (symptom → fix).
 | [AI applications](ai-apps.md) | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 
+## Plugins, REST API & Webhooks
+
+| Page | What it covers |
+|------|----------------|
+| [Plugin system & developer guide](plugin-development.md) | Official plugin catalog (`plugins/`), enabling/disabling integrations, and step-by-step guide to building and uploading custom `.zip` plugins |
+| [REST API v1 & outbound webhooks](rest-api-v1.md) | Stateless `/api/v1/*` endpoints, OpenAPI 3.1 spec, Bearer API keys (`apbx_...`), scopes, IP allowlists, and HMAC-SHA256 signed webhooks |
+
 ## Mobile apps
 
 The Android and iOS apps are built by GitHub Actions and attached to each

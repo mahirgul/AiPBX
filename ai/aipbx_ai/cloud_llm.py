@@ -170,9 +170,9 @@ def prompt(transcript, intents):
     )
 
 
-def _post(url, headers, body):
+def _post(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
     try:
-        assert_public_url(url, resolve=True, allow_private=ALLOW_PRIVATE_URLS)
+        assert_public_url(url, resolve=True, allow_private=allow_private)
         req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"),
                                      headers=dict(headers, **{"Content-Type": "application/json", "User-Agent": "aipbx-ai"}),
                                      method="POST")
@@ -199,7 +199,11 @@ def _answer_text(cfg, text, post):
     body = {"model": model, "temperature": 0, "messages": [{"role": "user", "content": text}]}
     if provider in JSON_MODE:
         body["response_format"] = {"type": "json_object"}
-    d = post(url, {"Authorization": "Bearer " + cfg["api_key"]} if cfg["api_key"] else {}, body)
+    req_headers = {"Authorization": "Bearer " + cfg["api_key"]} if cfg["api_key"] else {}
+    if post is _post:
+        d = _post(url, req_headers, body, allow_private=(ALLOW_PRIVATE_URLS or provider == "openai_compat"))
+    else:
+        d = post(url, req_headers, body)
     try:
         return d["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):

@@ -194,6 +194,18 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 - **Browser History Integration (`popstate`)**: Mobile chat panel transitions push a state to HTML5 `history.pushState()`. Tapping the hardware or gesture Back button emits a `popstate` event, cleanly returning the user to the conversation list without reloading the page.
 - **Touch-Optimized Responsive Views**: Administrative pages (`my_phone`, `roles`, `push_settings`, and `pending_sync`) dynamically adapt from wide desktop data-grids into card-based and stacked form elements with large tap targets and contextual action bars.
 
+### 4.5 REST API v1, Outbound Webhooks & First-Class Plugin System
+- **Stateless REST API (`/api/v1/*`)**:
+  - Authenticated via Bearer API tokens (`apbx_<40-hex>`, SHA-256 hashed in `sys_api_tokens`) with per-token scopes (`extensions:read/write`, `calls:read/write`, `trunks:read/write`, `system:read/write`, etc.), IPv4/IPv6 CIDR allowlists, and per-token sliding-window rate limits (`X-RateLimit-*`).
+  - Covered by an OpenAPI 3.1 specification (`/api/v1/openapi.json` / `web/openapi.json`) and `ResourceNormalizer` which strips sensitive database columns before serialization.
+- **Outbound Webhooks (`/webhooks` & `aipbx-webhook-worker`)**:
+  - Event-driven notifications (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, etc.) queued in `sys_webhook_deliveries` and delivered asynchronously by `aipbx-webhook-worker.service`.
+  - Payloads are signed with `X-AiPBX-Signature: sha256=<hmac>` and protected against SSRF and DNS rebinding via DNS resolution validation and `CURLOPT_RESOLVE` IP pinning.
+- **First-Class Plugin System (`/plugins`)**:
+  - Bundled plugins live in `/opt/aipbx/plugins/<slug>` and custom uploaded `.zip` plugins live in `/var/lib/aipbx/plugins/<slug>` (backed up and restored across `aipbx-update`).
+  - Plugins declare hooks in `plugin.json` (`admin_page`, `sync_domain`, `events`, `auth_provider`, `ai_provider`, `public_endpoints`) and only execute when explicitly enabled in `sys_plugins`.
+  - **Fault Isolation & Safe Mode**: `PluginManager` wraps every plugin hook in `try / catch (\Throwable)` and tracks consecutive failures; after 5 errors, the plugin is automatically disabled (**Safe Mode**) so a buggy third-party plugin can never break Asterisk sync or portal pages.
+
 ---
 
 ## 5. Android Mobile Application (Kotlin)

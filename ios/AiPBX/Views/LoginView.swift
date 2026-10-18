@@ -230,7 +230,8 @@ public struct LoginView: View {
                         .padding(.horizontal)
 
                         // Version Footnote
-                        Text(L("Version: 1.0.34 · Asterisk 22 WebRTC"))
+                        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.73"
+                        Text("Version: \(appVersion) · Asterisk 22 WebRTC")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .padding(.bottom, 30)

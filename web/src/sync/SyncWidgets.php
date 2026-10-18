@@ -27,6 +27,13 @@ function __syncWidgetsBody() {
     // Loaded here, not at the top: the service itself requires asterisk_sync.php.
     require_once dirname(__DIR__) . '/services/WebWidgetService.php';
     $widgets = getDB()->query('SELECT * FROM pbx_web_widgets WHERE is_active = 1 ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+    if (is_file(dirname(__DIR__) . '/core/PluginManager.php')) {
+        require_once dirname(__DIR__) . '/core/PluginManager.php';
+        $installed = PluginManager::installedMap();
+        if (isset($installed['web-widgets']) && empty($installed['web-widgets']['enabled'])) {
+            $widgets = [];
+        }
+    }
 
     writeConfWithRollback('pjsip_widgets.conf', buildWidgetPjsipConf($widgets), function () {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], t('sync.ctx_widgets'));

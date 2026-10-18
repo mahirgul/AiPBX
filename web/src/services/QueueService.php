@@ -24,12 +24,12 @@ class QueueService {
             $max_wait_seconds = intval($data['max_wait_seconds'] ?? 300) ?: 300;
             $fallback_action = trim($data['fallback_action'] ?? 'hangup');
             $fallback_target = preg_replace('/[^0-9]/', '', trim($data['fallback_target'] ?? '')) ?: null;
-            $record_enabled = isset($data['record_enabled']) ? 1 : 0;
+            $record_enabled = PBXHelper::boolFlag($data, 'record_enabled', 0);
             $record_format = trim($data['record_format'] ?? 'wav');
             if (!in_array($record_format, QUEUE_RECORD_FORMATS, true)) {
                 $record_format = 'wav';   // it goes into the dialplan: never free text
             }
-            $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
+            $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
             $language = trim($data['language'] ?? '');
             if ($language !== '' && !in_array($language, getAvailableLanguages(), true)) {
                 $language = '';

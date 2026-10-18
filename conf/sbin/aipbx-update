@@ -21,7 +21,7 @@ export LC_ALL=C.UTF-8
 # During the update install.sh replaces the copy in /usr/local/sbin; overwriting
 # a running bash script corrupts it, so we run from a temporary copy.
 if [[ -z "${AIPBX_UPDATE_REEXEC:-}" && -z "${AIPBX_UPDATE_COPIED:-}" ]]; then
-    tmp="$(mktemp /tmp/aipbx-update.XXXXXX)"
+    tmp="$(mktemp /run/aipbx-update.XXXXXX 2>/dev/null || mktemp /tmp/aipbx-update.XXXXXX)"
     cp "$0" "$tmp" && chmod 700 "$tmp"
     AIPBX_UPDATE_COPIED=1 AIPBX_UPDATE_REEXEC="$tmp" exec /bin/bash "$tmp" "$@"
 fi
@@ -53,10 +53,21 @@ done
 
 mkdir -p "$STATE_DIR" "$(dirname "$LOG_FILE")" "$BACKUP_ROOT"
 chmod 700 "$BACKUP_ROOT"
-touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+[[ -L "$LOG_FILE" ]] && rm -f "$LOG_FILE"
+[[ -f "$LOG_FILE" ]] || install -m 0640 -o root -g www-data /dev/null "$LOG_FILE" 2>/dev/null || touch "$LOG_FILE"
+chown root:www-data "$LOG_FILE" 2>/dev/null || true
+chmod 640 "$LOG_FILE"
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"; }
 json_str() { printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'; }
+
+write_check_file() {
+    local tmpc; tmpc="$(mktemp "$STATE_DIR/.update-check.XXXXXX")"
+    cat > "$tmpc"
+    chmod 644 "$tmpc"
+    [[ -L "$CHECK_FILE" ]] && rm -f "$CHECK_FILE"
+    mv -f "$tmpc" "$CHECK_FILE"
+}
 
 # state: running | done | failed | rolled_back
 status() {
@@ -65,10 +76,12 @@ status() {
     printf '{"state":%s,"step":%s,"from":%s,"to":%s,"updated_at":%s}\n' \
         "$(json_str "$state")" "$(json_str "$step")" "$(json_str "${FROM_VERSION:-${CURRENT:-}}")" \
         "$(json_str "${TARGET:-}")" "$(json_str "$(date -Iseconds)")" > "$tmpf"
-    chmod 644 "$tmpf"; mv -f "$tmpf" "$STATUS_FILE"
+    chmod 644 "$tmpf"
+    [[ -L "$STATUS_FILE" ]] && rm -f "$STATUS_FILE"
+    mv -f "$tmpf" "$STATUS_FILE"
 }
 
-git_in() { git -C "$INSTALL_DIR" "$@"; }
+git_in() { git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" "$@"; }
 ver_of() { echo "${1#v}"; }
 # a < b ?  (version comparison)
 ver_lt() { [[ "$(ver_of "$1")" != "$(ver_of "$2")" && "$(printf '%s\n%s\n' "$(ver_of "$1")" "$(ver_of "$2")" | sort -V | head -1)" == "$(ver_of "$1")" ]]; }
@@ -83,7 +96,7 @@ CURRENT_COMMIT="$(git_in rev-parse HEAD)"
 if ! git_in fetch --quiet --tags --force --prune --prune-tags origin 2>>"$LOG_FILE"; then
     log "ERROR: could not reach GitHub (git fetch)"
     [[ "$MODE" == check ]] && printf '{"ok":false,"error":"GitHub unreachable","current":%s,"checked_at":%s}\n' \
-        "$(json_str "$CURRENT")" "$(json_str "$(date -Iseconds)")" > "$CHECK_FILE" && chmod 644 "$CHECK_FILE"
+        "$(json_str "$CURRENT")" "$(json_str "$(date -Iseconds)")" | write_check_file
     exit 2
 fi
 LATEST="$(git_in tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
@@ -100,8 +113,7 @@ if [[ "$MODE" == check ]]; then
     fi
     printf '{"ok":true,"current":%s,"latest":%s,"available":%s,"notes":%s,"checked_at":%s}\n' \
         "$(json_str "$CURRENT")" "$(json_str "${LATEST:-}")" "$available" "$(json_str "$notes")" \
-        "$(json_str "$(date -Iseconds)")" > "$CHECK_FILE"
-    chmod 644 "$CHECK_FILE"
+        "$(json_str "$(date -Iseconds)")" | write_check_file
     echo "Installed: $CURRENT   Latest: ${LATEST:-none}   $([[ $available == true ]] && echo 'UPDATE AVAILABLE' || echo 'up to date')"
     exit 0
 fi
@@ -150,6 +162,9 @@ echo "$CURRENT_COMMIT" > "$BACKUP_DIR/commit"
 echo "$CURRENT" > "$BACKUP_DIR/version"
 cp -p /etc/ai-pbx.env "$BACKUP_DIR/ai-pbx.env"
 tar czf "$BACKUP_DIR/etc-asterisk.tgz" -C / etc/asterisk 2>>"$LOG_FILE"
+if [[ -d /var/lib/aipbx/plugins ]]; then
+    tar czf "$BACKUP_DIR/custom-plugins.tgz" -C / var/lib/aipbx/plugins 2>>"$LOG_FILE" || true
+fi
 mysqldump --single-transaction --routines --triggers --databases asterisk 2>>"$LOG_FILE" | gzip > "$BACKUP_DIR/asterisk-db.sql.gz"
 if ! zcat "$BACKUP_DIR/asterisk-db.sql.gz" 2>/dev/null | tail -n 1 | grep -q 'Dump completed'; then
     log "ERROR: database backup failed, nothing was changed"
@@ -186,6 +201,9 @@ rollback() {
             && log "Asterisk configuration restored from backup" \
             || log "WARNING: /etc/asterisk restore failed — by hand: tar xzf $BACKUP_DIR/etc-asterisk.tgz -C /"
     fi
+    if [[ -s "$BACKUP_DIR/custom-plugins.tgz" ]]; then
+        tar xzf "$BACKUP_DIR/custom-plugins.tgz" -C / 2>>"$LOG_FILE" || true
+    fi
     bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 \
         || log "WARNING: could not re-apply the previous release's system settings"
     log "===== Rolled back to $CURRENT ($1) ====="
@@ -205,7 +223,7 @@ bash "$INSTALL_DIR/install.sh" --upgrade >>"$LOG_FILE" 2>&1 || rollback "install
 # ------------------------------------------------------------------ verification
 status running "Verifying"
 sleep 3
-for svc in mariadb apache2 nginx asterisk; do
+for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
     systemctl is-active --quiet "$svc" || rollback "$svc is not running"
 done
 domain="$(grep -m1 '^PORTAL_DOMAIN=' /etc/ai-pbx.env 2>/dev/null | cut -d= -f2- | tr -d "\"'" || true)"

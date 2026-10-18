@@ -105,17 +105,20 @@ class RoleService {
         }
 
         $role_id = intval($data['role_id'] ?? 0);
-        $role_key = trim($data['role_key'] ?? '');
-
-        if ($role_id <= 0 || empty($role_key)) {
+        if ($role_id <= 0) {
             return [];
         }
 
         $db = getDB();
-        // Check system role status
-        $stmt = $db->prepare("SELECT is_system FROM sys_roles WHERE id = ?");
+        // Always fetch authoritative role_key and is_system from DB by id
+        $stmt = $db->prepare("SELECT role_key, is_system FROM sys_roles WHERE id = ?");
         $stmt->execute([$role_id]);
-        $is_sys = $stmt->fetchColumn();
+        $role_row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$role_row) {
+            return [];
+        }
+        $role_key = (string)$role_row['role_key'];
+        $is_sys = !empty($role_row['is_system']);
 
         if ($is_sys) {
             return ['error' => 'Sistem temel rolleri (admin, read_only_admin, cc_agent, fax_user, user) silinemez!'];

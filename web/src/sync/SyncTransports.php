@@ -15,28 +15,34 @@ function __syncTransportsBody() {
     $stmt = $db->query("SELECT keyword, data FROM pjsipsettings");
     $settings = $stmt ? $stmt->fetchAll(PDO::FETCH_KEY_PAIR) : [];
 
-    $bind_udp = $settings['bindaddr'] ?? '';
-    $bind_udp_port = $settings['bindport'] ?? '';
+    $cleanAddr = static fn(string $v): string => preg_replace('/[^0-9a-fA-F:.\[\]]/', '', trim($v)) ?? '';
+    $cleanPort = static function ($v): string {
+        $p = (int)$v;
+        return ($p >= 1 && $p <= 65535) ? (string)$p : '';
+    };
+
+    $bind_udp = $cleanAddr((string)($settings['bindaddr'] ?? ''));
+    $bind_udp_port = $cleanPort($settings['bindport'] ?? '');
 
     $tcp_enabled = !empty($settings['tcp_enabled']) && $settings['tcp_enabled'] !== '0' && strtolower($settings['tcp_enabled']) !== 'no';
-    $bind_tcp = $settings['tcp_bindaddr'] ?? '';
-    $bind_tcp_port = $settings['tcp_bindport'] ?? '';
+    $bind_tcp = $cleanAddr((string)($settings['tcp_bindaddr'] ?? ''));
+    $bind_tcp_port = $cleanPort($settings['tcp_bindport'] ?? '');
 
     $tls_enabled = !empty($settings['tls_enabled']) && $settings['tls_enabled'] !== '0' && strtolower($settings['tls_enabled']) !== 'no';
-    $bind_tls = $settings['tls_bindaddr'] ?? '';
-    $bind_tls_port = $settings['tls_bindport'] ?? '';
-    $tls_cert = $settings['tls_cert_file'] ?? '';
-    $tls_priv_key = $settings['tls_priv_key_file'] ?? '';
+    $bind_tls = $cleanAddr((string)($settings['tls_bindaddr'] ?? ''));
+    $bind_tls_port = $cleanPort($settings['tls_bindport'] ?? '');
+    $tls_cert = preg_replace('/[\r\n]+/', '', (string)($settings['tls_cert_file'] ?? ''));
+    $tls_priv_key = preg_replace('/[\r\n]+/', '', (string)($settings['tls_priv_key_file'] ?? ''));
 
     $wss_enabled = !isset($settings['wss_enabled']) || ($settings['wss_enabled'] !== '0' && strtolower($settings['wss_enabled']) !== 'no');
-    $wss_bind = $settings['wss_bindaddr'] ?? '';
-    $wss_port = $settings['wss_bindport'] ?? '';
+    $wss_bind = $cleanAddr((string)($settings['wss_bindaddr'] ?? ''));
+    $wss_port = $cleanPort($settings['wss_bindport'] ?? '');
 
     $ws_enabled = !empty($settings['ws_enabled']) && $settings['ws_enabled'] !== '0' && strtolower($settings['ws_enabled']) !== 'no';
-    $ws_bind = $settings['ws_bindaddr'] ?? '';
-    $ws_port = $settings['ws_bindport'] ?? '';
+    $ws_bind = $cleanAddr((string)($settings['ws_bindaddr'] ?? ''));
+    $ws_port = $cleanPort($settings['ws_bindport'] ?? '');
 
-    $extern_ip = $settings['externip_val'] ?? '';
+    $extern_ip = preg_replace('/[^a-zA-Z0-9.:_-]/', '', (string)($settings['externip_val'] ?? ''));
 
     // Local networks: read from the dynamic localnet_* / netmask_* records in the DB
     $local_nets = [];

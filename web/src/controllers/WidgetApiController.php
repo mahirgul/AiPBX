@@ -27,6 +27,14 @@ class WidgetApiController
         header('X-Robots-Tag: noindex');
         header('Vary: Origin');
 
+        if (is_file(dirname(__DIR__) . '/core/PluginManager.php')) {
+            require_once dirname(__DIR__) . '/core/PluginManager.php';
+            $installed = PluginManager::installedMap();
+            if (isset($installed['web-widgets']) && empty($installed['web-widgets']['enabled'])) {
+                self::answer(404, ['success' => false, 'error' => 'disabled']);
+            }
+        }
+
         $widget = WebWidgetService::getByPublicId($publicId);
         if ($widget !== null && WebWidgetService::originAllowed($widget, $origin)) {
             header('Access-Control-Allow-Origin: ' . $origin);

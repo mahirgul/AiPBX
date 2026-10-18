@@ -225,7 +225,7 @@ function __syncGeneralDialplanBody() {
     $conf .= "exten => s,1,NoOp(Sending Outbound FAX to \${FAX_DEST} from \${FAX_SENDER})\n";
     // The sender name arrives in the call file as SetVar: FAX_SENDER_NAME (fax_send.php);
     // when empty (e.g. an old/hand-made .call file) only the global header is used.
-    $conf .= " same => n,Set(FAXOPT(headerinfo)={$fax_header_info}\${IF(\$[\"\${FAX_SENDER_NAME}\" != \"\"]?\" - \"\${FAX_SENDER_NAME}:)})\n";
+    $conf .= " same => n,Set(FAXOPT(headerinfo)={$fax_header_info}\${IF(\$[\"\${FAX_SENDER_NAME}\" != \"\"]? - \${FAX_SENDER_NAME}:)})\n";
     // TSID = global prefix + the sending fax user's extension (FAX_SENDER, already
     // set in the .call file by fax_send.php) — e.g. prefix 0312555 + extension
     // 1234 = 03125551234 (2026-08-31, user request).

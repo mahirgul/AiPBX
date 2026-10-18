@@ -4,6 +4,7 @@ import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import android.os.LocaleList
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -14,11 +15,10 @@ import com.mhrgl.aipbx.data.AppPreferences
 import java.util.Locale
 
 /**
- * App language: English by default, or another supported language the user
- * picks (login / server screen or Settings). Activities follow it through AppCompat's
- * per-app locales; code without an Activity (ApiClient, services,
- * notifications) uses [str], because before Android 13 the application
- * context keeps the system language.
+ * App language manager supporting all 23 bundled languages across Android 8–16+.
+ *
+ * Ensures synchronous synchronization between [AppPreferences], Android 13+
+ * [LocaleManager], [AppCompatDelegate], and Activity base contexts ([wrap]).
  */
 object L10n {
     const val EN = "en"
@@ -53,70 +53,119 @@ object L10n {
     private val SUPPORTED = NAMES.keys.toList()
 
     private lateinit var app: Context
-    private var cachedLang: String? = null
-    private var cachedContext: Context? = null
+    @Volatile private var cachedLang: String? = null
+    @Volatile private var cachedContext: Context? = null
 
     fun init(context: Context) {
         app = context.applicationContext
-        apply(current())
-    }
-
-    /**
-     * The app language. On Android 13+ it can also be changed in the system's
-     * per-app language settings, and that choice wins. It is read from
-     * LocaleManager: AppCompatDelegate.getApplicationLocales() is still empty
-     * in Application.onCreate (no Activity yet), so the system choice used to
-     * be missed — the screens followed it but the language chip and texts made
-     * without an Activity (notifications, services) stayed in the old language.
-     */
-    fun current(): String {
         val prefs = AppPreferences.getInstance(app)
+        // If the user changed per-app language in Android 13+ system settings while
+        // the app was closed, adopt that choice on startup.
         if (Build.VERSION.SDK_INT >= 33) {
-            val system = app.getSystemService(LocaleManager::class.java)?.applicationLocales
-            if (system != null && !system.isEmpty) {
-                val lang = normalize(system[0]?.language)
-                if (lang != prefs.appLanguage) prefs.appLanguage = lang
-                return lang
+            val sys = app.getSystemService(LocaleManager::class.java)?.applicationLocales
+            if (sys != null && !sys.isEmpty) {
+                val sysLang = normalize(sys[0]?.language)
+                if (sysLang != prefs.appLanguage) {
+                    prefs.appLanguage = sysLang
+                }
             }
         }
+        apply(normalize(prefs.appLanguage))
+    }
+
+    /** Returns the active language code (always one of [SUPPORTED]). */
+    fun current(): String {
+        if (!::app.isInitialized) return EN
+        val prefs = AppPreferences.getInstance(app)
         return normalize(prefs.appLanguage)
     }
 
     fun displayName(lang: String = current()): String = NAMES[lang] ?: lang
 
-    /** Switches the language; open activities are recreated by AppCompat. */
-    fun set(lang: String) {
+    /** Switches the language and recreates the calling Activity if needed. */
+    fun set(lang: String, activity: AppCompatActivity? = null) {
         val l = normalize(lang)
-        AppPreferences.getInstance(app).appLanguage = l
+        if (::app.isInitialized) {
+            AppPreferences.getInstance(app).appLanguage = l
+        } else if (activity != null) {
+            app = activity.applicationContext
+            AppPreferences.getInstance(app).appLanguage = l
+        }
+        cachedLang = null
+        cachedContext = null
         apply(l)
+        if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
+            activity.recreate()
+        }
     }
 
-    /** Localized string for code that has no Activity context. */
+    /** Wraps an Activity base context with the selected locale on all Android versions. */
+    fun wrap(base: Context): Context {
+        val appCtx = base.applicationContext ?: base
+        if (!::app.isInitialized) {
+            app = appCtx
+        }
+        val lang = try {
+            normalize(AppPreferences.getInstance(appCtx).appLanguage)
+        } catch (_: Exception) {
+            EN
+        }
+        val locale = Locale.forLanguageTag(lang)
+        Locale.setDefault(locale)
+        val cfg = Configuration(base.resources.configuration)
+        cfg.setLocale(locale)
+        cfg.setLayoutDirection(locale)
+        return base.createConfigurationContext(cfg)
+    }
+
+    /** Localized string for code that has no Activity context (services, notifications, API errors). */
     fun str(@StringRes id: Int, vararg args: Any?): String = context().getString(id, *args)
 
     fun context(): Context {
         val lang = current()
         cachedContext?.takeIf { cachedLang == lang }?.let { return it }
+        val locale = Locale.forLanguageTag(lang)
         val cfg = Configuration(app.resources.configuration)
-        cfg.setLocale(Locale.forLanguageTag(lang))
-        return app.createConfigurationContext(cfg).also { cachedContext = it; cachedLang = lang }
+        cfg.setLocale(locale)
+        cfg.setLayoutDirection(locale)
+        return app.createConfigurationContext(cfg).also {
+            cachedContext = it
+            cachedLang = lang
+        }
     }
 
     /** Language chooser used on the login, server and settings screens. */
     fun showPicker(activity: AppCompatActivity) {
-        val idx = SUPPORTED.indexOf(current()).coerceAtLeast(0)
+        val cur = current()
+        val idx = SUPPORTED.indexOf(cur).coerceAtLeast(0)
         AlertDialog.Builder(activity)
             .setTitle(activity.getString(R.string.language_title))
             .setSingleChoiceItems(SUPPORTED.map { displayName(it) }.toTypedArray(), idx) { dialog, which ->
                 dialog.dismiss()
-                if (SUPPORTED[which] != current()) set(SUPPORTED[which])
+                val picked = SUPPORTED[which]
+                set(picked, activity)
             }
             .setNegativeButton(activity.getString(R.string.btn_cancel), null)
             .show()
     }
 
     private fun apply(lang: String) {
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+        val locale = Locale.forLanguageTag(lang)
+        Locale.setDefault(locale)
+        if (Build.VERSION.SDK_INT >= 33 && ::app.isInitialized) {
+            try {
+                val lm = app.getSystemService(LocaleManager::class.java)
+                val target = LocaleList.forLanguageTags(lang)
+                if (lm != null && lm.applicationLocales != target) {
+                    lm.applicationLocales = target
+                }
+            } catch (_: Exception) {
+            }
+        }
+        val compatTarget = LocaleListCompat.forLanguageTags(lang)
+        if (AppCompatDelegate.getApplicationLocales() != compatTarget) {
+            AppCompatDelegate.setApplicationLocales(compatTarget)
+        }
     }
 
     /** "tr-TR" -> "tr"; Norwegian "no"/"nn" -> "nb"; anything unsupported -> English. */

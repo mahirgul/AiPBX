@@ -88,7 +88,9 @@ if ($is_spa_request) {
             <div class="footer-stat-pill u-strong" id="footer-clock">
                 <i class="far fa-clock"></i> <?php echo t('footer.loading'); ?>
             </div>
-            <div class="footer-stat-pill u-muted u-fs-11" title="AiPBX">v<?php echo htmlspecialchars(AIPBX_VERSION); ?></div>
+            <button type="button" class="footer-stat-pill u-muted u-fs-11" onclick="openAipbxLicenseModal()" style="border:none; cursor:pointer; background:transparent;" title="<?php echo htmlspecialchars(t('license.modal_title', 'Open Source License & Disclaimer')); ?>">
+                <i class="fas fa-balance-scale" style="margin-right:4px;"></i>v<?php echo htmlspecialchars(AIPBX_VERSION); ?> · MIT
+            </button>
         </div>
 
         <!-- Right: user menu -->
@@ -152,6 +154,89 @@ if ($is_spa_request) {
         </div>
     </footer>
 </div>
+
+<?php
+$_licAcceptedAt = function_exists('getSystemSetting') ? (string)getSystemSetting('license_accepted_at', '') : '';
+$_licAcceptedBy = function_exists('getSystemSetting') ? (string)getSystemSetting('license_accepted_by', '') : '';
+$_licNeedsPrompt = ($_licAcceptedAt === '' && !empty($user) && ($user['role'] ?? '') === 'admin');
+?>
+<div id="aipbxLicenseModal" class="modal" style="display:<?php echo $_licNeedsPrompt ? 'flex' : 'none'; ?>; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:16px;">
+    <div class="card" style="max-width:620px; width:100%; max-height:90vh; overflow-y:auto; margin:0; padding:24px; border-radius:12px; box-shadow:0 20px 50px rgba(0,0,0,0.35);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+            <h3 style="margin:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-balance-scale" style="color:var(--primary);"></i>
+                <?php echo htmlspecialchars(t('license.modal_title', 'Open Source License & Telecom Disclaimer')); ?>
+            </h3>
+            <?php if (!$_licNeedsPrompt): ?>
+            <button type="button" onclick="closeAipbxLicenseModal()" class="btn btn-xs btn-secondary" style="border:none; background:transparent; font-size:16px; cursor:pointer;">✕</button>
+            <?php endif; ?>
+        </div>
+
+        <p class="u-fs-13 u-muted" style="margin:0 0 12px 0; line-height:1.55;">
+            <?php echo htmlspecialchars(t('license.intro', 'AiPBX is free and open-source software released under the MIT License and provided "AS IS" without warranty of any kind. By operating this PBX system, you acknowledge and agree to the following terms:')); ?>
+        </p>
+
+        <ul class="u-fs-13" style="margin:0 0 16px 0; padding-left:20px; line-height:1.6;">
+            <li style="margin-bottom:8px;"><?php echo htmlspecialchars(t('license.item_oss', 'No Warranty (MIT License): The authors and contributors shall not be liable for any direct, indirect, or consequential damages arising from the use of this software.')); ?></li>
+            <li style="margin-bottom:8px;"><?php echo htmlspecialchars(t('license.item_emergency', 'Emergency Calls (112 / 911 / 999): AiPBX is not a certified emergency call service. Power, internet, or SIP trunk outages may prevent emergency calls. Always maintain an independent emergency line.')); ?></li>
+            <li style="margin-bottom:8px;"><?php echo htmlspecialchars(t('license.item_fraud', 'Telecom Billing & Toll Fraud: Securing server access, enforcing strong SIP/admin credentials, and restricting outbound routes are your sole responsibility. The authors are not liable for carrier charges or toll fraud.')); ?></li>
+            <li style="margin-bottom:4px;"><?php echo htmlspecialchars(t('license.item_privacy', 'Privacy & Recording Compliance (GDPR / KVKK): Enabling call recording, fax archiving, or AI transcription requires complying with applicable caller-consent and data protection laws in your jurisdiction.')); ?></li>
+        </ul>
+
+        <?php if ($_licAcceptedAt !== ''): ?>
+        <div class="alert alert-info u-fs-12" style="margin-bottom:14px; padding:8px 12px;">
+            <i class="fas fa-check-circle"></i>
+            <?php echo htmlspecialchars(t('license.accepted_info', 'Accepted on')) . ': ' . htmlspecialchars($_licAcceptedAt . ($_licAcceptedBy !== '' ? ' — ' . $_licAcceptedBy : '')); ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($_licNeedsPrompt): ?>
+        <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:16px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:13px; font-weight:600; margin:0;">
+                <input type="checkbox" id="aipbxLicenseAgreeChk" onchange="document.getElementById('aipbxLicenseAcceptBtn').disabled = !this.checked;" style="margin-top:3px;">
+                <span><?php echo htmlspecialchars(t('license.checkbox_label', 'I have read, understood, and accept the MIT License and Telecommunications Responsibility Disclaimer.')); ?></span>
+            </label>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" id="aipbxLicenseAcceptBtn" class="btn btn-primary" disabled onclick="submitAipbxLicenseAccept()">
+                <i class="fas fa-check"></i> <?php echo htmlspecialchars(t('license.accept_btn', 'Accept & Continue')); ?>
+            </button>
+        </div>
+        <?php else: ?>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-secondary" onclick="closeAipbxLicenseModal()">
+                <?php echo htmlspecialchars(t('license.close_btn', 'Close')); ?>
+            </button>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<script>
+function openAipbxLicenseModal() {
+    var m = document.getElementById('aipbxLicenseModal');
+    if (m) m.style.display = 'flex';
+}
+function closeAipbxLicenseModal() {
+    var m = document.getElementById('aipbxLicenseModal');
+    if (m) m.style.display = 'none';
+}
+function submitAipbxLicenseAccept() {
+    var btn = document.getElementById('aipbxLicenseAcceptBtn');
+    if (btn) btn.disabled = true;
+    var fd = new FormData();
+    fd.append('csrf_token', <?php echo json_encode(function_exists('getCSRFToken') ? getCSRFToken() : ($_SESSION['csrf_token'] ?? '')); ?>);
+    fetch('/accept-license', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res && res.success) {
+                closeAipbxLicenseModal();
+            } else if (btn) {
+                btn.disabled = false;
+            }
+        })
+        .catch(function() { if (btn) btn.disabled = false; });
+}
+</script>
 
 <!-- 100% Offline Local JavaScript Modules -->
 <script src="<?php echo asset('/assets/js/theme.js'); ?>"></script>

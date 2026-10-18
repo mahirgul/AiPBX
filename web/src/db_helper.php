@@ -7,6 +7,15 @@
 require_once __DIR__ . '/../config.php';
 
 class DBHelper {
+    private static int $lastSavedId = 0;
+
+    /**
+     * Returns the primary key ID from the most recent insert() or save() call.
+     */
+    public static function lastSavedId(): int {
+        return self::$lastSavedId;
+    }
+
     /**
      * Dynamic Insert Record
      */
@@ -18,7 +27,9 @@ class DBHelper {
         $sql = "INSERT INTO {$table} (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $stmt = $db->prepare($sql);
         $stmt->execute(array_values($data));
-        return $db->lastInsertId();
+        $id = (int)$db->lastInsertId();
+        self::$lastSavedId = $id;
+        return $id;
     }
 
     /**
@@ -35,6 +46,9 @@ class DBHelper {
         
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
+        if ($where_col === 'id' && is_numeric($where_val)) {
+            self::$lastSavedId = (int)$where_val;
+        }
         return $stmt->rowCount();
     }
 
@@ -46,6 +60,7 @@ class DBHelper {
         unset($data[$id_col]);
         if ($id > 0) {
             self::update($table, $data, $id_col, $id);
+            self::$lastSavedId = $id;
             return $id;
         } else {
             return self::insert($table, $data);

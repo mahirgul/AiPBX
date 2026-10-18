@@ -46,6 +46,10 @@ class VoicemailActivity : AppCompatActivity() {
     private var player: MediaPlayer? = null
     private var playingId: String? = null
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

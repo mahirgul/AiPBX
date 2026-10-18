@@ -23,6 +23,11 @@ class WebWidgetController extends BaseController
             exit;
         }
 
+        if (($_GET['download'] ?? '') === 'wordpress') {
+            self::downloadWordPressPlugin();
+            exit;
+        }
+
         $csrf = static::csrfToken();
         $notices = static::handlePost([
             'save_widget' => fn() => WebWidgetService::saveWidget($_POST),
@@ -48,5 +53,42 @@ class WebWidgetController extends BaseController
             'routes' => WebWidgetService::outboundRoutes(),
             'log' => WebWidgetService::recentSessions(50),
         ], ['title' => t('web_widgets.title')] + $notices);
+    }
+
+    private static function downloadWordPressPlugin(): void
+    {
+        $wpDir = dirname(__DIR__, 3) . '/integrations/wordpress/aipbx-call-widget';
+        if (!is_dir($wpDir) || !class_exists('ZipArchive')) {
+            http_response_code(404);
+            echo 'WordPress plugin directory or ZipArchive extension not found.';
+            return;
+        }
+
+        $tmpZip = tempnam(sys_get_temp_dir(), 'aipbx_wp_');
+        if ($tmpZip === false) {
+            http_response_code(500);
+            return;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tmpZip, \ZipArchive::OVERWRITE) !== true) {
+            @unlink($tmpZip);
+            http_response_code(500);
+            return;
+        }
+
+        foreach (glob($wpDir . '/*') ?: [] as $file) {
+            if (is_file($file)) {
+                $zip->addFile($file, 'aipbx-call-widget/' . basename($file));
+            }
+        }
+        $zip->close();
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="aipbx-call-widget.zip"');
+        header('Content-Length: ' . (string) filesize($tmpZip));
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        readfile($tmpZip);
+        @unlink($tmpZip);
     }
 }

@@ -166,7 +166,7 @@ if ($only === null || $only === 'routes') { check_routes($onlyRoute); }
  */
 function check_rbac(): void
 {
-    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings', '/phones', '/phone-keys', '/web-widgets'];
+    $ADMIN_ONLY = ['/roles', '/system-users', '/firewall', '/fail2ban', '/certificates', '/asterisk-settings', '/phones', '/phone-keys', '/web-widgets', '/plugins', '/api-keys', '/webhooks'];
     $n = 0;
 
     // Told apart purely by size. Measured live (2026-09-01): a blocked request
@@ -359,6 +359,9 @@ function check_conventions(): void
         // Websites call the widget API without a session; the allowed
         // websites, one-time tokens and limits guard it (WebWidgetService).
         'WidgetApiController.php',
+        // REST API v1 authenticates stateless Bearer tokens (apbx_...), IP
+        // allowlists, rate limits and scopes via ApiRequestContext::authenticate().
+        'ApiV1Controller.php',
     ];
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/controllers/*.php') as $f) {

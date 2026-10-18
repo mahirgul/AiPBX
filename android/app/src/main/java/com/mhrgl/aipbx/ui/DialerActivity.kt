@@ -167,6 +167,15 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(L10n.wrap(newBase))
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("saved_tab", currentTab.name)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -218,6 +227,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         setupContactsTab()
         setupChatTab()
         setupFeaturesTab()
+        savedInstanceState?.getString("saved_tab")?.let { tabName ->
+            runCatching { Tab.valueOf(tabName) }.getOrNull()?.let { switchTab(it) }
+        }
         checkPermissions()
         // One system request per start: the full-screen explanation waits for the next one.
         if (!BatteryPrompt.askOnce(this)) {

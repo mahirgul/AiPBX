@@ -11,7 +11,9 @@ function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action
     try {
         $db = getDB();
         $username = null;
-        if ($user_id) {
+        if (!empty($GLOBALS['AIPBX_AUDIT_ACTOR'])) {
+            $username = (string)$GLOBALS['AIPBX_AUDIT_ACTOR'];
+        } elseif ($user_id) {
             $username = $db->prepare("SELECT full_name FROM sys_users WHERE id = ?");
             $username->execute([$user_id]);
             $username = $username->fetchColumn() ?: null;

@@ -50,6 +50,9 @@ class FaxSendService {
         if (!verifyCSRFToken($csrf_token)) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
+        if (empty($sender_did) || !preg_match('/^\d+$/', (string)$sender_did)) {
+            return ['success' => false, 'error' => 'Sender extension is required.'];
+        }
         if (empty($dest_number)) {
             return ['success' => false, 'error' => t('srv_fax.err_to')];
         }
@@ -209,6 +212,9 @@ class FaxSendService {
         // system's real numbering plan and outbound routes (pbx_outbound_routes)
         // over a native Local channel (Local/$dest@from-internal-pbx/n).
         $dest_dial = preg_replace('/[^0-9+*#]/', '', trim($destNumber));
+        $safe_fax_dest = preg_replace('/[^0-9+*#]/', '', trim($destNumber));
+        $safe_fax_sender = preg_replace('/[^0-9]/', '', trim($senderExt));
+        $safe_sender_name = str_replace(["\r", "\n"], '', (string)$sender_name_var);
 
         $call_file_content = "Channel: Local/$dest_dial@$dial_context/n\n" .
                              "CallerID: $caller_id_line\n" .
@@ -220,9 +226,9 @@ class FaxSendService {
                              "Priority: 1\n" .
                              ($perm_grp > 0 ? "SetVar: __PERMISSION_GROUP_ID=$perm_grp\n" : '') .
                              "SetVar: FAX_TIF_PATH=$tifPath\n" .
-                             "SetVar: FAX_DEST=$destNumber\n" .
-                             "SetVar: FAX_SENDER=$senderExt\n" .
-                             "SetVar: FAX_SENDER_NAME=$sender_name_var\n" .
+                             "SetVar: FAX_DEST=$safe_fax_dest\n" .
+                             "SetVar: FAX_SENDER=$safe_fax_sender\n" .
+                             "SetVar: FAX_SENDER_NAME=$safe_sender_name\n" .
                              "SetVar: FAX_ID=$faxId\n";
 
         // The temp file is written on the SAME file system as the spool: only
