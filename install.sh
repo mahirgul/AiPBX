@@ -401,7 +401,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php; do
+for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php aipbx_ops.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -1036,6 +1036,20 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+# --- signaling capture (opt-in: asterisk-config/hep.conf decides whether
+# Asterisk sends HEP; the local daemon stores events for the portal's
+# Signaling page). Installed here on fresh installs AND by --upgrade, so
+# aipbx-update upgrades land the same components.
+if [ -d "$INSTALL_DIR/signaling" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+    fi
+    if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
+        systemctl daemon-reload >/dev/null 2>&1 || true
+        systemctl enable --now aipbx-signaling.service >/dev/null 2>&1 || true
+    fi
+fi
 
 # PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
 # off until the page writes a configuration. aipbx-priv writes it into this
