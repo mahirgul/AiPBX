@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.0
+
+REST API v1, Outbound Webhooks, First-Class Plugin System, Android & iOS improvements, Open Source & Telecom Disclaimer, and security/reliability hardening across the entire stack.
+
+- **REST API v1 (`/api/v1/*`) & API Keys (`/api-keys`):** stateless REST API with 100+ endpoints and OpenAPI 3.1 specification (`/api/v1/openapi.json`), scoped Bearer tokens (`apbx_...`), IPv4/IPv6 CIDR allowlists, per-token rate limiting, secret-column sanitization (`sip_password`, `auth_password`, `voicemail_pin`), and allowlisted public system settings.
+- **Outbound Webhooks (`/webhooks`):** HMAC-SHA256 signed event delivery with background retry daemon (`aipbx-webhook-worker.service`), composite CDR/Fax sweep cursors, delivery logs, and DNS-pinned SSRF protection.
+- **First-Class Plugin System (`/plugins`):** modular integration catalog (`google-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`), custom `.zip` plugin installer, encrypted secret settings, bounded KV storage, public plugin endpoints (`/api/plugins/<slug>/*`), and a 5-error **Safe Mode** circuit breaker.
+- **Mobile apps (Android & iOS v1.0.73):** fixed in-app language switching across all 23 languages on Android (Play App Bundle language split disabled, `L10n.wrap` context attachment across all Activities, `LocaleManager` sync, and tab state preservation); iOS `CallKitManager` fulfills `CXStartCallAction` on outgoing calls and scopes WebView media capture permission to the local app bundle.
+- **Installer, Updater & Security Hardening:** `aipbx-update` passes `-c safe.directory` to `git`, re-execs from `/run`, and verifies `aipbx-webhook-worker`; atomic file writes in `aipbx-update` and `aipbx-sounds`; sticky-bit protection on `/var/lib/aipbx` (`1755`) and `/var/log/aipbx` (`1750`); `mysql.Config.FormatDSN()` in `aipbx-chat`; bounded cloud LLM/STT responses and serialized model downloads in `aipbx_ai`.
+- **Open Source License & Telecom Disclaimer:** added explicit Emergency Calling (112/911/999), Toll Fraud, and GDPR/KVKK Recording & AI Privacy notice to `LICENSE`, `install.sh`, and a one-time first-login admin acceptance modal across all 23 portal languages.
+
 ## 1.33.4
 
 Fixes from a full security and reliability review across the web portal, dialplan, chat, local AI, mobile apps and system helpers, plus three fixes by **@tomck** (#113).
