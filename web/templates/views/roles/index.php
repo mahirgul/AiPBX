@@ -186,6 +186,15 @@ $group_slugs = RoleRepository::groupSlugs();
                                 <tr class="perm-module-row">
                                     <td style="padding-left: 24px;">
                                         <strong class="u-text-main"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
+                                        <?php if (!empty($m_info['plugin'])): ?>
+                                            <?php
+                                            require_once dirname(__DIR__, 3) . '/src/core/PluginManager.php';
+                                            $isPluginEnabled = PluginManager::isEnabled((string)$m_info['plugin']);
+                                            ?>
+                                            <span class="badge <?php echo $isPluginEnabled ? 'badge-info' : 'badge-secondary'; ?> u-fs-11 u-ml-4" title="Plugin: <?php echo htmlspecialchars((string)$m_info['plugin']); ?>">
+                                                <i class="fas fa-plug"></i> <?php echo htmlspecialchars((string)$m_info['plugin']); ?>
+                                            </span>
+                                        <?php endif; ?>
                                         <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
                                     </td>
                                     <?php if (!empty($m_info['admin_only'])): ?>

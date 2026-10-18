@@ -23,7 +23,26 @@ require_once dirname(__DIR__, 2) . '/auth.php';
  */
 final class RbacTest extends TestCase
 {
-    private const LOCKED = ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'phones', 'web_widgets'];
+    private const LOCKED = [
+        'roles',
+        'system_users',
+        'firewall',
+        'fail2ban',
+        'mail_settings',
+        'system_update',
+        'certificates',
+        'phones',
+        'web_widgets',
+        'plugins',
+        'api_keys',
+        'webhooks',
+        'google_integration',
+        'file_storage',
+        'ai_models',
+        'ai_cloud',
+        'ai_apps',
+        'health',
+    ];
 
     protected function setUp(): void
     {
@@ -50,11 +69,22 @@ final class RbacTest extends TestCase
                 $stmt->execute([$role_key, $module]);
             }
         }
+        getRolePermissionsMap(null, true);
     }
 
     public static function lockedModules(): array
     {
-        return [['roles'], ['system_users'], ['firewall'], ['fail2ban'], ['mail_settings'], ['phones'], ['web_widgets']];
+        return array_map(static fn(string $m): array => [$m], self::LOCKED);
+    }
+
+    public function testAdminOnlyModulesMatchRoleRepositoryDefinition(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/repositories/RoleRepository.php';
+        $repoLocked = RoleRepository::adminOnlyModules();
+        $expected   = self::LOCKED;
+        sort($repoLocked);
+        sort($expected);
+        $this->assertSame($expected, $repoLocked);
     }
 
     #[DataProvider('lockedModules')]
@@ -156,6 +186,7 @@ final class RbacTest extends TestCase
             'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
              VALUES (?, ?, 1, 1, 1, 0)'
         )->execute(['editor_only', 'trunks']);
+        getRolePermissionsMap(null, true);
 
         $_SESSION['user_role'] = 'editor_only';
         $_SERVER['PHP_SELF'] = '/trunks.php';
@@ -170,6 +201,50 @@ final class RbacTest extends TestCase
         // uiRowActions must not contain the delete button either
         $actionsHtml = uiRowActions(['id' => 1], 'openEditTrunkModal', 'trunk_id', 'delete_trunk');
         $this->assertStringNotContainsString('delete_trunk', $actionsHtml);
+    }
+
+    public function testPluginBackedModulesRequireEnabledPluginForNonAdminRoles(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/core/PluginManager.php';
+
+        $db = getDB();
+        $db->prepare(
+            'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
+             VALUES (?, ?, 1, 1, 1, 1)'
+        )->execute(['cc_manager', 'ai_tts']);
+        $db->prepare(
+            'INSERT INTO sys_role_permissions (role_key, module_key, can_view, can_access, can_edit, can_delete)
+             VALUES (?, ?, 1, 1, 1, 1)'
+        )->execute(['cc_manager', 'ms_teams']);
+        getRolePermissionsMap(null, true);
+
+        $csrf = $_SESSION['csrf_token'] = 'test-csrf';
+        PluginManager::disable('ai-tts', $csrf);
+        PluginManager::disable('ms-teams', $csrf);
+
+        $_SESSION['user_role'] = 'cc_manager';
+        $this->assertFalse(hasModulePermission('ai_tts', 'access'));
+        $this->assertFalse(hasModulePermission('ms_teams', 'access'));
+
+        $_SESSION['user_role'] = 'read_only_admin';
+        $this->assertFalse(hasModulePermission('ai_tts', 'access'));
+        $this->assertFalse(hasModulePermission('ms_teams', 'access'));
+
+        PluginManager::enable('ai-tts', $csrf);
+        PluginManager::enable('ms-teams', $csrf);
+
+        $_SESSION['user_role'] = 'cc_manager';
+        $this->assertTrue(hasModulePermission('ai_tts', 'access'));
+        $this->assertTrue(hasModulePermission('ms_teams', 'access'));
+
+        $_SESSION['user_role'] = 'read_only_admin';
+        $this->assertTrue(hasModulePermission('ai_tts', 'access'));
+        $this->assertFalse(hasModulePermission('ai_tts', 'edit'));
+        $this->assertTrue(hasModulePermission('ms_teams', 'access'));
+        $this->assertFalse(hasModulePermission('ms_teams', 'edit'));
+
+        PluginManager::disable('ai-tts', $csrf);
+        PluginManager::disable('ms-teams', $csrf);
     }
 }
 

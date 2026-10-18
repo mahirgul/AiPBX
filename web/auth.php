@@ -169,6 +169,7 @@ function getModuleKeyForPage($page = null) {
         'plugins.php'               => 'plugins',
         'api_keys.php'              => 'api_keys',
         'webhooks.php'              => 'webhooks',
+        'google_integration.php'    => 'google_integration',
         'ms_teams.php'              => 'ms_teams',
         'web_widgets.php'           => 'web_widgets',
         'ai_tts.php'                => 'ai_tts',
@@ -177,15 +178,25 @@ function getModuleKeyForPage($page = null) {
         'ai_apps.php'               => 'ai_apps',
         'mail_settings.php'         => 'mail_settings',
         'file_storage.php'          => 'file_storage',
+        'health.php'                => 'health',
     ];
+    if (str_starts_with((string)$page, 'plugin_') && str_ends_with((string)$page, '.php')) {
+        return 'plugins';
+    }
     return $map[$page] ?? str_replace('.php', '', $page);
 }
 
 /**
  * Fetch permissions matrix for a given role key
  */
-function getRolePermissionsMap($role_key = null) {
+function getRolePermissionsMap($role_key = null, bool $reset = false) {
     static $cache = [];
+    if ($reset) {
+        $cache = [];
+        if ($role_key === null) {
+            return [];
+        }
+    }
     if ($role_key === null) {
         $role_key = $_SESSION['user_role'] ?? 'user';
     }
@@ -243,6 +254,22 @@ function hasModulePermission($module_key, $action = 'access') {
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
     if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'health'], true)) {
         return $role === 'admin';
+    }
+
+    // Plugin-backed delegable modules ('ms_teams' -> 'ms-teams', 'ai_tts' -> 'ai-tts'):
+    // when a plugin is not enabled in sys_plugins, non-admin roles must never access
+    // its pages or API endpoints even if sys_role_permissions grants them access.
+    $pluginModuleSlugs = [
+        'ms_teams' => 'ms-teams',
+        'ai_tts'   => 'ai-tts',
+    ];
+    if ($role !== 'admin' && isset($pluginModuleSlugs[$module_key])) {
+        if (is_file(__DIR__ . '/src/core/PluginManager.php')) {
+            require_once __DIR__ . '/src/core/PluginManager.php';
+            if (!PluginManager::isEnabled($pluginModuleSlugs[$module_key])) {
+                return false;
+            }
+        }
     }
 
     // Read-only viewer (read_only_admin) rule: can never change settings (edit) or delete (delete) in any module!

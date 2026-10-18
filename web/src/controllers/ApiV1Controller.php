@@ -292,16 +292,16 @@ final class ApiV1Controller
         if ($method === 'GET' && $idStr === null) {
             ApiRequestContext::requireScope('pbx:read');
             $rows = DBHelper::fetchAll(
-                "SELECT id, username, full_name, email, role, extension, extension_type, sip_auth_digest,
+                "SELECT id, username, full_name, email, role, extension, extension_type,
                         outbound_group, permission_group_id, boss_secretary_group_id, boss_secretary_role,
-                        voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify,
+                        voicemail_enabled, voicemail_email, voicemail_email_notify,
                         voicemail_attach_audio, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always,
                         cid_internal, cid_external, is_active
                  FROM sys_users
                  WHERE extension IS NOT NULL AND extension != ''
                  ORDER BY CAST(extension AS UNSIGNED) ASC, extension ASC"
             );
-            ApiResponse::success($rows);
+            ApiResponse::success(ResourceNormalizer::sanitizeList($rows));
         }
 
         if ($method === 'GET') {
@@ -1129,7 +1129,7 @@ final class ApiV1Controller
     {
         if ($method === 'GET' && $idStr === null) {
             ApiRequestContext::requireScope('devices:read');
-            ApiResponse::success(DBHelper::fetchAll('SELECT * FROM pbx_phones ORDER BY id ASC'));
+            ApiResponse::success(ResourceNormalizer::sanitizeList(DBHelper::fetchAll('SELECT * FROM pbx_phones ORDER BY id ASC')));
         }
         if ($method === 'GET') {
             ApiRequestContext::requireScope('devices:read');
@@ -1137,7 +1137,7 @@ final class ApiV1Controller
             if (!$row) {
                 ApiResponse::error('NOT_FOUND', 'Phone device not found.', 404);
             }
-            ApiResponse::success($row);
+            ApiResponse::success(ResourceNormalizer::sanitizeRow($row));
         }
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/phones', 405);
     }
@@ -1384,9 +1384,20 @@ final class ApiV1Controller
      */
     public static function invokeLoopback(string $method, string $path, array $body = [], string $pluginSlug = 'ai-assistant'): array
     {
+        if (!PluginManager::isEnabled($pluginSlug)) {
+            return [
+                'status_code' => 403,
+                'response'    => ['success' => false, 'error' => "Plugin '{$pluginSlug}' is disabled."],
+            ];
+        }
+
         $token = PluginManager::getSetting($pluginSlug, '_worker_api_token', '');
         if ($token === '') {
-            $token = ApiTokenService::issuePluginToken($pluginSlug, 'AI Assistant Loopback', ['*']);
+            $pluginMeta = PluginManager::getPlugin($pluginSlug);
+            $declaredScopes = is_array($pluginMeta['scopes'] ?? null) && !empty($pluginMeta['scopes'])
+                ? $pluginMeta['scopes']
+                : ['pbx:read'];
+            $token = ApiTokenService::issuePluginToken($pluginSlug, (string)($pluginMeta['name'] ?? $pluginSlug), $declaredScopes);
             PluginManager::setSetting($pluginSlug, '_worker_api_token', $token, true);
         }
 

@@ -12,11 +12,14 @@ final class ResourceNormalizer
     private const SECRET_COLUMNS = [
         'password_hash',
         'sip_password',
+        'sip_auth_digest',
+        'sip_secret',
         'auth_password',
         'voicemail_pin',
         'secret',
         'secret_encrypted',
         'token_hash',
+        'token',
         'two_factor_secret',
         'two_factor_recovery_codes',
     ];

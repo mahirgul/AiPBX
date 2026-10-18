@@ -278,6 +278,8 @@ final class PluginManager
 
             getDB()->prepare('UPDATE sys_plugins SET enabled = 0, worker_enabled = 0, updated_at = NOW() WHERE slug = ?')
                 ->execute([$slug]);
+            getDB()->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = ? AND setting_key = '_worker_api_token'")
+                ->execute([$slug]);
             ApiTokenService::revokePluginTokens($slug);
             self::cleanupPluginAsteriskConf($slug);
             self::resetCache();
@@ -798,6 +800,9 @@ final class PluginManager
             if ($streak >= 5) {
                 getDB()->prepare('UPDATE sys_plugins SET enabled = 0, worker_enabled = 0, updated_at = NOW() WHERE slug = ?')
                     ->execute([$slug]);
+                getDB()->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = ? AND setting_key = '_worker_api_token'")
+                    ->execute([$slug]);
+                ApiTokenService::revokePluginTokens($slug);
                 self::cleanupPluginAsteriskConf($slug);
                 self::resetCache();
                 writeAuditLog('plugins', 'plugin_safe_mode', $slug, "Plugin auto-disabled (Safe Mode) after 5 consecutive errors: {$msg}", 'update', null);

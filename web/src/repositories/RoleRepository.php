@@ -64,21 +64,37 @@ class RoleRepository extends BaseRepository
             'fax_inbox'          => ['title' => 'Incoming Faxes', 'group' => 'Fax System', 'actions' => $all],
             'fax_send'           => ['title' => 'Send Fax', 'group' => 'Fax System', 'actions' => self::VAE],
             'fax_sent'           => ['title' => 'Sent Faxes', 'group' => 'Fax System', 'actions' => $all],
-            'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all],
-            'ai_apps'            => ['title' => 'AI Applications', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
-            'ai_models'          => ['title' => 'Local Models', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
-            'ai_cloud'           => ['title' => 'Cloud Services', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
+            'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all, 'plugin' => 'ai-tts'],
+            'ai_apps'            => ['title' => 'AI Applications', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-apps'],
+            'ai_models'          => ['title' => 'Local Models', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-models'],
+            'ai_cloud'           => ['title' => 'Cloud Services', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-cloud'],
             'plugins'            => ['title' => 'Plugin Catalog', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'api_keys'           => ['title' => 'REST API Keys', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'webhooks'           => ['title' => 'Outbound Webhooks', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
-            'google_integration' => ['title' => 'Google Sign-in', 'group' => 'Integrations', 'actions' => self::VAE, 'admin_only' => true],
-            'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Integrations', 'actions' => $all],
-            'web_widgets'        => ['title' => 'Web Widgets', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
+            'google_integration' => ['title' => 'Google Sign-in', 'group' => 'Integrations', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'google-auth'],
+            'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Integrations', 'actions' => $all, 'plugin' => 'ms-teams'],
+            'web_widgets'        => ['title' => 'Web Widgets', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true, 'plugin' => 'web-widgets'],
             'firewall'           => ['title' => 'Firewall', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'fail2ban'           => ['title' => 'Fail2ban', 'group' => 'Security', 'actions' => $all, 'admin_only' => true],
             'certificates'       => ['title' => 'Certificates', 'group' => 'Security', 'actions' => self::VAE, 'admin_only' => true],
             'audit_log'          => ['title' => 'Audit Log', 'group' => 'Security', 'actions' => self::VA],
         ];
+    }
+
+    /**
+     * Maps RBAC module keys to their corresponding plugin slug in `sys_plugins`.
+     *
+     * @return array<string, string>
+     */
+    public static function pluginModuleMap(): array
+    {
+        $map = [];
+        foreach (self::modulesDefinition() as $key => $info) {
+            if (!empty($info['plugin'])) {
+                $map[$key] = (string)$info['plugin'];
+            }
+        }
+        return $map;
     }
 
     /** Module keys only the admin role can use (must match auth.php's circuit breaker). */

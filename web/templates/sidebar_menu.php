@@ -122,7 +122,7 @@ return [
     [
         'id' => 'integrations', 'icon' => 'fas fa-plug', 'icon_style' => 'color: #3b82f6;', 'label' => 'sidebar.group_integrations',
         'items' => [
-            ['href' => '/plugins', 'icon' => 'fas fa-puzzle-piece', 'label' => 'sidebar.item_plugins', 'show' => $isAdmin, 'pages' => ['plugins.php'], 'uri' => '/plugins'],
+            ['href' => '/plugins', 'icon' => 'fas fa-puzzle-piece', 'label' => 'sidebar.item_plugins', 'show' => $isAdmin, 'pages' => ['plugins.php']],
             ['href' => '/api-keys', 'icon' => 'fas fa-key', 'label' => 'sidebar.item_api_keys', 'show' => $isAdmin, 'pages' => ['api_keys.php'], 'uri' => '/api-keys'],
             ['href' => '/webhooks', 'icon' => 'fas fa-satellite-dish', 'label' => 'sidebar.item_webhooks', 'show' => $isAdmin, 'pages' => ['webhooks.php'], 'uri' => '/webhooks'],
             ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => 'sidebar.item_google_integration', 'show' => $isAdmin && $pluginOn('google-auth'), 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],

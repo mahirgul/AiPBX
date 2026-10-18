@@ -151,7 +151,9 @@ SYS;
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-    if (!empty($_POST['assistant_prompt'])) {
+    if (empty($plugin['enabled'])) {
+        $assistantError = 'Please enable the AI Assistant plugin in the Plugin Catalog before running commands.';
+    } elseif (!empty($_POST['assistant_prompt'])) {
         $prompt = trim((string)$_POST['assistant_prompt']);
         $assistantPlan = $buildAssistantPlan($prompt, $settings);
         $draftId = 'draft_' . bin2hex(random_bytes(6));
