@@ -24,6 +24,22 @@ final class PrivacyService
     public static function profiles(): array
     {
         return [
+            'off' => [
+                'code'                => 'Off / Custom (All Rules Disabled)',
+                'notice_mode'         => 'off',
+                'optout_digit'        => '9',
+                'optout_timeout'      => 3,
+                'recording_beep_sec'  => 0,
+                'pci_pause_enabled'   => false,
+                'retention_enabled'   => false,
+                'ret_recordings_days' => 0,
+                'ret_voicemail_days'  => 0,
+                'ret_fax_days'        => 0,
+                'ret_chat_days'       => 0,
+                'ret_cdr_days'        => 0,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => false,
+            ],
             'kvkk' => [
                 'code'                => 'KVKK (TR — 6698)',
                 'notice_mode'         => 'optout',
@@ -124,16 +140,15 @@ final class PrivacyService
     }
 
     /**
-     * Current privacy settings with safe defaults.
+     * Current privacy settings with safe opt-in defaults (all disabled until explicitly enabled).
      *
      * @return array<string, mixed>
      */
     public static function settings(): array
     {
-        $defaultProfile = (function_exists('getUserLanguage') && getUserLanguage() === 'tr') ? 'kvkk' : 'gdpr';
-        $profile = (string)getSystemSetting('privacy_jurisdiction_profile', $defaultProfile);
+        $profile = (string)getSystemSetting('privacy_jurisdiction_profile', 'off');
         if (!isset(self::profiles()[$profile])) {
-            $profile = $defaultProfile;
+            $profile = 'off';
         }
 
         return [
@@ -143,7 +158,7 @@ final class PrivacyService
             'optout_digit'          => self::validOptoutDigit((string)getSystemSetting('privacy_optout_digit', '9')),
             'optout_timeout'        => max(1, min(10, (int)getSystemSetting('privacy_optout_timeout', '3'))),
             'recording_beep_sec'    => self::validBeepSec((int)getSystemSetting('privacy_recording_beep_sec', '0')),
-            'pci_pause_enabled'     => getSystemSetting('privacy_pci_pause_enabled', '1') === '1',
+            'pci_pause_enabled'     => getSystemSetting('privacy_pci_pause_enabled', '0') === '1',
             'retention_enabled'     => getSystemSetting('privacy_retention_enabled', '0') === '1',
             'ret_recordings_days'   => max(0, min(3650, (int)getSystemSetting('privacy_ret_recordings_days', '180'))),
             'ret_voicemail_days'    => max(0, min(3650, (int)getSystemSetting('privacy_ret_voicemail_days', '90'))),

@@ -175,10 +175,11 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   <img src="docs/img/app_login.jpg" width="18%" alt="Setup">
 </p>
 
-### 🤖 AI
+### 🤖 AI & Dialplan Assistant
 - **Cloud TTS** — turn text into speech with Google (API key or service account), Amazon Polly, Azure AI
   Speech, ElevenLabs or OpenAI; listen, download the MP3 or save it as an announcement in one click.
   Credentials are stored encrypted; usage is tracked per character
+- **Dialplan Editor (`/assistant`) & Echo Reporter** — plain-language PBX change planner with dry-run preview before apply, safety validation, audit trail and one-click undo (`pbx_ai_changes`), plus the Echo diagnostic box backed by an opt-in local HEPv3 SIP signaling capture daemon (`aipbx-signaling` → `pbx_signaling_events`)
 
 ### 💼 Microsoft Teams Integration
 - **Direct Routing** over SIP-TLS 5061 with SRTP
@@ -190,9 +191,9 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
-- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`ms-teams`, `ldap-directory`, `crm-webhook`, `homer-hep`, `ai-voicemail`, `ai-assistant`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
 
-### 🔐 Authentication & Security
+### 🔐 Authentication, Security & Global Privacy (`/privacy`)
 - **Two-factor authentication (TOTP)** with offline QR codes and single-use recovery codes — enforced
   for portal, mobile and Google sign-in
 - **Passkeys (WebAuthn / FIDO2)** — passwordless sign-in with biometrics or PIN
@@ -201,6 +202,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **User invitations** — generated passwords, forced first-login change, mobile sign-in link
 - **RBAC** — built-in roles (admin, viewer, queue manager, agent, fax, **user** — the default) and custom
   roles with per-module permissions; security-critical pages are admin-only
+- **Optional Global Privacy & Telecom Compliance (`/privacy` — GDPR / KVKK / CCPA / HIPAA / PCI-DSS / LGPD)** — 100% opt-in (all off by default): pre-call disclosure announcements, Opt-Out (`Press 9 for unrecorded call`) and Explicit Opt-In (`Press 1 to allow recording`), FCC periodic recording beep (`MixMonitor B(15)`), automated nightly data retention purge & CDR PII anonymization (`REDACTED`), Subject Access Request (SAR) JSON export, Right to Erasure, and Cross-Border Cloud AI Lock
 - **Brute-force protection** — math CAPTCHA, account/IP lockout and a fail2ban jail using the real
   client address (PROXY protocol from the 443 edge)
 - **Certificates page** — one certificate for portal, TURNS and SIP-TLS: Let's Encrypt (tested on
@@ -213,7 +215,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language
-- 23 interface languages including Turkish 🇹🇷 and English 🇬🇧 (4,693 keys per language, 100% parity checked in CI)
+- 23 interface languages including Turkish 🇹🇷 and English 🇬🇧 (4,900+ keys per language, 100% parity checked in CI)
 
 ---
 

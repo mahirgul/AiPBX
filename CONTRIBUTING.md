@@ -21,13 +21,17 @@ AI PBX is organized as a unified monorepo:
 
 | Directory | Component | Tech Stack |
 |---|---|---|
-| `web/` | Web Management Portal &amp; API | PHP 8.x MVC, JavaScript, CSS |
+| `web/` | Web Management Portal, REST API v1 &amp; Built-in Privacy Engine | PHP 8.x MVC, JavaScript, CSS |
+| `plugins/` | Official First-Class Modular Plugins | PHP 8.x, JSON Manifests |
 | `asterisk-config/` | PBX Dialplan &amp; PJSIP Configs | Asterisk 22, PJSIP, SpanDSP |
 | `chat/` | High-Concurrency Chat Engine | Go (Gorilla WebSocket) |
-| `android/` | Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
-| `docs/` | Images used by the README and docs (the aipbx.bid website is maintained separately) | PNG, JPG |
-| `sounds/`, `asterisk-core-sounds-tr-*.tar.xz` | Bundled sounds, Turkish prompt texts and packages | `scripts/build_tr_sounds.sh` |
-| `install.sh` | Turnkey Auto-Installer | Bash (Ubuntu 26.04 LTS) |
+| `ai/` | Local &amp; Cloud AI Runtime (`aipbx-ai`) | Python |
+| `signaling/` | Local Loopback HEPv3 SIP Signaling Capture (`aipbx-signaling`) | Python |
+| `android/` | Android Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
+| `ios/` | iOS Mobile Application | SwiftUI, CallKit, WebRTC, PushKit |
+| `docs/` | Built-in Offline System Guide (`/help`) &amp; Documentation | Markdown, PNG, JPG |
+| `sounds/` | Bundled Sounds &amp; Turkish Prompt Packages | `scripts/build_tr_sounds.sh` |
+| `install.sh` | Turnkey Auto-Installer &amp; Upgrader | Bash (Ubuntu 26.04 LTS) |
 
 ---
 
@@ -46,11 +50,12 @@ Before every push (CI runs the same checks):
 
 ```bash
 cd web
-php bin/lint_lang.php                    # tr/en language keys
+php bin/lint_lang.php                    # 23-language key parity check
 php bin/smoke.php                        # every page renders, RBAC, conventions
 php vendor/bin/phinx migrate -e testing  # test database (tests/.env.test)
 set -a; . tests/.env.test; set +a; php vendor/bin/phpunit
 php -d memory_limit=2G vendor/bin/phpstan analyse
+(cd ../signaling && python3 -m unittest discover -s tests -v)
 (cd ../chat && gofmt -l . && go vet ./... && go test ./...)
 ```
 

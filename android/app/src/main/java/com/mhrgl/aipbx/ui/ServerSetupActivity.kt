@@ -62,6 +62,7 @@ class ServerSetupActivity : AppCompatActivity() {
 
         binding = ActivityServerSetupBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.mhrgl.aipbx.util.DisclaimerPrompt.showIfNeeded(this)
 
         // Edge-to-edge WindowInsets support
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
