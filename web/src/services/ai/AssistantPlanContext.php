@@ -26,7 +26,9 @@ class AssistantPlanContext
     public static function ringGroups(): array
     {
         try {
-            $rows = getDB()->query('SELECT id, title FROM pbx_ring_groups ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+            // The column is `name` (no `title` on this table); read it as title
+            // so the planner's shared shape keeps working.
+            $rows = getDB()->query('SELECT id, name AS title FROM pbx_ring_groups ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
             return [];
         }
