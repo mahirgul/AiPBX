@@ -56,6 +56,14 @@ and [troubleshooting](troubleshooting.md) (symptom → fix).
 | [AI applications](ai-apps.md) | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
 
+## Monitoring and integrations
+
+| Page | What it covers |
+|------|----------------|
+| [Signaling capture](signaling.md) | What res_hep sends to the local daemon, the events table, retention, and the forwarding contract for a monitoring endpoint (off by default) |
+| [Dialplan editor (assistant)](assistant.md) | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
+| [Cloud connector](connector.md) | Registering this installation as a node of an EchoGuard-compatible portal: the four allowlisted remote operations, the outbound-only agent, what is refused and why, key handling |
+
 ## Mobile apps
 
 The Android and iOS apps are built by GitHub Actions and attached to each
