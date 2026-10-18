@@ -115,6 +115,45 @@ class AssistantPlanService
     /** Previous forward state of an extension, for undo. */
     private static function captureBefore(string $action, array $a): ?array
     {
+        // Ring groups / queues: capture the exact field this action changes
+        // (timeout seconds, membership list) from the current row, so undo
+        // re-applies the SAME action with the previous value.
+        if (isset($a['group'])) {
+            $st = getDB()->prepare('SELECT ring_timeout, numbers_list FROM pbx_ring_groups WHERE id = ?');
+            $st->execute([(int) $a['group']]);
+            $g = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$g) {
+                return null;
+            }
+            $args = ['group' => (int) $a['group']];
+            if (isset($a['seconds'])) {
+                $args['seconds'] = (int) $g['ring_timeout'];
+            }
+            if (isset($a['extensions'])) {
+                $args['extensions'] = array_values(array_filter(array_map('trim', explode(',', (string) $g['numbers_list']))));
+            }
+            // Same NESTED shape as the extension path: rollback() reads
+            // $before['arguments'] — not the raw field list.
+            return ['action' => $action, 'arguments' => $args];
+        }
+        if (isset($a['queue'])) {
+            $st = getDB()->prepare('SELECT timeout, members_json FROM pbx_queues WHERE id = ?');
+            $st->execute([(int) $a['queue']]);
+            $q = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$q) {
+                return null;
+            }
+            $args = ['queue' => (int) $a['queue']];
+            if (isset($a['seconds'])) {
+                $args['seconds'] = (int) $q['timeout'];
+            }
+            if (isset($a['extensions'])) {
+                $args['extensions'] = array_values(array_filter(array_map('trim', (array) (json_decode((string) ($q['members_json'] ?? '[]'), true) ?: []))));
+            }
+            // Same NESTED shape as the extension path: rollback() reads
+            // $before['arguments'] — not the raw field list.
+            return ['action' => $action, 'arguments' => $args];
+        }
         $ext = $a['extension'] ?? null;
         if ($ext === null) {
             return null;
@@ -209,7 +248,7 @@ class AssistantPlanService
         if (isset($a['extensions'])) {
             $data['numbers_list'] = implode(',', (array) $a['extensions']);
         }
-        RingGroupService::saveRingGroup($data);
+        self::assertApplied(RingGroupService::saveRingGroup($data));
     }
 
     private static function applyQueue(array $a): void
@@ -227,12 +266,20 @@ class AssistantPlanService
         $members = is_array(json_decode($q['members_json'] ?? '[]', true))
             ? json_decode($q['members_json'] ?: '[]', true) : [];
         $data = $q;
+        // QueueService::saveQueue keys UPDATE vs INSERT on the FORM field
+        // `queue_id`, not on the row's `id` — without this the assistant's
+        // edit turns into an INSERT and dies with a duplicate queue_name.
+        $data['queue_id'] = (int) $q['id'];
         $data['csrf_token'] = self::csrf();
         if (isset($a['seconds'])) {
             $data['timeout'] = (int) $a['seconds'];
         }
         if (isset($a['extensions'])) {
-            $members = array_values(array_unique(array_merge($members, (array) $a['extensions'])));
+            // Membership is a SET, not a merge: exactly like the page's own
+            // multi-select (and ring groups), so the undo's before-value can
+            // actually REMOVE members. "add the queue member X" plans carry
+            // the final list — the planner merges the current members in.
+            $members = array_values(array_unique(array_map('strval', (array) $a['extensions'])));
             $data['members_json'] = null; // recomputed by saveQueue
             $mode = [];
             foreach ($members as $m) {
@@ -240,19 +287,19 @@ class AssistantPlanService
             }
             $data['member_mode'] = $mode;
         }
-        QueueService::saveQueue($data);
+        self::assertApplied(QueueService::saveQueue($data));
     }
 
     private static function applyTimeCondition(array $a): void
     {
-        TimeConditionService::saveTimeCondition([
+        self::assertApplied(TimeConditionService::saveTimeCondition([
             'csrf_token' => self::csrf(),
             'title' => $a['title'],
             'time_group_id' => '',
             'open_hour' => $a['open'],
             'close_hour' => $a['close'],
             'days' => implode(',', (array) $a['days']),
-        ]);
+        ]));
     }
 
     private static function applyGreeting(array $a): void
@@ -282,11 +329,26 @@ class AssistantPlanService
         switch ($action) {
             case 'extension.forward':    self::applyForward($a); return;
             case 'extension.voicemail':  self::applyVoicemail($a); return;
+            case 'ringgroup.timeout':
+            case 'ringgroup.members':    self::applyRingGroup($a); return;
+            case 'queue.timeout':
+            case 'queue.members':        self::applyQueue($a); return;
         }
         throw new RuntimeException(t('ai_assistant.err_not_undoable'));
     }
 
     // ------------------------------------------------------------ plumbing
+
+    /** The portal's own form handlers wrap results in PBXHelper::handleAction():
+     *  a failure there is a RETURNED error array, not an exception — surface it
+     *  instead of letting an audit row claim victory over a change that never
+     *  happened. */
+    private static function assertApplied($res): void
+    {
+        if (!is_array($res) || empty($res['success'])) {
+            throw new RuntimeException(sprintf(t('common.error_colon'), (string) ($res['error'] ?? 'unknown')));
+        }
+    }
 
     /** A valid CSRF token for service calls (api-side sessions carry a token). */
     private static function csrf(): string
@@ -318,6 +380,10 @@ class AssistantPlanService
     private const UNDO = [
         'extension.forward'   => 'extension.forward',
         'extension.voicemail' => 'extension.voicemail',
+        'ringgroup.timeout'   => 'ringgroup.timeout',
+        'ringgroup.members'   => 'ringgroup.members',
+        'queue.timeout'       => 'queue.timeout',
+        'queue.members'       => 'queue.members',
     ];
 
     /** Human summary for the audit trail. */

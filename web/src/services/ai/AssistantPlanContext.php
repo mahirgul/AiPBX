@@ -28,13 +28,14 @@ class AssistantPlanContext
         try {
             // The column is `name` (no `title` on this table); read it as title
             // so the planner's shared shape keeps working.
-            $rows = getDB()->query('SELECT id, name AS title FROM pbx_ring_groups ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+            $rows = getDB()->query('SELECT id, name AS title, numbers_list FROM pbx_ring_groups ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
             return [];
         }
         $out = [];
         foreach ($rows as $r) {
-            $out[] = ['id' => (int) $r['id'], 'title' => (string) $r['title']];
+            $members = array_values(array_filter(array_map('trim', explode(',', (string) ($r['numbers_list'] ?? '')))));
+            $out[] = ['id' => (int) $r['id'], 'title' => (string) $r['title'], 'members' => $members];
         }
         return $out;
     }
@@ -43,13 +44,14 @@ class AssistantPlanContext
     public static function queues(): array
     {
         try {
-            $rows = getDB()->query('SELECT id, title FROM pbx_queues ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+            $rows = getDB()->query('SELECT id, title, members_json FROM pbx_queues ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
             return [];
         }
         $out = [];
         foreach ($rows as $r) {
-            $out[] = ['id' => (int) $r['id'], 'title' => (string) $r['title']];
+            $members = array_values(array_filter(array_map('trim', (array) (json_decode((string) ($r['members_json'] ?? '[]'), true) ?: []))));
+            $out[] = ['id' => (int) $r['id'], 'title' => (string) $r['title'], 'members' => $members];
         }
         return $out;
     }
