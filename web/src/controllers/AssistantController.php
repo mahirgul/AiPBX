@@ -23,7 +23,7 @@ class AssistantController extends BaseController
         static::renderPage('assistant/index', [
             'changes'   => AssistantPlanService::recent(30),
             'echo_askable' => EchoReporter::askable(),
-            'csrf'      => static::csrfToken(),
+            'csrf'      => getCSRFToken(),
         ], ['title' => t('assistant.title')]);
     }
 }
