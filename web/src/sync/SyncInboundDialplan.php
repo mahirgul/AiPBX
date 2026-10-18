@@ -85,9 +85,10 @@ function __syncInboundDialplanBody() {
     // ------------------------------------------------------------------
     require_once __DIR__ . '/../services/PrivacyService.php';
     $privacyNotice = PrivacyService::dialplanNoticeConfig();
+    $beepOpt = PrivacyService::mixMonitorOptionSuffix();
 
     if ($privacyNotice !== null) {
-        $conf .= "; --- KVKK / GDPR Pre-Call Privacy Notice & Recording Opt-Out ---\n";
+        $conf .= "; --- Global Privacy / KVKK / GDPR / CCPA Pre-Call Notice & Consent ---\n";
         $conf .= "[sub-privacy-consent]\n";
         $conf .= "exten => s,1,NoOp(KVKK / GDPR Pre-Call Privacy Notice [{$privacyNotice['mode']}])\n";
         $conf .= " same => n,Answer()\n";
@@ -95,6 +96,11 @@ function __syncInboundDialplanBody() {
             $conf .= " same => n,Read(PRIVACY_CHOICE,{$privacyNotice['sound_path']},1,,1,{$privacyNotice['optout_timeout']})\n";
             $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_CHOICE}\" = \"{$privacyNotice['optout_digit']}\"]?Set(__PRIVACY_NO_RECORD=1))\n";
             $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?Set(CDR(accountcode)=PRIVACY_OPTOUT))\n";
+        } elseif ($privacyNotice['mode'] === 'optin') {
+            $conf .= " same => n,Set(__PRIVACY_NO_RECORD=1)\n";
+            $conf .= " same => n,Read(PRIVACY_CHOICE,{$privacyNotice['sound_path']},1,,1,{$privacyNotice['optout_timeout']})\n";
+            $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_CHOICE}\" = \"{$privacyNotice['optout_digit']}\"]?Set(__PRIVACY_NO_RECORD=0))\n";
+            $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?Set(CDR(accountcode)=PRIVACY_NO_CONSENT):Set(CDR(accountcode)=PRIVACY_CONSENT_OK))\n";
         } else {
             $conf .= " same => n,Playback({$privacyNotice['sound_path']})\n";
         }
@@ -124,7 +130,7 @@ function __syncInboundDialplanBody() {
                      . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$num}.wav";
                 $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?skip_did_rec_{$num})\n";
                 $conf .= " same => n,Set(REC_FILE={$rec})\n";
-                $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
+                $conf .= " same => n,MixMonitor(\${REC_FILE}{$beepOpt})\n";
                 $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
                 $conf .= " same => n(skip_did_rec_{$num}),NoOp(DID Recording check done)\n";
             }

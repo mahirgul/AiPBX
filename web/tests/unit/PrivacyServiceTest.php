@@ -42,6 +42,21 @@ final class PrivacyServiceTest extends TestCase
         $this->assertNotEmpty(PrivacyService::settings()['last_purge_at']);
     }
 
+    public function testApplyGlobalJurisdictionPresetsAndPeriodicBeep(): void
+    {
+        $res = PrivacyService::applyProfile(['jurisdiction_profile' => 'us_two_party']);
+        $this->assertArrayHasKey('message', $res);
+        $cfg = PrivacyService::settings();
+        $this->assertSame('us_two_party', $cfg['jurisdiction_profile']);
+        $this->assertSame(15, $cfg['recording_beep_sec']);
+        $this->assertSame(',B(15)', PrivacyService::mixMonitorOptionSuffix());
+
+        $hipaa = PrivacyService::applyProfile(['jurisdiction_profile' => 'hipaa']);
+        $this->assertArrayHasKey('message', $hipaa);
+        $this->assertTrue(PrivacyService::settings()['block_cloud_ai']);
+        $this->assertFalse(CloudAiService::configured('openai'));
+    }
+
     public function testSubjectLookupAndRightToErasureAnonymizesCdrs(): void
     {
         $db = getDB();

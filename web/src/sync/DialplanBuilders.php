@@ -442,10 +442,12 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 // CDR(userfield) is overwritten by the second — clicking the
                 // recording in the panel played only the queue part.
                 // MixMonitor fills MIXMONITOR_FILENAME itself.
+                require_once __DIR__ . '/../services/PrivacyService.php';
+                $beepOpt = PrivacyService::mixMonitorOptionSuffix();
                 $lines[] = " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?kayit_var_{$q_name})";
                 $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?kayit_var_{$q_name})";
                 $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
-                $lines[] = " same => n,MixMonitor(\${REC_FILE})";
+                $lines[] = " same => n,MixMonitor(\${REC_FILE}{$beepOpt})";
                 $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
                 $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
             }

@@ -2,14 +2,126 @@
 declare(strict_types=1);
 
 /**
- * GDPR (EN) / KVKK (TR) Data Privacy, Pre-Call Disclosure & Opt-Out,
- * Data Retention Auto-Purge, Subject Access Request (SAR) & Right to Erasure.
+ * Global Data Privacy & Telecom Compliance Engine:
+ * - KVKK (Turkey — Law No. 6698 & BTK)
+ * - GDPR / UK GDPR (EU 2016/679 & ePrivacy)
+ * - US CCPA / CPRA, CIPA Two-Party Consent & FCC 47 CFR § 64.1200 (Periodic Recording Beep)
+ * - HIPAA (Healthcare PHI Safeguards & Cloud AI Lock)
+ * - PCI-DSS v4.0 (Call Center Recording Pause / Card Data Protection)
+ * - LGPD (Brazil), PIPEDA (Canada), POPIA (South Africa), PDPA (Singapore), Privacy Act (Australia)
  */
 final class PrivacyService
 {
-    public const NOTICE_MODES = ['off', 'notice', 'optout'];
+    public const NOTICE_MODES = ['off', 'notice', 'optout', 'optin'];
     public const OPTOUT_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '#'];
     public const CDR_ACTIONS = ['anonymize', 'delete'];
+
+    /**
+     * Global regulatory profile presets.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function profiles(): array
+    {
+        return [
+            'kvkk' => [
+                'code'                => 'KVKK (TR — 6698)',
+                'notice_mode'         => 'optout',
+                'optout_digit'        => '9',
+                'optout_timeout'      => 3,
+                'recording_beep_sec'  => 0,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 180,
+                'ret_voicemail_days'  => 90,
+                'ret_fax_days'        => 180,
+                'ret_chat_days'       => 365,
+                'ret_cdr_days'        => 730,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => false,
+            ],
+            'gdpr' => [
+                'code'                => 'EU / UK GDPR (2016/679)',
+                'notice_mode'         => 'optin',
+                'optout_digit'        => '1',
+                'optout_timeout'      => 4,
+                'recording_beep_sec'  => 0,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 90,
+                'ret_voicemail_days'  => 60,
+                'ret_fax_days'        => 90,
+                'ret_chat_days'       => 180,
+                'ret_cdr_days'        => 365,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => false,
+            ],
+            'us_two_party' => [
+                'code'                => 'US CCPA / Two-Party Consent & FCC',
+                'notice_mode'         => 'optin',
+                'optout_digit'        => '1',
+                'optout_timeout'      => 4,
+                'recording_beep_sec'  => 15,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 180,
+                'ret_voicemail_days'  => 90,
+                'ret_fax_days'        => 180,
+                'ret_chat_days'       => 365,
+                'ret_cdr_days'        => 365,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => false,
+            ],
+            'hipaa' => [
+                'code'                => 'HIPAA (Healthcare PHI)',
+                'notice_mode'         => 'notice',
+                'optout_digit'        => '9',
+                'optout_timeout'      => 3,
+                'recording_beep_sec'  => 15,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 90,
+                'ret_voicemail_days'  => 30,
+                'ret_fax_days'        => 90,
+                'ret_chat_days'       => 90,
+                'ret_cdr_days'        => 365,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => true,
+            ],
+            'pci_dss' => [
+                'code'                => 'PCI-DSS v4.0 (Call Center)',
+                'notice_mode'         => 'optout',
+                'optout_digit'        => '9',
+                'optout_timeout'      => 3,
+                'recording_beep_sec'  => 0,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 90,
+                'ret_voicemail_days'  => 30,
+                'ret_fax_days'        => 90,
+                'ret_chat_days'       => 180,
+                'ret_cdr_days'        => 365,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => true,
+            ],
+            'global_lgpd_pipeda' => [
+                'code'                => 'LGPD (BR) / PIPEDA (CA) / POPIA / PDPA',
+                'notice_mode'         => 'optin',
+                'optout_digit'        => '1',
+                'optout_timeout'      => 4,
+                'recording_beep_sec'  => 15,
+                'pci_pause_enabled'   => true,
+                'retention_enabled'   => true,
+                'ret_recordings_days' => 180,
+                'ret_voicemail_days'  => 90,
+                'ret_fax_days'        => 180,
+                'ret_chat_days'       => 365,
+                'ret_cdr_days'        => 365,
+                'ret_cdr_action'      => 'anonymize',
+                'block_cloud_ai'      => false,
+            ],
+        ];
+    }
 
     /**
      * Current privacy settings with safe defaults.
@@ -18,11 +130,20 @@ final class PrivacyService
      */
     public static function settings(): array
     {
+        $defaultProfile = (function_exists('getUserLanguage') && getUserLanguage() === 'tr') ? 'kvkk' : 'gdpr';
+        $profile = (string)getSystemSetting('privacy_jurisdiction_profile', $defaultProfile);
+        if (!isset(self::profiles()[$profile])) {
+            $profile = $defaultProfile;
+        }
+
         return [
+            'jurisdiction_profile'  => $profile,
             'notice_mode'           => self::validNoticeMode((string)getSystemSetting('privacy_notice_mode', 'off')),
             'notice_sound_id'       => max(0, (int)getSystemSetting('privacy_notice_sound_id', '0')),
             'optout_digit'          => self::validOptoutDigit((string)getSystemSetting('privacy_optout_digit', '9')),
             'optout_timeout'        => max(1, min(10, (int)getSystemSetting('privacy_optout_timeout', '3'))),
+            'recording_beep_sec'    => self::validBeepSec((int)getSystemSetting('privacy_recording_beep_sec', '0')),
+            'pci_pause_enabled'     => getSystemSetting('privacy_pci_pause_enabled', '1') === '1',
             'retention_enabled'     => getSystemSetting('privacy_retention_enabled', '0') === '1',
             'ret_recordings_days'   => max(0, min(3650, (int)getSystemSetting('privacy_ret_recordings_days', '180'))),
             'ret_voicemail_days'    => max(0, min(3650, (int)getSystemSetting('privacy_ret_voicemail_days', '90'))),
@@ -39,7 +160,55 @@ final class PrivacyService
     }
 
     /**
-     * Save Pre-Call Notice & Recording Opt-Out settings and queue dialplan sync.
+     * Apply a global regulatory jurisdiction preset in one click.
+     *
+     * @param array<string, mixed> $post
+     * @return array<string, string>
+     */
+    public static function applyProfile(array $post): array
+    {
+        $key = (string)($post['jurisdiction_profile'] ?? '');
+        $profiles = self::profiles();
+        if (!isset($profiles[$key])) {
+            return ['error' => t('privacy.err_invalid_profile')];
+        }
+        $p = $profiles[$key];
+
+        // Keep notice_mode 'off' if no announcement sound is selected yet, so dialplan stays valid
+        $soundId = max(0, (int)getSystemSetting('privacy_notice_sound_id', '0'));
+        $noticeMode = $soundId > 0 ? (string)$p['notice_mode'] : 'off';
+
+        self::upsertSettings([
+            'privacy_jurisdiction_profile' => $key,
+            'privacy_notice_mode'          => $noticeMode,
+            'privacy_optout_digit'         => (string)$p['optout_digit'],
+            'privacy_optout_timeout'       => (string)$p['optout_timeout'],
+            'privacy_recording_beep_sec'   => (string)$p['recording_beep_sec'],
+            'privacy_pci_pause_enabled'    => $p['pci_pause_enabled'] ? '1' : '0',
+            'privacy_retention_enabled'    => $p['retention_enabled'] ? '1' : '0',
+            'privacy_ret_recordings_days'  => (string)$p['ret_recordings_days'],
+            'privacy_ret_voicemail_days'   => (string)$p['ret_voicemail_days'],
+            'privacy_ret_fax_days'         => (string)$p['ret_fax_days'],
+            'privacy_ret_chat_days'        => (string)$p['ret_chat_days'],
+            'privacy_ret_cdr_days'         => (string)$p['ret_cdr_days'],
+            'privacy_ret_cdr_action'       => (string)$p['ret_cdr_action'],
+            'privacy_block_cloud_ai'       => $p['block_cloud_ai'] ? '1' : '0',
+        ]);
+
+        if (function_exists('markSyncPending')) {
+            markSyncPending('inbound_dialplan');
+            markSyncPending('queues');
+            markSyncPending('ring_groups');
+        }
+        if (function_exists('logAudit')) {
+            logAudit('PRIVACY_PROFILE_APPLIED', 'sys_settings', null, "Applied jurisdiction preset: {$p['code']}");
+        }
+
+        return ['message' => sprintf(t('privacy.msg_profile_applied'), $p['code'])];
+    }
+
+    /**
+     * Save Pre-Call Notice, Opt-In/Opt-Out, Periodic Beep & PCI-DSS settings and queue dialplan sync.
      *
      * @param array<string, mixed> $post
      * @return array<string, string>
@@ -50,16 +219,20 @@ final class PrivacyService
         $soundId = max(0, (int)($post['notice_sound_id'] ?? 0));
         $digit = self::validOptoutDigit((string)($post['optout_digit'] ?? '9'));
         $timeout = max(1, min(10, (int)($post['optout_timeout'] ?? 3)));
+        $beepSec = self::validBeepSec((int)($post['recording_beep_sec'] ?? 0));
+        $pciPause = !empty($post['pci_pause_enabled']) ? '1' : '0';
 
         if ($mode !== 'off' && $soundId <= 0) {
             return ['error' => t('privacy.err_sound_required')];
         }
 
         self::upsertSettings([
-            'privacy_notice_mode'     => $mode,
-            'privacy_notice_sound_id' => (string)$soundId,
-            'privacy_optout_digit'    => $digit,
-            'privacy_optout_timeout'  => (string)$timeout,
+            'privacy_notice_mode'        => $mode,
+            'privacy_notice_sound_id'    => (string)$soundId,
+            'privacy_optout_digit'       => $digit,
+            'privacy_optout_timeout'     => (string)$timeout,
+            'privacy_recording_beep_sec' => (string)$beepSec,
+            'privacy_pci_pause_enabled'  => $pciPause,
         ]);
 
         if (function_exists('markSyncPending')) {
@@ -68,7 +241,12 @@ final class PrivacyService
             markSyncPending('ring_groups');
         }
         if (function_exists('logAudit')) {
-            logAudit('PRIVACY_NOTICE_UPDATED', 'sys_settings', null, "mode={$mode}, sound_id={$soundId}, optout_digit={$digit}");
+            logAudit(
+                'PRIVACY_NOTICE_UPDATED',
+                'sys_settings',
+                null,
+                "mode={$mode}, sound_id={$soundId}, digit={$digit}, beep={$beepSec}s, pci_pause={$pciPause}"
+            );
         }
 
         return ['message' => t('privacy.msg_notice_saved')];
@@ -170,7 +348,6 @@ final class PrivacyService
                 $stmt = $db->prepare("UPDATE asteriskcdr SET userfield = '' WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY) AND userfield != ''");
                 $stmt->execute([$recDays]);
             } catch (\Throwable $e) {
-                // ignore if table absent in minimal test env
             }
         }
 
@@ -362,7 +539,7 @@ final class PrivacyService
     }
 
     /**
-     * Right to Erasure (KVKK Art. 7 & 11 / GDPR Art. 17):
+     * Right to Erasure (KVKK Art. 7 & 11 / GDPR Art. 17 / CCPA / LGPD):
      * Deletes call recordings, voicemail transcripts, fax files/logs, signaling rows,
      * and anonymizes CDR rows for the given phone number.
      *
@@ -556,6 +733,16 @@ final class PrivacyService
         }
     }
 
+    /**
+     * Returns Asterisk `MixMonitor()` second-argument option string (e.g. `,B(15)`)
+     * when FCC / Two-Party Consent periodic recording beep is enabled, or empty string.
+     */
+    public static function mixMonitorOptionSuffix(): string
+    {
+        $beepSec = self::validBeepSec((int)getSystemSetting('privacy_recording_beep_sec', '0'));
+        return $beepSec > 0 ? ",B({$beepSec})" : '';
+    }
+
     private static function validNoticeMode(string $mode): string
     {
         return in_array($mode, self::NOTICE_MODES, true) ? $mode : 'off';
@@ -564,6 +751,14 @@ final class PrivacyService
     private static function validOptoutDigit(string $digit): string
     {
         return in_array($digit, self::OPTOUT_DIGITS, true) ? $digit : '9';
+    }
+
+    private static function validBeepSec(int $sec): int
+    {
+        if ($sec <= 0) {
+            return 0;
+        }
+        return max(5, min(60, $sec));
     }
 
     /**

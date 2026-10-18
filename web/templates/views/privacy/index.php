@@ -4,6 +4,7 @@
  *
  * @var string $csrf
  * @var array<string, mixed> $settings
+ * @var array<string, array<string, mixed>> $profiles
  * @var array<string, mixed> $overview
  * @var string $subjectQuery
  * @var array<string, mixed>|null $subjectResult
@@ -16,6 +17,7 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
 } elseif (isset($_POST['save_compliance'])) {
     $activeTab = 'compliance';
 }
+$activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GDPR / KVKK';
 ?>
 
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
@@ -28,7 +30,11 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
             <?php echo htmlspecialchars(t('privacy.subtitle')); ?>
         </p>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span class="badge badge-primary">
+            <i class="fas fa-scale-balanced"></i>
+            <?php echo htmlspecialchars($activeProfileCode); ?>
+        </span>
         <span class="badge <?php echo $settings['notice_mode'] !== 'off' ? 'badge-success' : 'badge-secondary'; ?>">
             <i class="fas fa-bullhorn"></i>
             <?php echo htmlspecialchars(t('privacy.badge_notice') . ': ' . t('privacy.mode_' . $settings['notice_mode'])); ?>
@@ -42,6 +48,33 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
             <?php echo htmlspecialchars(t('privacy.badge_cloud_lock') . ': ' . (!empty($settings['block_cloud_ai']) ? t('common.active') : t('common.inactive'))); ?>
         </span>
     </div>
+</div>
+
+<!-- Global Regulatory Jurisdiction Preset Bar -->
+<div class="card" style="margin-bottom:18px; padding:14px 18px;">
+    <form method="post" action="/privacy" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:0;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
+        <input type="hidden" name="apply_profile" value="1">
+        <div style="flex:1; min-width:260px;">
+            <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-earth-americas u-primary"></i>
+                <?php echo htmlspecialchars(t('privacy.profile_bar_title')); ?>
+            </div>
+            <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.profile_bar_help')); ?></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select name="jurisdiction_profile" class="form-control" style="min-width:280px;">
+                <?php foreach ($profiles as $pKey => $pMeta): ?>
+                    <option value="<?php echo htmlspecialchars($pKey); ?>"<?php echo $settings['jurisdiction_profile'] === $pKey ? ' selected' : ''; ?>>
+                        <?php echo htmlspecialchars(t('privacy.profile_' . $pKey)); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-wand-magic-sparkles"></i> <?php echo htmlspecialchars(t('privacy.btn_apply_profile')); ?>
+            </button>
+        </div>
+    </form>
 </div>
 
 <!-- Navigation Tabs -->
@@ -60,7 +93,7 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
     </button>
 </div>
 
-<!-- TAB 1: Pre-Call Disclosure & Recording Opt-Out -->
+<!-- TAB 1: Pre-Call Disclosure, Opt-In/Opt-Out, FCC Beep & PCI-DSS -->
 <div id="privacy-panel-notice" style="display:<?php echo $activeTab === 'notice' ? 'block' : 'none'; ?>;">
     <div class="grid-2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:18px;">
         <div class="card">
@@ -77,6 +110,7 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
                         <option value="off"<?php echo $settings['notice_mode'] === 'off' ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.mode_off')); ?></option>
                         <option value="notice"<?php echo $settings['notice_mode'] === 'notice' ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.mode_notice')); ?></option>
                         <option value="optout"<?php echo $settings['notice_mode'] === 'optout' ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.mode_optout')); ?></option>
+                        <option value="optin"<?php echo $settings['notice_mode'] === 'optin' ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.mode_optin')); ?></option>
                     </select>
                 </div>
 
@@ -92,7 +126,7 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
                     </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
                     <div class="form-group">
                         <label><?php echo htmlspecialchars(t('privacy.field_optout_digit')); ?></label>
                         <select name="optout_digit" class="form-control">
@@ -107,6 +141,21 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
                         <label><?php echo htmlspecialchars(t('privacy.field_optout_timeout')); ?></label>
                         <input type="number" name="optout_timeout" min="1" max="10" class="form-control" value="<?php echo (int)$settings['optout_timeout']; ?>">
                     </div>
+                    <div class="form-group">
+                        <label><?php echo htmlspecialchars(t('privacy.field_recording_beep')); ?></label>
+                        <select name="recording_beep_sec" class="form-control">
+                            <option value="0"<?php echo (int)$settings['recording_beep_sec'] === 0 ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.beep_off')); ?></option>
+                            <option value="15"<?php echo (int)$settings['recording_beep_sec'] === 15 ? ' selected' : ''; ?>>15 s (FCC / US)</option>
+                            <option value="30"<?php echo (int)$settings['recording_beep_sec'] === 30 ? ' selected' : ''; ?>>30 s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                        <input type="checkbox" name="pci_pause_enabled" value="1"<?php echo !empty($settings['pci_pause_enabled']) ? ' checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars(t('privacy.field_pci_pause')); ?></span>
+                    </label>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
@@ -119,14 +168,19 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
             <h3 style="margin-top:0;"><i class="fas fa-file-audio u-primary"></i> <?php echo htmlspecialchars(t('privacy.sample_scripts_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.sample_scripts_help')); ?></p>
 
-            <div style="margin-bottom:14px;">
-                <label class="u-fs-12 u-strong">TR — KVKK Aydınlatma ve Kayıtsız Görüşme Metni:</label>
-                <textarea class="form-control u-fs-12" rows="4" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_tr')); ?></textarea>
+            <div style="margin-bottom:12px;">
+                <label class="u-fs-12 u-strong">TR — KVKK Aydınlatma ve Kayıtsız Görüşme (Opt-Out — Tuş 9):</label>
+                <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_tr')); ?></textarea>
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <label class="u-fs-12 u-strong">EN — GDPR / CCPA Opt-Out Notice (Press 9 for Unrecorded Call):</label>
+                <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_en')); ?></textarea>
             </div>
 
             <div style="margin-bottom:14px;">
-                <label class="u-fs-12 u-strong">EN — GDPR Pre-Call Recording Notice & Opt-Out Script:</label>
-                <textarea class="form-control u-fs-12" rows="4" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_en')); ?></textarea>
+                <label class="u-fs-12 u-strong">EN — Strict GDPR / US Two-Party Consent Opt-In (Press 1 to Allow Recording):</label>
+                <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_optin_en')); ?></textarea>
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
