@@ -105,6 +105,71 @@ final class AssistantPlanServiceTest extends TestCase
         $this->assertSame(0, (int) $st->fetchColumn());
     }
 
+    /**
+     * Rename has no prior state to restore: the apply row must carry no
+     * before_json (the UI's undoable flag), so no Undo is ever offered —
+     * and rollback refuses it instead of failing on a click.
+     */
+    public function testRenameIsRecordedButNotUndoable(): void
+    {
+        $this->extension('101');
+        $plan = ['ok' => true, 'action' => 'extension.rename', 'source' => 'rules',
+                 'arguments' => ['extension' => '101', 'name' => 'Front desk 2']];
+        $id = AssistantPlanService::apply($plan, 'rename 101 to Front desk 2');
+        $row = AssistantPlanService::get($id);
+        $this->assertSame('extension.rename', $row['action']);
+        $this->assertNull($row['before_json']);
+
+        $this->expectException(RuntimeException::class);
+        AssistantPlanService::rollback($id);
+    }
+
+    /**
+     * Voicemail's Undo restores voicemail_enabled — not call forwarding.
+     * The review found captureBefore() recorded forwarding for every
+     * extension.* action, so undoing voicemail overwrote the forward state.
+     */
+    public function testVoicemailUndoRestoresVoicemailWithoutTouchingForwarding(): void
+    {
+        $this->extension('101');
+        AssistantPlanService::apply($this->planForward(true, '203'), 'Forward 101 to 203');
+
+        $plan = ['ok' => true, 'action' => 'extension.voicemail', 'source' => 'rules',
+                 'arguments' => ['extension' => '101', 'enabled' => true]];
+        $id = AssistantPlanService::apply($plan, 'voicemail on for 101');
+
+        $before = json_decode(AssistantPlanService::get($id)['before_json'], true);
+        $this->assertSame('extension.voicemail', $before['action']);
+        $this->assertFalse($before['arguments']['enabled']);
+
+        AssistantPlanService::rollback($id);
+        $st = getDB()->prepare('SELECT voicemail_enabled, call_forward_number FROM sys_users WHERE extension = "101"');
+        $st->execute();
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame(0, (int) $row['voicemail_enabled'], 'undo must restore voicemail_enabled');
+        $this->assertSame('203', $row['call_forward_number'], 'undo must not clobber forwarding');
+    }
+
+    /**
+     * Per-extension voicemail boxes and their dialplan routing come from the
+     * 'extensions' and 'general_dialplan' sync domains; 'voicemail' only
+     * regenerates general voicemail.conf.
+     */
+    public function testVoicemailQueuesExtensionAndDialplanSyncDomains(): void
+    {
+        $this->extension('101');
+        getDB()->exec('DELETE FROM sys_pending_sync');
+        $plan = ['ok' => true, 'action' => 'extension.voicemail', 'source' => 'rules',
+                 'arguments' => ['extension' => '101', 'enabled' => true]];
+        AssistantPlanService::apply($plan, 'voicemail on for 101');
+
+        $domains = getDB()->query('SELECT DISTINCT domain FROM sys_pending_sync')
+            ->fetchAll(PDO::FETCH_COLUMN);
+        $this->assertContains('extensions', $domains);
+        $this->assertContains('general_dialplan', $domains);
+        $this->assertNotContains('voicemail', $domains);
+    }
+
     public function testRefusesAPlanThatIsNotOk(): void
     {
         $this->expectException(RuntimeException::class);

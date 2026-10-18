@@ -130,6 +130,7 @@ function assistantPlan() {
   });
 }
 
+function asstEsc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function assistantShowPreview(r) {
   const p = r.plan;
   const args = Object.entries(p.arguments || {})
@@ -139,8 +140,8 @@ function assistantShowPreview(r) {
   const box = document.getElementById('asst-preview');
   box.innerHTML =
     '<div class="assistant-preview">' +
-      '<div class="u-strong">' + (window.t ? window.t(p.title_key) : p.title_key) + risk + '</div>' +
-      '<div class="u-fs-12 u-muted u-mt-6">' + args + '</div>' +
+      '<div class="u-strong">' + asstEsc(window.t ? window.t(p.title_key) : p.title_key) + asstEsc(risk) + '</div>' +
+      '<div class="u-fs-12 u-muted u-mt-6">' + asstEsc(args) + '</div>' +
       '<div class="u-flex-gap u-mt-10" style="display:flex; gap:8px;">' +
         '<button type="button" class="btn btn-primary" id="asst-apply">' + ASST.preview_apply + '</button>' +
         '<button type="button" class="btn btn-secondary" id="asst-discard">' + ASST.preview_discard + '</button>' +
@@ -164,7 +165,7 @@ function assistantApply(r) {
     }
     state.textContent = '';
     const box = document.getElementById('asst-preview');
-    box.innerHTML = '<div class="assistant-preview u-strong">' + (res.summary || ASST.applied) +
+    box.innerHTML = '<div class="assistant-preview u-strong">' + asstEsc(res.summary || ASST.applied) +
       (res.undoable ? ' <button type="button" class="btn btn-secondary u-fs-12" onclick="assistantUndo(' + res.id + ', this)">' + ASST.undo + '</button>' : '') +
       '</div>';
     setTimeout(() => location.reload(), 1200);
@@ -194,17 +195,17 @@ function echoAsk() {
   fd.append('question', q);
   asstPost('echo', fd, (r) => {
     if (!r.success) { out.innerHTML = '<span class="u-muted">' + (r.error || ASST.err_generic) + '</span>'; return; }
-    if (r.askable) { out.innerHTML = '<div class="assistant-preview">' + r.askable + '</div>'; return; }
-    let html = '<div class="assistant-preview"><div class="u-strong">' + r.title + '</div>';
+    if (r.askable) { out.innerHTML = '<div class="assistant-preview">' + asstEsc(r.askable) + '</div>'; return; }
+    let html = '<div class="assistant-preview"><div class="u-strong">' + asstEsc(r.title) + '</div>';
     if (r.rows && r.rows.length) {
       html += '<table class="data-table" style="margin-top:8px;"><tbody>';
       for (const row of r.rows) {
-        html += '<tr>' + Object.values(row).map(v => '<td>' + (typeof v === "number" ? (Math.round(v * 10) / 10) : v) + '</td>').join('') + '</tr>';
+        html += '<tr>' + Object.values(row).map(v => '<td>' + asstEsc(typeof v === "number" ? (Math.round(v * 10) / 10) : v) + '</td>').join('') + '</tr>';
       }
       html += '</tbody></table>';
     }
     if (r.narration) {
-      html += '<p class="u-mt-10">' + r.narration + '</p>';
+      html += '<p class="u-mt-10">' + asstEsc(r.narration) + '</p>';
     }
     out.innerHTML = html + '</div>';
   });
