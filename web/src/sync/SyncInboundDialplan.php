@@ -83,6 +83,24 @@ function __syncInboundDialplanBody() {
     // ------------------------------------------------------------------
     // General inbound routes (DID matches)
     // ------------------------------------------------------------------
+    require_once __DIR__ . '/../services/PrivacyService.php';
+    $privacyNotice = PrivacyService::dialplanNoticeConfig();
+
+    if ($privacyNotice !== null) {
+        $conf .= "; --- KVKK / GDPR Pre-Call Privacy Notice & Recording Opt-Out ---\n";
+        $conf .= "[sub-privacy-consent]\n";
+        $conf .= "exten => s,1,NoOp(KVKK / GDPR Pre-Call Privacy Notice [{$privacyNotice['mode']}])\n";
+        $conf .= " same => n,Answer()\n";
+        if ($privacyNotice['mode'] === 'optout') {
+            $conf .= " same => n,Read(PRIVACY_CHOICE,{$privacyNotice['sound_path']},1,,1,{$privacyNotice['optout_timeout']})\n";
+            $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_CHOICE}\" = \"{$privacyNotice['optout_digit']}\"]?Set(__PRIVACY_NO_RECORD=1))\n";
+            $conf .= " same => n,ExecIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?Set(CDR(accountcode)=PRIVACY_OPTOUT))\n";
+        } else {
+            $conf .= " same => n,Playback({$privacyNotice['sound_path']})\n";
+        }
+        $conf .= " same => n,Return()\n\n";
+    }
+
     $conf .= "[from-trunk-inbound]\n\n";
 
     if (!empty($dids)) {
@@ -97,13 +115,18 @@ function __syncInboundDialplanBody() {
                 $lang = preg_replace('/[^a-zA-Z_]/', '', $d['language']);
                 $conf .= " same => n,Set(CHANNEL(language)={$lang})\n";
             }
-            // Mandatory call recording.
+            if ($privacyNotice !== null) {
+                $conf .= " same => n,Gosub(sub-privacy-consent,s,1)\n";
+            }
+            // Mandatory call recording (unless caller opted out via KVKK/GDPR consent key).
             if (!empty($d['record_call'])) {
                 $rec = "/var/spool/asterisk/monitor/inbound_"
                      . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$num}.wav";
+                $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?skip_did_rec_{$num})\n";
                 $conf .= " same => n,Set(REC_FILE={$rec})\n";
                 $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
                 $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
+                $conf .= " same => n(skip_did_rec_{$num}),NoOp(DID Recording check done)\n";
             }
 
             $conf .= buildDestinationLines($d['dest_type'], $d['dest_id'], $num) . "\n\n";

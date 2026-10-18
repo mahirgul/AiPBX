@@ -440,6 +440,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Health checks: the checks that are due, alarm e-mails, daily summary (Admin -> Health checks)
 * * * * * root /usr/local/bin/aipbx_health.php >/dev/null 2>&1
+
+# Nightly KVKK / GDPR data retention auto-purge (Security -> GDPR & Data Privacy)
+45 3 * * * root /usr/bin/php /opt/aipbx/web/bin/privacy_purge.php >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
 

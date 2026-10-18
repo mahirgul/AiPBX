@@ -135,6 +135,9 @@ class CloudAiService
 
     public static function configured(string $id): bool
     {
+        if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
+            return false;
+        }
         $cfg = self::config($id);
         $fields = self::provider($id)['fields'];
         // Google Cloud: either the service account or the API key.

@@ -140,6 +140,7 @@ return [
             ['href' => '/firewall', 'icon' => 'fas fa-fire', 'label' => 'sidebar.item_firewall', 'show' => $isAdmin, 'pages' => ['firewall.php']],
             ['href' => '/fail2ban', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_fail2ban', 'show' => $isAdmin, 'pages' => ['fail2ban.php']],
             ['href' => '/certificates', 'icon' => 'fas fa-certificate', 'label' => 'sidebar.item_certificates', 'show' => $isAdmin, 'pages' => ['certificates.php']],
+            ['href' => '/privacy', 'icon' => 'fas fa-user-lock', 'label' => 'sidebar.item_privacy', 'show' => $isAdmin, 'pages' => ['privacy.php']],
             ['href' => '/audit-log', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_audit_log', 'show' => $can('audit_log'), 'pages' => ['audit_log.php']],
         ],
     ],
