@@ -1,7 +1,7 @@
 # Signaling capture
 
 AiPBX ships an optional signaling pipeline: what crosses the SIP stack can
-be captured, kept on this server and shown on the portal's Signaling page.
+be captured, kept on this server and read by the dialplan editor's Echo box.
 Capture is opt-in: `asterisk-config/hep.conf` ships with `enabled = no`, so
 a normal installation captures nothing and pays no overhead.
 
@@ -21,7 +21,7 @@ aipbx-signaling (systemd: aipbx-signaling.service, 127.0.0.1:9061)
 MariaDB: pbx_signaling_events
     │  read
     ▼
-Portal Signaling page  /  AI → Dialplan editor (Echo box)
+AI → Dialplan editor (Echo box)
 ```
 
 **Asterisk side** — `hep.conf`:
@@ -43,14 +43,16 @@ it.
 **Daemon side** — `python -m aipbx_signaling` (installed by `install.sh`,
 and therefore by `aipbx-update` on every upgrade, as
 `aipbx-signaling.service`). Reads `/etc/ai-pbx.env` for database credentials
-(the same file the portal reads; the `asterisk` group owns it). Settings in
-`sys_settings` are re-read every 30 s, so the portal's Signaling page is the
-single source of truth:
+(the same file the portal reads; the `asterisk` group owns it). One setting
+comes from `sys_settings` (default when absent, clamped 1..3650):
 
-| setting                     | meaning                              |
-|-----------------------------|--------------------------------------|
-| `signaling_enabled`         | capture listener on/off              |
-| `signaling_retention_days`  | delete events older than this (1–3650) |
+| setting                    | meaning                                 |
+|----------------------------|-----------------------------------------|
+| `signaling_retention_days` | delete events older than this (1–3650)  |
+
+A Signaling page that edits this in the portal is a follow-up; today the
+setting is written to `sys_settings` directly, and whether Asterisk captures
+at all is the `hep.conf` switch above.
 
 **Storage** — `pbx_signaling_events`: `ts, call_id, method, proto,
 transport, src, dst, from_uri, to_uri, cseq, status_code, first_line, line,
@@ -69,6 +71,6 @@ leaves this server.
 ## What stays on this server
 
 Captured events never leave the machine: `pbx_signaling_events` is read by
-the portal's Signaling page and the dialplan editor's Echo box, both local.
+the dialplan editor's Echo box, locally.
 Shipping captures to a third-party cloud is exactly the kind of connector
 the planned plugin system should carry — not core.
