@@ -196,14 +196,48 @@ class AssistantPlanner
             && $found) {
             $group = self::matchNamed($text, $context['ring_groups'] ?? []);
             if ($group !== null) {
+                $current = [];
+                foreach (($context['ring_groups'] ?? []) as $rg) {
+                    if ((int) $rg['id'] === (int) $group) {
+                        $current = (array) ($rg['members'] ?? []);
+                    }
+                }
                 if (preg_match('/\b(?:timeout|ring time|sure|süre|zaman asimi|zaman aşımı)\b/u', $text)
                     && preg_match('/\b(\d{1,3})\b\s*(?:s|sec|secs|seconds|saniye)?\b/u', $text, $secs)) {
                     return self::build('ringgroup.timeout', [
                         'group' => $group, 'seconds' => $secs[1],
                     ], $context, 'rules');
                 }
+                // 'add' means merge into the group's current membership; the
+                // membership field always ends up as the final list, which is
+                // also what the undo's before-value restores.
+                $new = array_values(array_unique(array_merge($current, $exts[1])));
                 return self::build('ringgroup.members', [
-                    'group' => $group, 'extensions' => array_values(array_unique($exts[1])),
+                    'group' => $group, 'extensions' => $new,
+                ], $context, 'rules');
+            }
+        }
+
+        // "add 101 and 102 to the sales queue" / "sales queue ring time to 45"
+        // — mirrors the ring-group block; membership is the final list.
+        if (preg_match('/\b(?:queue|call queue|kuyruk)\b/u', $text)) {
+            $qgroup = self::matchNamed($text, $context['queues'] ?? []);
+            if ($qgroup !== null && $found) {
+                if (preg_match('/\b(?:timeout|ring time|max wait|sure|süre|zaman asimi|zaman aşımı)\b/u', $text)
+                    && preg_match('/\b(\d{1,4})\b\s*(?:s|sec|secs|seconds|saniye)?\b/u', $text, $qsecs)) {
+                    return self::build('queue.timeout', [
+                        'queue' => $qgroup, 'seconds' => $qsecs[1],
+                    ], $context, 'rules');
+                }
+                $qmembers = [];
+                foreach (($context['queues'] ?? []) as $qq) {
+                    if ((int) $qq['id'] === (int) $qgroup) {
+                        $qmembers = (array) ($qq['members'] ?? []);
+                    }
+                }
+                return self::build('queue.members', [
+                    'queue' => $qgroup,
+                    'extensions' => array_values(array_unique(array_merge($qmembers, $exts[1]))),
                 ], $context, 'rules');
             }
         }
@@ -466,7 +500,8 @@ class AssistantPlanner
             if ($title === '') {
                 continue;
             }
-            $out[] = ['id' => (int) ($row['id'] ?? 0), 'title' => $title];
+            $out[] = ['id' => (int) ($row['id'] ?? 0), 'title' => $title]
+                + (isset($row['members']) ? ['members' => (array) $row['members']] : []);
         }
         return $out;
     }
