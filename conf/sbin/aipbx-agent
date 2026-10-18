@@ -1,0 +1,14 @@
+#!/usr/bin/python3 -I
+# aipbx-agent — start/query the AiPBX connector agent (see agent/README.md).
+#
+# A thin launcher only: the implementation lives in aipbx_agent.py, installed to
+# /usr/local/lib/aipbx/ next to this file's target. Kept separate so the agent
+# is importable (and unit-testable) instead of being a script you can only run.
+import sys
+
+sys.path.insert(0, "/usr/local/lib/aipbx")
+
+from aipbx_agent import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())

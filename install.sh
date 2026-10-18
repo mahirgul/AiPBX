@@ -385,7 +385,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php; do
+for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php aipbx_ops.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -990,6 +990,43 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+
+# Connector agent (agent/README.md, docs/connector.md): lets a cloud
+# portal run the four allowlisted ops on this box. Outbound-only — it opens no
+# ports and is driven by a poll loop. Installed here but NOT enabled and NOT
+# configured: the node key comes from the portal, and the unit has a
+# ConditionPathExists so it stays inert (rather than crash-looping) until
+# /etc/aipbx/agent.conf exists. The ops the cloud may reach are sealed in
+# web/bin/aipbx_ops.php, symlinked to /usr/local/bin above.
+install -d -o root -g root -m 0755 /usr/local/lib/aipbx /etc/aipbx
+install -d -o root -g root -m 0700 /var/lib/aipbx
+install -o root -g root -m 0644 "$INSTALL_DIR/agent/aipbx_agent.py" /usr/local/lib/aipbx/aipbx_agent.py
+install -o root -g root -m 0644 "$INSTALL_DIR/VERSION" /usr/local/lib/aipbx/VERSION
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-agent" /usr/local/sbin/aipbx-agent
+cat > /etc/systemd/system/aipbx-agent.service << 'AGENTUNIT'
+[Unit]
+Description=AiPBX connector agent (outbound cloud node)
+Documentation=file:///usr/local/share/aipbx/agent/README.md
+After=network-online.target mariadb.service
+Wants=network-online.target
+# Inert until an administrator writes a node configuration.
+ConditionPathExists=/etc/aipbx/agent.conf
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/aipbx-agent run
+Restart=always
+RestartSec=30
+# No filesystem or privilege to gain: the agent only makes outbound HTTPS calls
+# and runs aipbx_ops.php, which enforces its own allowlist.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+AGENTUNIT
+systemctl daemon-reload >/dev/null 2>&1 || true
 
 # PBX → Network services (DHCP/TFTP for desk phones): dnsmasq in its own unit,
 # off until the page writes a configuration. aipbx-priv writes it into this
