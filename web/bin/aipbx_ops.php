@@ -130,7 +130,7 @@ function health_results($timeout = 90) {
     $res = runArgv(['php', $script, '--all', '--no-mail'], $timeout);
     $results = [];
     foreach (explode("\n", (string) $res['stdout']) as $line) {
-        if (preg_match('/^\s*(PASS|FAIL|WARN|SKIP)\s+(\S+)\s*(.*)$/i', $line, $m)) {
+        if (preg_match('/^\s*(PASS|FAIL|WARN|SKIP|OK|OFF)\s+(\S+)\s*(.*)$/i', $line, $m)) {
             $results[$m[2]] = ['status' => strtolower($m[1]), 'message' => trim($m[3])];
         }
     }
