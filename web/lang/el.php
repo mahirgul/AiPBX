@@ -4247,7 +4247,7 @@ return [
     'web_widgets.help_callback' => 'Επανάκληση:',
     'web_widgets.help_callback_desc' => 'Το PBX καλεί τον επισκέπτη μέσω της επιλεγμένης εξερχόμενης δρομολόγησης και, όταν απαντήσει, τον στέλνει στον προορισμό. Καλούνται μόνο αριθμοί που ξεκινούν με τα επιτρεπόμενα προθέματα, και απαιτείται ημερήσιο όριο.',
     'web_widgets.help_wordpress' => 'WordPress:',
-    'web_widgets.help_wordpress_desc' => 'Εγκαταστήστε το πρόσθετο «AiPBX Call Widget» (integrations/wordpress στο αποθετήριο) και επικολλήστε τον κώδικα ενσωμάτωσης στη σελίδα ρυθμίσεών του.',
+    'web_widgets.help_wordpress_desc' => 'Εγκαταστήστε το πρόσθετο «AiPBX Call Widget» (plugins/web-widgets/wordpress στο αποθετήριο) και επικολλήστε τον κώδικα ενσωμάτωσης στη σελίδα ρυθμίσεών του.',
     'web_widgets.col_name' => 'Widget',
     'web_widgets.col_destination' => 'Προορισμός',
     'web_widgets.col_features' => 'Λειτουργίες',

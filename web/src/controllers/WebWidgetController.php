@@ -57,7 +57,7 @@ class WebWidgetController extends BaseController
 
     private static function downloadWordPressPlugin(): void
     {
-        $wpDir = dirname(__DIR__, 3) . '/integrations/wordpress/aipbx-call-widget';
+        $wpDir = dirname(__DIR__, 3) . '/plugins/web-widgets/wordpress/aipbx-call-widget';
         if (!is_dir($wpDir) || !class_exists('ZipArchive')) {
             http_response_code(404);
             echo 'WordPress plugin directory or ZipArchive extension not found.';

@@ -4247,7 +4247,7 @@ return [
     'web_widgets.help_callback' => 'Обратный звонок:',
     'web_widgets.help_callback_desc' => 'АТС звонит посетителю через выбранный исходящий маршрут и, когда он отвечает, направляет его в назначение. Набираются только номера, начинающиеся с разрешённых префиксов, а дневной лимит обязателен.',
     'web_widgets.help_wordpress' => 'WordPress:',
-    'web_widgets.help_wordpress_desc' => 'Установите плагин «AiPBX Call Widget» (integrations/wordpress в репозитории) и вставьте код встраивания на его странице настроек.',
+    'web_widgets.help_wordpress_desc' => 'Установите плагин «AiPBX Call Widget» (plugins/web-widgets/wordpress в репозитории) и вставьте код встраивания на его странице настроек.',
     'web_widgets.col_name' => 'Виджет',
     'web_widgets.col_destination' => 'Назначение',
     'web_widgets.col_features' => 'Функции',
