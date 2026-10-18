@@ -73,14 +73,18 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
         <?php
         $sidebar_label = fn($l) => is_array($l) ? t($l[0], $l[1]) : t($l);
         $sidebar_icon = fn(array $e) => '<i class="' . $e['icon'] . '"' . (isset($e['icon_style']) ? ' style="' . $e['icon_style'] . '"' : '') . '></i>';
+        $request_path = parse_url($request_uri ?? '', PHP_URL_PATH) ?: '/';
         foreach (require __DIR__ . '/sidebar_menu.php' as $group):
             $items = array_filter($group['items'], fn($item) => $item['show']);
             if (!$items) {
                 continue;
             }
-            $is_active = fn($item) => in_array($active_page, $item['pages'], true)
+            $is_active = fn($item) => ($item['href'] === $request_path)
+                || ($active_page !== 'index.php' && in_array($active_page, $item['pages'], true))
                 || (isset($item['uri']) && str_contains($request_uri, $item['uri']));
-            $open = in_array($active_page, $group['open_on'] ?? [], true) || array_filter($group['items'], $is_active);
+            $open = ($active_page !== 'index.php' && in_array($active_page, $group['open_on'] ?? [], true))
+                || ($request_path === '/' && in_array('index.php', $group['open_on'] ?? [], true))
+                || (bool) array_filter($group['items'], $is_active);
             $group_label = $sidebar_label($group['label']);
             ?>
             <li class="nav-group <?php echo ($open && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-<?php echo $group['id']; ?>">

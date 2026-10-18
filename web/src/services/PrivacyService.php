@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/privacy/PrivacyDataSubjectHelper.php';
+
 /**
  * Global Data Privacy & Telecom Compliance Engine:
  * - KVKK (Turkey — Law No. 6698 & BTK)
@@ -210,13 +213,16 @@ final class PrivacyService
             'privacy_block_cloud_ai'       => $p['block_cloud_ai'] ? '1' : '0',
         ]);
 
-        if (function_exists('markSyncPending')) {
-            markSyncPending('inbound_dialplan');
-            markSyncPending('queues');
-            markSyncPending('ring_groups');
+        $uid = $_SESSION['user_id'] ?? null;
+        if (function_exists('markPendingSync')) {
+            $lbl = "Privacy preset: {$p['code']}";
+            markPendingSync('general_dialplan', 'privacy', 'profile', $lbl, 'update', $uid);
+            markPendingSync('inbound_dialplan', 'privacy', 'profile', $lbl, 'update', $uid);
+            markPendingSync('queues', 'privacy', 'profile', $lbl, 'update', $uid);
+            markPendingSync('ring_groups', 'privacy', 'profile', $lbl, 'update', $uid);
         }
-        if (function_exists('logAudit')) {
-            logAudit('PRIVACY_PROFILE_APPLIED', 'sys_settings', null, "Applied jurisdiction preset: {$p['code']}");
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog('privacy', 'profile', $key, "Applied jurisdiction preset: {$p['code']}", 'update', $uid);
         }
 
         return ['message' => sprintf(t('privacy.msg_profile_applied'), $p['code'])];
@@ -250,17 +256,22 @@ final class PrivacyService
             'privacy_pci_pause_enabled'  => $pciPause,
         ]);
 
-        if (function_exists('markSyncPending')) {
-            markSyncPending('inbound_dialplan');
-            markSyncPending('queues');
-            markSyncPending('ring_groups');
+        $uid = $_SESSION['user_id'] ?? null;
+        if (function_exists('markPendingSync')) {
+            $lbl = "Privacy Pre-Call Notice ({$mode})";
+            markPendingSync('general_dialplan', 'privacy', 'notice', $lbl, 'update', $uid);
+            markPendingSync('inbound_dialplan', 'privacy', 'notice', $lbl, 'update', $uid);
+            markPendingSync('queues', 'privacy', 'notice', $lbl, 'update', $uid);
+            markPendingSync('ring_groups', 'privacy', 'notice', $lbl, 'update', $uid);
         }
-        if (function_exists('logAudit')) {
-            logAudit(
-                'PRIVACY_NOTICE_UPDATED',
-                'sys_settings',
-                null,
-                "mode={$mode}, sound_id={$soundId}, digit={$digit}, beep={$beepSec}s, pci_pause={$pciPause}"
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog(
+                'privacy',
+                'notice',
+                'settings',
+                "Pre-call notice: mode={$mode}, sound_id={$soundId}, digit={$digit}, beep={$beepSec}s, pci_pause={$pciPause}",
+                'update',
+                $uid
             );
         }
 
@@ -295,12 +306,14 @@ final class PrivacyService
             'privacy_ret_cdr_action'      => $cdrAction,
         ]);
 
-        if (function_exists('logAudit')) {
-            logAudit(
-                'PRIVACY_RETENTION_UPDATED',
-                'sys_settings',
-                null,
-                "enabled={$enabled}, rec={$recDays}d, vm={$vmDays}d, fax={$faxDays}d, chat={$chatDays}d, cdr={$cdrDays}d ({$cdrAction})"
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog(
+                'privacy',
+                'retention',
+                'settings',
+                "Retention policy: enabled={$enabled}, rec={$recDays}d, vm={$vmDays}d, fax={$faxDays}d, chat={$chatDays}d, cdr={$cdrDays}d ({$cdrAction})",
+                'update',
+                $_SESSION['user_id'] ?? null
             );
         }
 
@@ -320,8 +333,8 @@ final class PrivacyService
             'privacy_block_cloud_ai' => $blockCloudAi,
         ]);
 
-        if (function_exists('logAudit')) {
-            logAudit('PRIVACY_COMPLIANCE_UPDATED', 'sys_settings', null, "block_cloud_ai={$blockCloudAi}");
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog('privacy', 'compliance', 'block_cloud_ai', "Cross-border Cloud AI lock: block_cloud_ai={$blockCloudAi}", 'update', $_SESSION['user_id'] ?? null);
         }
 
         return ['message' => t('privacy.msg_compliance_saved')];
@@ -334,319 +347,77 @@ final class PrivacyService
      */
     public static function runRetentionPurge(): array
     {
-        $db = getDB();
-        $cfg = self::settings();
-        $counts = [
-            'recordings' => 0,
-            'voicemail'  => 0,
-            'fax'        => 0,
-            'chat'       => 0,
-            'cdr'        => 0,
-        ];
-
-        // 1. Call recordings older than ret_recordings_days
-        $recDays = (int)$cfg['ret_recordings_days'];
-        if ($recDays > 0) {
-            $cutoffTs = time() - ($recDays * 86400);
-            $monitorDir = '/var/spool/asterisk/monitor';
-            if (is_dir($monitorDir)) {
-                $files = glob($monitorDir . '/*.{wav,mp3,ogg,gsm}', GLOB_BRACE) ?: [];
-                foreach ($files as $file) {
-                    if (is_file($file) && @filemtime($file) !== false && @filemtime($file) < $cutoffTs) {
-                        if (@unlink($file)) {
-                            $counts['recordings']++;
-                        }
-                    }
-                }
+        return PrivacyDataSubjectHelper::runRetentionPurge(
+            self::settings(),
+            static function (array $pairs): void {
+                self::upsertSettings($pairs);
             }
-            try {
-                $stmt = $db->prepare("UPDATE asteriskcdr SET userfield = '' WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY) AND userfield != ''");
-                $stmt->execute([$recDays]);
-            } catch (\Throwable $e) {
-            }
-        }
-
-        // 2. Voicemail archive & AI transcripts older than ret_voicemail_days
-        $vmDays = (int)$cfg['ret_voicemail_days'];
-        if ($vmDays > 0) {
-            try {
-                $stmt = $db->prepare("DELETE FROM pbx_voicemail_archive WHERE origtime < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? DAY))");
-                $stmt->execute([$vmDays]);
-                $counts['voicemail'] += $stmt->rowCount();
-            } catch (\Throwable $e) {
-            }
-            try {
-                $stmt = $db->prepare("DELETE FROM pbx_voicemail_ai WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
-                $stmt->execute([$vmDays]);
-            } catch (\Throwable $e) {
-            }
-        }
-
-        // 3. Fax logs older than ret_fax_days
-        $faxDays = (int)$cfg['ret_fax_days'];
-        if ($faxDays > 0) {
-            try {
-                $stmt = $db->prepare("SELECT id, file_path, pdf_path FROM pbx_fax_log WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
-                $stmt->execute([$faxDays]);
-                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                    foreach (['file_path', 'pdf_path'] as $col) {
-                        $p = (string)($row[$col] ?? '');
-                        if ($p !== '' && str_starts_with($p, '/var/spool/asterisk/fax/') && is_file($p)) {
-                            @unlink($p);
-                        }
-                    }
-                }
-                $del = $db->prepare("DELETE FROM pbx_fax_log WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
-                $del->execute([$faxDays]);
-                $counts['fax'] += $del->rowCount();
-            } catch (\Throwable $e) {
-            }
-        }
-
-        // 4. Chat messages older than ret_chat_days
-        $chatDays = (int)$cfg['ret_chat_days'];
-        if ($chatDays > 0) {
-            try {
-                $stmt = $db->prepare("DELETE FROM chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
-                $stmt->execute([$chatDays]);
-                $counts['chat'] += $stmt->rowCount();
-            } catch (\Throwable $e) {
-            }
-        }
-
-        // 5. CDR records older than ret_cdr_days (anonymize PII or delete)
-        $cdrDays = (int)$cfg['ret_cdr_days'];
-        if ($cdrDays > 0) {
-            try {
-                if ($cfg['ret_cdr_action'] === 'delete') {
-                    $stmt = $db->prepare("DELETE FROM asteriskcdr WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY)");
-                    $stmt->execute([$cdrDays]);
-                    $counts['cdr'] += $stmt->rowCount();
-                } else {
-                    $stmt = $db->prepare(
-                        "UPDATE asteriskcdr
-                         SET src = 'REDACTED', dst = 'REDACTED', clid = 'REDACTED', userfield = ''
-                         WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY)
-                           AND (src != 'REDACTED' OR dst != 'REDACTED' OR clid != 'REDACTED')"
-                    );
-                    $stmt->execute([$cdrDays]);
-                    $counts['cdr'] += $stmt->rowCount();
-                }
-            } catch (\Throwable $e) {
-            }
-        }
-
-        $now = date('Y-m-d H:i:s');
-        $summary = sprintf(
-            'recordings=%d, voicemail=%d, fax=%d, chat=%d, cdr=%d',
-            $counts['recordings'],
-            $counts['voicemail'],
-            $counts['fax'],
-            $counts['chat'],
-            $counts['cdr']
         );
-        self::upsertSettings([
-            'privacy_last_purge_at'      => $now,
-            'privacy_last_purge_summary' => $summary,
-        ]);
-
-        if (function_exists('logAudit')) {
-            logAudit('PRIVACY_PURGE', 'sys_settings', null, "Retention purge completed: {$summary}");
-        }
-
-        return ['counts' => $counts, 'summary' => $summary];
     }
 
     /**
-     * Subject Access Request (SAR) lookup by phone number / extension.
+     * Subject Access Request (SAR) lookup by phone number / extension across both
+     * CDR layers (asteriskcdr + cdrs), voicemail_archive/voicemail_ai, fax_received/fax_sent,
+     * ai_requests, and pbx_signaling_events.
      *
      * @return array<string, mixed>|null
      */
     public static function lookupSubject(string $rawNumber): ?array
     {
-        $clean = preg_replace('/[^0-9+]/', '', trim($rawNumber)) ?? '';
-        $digitsOnly = preg_replace('/[^0-9]/', '', $clean) ?? '';
-        if (strlen($digitsOnly) < 3) {
-            return null;
-        }
-
-        $db = getDB();
-        $like = '%' . $digitsOnly . '%';
-
-        $cdrs = [];
-        $recordingFiles = [];
-        try {
-            $stmt = $db->prepare(
-                "SELECT calldate, clid, src, dst, dcontext, disposition, duration, billsec, uniqueid, userfield
-                 FROM asteriskcdr
-                 WHERE src = ? OR dst = ? OR src LIKE ? OR dst LIKE ?
-                 ORDER BY calldate DESC LIMIT 200"
-            );
-            $stmt->execute([$clean, $clean, $like, $like]);
-            $cdrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($cdrs as $c) {
-                $uf = trim((string)($c['userfield'] ?? ''));
-                if ($uf !== '' && str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)) {
-                    $recordingFiles[$uf] = $uf;
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-
-        // Also scan monitor filename matches
-        $globbed = glob('/var/spool/asterisk/monitor/*' . $digitsOnly . '*.{wav,mp3,ogg}', GLOB_BRACE) ?: [];
-        foreach ($globbed as $gf) {
-            if (is_file($gf)) {
-                $recordingFiles[$gf] = $gf;
-            }
-        }
-
-        $voicemails = [];
-        try {
-            $stmt = $db->prepare(
-                "SELECT id, mailboxuser, callerid, origtime, duration, transcript
-                 FROM pbx_voicemail_archive
-                 WHERE mailboxuser = ? OR callerid LIKE ?
-                 ORDER BY origtime DESC LIMIT 100"
-            );
-            $stmt->execute([$digitsOnly, $like]);
-            $voicemails = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Throwable $e) {
-        }
-
-        $faxes = [];
-        try {
-            $stmt = $db->prepare(
-                "SELECT id, direction, caller_id, destination, status, pages, created_at, file_path, pdf_path
-                 FROM pbx_fax_log
-                 WHERE caller_id LIKE ? OR destination LIKE ?
-                 ORDER BY created_at DESC LIMIT 100"
-            );
-            $stmt->execute([$like, $like]);
-            $faxes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Throwable $e) {
-        }
-
-        $signalingCount = 0;
-        try {
-            $stmt = $db->prepare(
-                "SELECT COUNT(*) FROM pbx_signaling_events WHERE from_uri LIKE ? OR to_uri LIKE ?"
-            );
-            $stmt->execute([$like, $like]);
-            $signalingCount = (int)$stmt->fetchColumn();
-        } catch (\Throwable $e) {
-        }
-
-        return [
-            'query'           => $clean,
-            'digits'          => $digitsOnly,
-            'cdr_count'       => count($cdrs),
-            'cdrs'            => array_slice($cdrs, 0, 25),
-            'all_cdrs'        => $cdrs,
-            'recording_count' => count($recordingFiles),
-            'recording_files' => array_values($recordingFiles),
-            'voicemail_count' => count($voicemails),
-            'voicemails'      => $voicemails,
-            'fax_count'       => count($faxes),
-            'faxes'           => $faxes,
-            'signaling_count' => $signalingCount,
-        ];
+        return PrivacyDataSubjectHelper::lookupSubject($rawNumber);
     }
 
     /**
      * Right to Erasure (KVKK Art. 7 & 11 / GDPR Art. 17 / CCPA / LGPD):
      * Deletes call recordings, voicemail transcripts, fax files/logs, signaling rows,
-     * and anonymizes CDR rows for the given phone number.
+     * and anonymizes CDR rows across both asteriskcdr and cdrs for the given phone number.
      *
      * @return array<string, string>
      */
     public static function eraseSubject(string $rawNumber): array
     {
-        $info = self::lookupSubject($rawNumber);
-        if ($info === null) {
-            return ['error' => t('privacy.err_subject_short')];
+        return PrivacyDataSubjectHelper::eraseSubject($rawNumber);
+    }
+
+    /**
+     * Redact sensitive PII / PCI-DSS patterns (credit card PANs, IBANs, SSN/TCKN, emails) from text.
+     */
+    public static function redactText(string $text): string
+    {
+        if ($text === '') {
+            return '';
         }
+        // 1. IBAN (e.g. TR33 0006 1005 1978 6457 8413 26 or DE89370400440532013000)
+        $text = preg_replace('/\b[A-Z]{2}\d{2}(?:[\s-]?[A-Z0-9]{4}){3,7}(?:[\s-]?[A-Z0-9]{1,4})?\b/i', '[REDACTED-IBAN]', $text) ?? $text;
+        // 2. Credit/Debit Card PANs (13 to 19 digits, optionally grouped by spaces or hyphens)
+        $text = preg_replace_callback('/\b(?:\d[ -]*?){13,19}\b/', static function (array $m): string {
+            $digits = preg_replace('/\D/', '', $m[0]) ?? '';
+            return (strlen($digits) >= 13 && strlen($digits) <= 19) ? '[REDACTED-CARD]' : $m[0];
+        }, $text) ?? $text;
+        // 3. US SSN (XXX-XX-XXXX) and 11-digit National ID / TCKN
+        $text = preg_replace('/\b\d{3}-\d{2}-\d{4}\b/', '[REDACTED-ID]', $text) ?? $text;
+        $text = preg_replace('/\b[1-9]\d{10}\b/', '[REDACTED-ID]', $text) ?? $text;
+        // 4. Email addresses
+        $text = preg_replace('/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/', '[REDACTED-EMAIL]', $text) ?? $text;
 
-        $db = getDB();
-        $clean = $info['query'];
-        $digits = $info['digits'];
-        $like = '%' . $digits . '%';
+        return $text;
+    }
 
-        $deletedRecs = 0;
-        foreach ($info['recording_files'] as $file) {
-            if (is_string($file) && str_starts_with($file, '/var/spool/asterisk/monitor/') && is_file($file)) {
-                if (@unlink($file)) {
-                    $deletedRecs++;
-                }
-            }
+    /**
+     * Automatically redacts sensitive PII/PCI data in live AGI / AI / Voicemail transcripts
+     * whenever PCI-DSS protection or an active privacy jurisdiction profile is enabled.
+     * When all privacy rules are disabled ('off'), returns the transcript unchanged.
+     */
+    public static function redactTranscriptIfEnabled(string $text): string
+    {
+        if ($text === '') {
+            return '';
         }
-
-        $anonCdrs = 0;
-        try {
-            $stmt = $db->prepare(
-                "UPDATE asteriskcdr
-                 SET src = IF(src = ? OR src LIKE ?, 'REDACTED', src),
-                     dst = IF(dst = ? OR dst LIKE ?, 'REDACTED', dst),
-                     clid = 'REDACTED',
-                     userfield = ''
-                 WHERE src = ? OR dst = ? OR src LIKE ? OR dst LIKE ?"
-            );
-            $stmt->execute([$clean, $like, $clean, $like, $clean, $clean, $like, $like]);
-            $anonCdrs = $stmt->rowCount();
-        } catch (\Throwable $e) {
+        $cfg = self::settings();
+        if (!empty($cfg['pci_pause_enabled']) || $cfg['jurisdiction_profile'] !== 'off' || !empty($cfg['block_cloud_ai'])) {
+            return self::redactText($text);
         }
-
-        $delVm = 0;
-        try {
-            $stmt = $db->prepare("DELETE FROM pbx_voicemail_archive WHERE mailboxuser = ? OR callerid LIKE ?");
-            $stmt->execute([$digits, $like]);
-            $delVm = $stmt->rowCount();
-        } catch (\Throwable $e) {
-        }
-
-        $delFax = 0;
-        try {
-            foreach ($info['faxes'] as $fax) {
-                foreach (['file_path', 'pdf_path'] as $col) {
-                    $p = (string)($fax[$col] ?? '');
-                    if ($p !== '' && str_starts_with($p, '/var/spool/asterisk/fax/') && is_file($p)) {
-                        @unlink($p);
-                    }
-                }
-            }
-            $stmt = $db->prepare("DELETE FROM pbx_fax_log WHERE caller_id LIKE ? OR destination LIKE ?");
-            $stmt->execute([$like, $like]);
-            $delFax = $stmt->rowCount();
-        } catch (\Throwable $e) {
-        }
-
-        $delSig = 0;
-        try {
-            $stmt = $db->prepare("DELETE FROM pbx_signaling_events WHERE from_uri LIKE ? OR to_uri LIKE ?");
-            $stmt->execute([$like, $like]);
-            $delSig = $stmt->rowCount();
-        } catch (\Throwable $e) {
-        }
-
-        $maskedTarget = substr($digits, 0, 3) . str_repeat('*', max(2, strlen($digits) - 5)) . substr($digits, -2);
-        if (function_exists('logAudit')) {
-            logAudit(
-                'PRIVACY_ERASURE',
-                'privacy',
-                null,
-                "Erased subject {$maskedTarget}: cdr_anonymized={$anonCdrs}, recordings_deleted={$deletedRecs}, voicemail_deleted={$delVm}, fax_deleted={$delFax}, signaling_deleted={$delSig}"
-            );
-        }
-
-        return [
-            'message' => sprintf(
-                t('privacy.msg_erased'),
-                $anonCdrs,
-                $deletedRecs,
-                $delVm,
-                $delFax
-            ),
-        ];
+        return $text;
     }
 
     /**
@@ -685,9 +456,13 @@ final class PrivacyService
 
         try {
             $recentAudits = $db->query(
-                "SELECT action, username, ip_address, details, created_at
+                "SELECT UPPER(CONCAT(domain, ':', entity_type)) AS action,
+                        COALESCE(username, 'system') AS username,
+                        ip_address,
+                        entity_label AS details,
+                        created_at
                  FROM sys_audit_log
-                 WHERE action LIKE 'PRIVACY_%' OR action = 'LICENSE_ACCEPTED'
+                 WHERE domain = 'privacy' OR entity_type = 'license_acceptance'
                  ORDER BY id DESC LIMIT 15"
             )->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {

@@ -21,8 +21,8 @@ class PrivacyController extends BaseController
             $rawSubject = trim((string)($_POST['subject_number'] ?? ''));
             $info = PrivacyService::lookupSubject($rawSubject);
             if ($info !== null) {
-                if (function_exists('logAudit')) {
-                    logAudit('PRIVACY_SAR_EXPORT', 'privacy', null, 'Exported SAR data package for ' . $info['query']);
+                if (function_exists('writeAuditLog')) {
+                    writeAuditLog('privacy', 'sar_export', $info['query'], 'Exported SAR data package for ' . $info['query'], 'create', $_SESSION['user_id'] ?? null);
                 }
                 $settings = PrivacyService::settings();
                 $profiles = PrivacyService::profiles();

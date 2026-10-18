@@ -248,7 +248,7 @@ domain="${domain#[\"\']}"; domain="${domain%[\"\']}"
 [[ -z "$domain" ]] && domain=127.0.0.1
 code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domain}:443:127.0.0.1" "https://${domain}/login" || echo 000)"
 [[ "$code" == 200 ]] || rollback "Portal not responding (HTTP $code)"
-if ! (cd "$INSTALL_DIR/web" && timeout 900 php bin/smoke.php >>"$LOG_FILE" 2>&1); then
+if ! (cd "$INSTALL_DIR/web" && timeout 900 sudo -n -u www-data php bin/smoke.php >>"$LOG_FILE" 2>&1); then
     rollback "Page tests (smoke) failed"
 fi
 

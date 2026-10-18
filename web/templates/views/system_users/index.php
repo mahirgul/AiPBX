@@ -29,7 +29,7 @@
             <?php if ($import_preview['send_invitations']): ?><br><i class="fas fa-envelope"></i> <?php echo t('system_users.import_will_invite'); ?><?php endif; ?>
         </p>
         <div class="table-responsive" style="max-height: 420px; overflow: auto;">
-            <table class="table">
+            <table class="data-table">
                 <thead><tr>
                     <th>#</th><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th>
                     <th><?php echo t('system_users.field_email'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th>

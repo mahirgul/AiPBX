@@ -45,6 +45,14 @@ class AuditLogController extends BaseController
         $login_search_query = trim($_GET['login_search'] ?? '');
         $login_attempts = AuditLogRepository::searchLoginAttempts($start_ts, $end_ts, $login_status_filter, $login_search_query);
 
+        $audit_domains = array_merge(PENDING_SYNC_DOMAIN_MAP, [
+            'privacy'  => 'privacy',
+            'security' => 'security',
+            'plugins'  => 'plugins',
+            'phones'   => 'phones',
+            'ai_cloud' => 'ai_cloud',
+        ]);
+
         $page_title = t('audit_log.title');
         static::renderPage('audit_log/index', [
             'logs' => $logs,
@@ -54,7 +62,7 @@ class AuditLogController extends BaseController
             'user_filter' => $user_filter,
             'search_query' => $search_query,
             'date_filter' => $date_filter,
-            'domain_map' => PENDING_SYNC_DOMAIN_MAP,
+            'domain_map' => $audit_domains,
             'login_attempts' => $login_attempts,
             'login_status_filter' => $login_status_filter,
             'login_search_query' => $login_search_query,
