@@ -26,11 +26,19 @@
             <option value="all" <?php echo $date_filter === 'all' ? 'selected' : ''; ?>><?php echo t('audit_log.range_all'); ?></option>
         </select>
 
+        <?php
+        $resolveAuditDomainLabel = static fn(string $d): string => match ($d) {
+            'privacy'  => t('sidebar.item_privacy', $d),
+            'security' => t('sidebar.group_security', $d),
+            'plugins'  => t('sidebar.item_plugins', $d),
+            default    => t('pending_sync.domain_' . $d, $d),
+        };
+        ?>
         <select name="domain" class="form-control form-control-sm u-w-auto">
             <option value=""><?php echo t('audit_log.all_domains'); ?></option>
             <?php foreach (array_keys($domain_map) as $d): ?>
                 <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $domain_filter === $d ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars(t('pending_sync.domain_' . $d, $d)); ?>
+                    <?php echo htmlspecialchars($resolveAuditDomainLabel((string)$d)); ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -66,7 +74,7 @@
     </form>
 
     <div class="table-responsive">
-        <table class="data-table" data-no-dt="true">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th><?php echo t('audit_log.col_date'); ?></th>
@@ -106,7 +114,7 @@
                             <td><?php echo htmlspecialchars($log['username'] ?? t('pending_sync.unknown_user')); ?></td>
                             <td>
                                 <?php if (!empty($log['domain'])): ?>
-                                    <span class="badge badge-info"><?php echo htmlspecialchars(t('pending_sync.domain_' . $log['domain'], $log['domain'])); ?></span>
+                                    <span class="badge badge-info"><?php echo htmlspecialchars($resolveAuditDomainLabel((string)$log['domain'])); ?></span>
                                 <?php else: ?>
                                     <span class="u-muted">—</span>
                                 <?php endif; ?>
@@ -152,7 +160,7 @@
     </form>
 
     <div class="table-responsive">
-        <table class="data-table" data-no-dt="true">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th><?php echo t('audit_log.col_date'); ?></th>

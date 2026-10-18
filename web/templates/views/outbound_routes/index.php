@@ -26,7 +26,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="data-table" id="routesTable" data-no-dt="true">
+        <table class="data-table" id="routesTable">
             <thead>
                 <tr>
                     <?php if ($can_reorder): ?><th class="row-drag-handle"></th><?php endif; ?>

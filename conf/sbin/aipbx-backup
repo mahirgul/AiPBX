@@ -58,7 +58,7 @@ paths=()
 # etc/ssl/aipbx holds uploaded or self-signed certificates, etc/aipbx the AI
 # service token. The archive is root-only (umask 077 above).
 for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt \
-         var/lib/aipbx/settings.key etc/ssl/aipbx etc/aipbx; do
+         var/lib/aipbx/settings.key var/lib/aipbx/plugins etc/ssl/aipbx etc/aipbx; do
     [[ -e "/$p" ]] && paths+=("$p")
 done
 if ! tar czf "$WORK/config.tgz" -C / "${paths[@]}" 2>>"$LOG_FILE"; then

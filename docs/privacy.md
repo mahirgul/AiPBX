@@ -33,25 +33,27 @@ When enabled on inbound DID routes (`[sub-privacy-consent]` in `extensions_inbou
 
 ## 3. Data Retention & Automated Nightly Purge
 
-When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/aipbx` runs `php /opt/aipbx/web/bin/privacy_purge.php` every night at 03:45 (or on demand via **Run Purge Policy Now**):
+When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/aipbx` runs `php /usr/local/bin/privacy_purge.php` every night at 03:45 (or on demand via **Run Purge Policy Now**):
 
 - Deletes call recording audio files (`/var/spool/asterisk/monitor/*`) older than N days
 - Deletes voicemail archives and AI transcripts older than N days
 - Deletes fax logs and spool files older than N days
 - Deletes chat messages older than N days
-- Anonymizes expired CDR rows (`src = 'REDACTED'`, `dst = 'REDACTED'`, `clid = 'REDACTED'`) so call statistics remain intact without retaining personal phone numbers (or deletes expired CDR rows if configured)
+- Anonymizes expired CDR rows across both `asteriskcdr` (Asterisk ODBC runtime) and `cdrs` (`src = 'REDACTED'`, `dst = 'REDACTED'`, `clid = 'REDACTED'`) so call volume statistics remain intact without retaining personal phone numbers (or deletes expired CDR rows if configured)
 
 ---
 
 ## 4. Subject Access Request (SAR) & Right to Erasure
 
-Searching a phone number or extension lists all matching CDRs, audio recordings, voicemails, faxes, and SIP signaling rows:
+Searching a phone number or extension lists all matching CDRs (across `asteriskcdr` and `cdrs`), audio recordings, voicemails, faxes, and SIP signaling rows:
 
 - **Export SAR Data Package (JSON):** Downloads a structured JSON archive for KVKK Art. 11 / GDPR Art. 15 & 20 requests and logs `PRIVACY_SAR_EXPORT` in the Audit Log.
 - **Execute Right to Erasure:** Permanently deletes matching audio recordings, voicemails, faxes, and signaling events, anonymizes matching CDR entries as `REDACTED`, and records an immutable `PRIVACY_ERASURE` certificate in the Audit Log.
 
 ---
 
-## 5. Cross-Border Cloud AI Lock
+## 5. Live AGI/AI PII Redaction & Cross-Border Cloud AI Lock
 
-Checking **Lock outbound Cloud AI services** immediately disables all external Cloud AI providers (`CloudAiService::configured() === false`), ensuring call audio and transcripts never leave the local PBX server.
+- **Live Transcript PII / Payment Card Masking:** When PCI-DSS pause/resume or a strict privacy preset (`pci_dss`, `gdpr`, `kvkk`, `hipaa`) is active, `PrivacyService::redactTranscriptPii()` automatically masks Luhn-validated payment card numbers (13–19 digits → `[REDACTED-CARD]`), CVV/CVC sequences (`[REDACTED-CVV]`), and 11-digit National IDs (`[REDACTED-ID]`) in live AGI voice transcripts and voicemail transcriptions before database storage or external LLM synthesis.
+- **Cross-Border Cloud AI Lock:** Checking **Lock outbound Cloud AI services** immediately disables all external Cloud AI providers (`CloudAiService::configured() === false`), ensuring call audio and transcripts never leave the local PBX server.
+

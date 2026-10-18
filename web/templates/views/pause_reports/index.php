@@ -99,7 +99,7 @@
 
     <!-- Detailed Logs Table -->
     <div class="table-responsive">
-        <table class="data-table" data-no-dt="true">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th><?php echo t('pause_reports.col_id'); ?></th>

@@ -26,7 +26,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="data-table" id="trunksTable" data-no-dt="true">
+        <table class="data-table" id="trunksTable">
             <thead>
                 <tr>
                     <?php if ($can_reorder): ?><th class="row-drag-handle"></th><?php endif; ?>

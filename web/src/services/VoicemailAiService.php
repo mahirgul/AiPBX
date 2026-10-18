@@ -159,7 +159,9 @@ final class VoicemailAiService
         if ($text === '') {
             return null;
         }
-        $summary = self::summaryOn() ? self::summarize($text, $lang) : '';
+        require_once __DIR__ . '/PrivacyService.php';
+        $text = PrivacyService::redactTranscriptIfEnabled($text);
+        $summary = self::summaryOn() ? PrivacyService::redactTranscriptIfEnabled(self::summarize($text, $lang)) : '';
         try {
             getDB()->prepare('INSERT IGNORE INTO voicemail_ai (mailbox, origtime, transcript, summary, engine) VALUES (?, ?, ?, ?, ?)')
                 ->execute([$mailbox, $origtime, $text, mb_substr($summary, 0, 500), $engine]);

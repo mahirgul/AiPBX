@@ -20,6 +20,7 @@ require_once dirname(__DIR__) . '/audit_log.php';
 require_once dirname(__DIR__) . '/secret_box.php';
 require_once __DIR__ . '/ForgotPasswordService.php';
 require_once __DIR__ . '/phones/PhoneTemplates.php';
+require_once __DIR__ . '/phones/PhoneKeyAndTftpHelper.php';
 
 class PhoneProvisionService
 {
@@ -542,9 +543,7 @@ class PhoneProvisionService
 
     public static function getKeys(int $userId): array
     {
-        $stmt = getDB()->prepare('SELECT page, position, key_type AS type, target, label FROM pbx_phone_keys WHERE user_id = ? ORDER BY page, position');
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return PhoneKeyAndTftpHelper::getKeys($userId);
     }
 
     /** The model of the user's (first) phone, '' when they have none. */
@@ -561,91 +560,19 @@ class PhoneProvisionService
      */
     public static function saveKeys(int $userId, array $keys, string $csrf): array
     {
-        return PBXHelper::handleAction($csrf, function () use ($userId, $keys) {
-            if (self::userRow($userId) === null) {
-                throw new \Exception(t('phones.err_user'));
-            }
-            $rows = self::validateKeys($keys);
-            self::writeKeys($userId, $rows);
-            writeAuditLog('phones', 'key_layout', $userId, (string) self::userRow($userId)['extension'], 'update', $_SESSION['user_id'] ?? null);
-            self::exportTftpQuietly();
-            return t('phones.keys_saved');
-        });
+        return PhoneKeyAndTftpHelper::saveKeys($userId, $keys, $csrf, [self::class, 'userRow']);
     }
 
     /** Copies $fromUser's layout to every user in $toUsers (their own layout is replaced). */
     public static function copyKeys(int $fromUser, array $toUsers, string $csrf): array
     {
-        return PBXHelper::handleAction($csrf, function () use ($fromUser, $toUsers) {
-            $rows = self::getKeys($fromUser);
-            $n = 0;
-            foreach (array_unique(array_map('intval', $toUsers)) as $to) {
-                if ($to === $fromUser || self::userRow($to) === null) {
-                    continue;
-                }
-                self::writeKeys($to, $rows);
-                writeAuditLog('phones', 'key_layout', $to, (string) self::userRow($to)['extension'], 'copy', $_SESSION['user_id'] ?? null);
-                $n++;
-            }
-            if ($n === 0) {
-                throw new \Exception(t('phones.err_copy_none'));
-            }
-            self::exportTftpQuietly();
-            return sprintf(t('phones.keys_copied'), $n);
-        });
+        return PhoneKeyAndTftpHelper::copyKeys($fromUser, $toUsers, $csrf, [self::class, 'userRow']);
     }
 
     /** @return list<array{page: int, position: int, type: string, target: string, label: string}> */
     public static function validateKeys(array $keys): array
     {
-        $rows = [];
-        $seen = [];
-        foreach ($keys as $k) {
-            $type = (string) ($k['type'] ?? '');
-            if ($type === '') {
-                continue;
-            }
-            if (!in_array($type, self::KEY_TYPES, true)) {
-                throw new \Exception(t('phones.err_key_type'));
-            }
-            $page = (int) ($k['page'] ?? 0);
-            $pos = (int) ($k['position'] ?? 0);
-            if ($page < 0 || $page > 6 || $pos < 1 || $pos > 120) {
-                throw new \Exception(t('phones.err_key_position'));
-            }
-            $target = trim((string) ($k['target'] ?? ''));
-            if (in_array($type, ['blf', 'speeddial', 'park'], true)) {
-                if (!preg_match('/^[0-9*#+]{1,32}$/', $target)) {
-                    throw new \Exception(sprintf(t('phones.err_key_target'), $pos));
-                }
-            } else {
-                $target = '';
-            }
-            $label = mb_substr(trim((string) preg_replace('/[\x00-\x1F\x7F]/u', '', (string) ($k['label'] ?? ''))), 0, 64);
-            if (isset($seen["{$page}-{$pos}"])) {
-                continue;
-            }
-            $seen["{$page}-{$pos}"] = true;
-            $rows[] = ['page' => $page, 'position' => $pos, 'type' => $type, 'target' => $target, 'label' => $label];
-        }
-        return $rows;
-    }
-
-    private static function writeKeys(int $userId, array $rows): void
-    {
-        $db = getDB();
-        $db->beginTransaction();
-        try {
-            $db->prepare('DELETE FROM pbx_phone_keys WHERE user_id = ?')->execute([$userId]);
-            $ins = $db->prepare('INSERT INTO pbx_phone_keys (user_id, page, position, key_type, target, label) VALUES (?, ?, ?, ?, ?, ?)');
-            foreach ($rows as $r) {
-                $ins->execute([$userId, (int) $r['page'], (int) $r['position'], $r['type'], $r['target'], $r['label']]);
-            }
-            $db->commit();
-        } catch (\Throwable $e) {
-            $db->rollBack();
-            throw $e;
-        }
+        return PhoneKeyAndTftpHelper::validateKeys($keys);
     }
 
     // ------------------------------------------------------ TFTP / FTP folder
@@ -653,88 +580,25 @@ class PhoneProvisionService
     /**
      * Writes the configuration files of every assigned phone into the TFTP/FTP
      * folder (Network services), for phones that fetch their files over TFTP
-     * or FTP (NEC). Only with "provision_tftp_export" on; files of phones that
-     * are gone (or the whole set, when switched off) are removed. A file is
-     * rewritten only when its content changed. The folder answers only the
-     * allowed networks (firewall), like the HTTP provisioning.
-     *
-     * Runs on every change on the Phones page and every 5 minutes
-     * (bin/provision_tftp.php), so a changed SIP password reaches it too.
+     * or FTP (NEC).
      *
      * @return array{written: int, removed: int, files: int}
      */
     public static function exportTftp(?string $dir = null): array
     {
-        $dir = $dir ?? (getenv('AIPBX_TFTP_DIR') ?: '/var/lib/aipbx/tftp');
-        $old = json_decode((string) getSystemSetting('provision_tftp_files', '[]'), true);
-        $old = is_array($old) ? $old : [];
-        $new = [];
-        $written = 0;
-        if (getSystemSetting('provision_tftp_export', '0') === '1' && is_dir($dir) && is_writable($dir)) {
-            $phones = getDB()->query('SELECT * FROM pbx_phones WHERE user_id IS NOT NULL')->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($phones as $phone) {
-                $tpl = PhoneTemplates::forModel((string) $phone['model']);
-                $user = self::userRow((int) $phone['user_id']);
-                if ($tpl === null || $user === null || (int) $user['is_active'] !== 1) {
-                    continue;
-                }
-                $ctx = self::withConfigVersion($phone, $tpl, self::buildContext($phone, $user), true);
-                foreach ($tpl->exportFiles((string) $phone['mac']) as $name) {
-                    if (!preg_match('/^[A-Za-z0-9._-]{1,120}$/', $name)) {
-                        continue;
-                    }
-                    $new[] = $name;
-                    $body = $tpl->renderFile($name, $ctx);
-                    $path = $dir . '/' . $name;
-                    if (is_file($path) && @file_get_contents($path) === $body) {
-                        continue;
-                    }
-                    $tmp = $dir . '/.' . $name . '.tmp';
-                    if (@file_put_contents($tmp, $body) !== false && @chmod($tmp, 0644) && @rename($tmp, $path)) {
-                        $written++;
-                    } else {
-                        @unlink($tmp);
-                    }
-                }
-            }
-        }
-        $removed = 0;
-        foreach (array_diff($old, $new) as $name) {
-            if (is_string($name) && preg_match('/^[A-Za-z0-9._-]{1,120}$/', $name) && @unlink($dir . '/' . $name)) {
-                $removed++;
-            }
-        }
-        if ($old !== $new) {
-            getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
-                ->execute(['provision_tftp_files', (string) json_encode(array_values(array_unique($new)))]);
-        }
-        return ['written' => $written, 'removed' => $removed, 'files' => count(array_unique($new))];
+        return PhoneKeyAndTftpHelper::exportTftp($dir, [self::class, 'userRow']);
     }
 
     /**
      * Every form a password can take in a phone file, longest first, so the
-     * preview hides each: as typed, XML-escaped (a & or < in it), and cut to
-     * the length a template allows (NEC: 31).
+     * preview hides each.
      *
      * @param list<string> $passwords
      * @return list<string>
      */
     public static function secretForms(array $passwords): array
     {
-        $forms = [];
-        foreach ($passwords as $p) {
-            $p = trim((string) preg_replace('/[\x00-\x1F\x7F]/u', '', $p));
-            if (strlen($p) < 4) {
-                continue;
-            }
-            foreach ([$p, mb_substr($p, 0, 31)] as $v) {
-                $forms[] = $v;
-                $forms[] = htmlspecialchars($v, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-            }
-        }
-        $forms = array_values(array_unique($forms));
-        usort($forms, fn($a, $b) => strlen($b) <=> strlen($a));
-        return $forms;
+        return PhoneKeyAndTftpHelper::secretForms($passwords);
     }
 
     /** exportTftp() after a change on the page; a failure must not fail the change. */
@@ -992,7 +856,7 @@ class PhoneProvisionService
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private static function userRow(int $id): ?array
+    public static function userRow(int $id): ?array
     {
         $stmt = getDB()->prepare("SELECT id, full_name, extension, sip_password, is_active FROM sys_users WHERE id = ? AND extension_type = 'sip' AND extension IS NOT NULL AND extension != ''");
         $stmt->execute([$id]);
