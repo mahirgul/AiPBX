@@ -193,12 +193,12 @@ $_licNeedsPrompt = ($_licAcceptedAt === '' && !empty($user) && ($user['role'] ??
         <?php if ($_licNeedsPrompt): ?>
         <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:16px;">
             <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:13px; font-weight:600; margin:0;">
-                <input type="checkbox" id="aipbxLicenseAgreeChk" onchange="document.getElementById('aipbxLicenseAcceptBtn').disabled = !this.checked;" style="margin-top:3px;">
+                <input type="checkbox" id="aipbxLicenseAgreeChk" onchange="this.form && (this.form.querySelector('button').disabled = !this.checked); var b = this.closest('.card').querySelector('[data-license-accept]'); if (b) b.disabled = !this.checked;" style="margin-top:3px;">
                 <span><?php echo htmlspecialchars(t('license.checkbox_label', 'I have read, understood, and accept the MIT License and Telecommunications Responsibility Disclaimer.')); ?></span>
             </label>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button type="button" id="aipbxLicenseAcceptBtn" class="btn btn-primary" disabled onclick="submitAipbxLicenseAccept()">
+            <button type="button" data-license-accept="1" class="btn btn-primary" disabled onclick="submitAipbxLicenseAccept(this)">
                 <i class="fas fa-check"></i> <?php echo htmlspecialchars(t('license.accept_btn', 'Accept & Continue')); ?>
             </button>
         </div>
@@ -220,8 +220,7 @@ function closeAipbxLicenseModal() {
     var m = document.getElementById('aipbxLicenseModal');
     if (m) m.style.display = 'none';
 }
-function submitAipbxLicenseAccept() {
-    var btn = document.getElementById('aipbxLicenseAcceptBtn');
+function submitAipbxLicenseAccept(btn) {
     if (btn) btn.disabled = true;
     var fd = new FormData();
     fd.append('csrf_token', <?php echo json_encode(function_exists('getCSRFToken') ? getCSRFToken() : ($_SESSION['csrf_token'] ?? '')); ?>);

@@ -42,6 +42,7 @@ function __syncRingGroupsBody() {
         }
 
         if ($record) {
+            $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?rg_rec_exists_{$id})\n";
             $conf .= " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?rg_rec_exists_{$id})\n";
             $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/rg_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
