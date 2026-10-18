@@ -4247,7 +4247,7 @@ return [
     'web_widgets.help_callback' => 'Обратно обаждане:',
     'web_widgets.help_callback_desc' => 'Централата набира посетителя през избрания изходящ маршрут и когато отговори, го насочва към целта. Набират се само номера, започващи с разрешените префикси, и е задължителен дневен лимит.',
     'web_widgets.help_wordpress' => 'WordPress:',
-    'web_widgets.help_wordpress_desc' => 'Инсталирайте плъгина „AiPBX Call Widget“ (integrations/wordpress в хранилището) и поставете кода за вграждане на страницата му с настройки.',
+    'web_widgets.help_wordpress_desc' => 'Инсталирайте плъгина „AiPBX Call Widget“ (plugins/web-widgets/wordpress в хранилището) и поставете кода за вграждане на страницата му с настройки.',
     'web_widgets.col_name' => 'Уиджет',
     'web_widgets.col_destination' => 'Цел',
     'web_widgets.col_features' => 'Функции',
