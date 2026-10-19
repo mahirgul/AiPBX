@@ -28,7 +28,11 @@ object ImageViewerDialog {
     private const val MAX_DIM = 2048
 
     fun show(context: Context, imageUrl: String, authToken: String?) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialog = Dialog(context, R.style.Theme_AiPbxPhone_FullScreen)
+        dialog.window?.let { win ->
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(win, false)
+            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        }
         val root = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
 
         val image = ZoomImageView(context) { dialog.dismiss() }
@@ -43,6 +47,15 @@ object ImageViewerDialog {
             visibility = android.view.View.GONE
         }
         root.addView(error, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                    androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            error.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
         dialog.setContentView(root)
         dialog.show()

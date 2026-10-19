@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.74",
+  "version": "1.0.75",
   "notes": {
-    "en-US": "Added first-launch Open Source License, Emergency Calling (112/911/999) & Data Privacy notice and aligned multi-language support across all 23 languages.",
-    "tr-TR": "İlk açılışta Açık Kaynak Lisansı, Acil Çağrı (112/911/999) ve Veri Gizliliği bilgilendirme ekranı eklendi; 23 dil desteği ve kararlılık iyileştirmeleri yapıldı."
+    "en-US": "Full Android 15/16 edge-to-edge display and window insets support across all screens including the QR scanner and full-screen photo viewer, plus updated AndroidX libraries.",
+    "tr-TR": "QR tarayıcı ve tam ekran fotoğraf görüntüleyici dahil tüm ekranlarda tam Android 15/16 uçtan uca (edge-to-edge) ekran uyumluluğu ve güncel AndroidX kütüphane iyileştirmeleri."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

@@ -133,6 +133,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding.btnQrLogin.setOnClickListener {
             val options = ScanOptions().apply {
+                setCaptureActivity(QrCaptureActivity::class.java)
                 setPrompt(getString(R.string.qr_prompt_login))
                 setBeepEnabled(true)
                 setOrientationLocked(false)
@@ -198,7 +199,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthDeepLink(intent)

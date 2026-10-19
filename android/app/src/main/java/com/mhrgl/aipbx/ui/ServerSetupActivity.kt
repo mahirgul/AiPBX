@@ -77,6 +77,7 @@ class ServerSetupActivity : AppCompatActivity() {
 
         binding.btnQrScan.setOnClickListener {
             val options = ScanOptions().apply {
+                setCaptureActivity(QrCaptureActivity::class.java)
                 setPrompt(getString(R.string.qr_prompt_setup))
                 setBeepEnabled(true)
                 setOrientationLocked(false)

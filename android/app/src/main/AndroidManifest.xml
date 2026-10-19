@@ -131,12 +131,17 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
-        <!-- QR scanner: the library declares it sensorLandscape, which turns the
-             screen sideways on phones; follow the device like the rest of the app. -->
+        <!-- Edge-to-edge QR scanner activity replacing ZXing's non-ComponentActivity CaptureActivity -->
+        <activity
+            android:name=".ui.QrCaptureActivity"
+            android:exported="false"
+            android:screenOrientation="fullSensor"
+            android:stateNotNeeded="true"
+            android:theme="@style/Theme.AiPbxPhone.FullScreen"
+            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
-            android:screenOrientation="fullSensor"
-            tools:replace="screenOrientation" />
+            tools:node="remove" />
 
         <!-- FileProvider for Sharing / Downloading Log Files -->
         <provider
