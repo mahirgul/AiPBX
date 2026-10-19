@@ -711,13 +711,13 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID_SERVICE)
             .setContentTitle(title)
             .setContentText(content.ifEmpty { null })
-            .setSmallIcon(R.drawable.ic_phone)
+            .setSmallIcon(R.drawable.ic_stat_aipbx)
             .setContentIntent(pendingOpen)
             .setOngoing(true)
             .setCategory(if (isCallActive) NotificationCompat.CATEGORY_CALL else NotificationCompat.CATEGORY_SERVICE)
-            // Accent of the icon: green while connected, amber while connecting, red when cut off.
+            // Accent of the icon: AiPBX brand blue while connected, amber while connecting, red when cut off.
             .setColor(when {
-                isCallActive || status == ConnectionStatus.CONNECTED -> 0xFF16A34A.toInt()
+                isCallActive || status == ConnectionStatus.CONNECTED -> 0xFF0284C7.toInt()
                 status == ConnectionStatus.CONNECTING -> 0xFFD97706.toInt()
                 else -> 0xFFDC2626.toInt()
             })
@@ -808,7 +808,8 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID_CALLS)
             .setContentTitle(getString(R.string.notif_incoming_call_title, callerName))
             .setContentText(getString(R.string.notif_incoming_call_desc, callerNumber))
-            .setSmallIcon(R.drawable.ic_phone)
+            .setSmallIcon(R.drawable.ic_stat_aipbx)
+            .setColor(0xFF0284C7.toInt())
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(fullScreenPending, true)

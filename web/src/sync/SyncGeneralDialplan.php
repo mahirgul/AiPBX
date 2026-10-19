@@ -60,7 +60,7 @@ function __syncGeneralDialplanBody() {
             }
             $conf .= "exten => {$ext},hint,PJSIP/{$ext}-sip&PJSIP/{$ext}-webrtc&PJSIP/{$ext}-mob-webrtc\n";
             $conf .= "exten => {$ext},1,NoOp(Direct Call to Extension {$ext} - {$name})\n";
-            $conf .= " same => n,Set(CDR(direction)=internal)\n";
+            $conf .= " same => n,ExecIf(\$[\"\${CDR(direction)}\" = \"\"]?Set(CDR(direction)=internal))\n";
 
             // Boss - secretary check: if this extension is an active boss, the secretary filter applies
             if (isset($bs_groups[$ext])) {

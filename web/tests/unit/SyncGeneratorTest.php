@@ -611,6 +611,48 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringContainsString('ExecIf($["${CDR(inbound_trunk)}" = ""]?Set(CALLERID(num)=${IF($["${CID_EXTERNAL}" != ""]?${CID_EXTERNAL}:08501234567)}))', $conf,
             'on trunk-to-trunk transit calls the incoming mobile number must not be replaced by the trunk default CID');
     }
+
+    public function testInboundDidPatternAutoExtensionMatching(): void
+    {
+        $_SESSION['csrf_token'] = 'test-csrf';
+        $res = RouteService::saveDIDRoute([
+            'csrf_token' => 'test-csrf',
+            'route_id' => 0,
+            'did_number' => '98xx',
+            'title' => '98XX Extensions',
+            'dest_type' => 'extension',
+            'dest_id' => '__did__',
+            'record_call' => 1,
+            'is_active' => 1,
+        ]);
+        $this->assertEmpty($res['error'] ?? '');
+
+        $saved = getDB()->query("SELECT * FROM pbx_dids WHERE title = '98XX Extensions'")->fetch(\PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($saved);
+        $this->assertSame('98XX', $saved['did_number']);
+
+        $res2 = RouteService::saveDIDRoute([
+            'csrf_token' => 'test-csrf',
+            'route_id' => 0,
+            'did_number' => '78xxx',
+            'title' => '78XXX Extensions',
+            'dest_type' => 'extension',
+            'dest_id' => '__did__',
+            'record_call' => 0,
+            'is_active' => 1,
+        ]);
+        $this->assertEmpty($res2['error'] ?? '');
+
+        syncInboundDialplan();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+
+        $this->assertStringContainsString('exten => _98XX,1,NoOp(Inbound call for DID _98XX - 98XX Extensions)', $conf);
+        $this->assertStringContainsString('exten => _78XXX,1,NoOp(Inbound call for DID _78XXX - 78XXX Extensions)', $conf);
+        $this->assertStringContainsString('same => n,Set(CDR(did)=${EXTEN})', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($[${DIALPLAN_EXISTS(from-internal-pbx-ortak,${EXTEN},1)}]?from-internal-pbx-ortak,${EXTEN},1)', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($[$[${LEN(${EXTEN})} > 4] & $[${DIALPLAN_EXISTS(from-trunk-inbound,${EXTEN:-4},1)}]]?from-trunk-inbound,${EXTEN:-4},1)', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($[$[${LEN(${EXTEN})} > 5] & $[${DIALPLAN_EXISTS(from-trunk-inbound,${EXTEN:-5},1)}]]?from-trunk-inbound,${EXTEN:-5},1)', $conf);
+    }
 }
 
 
