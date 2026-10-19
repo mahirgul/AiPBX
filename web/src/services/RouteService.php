@@ -7,7 +7,8 @@ class RouteService {
     public static function saveDIDRoute($data) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
             $route_id = intval($data['route_id'] ?? 0);
-            $did_number = preg_replace('/[^0-9]/', '', trim($data['did_number'] ?? ''));
+            $raw_did = ltrim(strtoupper(trim($data['did_number'] ?? '')), '_');
+            $did_number = preg_replace('/[^0-9XZN.!]/', '', $raw_did);
             $title = trim($data['title'] ?? '');
             $dest_type = sanitizeDestType($data['dest_type'] ?? 'time_condition');
             $dest_id = trim($data['dest_id'] ?? '');
@@ -18,7 +19,7 @@ class RouteService {
                 $language = '';
             }
 
-            if (empty($did_number) || empty($title)) {
+            if ($did_number === '' || !preg_match('/[0-9XZN]/', $did_number) || empty($title)) {
                 throw new \Exception(t('srv_route.err_did'));
             }
 

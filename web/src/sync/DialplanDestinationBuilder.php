@@ -91,6 +91,29 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             break;
 
         case 'extension':
+            if ($dest_id === '__did__') {
+                $lines[] = " same => n,GotoIf(\$[\${DIALPLAN_EXISTS(from-internal-pbx-ortak,\${EXTEN},1)}]?from-internal-pbx-ortak,\${EXTEN},1)";
+                $extLengths = [4, 5, 3, 6, 2];
+                try {
+                    $dbLens = $db->query("SELECT DISTINCT CHAR_LENGTH(extension) FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+                    foreach ($dbLens as $dl) {
+                        $dl = (int)$dl;
+                        if ($dl > 0 && !in_array($dl, $extLengths, true)) {
+                            $extLengths[] = $dl;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // keep default lengths
+                }
+                foreach ($extLengths as $tailLen) {
+                    $lines[] = " same => n,GotoIf(\$[\$[\${LEN(\${EXTEN})} > {$tailLen}] & \$[\${DIALPLAN_EXISTS(from-internal-pbx-ortak,\${EXTEN:-{$tailLen}},1)}]]?from-internal-pbx-ortak,\${EXTEN:-{$tailLen}},1)";
+                }
+                $lines[] = " same => n,NoOp(Auto-matched extension for DID \${EXTEN} not found)";
+                $lines[] = " same => n,Playtones(congestion)";
+                $lines[] = " same => n,Congestion(10)";
+                $lines[] = " same => n,Hangup(1)";
+                break;
+            }
             // buildDestinationLines('extension', ...) can be called more than
             // once inside the same context/exten block (e.g. a multi-rule time
             // condition with the same extension as both match and nomatch

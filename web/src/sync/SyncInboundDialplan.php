@@ -109,13 +109,24 @@ function __syncInboundDialplanBody() {
 
     $conf .= "[from-trunk-inbound]\n\n";
 
+    $pattern_lengths = [];
     if (!empty($dids)) {
         foreach ($dids as $d) {
-            $num = preg_replace('/[^0-9]/', '', trim($d['did_number']));
+            $raw_did = ltrim(strtoupper(trim($d['did_number'])), '_');
+            $num = preg_replace('/[^0-9XZN.!]/', '', $raw_did);
+            if ($num === '') continue;
+            $is_pattern = (bool)preg_match('/[XZN.!]/', $num);
+            $exten_key = $is_pattern ? "_{$num}" : $num;
+            $did_cdr = $is_pattern ? '${EXTEN}' : $num;
+            $rec_to = $is_pattern ? '${FILTER(0-9+,${EXTEN})}' : $num;
+            $label_id = intval($d['id'] ?? 0) ?: preg_replace('/[^0-9A-Za-z_]/', '', $num);
+            if ($is_pattern && !preg_match('/[.!]/', $num)) {
+                $pattern_lengths[strlen($num)] = true;
+            }
             $title = toCleanAscii($d['title']);
-            $conf .= "; DID: {$num} ({$title})\n";
-            $conf .= "exten => {$num},1,NoOp(Inbound call for DID {$num} - {$title})\n";
-            $conf .= " same => n,Set(CDR(did)={$num})\n";
+            $conf .= "; DID: {$exten_key} ({$title})\n";
+            $conf .= "exten => {$exten_key},1,NoOp(Inbound call for DID {$exten_key} - {$title})\n";
+            $conf .= " same => n,Set(CDR(did)={$did_cdr})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             if (!empty($d['language'])) {
                 $lang = preg_replace('/[^a-zA-Z_]/', '', $d['language']);
@@ -127,15 +138,16 @@ function __syncInboundDialplanBody() {
             // Mandatory call recording (unless caller opted out via KVKK/GDPR consent key).
             if (!empty($d['record_call'])) {
                 $rec = "/var/spool/asterisk/monitor/inbound_"
-                     . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$num}.wav";
-                $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?skip_did_rec_{$num})\n";
+                     . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$rec_to}.wav";
+                $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?skip_did_rec_{$label_id})\n";
                 $conf .= " same => n,Set(REC_FILE={$rec})\n";
                 $conf .= " same => n,MixMonitor(\${REC_FILE}{$beepOpt})\n";
                 $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
-                $conf .= " same => n(skip_did_rec_{$num}),NoOp(DID Recording check done)\n";
+                $conf .= " same => n(skip_did_rec_{$label_id}),NoOp(DID Recording check done)\n";
             }
 
-            $conf .= buildDestinationLines($d['dest_type'], $d['dest_id'], $num) . "\n\n";
+            $orig_target = $is_pattern ? '${EXTEN}' : $num;
+            $conf .= buildDestinationLines($d['dest_type'], $d['dest_id'], $orig_target) . "\n\n";
         }
     } else {
         $conf .= "; No specific DIDs configured yet\n\n";
@@ -145,9 +157,17 @@ function __syncInboundDialplanBody() {
     // Closing context for unmatched calls
     // ------------------------------------------------------------------
     $conf .= "[from-trunk-notfound]\n";
+    $notfound_body = "";
+    foreach (array_keys($pattern_lengths) as $pLen) {
+        $pLen = (int)$pLen;
+        if ($pLen > 0) {
+            $notfound_body .= " same => n,GotoIf(\$[\$[\${LEN(\${EXTEN})} > {$pLen}] & \$[\${DIALPLAN_EXISTS(from-trunk-inbound,\${EXTEN:-{$pLen}},1)}]]?from-trunk-inbound,\${EXTEN:-{$pLen}},1)\n";
+        }
+    }
+    $notfound_body .= " same => n,Playtones(congestion)\n same => n,Congestion(10)\n same => n,Hangup(1)\n";
     $conf .= buildCatchAllExtensions(
         "NoOp(No matching inbound route - DID: \${EXTEN})",
-        " same => n,Playtones(congestion)\n same => n,Congestion(10)\n same => n,Hangup(1)\n"
+        $notfound_body
     ) . "\n";
 
     $conf .= "exten => s,1,NoOp(No matching inbound route - DID: s)\n";

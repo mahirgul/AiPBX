@@ -4526,6 +4526,7 @@ return [
     'dest.announcement' => 'Съобщение',
     'dest.outbound_route' => 'Изходящ маршрут / външна линия',
     'dest.extension' => 'Вътрешен номер',
+    'dest.extension_auto_did' => 'Автоматично: Набран DID = Вътрешен номер',
     'dest.queue' => 'Опашка',
     'dest.queue_default' => 'Основен кол център (queue_cc)',
     'dest.fax' => 'Факс линия',

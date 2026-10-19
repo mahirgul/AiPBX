@@ -33,7 +33,8 @@ object VoicemailNotifications {
             .setContentText(if (text.isNotBlank()) "$body — $text" else body)
         if (text.isNotBlank()) builder.setStyle(NotificationCompat.BigTextStyle().bigText("$body\n$text"))
         val notif = builder
-            .setSmallIcon(R.drawable.ic_voicemail)
+            .setSmallIcon(R.drawable.ic_stat_aipbx)
+            .setColor(0xFF0284C7.toInt())
             .setContentIntent(open)
             .setNumber(newCount)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

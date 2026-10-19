@@ -4526,6 +4526,7 @@ return [
     'dest.announcement' => 'Оголошення',
     'dest.outbound_route' => 'Вихідний маршрут / зовнішня лінія',
     'dest.extension' => 'Внутрішній номер',
+    'dest.extension_auto_did' => 'Автоматично: Набраний DID = Внутрішній номер',
     'dest.queue' => 'Черга',
     'dest.queue_default' => 'Основний кол-центр (queue_cc)',
     'dest.fax' => 'Факсова лінія',
