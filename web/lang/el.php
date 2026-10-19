@@ -4526,6 +4526,7 @@ return [
     'dest.announcement' => 'Αναγγελία',
     'dest.outbound_route' => 'Εξερχόμενη διαδρομή / εξωτερική γραμμή',
     'dest.extension' => 'Εσωτερικό',
+    'dest.extension_auto_did' => 'Αυτόματα: Κληθέν DID = Εσωτερικό νούμερο',
     'dest.queue' => 'Ουρά',
     'dest.queue_default' => 'Κύριο τηλεφωνικό κέντρο (queue_cc)',
     'dest.fax' => 'Γραμμή φαξ',

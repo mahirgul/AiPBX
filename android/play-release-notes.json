@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.75",
+  "version": "1.0.76",
   "notes": {
-    "en-US": "Full Android 15/16 edge-to-edge display and window insets support across all screens including the QR scanner and full-screen photo viewer, plus updated AndroidX libraries.",
-    "tr-TR": "QR tarayıcı ve tam ekran fotoğraf görüntüleyici dahil tüm ekranlarda tam Android 15/16 uçtan uca (edge-to-edge) ekran uyumluluğu ve güncel AndroidX kütüphane iyileştirmeleri."
+    "en-US": "Updated notification icon to the official AiPBX logo and brand color across all notifications, plus full Android 15/16 edge-to-edge display support.",
+    "tr-TR": "Tüm bildirimlerde yeşil ahize yerine resmi AiPBX logosu ve marka rengi kullanıldı; Android 15/16 tam uçtan uca (edge-to-edge) ekran uyumluluğu eklendi."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
