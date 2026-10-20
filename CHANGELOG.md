@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.5
+
+Country-code driven telecom presets, unified multi-device real-time dialplan simulator, Android configurable `+` prefix toggle (v1.0.80), and mobile i18n synchronization across 22 languages.
+
+- **Country-Code Driven Telecom Presets (`/dialplan-rules`):** Added a dedicated country-code configuration field on the Call Normalization page (`+ [ 90 ]`, saved in `sys_settings`) that dynamically generates and loads tailored E.164 normalization rules (`_+<CC>.` -> `0`, `_+X.` -> `00`) for desktop, mobile, and web clients based on the specified country code.
+- **Unified Multi-Device Live Number Simulator:** Redesigned the Live Number Test Simulator to eliminate client dropdown selection and render real-time normalization results for all client types (Desktop, Mobile, and Web) simultaneously stacked side-by-side/vertically with matched patterns, regex breakdowns, and transformation paths.
+- **Configurable `+` Prefix in Mobile App (Android v1.0.80, build 80):** Added a user-configurable toggle in Android dialer settings (`sendPlusPrefix`, default: `true`). When enabled, preserves `+` (e.g. `+90...`) so server-side normalization rules handle country-code formatting; when disabled, automatically converts `+` to `00` for legacy trunk compatibility.
+- **Mobile Translation Coverage (22 Languages):** Synchronized Android `pref_send_plus` settings strings across all 21 localized XML resources (`check_mobile_lang.py` 100% clean).
+- **Telephony & Fax Script Hardening:** Fixed tab-delimited parsing in outgoing fax result processor (`process_outgoing_fax_result.sh`) and hardened Phinx migration rollback.
+
 ## 1.34.4
 
 Universal Ingress Call Normalization Rules (`/dialplan-rules`), Android configurable `+` prefix toggle (v1.0.80), route group context isolation, web dialer / call forwarding / fax outbound normalization, transactional DML safety, and pattern specificity simulation.
