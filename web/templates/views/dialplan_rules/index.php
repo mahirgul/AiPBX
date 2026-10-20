@@ -322,8 +322,3 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
 </div>
 
 <script src="<?php echo asset('/assets/js/dialplan_rules.js'); ?>"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        runLiveSimulation();
-    });
-</script>

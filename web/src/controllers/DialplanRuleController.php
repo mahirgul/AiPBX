@@ -17,16 +17,18 @@ class DialplanRuleController extends BaseController
         static::requireRole('admin');
 
         // Handle AJAX simulation request
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'simulate') {
+        if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'simulate') {
             header('Content-Type: application/json; charset=utf-8');
-            $csrf = (string)($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-            if (!verifyCSRFToken($csrf)) {
-                http_response_code(403);
-                echo json_encode(['success' => false, 'error' => 'Invalid CSRF token.']);
-                exit;
+            if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+                $csrf = (string)($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+                if (!verifyCSRFToken($csrf)) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token.']);
+                    exit;
+                }
             }
 
-            $number = trim((string)($_POST['number'] ?? ''));
+            $number = trim((string)($_REQUEST['number'] ?? ''));
             $res = DialplanRuleRepository::simulateAll($number);
             echo json_encode(['success' => true, 'data' => $res]);
             exit;
