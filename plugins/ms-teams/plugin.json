@@ -6,7 +6,7 @@
         "en": "Microsoft Teams Direct Routing & Webhooks"
     },
     "version": "1.2.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "integration",
     "icon": "fab fa-windows",
     "icon_style": "color: #6264a7;",
@@ -15,13 +15,22 @@
         "tr": "AiPBX'i Microsoft Teams Direct Routing için SBC olarak bağlar; cevapsız çağrı, faks ve sesli mesaj bildirimlerini Teams kanallarına gönderir.",
         "en": "Connect AiPBX as a Session Border Controller (SBC) for Microsoft Teams Direct Routing and send real-time call/fax/voicemail Adaptive Cards to Teams channels."
     },
-    "scopes": ["pbx:write", "calls:read"],
+    "scopes": [
+        "pbx:write",
+        "calls:read"
+    ],
     "hooks": {
         "sync_domain": "trunks",
-        "events": ["call.missed", "fax.received", "voicemail.created"],
+        "events": [
+            "call.missed",
+            "fax.received",
+            "voicemail.created"
+        ],
         "admin_page": {
             "route": "/ms-teams",
             "group": "integrations"
         }
-    }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }

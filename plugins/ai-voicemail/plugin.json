@@ -6,7 +6,7 @@
         "en": "AI Voicemail Transcription & Executive Summary"
     },
     "version": "1.0.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "ai",
     "icon": "fas fa-voicemail",
     "icon_style": "color: #8b5cf6;",
@@ -15,9 +15,14 @@
         "tr": "Gelen sesli mesajları (`voicemail.received`) OpenAI veya OpenAI şeması uyumlu uzak AI sunucuları üzerinden otomatik metne döker ve özetler.",
         "en": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint."
     },
-    "scopes": ["voicemail:read", "ai:write"],
+    "scopes": [
+        "voicemail:read",
+        "ai:write"
+    ],
     "hooks": {
-        "events": ["voicemail.received"],
+        "events": [
+            "voicemail.received"
+        ],
         "admin_page": {
             "group": "ai"
         }
@@ -78,5 +83,7 @@
                 "tr": "Özet Çıktı Dili"
             }
         }
-    ]
+    ],
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }

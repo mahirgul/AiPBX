@@ -6,7 +6,7 @@
         "en": "Local Lightweight TTS & Speech Runtime"
     },
     "version": "1.1.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "ai",
     "icon": "fas fa-microchip",
     "icon_style": "color: var(--purple);",
@@ -15,12 +15,16 @@
         "tr": "İnternet bağlantısı olmadan yerel sunucuda hafif Piper TTS sesleriyle anons üretmek için isteğe bağlı yerel ses eklentisi.",
         "en": "Optional lightweight local Piper TTS voices and speech models for offline announcement synthesis."
     },
-    "scopes": ["sounds:write"],
+    "scopes": [
+        "sounds:write"
+    ],
     "hooks": {
         "tts_provider": true,
         "admin_page": {
             "route": "/ai-models",
             "group": "ai"
         }
-    }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }

@@ -6,7 +6,7 @@
         "en": "AI Voice Applications (Conversational IVR Bots)"
     },
     "version": "1.2.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "ai",
     "icon": "fas fa-robot",
     "icon_style": "color: var(--purple);",
@@ -15,12 +15,17 @@
         "tr": "Arayanları sesli karşılayan, konuşmayı metne çevirip dış webhook/CRM sorgusu yapan ve çağrıyı dinamik yönlendiren AI sesli botlar oluşturur.",
         "en": "Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically."
     },
-    "scopes": ["pbx:write", "calls:read"],
+    "scopes": [
+        "pbx:write",
+        "calls:read"
+    ],
     "hooks": {
         "sync_domain": "ai_apps",
         "admin_page": {
             "route": "/ai-apps",
             "group": "ai"
         }
-    }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }

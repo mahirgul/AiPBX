@@ -7,6 +7,8 @@
  */
 
 $enabledCount = count(array_filter($plugins, fn($p) => !empty($p['enabled'])));
+$officialCount = count(array_filter($plugins, fn($p) => ($p['type'] ?? 'official') === 'official'));
+$communityCount = count(array_filter($plugins, fn($p) => ($p['type'] ?? 'official') === 'community'));
 $categories = [
     'integration' => ['label' => t('plugins.cat_integrations', 'Integrations & SSO'), 'icon' => 'fas fa-plug u-primary'],
     'ai'          => ['label' => t('plugins.cat_ai', 'Cloud AI, OpenAI-Compatible & Speech'), 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);'],
@@ -29,7 +31,8 @@ foreach ($plugins as $p) {
         <div class="card-title">
             <i class="fas fa-puzzle-piece u-primary"></i> <?php echo htmlspecialchars(t('plugins.title', 'Plugin Catalog & Manager')); ?>
             <span class="badge badge-success u-fs-11 u-ml-8"><?php echo $enabledCount; ?> <?php echo htmlspecialchars(t('common.active', 'Active')); ?></span>
-            <span class="badge badge-secondary u-fs-11 u-ml-4"><?php echo count($plugins); ?> <?php echo htmlspecialchars(t('plugins.total_catalog', 'in Catalog')); ?></span>
+            <span class="badge badge-primary u-fs-11 u-ml-4"><i class="fas fa-shield-alt"></i> <?php echo $officialCount; ?> <?php echo htmlspecialchars(t('plugins.badge_official', 'Official')); ?></span>
+            <span class="badge badge-warning u-fs-11 u-ml-4"><i class="fas fa-users"></i> <?php echo $communityCount; ?> <?php echo htmlspecialchars(t('plugins.badge_community', 'Community')); ?></span>
         </div>
         <div class="u-flex-center" style="gap: 8px;">
             <a href="/api-keys" class="btn btn-secondary btn-sm">
@@ -99,9 +102,19 @@ foreach ($plugins as $p) {
                                     <div>
                                         <strong><?php echo htmlspecialchars($p['name']); ?></strong>
                                         <span class="badge badge-secondary u-fs-11">v<?php echo htmlspecialchars($p['version']); ?></span>
-                                        <div class="text-muted u-fs-11">
+                                        <?php if (($p['type'] ?? 'official') === 'official'): ?>
+                                            <span class="badge badge-primary u-fs-11"><i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars(t('plugins.badge_official', 'Official')); ?></span>
+                                        <?php else: ?>
+                                            <span class="badge badge-warning u-fs-11"><i class="fas fa-users"></i> <?php echo htmlspecialchars(t('plugins.badge_community', 'Community')); ?></span>
+                                        <?php endif; ?>
+                                        <div class="text-muted u-fs-11 u-mt-2">
                                             <code><?php echo htmlspecialchars($p['slug']); ?></code>
-                                            · <?php echo $p['source'] === 'official' ? htmlspecialchars(t('plugins.source_official', 'Official Catalog')) : htmlspecialchars(t('plugins.source_custom', 'Custom .zip')); ?>
+                                            · <?php echo htmlspecialchars(t('common.by', 'by')); ?>
+                                            <?php if (!empty($p['author_url'])): ?>
+                                                <a href="<?php echo htmlspecialchars($p['author_url']); ?>" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; color: inherit; font-weight: 500;"><?php echo htmlspecialchars($p['author']); ?></a>
+                                            <?php else: ?>
+                                                <?php echo htmlspecialchars($p['author']); ?>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>

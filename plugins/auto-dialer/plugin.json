@@ -6,7 +6,7 @@
         "en": "Auto Dialer & AMD Campaigns"
     },
     "version": "1.0.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "integration",
     "icon": "fas fa-phone-volume",
     "icon_style": "color: #0284c7;",
@@ -65,5 +65,7 @@
                 "tr": "Cevapsız sayılmadan önce karşı tarafın kaç saniye çaldırılacağı (10-120 sn)."
             }
         }
-    ]
+    ],
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }

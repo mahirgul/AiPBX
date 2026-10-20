@@ -6,7 +6,7 @@
         "en": "AI Text-to-Speech Announcement Studio"
     },
     "version": "1.2.0",
-    "author": "AiPBX",
+    "author": "AiPBX Official Team",
     "category": "ai",
     "icon": "fas fa-comment-dots",
     "icon_style": "color: var(--purple);",
@@ -15,12 +15,16 @@
         "tr": "Bulut TTS veya hafif yerel TTS motorlarıyla metinden doğal IVR ve kuyruk anonsları üretip doğrudan santral ses dosyalarına kaydeder.",
         "en": "Synthesize natural IVR and queue announcements from text using Cloud TTS or lightweight local TTS engines and save directly to Asterisk sounds."
     },
-    "scopes": ["sounds:write"],
+    "scopes": [
+        "sounds:write"
+    ],
     "hooks": {
         "tts_provider": true,
         "admin_page": {
             "route": "/ai-tts",
             "group": "ai"
         }
-    }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
 }
