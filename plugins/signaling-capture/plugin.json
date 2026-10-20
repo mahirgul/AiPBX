@@ -6,7 +6,7 @@
         "en": "SIP Signaling Capture (HEPv3 / Homer & Webhook Telemetry)"
     },
     "version": "1.0.0",
-    "author": "AiPBX",
+    "author": "Gregory Merriweather (shido6)",
     "category": "telemetry",
     "icon": "fas fa-satellite-dish",
     "icon_style": "color: #0ea5e9;",
@@ -15,10 +15,18 @@
         "tr": "Asterisk PJSIP sinyal ve RTCP kalite verilerini HEPv3 protokolü ile Homer / Sipcapture sunucularına veya dış telemetri servislerine aktarır.",
         "en": "Stream Asterisk PJSIP signaling and RTCP telemetry via HEPv3 to Homer / Sipcapture servers or external HTTP telemetry collectors."
     },
-    "scopes": ["calls:read", "system:read"],
+    "scopes": [
+        "calls:read",
+        "system:read"
+    ],
     "hooks": {
         "sync_domain": "general_dialplan",
-        "events": ["call.started", "call.answered", "call.ended", "call.missed"],
+        "events": [
+            "call.started",
+            "call.answered",
+            "call.ended",
+            "call.missed"
+        ],
         "admin_page": {
             "group": "integrations"
         }
@@ -96,5 +104,7 @@
                 "tr": "Harici Sunucu API Anahtarı (İsteğe Bağlı)"
             }
         }
-    ]
+    ],
+    "type": "community",
+    "author_url": "https://github.com/shido6"
 }
