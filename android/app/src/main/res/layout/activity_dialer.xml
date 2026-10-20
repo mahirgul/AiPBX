@@ -133,7 +133,9 @@
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/menu_logout"
-            android:src="@drawable/ic_call_end"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_power_logout"
             app:tint="@color/text_secondary" />
     </LinearLayout>
 
@@ -381,9 +383,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/card_bg_secondary"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="6dp">
+                android:paddingVertical="4dp">
 
                 <TextView
                     android:id="@+id/tvHistoryStats"
@@ -397,10 +400,12 @@
                 <ImageButton
                     android:id="@+id/btnClearHistory"
                     android:contentDescription="@string/history_clear"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="14dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="6dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/ic_delete_sweep"
                     android:visibility="gone"
                     app:tint="@color/text_secondary" />
@@ -408,10 +413,12 @@
                 <ImageButton
                     android:id="@+id/btnRefreshHistory"
                     android:contentDescription="@string/ui_refresh_call_history"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_history"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_refresh"
                     app:tint="@color/text_secondary" />
             </LinearLayout>
 
@@ -510,7 +517,7 @@
                     android:paddingHorizontal="12dp"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="13sp" />
 
                 <ImageButton
                     android:id="@+id/btnRefreshContacts"
@@ -519,7 +526,9 @@
                     android:layout_height="36dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_contacts"
+                    android:padding="7dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_refresh"
                     app:tint="@color/text_secondary" />
             </LinearLayout>
 
@@ -529,7 +538,7 @@
                 android:layout_height="wrap_content"
                 android:background="@color/card_bg_secondary"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="4dp"
+                android:paddingVertical="6dp"
                 android:text="@string/ui_extensions_listed_zero"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
@@ -595,8 +604,6 @@
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:background="@drawable/card_rounded_bg"
-                        android:drawableStart="@drawable/ic_contacts"
-                        android:drawablePadding="8dp"
                         android:hint="@string/ui_search_chats_hint"
                         android:imeOptions="actionSearch"
                         android:inputType="text"
@@ -640,7 +647,7 @@
                     <TextView
                         android:id="@+id/btnChatFilterAll"
                         android:layout_width="0dp"
-                        android:layout_height="32dp"
+                        android:layout_height="36dp"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
@@ -654,7 +661,7 @@
                     <TextView
                         android:id="@+id/btnChatFilterDirect"
                         android:layout_width="0dp"
-                        android:layout_height="32dp"
+                        android:layout_height="36dp"
                         android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
@@ -667,7 +674,7 @@
                     <TextView
                         android:id="@+id/btnChatFilterGroups"
                         android:layout_width="0dp"
-                        android:layout_height="32dp"
+                        android:layout_height="36dp"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/chip_tab_btn_bg"
@@ -783,10 +790,12 @@
 
                     <ImageButton
                         android:id="@+id/btnChatRoomBack"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/ui_back"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_arrow_back"
                         app:tint="@color/text_primary" />
 
@@ -812,7 +821,7 @@
                                 android:gravity="center"
                                 android:text="U"
                                 android:textColor="#FFFFFF"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <View
@@ -847,7 +856,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/ui_offline"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="11.5sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -857,6 +866,8 @@
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/ui_group_info"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_info"
                         app:tint="@color/primary"
                         android:visibility="gone" />
@@ -867,6 +878,8 @@
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/ui_call"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_phone"
                         app:tint="@color/primary" />
                 </LinearLayout>
@@ -940,6 +953,8 @@
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="4dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_close"
                         app:tint="@color/text_secondary" />
                 </LinearLayout>
@@ -961,6 +976,8 @@
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/ui_attach_file"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_attach"
                         app:tint="@color/text_secondary" />
 
@@ -970,6 +987,8 @@
                         android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/ui_take_send_photo"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_photo"
                         app:tint="@color/text_secondary" />
 
@@ -995,6 +1014,7 @@
                         android:background="@drawable/circle_avatar"
                         android:contentDescription="@string/ui_send"
                         android:padding="8dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_send"
                         app:tint="#FFFFFF" />
                 </LinearLayout>
@@ -1044,7 +1064,7 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/ui_dnd"
                                     android:textColor="@color/text_primary"
-                                    android:textSize="16sp"
+                                    android:textSize="15sp"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -1082,7 +1102,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/features_cf_title"
                             android:textColor="@color/text_primary"
-                            android:textSize="16sp"
+                            android:textSize="15sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -1127,7 +1147,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="phone"
-                                android:maxLines="1" />
+                                android:maxLines="1"
+                                android:textSize="13sp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- 2. Forward when busy -->
@@ -1164,7 +1185,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="phone"
-                                android:maxLines="1" />
+                                android:maxLines="1"
+                                android:textSize="13sp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- 3. Forward when unanswered -->
@@ -1206,7 +1228,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="phone"
-                                    android:maxLines="1" />
+                                    android:maxLines="1"
+                                    android:textSize="13sp" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -1226,7 +1249,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="none"
-                                    android:text="@string/ui_sample_20s" />
+                                    android:text="@string/ui_sample_20s"
+                                    android:textSize="13sp" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
 
@@ -1234,29 +1258,32 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
+                            android:layout_marginTop="14dp"
                             android:orientation="horizontal">
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnClearForward"
                                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                                 android:layout_width="0dp"
-                                android:layout_height="48dp"
+                                android:layout_height="44dp"
                                 android:layout_weight="1"
                                 android:text="@string/features_btn_clear"
+                                android:textAllCaps="false"
                                 android:textColor="@color/text_secondary"
+                                android:textSize="13sp"
                                 app:cornerRadius="8dp"
                                 app:strokeColor="@color/border_color" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnSaveForward"
                                 android:layout_width="0dp"
-                                android:layout_height="48dp"
+                                android:layout_height="44dp"
                                 android:layout_marginStart="10dp"
                                 android:layout_weight="2"
                                 android:backgroundTint="@color/primary"
                                 android:text="@string/features_btn_save"
-                                android:textSize="14sp"
+                                android:textAllCaps="false"
+                                android:textSize="13sp"
                                 app:cornerRadius="8dp" />
                         </LinearLayout>
                     </LinearLayout>
@@ -1280,7 +1307,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/features_system_info_title"
                             android:textColor="@color/text_primary"
-                            android:textSize="16sp"
+                            android:textSize="15sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -1300,7 +1327,7 @@
                             android:layout_marginTop="3dp"
                             android:text="@string/ui_pbx_placeholder"
                             android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/tvDeviceInfo"
@@ -1309,7 +1336,7 @@
                             android:layout_marginTop="3dp"
                             android:text="@string/ui_device_placeholder"
                             android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/tvFcmStatus"
@@ -1318,7 +1345,7 @@
                             android:layout_marginTop="3dp"
                             android:text="@string/ui_notification_checking"
                             android:textColor="@color/status_connected"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
@@ -1328,7 +1355,9 @@
                             android:layout_height="44dp"
                             android:layout_marginTop="12dp"
                             android:text="@string/ui_refresh_device"
+                            android:textAllCaps="false"
                             android:textColor="@color/primary"
+                            android:textSize="13sp"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
 
@@ -1339,7 +1368,9 @@
                             android:layout_height="44dp"
                             android:layout_marginTop="8dp"
                             android:text="@string/ui_battery_settings"
+                            android:textAllCaps="false"
                             android:textColor="@color/primary"
+                            android:textSize="13sp"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
 
@@ -1351,7 +1382,9 @@
                             android:minHeight="44dp"
                             android:layout_marginTop="8dp"
                             android:text="@string/full_screen_status_on"
+                            android:textAllCaps="false"
                             android:textColor="@color/primary"
+                            android:textSize="13sp"
                             android:visibility="gone"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
@@ -1362,7 +1395,9 @@
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="8dp"
+                            android:textAllCaps="false"
                             android:textColor="@color/primary"
+                            android:textSize="13sp"
                             app:cornerRadius="8dp"
                             app:strokeColor="@color/primary" />
 
@@ -1373,7 +1408,9 @@
                             android:layout_height="44dp"
                             android:layout_marginTop="4dp"
                             android:text="@string/ui_privacy_policy"
+                            android:textAllCaps="false"
                             android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
                             app:cornerRadius="8dp" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
@@ -1397,7 +1434,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/ui_diagnostic_logs"
                             android:textColor="@color/text_primary"
-                            android:textSize="16sp"
+                            android:textSize="15sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -1418,25 +1455,27 @@
                                 android:id="@+id/btnViewLogs"
                                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                                 android:layout_width="0dp"
-                                android:layout_height="46dp"
+                                android:layout_height="44dp"
                                 android:layout_marginEnd="6dp"
                                 android:layout_weight="1"
                                 android:text="@string/ui_logs"
+                                android:textAllCaps="false"
                                 android:textColor="@color/primary"
-                                android:textSize="12sp"
+                                android:textSize="13sp"
                                 app:cornerRadius="8dp"
                                 app:strokeColor="@color/primary" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnDownloadShareLogs"
                                 android:layout_width="0dp"
-                                android:layout_height="46dp"
+                                android:layout_height="44dp"
                                 android:layout_marginStart="6dp"
                                 android:layout_weight="1"
                                 android:backgroundTint="@color/primary"
                                 android:text="@string/ui_share"
+                                android:textAllCaps="false"
                                 android:textColor="#FFFFFF"
-                                android:textSize="12sp"
+                                android:textSize="13sp"
                                 app:cornerRadius="8dp" />
                         </LinearLayout>
                     </LinearLayout>

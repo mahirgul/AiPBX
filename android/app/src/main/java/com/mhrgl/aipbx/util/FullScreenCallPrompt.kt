@@ -23,8 +23,21 @@ object FullScreenCallPrompt {
     /** True when incoming calls can open full screen (always true before Android 14). */
     fun isAllowed(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        val prefs = AppPreferences.getInstance(context)
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return true
-        return nm.canUseFullScreenIntent()
+        if (nm.canUseFullScreenIntent()) {
+            if (!prefs.fullScreenUserAllowed) {
+                prefs.fullScreenUserAllowed = true
+            }
+            return true
+        }
+        if (Settings.canDrawOverlays(context)) {
+            if (!prefs.fullScreenUserAllowed) {
+                prefs.fullScreenUserAllowed = true
+            }
+            return true
+        }
+        return prefs.fullScreenUserAllowed && nm.areNotificationsEnabled()
     }
 
     /** Only Android 14+ has the switch, older versions need no button. */
@@ -32,20 +45,32 @@ object FullScreenCallPrompt {
 
     fun openSettings(activity: Activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        val prefs = AppPreferences.getInstance(activity)
+        prefs.fullScreenPromptShown = true
+        prefs.fullScreenUserAllowed = true
         try {
             activity.startActivity(
                 Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
                     .setData(Uri.parse("package:${activity.packageName}"))
             )
-        } catch (e: Exception) {
-            // Some vendors lack the direct page: fall back to the app's notification settings.
-            try {
-                activity.startActivity(
-                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
-                )
-            } catch (_: Exception) {
-            }
+            return
+        } catch (_: Exception) {
+        }
+        try {
+            activity.startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+            )
+            return
+        } catch (_: Exception) {
+        }
+        // Some vendors lack the direct page: fall back to the app's notification settings.
+        try {
+            activity.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+            )
+        } catch (_: Exception) {
         }
     }
 
