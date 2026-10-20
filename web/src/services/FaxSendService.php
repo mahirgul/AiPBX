@@ -188,7 +188,7 @@ class FaxSendService {
                 $out_grp = max(1, (int)($uRow['outbound_group'] ?? 1));
             }
         }
-        $dial_context = $out_grp > 1 ? "from-internal-g{$out_grp}" : 'from-internal-pbx';
+        $dial_context = $out_grp > 1 ? "from-internal-desktop-{$out_grp}" : 'from-internal-desktop';
 
         $sender_name = trim(preg_replace('/[\r\n]+/', ' ', $sender_row['full_name'] ?? ''));
         $sender_name_var = $sender_name !== '' ? "{$sender_name} ({$senderExt})" : $senderExt;

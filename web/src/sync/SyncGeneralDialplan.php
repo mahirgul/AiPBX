@@ -179,6 +179,7 @@ function __syncGeneralDialplanBody() {
 
     $conf .= "; AMI Originate Context for Web Dialer & Header Softphone\n";
     $conf .= "[cc-internal]\n";
+    $conf .= "include => from-internal-web\n";
     $conf .= "include => from-internal-pbx\n\n";
 
     // Native Incoming FAX Context

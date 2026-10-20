@@ -48,7 +48,7 @@ To guarantee that call centers, queues, faks, and IVRs are never disrupted:
    - `from-internal-desktop` → includes `sub-norm-desktop-N`
    - `from-internal-mobile` → includes `sub-norm-mobile-N`
    - `from-internal-web` → includes `sub-norm-web-N`
-3. **Loop Prevention:** Built-in loop counter (`__AIPBX_NORM_COUNT`) halts transformation if more than 3 passes occur, preventing any possibility of dialplan recursion.
+3. **Single-Pass Ingress Pre-Filter & Loop Circuit Breaker:** Normalization operates as a single-pass pre-filter: once a rule matches and transforms the number, Asterisk routes directly to `from-internal-outbound-N`. A defense-in-depth hop guard (`__AIPBX_NORM_COUNT > 3`) acts as a fail-safe circuit breaker, guaranteeing that external dialplan loops or macro re-entrancy can never cause infinite recursion.
 
 ---
 

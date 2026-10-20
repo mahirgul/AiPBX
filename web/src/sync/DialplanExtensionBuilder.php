@@ -30,11 +30,11 @@ function buildDndCfCheckLines($ext, $db) {
         ];
     }
 
-    $cf_target = preg_replace('/[^0-9]/', '', trim($u['call_forward_number'] ?? ''));
+    $cf_target = preg_replace('/[^0-9+]/', '', trim($u['call_forward_number'] ?? ''));
     if ($cf_target !== '') {
         $perm_grp = (int)($u['permission_group_id'] ?? 0);
         $out_grp = max(1, (int)($u['outbound_group'] ?? 1));
-        $cf_ctx = $out_grp > 1 ? "from-internal-g{$out_grp}" : 'from-internal-pbx';
+        $cf_ctx = $out_grp > 1 ? "from-internal-desktop-{$out_grp}" : 'from-internal-desktop';
         $cf_lines = [
             " same => n,NoOp(Call forwarding on - {$ext} -> {$cf_target})",
         ];
@@ -79,16 +79,16 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $u = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $dnd = !empty($u['dnd_enabled']);
-    $cfAlways = preg_replace('/[^0-9]/', '', trim($u['call_forward_number'] ?? ''));
-    $cfBusy = preg_replace('/[^0-9]/', '', trim($u['cf_busy_number'] ?? ''));
-    $cfNoAnswer = preg_replace('/[^0-9]/', '', trim($u['cf_noanswer_number'] ?? ''));
+    $cfAlways = preg_replace('/[^0-9+]/', '', trim($u['call_forward_number'] ?? ''));
+    $cfBusy = preg_replace('/[^0-9+]/', '', trim($u['cf_busy_number'] ?? ''));
+    $cfNoAnswer = preg_replace('/[^0-9+]/', '', trim($u['cf_noanswer_number'] ?? ''));
     $cfTimeout = intval($u['cf_noanswer_timeout'] ?? 20);
     if ($cfTimeout < 5 || $cfTimeout > 120) {
         $cfTimeout = 20;
     }
     $permGrp = (int)($u['permission_group_id'] ?? 0);
     $outGrp = max(1, (int)($u['outbound_group'] ?? 1));
-    $cfContext = $outGrp > 1 ? "from-internal-g{$outGrp}" : 'from-internal-pbx';
+    $cfContext = $outGrp > 1 ? "from-internal-desktop-{$outGrp}" : 'from-internal-desktop';
 
     $globalTimeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30')) ?: 30;
     $dialTimeout = ($cfNoAnswer !== '') ? $cfTimeout : $globalTimeout;

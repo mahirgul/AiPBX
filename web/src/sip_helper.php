@@ -100,7 +100,6 @@ class SIPHelper {
             'account' => $ext_str,
             'secret' => $pass,
             'callerid' => "\"{$clean_name}\" <{$ext_str}>",
-            'context' => 'from-internal-pbx',
             'max_contacts' => '10',
             'auth_digest' => $authDigest ? 'yes' : 'no'
         ];

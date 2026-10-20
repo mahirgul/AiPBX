@@ -13,7 +13,7 @@ if ($action === 'originate') {
     // the dialplan via a Local channel (from-internal-pbx → PJSIP_DIAL_CONTACTS → all devices)
     // Outbound route group: if the user is assigned to a group other than 1, that group's context is used
     $outbound_grp = max(1, intval($user['outbound_group'] ?? 1));
-    $outbound_context = ($outbound_grp > 1) ? "from-internal-g{$outbound_grp}" : 'cc-internal';
+    $outbound_context = ($outbound_grp > 1) ? "from-internal-web-{$outbound_grp}" : 'from-internal-web';
 
     // The permission group travels with the Originate: the Local leg has no
     // endpoint variables, and an empty group passes the dial-permission

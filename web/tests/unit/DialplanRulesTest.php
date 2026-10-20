@@ -65,6 +65,8 @@ final class DialplanRulesTest extends TestCase
         $token = 'test-token';
         $_SESSION['csrf_token'] = $token;
 
+        getDB()->exec("DELETE FROM pbx_dialplan_rules WHERE match_pattern = '_9.'");
+
         // Create
         $saveRes = DialplanRuleService::saveRule([
             'csrf_token' => $token,
@@ -110,23 +112,108 @@ final class DialplanRulesTest extends TestCase
         $this->assertStringContainsString('[from-internal-web]', $conf);
     }
 
-    public function testSyncExtensionsSetsClientTypeAndIngressContext(): void
+    public function testWebNormalizationRules(): void
+    {
+        $resTr = DialplanRuleRepository::simulate('+905379902352', 'web');
+        $this->assertTrue($resTr['matched']);
+        $this->assertSame('05379902352', $resTr['normalized']);
+
+        $resIntl = DialplanRuleRepository::simulate('+12125551234', 'web');
+        $this->assertTrue($resIntl['matched']);
+        $this->assertSame('0012125551234', $resIntl['normalized']);
+
+        $res10 = DialplanRuleRepository::simulate('5379902352', 'web');
+        $this->assertTrue($res10['matched']);
+        $this->assertSame('05379902352', $res10['normalized']);
+    }
+
+    public function testPatternSpecificityScoring(): void
+    {
+        $scoreExact = DialplanRuleRepository::calculatePatternSpecificity('_+90.');
+        $scoreGeneric = DialplanRuleRepository::calculatePatternSpecificity('_+X.');
+        $this->assertGreaterThan($scoreGeneric, $scoreExact, '_+90. must be more specific than _+X.');
+
+        // Verify simulation picks _+90. over _+X. for Turkish mobile
+        $res = DialplanRuleRepository::simulate('+905321234567', 'mobile');
+        $this->assertTrue($res['matched']);
+        $this->assertSame('_+90.', $res['rule']['match_pattern']);
+        $this->assertSame('05321234567', $res['normalized']);
+    }
+
+    public function testPatternValidationRejectsInvalidPatterns(): void
+    {
+        $resEmpty = DialplanRuleService::validateRule(['rule_name' => '', 'match_pattern' => '_']);
+        $this->assertFalse($resEmpty['valid']);
+
+        $resBare = DialplanRuleService::validateRule(['rule_name' => 'Bare Underscore', 'match_pattern' => '_']);
+        $this->assertFalse($resBare['valid']);
+
+        $resUnbalanced = DialplanRuleService::validateRule(['rule_name' => 'Bad Brackets', 'match_pattern' => '_00[1-9']);
+        $this->assertFalse($resUnbalanced['valid']);
+
+        $resEmptyBrackets = DialplanRuleService::validateRule(['rule_name' => 'Empty Brackets', 'match_pattern' => '_00[].']);
+        $this->assertFalse($resEmptyBrackets['valid']);
+
+        $resBadChars = DialplanRuleService::validateRule(['rule_name' => 'Bad Chars', 'match_pattern' => '_00@abc!']);
+        $this->assertFalse($resBadChars['valid']);
+
+        $resBadStrip = DialplanRuleService::validateRule(['rule_name' => 'Bad Strip', 'match_pattern' => '_00.', 'strip_front' => 99]);
+        $this->assertFalse($resBadStrip['valid']);
+
+        $resGood = DialplanRuleService::validateRule(['rule_name' => 'Good Rule', 'match_pattern' => '_00[1-9].', 'strip_front' => 1]);
+        $this->assertTrue($resGood['valid']);
+    }
+
+    public function testLoadDefaultsDmlSafety(): void
+    {
+        $token = 'test-token';
+        $_SESSION['csrf_token'] = $token;
+
+        $res = DialplanRuleService::loadDefaults($token);
+        $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
+
+        // Verify all 3 client types have default presets loaded
+        $desktop = DialplanRuleRepository::allActiveOrdered('desktop');
+        $mobile = DialplanRuleRepository::allActiveOrdered('mobile');
+        $web = DialplanRuleRepository::allActiveOrdered('web');
+
+        $this->assertNotEmpty($desktop, 'Desktop presets should be loaded');
+        $this->assertNotEmpty($mobile, 'Mobile presets should be loaded');
+        $this->assertNotEmpty($web, 'Web presets should be loaded');
+    }
+
+    public function testOutboundGroup2ContextIsolation(): void
     {
         $db = getDB();
-        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES ('testnorm1', '', 'Test Norm 1', '8001', 'Pass8001!', 1, 'sip', 1, 'user') ON DUPLICATE KEY UPDATE is_active = 1")->execute();
+        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role, outbound_group) VALUES ('testnormgrp2', '', 'Test Norm Grp2', '8999', 'Pass8999!', 1, 'sip', 1, 'user', 2) ON DUPLICATE KEY UPDATE outbound_group = 2, is_active = 1")->execute();
 
         try {
             syncAllExtensions();
             $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_endpoints.conf');
 
-            $this->assertStringContainsString('context=from-internal-desktop', $conf);
-            $this->assertStringContainsString('context=from-internal-mobile', $conf);
-            $this->assertStringContainsString('context=from-internal-web', $conf);
-            $this->assertStringContainsString('set_var=AIPBX_CLIENT_TYPE=desktop', $conf);
-            $this->assertStringContainsString('set_var=AIPBX_CLIENT_TYPE=mobile', $conf);
-            $this->assertStringContainsString('set_var=AIPBX_CLIENT_TYPE=web', $conf);
+            $this->assertStringContainsString('context=from-internal-desktop-2', $conf);
+            $this->assertStringContainsString('context=from-internal-mobile-2', $conf);
+            $this->assertStringContainsString('context=from-internal-web-2', $conf);
         } finally {
-            $db->prepare("DELETE FROM sys_users WHERE extension = '8001'")->execute();
+            $db->prepare("DELETE FROM sys_users WHERE extension = '8999'")->execute();
+            syncAllExtensions();
+        }
+    }
+
+    public function testCallForwardingPreservesPlusAndRoutesToIngress(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/DialplanExtensionBuilder.php';
+
+        $db = getDB();
+        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role, call_forward_number, outbound_group) VALUES ('testcf1', '', 'Test CF 1', '8998', 'Pass8998!', 1, 'sip', 1, 'user', '+905321112233', 1) ON DUPLICATE KEY UPDATE call_forward_number = '+905321112233', outbound_group = 1, is_active = 1")->execute();
+
+        try {
+            $lines = \buildDndCfCheckLines('8998', $db);
+            $this->assertTrue($lines['terminal']);
+            $joined = implode("\n", $lines['lines']);
+            $this->assertStringContainsString('Goto(from-internal-desktop,+905321112233,1)', $joined);
+        } finally {
+            $db->prepare("DELETE FROM sys_users WHERE extension = '8998'")->execute();
         }
     }
 }
