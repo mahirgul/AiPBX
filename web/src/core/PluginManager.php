@@ -902,6 +902,31 @@ final class PluginManager
     }
 
     /**
+     * Return a PDO connection capable of running validated `plg_*` DDL statements.
+     * Uses `MIGRATOR_DB_USER` / `MIGRATOR_DB_PASS` from `/etc/ai-pbx.env` when configured
+     * (since runtime `aipbx_portal` is restricted to DML: SELECT/INSERT/UPDATE/DELETE),
+     * falling back to `getDB()` in test environments.
+     */
+    private static function getSchemaDB(): \PDO
+    {
+        $migUser = function_exists('portalEnv') ? (string)portalEnv('MIGRATOR_DB_USER', '') : '';
+        $migPass = function_exists('portalEnv') ? (string)portalEnv('MIGRATOR_DB_PASS', '') : '';
+        if ($migUser !== '' && $migPass !== '') {
+            try {
+                $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+                return new \PDO($dsn, $migUser, $migPass, [
+                    \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                    \PDO::ATTR_EMULATE_PREPARES   => false,
+                ]);
+            } catch (\Throwable $e) {
+                // Fall back to getDB() if migrator connection fails
+            }
+        }
+        return getDB();
+    }
+
+    /**
      * Validate and apply `schema.sql` (or `migrations/install.sql`) for a plugin.
      * Security rule: Plugins may ONLY create tables prefixed with `plg_` (`^plg_[a-z0-9_]{2,58}$`).
      *
@@ -926,7 +951,7 @@ final class PluginManager
         }
 
         $statements = self::parseAndValidatePluginSchemaSql($rawSql);
-        $db = getDB();
+        $db = self::getSchemaDB();
         $tables = [];
         foreach ($statements as $item) {
             $db->exec($item['sql']);
@@ -1011,7 +1036,7 @@ final class PluginManager
             return;
         }
 
-        $db = getDB();
+        $db = self::getSchemaDB();
         foreach (array_keys($tables) as $tableName) {
             if (preg_match('/^plg_[a-z0-9_]{2,58}$/', $tableName)) {
                 try {
