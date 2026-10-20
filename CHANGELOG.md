@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.2
+
+Security and reliability hardening, Android v1.0.78 release, mobile 22-language translation synchronization, multi-call busy handling, and GitHub Sponsors integration.
+
+- **Security & Media Handling:** authenticated chat attachment download with Bearer token validation, temporary file hash naming, and sandboxed `FileProvider` URI generation; preserved whitespace characters in user passwords on mobile login; robust Turkish national phone number normalization using SIM country ISO detection.
+- **Mobile Reliability & Multi-Call Handling (Android v1.0.78, build 78):** rejected second incoming SIP calls with `486 Busy Here` when already active on a call; added exception safety guards against `ForegroundServiceStartNotAllowedException` during background resurrection and notification dispatch; added empty caller name fallback handling in incoming call notifications; isolated chat typing indicator state per active conversation; cleaned up FCM push tokens and local state on logout.
+- **Diacritics & Accent Normalization:** comprehensive Unicode NFD accent and diacritic stripping (including Croatian/Serbian `đ/Đ` normalization) across contacts and chat search indexing.
+- **Mobile i18n Synchronization:** synchronized missing call forwarding strings (`cf_always`, `cf_noanswer`) across all 22 supported mobile languages.
+- **GitHub Sponsors & Open Source Support:** enabled GitHub Sponsors configuration (`.github/FUNDING.yml`) for `@mahirgul`, added Sponsor badge and documentation section in `README.md`, and integrated sponsor links in the PBX portal layout.
+
 ## 1.34.1
 
 Optional Global Privacy & Telecom Compliance (`/privacy`), live AGI/AI PII & PCI-DSS redaction, universal table filtering & pagination, mobile web UX, modular service architecture, and cross-platform mobile v1.0.74 release.
