@@ -14,9 +14,10 @@ Optional per route: call recording and the channel language.
   - `Z`: Matches any single digit from `1` to `9`.
   - `N`: Matches any single digit from `2` to `9`.
   - `.`: Matches one or more remaining characters (e.g., `_905XXXXXXXXX`).
-- **Dynamic DID Routing (`__did__`)**: When configuring an inbound route for an entire block of DIDs, you can select destination **Extension → Dialed Number (`__did__`)**. The incoming call is dynamically dispatched to the extension matching the exact dialed DID (e.g., DIDs `200`–`299` automatically route to extensions `200`–`299` without creating 100 separate inbound routes).
+  - `!`: Matches zero or more remaining characters.
+- **Dynamic DID Routing (`__did__`)**: When configuring an inbound route for a block of numbers, destination **Extension → Dialed Number (`__did__`)** dynamically matches the dialed DID suffix to existing local extensions.
 - A call from a trunk tries exact inbound routes first, then pattern routes; with transit routing enabled it then tries the trunk's
-  outbound route group and local extensions; otherwise it ends with congestion via `from-trunk-notfound`.
+  outbound route group and local extensions; unmatched calls fall through to `from-trunk-notfound` (which also checks extension number length fallbacks) or end with congestion.
 - To see what a trunk sends, capture SIP (see [Troubleshooting](troubleshooting.md#capturing-sip)) and
   read the number in the `INVITE` line.
 
