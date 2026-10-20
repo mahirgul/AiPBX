@@ -87,6 +87,9 @@ class DocsService
         return array_values($out);
     }
 
+    /** Root-level Markdown files linked from docs/*.md as ../INSTALL.md etc. */
+    private const ROOT_DOCS = ['INSTALL', 'ARCHITECTURE', 'CHANGELOG', 'CONTRIBUTING', 'SECURITY'];
+
     /** The Markdown of a document, or null (unknown name or not a docs/ file). */
     public static function source(string $name): ?string
     {
@@ -94,7 +97,16 @@ class DocsService
             return null;
         }
         $file = self::dir() . '/' . $name . '.md';
-        return is_file($file) ? (string) file_get_contents($file) : null;
+        if (is_file($file)) {
+            return (string) file_get_contents($file);
+        }
+        if (in_array($name, self::ROOT_DOCS, true)) {
+            $rootFile = dirname(self::dir()) . '/' . $name . '.md';
+            if (is_file($rootFile)) {
+                return (string) file_get_contents($rootFile);
+            }
+        }
+        return null;
     }
 
     /**
