@@ -216,4 +216,71 @@ final class DialplanRulesTest extends TestCase
             $db->prepare("DELETE FROM sys_users WHERE extension = '8998'")->execute();
         }
     }
+
+    public function testSimulateAllClients(): void
+    {
+        $res = DialplanRuleRepository::simulateAll('+905379902352');
+        $this->assertArrayHasKey('desktop', $res);
+        $this->assertArrayHasKey('mobile', $res);
+        $this->assertArrayHasKey('web', $res);
+
+        // All three client types match +905379902352 -> 05379902352 via _+90. preset
+        $this->assertTrue($res['desktop']['matched']);
+        $this->assertSame('05379902352', $res['desktop']['normalized']);
+        $this->assertSame('desktop', $res['desktop']['client_type']);
+
+        $this->assertTrue($res['mobile']['matched']);
+        $this->assertSame('05379902352', $res['mobile']['normalized']);
+        $this->assertSame('mobile', $res['mobile']['client_type']);
+
+        $this->assertTrue($res['web']['matched']);
+        $this->assertSame('05379902352', $res['web']['normalized']);
+        $this->assertSame('web', $res['web']['client_type']);
+
+        // An unmatched number (e.g., standard internal extension 1001) passes through unmatched on all 3
+        $resExt = DialplanRuleRepository::simulateAll('1001');
+        $this->assertFalse($resExt['desktop']['matched']);
+        $this->assertSame('1001', $resExt['desktop']['normalized']);
+        $this->assertFalse($resExt['mobile']['matched']);
+        $this->assertSame('1001', $resExt['mobile']['normalized']);
+        $this->assertFalse($resExt['web']['matched']);
+        $this->assertSame('1001', $resExt['web']['normalized']);
+    }
+
+    public function testLoadDefaultsCustomCountryCode(): void
+    {
+        $token = 'test-token';
+        $_SESSION['csrf_token'] = $token;
+
+        // Load German presets (country code 49)
+        $res = DialplanRuleService::loadDefaults($token, '49');
+        $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
+
+        // Verify sys_settings saved '49'
+        $this->assertSame('49', getSystemSetting('dialplan_rules_country_code'));
+
+        // Verify Germany rule was created for mobile and web
+        $mobileRules = DialplanRuleRepository::allActiveOrdered('mobile');
+        $foundDe = false;
+        foreach ($mobileRules as $rule) {
+            if ($rule['match_pattern'] === '_+49.') {
+                $foundDe = true;
+                $this->assertSame(3, (int)$rule['strip_front']); // '+' and '49' = 3
+                $this->assertSame('0', $rule['prepend']);
+            }
+        }
+        $this->assertTrue($foundDe, 'Mobile should have _+49. rule with strip 3 and prepend 0');
+
+        // Test simulation for Germany number
+        $simAll = DialplanRuleRepository::simulateAll('+491701234567');
+        $this->assertTrue($simAll['mobile']['matched']);
+        $this->assertSame('01701234567', $simAll['mobile']['normalized']);
+        $this->assertTrue($simAll['web']['matched']);
+        $this->assertSame('01701234567', $simAll['web']['normalized']);
+
+        // Restore back to default Turkey (90)
+        $restore = DialplanRuleService::loadDefaults($token, '90');
+        $this->assertTrue($restore['success'] ?? false, $restore['error'] ?? '');
+        $this->assertSame('90', getSystemSetting('dialplan_rules_country_code'));
+    }
 }

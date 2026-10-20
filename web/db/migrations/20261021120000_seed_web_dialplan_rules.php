@@ -113,7 +113,6 @@ final class SeedWebDialplanRules extends AbstractMigration
 
     public function down(): void
     {
-        // Safe down: do nothing or remove web rules
-        $this->execute("DELETE FROM pbx_dialplan_rules WHERE client_type = 'web'");
+        // Safe down: preserve custom rules, only revert if explicitly needed
     }
 }

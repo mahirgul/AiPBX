@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">interioare listate</string>
     <string name="api_fcm_token_failed">Nu s-a putut trimite tokenul FCM (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Nu s-a putut șterge grupul (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Păstrează prefixul \'+\'</string>
+    <string name="pref_send_plus_desc">Trimite \'+\' internațional direct la PBX pentru normalizare (ACTIVAT) sau convertește în 00 (DEZACTIVAT)</string>
 </resources>
