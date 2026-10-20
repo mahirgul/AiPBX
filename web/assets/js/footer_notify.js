@@ -11,33 +11,6 @@
     let _activeToastTimer = null;
     let _activeToastCount = 0;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        startFooterClock();
-    });
-
-    /**
-     * Footer live clock module
-     */
-    function startFooterClock() {
-        const clockEl = document.getElementById('footer-clock');
-        if (!clockEl) return;
-
-        function update() {
-            const now = new Date();
-            const d = String(now.getDate()).padStart(2, '0');
-            const m = String(now.getMonth() + 1).padStart(2, '0');
-            const y = now.getFullYear();
-            const h = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-
-            clockEl.innerHTML = `<i class="far fa-clock"></i> ${d}.${m}.${y} ${h}:${min}:${s}`;
-        }
-
-        update();
-        setInterval(update, 1000);
-    }
-
     /**
      * Safe HTML escape helper
      */

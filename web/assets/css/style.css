@@ -137,7 +137,7 @@
    wins) — the mobile override is now defined here, in one place. */
 @media (max-width: 900px) {
     .content-area {
-        padding: 10px 10px 76px 10px;
+        padding: 10px 10px 88px 10px;
     }
 
     /* iOS Safari zooms the page automatically when an input/select/textarea
@@ -233,17 +233,46 @@
     }
 }
 
+@media (max-width: 768px) {
+    .app-footer-bar {
+        height: auto;
+        min-height: 40px;
+        padding: 6px 14px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        flex-wrap: wrap;
+        row-gap: 6px;
+        column-gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .footer-left-group,
+    .footer-right-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .footer-right-group {
+        margin-left: auto;
+    }
+    .footer-toast-container {
+        bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 @media (max-width: 520px) {
     .app-footer-bar {
-        padding: 0 8px;
+        padding: 6px 10px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        row-gap: 6px;
     }
     .footer-stat-pill {
-        padding: 2px 7px;
-        font-size: 10.5px;
-        gap: 4px;
+        padding: 3px 8px;
+        font-size: 11px;
+        gap: 5px;
     }
     .user-badge {
-        padding: 0 7px;
+        padding: 2px 8px;
         gap: 5px;
     }
     .user-badge-role {
