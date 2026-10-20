@@ -4935,4 +4935,7 @@ return [
     'asterisk_settings.amd_maximum_number_of_words_help' => 'If greeting exceeds this word count → MACHINE (default: 2)',
     'asterisk_settings.field_amd_silence_threshold' => 'Silence Threshold (1–32767)',
     'asterisk_settings.amd_silence_threshold_help' => 'Audio noise floor below which samples count as silence (default: 256)',
+    'plugins.badge_official' => 'Официален',
+    'plugins.badge_community' => 'Общност',
+    'common.by' => 'от',
 ];

@@ -9,7 +9,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 Security and reliability hardening, Android v1.0.78 release, mobile 22-language translation synchronization, multi-call busy handling, and GitHub Sponsors integration.
 
-- **Security & Media Handling:** authenticated chat attachment download with Bearer token validation, temporary file hash naming, and sandboxed `FileProvider` URI generation; preserved whitespace characters in user passwords on mobile login; robust Turkish national phone number normalization using SIM country ISO detection.
+- **Security & Media Handling:** authenticated chat attachment download with Bearer token validation, temporary file hash naming, and sandboxed `FileProvider` URI generation; preserved whitespace characters in user passwords on mobile login; universal E.164 phone number dialpad normalization (`+` → `00`) replacing country-specific SIM assumptions.
 - **Mobile Reliability & Multi-Call Handling (Android v1.0.78, build 78):** rejected second incoming SIP calls with `486 Busy Here` when already active on a call; added exception safety guards against `ForegroundServiceStartNotAllowedException` during background resurrection and notification dispatch; added empty caller name fallback handling in incoming call notifications; isolated chat typing indicator state per active conversation; cleaned up FCM push tokens and local state on logout.
 - **Diacritics & Accent Normalization:** comprehensive Unicode NFD accent and diacritic stripping (including Croatian/Serbian `đ/Đ` normalization) across contacts and chat search indexing.
 - **Mobile i18n Synchronization:** synchronized missing call forwarding strings (`cf_always`, `cf_noanswer`) across all 22 supported mobile languages.
