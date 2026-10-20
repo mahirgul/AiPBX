@@ -75,10 +75,24 @@ final class DocsServiceTest extends TestCase
         $this->assertSame('system-map', $docs[0]['name']);
         $this->assertSame('System map (for administrators)', $docs[0]['title']);
         foreach ($docs as $d) {
-            $html = DocsService::render((string) DocsService::source($d['name']));
+            $src = (string) DocsService::source($d['name']);
+            $html = DocsService::render($src);
             $this->assertNotSame('', $html, $d['name']);
             $this->assertStringNotContainsString('<script', $html, $d['name']);
+            if (preg_match_all('/\[([^\]]+)\]\(([^)\s]+)\)/', $src, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $m) {
+                    if (preg_match('~^(?:\.\./)?(?:docs/)?([A-Za-z0-9_-]+)\.md(#[A-Za-z0-9_-]*)?$~', $m[2], $mm)) {
+                        $this->assertNotNull(
+                            DocsService::source($mm[1]),
+                            "Broken doc link {$m[2]} in {$d['name']}.md"
+                        );
+                    }
+                }
+            }
         }
+        $this->assertNotNull(DocsService::source('INSTALL'));
+        $this->assertNotNull(DocsService::source('ARCHITECTURE'));
+        $this->assertNotNull(DocsService::source('CHANGELOG'));
         $this->assertNull(DocsService::source('../web/config'));
         $this->assertNull(DocsService::source('nope'));
         $found = DocsService::search('aipbx-selftest');
