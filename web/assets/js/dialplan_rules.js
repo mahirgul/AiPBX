@@ -146,7 +146,8 @@ function runLiveSimulation() {
     if (!outBox) return;
 
     if (!num) {
-        outBox.innerHTML = '<div class="text-muted u-fs-12" style="padding: 12px; text-align: center;"><i class="fas fa-keyboard"></i> Test etmek istediğiniz numarayı yazın...</div>';
+        var waitingMsg = outBox.dataset.txtWaiting || 'Enter a number to test...';
+        outBox.innerHTML = '<div class="text-muted u-fs-12" style="padding: 12px; text-align: center;"><i class="fas fa-keyboard"></i> ' + escapeHtml(waitingMsg) + '</div>';
         return;
     }
 
@@ -173,15 +174,23 @@ function renderSimulationResult(data) {
     var outBox = document.getElementById('sim_result_container');
     if (!outBox) return;
 
+    var txtDirect = outBox.dataset.txtDirect || 'Direct Pass (No Rule Matched)';
+    var txtDirectDesc = outBox.dataset.txtDirectDesc || 'Number passes directly to Outbound Routes without modification.';
+    var txtResult = outBox.dataset.txtResult || 'Result:';
+    var txtMatched = outBox.dataset.txtMatched || 'Rule Matched';
+    var txtDevice = outBox.dataset.txtDevice || 'Device';
+    var txtStripFront = outBox.dataset.txtStripFront || 'Strip Front';
+    var txtPrepend = outBox.dataset.txtPrepend || 'Prepend';
+
     if (!data.matched) {
         outBox.innerHTML = `
             <div style="background: var(--bg-surface-secondary); padding: 14px; border-radius: 8px; border-left: 4px solid var(--text-muted);">
                 <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
-                    <i class="fas fa-arrow-right"></i> Doğrudan Geçiş (Eşleşen Kural Yok)
+                    <i class="fas fa-arrow-right"></i> ${escapeHtml(txtDirect)}
                 </div>
-                <div class="u-fs-12 text-muted">Numara herhangi bir normalleştirme kuralına takılmadan doğrudan Giden Rotalara aktarılır.</div>
+                <div class="u-fs-12 text-muted">${escapeHtml(txtDirectDesc)}</div>
                 <div style="margin-top: 8px; font-family: monospace; font-size: 15px; font-weight: bold; color: var(--color-primary);">
-                    Sonuç: ${escapeHtml(data.normalized)}
+                    ${escapeHtml(txtResult)} ${escapeHtml(data.normalized)}
                 </div>
             </div>
         `;
@@ -192,16 +201,16 @@ function renderSimulationResult(data) {
     outBox.innerHTML = `
         <div style="background: rgba(46, 204, 113, 0.08); padding: 14px; border-radius: 8px; border-left: 4px solid #2ecc71;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Kural Eşleşti</span>
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i> ${escapeHtml(txtMatched)}</span>
                 <span class="badge badge-info"><code>${escapeHtml(r.match_pattern)}</code></span>
             </div>
             <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
                 ${escapeHtml(r.rule_name)}
             </div>
             <div class="u-fs-11 text-muted" style="margin-top: 4px;">
-                Cihaz: <strong>${escapeHtml(data.client_type.toUpperCase())}</strong> | 
-                Baştan Kes: <strong>${r.strip_front}</strong> | 
-                Başa Ekle: <strong>${escapeHtml(r.prepend || '-')}</strong>
+                ${escapeHtml(txtDevice)}: <strong>${escapeHtml(data.client_type.toUpperCase())}</strong> | 
+                ${escapeHtml(txtStripFront)}: <strong>${r.strip_front}</strong> | 
+                ${escapeHtml(txtPrepend)}: <strong>${escapeHtml(r.prepend || '-')}</strong>
             </div>
             <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
                 <span class="text-muted" style="font-family: monospace;">${escapeHtml(data.original)}</span>

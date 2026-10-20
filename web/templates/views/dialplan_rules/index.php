@@ -71,7 +71,15 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
             </div>
             <div>
                 <label class="form-label u-fs-12 u-strong"><?php echo t('dialplan_rules.sim_result_label'); ?></label>
-                <div id="sim_result_container">
+                <div id="sim_result_container"
+                     data-txt-waiting="<?php echo htmlspecialchars(t('dialplan_rules.sim_waiting')); ?>"
+                     data-txt-direct="<?php echo htmlspecialchars(t('dialplan_rules.sim_direct_pass')); ?>"
+                     data-txt-direct-desc="<?php echo htmlspecialchars(t('dialplan_rules.sim_direct_desc')); ?>"
+                     data-txt-result="<?php echo htmlspecialchars(t('dialplan_rules.sim_result_prefix')); ?>"
+                     data-txt-matched="<?php echo htmlspecialchars(t('dialplan_rules.sim_rule_matched')); ?>"
+                     data-txt-device="<?php echo htmlspecialchars(t('dialplan_rules.col_client_type')); ?>"
+                     data-txt-strip-front="<?php echo htmlspecialchars(t('dialplan_rules.strip_front')); ?>"
+                     data-txt-prepend="<?php echo htmlspecialchars(t('dialplan_rules.prepend')); ?>">
                     <div class="text-muted u-fs-12" style="padding: 12px; text-align: center;">
                         <i class="fas fa-keyboard"></i> <?php echo t('dialplan_rules.sim_waiting'); ?>
                     </div>

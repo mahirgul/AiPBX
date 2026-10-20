@@ -100,7 +100,78 @@ class DialplanRuleRepository extends BaseRepository
     }
 
     /**
+     * Calculates Asterisk dialplan pattern specificity score.
+     * Higher score = more specific match.
+     * In Asterisk:
+     * - Exact characters (0-9, *, #, +) have the highest weight.
+     * - Character subsets [1-9] are next.
+     * - N (2-9), Z (1-9), X (0-9) are next.
+     * - Wildcards (. or !) have the lowest weight.
+     */
+    public static function calculatePatternSpecificity(string $pattern): int
+    {
+        $p = trim($pattern);
+        if (str_starts_with($p, '_')) {
+            $p = substr($p, 1);
+        }
+
+        $score = 0;
+        $len = strlen($p);
+        $inBracket = false;
+        $bracketCount = 0;
+
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $p[$i];
+
+            if ($ch === '[' && !$inBracket) {
+                $inBracket = true;
+                $bracketCount = 0;
+                continue;
+            }
+            if ($ch === ']' && $inBracket) {
+                $inBracket = false;
+                $score += max(52, 90 - ($bracketCount * 4));
+                continue;
+            }
+            if ($inBracket) {
+                $bracketCount++;
+                continue;
+            }
+
+            switch ($ch) {
+                case '0': case '1': case '2': case '3': case '4':
+                case '5': case '6': case '7': case '8': case '9':
+                case '*': case '#': case '+':
+                    $score += 100;
+                    break;
+                case 'N': case 'n':
+                    $score += 65;
+                    break;
+                case 'Z': case 'z':
+                    $score += 60;
+                    break;
+                case 'X': case 'x':
+                    $score += 50;
+                    break;
+                case '.':
+                    $score += 15;
+                    break;
+                case '!':
+                    $score += 10;
+                    break;
+                default:
+                    $score += 40;
+                    break;
+            }
+        }
+
+        return $score;
+    }
+
+    /**
      * Simulates the dialplan normalization pipeline on an input number for a given client type.
+     * In accordance with Asterisk context semantics, candidate patterns that match
+     * are ranked by pattern specificity (most specific rule wins, with sort_order as tie-breaker).
      *
      * @return array{
      *   original: string,
@@ -108,7 +179,7 @@ class DialplanRuleRepository extends BaseRepository
      *   matched: bool,
      *   rule: ?array,
      *   normalized: string,
-     *   steps: array<array{rule_name: string, pattern: string, before: string, after: string}>
+     *   steps: array<array{rule_name: string, pattern: string, before: string, after: string, specificity?: int}>
      * }
      */
     public static function simulate(string $number, string $clientType = 'mobile'): array
@@ -118,36 +189,57 @@ class DialplanRuleRepository extends BaseRepository
         $matchedRule = null;
         $steps = [];
 
+        $candidates = [];
         foreach ($rules as $r) {
             $pattern = trim($r['match_pattern'] ?? '');
             if ($pattern === '') continue;
 
             $regex = static::asteriskPatternToRegex($pattern);
             if (@preg_match($regex, $current)) {
-                $matchedRule = $r;
-                $before = $current;
-
-                $front = max(0, intval($r['strip_front'] ?? 0));
-                $back = max(0, intval($r['strip_back'] ?? 0));
-                $prepend = (string)($r['prepend'] ?? '');
-                $append = (string)($r['append'] ?? '');
-
-                $core = $current;
-                if ($front > 0 || $back > 0) {
-                    $core = (string)(($back > 0) ? substr($current, $front, -$back) : substr($current, $front));
-                }
-
-                $current = $prepend . $core . $append;
-                $steps[] = [
-                    'rule_name' => (string)($r['rule_name'] ?? ''),
-                    'pattern' => $pattern,
-                    'before' => $before,
-                    'after' => $current,
+                $candidates[] = [
+                    'rule' => $r,
+                    'specificity' => static::calculatePatternSpecificity($pattern),
+                    'sort_order' => intval($r['sort_order'] ?? 0),
+                    'id' => intval($r['id'] ?? 0),
                 ];
-
-                // In Asterisk dialplan, the first matching pattern triggers Goto() and exits rule pipeline
-                break;
             }
+        }
+
+        if (!empty($candidates)) {
+            // Sort by Asterisk pattern specificity (highest specificity first)
+            // Equal specificity falls back to sort_order ASC, then id ASC
+            usort($candidates, function(array $a, array $b): int {
+                if ($a['specificity'] !== $b['specificity']) {
+                    return $b['specificity'] <=> $a['specificity'];
+                }
+                if ($a['sort_order'] !== $b['sort_order']) {
+                    return $a['sort_order'] <=> $b['sort_order'];
+                }
+                return $a['id'] <=> $b['id'];
+            });
+
+            $matchedRule = $candidates[0]['rule'];
+            $pattern = trim($matchedRule['match_pattern'] ?? '');
+            $before = $current;
+
+            $front = max(0, intval($matchedRule['strip_front'] ?? 0));
+            $back = max(0, intval($matchedRule['strip_back'] ?? 0));
+            $prepend = (string)($matchedRule['prepend'] ?? '');
+            $append = (string)($matchedRule['append'] ?? '');
+
+            $core = $current;
+            if ($front > 0 || $back > 0) {
+                $core = (string)(($back > 0) ? substr($current, $front, -$back) : substr($current, $front));
+            }
+
+            $current = $prepend . $core . $append;
+            $steps[] = [
+                'rule_name' => (string)($matchedRule['rule_name'] ?? ''),
+                'pattern' => $pattern,
+                'before' => $before,
+                'after' => $current,
+                'specificity' => $candidates[0]['specificity'],
+            ];
         }
 
         return [

@@ -232,20 +232,25 @@ function __syncAllExtensionsBody() {
         // A context set by hand in the sip table wins (an escape hatch for
         // special cases).
         $group = max(1, intval($u['outbound_group'] ?? 1));
-        $group_context = ($group > 1) ? "from-internal-g{$group}" : 'from-internal-pbx';
-        $context = !empty($sip_map['context']) ? $sip_map['context'] : $group_context;
+        $stored_ctx = trim($sip_map['context'] ?? '');
 
         // Ingress contexts per device origin (Desktop, Mobile, Web).
-        // Custom context entered explicitly in `sip` table always wins.
-        $sip_context = ($context === $group_context)
-            ? (($group > 1) ? "from-internal-desktop-{$group}" : 'from-internal-desktop')
-            : $context;
-        $mob_context = ($context === $group_context)
-            ? (($group > 1) ? "from-internal-mobile-{$group}" : 'from-internal-mobile')
-            : $context;
-        $web_context = ($context === $group_context)
-            ? (($group > 1) ? "from-internal-web-{$group}" : 'from-internal-web')
-            : $context;
+        // Custom context entered explicitly in `sip` table wins only if it is
+        // not one of the default or generated PBX contexts (V3-01).
+        $isDefaultOrGeneratedContext = empty($stored_ctx)
+            || $stored_ctx === 'from-internal-pbx'
+            || preg_match('/^from-internal-g\d+$/', $stored_ctx)
+            || preg_match('/^from-internal-(desktop|mobile|web)(-\d+)?$/', $stored_ctx);
+
+        if ($isDefaultOrGeneratedContext) {
+            $sip_context = ($group > 1) ? "from-internal-desktop-{$group}" : 'from-internal-desktop';
+            $mob_context = ($group > 1) ? "from-internal-mobile-{$group}" : 'from-internal-mobile';
+            $web_context = ($group > 1) ? "from-internal-web-{$group}" : 'from-internal-web';
+        } else {
+            $sip_context = $stored_ctx;
+            $mob_context = $stored_ctx;
+            $web_context = $stored_ctx;
+        }
 
         $callerid = !empty($sip_map['callerid']) ? $sip_map['callerid'] : "\"{$name}\" <{$ext}>";
         $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
