@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.6
+
+CSRF token handling and real-time simulator AJAX resilience on the Call Normalization page (`/dialplan-rules`).
+
+- **Global Head CSRF Meta Tag:** Added `<meta name="csrf-token">` to the global application layout (`app_header.php`), providing standard CSRF token discovery across all frontend AJAX components.
+- **Resilient Frontend CSRF Token Discovery:** Implemented `getCsrfToken()` in `dialplan_rules.js` checking `window.CSRF_TOKEN`, `<meta name="csrf-token">`, and form input fallbacks; dispatched `X-CSRF-Token` HTTP headers on all live simulation and table reorder requests.
+- **Safe In-Memory Simulation Endpoint:** Hardened the simulation endpoint in `DialplanRuleController` to safely handle authenticated admin requests and eliminated duplicate initial simulation calls on DOMContentLoaded.
+
 ## 1.34.5
 
 Country-code driven telecom presets, unified multi-device real-time dialplan simulator, Android configurable `+` prefix toggle (v1.0.80), and mobile i18n synchronization across 22 languages.
