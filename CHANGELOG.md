@@ -7,10 +7,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.34.4
 
-Universal Ingress Call Normalization Rules (`/dialplan-rules`), Android configurable `+` prefix toggle (v1.0.79), route group context isolation, web dialer / call forwarding / fax outbound normalization, transactional DML safety, and pattern specificity simulation.
+Universal Ingress Call Normalization Rules (`/dialplan-rules`), Android configurable `+` prefix toggle (v1.0.80), route group context isolation, web dialer / call forwarding / fax outbound normalization, transactional DML safety, and pattern specificity simulation.
 
 - **Ingress Call Normalization Rules (`/dialplan-rules`):** Pre-filters and transforms outbound numbers at ingress before reaching trunk outbound routes based on client device type (`desktop`, `mobile`, `web`). Internal extensions (`101`), queues, IVRs, and feature codes (`*97`, etc.) remain strictly isolated and unaffected.
-- **Configurable `+` Prefix in Mobile App (Android v1.0.79, build 79):** Added a user-configurable toggle in Android dialer settings (`sendPlusPrefix`, default: `true`). When enabled, preserves `+` (e.g. `+90...`) so server-side normalization rules handle country-code formatting; when disabled, automatically converts `+` to `00` for legacy trunk compatibility.
+- **Configurable `+` Prefix in Mobile App (Android v1.0.80, build 80):** Added a user-configurable toggle in Android dialer settings (`sendPlusPrefix`, default: `true`). When enabled, preserves `+` (e.g. `+90...`) so server-side normalization rules handle country-code formatting; when disabled, automatically converts `+` to `00` for legacy trunk compatibility.
 - **Route Group Context Isolation (V3-01):** Fixed route group context assignment so subscribers with `outbound_group > 1` properly route into their dedicated device contexts (`from-internal-desktop-N`, `from-internal-mobile-N`, `from-internal-web-N`) rather than being pinned to group 1.
 - **DML Permission Safety & Preset Loader (V3-02):** Replaced `TRUNCATE TABLE` with transactional `DELETE FROM pbx_dialplan_rules` wrapped in PDO rollback safety, allowing production installations with least-privilege DML-only DB users to load telecom presets without requiring `DROP` privileges.
 - **Web Softphone & CRM Normalization Presets (V3-03):** Seeded complete web dialplan normalization rules (`_+90.`, `_+X.`, `_5XXXXXXXXX`) and desktop international rules in Phinx migrations and unified single-source preset definitions.
