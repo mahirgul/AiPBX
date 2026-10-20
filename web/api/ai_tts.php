@@ -25,6 +25,7 @@ if (!hasModulePermission('ai_tts', 'view')) {
 }
 
 if ($action === 'audio') {
+    session_write_close();
     $id = (int) ($_GET['id'] ?? 0);
     $path = AiTtsService::audioPath($id);
     if ($id <= 0 || !AiTtsService::get($id) || !is_file($path)) {

@@ -21,6 +21,7 @@ if ($role !== 'admin' && ($targetExt === '' || $targetExt !== $userExt)) {
 }
 
 if ($action === 'play') {
+    session_write_close();
     $folder = preg_replace('/[^a-zA-Z]/', '', $_GET['folder'] ?? 'INBOX');
     $msg = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['msg'] ?? '');
 

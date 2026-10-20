@@ -1,4 +1,6 @@
-# Local AI models
+# Local AI models (Plugin)
+
+> **Plugin (`ai-models`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 **AI → Local models** runs AI models **on the PBX itself**: text and audio never leave the server,
 there is no API key and no cost per use. The first model is **EMA Lightning**, a Turkish

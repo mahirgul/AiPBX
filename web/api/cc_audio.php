@@ -35,6 +35,8 @@ if ($role !== 'admin' && !$can_listen && !$is_own_call) {
     die('Access denied');
 }
 
+session_write_close();
+
 // In the S3 bucket (#69): streamed through the chat service, same checks above.
 if (RecordingStorage::isRemote($cdr['recording_path'])) {
     $key = RecordingStorage::key($cdr['recording_path']);

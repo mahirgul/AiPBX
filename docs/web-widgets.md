@@ -1,4 +1,6 @@
-# Website call widget and call-back form
+# Website call widget and call-back form (Plugin)
+
+> **Plugin (`web-widgets`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 **Integrations → Web widgets** puts a "Call us" button on any website. A visitor either talks to the
 company from the browser over WebRTC, without a phone or an app, or leaves a number and the PBX

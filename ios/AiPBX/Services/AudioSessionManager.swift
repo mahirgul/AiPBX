@@ -15,10 +15,20 @@ public final class AudioSessionManager: NSObject, ObservableObject {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
-            try session.setActive(true)
-            AppLogManager.shared.info("AudioSession", "AVAudioSession configured for voice call")
+            AppLogManager.shared.info("AudioSession", "AVAudioSession category configured for voice call")
         } catch {
-            AppLogManager.shared.error("AudioSession", "Failed to configure audio session: \(error.localizedDescription)")
+            AppLogManager.shared.error("AudioSession", "Failed to configure audio session category: \(error.localizedDescription)")
+        }
+    }
+
+    public func activateAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
+            try session.setActive(true)
+            AppLogManager.shared.info("AudioSession", "AVAudioSession activated for voice call")
+        } catch {
+            AppLogManager.shared.error("AudioSession", "Failed to activate audio session: \(error.localizedDescription)")
         }
     }
 
