@@ -2,6 +2,7 @@
 /**
  * Inbound & Outbound Route Service
  */
+require_once __DIR__ . '/../helpers.php';
 
 class RouteService {
     public static function saveDIDRoute($data) {

@@ -1,6 +1,6 @@
 # Outbound routes
 
-An outbound route matches a dialled number with a pattern and sends it to one or more trunks.
+An outbound route matches a dialled number with a pattern and sends it to one or more trunks. Before reaching outbound routes, numbers originating from subscriber devices can be pre-filtered and standardized per client type (Mobile, Desk, Web) via [Call Normalization Rules](call-normalization.md).
 
 ## Patterns
 

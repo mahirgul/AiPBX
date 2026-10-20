@@ -21,6 +21,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 |------|----------------|
 | 🌐 [Trunks](trunks.md) | Connection modes, inbound DID trimming, transit routing, outbound caller ID normalization, copy / rename / order |
 | 📤 [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, multiple PBXes with different number formats |
+| 🎛️ [Call normalization](call-normalization.md) | Pre-filter rules per client origin (Mobile, Desk, Web), E.164 normalization, trunk prefix stripping |
 | 📥 [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, key layouts (BLF, speed dial, park), re-provision |
 | 🖧 [Network settings](network-settings.md) | The server's addresses, the addresses desk phones get, and moving everything after an IP change in one step |

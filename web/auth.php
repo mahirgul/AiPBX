@@ -122,6 +122,7 @@ function getModuleKeyForPage($page = null) {
         'trunks.php'            => 'trunks',
         'did_routes.php'        => 'did_routes',
         'outbound_routes.php'   => 'outbound_routes',
+        'dialplan_rules.php'    => 'outbound_routes',
         'dial_permissions.php' => 'dial_permissions',
         'time_conditions.php'   => 'time_conditions',
         'ivrs.php'              => 'ivrs',

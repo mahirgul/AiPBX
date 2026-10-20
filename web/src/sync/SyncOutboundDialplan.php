@@ -32,6 +32,13 @@ function __syncOutboundDialplanBody() {
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
+    $dialplan_rules = [];
+    try {
+        $dialplan_rules = $db->query("SELECT * FROM pbx_dialplan_rules WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Exception $e) {
+        $dialplan_rules = [];
+    }
+
     // Routes are split by group. Every group gets its own context; users can
     // only use the routes of the group they are in.
     //
@@ -43,6 +50,15 @@ function __syncOutboundDialplanBody() {
         $g = max(1, intval($r['route_group'] ?? 1));
         $groups[$g][] = $r;
     }
+    try {
+        $userGroups = $db->query("SELECT DISTINCT outbound_group FROM sys_users WHERE outbound_group > 1")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($userGroups as $ug) {
+            $ug = intval($ug);
+            if ($ug > 1 && !isset($groups[$ug])) {
+                $groups[$ug] = [];
+            }
+        }
+    } catch (\Exception $e) {}
     if (empty($groups)) {
         $groups[1] = [];
     }
@@ -204,6 +220,16 @@ function __syncOutboundDialplanBody() {
     $conf .= "[from-internal-outbound]\n";
     $conf .= "include => from-internal-outbound-1\n\n";
 
+    // Ingress Call Normalization Pre-Filter for all groups
+    foreach ($groups as $group_no => $_gr) {
+        $conf .= buildDialplanNormalizationRules((int)$group_no, $dialplan_rules);
+    }
+
+    $conf .= "; ---- Ingress device aliases for group 1 ----\n";
+    $conf .= "[from-internal-desktop]\ninclude => from-internal-desktop-1\n\n";
+    $conf .= "[from-internal-mobile]\ninclude => from-internal-mobile-1\n\n";
+    $conf .= "[from-internal-web]\ninclude => from-internal-web-1\n\n";
+
     // Outbound call termination and status handling (D-1 / D-2)
     // BUSY -> 486 Busy Here, CONGESTION -> 503, NOANSWER -> 480, CHANUNAVAIL -> HANGUPCAUSE (e.g. 404/603)
     $conf .= "; ---- Outbound call status handling (D-1 / D-2) ----\n";
@@ -237,4 +263,78 @@ function __syncOutboundDialplanBody() {
     return writeConfWithRollback('extensions_outbound.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_outbound'));
     }, t('sync.ctx_outbound'));
+}
+
+/**
+ * Builds ingress normalization contexts for a given outbound route group.
+ * Generates:
+ * - [sub-norm-desktop-N], [sub-norm-mobile-N], [sub-norm-web-N]
+ * - [from-internal-desktop-N], [from-internal-mobile-N], [from-internal-web-N]
+ */
+function buildDialplanNormalizationRules(int $group_no, array $rules): string
+{
+    $conf = "; ---- Ingress Normalization Pre-Filter (Group {$group_no}) ----\n";
+
+    $desktopRules = [];
+    $mobileRules = [];
+    $webRules = [];
+
+    foreach ($rules as $r) {
+        if (empty($r['is_active'])) continue;
+        $ct = $r['client_type'] ?? 'all';
+        if ($ct === 'desktop' || $ct === 'all') {
+            $desktopRules[] = $r;
+        }
+        if ($ct === 'mobile' || $ct === 'all') {
+            $mobileRules[] = $r;
+        }
+        if ($ct === 'web' || $ct === 'all') {
+            $webRules[] = $r;
+        }
+    }
+
+    $types = [
+        'desktop' => $desktopRules,
+        'mobile'  => $mobileRules,
+        'web'     => $webRules,
+    ];
+
+    foreach ($types as $type => $typeRules) {
+        $conf .= "[sub-norm-{$type}-{$group_no}]\n";
+        foreach ($typeRules as $r) {
+            $name = toCleanAscii($r['rule_name'] ?? '');
+            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($r['match_pattern'] ?? ''));
+            if ($pattern === '') continue;
+
+            $strip_front = max(0, intval($r['strip_front'] ?? 0));
+            $strip_back = max(0, intval($r['strip_back'] ?? 0));
+            $prepend = preg_replace('/[^0-9*#+]/', '', trim((string)($r['prepend'] ?? '')));
+            $append = preg_replace('/[^0-9*#+]/', '', trim((string)($r['append'] ?? '')));
+
+            $core = "\${EXTEN}";
+            if ($strip_front > 0 || $strip_back > 0) {
+                $core = ($strip_back > 0) ? "\${EXTEN:{$strip_front}:-{$strip_back}}" : "\${EXTEN:{$strip_front}}";
+            }
+            $dial_num = $prepend . $core . $append;
+
+            $conf .= "; Pre-filter: {$name} ({$pattern} -> {$dial_num})\n";
+            $conf .= "exten => {$pattern},1,NoOp(Pre-filter [{$type}] rule: {$name} \${EXTEN} -> {$dial_num})\n";
+            $conf .= " same => n,Set(__AIPBX_NORM_COUNT=\$[0\${AIPBX_NORM_COUNT} + 1])\n";
+            $conf .= " same => n,GotoIf(\$[\${AIPBX_NORM_COUNT} > 3]?from-internal-outbound-{$group_no},\${EXTEN},1)\n";
+            $conf .= " same => n,Goto(from-internal-outbound-{$group_no},{$dial_num},1)\n\n";
+        }
+        if (empty($typeRules)) {
+            $conf .= "; (no active normalization rules for {$type})\n\n";
+        }
+    }
+
+    foreach (['desktop', 'mobile', 'web'] as $type) {
+        $conf .= "[from-internal-{$type}-{$group_no}]\n";
+        $conf .= "include => from-internal-pbx-ortak\n";
+        $conf .= "include => featurecodes-pbx\n";
+        $conf .= "include => sub-norm-{$type}-{$group_no}\n";
+        $conf .= "include => from-internal-outbound-{$group_no}\n\n";
+    }
+
+    return $conf;
 }

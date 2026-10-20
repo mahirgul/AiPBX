@@ -33,6 +33,7 @@ return [
     '/trunks'          => ['controller' => TrunkController::class, 'action' => 'index', 'module' => 'trunks.php'],
     '/did-routes'      => ['controller' => DidRouteController::class, 'action' => 'index', 'module' => 'did_routes.php'],
     '/outbound-routes' => ['controller' => OutboundRouteController::class, 'action' => 'index', 'module' => 'outbound_routes.php'],
+    '/dialplan-rules'  => ['controller' => DialplanRuleController::class, 'action' => 'index', 'module' => 'dialplan_rules.php'],
     '/dial-permissions' => ['controller' => DialPermissionController::class, 'action' => 'index', 'module' => 'dial_permissions.php'],
     '/time-conditions' => ['controller' => TimeConditionController::class, 'action' => 'index', 'module' => 'time_conditions.php'],
     '/ivrs'            => ['controller' => IvrController::class, 'action' => 'index', 'module' => 'ivrs.php'],
