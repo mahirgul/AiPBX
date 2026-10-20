@@ -2,25 +2,37 @@
 
 AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`PluginManager`) integrated with `/api/v1/*` and Outbound Webhooks.
 
-- **Official Catalog (`plugins/<slug>/`)**: Ships in the repository (`google-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`). Fresh installations start lean; administrators enable only the plugins they need under **Integrations → Plugins** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
+- **Official Catalog (`plugins/<slug>/`)**: Ships in the repository (`google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`). Fresh installations start lean; administrators enable only the plugins they need under **Integrations → Plugins** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
 - **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integrations → Plugins → Upload Custom Plugin (`.zip`)**.
 
 ---
 
-## 1. Package Layout
+## 1. Package Layout & `plg_*` Database Tables
 
-A plugin is a folder (or `.zip` archive) containing `plugin.json` at its root, plus optional hook files:
+A plugin is a folder (or `.zip` archive) containing `plugin.json` at its root, an optional `schema.sql` for creating dedicated `plg_*` MySQL tables, plus optional hook files:
 
 ```
 my-crm-bridge/
-├── plugin.json          # Required: manifest, hooks, scopes, settings_schema
+├── plugin.json          # Required: manifest, tables, hooks, scopes, settings_schema
+├── schema.sql           # Optional: CREATE TABLE IF NOT EXISTS plg_<name> (...) statements
 ├── events/
 │   └── handler.php      # Optional: async event hook handler (call.*, voicemail.*, fax.*)
+├── worker/
+│   └── tick.php         # Optional: background worker hook run by aipbx-webhook-worker
+├── public/
+│   └── handler.php      # Optional: endpoint served at /api/plugins/<slug>/<subPath>
 ├── sync/
 │   └── Sync.php         # Optional: Asterisk config generator hook
 └── admin/
+    ├── action.php       # Optional: pre-render POST / CSV export handler
     └── page.php         # Optional: custom admin UI rendered on /plugins/<slug>
 ```
+
+### Dedicated Plugin MySQL Tables (`plg_` Prefix Rule)
+When a plugin needs relational tables (such as campaigns, call queues, or logs beyond the 500-item `sys_plugin_kv` store):
+1. Place a `schema.sql` file in the plugin root and list the table names under `"tables": ["plg_my_table"]` in `plugin.json`.
+2. **Strict Prefix Sandbox**: Every table in `schema.sql` **must** start with `plg_` (`CREATE TABLE IF NOT EXISTS plg_<name> (...)`). `PluginManager::parseAndValidatePluginSchemaSql()` rejects any statement that touches core tables (`sys_*`, `pbx_*`, `cdrs`) or contains destructive DDL (`DROP`, `ALTER`, `TRUNCATE`).
+3. **Lifecycle**: Tables are automatically created when the plugin is enabled, preserved when disabled, and dropped when uninstalled.
 
 ---
 
