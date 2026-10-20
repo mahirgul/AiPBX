@@ -118,8 +118,10 @@
     <string name="btn_remove">Entfernen</string>
     <string name="call_from_pbx">Anruf der TK-Anlage</string>
     <string name="call_on_hold">Gehalten</string>
+    <string name="cf_always">RU (IMMER)</string>
     <string name="cf_busy">RU (BESETZT)</string>
     <string name="cf_busy_noanswer">RU (BESETZT/KEINE ANTWORT)</string>
+    <string name="cf_noanswer">RU (KEINE ANTWORT)</string>
     <string name="chat_document">Dokument</string>
     <string name="chat_extension_title">Nebenstelle #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

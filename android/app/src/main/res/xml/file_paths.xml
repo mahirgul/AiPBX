@@ -2,6 +2,7 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="cache_logs" path="logs/" />
     <cache-path name="chat_camera" path="camera/" />
+    <cache-path name="chat_attachments" path="attachments/" />
     <external-files-path name="external_logs" path="logs/" />
     <external-cache-path name="external_cache_logs" path="logs/" />
     <files-path name="internal_logs" path="logs/" />

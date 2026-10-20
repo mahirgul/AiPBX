@@ -106,4 +106,29 @@ object FcmHelper {
             }
         }
     }
+
+    fun unregisterTokenFromServer(context: Context) {
+        val prefs = AppPreferences.getInstance(context)
+        val sUrl = prefs.serverUrl
+        val authToken = prefs.token
+        val deviceId = prefs.deviceUuid
+        val fcmToken = prefs.fcmToken
+
+        if (sUrl.isEmpty() || authToken.isNullOrEmpty()) return
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val apiClient = ApiClient { prefs }
+                apiClient.unregisterFcmToken(
+                    baseUrl = sUrl,
+                    token = authToken,
+                    deviceId = deviceId,
+                    fcmToken = fcmToken
+                )
+                Log.i(TAG, "FCM token deregistered from AI PBX server.")
+            } catch (e: Exception) {
+                Log.w(TAG, "Exception deregistering FCM token from server: ${e.message}")
+            }
+        }
+    }
 }

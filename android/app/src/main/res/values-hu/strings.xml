@@ -118,8 +118,10 @@
     <string name="btn_remove">Eltávolítás</string>
     <string name="call_from_pbx">Alközponti hívás</string>
     <string name="call_on_hold">Tartásban</string>
+    <string name="cf_always">ÁTIR. (MINDIG)</string>
     <string name="cf_busy">ÁTIR. (FOGLALT)</string>
     <string name="cf_busy_noanswer">ÁTIR. (FOGLALT/NEM FOGADOTT)</string>
+    <string name="cf_noanswer">ÁTIR. (NEM FOGADOTT)</string>
     <string name="chat_document">Dokumentum</string>
     <string name="chat_extension_title">%1$s. mellék</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

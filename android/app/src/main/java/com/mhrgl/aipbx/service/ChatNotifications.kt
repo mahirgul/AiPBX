@@ -119,10 +119,11 @@ object ChatNotifications {
 class ChatReplyReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val text = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(ChatNotifications.KEY_REPLY)
+        val rawText = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(ChatNotifications.KEY_REPLY)
             ?.toString()?.trim().orEmpty()
         val convId = intent.getIntExtra(ChatActivity.EXTRA_CONV_ID, 0)
-        if (text.isEmpty() || convId <= 0) return
+        if (rawText.isEmpty() || convId <= 0) return
+        val text = rawText.take(4000)
 
         val title = intent.getStringExtra(ChatNotifications.EXTRA_SENDER_TITLE).orEmpty()
         val body = intent.getStringExtra(ChatNotifications.EXTRA_BODY).orEmpty()
