@@ -118,8 +118,10 @@
     <string name="btn_remove">Ta bort</string>
     <string name="call_from_pbx">Växelsamtal</string>
     <string name="call_on_hold">Parkerat</string>
+    <string name="cf_always">VK (ALLTID)</string>
     <string name="cf_busy">VK (UPPTAGET)</string>
     <string name="cf_busy_noanswer">VK (UPPTAGET/INGET SVAR)</string>
+    <string name="cf_noanswer">VK (INGET SVAR)</string>
     <string name="chat_document">Dokument</string>
     <string name="chat_extension_title">Anknytning #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

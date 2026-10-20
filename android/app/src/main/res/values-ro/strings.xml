@@ -118,8 +118,10 @@
     <string name="btn_remove">Eliminați</string>
     <string name="call_from_pbx">Apel PBX</string>
     <string name="call_on_hold">În așteptare</string>
+    <string name="cf_always">RA (ÎNTOTDEAUNA)</string>
     <string name="cf_busy">RA (OCUPAT)</string>
     <string name="cf_busy_noanswer">RA (OCUPAT/FĂRĂ RĂSPUNS)</string>
+    <string name="cf_noanswer">RA (FĂRĂ RĂSPUNS)</string>
     <string name="chat_document">Document</string>
     <string name="chat_extension_title">Interior #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

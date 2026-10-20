@@ -805,9 +805,11 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val effectiveName = callerName.takeIf { it.isNotBlank() } ?: callerNumber.takeIf { it.isNotBlank() } ?: getString(R.string.vm_unknown_caller)
+        val effectiveNumber = if (callerNumber.isNotBlank() && callerNumber != effectiveName) callerNumber else ""
         val builder = NotificationCompat.Builder(this, CHANNEL_ID_CALLS)
-            .setContentTitle(getString(R.string.notif_incoming_call_title, callerName))
-            .setContentText(getString(R.string.notif_incoming_call_desc, callerNumber))
+            .setContentTitle(getString(R.string.notif_incoming_call_title, effectiveName))
+            .setContentText(if (effectiveNumber.isNotEmpty()) getString(R.string.notif_incoming_call_desc, effectiveNumber) else getString(R.string.call_from_pbx))
             .setSmallIcon(R.drawable.ic_stat_aipbx)
             .setColor(0xFF0284C7.toInt())
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -956,10 +958,14 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
 
         fun start(context: Context) {
             val intent = Intent(context, PbxForegroundService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cannot start PbxForegroundService from current context: ${e.message}")
             }
         }
 
@@ -967,10 +973,14 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             val intent = Intent(context, PbxForegroundService::class.java).apply {
                 this.action = action
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cannot start PbxForegroundService with action $action: ${e.message}")
             }
         }
     }

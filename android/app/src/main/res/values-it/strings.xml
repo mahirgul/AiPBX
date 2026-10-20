@@ -118,8 +118,10 @@
     <string name="btn_remove">Rimuovi</string>
     <string name="call_from_pbx">Chiamata dal centralino</string>
     <string name="call_on_hold">In attesa</string>
+    <string name="cf_always">INOLTRO (SEMPRE)</string>
     <string name="cf_busy">INOLTRO (OCCUPATO)</string>
     <string name="cf_busy_noanswer">INOLTRO (OCCUPATO/NESSUNA RISPOSTA)</string>
+    <string name="cf_noanswer">INOLTRO (NESSUNA RISPOSTA)</string>
     <string name="chat_document">Documento</string>
     <string name="chat_extension_title">Interno #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

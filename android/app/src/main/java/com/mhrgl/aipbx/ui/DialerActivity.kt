@@ -321,6 +321,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
     override fun onPause() {
         super.onPause()
+        sendChatTypingState(false)
         if (ChatActivity.activeConversationId == currentChatConvId) {
             ChatActivity.activeConversationId = 0
         }
@@ -389,6 +390,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                 .setTitle(getString(R.string.logout_title))
                 .setMessage(getString(R.string.logout_confirm))
                 .setPositiveButton(getString(R.string.btn_logout)) { _, _ ->
+                    com.mhrgl.aipbx.service.FcmHelper.unregisterTokenFromServer(this)
+                    com.mhrgl.aipbx.data.ChatWebSocketManager.instance.disconnect()
                     pbxService?.engine?.destroy()
                     prefs.clearAuth()
                     stopService(Intent(this, PbxForegroundService::class.java))
@@ -642,12 +645,20 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         var cleanNumber = targetNumber.replace(Regex("[^0-9*#+]"), "")
-        if (cleanNumber.startsWith("+90")) {
-            cleanNumber = "0" + cleanNumber.substring(3)
-        } else if (cleanNumber.startsWith("+")) {
+        val tm = getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+        val simCountry = tm?.simCountryIso ?: tm?.networkCountryIso
+        val isTr = simCountry?.equals("tr", ignoreCase = true) == true ||
+                java.util.Locale.getDefault().country.equals("TR", ignoreCase = true) ||
+                com.mhrgl.aipbx.util.L10n.current() == "tr"
+        if (isTr) {
+            if (cleanNumber.startsWith("+90")) {
+                cleanNumber = "0" + cleanNumber.substring(3)
+            } else if (cleanNumber.length == 10 && cleanNumber.startsWith("5")) {
+                cleanNumber = "0$cleanNumber"
+            }
+        }
+        if (cleanNumber.startsWith("+")) {
             cleanNumber = "00" + cleanNumber.substring(1)
-        } else if (cleanNumber.length == 10 && cleanNumber.startsWith("5")) {
-            cleanNumber = "0$cleanNumber"
         }
 
         if (cleanNumber.isEmpty()) {
@@ -1069,6 +1080,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             }
         }
 
+        binding.etChatMessage.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                sendChatTypingState(!s.isNullOrEmpty())
+            }
+        })
+
         binding.btnChatRoomBack.setOnClickListener {
             closeChatRoom()
         }
@@ -1435,6 +1454,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     fun isChatRoomOpen(): Boolean = binding.layoutChatRoom.visibility == View.VISIBLE
 
     private fun openChatRoom(convId: Int, targetExt: String = "", targetName: String? = null, isGroup: Boolean = false) {
+        if (chatTypingSent && chatTypingConvId > 0 && chatTypingConvId != convId) {
+            sendChatTypingState(false)
+        }
         currentChatConvId = convId
         currentChatTargetExt = targetExt
         currentChatTargetName = targetName ?: targetExt
@@ -1463,6 +1485,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     }
 
     private fun closeChatRoom() {
+        sendChatTypingState(false)
         binding.layoutChatRoom.visibility = View.GONE
         binding.layoutChatList.visibility = View.VISIBLE
         binding.bottomNav.visibility = View.VISIBLE
@@ -1489,7 +1512,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             binding.tvChatRoomTargetStatus.text = if (grp != null) {
                 getString(R.string.group_members_online_grp, grp.memberCount, grp.onlineCount)
             } else {
-                "Grup"
+                getString(R.string.group_chat)
             }
         } else {
             binding.btnChatRoomCall.visibility = View.VISIBLE
@@ -1500,7 +1523,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             binding.tvChatRoomTargetName.text = if (currentChatTargetName.isNotEmpty()) {
                 "$currentChatTargetName (#$currentChatTargetExt)"
             } else {
-                "Dahili #$currentChatTargetExt"
+                getString(R.string.chat_extension_title, currentChatTargetExt)
             }
             // The current state the socket knows instead of a fixed "Offline" — the presence
             // event does not come again while the other side is already connected.
@@ -1581,6 +1604,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     }
 
     private fun sendChatMessage() {
+        sendChatTypingState(false)
         val text = binding.etChatMessage.text.toString().trim()
         val upload = chatPendingUpload
         if (text.isEmpty() && upload == null) return
@@ -1605,6 +1629,32 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         binding.etChatMessage.setText("")
         chatPendingUpload = null
         binding.llChatUploadPreview.visibility = View.GONE
+    }
+
+    private val chatTypingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var chatTypingSent = false
+    private var chatTypingSentAt = 0L
+    private var chatTypingConvId = 0
+    private val stopChatTyping = Runnable { sendChatTypingState(false) }
+
+    private fun sendChatTypingState(typing: Boolean) {
+        val targetConvId = if (currentChatConvId > 0) currentChatConvId else chatTypingConvId
+        if (targetConvId <= 0) return
+        chatTypingHandler.removeCallbacks(stopChatTyping)
+        if (typing) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (!chatTypingSent || chatTypingConvId != targetConvId || now - chatTypingSentAt > 3000) {
+                ChatWebSocketManager.instance.sendTyping(targetConvId, true)
+                chatTypingSent = true
+                chatTypingConvId = targetConvId
+                chatTypingSentAt = now
+            }
+            chatTypingHandler.postDelayed(stopChatTyping, 4000)
+        } else if (chatTypingSent) {
+            ChatWebSocketManager.instance.sendTyping(targetConvId, false)
+            chatTypingSent = false
+            chatTypingConvId = 0
+        }
     }
 
     /** Picture preview in the upload bar (null: the clip icon for other files). */
@@ -1953,7 +2003,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         // 2. Duration dropdown
-        val timeoutAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, timeoutOptions.map { "$it sn" })
+        val timeoutAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, timeoutOptions.map { getString(R.string.seconds_short, it) })
         binding.actvNoAnswerTimeout.setAdapter(timeoutAdapter)
         binding.actvNoAnswerTimeout.setOnItemClickListener { _, _, position, _ ->
             currentNoAnswerTimeout = timeoutOptions.getOrElse(position) { 20 }
@@ -1989,7 +2039,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             binding.etForwardAlways.setText("")
             binding.etForwardBusy.setText("")
             binding.etForwardNoAnswer.setText("")
-            binding.actvNoAnswerTimeout.setText("20 sn", false)
+            binding.actvNoAnswerTimeout.setText(getString(R.string.seconds_short, 20), false)
             currentNoAnswerTimeout = 20
 
             updateFeaturesOnServer(
@@ -2095,10 +2145,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         val hasAnyCf = currentForwardAlways.isNotEmpty() || currentForwardBusy.isNotEmpty() || currentForwardNoAnswer.isNotEmpty()
         binding.tvCfBadge.visibility = if (hasAnyCf) View.VISIBLE else View.GONE
         binding.tvCfBadge.text = when {
-            currentForwardAlways.isNotEmpty() -> "CF (HER ZAMAN)"
+            currentForwardAlways.isNotEmpty() -> getString(R.string.cf_always)
             currentForwardBusy.isNotEmpty() && currentForwardNoAnswer.isNotEmpty() -> getString(R.string.cf_busy_noanswer)
             currentForwardBusy.isNotEmpty() -> getString(R.string.cf_busy)
-            currentForwardNoAnswer.isNotEmpty() -> "CF (CEVAPSIZ)"
+            currentForwardNoAnswer.isNotEmpty() -> getString(R.string.cf_noanswer)
             else -> getString(R.string.ui_cf_active)
         }
     }
@@ -2295,6 +2345,14 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         if (conversationId == currentChatConvId) {
             runOnUiThread {
                 if (::chatMessageAdapter.isInitialized) chatMessageAdapter.applyReceipts(readUpto, deliveredUpto)
+            }
+        }
+    }
+
+    override fun onMessageDeleted(conversationId: Int, messageId: Long) {
+        if (conversationId == currentChatConvId) {
+            runOnUiThread {
+                if (::chatMessageAdapter.isInitialized) chatMessageAdapter.markDeleted(messageId)
             }
         }
     }

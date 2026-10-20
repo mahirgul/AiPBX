@@ -504,6 +504,39 @@ class ApiClient(private val prefsProvider: (() -> AppPreferences?)? = null) {
         }
     }
 
+    suspend fun unregisterFcmToken(
+        baseUrl: String,
+        token: String,
+        deviceId: String? = null,
+        fcmToken: String? = null
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val cleanUrl = baseUrl.trim().trimEnd('/')
+            val endpoint = "$cleanUrl/api/mobile/fcm_token.php"
+
+            val jsonBody = JSONObject().apply {
+                if (!deviceId.isNullOrEmpty()) put("device_id", deviceId)
+                if (!fcmToken.isNullOrEmpty()) put("fcm_token", fcmToken)
+            }.toString()
+
+            val request = Request.Builder()
+                .url(endpoint)
+                .addHeader("Authorization", "Bearer $token")
+                .delete(jsonBody.toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    Result.success(true)
+                } else {
+                    Result.failure(Exception("Failed to unregister FCM token: ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun refreshToken(baseUrl: String, token: String): Result<LoginResponse> =
         withContext(Dispatchers.IO) {
             try {

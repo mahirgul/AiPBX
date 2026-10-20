@@ -41,12 +41,16 @@ class ResurrectionReceiver : BroadcastReceiver() {
         }
         prefs.lastResurrectionTimestamp = now
 
-        if (!PbxForegroundService.isServiceRunning) {
-            Log.w(TAG, "PbxForegroundService is not running! Resurrecting service now...")
-            PbxForegroundService.start(context)
-        } else {
-            Log.d(TAG, "PbxForegroundService is alive. Triggering watchdog action...")
-            PbxForegroundService.startWithAction(context, PbxForegroundService.ACTION_WATCHDOG)
+        try {
+            if (!PbxForegroundService.isServiceRunning) {
+                Log.w(TAG, "PbxForegroundService is not running! Resurrecting service now...")
+                PbxForegroundService.start(context)
+            } else {
+                Log.d(TAG, "PbxForegroundService is alive. Triggering watchdog action...")
+                PbxForegroundService.startWithAction(context, PbxForegroundService.ACTION_WATCHDOG)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to resurrect or trigger watchdog on PbxForegroundService: ${e.message}")
         }
 
         // Schedule next periodic check

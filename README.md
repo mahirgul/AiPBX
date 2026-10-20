@@ -18,6 +18,7 @@
 <p align="center">
   <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?label=release" alt="Latest release"></a>
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
   <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
@@ -35,6 +36,7 @@
   <a href="CHANGELOG.md">📋 Changelog</a> •
   <a href="docs/roadmap.md">🗺️ Roadmap</a> •
   <a href="#-contributing">🤝 Contributing</a> •
+  <a href="#-sponsor">💖 Sponsor</a> •
   <a href="#️-disclaimer--legal-notice--sorumluluk-reddi">⚖️ Disclaimer</a>
 </p>
 
@@ -330,6 +332,18 @@ Code comments, commit messages and documentation are written in English.
 > 2. **Çağrı Kaydı, Yapay Zeka ve Otomatik Arama Mevzuat Uyumu:** Çağrı ses kaydı, yapay zeka ile ses-metin dönüştürme (STT/LLM) ve otomatik dış arama (`auto-dialer` / AMD) özellikleri; **6698 sayılı KVKK**, **BTK düzenlemeleri**, **İYS / Ticari Elektronik İleti mevzuatı**, **GDPR** ve ilgili ülkelerin telekomünikasyon/dinleme yasalarına tabidir. Aydınlatma metinlerinin dinletilmesi, açık rıza alınması ve yasal saklama sürelerine uyum tamamen **sistemi kuran ve işleten kurumun/yöneticinin sorumluluğundadır**.
 > 3. **Acil Çağrı Hizmetleri (`112` / `911`):** VoIP ve IP santral üzerinden yapılan aramalar elektrik enerjisi, yerel ağ, internet erişimi ve SIP operatör (trunk) bağlantısına bağımlıdır. Uygun operatör yönlendirmesi ve yedeklilik sağlanmadığı sürece geleneksel sabit acil çağrı hatlarının (PSTN) yerini garanti etmez.
 > 4. **Ağ Güvenliği ve Ücretli Arama Güvenliği (Toll Fraud):** Kurulum aracı rastgele güçlü parolalar ve güvenlik duvarı kuralları oluştursa da; SIP trunk limitlerinin, dış arama yetkilerinin (Call Barring) ve sunucu erişim güvenliğinin korunması sistem yöneticisinin sorumluluğundadır.
+
+---
+
+## 💖 Sponsor
+
+If you find AiPBX useful for your organization or projects, consider sponsoring its ongoing development and maintenance:
+
+<p align="center">
+  <a href="https://github.com/sponsors/mahirgul">
+    <img src="https://img.shields.io/badge/Sponsor%20on%20GitHub-%E2%9D%A4-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub">
+  </a>
+</p>
 
 ---
 

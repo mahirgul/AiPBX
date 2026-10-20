@@ -118,8 +118,10 @@
     <string name="btn_remove">Fjern</string>
     <string name="call_from_pbx">Sentralbordanrop</string>
     <string name="call_on_hold">På vent</string>
+    <string name="cf_always">VK (ALLTID)</string>
     <string name="cf_busy">VK (OPPTATT)</string>
     <string name="cf_busy_noanswer">VK (OPPTATT/UBESVART)</string>
+    <string name="cf_noanswer">VK (UBESVART)</string>
     <string name="chat_document">Dokument</string>
     <string name="chat_extension_title">Internnummer #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

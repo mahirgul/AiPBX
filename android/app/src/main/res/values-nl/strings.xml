@@ -118,8 +118,10 @@
     <string name="btn_remove">Verwijderen</string>
     <string name="call_from_pbx">PBX-oproep</string>
     <string name="call_on_hold">In wachtstand</string>
+    <string name="cf_always">DS (ALTIJD)</string>
     <string name="cf_busy">DS (BEZET)</string>
     <string name="cf_busy_noanswer">DS (BEZET/GEEN ANTWOORD)</string>
+    <string name="cf_noanswer">DS (GEEN ANTWOORD)</string>
     <string name="chat_document">Document</string>
     <string name="chat_extension_title">Toestel #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

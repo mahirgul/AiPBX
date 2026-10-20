@@ -118,8 +118,10 @@
     <string name="btn_remove">Sil</string>
     <string name="call_from_pbx">PBX zəngi</string>
     <string name="call_on_hold">Gözləmədə</string>
+    <string name="cf_always">YÖN (HƏMİŞƏ)</string>
     <string name="cf_busy">YÖN (MƏŞĞUL)</string>
     <string name="cf_busy_noanswer">YÖN (MƏŞĞUL/CAVABSIZ)</string>
+    <string name="cf_noanswer">YÖN (CAVABSIZ)</string>
     <string name="chat_document">Sənəd</string>
     <string name="chat_extension_title">Daxili nömrə #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

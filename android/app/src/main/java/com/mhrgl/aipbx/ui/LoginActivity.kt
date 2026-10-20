@@ -106,7 +106,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding.btnLogin.setOnClickListener {
             val username = binding.etUsername.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
+            val password = binding.etPassword.text.toString()
 
             if (username.isEmpty() || password.isEmpty()) {
                 showError(getString(R.string.err_enter_credentials))

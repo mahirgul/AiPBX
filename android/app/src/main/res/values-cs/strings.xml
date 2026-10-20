@@ -118,8 +118,10 @@
     <string name="btn_remove">Odebrat</string>
     <string name="call_from_pbx">Hovor z ústředny</string>
     <string name="call_on_hold">Podrženo</string>
+    <string name="cf_always">PŘESM. (VŽDY)</string>
     <string name="cf_busy">PŘESM. (OBSAZENO)</string>
     <string name="cf_busy_noanswer">PŘESM. (OBSAZENO/NEPŘIJATO)</string>
+    <string name="cf_noanswer">PŘESM. (NEPŘIJATO)</string>
     <string name="chat_document">Dokument</string>
     <string name="chat_extension_title">Linka #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

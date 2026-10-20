@@ -118,8 +118,10 @@
     <string name="btn_remove">Poista</string>
     <string name="call_from_pbx">Vaihdepuhelu</string>
     <string name="call_on_hold">Pidossa</string>
+    <string name="cf_always">SS (AINA)</string>
     <string name="cf_busy">SS (VARATTU)</string>
     <string name="cf_busy_noanswer">SS (VARATTU/EI VASTAUSTA)</string>
+    <string name="cf_noanswer">SS (EI VASTAUSTA)</string>
     <string name="chat_document">Asiakirja</string>
     <string name="chat_extension_title">Alanumero #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

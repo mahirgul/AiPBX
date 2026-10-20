@@ -23,6 +23,11 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
+        val prefs = AppPreferences.getInstance(this)
+        if (!prefs.isLoggedIn) {
+            Log.d(TAG, "Ignoring incoming FCM push because user is logged out")
+            return
+        }
         val data = remoteMessage.data
         val action = data["action"] ?: "incoming_call"
         Log.i(TAG, "FCM Message received from: ${remoteMessage.from}, action=$action")

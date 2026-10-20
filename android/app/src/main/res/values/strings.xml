@@ -122,8 +122,10 @@
     <string name="btn_remove">Remove</string>
     <string name="call_from_pbx">PBX Call</string>
     <string name="call_on_hold">On hold</string>
+    <string name="cf_always">CF (ALWAYS)</string>
     <string name="cf_busy">CF (BUSY)</string>
     <string name="cf_busy_noanswer">CF (BUSY/NO ANSWER)</string>
+    <string name="cf_noanswer">CF (NO ANSWER)</string>
     <string name="chat_document">Document</string>
     <string name="chat_extension_title">Extension #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

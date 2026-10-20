@@ -118,8 +118,10 @@
     <string name="btn_remove">Αφαίρεση</string>
     <string name="call_from_pbx">Κλήση PBX</string>
     <string name="call_on_hold">Σε αναμονή</string>
+    <string name="cf_always">ΠΡΟΩΘ. (ΠΑΝΤΑ)</string>
     <string name="cf_busy">ΠΡΟΩΘ. (ΚΑΤΕΙΛ.)</string>
     <string name="cf_busy_noanswer">ΠΡΟΩΘ. (ΚΑΤΕΙΛ./ΧΩΡΙΣ ΑΠΑΝΤ.)</string>
+    <string name="cf_noanswer">ΠΡΟΩΘ. (ΧΩΡΙΣ ΑΠΑΝΤ.)</string>
     <string name="chat_document">Έγγραφο</string>
     <string name="chat_extension_title">Εσωτερικό #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

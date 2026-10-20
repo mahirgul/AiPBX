@@ -1,17 +1,28 @@
 package com.mhrgl.aipbx.ui
 
+import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.SimpleImageLoader
 import com.mhrgl.aipbx.model.ChatMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 class ChatMessageAdapter(
     private val myExtension: String,
@@ -209,11 +220,9 @@ class ChatMessageAdapter(
                 tvFileSize.text = formatFileSize(m.fileSize)
 
                 llFileAttachment.setOnClickListener {
-                    try {
-                        val fullFileUrl = resolveMediaUrl(m.attachmentUrl)
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withToken(fullFileUrl)))
-                        ctx.startActivity(intent)
-                    } catch (e: Exception) {}
+                    val fullFileUrl = resolveMediaUrl(m.attachmentUrl)
+                    val fileName = m.fileName ?: "document"
+                    openSecureAttachment(ctx, fullFileUrl, fileName)
                 }
             } else {
                 llFileAttachment.visibility = View.GONE
@@ -243,14 +252,66 @@ class ChatMessageAdapter(
         }
 
         /**
-         * An external browser/viewer cannot send an Authorization header and
-         * has no chat cookie; the server accepts ?token= for /chat/media/.
+         * Securely downloads chat attachment to local cache using Authorization Bearer token,
+         * then opens via FileProvider without leaking session token in intent URL.
          */
-        private fun withToken(url: String): String {
+        private fun openSecureAttachment(context: Context, fileUrl: String, fileName: String) {
             val token = tokenProvider()
-            if (token.isNullOrEmpty()) return url
-            val sep = if (url.contains('?')) '&' else '?'
-            return url + sep + "token=" + Uri.encode(token)
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    val targetFile = withContext(Dispatchers.IO) {
+                        val fileHash = (fileUrl.hashCode().toLong() and 0xFFFFFFFFL).toString(16)
+                        val safeName = "${fileHash}_" + fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                        val dir = File(context.cacheDir, "attachments").apply { mkdirs() }
+                        val file = File(dir, safeName)
+                        if (!file.exists() || file.length() == 0L) {
+                            val tempFile = File(dir, "$safeName.part")
+                            try {
+                                val conn = (URL(fileUrl).openConnection() as HttpURLConnection).apply {
+                                    connectTimeout = 15000
+                                    readTimeout = 30000
+                                    instanceFollowRedirects = true
+                                    if (!token.isNullOrEmpty()) {
+                                        setRequestProperty("Authorization", "Bearer $token")
+                                    }
+                                }
+                                val code = conn.responseCode
+                                if (code !in 200..299) {
+                                    throw IllegalStateException("HTTP error $code while downloading attachment")
+                                }
+                                conn.inputStream.use { input ->
+                                    FileOutputStream(tempFile).use { output ->
+                                        input.copyTo(output)
+                                    }
+                                }
+                                if (tempFile.length() == 0L) {
+                                    tempFile.delete()
+                                    throw IllegalStateException("Downloaded file is empty")
+                                }
+                                if (!tempFile.renameTo(file)) {
+                                    tempFile.copyTo(file, overwrite = true)
+                                    tempFile.delete()
+                                }
+                            } catch (e: Exception) {
+                                tempFile.delete()
+                                throw e
+                            }
+                        }
+                        file
+                    }
+                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", targetFile)
+                    val ext = MimeTypeMap.getFileExtensionFromUrl(targetFile.name)
+                    val mime = if (!ext.isNullOrEmpty()) MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext.lowercase()) else null
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, mime ?: "*/*")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, context.getString(R.string.err_file_read), Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         /** /chat/media/images/<name>.<ext> → /chat/media/thumbs/<name>_thumb.<ext> (the server's naming). */

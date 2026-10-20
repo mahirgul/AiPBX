@@ -390,6 +390,20 @@
                 ua.on('newRTCSession', function(data) {
                     var session = data.session;
                     if (currentSession && currentSession !== session) {
+                        // If there is already an active/ongoing call, reject the second incoming call with 486 Busy Here
+                        // instead of wiping media and muting the current active call.
+                        if (typeof currentSession.isEnded === 'function' && !currentSession.isEnded()) {
+                            log("newRTCSession: Active call in progress, rejecting second call with 486 Busy");
+                            try {
+                                session.terminate({
+                                    status_code: 486,
+                                    reason_phrase: "Busy Here"
+                                });
+                            } catch (e) {
+                                log("Error rejecting second call with 486: " + e.message);
+                            }
+                            return;
+                        }
                         log("newRTCSession: Cleaning up previous session");
                         cleanupMedia(currentSession);
                     }
@@ -397,7 +411,7 @@
                     bindSessionEvents(session);
 
                     if (session.direction === 'incoming') {
-                        var rawName = session.remote_identity.display_name || session.remote_identity.uri.user || "Bilinmiyor";
+                        var rawName = session.remote_identity.display_name || session.remote_identity.uri.user || "";
                         var rawNumber = session.remote_identity.uri.user || "";
 
                         var callerNumber = rawNumber.replace(/-mob-webrtc$|-webrtc$|-sip$/, '');

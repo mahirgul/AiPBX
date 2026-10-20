@@ -118,8 +118,10 @@
     <string name="btn_remove">Quitar</string>
     <string name="call_from_pbx">Llamada de la centralita</string>
     <string name="call_on_hold">En espera</string>
+    <string name="cf_always">DESVÍO (SIEMPRE)</string>
     <string name="cf_busy">DESVÍO (OCUPADO)</string>
     <string name="cf_busy_noanswer">DESVÍO (OCUPADO/SIN RESPUESTA)</string>
+    <string name="cf_noanswer">DESVÍO (SIN RESPUESTA)</string>
     <string name="chat_document">Documento</string>
     <string name="chat_extension_title">Extensión #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>
