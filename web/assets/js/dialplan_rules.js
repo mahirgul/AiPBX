@@ -60,6 +60,13 @@ document.addEventListener('DOMContentLoaded', function () {
         // Run once on initial page load
         runLiveSimulation();
     }
+
+    // Preset country code input dynamic badge update
+    var ccInput = document.getElementById('preset_country_code');
+    if (ccInput) {
+        ccInput.addEventListener('input', updateCountryBadge);
+        ccInput.addEventListener('change', updateCountryBadge);
+    }
 });
 
 function switchTab(tabKey) {
@@ -161,11 +168,32 @@ function setSimNumber(num) {
     }
 }
 
+function updateCountryBadge() {
+    var ccInput = document.getElementById('preset_country_code');
+    var badge = document.getElementById('preset_country_badge');
+    if (!ccInput || !badge) return;
+    var val = ccInput.value.replace(/[^0-9]/g, '');
+    var codes = window.COUNTRY_CALLING_CODES || {};
+    var info = codes[val];
+    if (info) {
+        badge.textContent = (info.flag ? info.flag + ' ' : '') + (info.name_tr || info.name_en);
+        badge.style.display = 'inline-flex';
+    } else if (val) {
+        badge.textContent = '+' + val;
+        badge.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
 function confirmLoadDefaultsWithCc(e, form) {
     var ccInput = form.querySelector('input[name="country_code"]');
-    var cc = (ccInput ? ccInput.value.trim() : '') || '90';
-    var tmpl = form.dataset.confirmTmpl || 'Load presets for country code +%s? Current rules will be replaced.';
-    var msg = tmpl.replace('%s', cc).replace('{cc}', cc);
+    var cc = (ccInput ? ccInput.value.replace(/[^0-9]/g, '').trim() : '') || '90';
+    var codes = window.COUNTRY_CALLING_CODES || {};
+    var info = codes[cc];
+    var countryLabel = info ? ((info.flag ? info.flag + ' ' : '') + (info.name_tr || info.name_en) + ' (+' + cc + ')') : ('+' + cc);
+    var tmpl = form.dataset.confirmTmpl || 'Load presets for %s? Current rules will be replaced.';
+    var msg = tmpl.replace('%s', countryLabel).replace('{cc}', countryLabel);
     if (!confirm(msg)) {
         e.preventDefault();
         return false;

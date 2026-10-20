@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.7
+
+Global country calling codes directory, dynamic country badge & autocomplete, and reliable preset loader execution on the Call Normalization page (`/dialplan-rules`).
+
+- **Global Country Calling Codes Directory (`web/config/country_calling_codes.json`):** Integrated standard ITU-T E.164 country calling code database with localized country names in Turkish and English, ISO 3166 alpha-2 identifiers, and national flags.
+- **Telecom Preset Form Action Fix:** Resolved form action dispatching in `DialplanRuleController` and `index.php` so clicking "Load Recommended Presets" with any country code (such as Austria `+43`, Germany `+49`, etc.) reliably replaces existing rules and updates `sys_settings` without being skipped by `handlePost`.
+- **Dynamic Country Name & Flag Display:** Connected a live country identifier badge and `<datalist>` autocomplete to the country code input on `/dialplan-rules`, dynamically showing the country name and flag (e.g. `🇦🇹 Avusturya`) as the user types or selects a code.
+- **Localized Rule Preset Titles:** Configured preset generator in `DialplanRuleService` to embed localized country names into generated normalization rule names (e.g. `Masaüstü: E.164 Avusturya (+43 -> 0)`).
+
 ## 1.34.6
 
 CSRF token handling and real-time simulator AJAX resilience on the Call Normalization page (`/dialplan-rules`).
