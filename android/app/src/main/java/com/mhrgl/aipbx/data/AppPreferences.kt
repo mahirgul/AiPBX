@@ -288,6 +288,10 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_SLEEPING_WARNING, false)
         set(value) = prefs.edit().putBoolean(KEY_SLEEPING_WARNING, value).apply()
 
+    var sendPlusPrefix: Boolean
+        get() = prefs.getBoolean(KEY_SEND_PLUS_PREFIX, true)
+        set(value) = prefs.edit().putBoolean(KEY_SEND_PLUS_PREFIX, value).apply()
+
     var lastResurrectionTimestamp: Long
         get() = prefs.getLong(KEY_LAST_RESURRECTION_TS, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_RESURRECTION_TS, value).apply()
@@ -435,6 +439,7 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_TOKEN_REFRESH_TIME = "last_token_refresh_time"
         private const val KEY_VIDEO_RES = "video_resolution"
         private const val KEY_VIDEO_FPS = "video_fps"
+        private const val KEY_SEND_PLUS_PREFIX = "send_plus_prefix"
 
         private const val OLD_PREFS_NAME = "ai_pbx_prefs"
         private const val SECURE_PREFS_NAME = "ai_pbx_secure_prefs"

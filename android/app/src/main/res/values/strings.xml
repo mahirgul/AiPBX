@@ -304,6 +304,8 @@
     <string name="ui_dnd">Do Not Disturb (DND)</string>
     <string name="ui_dnd_active">DND ON</string>
     <string name="ui_dnd_desc">All incoming calls get busy</string>
+    <string name="pref_send_plus_title">Keep \'+\' Prefix</string>
+    <string name="pref_send_plus_desc">Send international \'+\' directly to PBX for dialplan normalization (ON) or convert to 00 (OFF)</string>
     <string name="ui_download_share">Download &amp; Share</string>
     <string name="ui_edit_info">Edit Info</string>
     <string name="ui_extension_placeholder">Extension: --</string>
