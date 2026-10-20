@@ -252,6 +252,43 @@ final class DialplanRulesTest extends TestCase
         $token = 'test-token';
         $_SESSION['csrf_token'] = $token;
 
+        // Test Country Calling Codes Dataset
+        $countries = DialplanRuleService::getAllCountries();
+        $this->assertNotEmpty($countries);
+        $this->assertArrayHasKey('43', $countries);
+        $this->assertArrayHasKey('90', $countries);
+        $this->assertArrayHasKey('49', $countries);
+
+        $atInfo = DialplanRuleService::getCountryInfo('43');
+        $this->assertSame('Avusturya', $atInfo['name_tr']);
+        $this->assertSame('Austria', $atInfo['name_en']);
+        $this->assertSame('AT', $atInfo['iso2']);
+        $this->assertSame('🇦🇹', $atInfo['flag']);
+
+        // Load Austria presets (country code 43)
+        $resAt = DialplanRuleService::loadDefaults($token, '43');
+        $this->assertTrue($resAt['success'] ?? false, $resAt['error'] ?? '');
+        $this->assertSame('43', getSystemSetting('dialplan_rules_country_code'));
+
+        $atMobile = DialplanRuleRepository::allActiveOrdered('mobile');
+        $foundAt = false;
+        foreach ($atMobile as $rule) {
+            if ($rule['match_pattern'] === '_+43.') {
+                $foundAt = true;
+                $this->assertSame(3, (int)$rule['strip_front']);
+                $this->assertSame('0', $rule['prepend']);
+                $this->assertStringContainsString('Avusturya', $rule['rule_name']);
+            }
+        }
+        $this->assertTrue($foundAt, 'Mobile should have _+43. Avusturya rule');
+
+        // Test simulation for Austria number
+        $simAt = DialplanRuleRepository::simulateAll('+436641234567');
+        $this->assertTrue($simAt['mobile']['matched']);
+        $this->assertSame('06641234567', $simAt['mobile']['normalized']);
+        $this->assertTrue($simAt['web']['matched']);
+        $this->assertSame('06641234567', $simAt['web']['normalized']);
+
         // Load German presets (country code 49)
         $res = DialplanRuleService::loadDefaults($token, '49');
         $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
@@ -267,6 +304,7 @@ final class DialplanRulesTest extends TestCase
                 $foundDe = true;
                 $this->assertSame(3, (int)$rule['strip_front']); // '+' and '49' = 3
                 $this->assertSame('0', $rule['prepend']);
+                $this->assertStringContainsString('Almanya', $rule['rule_name']);
             }
         }
         $this->assertTrue($foundDe, 'Mobile should have _+49. rule with strip 3 and prepend 0');

@@ -44,12 +44,22 @@ class DialplanRuleController extends BaseController
             exit;
         }
 
-        $notices = static::handlePost([
+        $action = (string)($_POST['action'] ?? '');
+        $postActions = [
             'save_rule' => fn() => DialplanRuleService::saveRule($_POST),
             'delete_rule' => fn() => DialplanRuleService::deleteRule(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
             'toggle_status' => fn() => DialplanRuleService::toggleStatus(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
             'load_defaults' => fn() => DialplanRuleService::loadDefaults(static::csrfToken(), (string)($_POST['country_code'] ?? '90')),
-        ]);
+        ];
+
+        $notices = ['message' => '', 'error' => ''];
+        if (static::isPost()) {
+            if ($action !== '' && isset($postActions[$action])) {
+                $notices = static::notices($postActions[$action]());
+            } else {
+                $notices = static::handlePost($postActions);
+            }
+        }
 
         $active_tab = trim((string)($_GET['tab'] ?? 'mobile'));
         if (!in_array($active_tab, ['mobile', 'desktop', 'web', 'all', 'simulator'], true)) {
@@ -57,6 +67,8 @@ class DialplanRuleController extends BaseController
         }
 
         $country_code = (string)getSystemSetting('dialplan_rules_country_code', '90');
+        $country_info = DialplanRuleService::getCountryInfo($country_code);
+        $all_countries = DialplanRuleService::getAllCountries();
 
         $all_rules = DialplanRuleRepository::allOrdered();
         $rules_by_type = [
@@ -82,6 +94,8 @@ class DialplanRuleController extends BaseController
         static::renderPage('dialplan_rules/index', [
             'active_tab' => $active_tab,
             'country_code' => $country_code,
+            'country_info' => $country_info,
+            'all_countries' => $all_countries,
             'all_rules' => $all_rules,
             'rules_by_type' => $rules_by_type,
         ], ['title' => $page_title] + $notices);

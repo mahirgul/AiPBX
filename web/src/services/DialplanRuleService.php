@@ -282,6 +282,44 @@ class DialplanRuleService
         });
     }
 
+    public static function getAllCountries(): array
+    {
+        static $list = null;
+        if ($list !== null) {
+            return $list;
+        }
+        $file = dirname(__DIR__, 2) . '/config/country_calling_codes.json';
+        if (is_file($file)) {
+            $decoded = json_decode((string)file_get_contents($file), true);
+            if (is_array($decoded)) {
+                $list = $decoded;
+                return $list;
+            }
+        }
+        return [];
+    }
+
+    public static function getCountryInfo(string $code): array
+    {
+        $code = preg_replace('/[^0-9]/', '', $code);
+        $countries = self::getAllCountries();
+        return $countries[$code] ?? [
+            'name_tr' => "+{$code}",
+            'name_en' => "+{$code}",
+            'iso2' => '',
+            'flag' => '🌐',
+        ];
+    }
+
+    public static function getCountryName(string $code, string $lang = 'tr'): string
+    {
+        $info = self::getCountryInfo($code);
+        if ($lang === 'tr') {
+            return $info['name_tr'] ?? "+{$code}";
+        }
+        return $info['name_en'] ?? "+{$code}";
+    }
+
     public static function getDefaultPresets(string $countryCode = '90'): array
     {
         $cc = preg_replace('/[^0-9]/', '', $countryCode);
@@ -289,7 +327,7 @@ class DialplanRuleService
             $cc = '90';
         }
         $stripLen = 1 + strlen($cc); // e.g. for +90 -> 3 digits (+, 9, 0)
-        $countryName = ($cc === '90') ? 'Türkiye' : "+{$cc}";
+        $countryName = self::getCountryName($cc, 'tr');
 
         $presets = [
             // Desktop

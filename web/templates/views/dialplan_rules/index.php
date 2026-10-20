@@ -18,13 +18,22 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
                 <form method="POST" class="d-inline-flex align-items-center" style="display: inline-flex; align-items: center; gap: 6px;" onsubmit="return confirmLoadDefaultsWithCc(event, this);" data-confirm-tmpl="<?php echo htmlspecialchars(t('dialplan_rules.confirm_load_defaults_cc')); ?>">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCSRFToken()); ?>">
                     <input type="hidden" name="action" value="load_defaults">
+                    <input type="hidden" name="load_defaults" value="1">
                     <div class="input-group input-group-sm" style="width: auto; display: inline-flex;">
                         <span class="input-group-text" style="font-size: 11px; font-weight: bold; padding: 2px 7px;" title="<?php echo htmlspecialchars(t('dialplan_rules.country_code_hint')); ?>">
                             <i class="fas fa-globe-americas"></i> +
                         </span>
-                        <input type="text" name="country_code" id="preset_country_code" class="form-control form-control-sm" style="width: 55px; text-align: center; font-weight: bold; font-family: monospace;" value="<?php echo htmlspecialchars($country_code ?? '90'); ?>" placeholder="90" maxlength="4" pattern="[0-9]{1,4}" title="<?php echo htmlspecialchars(t('dialplan_rules.country_code_hint')); ?>">
+                        <input type="text" name="country_code" id="preset_country_code" list="preset_country_codes_datalist" class="form-control form-control-sm" style="width: 60px; text-align: center; font-weight: bold; font-family: monospace;" value="<?php echo htmlspecialchars($country_code ?? '90'); ?>" placeholder="90" maxlength="4" pattern="[0-9]{1,4}" title="<?php echo htmlspecialchars(t('dialplan_rules.country_code_hint')); ?>" autocomplete="off">
                     </div>
-                    <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('dialplan_rules.btn_load_defaults'); ?>">
+                    <span id="preset_country_badge" class="badge" style="background: var(--bg-surface-secondary); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 11px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px;" title="<?php echo htmlspecialchars($country_info['name_en'] ?? ''); ?>">
+                        <?php echo htmlspecialchars(($country_info['flag'] ?? '') . ' ' . ($country_info['name_tr'] ?? '')); ?>
+                    </span>
+                    <datalist id="preset_country_codes_datalist">
+                        <?php foreach (($all_countries ?? []) as $cCode => $cInfo): ?>
+                            <option value="<?php echo htmlspecialchars((string)$cCode); ?>"><?php echo htmlspecialchars(($cInfo['flag'] ?? '') . ' ' . ($cInfo['name_tr'] ?? $cInfo['name_en']) . ' (+' . $cCode . ')'); ?></option>
+                        <?php endforeach; ?>
+                    </datalist>
+                    <button type="submit" name="load_defaults" value="1" class="btn btn-secondary btn-sm" title="<?php echo t('dialplan_rules.btn_load_defaults'); ?>">
                         <i class="fas fa-magic"></i> <?php echo t('dialplan_rules.btn_load_defaults'); ?>
                     </button>
                 </form>
@@ -321,4 +330,7 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
     </div>
 </div>
 
+<script>
+    window.COUNTRY_CALLING_CODES = <?php echo json_encode($all_countries ?? [], JSON_UNESCAPED_UNICODE); ?>;
+</script>
 <script src="<?php echo asset('/assets/js/dialplan_rules.js'); ?>"></script>
