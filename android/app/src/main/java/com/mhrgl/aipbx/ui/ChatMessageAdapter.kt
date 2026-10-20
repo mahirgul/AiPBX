@@ -265,7 +265,7 @@ class ChatMessageAdapter(
                         val dir = File(context.cacheDir, "attachments").apply { mkdirs() }
                         val file = File(dir, safeName)
                         if (!file.exists() || file.length() == 0L) {
-                            val tempFile = File(dir, "$safeName.part")
+                            val tempFile = File(dir, "${safeName}_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}.part")
                             try {
                                 val conn = (URL(fileUrl).openConnection() as HttpURLConnection).apply {
                                     connectTimeout = 15000

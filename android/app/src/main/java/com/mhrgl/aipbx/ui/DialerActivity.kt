@@ -395,6 +395,9 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
                     pbxService?.engine?.destroy()
                     prefs.clearAuth()
                     stopService(Intent(this, PbxForegroundService::class.java))
+                    try {
+                        java.io.File(cacheDir, "attachments").deleteRecursively()
+                    } catch (e: Exception) { /* ignore */ }
                     startActivity(Intent(this, ServerSetupActivity::class.java))
                     finish()
                 }
@@ -646,7 +649,8 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         var cleanNumber = targetNumber.replace(Regex("[^0-9*#+]"), "")
         val tm = getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
-        val simCountry = tm?.simCountryIso ?: tm?.networkCountryIso
+        val simCountry = tm?.simCountryIso?.takeIf { it.isNotBlank() }
+            ?: tm?.networkCountryIso?.takeIf { it.isNotBlank() }
         val isTr = simCountry?.equals("tr", ignoreCase = true) == true ||
                 java.util.Locale.getDefault().country.equals("TR", ignoreCase = true) ||
                 com.mhrgl.aipbx.util.L10n.current() == "tr"
