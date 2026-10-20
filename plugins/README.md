@@ -1,4 +1,4 @@
-# AiPBX Official Plugin Catalog (`plugins/`)
+# AiPBX Plugin Catalog (Official & Community)
 
 This directory contains the **Official Plugin Catalog** for AiPBX. Starting with the modular plugin architecture, optional external integrations, telemetry collectors, and AI modules live here as self-contained plugin manifests (`<slug>/plugin.json`) rather than being force-enabled on every PBX installation.
 

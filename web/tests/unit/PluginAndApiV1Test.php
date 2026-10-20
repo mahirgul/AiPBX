@@ -310,4 +310,33 @@ final class PluginAndApiV1Test extends TestCase
         $un = PluginManager::uninstall('auto-dialer', 'test-csrf-token');
         $this->assertTrue($un['success']);
     }
+
+    public function testPluginManagerTypeAndAuthorUrlSanitization(): void
+    {
+        $plugins = PluginManager::allPlugins();
+        $this->assertNotEmpty($plugins);
+
+        $bySlug = [];
+        foreach ($plugins as $p) {
+            $bySlug[$p['slug']] = $p;
+            $this->assertContains($p['type'], ['official', 'community']);
+            if (!empty($p['author_url'])) {
+                $this->assertMatchesRegularExpression('#^https?://#i', $p['author_url']);
+            }
+        }
+
+        // Official plugins
+        $this->assertArrayHasKey('auto-dialer', $bySlug);
+        $this->assertSame('official', $bySlug['auto-dialer']['type']);
+        $this->assertArrayHasKey('google-auth', $bySlug);
+        $this->assertSame('official', $bySlug['google-auth']['type']);
+
+        // Community plugins
+        if (isset($bySlug['ai-assistant'])) {
+            $this->assertSame('community', $bySlug['ai-assistant']['type']);
+        }
+        if (isset($bySlug['signaling-capture'])) {
+            $this->assertSame('community', $bySlug['signaling-capture']['type']);
+        }
+    }
 }
