@@ -21,8 +21,20 @@
  */
 class DocsService
 {
-    /** Shown first in the document list; the rest follow alphabetically. */
+    /** Shown first in the document list; core docs follow alphabetically, then PLUGINS at the bottom. */
     private const FIRST = ['system-map', 'troubleshooting', 'README'];
+
+    /** Documentation pages for optional plugins, grouped at the bottom of the Help sidebar. */
+    private const PLUGINS = [
+        'plugin-development',
+        'ai-apps',
+        'assistant',
+        'cloud-ai',
+        'cloud-tts',
+        'local-ai',
+        'signaling',
+        'web-widgets',
+    ];
 
     /** Prefix of a link to another document: the portal uses /help?doc=, the website /docs/. */
     public static string $docUrl = '/help?doc=';
@@ -40,20 +52,34 @@ class DocsService
     }
 
     /**
-     * @return list<array{name: string, title: string}>
+     * @return list<array{name: string, title: string, plugin?: bool}>
      */
     public static function list(): array
     {
         $out = [];
         foreach (glob(self::dir() . '/*.md') ?: [] as $file) {
             $name = basename($file, '.md');
-            $out[$name] = ['name' => $name, 'title' => self::title($file) ?: $name];
+            $out[$name] = [
+                'name' => $name,
+                'title' => self::title($file) ?: $name,
+                'plugin' => in_array($name, self::PLUGINS, true),
+            ];
         }
         uksort($out, function (string $a, string $b): int {
             $ia = array_search($a, self::FIRST, true);
             $ib = array_search($b, self::FIRST, true);
             if ($ia !== false || $ib !== false) {
                 return ($ia === false ? 99 : $ia) <=> ($ib === false ? 99 : $ib);
+            }
+            $pa = in_array($a, self::PLUGINS, true);
+            $pb = in_array($b, self::PLUGINS, true);
+            if ($pa !== $pb) {
+                return $pa <=> $pb;
+            }
+            if ($pa && $pb) {
+                if ($a === 'plugin-development' || $b === 'plugin-development') {
+                    return $a === 'plugin-development' ? -1 : 1;
+                }
             }
             return strcasecmp($a, $b);
         });

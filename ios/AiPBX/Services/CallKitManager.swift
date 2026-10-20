@@ -246,7 +246,7 @@ public final class CallKitManager: NSObject, CXProviderDelegate {
 
     public func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         AppLogManager.shared.info("CallKit", "Audio session activated by CallKit")
-        AudioSessionManager.shared.configureAudioSessionForCall()
+        AudioSessionManager.shared.activateAudioSession()
     }
 
     public func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {

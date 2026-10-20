@@ -1,4 +1,6 @@
-# Signaling capture
+# Signaling capture (Plugin)
+
+> **Plugin (`signaling-capture`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 AiPBX ships an optional signaling pipeline: what crosses the SIP stack can
 be captured, kept on this server and read by the dialplan editor's Echo box.

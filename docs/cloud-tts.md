@@ -1,4 +1,6 @@
-# Cloud TTS
+# Cloud TTS (Plugin)
+
+> **Plugin (`ai-tts`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 **AI → Cloud TTS** (admin by default) turns text into speech with a cloud text-to-speech service. The
 result can be played on the page, downloaded as MP3, or saved straight into **Sounds**

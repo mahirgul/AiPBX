@@ -1,4 +1,6 @@
-# AI applications
+# AI applications (Plugin)
+
+> **Plugin (`ai-apps`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 **AI → Applications** (admin only) are AI features that take calls. Each application has an
 **internal number** (dial it from an extension) and can be chosen as a destination wherever
