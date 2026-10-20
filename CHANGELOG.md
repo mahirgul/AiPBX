@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.3
+
+Auto-dialer loopback callback fix, official vs. community plugin architecture, mobile admin footer responsiveness, universal E.164 dialing normalization, and full 23-language i18n synchronization.
+
+- **Auto-Dialer Telephony Loopback Callback:** added `/api/plugins/` exception to Port 80 Apache vhost in `install.sh` and live configuration, preventing 301 HTTPS redirects on Asterisk `CURL()` calls and ensuring real-time `dial_failed`, `answered`, and `hangup` event delivery to the PBX database without stuck dialing recovery drops.
+- **Plugin System & Author Metadata:** added first-class distinction between Official (`type: official`) and Community (`type: community`) plugins, visual badge indicators in the catalog, manifest author metadata (`author`, `author_url`) with safe HTTP/HTTPS URL scheme validation and enum verification, and dedicated standalone plugins repository.
+- **Inbound DID Pattern Routing & Dynamic Extension Target:** documented Asterisk pattern wildcards (`_`, `X`, `Z`, `N`, `.`) and dynamic destination dispatching (`__did__`) to route full blocks of DIDs directly to matching extensions in `docs/inbound-routes.md`.
+- **Mobile Web Portal UX & Responsive Footer:** streamlined admin footer bar by removing redundant live clock element, responsive wrapping into two clean lines on mobile screens without overflowing or cramping, and safe area inset support.
+- **23-Language Portal i18n Synchronization:** added missing badge and attribution keys (`plugins.badge_official`, `plugins.badge_community`, `common.by`) across all 23 supported interface languages, restoring a 100% clean CI lint status (`lint_lang.php`).
+- **Android Universal E.164 Dialpad Normalization:** replaced legacy country-specific SIM ISO normalization assumptions with standard international E.164 (`+` → `00`) prefix dialing, contacts layout alignment with chat, and permission state hardening.
+
 ## 1.34.2
 
 Security and reliability hardening, Android v1.0.78 release, mobile 22-language translation synchronization, multi-call busy handling, and GitHub Sponsors integration.
