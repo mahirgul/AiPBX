@@ -38,33 +38,27 @@ class SipFormattingTest {
 
     @Test
     fun testDialNumberNormalization() {
-        fun normalize(num: String, isTr: Boolean): String {
+        fun normalize(num: String): String {
             var clean = num.replace(Regex("[^0-9*#+]"), "")
-            if (clean.startsWith("+90")) {
-                clean = "0" + clean.substring(3)
-            } else if (isTr && clean.length == 10 && clean.startsWith("5")) {
-                clean = "0$clean"
-            }
             if (clean.startsWith("+")) {
                 clean = "00" + clean.substring(1)
             }
             return clean
         }
 
-        // +90 must always convert to 05xx regardless of isTr
-        assertEquals("05321234567", normalize("+905321234567", isTr = false))
-        assertEquals("05321234567", normalize("+90 532 123 45 67", isTr = false))
-        assertEquals("05321234567", normalize("+905321234567", isTr = true))
+        // Clean formatting characters
+        assertEquals("05321234567", normalize("0532 123 45 67"))
+        assertEquals("05321234567", normalize("0 (532) 123-45-67"))
 
-        // Local 10-digit number prepends 0 only when isTr is true
-        assertEquals("05321234567", normalize("5321234567", isTr = true))
-        assertEquals("5321234567", normalize("5321234567", isTr = false))
+        // International + prefix converts to standard 00
+        assertEquals("00905321234567", normalize("+905321234567"))
+        assertEquals("00905321234567", normalize("+90 532 123 45 67"))
+        assertEquals("00491711234567", normalize("+491711234567"))
+        assertEquals("00447911123456", normalize("+44 7911 123456"))
 
-        // International + prefix converts to 00
-        assertEquals("00491711234567", normalize("+491711234567", isTr = false))
-        assertEquals("00491711234567", normalize("+491711234567", isTr = true))
-
-        // Normal 0-prefixed number remains untouched
-        assertEquals("02121234567", normalize("02121234567", isTr = true))
+        // Internal extensions and feature codes remain untouched
+        assertEquals("101", normalize("101"))
+        assertEquals("*97", normalize("*97"))
+        assertEquals("#31#05321234567", normalize("#31#05321234567"))
     }
 }

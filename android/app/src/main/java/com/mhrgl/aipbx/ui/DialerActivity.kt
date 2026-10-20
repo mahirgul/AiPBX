@@ -568,7 +568,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
 
         // The keypad types; tapping the field only places the cursor (no system keyboard).
         binding.tvDigits.showSoftInputOnFocus = false
-        // Typed or pasted text keeps only what can be dialled ("+90 (532) 123-45-67" → +905321234567).
+        // Typed or pasted text keeps only what can be dialled ("+49 (170) 123-45-67" → +491701234567).
         binding.tvDigits.filters = arrayOf(android.text.InputFilter { source, start, end, _, _, _ ->
             val kept = source.subSequence(start, end).filter { it.isDigit() || it in "*#+" }
             if (kept.length == end - start) null else kept
@@ -648,17 +648,6 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         var cleanNumber = targetNumber.replace(Regex("[^0-9*#+]"), "")
-        val tm = getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
-        val simCountry = tm?.simCountryIso?.takeIf { it.isNotBlank() }
-            ?: tm?.networkCountryIso?.takeIf { it.isNotBlank() }
-        val isTr = simCountry?.equals("tr", ignoreCase = true) == true ||
-                java.util.Locale.getDefault().country.equals("TR", ignoreCase = true) ||
-                com.mhrgl.aipbx.util.L10n.current() == "tr"
-        if (cleanNumber.startsWith("+90")) {
-            cleanNumber = "0" + cleanNumber.substring(3)
-        } else if (isTr && cleanNumber.length == 10 && cleanNumber.startsWith("5")) {
-            cleanNumber = "0$cleanNumber"
-        }
         if (cleanNumber.startsWith("+")) {
             cleanNumber = "00" + cleanNumber.substring(1)
         }
