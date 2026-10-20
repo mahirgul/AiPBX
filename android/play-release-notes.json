@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.77",
+  "version": "1.0.78",
   "notes": {
-    "en-US": "Unified visual sizing across History, Contacts, Chat, and PBX tabs, replaced logout icon with a dedicated power/logoff symbol, and persisted full-screen incoming call settings across restarts and updates.",
-    "tr-TR": "Geçmiş, Kişiler, Sohbet ve PBX sekmelerinde simge, satır ve buton boyutları eşitlendi; çıkış butonu simgesi güç/çıkış ikonu olarak yenilendi ve tam ekran çağrı ayarı kalıcı hale getirildi."
+    "en-US": "Security and stability fixes: secure attachment downloading, foreground service start safety, multi-call busy handling, diacritics search normalization, and 22-language translation sync.",
+    "tr-TR": "Güvenlik ve kararlılık iyileştirmeleri: güvenli sohbet eki indirme, ön plan servis güvenlik korumaları, çoklu çağrıda meşgul yönetimi, aksanlı arama normalizasyonu ve 22 dilde çeviri senkronizasyonu."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
