@@ -247,6 +247,11 @@ final class PluginManager
 
             self::resetCache();
 
+            // Apply plugin database schema (schema.sql -> plg_* tables only)
+            if (!empty($m['dir'])) {
+                self::applyPluginSchema($slug, (string)$m['dir']);
+            }
+
             // If plugin defines an Asterisk sync_domain hook, mark it pending
             if (!empty($m['hooks']['sync_domain'])) {
                 try {
@@ -300,9 +305,9 @@ final class PluginManager
     }
 
     /**
-     * Uninstall a plugin: removes DB registration, settings, KV store, and
-     * (if custom uploaded) its directory on disk. Official catalog plugins stay
-     * available in the catalog for future re-installation.
+     * Uninstall a plugin: removes DB registration, settings, KV store, declared
+     * `plg_*` tables, and (if custom uploaded) its directory on disk. Official
+     * catalog plugins stay available in the catalog for future re-installation.
      *
      * @return array<string, mixed>
      */
@@ -314,6 +319,9 @@ final class PluginManager
                 throw new \Exception(t('common.not_found', 'Plugin not found.'));
             }
 
+            $manifests = self::discoverManifests();
+            $m = $manifests[$slug] ?? [];
+
             $db = getDB();
             $db->prepare('DELETE FROM sys_plugins WHERE slug = ?')->execute([$slug]);
             $db->prepare('DELETE FROM sys_plugin_settings WHERE plugin_slug = ?')->execute([$slug]);
@@ -321,6 +329,7 @@ final class PluginManager
             $db->prepare('DELETE FROM sys_webhook_queue WHERE plugin_slug = ?')->execute([$slug]);
             ApiTokenService::revokePluginTokens($slug);
             self::cleanupPluginAsteriskConf($slug);
+            self::dropPluginTables($slug, $m);
 
             if ($p['source'] === 'custom') {
                 $customPath = self::customDir() . '/' . $slug;
@@ -473,6 +482,9 @@ final class PluginManager
                 $rawToken = ApiTokenService::issuePluginToken($slug, $name, $scopes);
                 self::setSetting($slug, '_worker_api_token', $rawToken, true);
             }
+
+            // Apply plugin database schema (schema.sql -> plg_* tables only)
+            self::applyPluginSchema($slug, $targetDir);
 
             self::resetCache();
             writeAuditLog('plugins', 'plugin', $slug, "Custom plugin uploaded & enabled: {$name} (v{$version})", 'create', $_SESSION['user_id'] ?? null);
@@ -887,6 +899,159 @@ final class PluginManager
             }
         }
         return $items;
+    }
+
+    /**
+     * Validate and apply `schema.sql` (or `migrations/install.sql`) for a plugin.
+     * Security rule: Plugins may ONLY create tables prefixed with `plg_` (`^plg_[a-z0-9_]{2,58}$`).
+     *
+     * @return list<string> Names of `plg_*` tables created/verified
+     */
+    public static function applyPluginSchema(string $slug, string $pluginDir): array
+    {
+        $schemaFile = '';
+        foreach ([$pluginDir . '/schema.sql', $pluginDir . '/migrations/install.sql'] as $candidate) {
+            if (is_file($candidate)) {
+                $schemaFile = $candidate;
+                break;
+            }
+        }
+        if ($schemaFile === '') {
+            return [];
+        }
+
+        $rawSql = (string)@file_get_contents($schemaFile);
+        if (trim($rawSql) === '') {
+            return [];
+        }
+
+        $statements = self::parseAndValidatePluginSchemaSql($rawSql);
+        $db = getDB();
+        $tables = [];
+        foreach ($statements as $item) {
+            $db->exec($item['sql']);
+            $tables[] = $item['table'];
+        }
+        return $tables;
+    }
+
+    /**
+     * Parse raw SQL from a plugin's `schema.sql` and enforce the `plg_` table sandbox.
+     * Only `CREATE TABLE [IF NOT EXISTS] plg_<name> (...)` statements are permitted.
+     *
+     * @return list<array{table: string, sql: string}>
+     */
+    public static function parseAndValidatePluginSchemaSql(string $rawSql): array
+    {
+        // Strip SQL comments (-- ... and /* ... */)
+        $clean = (string)preg_replace('~/\*.*?\*/~s', '', $rawSql);
+        $lines = preg_split('/\R/', $clean) ?: [];
+        $filteredLines = [];
+        foreach ($lines as $line) {
+            $trimmed = ltrim($line);
+            if (str_starts_with($trimmed, '--') || str_starts_with($trimmed, '#')) {
+                continue;
+            }
+            $filteredLines[] = $line;
+        }
+        $clean = implode("\n", $filteredLines);
+
+        $parts = array_filter(array_map('trim', explode(';', $clean)), fn($s) => $s !== '');
+        $validated = [];
+
+        foreach ($parts as $stmt) {
+            if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(plg_[a-z0-9_]{2,58})`?\s*\(.+\)\s*(?:ENGINE\s*=\s*[A-Za-z0-9_]+)?(?:\s+DEFAULT\s+CHARSET\s*=\s*[A-Za-z0-9_]+)?(?:\s+COLLATE\s*=\s*[A-Za-z0-9_]+)?$/is', $stmt, $m)) {
+                throw new \Exception('Plugin schema security violation: only CREATE TABLE [IF NOT EXISTS] plg_<name> (...) statements are allowed in schema.sql.');
+            }
+            $tableName = strtolower($m[1]);
+            // Block any subquery/reference to core tables or destructive DDL keywords inside the statement
+            if (preg_match('/\b(DROP|TRUNCATE|ALTER|GRANT|REVOKE|INTO\s+OUTFILE|LOAD_FILE|sys_users|sys_settings|sys_api_tokens|sys_plugins)\b/i', $stmt)) {
+                throw new \Exception("Plugin schema security violation in table {$tableName}: forbidden SQL keyword or core table reference.");
+            }
+            $validated[] = [
+                'table' => $tableName,
+                'sql'   => $stmt,
+            ];
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Drop `plg_*` tables owned by a plugin when it is uninstalled.
+     *
+     * @param array<string, mixed> $manifest
+     */
+    public static function dropPluginTables(string $slug, array $manifest): void
+    {
+        $tables = [];
+        if (!empty($manifest['tables']) && is_array($manifest['tables'])) {
+            foreach ($manifest['tables'] as $t) {
+                $tName = strtolower(trim((string)$t));
+                if (preg_match('/^plg_[a-z0-9_]{2,58}$/', $tName)) {
+                    $tables[$tName] = true;
+                }
+            }
+        }
+        $pluginDir = (string)($manifest['dir'] ?? '');
+        if ($pluginDir !== '') {
+            foreach ([$pluginDir . '/schema.sql', $pluginDir . '/migrations/install.sql'] as $candidate) {
+                if (is_file($candidate)) {
+                    try {
+                        foreach (self::parseAndValidatePluginSchemaSql((string)@file_get_contents($candidate)) as $st) {
+                            $tables[$st['table']] = true;
+                        }
+                    } catch (\Throwable $e) {
+                    }
+                }
+            }
+        }
+
+        if (empty($tables)) {
+            return;
+        }
+
+        $db = getDB();
+        foreach (array_keys($tables) as $tableName) {
+            if (preg_match('/^plg_[a-z0-9_]{2,58}$/', $tableName)) {
+                try {
+                    $db->exec("DROP TABLE IF EXISTS `{$tableName}`");
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+    }
+
+    /**
+     * Execute `worker/tick.php` for all enabled plugins that declare `hooks.worker`.
+     * Called periodically by `web/bin/webhook_worker.php`.
+     */
+    public static function tickAllEnabledWorkers(): void
+    {
+        $manifests = self::discoverManifests();
+        foreach (self::allPlugins() as $p) {
+            if (!$p['enabled'] || empty($p['worker_enabled'])) {
+                continue;
+            }
+            $slug = (string)$p['slug'];
+            $m = $manifests[$slug] ?? null;
+            if (!$m || empty($m['dir'])) {
+                continue;
+            }
+            $tickFile = $m['dir'] . '/worker/tick.php';
+            if (is_file($tickFile)) {
+                try {
+                    $settings = self::getAllSettings($slug, false);
+                    $fn = require $tickFile;
+                    if (is_callable($fn)) {
+                        $fn($slug, $settings);
+                    }
+                    self::recordPluginSuccess($slug);
+                } catch (\Throwable $e) {
+                    self::recordPluginError($slug, 'worker', $e);
+                }
+            }
+        }
     }
 
     private static function cleanupPluginAsteriskConf(string $slug): void
