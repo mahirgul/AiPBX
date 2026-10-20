@@ -39,6 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (($_GET['action'] ?? 'list') === 'play') {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     $archived = VoicemailService::archivedKey($ext, (string) ($_GET['id'] ?? ''));
     if ($archived !== null) {
         require_once __DIR__ . '/../../src/services/BucketFiles.php';
