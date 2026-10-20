@@ -326,6 +326,12 @@ class AppPreferences(context: Context) {
             remove(KEY_TURN_PASS)
             remove(KEY_TURN_URL)
             remove(KEY_VIDEO_RES)
+            remove(KEY_FCM_TOKEN)
+            remove(KEY_PUSH_PROVIDER)
+            remove(KEY_FCM_PROJECT_ID)
+            remove(KEY_FCM_APP_ID)
+            remove(KEY_FCM_API_KEY)
+            remove(KEY_FCM_SENDER_ID)
             apply()
         }
         try {
@@ -342,6 +348,12 @@ class AppPreferences(context: Context) {
                 remove(KEY_TURN_PASS)
                 remove(KEY_TURN_URL)
                 remove(KEY_VIDEO_RES)
+                remove(KEY_FCM_TOKEN)
+                remove(KEY_PUSH_PROVIDER)
+                remove(KEY_FCM_PROJECT_ID)
+                remove(KEY_FCM_APP_ID)
+                remove(KEY_FCM_API_KEY)
+                remove(KEY_FCM_SENDER_ID)
                 apply()
             }
             appContext.getSharedPreferences(OLD_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
