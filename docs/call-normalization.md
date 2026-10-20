@@ -1,0 +1,57 @@
+# Call Normalization & Ingress Dialplan Rules
+
+Call Normalization rules act as an intelligent **pre-filter (Kademe 1)** between subscriber endpoints and the PBX Outbound Routes.
+
+```
+[ Incoming Call ]
+   ├─ 📱 Mobile App (E.164 contacts: "+90537...", "+1212...", "537...")
+   ├─ ☎️ Desk Phone (Office trunk prefix habits: "0" or "9")
+   └─ 💻 Web Softphone / CRM Click-to-Dial
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ 1. INGRESS NORMALIZATION PRE-FILTER                   │
+│    • Slices & normalizes numbers per client device     │
+│    • Converts E.164 '+' into canonical trunk formats   │
+│    • Strips legacy desk phone trunk codes ('0' / '9')  │
+│    • Internal extensions (*97, 101) stay untouched    │
+│    ➜ Output: Single Standard Number ("05379902352")    │
+└────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│ 2. OUTBOUND ROUTES & TRUNKS                            │
+│    • Matched against clean, standard patterns          │
+│    • Applied permission checks and route groups        │
+│    • Dispatched across trunk failover chains           │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Why Separate Device Rules?
+
+Different devices originate calls with completely different user habits:
+1. **Desk Phones (`desktop` / `sip`):** Users frequently dial a trunk access prefix (`0` in Europe/Turkey, `9` in North America) before dialing an outside number (`00537...` or `91212...`).
+2. **Mobile App (`mobile` / `mob-webrtc`):** Users tap contacts stored in their address book in full E.164 (`+90...`, `+1...`, `+49...`) or 10-digit national format (`537...`). Mobile users never enter an outside trunk code.
+3. **Web Softphone (`web` / `webrtc`):** Browser-based agent softphone and CRM click-to-dial calls.
+
+Without ingress normalization, supporting both desk phones and mobile apps required duplicated or conflicting outbound routes. With normalization rules, the dialed string is shaped into a standard format first.
+
+---
+
+## Safe Asterisk Dialplan Hierarchy
+
+To guarantee that call centers, queues, faks, and IVRs are never disrupted:
+1. **Internal Extensions & Features:** Evaluated first (`from-internal-pbx-ortak`, `featurecodes-pbx`). Numbers like `101`, `1002`, `*97` (Voicemail), `7000` (IVR) never reach normalization rules.
+2. **Ingress Sub-Contexts:** Slices are applied only to calls leaving the PBX:
+   - `from-internal-desktop` → includes `sub-norm-desktop-N`
+   - `from-internal-mobile` → includes `sub-norm-mobile-N`
+   - `from-internal-web` → includes `sub-norm-web-N`
+3. **Loop Prevention:** Built-in loop counter (`__AIPBX_NORM_COUNT`) halts transformation if more than 3 passes occur, preventing any possibility of dialplan recursion.
+
+---
+
+## Live Normalization Simulator
+
+On the **Trunks → Call Normalization (`/dialplan-rules`)** page, the interactive simulator lets administrators input any test number (e.g. `+905379902352` or `005379902352`), select the target device type, and inspect the real-time pattern match and resulting number.

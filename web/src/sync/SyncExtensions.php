@@ -234,6 +234,19 @@ function __syncAllExtensionsBody() {
         $group = max(1, intval($u['outbound_group'] ?? 1));
         $group_context = ($group > 1) ? "from-internal-g{$group}" : 'from-internal-pbx';
         $context = !empty($sip_map['context']) ? $sip_map['context'] : $group_context;
+
+        // Ingress contexts per device origin (Desktop, Mobile, Web).
+        // Custom context entered explicitly in `sip` table always wins.
+        $sip_context = ($context === $group_context)
+            ? (($group > 1) ? "from-internal-desktop-{$group}" : 'from-internal-desktop')
+            : $context;
+        $mob_context = ($context === $group_context)
+            ? (($group > 1) ? "from-internal-mobile-{$group}" : 'from-internal-mobile')
+            : $context;
+        $web_context = ($context === $group_context)
+            ? (($group > 1) ? "from-internal-web-{$group}" : 'from-internal-web')
+            : $context;
+
         $callerid = !empty($sip_map['callerid']) ? $sip_map['callerid'] : "\"{$name}\" <{$ext}>";
         $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
         $max_contacts = !empty($sip_map['max_contacts']) ? $sip_map['max_contacts'] : '5';
@@ -267,9 +280,10 @@ function __syncAllExtensionsBody() {
             $conf .= "auth=auth{$ext}-sip\n";
         }
         $conf .= "aors={$ext}-sip,{$ext}\n";
-        $conf .= "context={$context}\n";
+        $conf .= "context={$sip_context}\n";
         $conf .= "callerid={$callerid}\n";
         $conf .= $set_vars;
+        $conf .= "set_var=AIPBX_CLIENT_TYPE=desktop\n";
         $conf .= $pickup_lines;
         // Voicemail lamp on desk phones (MWI): new messages are signalled to
         // the phone. A mailboxes value set by hand in the `sip` table wins.
@@ -302,17 +316,19 @@ function __syncAllExtensionsBody() {
         $conf .= "[{$ext}-webrtc](endpoint-wss)\n";
         $conf .= "auth=auth{$ext}-webrtc\n";
         $conf .= "aors={$ext}-webrtc\n";
-        $conf .= "context={$context}\n";
+        $conf .= "context={$web_context}\n";
         $conf .= "callerid={$callerid}\n";
         $conf .= $set_vars;
+        $conf .= "set_var=AIPBX_CLIENT_TYPE=web\n";
         $conf .= $pickup_lines . "\n";
 
         $conf .= "[{$ext}-mob-webrtc](endpoint-wss)\n";
         $conf .= "auth=auth{$ext}-mob-webrtc\n";
         $conf .= "aors={$ext}-mob-webrtc\n";
-        $conf .= "context={$context}\n";
+        $conf .= "context={$mob_context}\n";
         $conf .= "callerid={$callerid}\n";
         $conf .= $set_vars;
+        $conf .= "set_var=AIPBX_CLIENT_TYPE=mobile\n";
         $conf .= $pickup_lines . "\n";
 
         if ($auth_digest) {
