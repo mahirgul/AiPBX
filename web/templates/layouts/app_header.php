@@ -64,6 +64,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
 <?php echo jsI18nScript(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(getCSRFToken()); ?>">
     <title><?php echo isset($page_title) ? htmlspecialchars($page_title) . ' - ' : ''; ?><?php echo htmlspecialchars($site_title); ?></title>
     <link rel="shortcut icon" href="<?php echo !empty($site_favicon_url) ? htmlspecialchars($site_favicon_url) : '/favicon.ico'; ?>">
 

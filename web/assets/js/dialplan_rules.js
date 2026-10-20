@@ -2,13 +2,20 @@
  * Dialplan Normalization Rules JavaScript (/dialplan-rules)
  */
 
+function getCsrfToken() {
+    return (window.CSRF_TOKEN) ||
+           (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')) ||
+           (document.querySelector('input[name="csrf_token"]')?.value) ||
+           '';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // Enable reorder on rule tables
     ['table-mobile', 'table-desktop', 'table-web', 'table-all'].forEach(function (tableId) {
         var el = document.getElementById(tableId);
         if (el) {
             UIHelper.enableRowReorder(el, 'dialplan_rules', function (orderedIds) {
-                var csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                var csrf = getCsrfToken();
                 var formData = new FormData();
                 formData.append('action', 'reorder');
                 formData.append('csrf_token', csrf);
@@ -18,6 +25,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 fetch('/dialplan-rules', {
                     method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': csrf
+                    },
                     body: formData
                 })
                 .then(function (r) { return r.json(); })
@@ -174,7 +184,7 @@ function runLiveSimulation() {
         return;
     }
 
-    var csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    var csrf = getCsrfToken();
     var fd = new FormData();
     fd.append('action', 'simulate');
     fd.append('csrf_token', csrf);
@@ -182,6 +192,9 @@ function runLiveSimulation() {
 
     fetch('/dialplan-rules', {
         method: 'POST',
+        headers: {
+            'X-CSRF-Token': csrf
+        },
         body: fd
     })
     .then(function (r) { return r.json(); })
