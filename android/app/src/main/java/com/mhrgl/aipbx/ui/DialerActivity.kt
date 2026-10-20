@@ -654,12 +654,10 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         val isTr = simCountry?.equals("tr", ignoreCase = true) == true ||
                 java.util.Locale.getDefault().country.equals("TR", ignoreCase = true) ||
                 com.mhrgl.aipbx.util.L10n.current() == "tr"
-        if (isTr) {
-            if (cleanNumber.startsWith("+90")) {
-                cleanNumber = "0" + cleanNumber.substring(3)
-            } else if (cleanNumber.length == 10 && cleanNumber.startsWith("5")) {
-                cleanNumber = "0$cleanNumber"
-            }
+        if (cleanNumber.startsWith("+90")) {
+            cleanNumber = "0" + cleanNumber.substring(3)
+        } else if (isTr && cleanNumber.length == 10 && cleanNumber.startsWith("5")) {
+            cleanNumber = "0$cleanNumber"
         }
         if (cleanNumber.startsWith("+")) {
             cleanNumber = "00" + cleanNumber.substring(1)
@@ -892,15 +890,6 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
     private fun filterContacts(query: String) {
         contactsAdapter.filterUnified(query, corporateContactsList, deviceContactsList, isDeviceContactsSelected)
         val count = contactsAdapter.itemCount
-        val label = if (query.trim().isNotEmpty()) {
-            getString(R.string.contacts_results_found)
-        } else if (isDeviceContactsSelected) {
-            getString(R.string.contacts_phone_listed)
-        } else {
-            getString(R.string.contacts_extensions_listed)
-        }
-        binding.tvContactsCount.text = "$count $label"
-
         if (count == 0) {
             binding.tvEmptyContacts.text = if (query.trim().isNotEmpty()) {
                 getString(R.string.contacts_no_match, query)
