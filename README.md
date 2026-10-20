@@ -4,8 +4,6 @@
   </a>
 </p>
 
-<h1 align="center">AI PBX</h1>
-
 <p align="center">
   <strong>Open-Source Enterprise IP PBX Management Portal & Unified Communications</strong><br>
   Asterisk 22 · PHP 8 · MariaDB · WebRTC · Instant Messaging · Android & iOS Apps
