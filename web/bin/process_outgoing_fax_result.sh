@@ -77,10 +77,7 @@ FAX_INFO=$($MYSQL_QUERY -e \
    WHERE s.id = $FAX_ID LIMIT 1;" 2>/dev/null)
 
 if [ -n "$FAX_INFO" ]; then
-    SENDER_EXT=$(echo "$FAX_INFO" | awk '{print $1}')
-    DEST_NUM=$(echo "$FAX_INFO" | awk '{print $2}')
-    PDF_PATH=$(echo "$FAX_INFO" | awk '{print $3}')
-    SENDER_EMAIL=$(echo "$FAX_INFO" | awk '{print $4}')
+    IFS=$'\t' read -r SENDER_EXT DEST_NUM PDF_PATH SENDER_EMAIL FULL_NAME <<< "$FAX_INFO"
     
     log "FAX #$FAX_ID Info -> Sender DID: $SENDER_EXT | Dest: $DEST_NUM | Email: ${SENDER_EMAIL:-NONE}"
     
