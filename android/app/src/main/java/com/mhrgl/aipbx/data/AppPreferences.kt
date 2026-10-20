@@ -244,8 +244,13 @@ class AppPreferences(context: Context) {
 
     /** App language code (see L10n); English unless the user picks another. Kept on logout. */
     var appLanguage: String
-        get() = prefs.getString(KEY_APP_LANGUAGE, "en") ?: "en"
-        set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
+        get() = prefs.getString(KEY_APP_LANGUAGE, null)
+            ?: appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_APP_LANGUAGE, "en")
+            ?: "en"
+        set(value) {
+            prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_APP_LANGUAGE, value).apply()
+        }
 
     /** When the "app was put to sleep" warning was last shown (at most once a week). */
     var sleepingWarningShownAt: Long
@@ -254,13 +259,30 @@ class AppPreferences(context: Context) {
 
     /** The automatic battery-optimisation request was shown once (see BatteryPrompt). */
     var batteryPromptShown: Boolean
-        get() = prefs.getBoolean(KEY_BATTERY_PROMPT_SHOWN, false)
-        set(value) = prefs.edit().putBoolean(KEY_BATTERY_PROMPT_SHOWN, value).apply()
+        get() = prefs.getBoolean(KEY_BATTERY_PROMPT_SHOWN, false) ||
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_BATTERY_PROMPT_SHOWN, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_BATTERY_PROMPT_SHOWN, value).apply()
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_BATTERY_PROMPT_SHOWN, value).apply()
+        }
 
     /** The full-screen incoming call explanation was shown once (see FullScreenCallPrompt). */
     var fullScreenPromptShown: Boolean
-        get() = prefs.getBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, false)
-        set(value) = prefs.edit().putBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, value).apply()
+        get() = prefs.getBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, false) ||
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, value).apply()
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_FULL_SCREEN_PROMPT_SHOWN, value).apply()
+        }
+
+    /** Persistent flag recording that the user has allowed/configured full-screen incoming calls. */
+    var fullScreenUserAllowed: Boolean
+        get() = prefs.getBoolean(KEY_FULL_SCREEN_USER_ALLOWED, false) ||
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_FULL_SCREEN_USER_ALLOWED, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_FULL_SCREEN_USER_ALLOWED, value).apply()
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_FULL_SCREEN_USER_ALLOWED, value).apply()
+        }
 
     var hasSleepingWarning: Boolean
         get() = prefs.getBoolean(KEY_SLEEPING_WARNING, false)
@@ -307,7 +329,21 @@ class AppPreferences(context: Context) {
             apply()
         }
         try {
-            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+            appContext.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
+                remove(KEY_TOKEN)
+                remove(KEY_USERNAME)
+                remove(KEY_FULL_NAME)
+                remove(KEY_EXTENSION)
+                remove(KEY_SIP_USERNAME)
+                remove(KEY_SIP_PASSWORD)
+                remove(KEY_WS_URL)
+                remove(KEY_DOMAIN)
+                remove(KEY_TURN_USER)
+                remove(KEY_TURN_PASS)
+                remove(KEY_TURN_URL)
+                remove(KEY_VIDEO_RES)
+                apply()
+            }
             appContext.getSharedPreferences(OLD_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
         } catch (e: Exception) {
             Log.w("AppPreferences", "Failed to clear fallback preferences on logout", e)
@@ -381,6 +417,7 @@ class AppPreferences(context: Context) {
         private const val KEY_BATTERY_PROMPT_SHOWN = "battery_prompt_shown"
         private const val KEY_SLEEPING_WARNING_SHOWN_AT = "sleeping_warning_shown_at"
         private const val KEY_FULL_SCREEN_PROMPT_SHOWN = "full_screen_prompt_shown"
+        private const val KEY_FULL_SCREEN_USER_ALLOWED = "full_screen_user_allowed"
         private const val KEY_LAST_RESURRECTION_TS = "last_resurrection_ts"
         private const val KEY_DEVICE_UUID = "device_uuid"
         private const val KEY_LAST_TOKEN_REFRESH_TIME = "last_token_refresh_time"
