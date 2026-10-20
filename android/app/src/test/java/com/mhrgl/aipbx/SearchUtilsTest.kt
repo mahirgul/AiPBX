@@ -20,6 +20,17 @@ class SearchUtilsTest {
     }
 
     @Test
+    fun testEuropeanDiacriticsMatches() {
+        assertTrue(SearchUtils.matches("Łukasz Nowak", "lukasz"))
+        assertTrue(SearchUtils.matches("François Müller", "francois"))
+        assertTrue(SearchUtils.matches("François Müller", "muller"))
+        assertTrue(SearchUtils.matches("Hélène Côté", "helene"))
+        assertTrue(SearchUtils.matches("Hélène Côté", "cote"))
+        assertTrue(SearchUtils.matches("Kraków Główny", "krakow"))
+        assertTrue(SearchUtils.matches("Đorđe Petrović", "dorde"))
+    }
+
+    @Test
     fun testExtensionMatches() {
         assertTrue(SearchUtils.matches("19000", "190"))
         assertTrue(SearchUtils.matches("19000", "000"))

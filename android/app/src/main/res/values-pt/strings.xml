@@ -118,8 +118,10 @@
     <string name="btn_remove">Remover</string>
     <string name="call_from_pbx">Chamada do PBX</string>
     <string name="call_on_hold">Em espera</string>
+    <string name="cf_always">REENC. (SEMPRE)</string>
     <string name="cf_busy">REENC. (OCUPADO)</string>
     <string name="cf_busy_noanswer">REENC. (OCUPADO/SEM RESPOSTA)</string>
+    <string name="cf_noanswer">REENC. (SEM RESPOSTA)</string>
     <string name="chat_document">Documento</string>
     <string name="chat_extension_title">Extensão #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

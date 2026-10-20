@@ -118,8 +118,10 @@
     <string name="btn_remove">Retirer</string>
     <string name="call_from_pbx">Appel PBX</string>
     <string name="call_on_hold">En attente</string>
+    <string name="cf_always">RENVOI (TOUJOURS)</string>
     <string name="cf_busy">RENVOI (OCCUPÉ)</string>
     <string name="cf_busy_noanswer">RENVOI (OCCUPÉ/SANS RÉPONSE)</string>
+    <string name="cf_noanswer">RENVOI (SANS RÉPONSE)</string>
     <string name="chat_document">Document</string>
     <string name="chat_extension_title">Poste n° %1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

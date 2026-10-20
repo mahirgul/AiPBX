@@ -81,8 +81,8 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
             insets
         }
 
-        val callerName = intent.getStringExtra(EXTRA_CALLER_NAME) ?: "Bilinmeyen Arayan"
-        val callerNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER) ?: ""
+        val callerName = intent.getStringExtra(EXTRA_CALLER_NAME)?.takeIf { it.isNotBlank() } ?: getString(R.string.vm_unknown_caller)
+        val callerNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER)?.trim().orEmpty()
 
         binding.tvIncomingCallerName.text = callerName
         binding.tvIncomingCallerNumber.text = if (callerNumber.isNotEmpty()) getString(R.string.extension_label_caller, callerNumber) else getString(R.string.call_from_pbx)
@@ -143,14 +143,34 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
     }
 
     private fun performAnswer(withVideo: Boolean = false) {
-        pbxService?.stopRinging()
-        pbxService?.engine?.answerCall(if (withVideo) AppPreferences.getInstance(this).videoLimits else null)
+        val service = pbxService
+        if (service != null) {
+            service.stopRinging()
+            service.engine.answerCall(if (withVideo) AppPreferences.getInstance(this).videoLimits else null)
 
-        val callIntent = Intent(this, CallActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            val callIntent = Intent(this, CallActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            startActivity(callIntent)
+            finish()
+        } else {
+            // Service not yet bound: dispatch ACTION_ANSWER / ACTION_ANSWER_VIDEO to PbxForegroundService
+            val answerIntent = Intent(this, PbxForegroundService::class.java).apply {
+                action = if (withVideo) PbxForegroundService.ACTION_ANSWER_VIDEO else PbxForegroundService.ACTION_ANSWER
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(answerIntent)
+                } else {
+                    startService(answerIntent)
+                }
+            } catch (e: Exception) {
+                try {
+                    startService(answerIntent)
+                } catch (ignored: Exception) {}
+            }
+            finish()
         }
-        startActivity(callIntent)
-        finish()
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {

@@ -118,8 +118,10 @@
     <string name="btn_remove">Fjern</string>
     <string name="call_from_pbx">PBX-opkald</string>
     <string name="call_on_hold">Parkeret</string>
+    <string name="cf_always">VS (ALTID)</string>
     <string name="cf_busy">VS (OPTAGET)</string>
     <string name="cf_busy_noanswer">VS (OPTAGET/INTET SVAR)</string>
+    <string name="cf_noanswer">VS (INTET SVAR)</string>
     <string name="chat_document">Dokument</string>
     <string name="chat_extension_title">Lokalnummer #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>

@@ -118,8 +118,10 @@
     <string name="btn_remove">Премахни</string>
     <string name="call_from_pbx">Обаждане от централата</string>
     <string name="call_on_hold">Задържан</string>
+    <string name="cf_always">ПР (ВИНАГИ)</string>
     <string name="cf_busy">ПР (ЗАЕТО)</string>
     <string name="cf_busy_noanswer">ПР (ЗАЕТО/БЕЗ ОТГОВОР)</string>
+    <string name="cf_noanswer">ПР (БЕЗ ОТГОВОР)</string>
     <string name="chat_document">Документ</string>
     <string name="chat_extension_title">Вътрешен номер #%1$s</string>
     <string name="chat_name_ext_title">%1$s (#%2$s)</string>
