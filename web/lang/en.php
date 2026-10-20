@@ -5072,4 +5072,7 @@ Your phone will ring.',
     'privacy.beep_off' => 'Off',
     'privacy.field_pci_pause' => 'PCI-DSS v4.0: Allow agents to pause/resume MixMonitor during payment card entry',
     'privacy.sample_script_optin_en' => 'To help us improve our service and in compliance with privacy regulations, we would like to record this call. Please press 1 now to consent to call recording, or stay on the line to continue without recording.',
+    'plugins.badge_official' => 'Official',
+    'plugins.badge_community' => 'Community',
+    'common.by' => 'by',
 ];

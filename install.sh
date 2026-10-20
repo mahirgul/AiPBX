@@ -802,6 +802,7 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
     RewriteCond %{ENV:REDIRECT_STATUS} ^\$
     RewriteCond %{REQUEST_URI} !^/provision/
+    RewriteCond %{REQUEST_URI} !^/api/plugins/
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log

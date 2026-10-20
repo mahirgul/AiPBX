@@ -48,6 +48,8 @@ When a plugin needs relational tables (such as campaigns, call queues, or logs b
     },
     "version": "1.0.0",
     "author": "Your Company",
+    "author_url": "https://example.com",
+    "type": "community",
     "category": "integration",
     "icon": "fas fa-address-book",
     "icon_style": "color: #10b981;",

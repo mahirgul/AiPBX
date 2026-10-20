@@ -147,14 +147,20 @@ final class PluginManager
                 $settingsUrl = '/plugins/' . $slug;
             }
 
+            $rawType = (string)($m['type'] ?? (($m['source'] ?? $dbRow['source'] ?? 'official') === 'official' ? 'official' : 'community'));
+            $type = in_array($rawType, ['official', 'community'], true) ? $rawType : 'community';
+
+            $rawAuthorUrl = trim((string)($m['author_url'] ?? ''));
+            $authorUrl = (preg_match('#^https?://#i', $rawAuthorUrl) === 1) ? $rawAuthorUrl : '';
+
             $out[] = [
                 'slug'            => $slug,
                 'name'            => $name,
                 'description'     => $desc,
                 'version'         => (string)($m['version'] ?? $dbRow['version'] ?? '1.0.0'),
                 'author'          => (string)($m['author'] ?? 'AiPBX Official Team'),
-                'author_url'      => (string)($m['author_url'] ?? ''),
-                'type'            => (string)($m['type'] ?? ($m['source'] === 'official' ? 'official' : 'community')),
+                'author_url'      => $authorUrl,
+                'type'            => $type,
                 'category'        => $category,
                 'icon'            => $icon,
                 'icon_style'      => $iconStyle,
