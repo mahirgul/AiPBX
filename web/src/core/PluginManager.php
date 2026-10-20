@@ -961,6 +961,31 @@ final class PluginManager
     }
 
     /**
+     * Apply `schema.sql` (`plg_*` tables) for all currently enabled plugins.
+     * Invoked during `install.sh --upgrade` (`aipbx-update`) so background workers
+     * have all required plugin tables before any admin page is visited.
+     */
+    public static function syncAllEnabledPluginSchemas(): void
+    {
+        $manifests = self::discoverManifests();
+        foreach (self::allPlugins() as $p) {
+            if (!$p['enabled']) {
+                continue;
+            }
+            $slug = (string)$p['slug'];
+            $m = $manifests[$slug] ?? null;
+            if (!$m || empty($m['dir'])) {
+                continue;
+            }
+            try {
+                self::applyPluginSchema($slug, (string)$m['dir']);
+            } catch (\Throwable $e) {
+                self::recordPluginError($slug, 'schema_sync', $e);
+            }
+        }
+    }
+
+    /**
      * Parse raw SQL from a plugin's `schema.sql` and enforce the `plg_` table sandbox.
      * Only `CREATE TABLE [IF NOT EXISTS] plg_<name> (...)` statements are permitted.
      *
