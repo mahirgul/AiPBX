@@ -300,6 +300,8 @@
     <string name="ui_dnd">Rahatsız Etme (DND)</string>
     <string name="ui_dnd_active">DND AKTİF</string>
     <string name="ui_dnd_desc">Gelen tüm aramalar meşgule düşer</string>
+    <string name="pref_send_plus_title">Uluslararası \'+\' Koru</string>
+    <string name="pref_send_plus_desc">Aramalarda \'+\' önekini doğrudan santral normalleştirmesine gönder (Açık) veya 00\'a dönüştür (Kapalı)</string>
     <string name="ui_download_share">İndir ve Paylaş</string>
     <string name="ui_edit_info">Bilgileri Düzenle</string>
     <string name="ui_extension_placeholder">Dahili: --</string>

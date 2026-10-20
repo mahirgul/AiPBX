@@ -648,7 +648,7 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
         }
 
         var cleanNumber = targetNumber.replace(Regex("[^0-9*#+]"), "")
-        if (cleanNumber.startsWith("+")) {
+        if (cleanNumber.startsWith("+") && !prefs.sendPlusPrefix) {
             cleanNumber = "00" + cleanNumber.substring(1)
         }
 
@@ -1996,6 +1996,12 @@ class DialerActivity : AppCompatActivity(), SipEngineListener, ChatEventListener
             if (isChecked != isDndEnabled) {
                 updateFeaturesOnServer(dnd = isChecked)
             }
+        }
+
+        // 3.1 Keep '+' Prefix Switch
+        binding.switchSendPlusPrefix.isChecked = prefs.sendPlusPrefix
+        binding.switchSendPlusPrefix.setOnCheckedChangeListener { _, isChecked ->
+            prefs.sendPlusPrefix = isChecked
         }
 
         // 4. Save the forwarding settings

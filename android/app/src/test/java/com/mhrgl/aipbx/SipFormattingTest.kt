@@ -38,9 +38,9 @@ class SipFormattingTest {
 
     @Test
     fun testDialNumberNormalization() {
-        fun normalize(num: String): String {
+        fun normalize(num: String, sendPlusPrefix: Boolean = false): String {
             var clean = num.replace(Regex("[^0-9*#+]"), "")
-            if (clean.startsWith("+")) {
+            if (clean.startsWith("+") && !sendPlusPrefix) {
                 clean = "00" + clean.substring(1)
             }
             return clean
@@ -50,14 +50,20 @@ class SipFormattingTest {
         assertEquals("05321234567", normalize("0532 123 45 67"))
         assertEquals("05321234567", normalize("0 (532) 123-45-67"))
 
-        // International + prefix converts to standard 00
-        assertEquals("00905321234567", normalize("+905321234567"))
-        assertEquals("00905321234567", normalize("+90 532 123 45 67"))
-        assertEquals("00491711234567", normalize("+491711234567"))
-        assertEquals("00447911123456", normalize("+44 7911 123456"))
+        // International + prefix when sendPlusPrefix is false converts to 00
+        assertEquals("00905321234567", normalize("+905321234567", sendPlusPrefix = false))
+        assertEquals("00905321234567", normalize("+90 532 123 45 67", sendPlusPrefix = false))
+        assertEquals("00491711234567", normalize("+491711234567", sendPlusPrefix = false))
+        assertEquals("00447911123456", normalize("+44 7911 123456", sendPlusPrefix = false))
+
+        // International + prefix when sendPlusPrefix is true keeps + for server normalization
+        assertEquals("+905321234567", normalize("+905321234567", sendPlusPrefix = true))
+        assertEquals("+905321234567", normalize("+90 532 123 45 67", sendPlusPrefix = true))
+        assertEquals("+12125550199", normalize("+1 212 555 0199", sendPlusPrefix = true))
 
         // Internal extensions and feature codes remain untouched
-        assertEquals("101", normalize("101"))
+        assertEquals("101", normalize("101", sendPlusPrefix = true))
+        assertEquals("101", normalize("101", sendPlusPrefix = false))
         assertEquals("*97", normalize("*97"))
         assertEquals("#31#05321234567", normalize("#31#05321234567"))
     }
