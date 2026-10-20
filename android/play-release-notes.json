@@ -1,6 +1,6 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.78",
+  "version": "1.0.79",
   "notes": {
     "en-US": "Security and stability fixes: secure attachment downloading, foreground service start safety, multi-call busy handling, diacritics search normalization, and 22-language translation sync.",
     "tr-TR": "Güvenlik ve kararlılık iyileştirmeleri: güvenli sohbet eki indirme, ön plan servis güvenlik korumaları, çoklu çağrıda meşgul yönetimi, aksanlı arama normalizasyonu ve 22 dilde çeviri senkronizasyonu."
