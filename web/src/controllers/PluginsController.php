@@ -65,6 +65,16 @@ class PluginsController extends BaseController
         $message = '';
         $error = '';
 
+        $manifests = PluginManager::discoverManifests();
+        $manifest = $manifests[$slug] ?? [];
+        if (!empty($plugin['enabled']) && !empty($manifest['dir'])) {
+            try {
+                PluginManager::applyPluginSchema($slug, (string)$manifest['dir']);
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
         if (static::isPost()) {
             if (!static::verifyCsrf()) {
                 $error = t('common.invalid_csrf');
@@ -78,8 +88,25 @@ class PluginsController extends BaseController
             }
         }
 
-        $manifests = PluginManager::discoverManifests();
-        $manifest = $manifests[$slug] ?? [];
+        if (!empty($manifest['dir']) && is_file($manifest['dir'] . '/admin/action.php')) {
+            try {
+                $actionFn = require $manifest['dir'] . '/admin/action.php';
+                if (is_callable($actionFn)) {
+                    $actionRes = $actionFn($slug, PluginManager::getAllSettings($slug, false));
+                    if (is_array($actionRes)) {
+                        if (!empty($actionRes['message'])) {
+                            $message = (string)$actionRes['message'];
+                        }
+                        if (!empty($actionRes['error'])) {
+                            $error = (string)$actionRes['error'];
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
         $customViewPath = null;
         if (!empty($manifest['dir']) && is_file($manifest['dir'] . '/admin/page.php')) {
             $customViewPath = $manifest['dir'] . '/admin/page.php';

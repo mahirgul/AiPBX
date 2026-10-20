@@ -215,4 +215,99 @@ final class PluginAndApiV1Test extends TestCase
         PluginManager::disable('signaling-capture', 'test-csrf-token');
         $this->assertFalse(PluginManager::isEnabled('signaling-capture'));
     }
+
+    public function testPluginSchemaSandboxAndAutoDialerLifecycle(): void
+    {
+        // 1. Security check: non-plg_ table names and destructive DDL are rejected
+        $threwNonPlg = false;
+        try {
+            PluginManager::parseAndValidatePluginSchemaSql('CREATE TABLE sys_evil (id INT PRIMARY KEY);');
+        } catch (\Exception $e) {
+            $threwNonPlg = true;
+        }
+        $this->assertTrue($threwNonPlg);
+
+        $threwDrop = false;
+        try {
+            PluginManager::parseAndValidatePluginSchemaSql('DROP TABLE plg_autodial_campaigns;');
+        } catch (\Exception $e) {
+            $threwDrop = true;
+        }
+        $this->assertTrue($threwDrop);
+
+        // 2. Enable auto-dialer -> creates plg_autodial_campaigns and plg_autodial_numbers
+        PluginManager::resetCache();
+        $manifests = PluginManager::discoverManifests();
+        $this->assertArrayHasKey('auto-dialer', $manifests);
+
+        $en = PluginManager::enable('auto-dialer', 'test-csrf-token');
+        $this->assertTrue($en['success']);
+        $this->assertTrue(PluginManager::isEnabled('auto-dialer'));
+
+        require_once dirname(__DIR__, 3) . '/plugins/auto-dialer/AutoDialerService.php';
+
+        $campId = AutoDialerService::createCampaign([
+            'name' => 'Unit Test AMD Campaign',
+            'dest_type' => 'extension',
+            'dest_id' => '101',
+            'caller_id' => '08505550000',
+            'max_concurrent' => 2,
+            'queue_free_agent_pacing' => 1,
+            'max_retries' => 1,
+            'retry_interval_sec' => 60,
+            'amd_enabled' => 1,
+            'amd_machine_action' => 'play_sound',
+            'amd_machine_sound' => 'welcome_msg',
+            'numbers_bulk' => "05321112233, Ali Veli, VIP\n05442223344, Ayse Kaya, Test",
+        ]);
+        $this->assertGreaterThan(0, $campId);
+
+        // Verify dialplan file generated with AMD(...) parameters and voicemail drop
+        $dpPath = rtrim((string)getenv('ASTERISK_PBX_DIR'), '/') . '/extensions_plugin_auto-dialer.conf';
+        $this->assertFileExists($dpPath);
+        $dpContent = (string)file_get_contents($dpPath);
+        $this->assertStringContainsString('[aipbx-autodial-out]', $dpContent);
+        $this->assertStringContainsString("[aipbx-autodial-camp-{$campId}]", $dpContent);
+        $this->assertStringContainsString('AMD(2500,1500,800,5000,100,50,2,256)', $dpContent);
+        $this->assertStringContainsString('WaitForSilence(1500,1,15)', $dpContent);
+        $this->assertStringContainsString('Playback(custom/welcome_msg)', $dpContent);
+
+        // Start campaign and run a worker tick
+        AutoDialerService::setCampaignStatus($campId, 'running');
+        $originated = AutoDialerService::tickCampaigns();
+        $this->assertSame(2, $originated);
+
+        $nums = AutoDialerService::listNumbers($campId);
+        $this->assertCount(2, $nums);
+        $num1 = (int)$nums[0]['id'];
+        $num2 = (int)$nums[1]['id'];
+
+        // Simulate Asterisk callback: num1 -> HUMAN, num2 -> MACHINE
+        $cb1 = AutoDialerService::handleCallback([
+            'num_id' => $num1,
+            'event' => 'answered',
+            'amd_status' => 'HUMAN',
+            'amd_cause' => 'HUMAN-800-800',
+            'uniqueid' => '1700000.1',
+        ]);
+        $this->assertTrue($cb1['success']);
+
+        $cb2 = AutoDialerService::handleCallback([
+            'num_id' => $num2,
+            'event' => 'answered',
+            'amd_status' => 'MACHINE',
+            'amd_cause' => 'TOOLONG-1500',
+            'uniqueid' => '1700000.2',
+        ]);
+        $this->assertTrue($cb2['success']);
+
+        $camps = AutoDialerService::listCampaigns();
+        $this->assertNotEmpty($camps);
+        $this->assertSame(1, (int)$camps[0]['human_count']);
+        $this->assertSame(1, (int)$camps[0]['machine_count']);
+
+        // Clean up and uninstall plugin -> drops plg_autodial_* tables
+        $un = PluginManager::uninstall('auto-dialer', 'test-csrf-token');
+        $this->assertTrue($un['success']);
+    }
 }

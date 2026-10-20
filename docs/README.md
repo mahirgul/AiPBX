@@ -54,7 +54,8 @@ Optional applications and integrations included in the official plugin catalog (
 
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|
-| [Plugin system & developer guide](plugin-development.md) | — | Official plugin catalog (`plugins/`), enabling/disabling integrations (`google-auth`, `ms-teams`, …), and step-by-step guide to building and uploading custom `.zip` plugins |
+| [Plugin system & developer guide](plugin-development.md) | — | Official plugin catalog (`plugins/`), `plg_*` database tables, enabling/disabling integrations (`google-auth`, `ms-teams`, …), and building custom `.zip` plugins |
+| [Auto dialer & AMD campaigns (Plugin)](auto-dialer.md) | `auto-dialer` | Automated outbound calling campaigns with Answering Machine Detection (`AMD`), queue free-agent pacing, voicemail drop, and CSV call results |
 | [Website call widget (Plugin)](web-widgets.md) | `web-widgets` | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
 | [Cloud AI services (Plugin)](cloud-ai.md) | `ai-cloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
 | [Cloud TTS (Plugin)](cloud-tts.md) | `ai-tts` | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |

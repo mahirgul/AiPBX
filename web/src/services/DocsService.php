@@ -27,6 +27,7 @@ class DocsService
     /** Documentation pages for optional plugins, grouped at the bottom of the Help sidebar. */
     private const PLUGINS = [
         'plugin-development',
+        'auto-dialer',
         'ai-apps',
         'assistant',
         'cloud-ai',

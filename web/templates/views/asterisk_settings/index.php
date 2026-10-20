@@ -22,6 +22,9 @@
         <button type="button" class="settings-tab-btn" data-tab="lang" onclick="switchSettingsTab('lang', this)">
             <i class="fas fa-language"></i> <?php echo t('asterisk_settings.tab_lang'); ?>
         </button>
+        <button type="button" class="settings-tab-btn" data-tab="amd" onclick="switchSettingsTab('amd', this)">
+            <i class="fas fa-robot"></i> <?php echo t('asterisk_settings.tab_amd', 'AMD'); ?>
+        </button>
     </div>
 
     <!-- SECTION 1: PJSIP, NAT & network global settings -->
@@ -375,6 +378,72 @@
                 <?php endforeach; ?>
             </select>
             <small class="u-hint"><?php echo t('asterisk_settings.lang_packs_help'); ?></small>
+        </div>
+    </div>
+    </div>
+
+    <!-- SECTION: AMD (Answering Machine Detection) settings -->
+    <div id="tab_amd" class="settings-tab-pane" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-robot u-primary"></i> <?php echo t('asterisk_settings.amd_section_title', 'Answering Machine Detection (AMD)'); ?>
+            </div>
+        </div>
+
+        <div class="module-help-box" style="display: block;">
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+            <p><?php echo t('asterisk_settings.amd_help_body', 'Global timing and word-detection parameters used by Asterisk\'s <code>AMD()</code> application during automated outbound campaigns (Auto Dialer). Times are in milliseconds (ms).'); ?></p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_initial_silence', 'Initial Silence (ms)'); ?></label>
+                <input type="number" name="amd_initial_silence" class="form-control" value="<?php echo htmlspecialchars($s['amd_initial_silence'] ?? '2500'); ?>" min="250" max="15000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_initial_silence_help', 'Max silence before greeting; if exceeded → MACHINE (default: 2500 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_greeting', 'Max Greeting Length (ms)'); ?></label>
+                <input type="number" name="amd_greeting" class="form-control" value="<?php echo htmlspecialchars($s['amd_greeting'] ?? '1500'); ?>" min="250" max="15000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_greeting_help', 'Max length of initial greeting; if exceeded → MACHINE (default: 1500 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_after_greeting_silence', 'After-Greeting Silence (ms)'); ?></label>
+                <input type="number" name="amd_after_greeting_silence" class="form-control" value="<?php echo htmlspecialchars($s['amd_after_greeting_silence'] ?? '800'); ?>" min="100" max="10000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_after_greeting_silence_help', 'Silence after greeting required to classify as HUMAN (default: 800 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_total_analysis_time', 'Total Analysis Time (ms)'); ?></label>
+                <input type="number" name="amd_total_analysis_time" class="form-control" value="<?php echo htmlspecialchars($s['amd_total_analysis_time'] ?? '5000'); ?>" min="1000" max="30000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_total_analysis_time_help', 'Max total decision time before returning NOTSURE (default: 5000 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_min_word_length', 'Min Word Length (ms)'); ?></label>
+                <input type="number" name="amd_min_word_length" class="form-control" value="<?php echo htmlspecialchars($s['amd_min_word_length'] ?? '100'); ?>" min="20" max="2000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_min_word_length_help', 'Minimum continuous voice duration counted as a word (default: 100 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_between_words_silence', 'Between-Words Silence (ms)'); ?></label>
+                <input type="number" name="amd_between_words_silence" class="form-control" value="<?php echo htmlspecialchars($s['amd_between_words_silence'] ?? '50'); ?>" min="10" max="2000" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_between_words_silence_help', 'Minimum silence gap separating two words (default: 50 ms)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_maximum_number_of_words', 'Maximum Number of Words'); ?></label>
+                <input type="number" name="amd_maximum_number_of_words" class="form-control" value="<?php echo htmlspecialchars($s['amd_maximum_number_of_words'] ?? '2'); ?>" min="1" max="20" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_maximum_number_of_words_help', 'If greeting exceeds this word count → MACHINE (default: 2)'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_amd_silence_threshold', 'Silence Threshold (1–32767)'); ?></label>
+                <input type="number" name="amd_silence_threshold" class="form-control" value="<?php echo htmlspecialchars($s['amd_silence_threshold'] ?? '256'); ?>" min="1" max="32767" required>
+                <small class="u-hint"><?php echo t('asterisk_settings.amd_silence_threshold_help', 'Audio noise floor below which samples count as silence (default: 256)'); ?></small>
+            </div>
         </div>
     </div>
     </div>

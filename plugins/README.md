@@ -15,6 +15,7 @@ This directory contains the **Official Plugin Catalog** for AiPBX. Starting with
 | [`google-auth`](./google-auth/plugin.json) | `integration` | Google Sign-In (OAuth 2.0) for web portal and mobile apps |
 | [`ms-teams`](./ms-teams/plugin.json) | `integration` | Microsoft Teams Direct Routing SBC trunking, PowerShell generator, and call webhooks |
 | [`web-widgets`](./web-widgets/plugin.json) | `integration` | Embeddable WebRTC click-to-call button, callback form, and downloadable WordPress plugin (`.zip`) |
+| [`auto-dialer`](./auto-dialer/plugin.json) | `integration` | Automated outbound calling campaigns with Asterisk AMD, queue free-agent pacing, voicemail drop, and `plg_autodial_*` tables |
 | [`ai-cloud`](./ai-cloud/plugin.json) | `ai` | Cloud & OpenAI-compatible AI provider connection manager |
 | [`ai-tts`](./ai-tts/plugin.json) | `ai` | AI Text-to-Speech studio for generating IVR and system announcements |
 | [`ai-apps`](./ai-apps/plugin.json) | `ai` | Conversational AI Voice Bots (`AudioSocket` / `ARI`) for inbound calls |
@@ -31,11 +32,17 @@ Every plugin (official or custom `.zip`) must contain a `plugin.json` manifest a
 
 ```
 my-custom-plugin/
-├── plugin.json          # Required: metadata, scopes, hooks, settings_schema
+├── plugin.json          # Required: metadata, tables (plg_*), scopes, hooks, settings_schema
+├── schema.sql           # Optional: CREATE TABLE IF NOT EXISTS plg_<name> (...) statements
 ├── events/
 │   └── handler.php      # Optional: returns function(string $event, array $envelope, array $settings): void
+├── worker/
+│   └── tick.php         # Optional: periodic background worker function(string $slug, array $settings): void
+├── public/
+│   └── handler.php      # Optional: serves /api/plugins/<slug>/<subPath>
 ├── sync/
 │   └── Sync.php         # Optional: returns function(string $slug, array $settings): void
 └── admin/
+    ├── action.php       # Optional: pre-render POST/export handler returning ['message' => ..., 'error' => ...]
     └── page.php         # Optional: custom PHP view rendered inside /plugins/<slug>
 ```

@@ -64,7 +64,36 @@ class AsteriskSettingsService {
             // unlike every other setting it takes effect only after a FULL
             // Asterisk restart, a "reload" is not enough (see asterisk_sync.php).
             'system_default_language' => 'en',
+
+            // Answering Machine Detection (AMD) global defaults (passed to Asterisk AMD() application)
+            'amd_initial_silence'         => '2500',
+            'amd_greeting'                => '1500',
+            'amd_after_greeting_silence'  => '800',
+            'amd_total_analysis_time'     => '5000',
+            'amd_min_word_length'         => '100',
+            'amd_between_words_silence'   => '50',
+            'amd_maximum_number_of_words' => '2',
+            'amd_silence_threshold'       => '256',
         ];
+    }
+
+    /**
+     * Build the 8-argument string for Asterisk's `AMD(...)` dialplan application
+     * from the saved global PBX settings.
+     */
+    public static function amdDialplanArgs(): string
+    {
+        $defs = self::defaults();
+        $initial   = max(250, min(15000, (int)getSystemSetting('amd_initial_silence', $defs['amd_initial_silence'])));
+        $greeting  = max(250, min(15000, (int)getSystemSetting('amd_greeting', $defs['amd_greeting'])));
+        $after     = max(100, min(10000, (int)getSystemSetting('amd_after_greeting_silence', $defs['amd_after_greeting_silence'])));
+        $total     = max(1000, min(30000, (int)getSystemSetting('amd_total_analysis_time', $defs['amd_total_analysis_time'])));
+        $minWord   = max(20, min(2000, (int)getSystemSetting('amd_min_word_length', $defs['amd_min_word_length'])));
+        $between   = max(10, min(2000, (int)getSystemSetting('amd_between_words_silence', $defs['amd_between_words_silence'])));
+        $maxWords  = max(1, min(20, (int)getSystemSetting('amd_maximum_number_of_words', $defs['amd_maximum_number_of_words'])));
+        $threshold = max(1, min(32767, (int)getSystemSetting('amd_silence_threshold', $defs['amd_silence_threshold'])));
+
+        return "{$initial},{$greeting},{$after},{$total},{$minWord},{$between},{$maxWords},{$threshold}";
     }
 
     /**
@@ -135,6 +164,15 @@ class AsteriskSettingsService {
 
             'system_default_language' => in_array($post['system_default_language'] ?? '', getAvailableLanguages(), true)
                 ? $post['system_default_language'] : 'en',
+
+            'amd_initial_silence'         => (string)max(250, min(15000, intval($post['amd_initial_silence'] ?? 2500))),
+            'amd_greeting'                => (string)max(250, min(15000, intval($post['amd_greeting'] ?? 1500))),
+            'amd_after_greeting_silence'  => (string)max(100, min(10000, intval($post['amd_after_greeting_silence'] ?? 800))),
+            'amd_total_analysis_time'     => (string)max(1000, min(30000, intval($post['amd_total_analysis_time'] ?? 5000))),
+            'amd_min_word_length'         => (string)max(20, min(2000, intval($post['amd_min_word_length'] ?? 100))),
+            'amd_between_words_silence'   => (string)max(10, min(2000, intval($post['amd_between_words_silence'] ?? 50))),
+            'amd_maximum_number_of_words' => (string)max(1, min(20, intval($post['amd_maximum_number_of_words'] ?? 2))),
+            'amd_silence_threshold'       => (string)max(1, min(32767, intval($post['amd_silence_threshold'] ?? 256))),
         ];
 
         // --- RTP (media) settings --------------------------------------------

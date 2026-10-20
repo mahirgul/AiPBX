@@ -138,6 +138,9 @@ $isDaemon = in_array('--daemon', $argv ?? [], true);
 
 do {
     sweepCdrAndFaxEvents();
+    if (class_exists('PluginManager')) {
+        PluginManager::tickAllEnabledWorkers();
+    }
     $stats = WebhookService::processPendingBatch(50);
     if (!$isDaemon) {
         if ($stats['processed'] > 0) {
