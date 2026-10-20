@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">daxili nömrə siyahıda</string>
     <string name="api_fcm_token_failed">FCM token göndərilə bilmədi (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Qrup silinə bilmədi (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Beynəlxalq \'+\' Saxla</string>
+    <string name="pref_send_plus_desc">Zənglərdə \'+\' prefiksini birbaşa ATS normallaşdırmasına göndər (Açıq) və ya 00-a çevir (Bağlı)</string>
 </resources>

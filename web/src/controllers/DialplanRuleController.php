@@ -27,8 +27,7 @@ class DialplanRuleController extends BaseController
             }
 
             $number = trim((string)($_POST['number'] ?? ''));
-            $clientType = trim((string)($_POST['client_type'] ?? 'mobile'));
-            $res = DialplanRuleRepository::simulate($number, $clientType);
+            $res = DialplanRuleRepository::simulateAll($number);
             echo json_encode(['success' => true, 'data' => $res]);
             exit;
         }
@@ -47,13 +46,15 @@ class DialplanRuleController extends BaseController
             'save_rule' => fn() => DialplanRuleService::saveRule($_POST),
             'delete_rule' => fn() => DialplanRuleService::deleteRule(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
             'toggle_status' => fn() => DialplanRuleService::toggleStatus(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
-            'load_defaults' => fn() => DialplanRuleService::loadDefaults(static::csrfToken()),
+            'load_defaults' => fn() => DialplanRuleService::loadDefaults(static::csrfToken(), (string)($_POST['country_code'] ?? '90')),
         ]);
 
         $active_tab = trim((string)($_GET['tab'] ?? 'mobile'));
         if (!in_array($active_tab, ['mobile', 'desktop', 'web', 'all', 'simulator'], true)) {
             $active_tab = 'mobile';
         }
+
+        $country_code = (string)getSystemSetting('dialplan_rules_country_code', '90');
 
         $all_rules = DialplanRuleRepository::allOrdered();
         $rules_by_type = [
@@ -78,6 +79,7 @@ class DialplanRuleController extends BaseController
         $page_title = t('dialplan_rules.title');
         static::renderPage('dialplan_rules/index', [
             'active_tab' => $active_tab,
+            'country_code' => $country_code,
             'all_rules' => $all_rules,
             'rules_by_type' => $rules_by_type,
         ], ['title' => $page_title] + $notices);

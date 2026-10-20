@@ -282,25 +282,48 @@ class DialplanRuleService
         });
     }
 
-    public static function getDefaultPresets(): array
+    public static function getDefaultPresets(string $countryCode = '90'): array
     {
-        return [
+        $cc = preg_replace('/[^0-9]/', '', $countryCode);
+        if ($cc === '' || strlen($cc) > 4) {
+            $cc = '90';
+        }
+        $stripLen = 1 + strlen($cc); // e.g. for +90 -> 3 digits (+, 9, 0)
+        $countryName = ($cc === '90') ? 'Türkiye' : "+{$cc}";
+
+        $presets = [
+            // Desktop
             ['desktop', 'Masaüstü: Dış Hat Çıkış Kodunu (0) Temizle', '_00[1-9].', 1, '', 0, '', 1, 1, 'Masaüstü telefonlardan 0 ile dış hat alıp ulusal numara (0xxx) çevrildiğinde baştaki fazla 0ı temizler.'],
             ['desktop', 'Masaüstü: Dış Hat Uluslararası (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Masaüstü telefonlardan 0 dış hat koduyla uluslararası arama yapıldığında baştaki fazla 0ı temizler.'],
-            ['desktop', 'Masaüstü: E.164 Türkiye (+90 -> 0)', '_+90.', 3, '0', 0, '', 3, 1, 'Masaüstü telefonlardan veya rehberden +90 ile gelen aramaları ulusal 0 formatına çevirir.'],
+            ['desktop', "Masaüstü: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 3, 1, "Masaüstü telefonlardan veya rehberden +{$cc} ile gelen aramaları ulusal 0 formatına çevirir."],
             ['desktop', 'Masaüstü: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 4, 1, 'Masaüstü telefonlardan + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
-            ['mobile', 'Mobil: E.164 Türkiye (+90 -> 0)', '_+90.', 3, '0', 0, '', 1, 1, 'Mobil rehberdeki +90 Türkiye numaralarını ulusal 0 formatına çevirir.'],
+
+            // Mobile
+            ['mobile', "Mobil: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Mobil rehberdeki +{$cc} ülke numaralarını ulusal 0 formatına çevirir."],
             ['mobile', 'Mobil: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 2, 1, 'Mobil rehberden + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
-            ['mobile', 'Mobil: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobil rehberde 5xx şeklinde 10 hane kaydedilmiş numaraların başına 0 ekler.'],
-            ['web', 'Web: E.164 Türkiye (+90 -> 0)', '_+90.', 3, '0', 0, '', 1, 1, 'Web softphone veya CRM üzerinden +90 ile gelen aramaları ulusal 0 formatına çevirir.'],
+
+            // Web
+            ['web', "Web: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Web softphone veya CRM üzerinden +{$cc} ile gelen aramaları ulusal 0 formatına çevirir."],
             ['web', 'Web: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 2, 1, 'Web softphone üzerinden + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
-            ['web', 'Web: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Web softphone üzerinden 10 hane girilen GSM numaralarına 0 ekler.'],
         ];
+
+        // Specific national mobile formats (e.g. Turkey 10-digit GSM 5xx -> 05xx)
+        if ($cc === '90') {
+            $presets[] = ['mobile', 'Mobil: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobil rehberde 5xx şeklinde 10 hane kaydedilmiş numaraların başına 0 ekler.'];
+            $presets[] = ['web', 'Web: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Web softphone üzerinden 10 hane girilen GSM numaralarına 0 ekler.'];
+        }
+
+        return $presets;
     }
 
-    public static function loadDefaults(string $csrfToken): array
+    public static function loadDefaults(string $csrfToken, string $countryCode = '90'): array
     {
-        return PBXHelper::handleAction($csrfToken, function() {
+        return PBXHelper::handleAction($csrfToken, function() use ($countryCode) {
+            $cleanCc = preg_replace('/[^0-9]/', '', $countryCode);
+            if ($cleanCc === '' || strlen($cleanCc) > 4) {
+                $cleanCc = '90';
+            }
+
             $db = getDB();
             $db->beginTransaction();
             try {
@@ -311,9 +334,13 @@ class DialplanRuleService
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())"
                 );
 
-                foreach (self::getDefaultPresets() as $d) {
+                foreach (self::getDefaultPresets($cleanCc) as $d) {
                     $stmt->execute($d);
                 }
+
+                $stmtSet = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('dialplan_rules_country_code', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+                $stmtSet->execute([$cleanCc]);
+
                 $db->commit();
             } catch (\Throwable $e) {
                 if ($db->inTransaction()) {
@@ -327,13 +354,13 @@ class DialplanRuleService
                     'outbound_dialplan',
                     'dialplan_rule',
                     'defaults',
-                    "Default dialplan normalization rules loaded",
+                    "Default dialplan normalization rules loaded for country +{$cleanCc}",
                     'update',
                     $_SESSION['user_id'] ?? null
                 );
             }
 
-            return t('dialplan_rules.msg_defaults_loaded');
+            return sprintf(t('dialplan_rules.msg_defaults_loaded_cc'), $cleanCc);
         });
     }
 }

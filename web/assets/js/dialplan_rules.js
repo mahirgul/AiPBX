@@ -46,11 +46,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Simulator input live calculation
     var simInput = document.getElementById('sim_input_number');
     if (simInput) {
-        var simTimer = null;
-        simInput.addEventListener('input', function () {
-            clearTimeout(simTimer);
-            simTimer = setTimeout(runLiveSimulation, 150);
-        });
+        simInput.addEventListener('input', debounceSimulation);
+        // Run once on initial page load
+        runLiveSimulation();
     }
 });
 
@@ -139,15 +137,40 @@ function updateModalPreview() {
     }
 }
 
+var simDebounceTimer = null;
+function debounceSimulation() {
+    clearTimeout(simDebounceTimer);
+    simDebounceTimer = setTimeout(runLiveSimulation, 150);
+}
+
+function setSimNumber(num) {
+    var el = document.getElementById('sim_input_number');
+    if (el) {
+        el.value = num;
+        runLiveSimulation();
+    }
+}
+
+function confirmLoadDefaultsWithCc(e, form) {
+    var ccInput = form.querySelector('input[name="country_code"]');
+    var cc = (ccInput ? ccInput.value.trim() : '') || '90';
+    var tmpl = form.dataset.confirmTmpl || 'Load presets for country code +%s? Current rules will be replaced.';
+    var msg = tmpl.replace('%s', cc).replace('{cc}', cc);
+    if (!confirm(msg)) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+
 function runLiveSimulation() {
     var num = (document.getElementById('sim_input_number')?.value || '').trim();
-    var clientType = document.getElementById('sim_select_client')?.value || 'mobile';
     var outBox = document.getElementById('sim_result_container');
     if (!outBox) return;
 
     if (!num) {
         var waitingMsg = outBox.dataset.txtWaiting || 'Enter a number to test...';
-        outBox.innerHTML = '<div class="text-muted u-fs-12" style="padding: 12px; text-align: center;"><i class="fas fa-keyboard"></i> ' + escapeHtml(waitingMsg) + '</div>';
+        outBox.innerHTML = '<div class="text-muted u-fs-12" style="padding: 18px; text-align: center;"><i class="fas fa-keyboard"></i> ' + escapeHtml(waitingMsg) + '</div>';
         return;
     }
 
@@ -156,7 +179,6 @@ function runLiveSimulation() {
     fd.append('action', 'simulate');
     fd.append('csrf_token', csrf);
     fd.append('number', num);
-    fd.append('client_type', clientType);
 
     fetch('/dialplan-rules', {
         method: 'POST',
@@ -170,53 +192,88 @@ function runLiveSimulation() {
     .catch(function () {});
 }
 
+function renderClientResultCard(type, clientData, original, outBox) {
+    var typeIcons = {
+        'desktop': 'fa-desktop',
+        'mobile': 'fa-mobile-alt',
+        'web': 'fa-globe'
+    };
+    var typeTitles = {
+        'desktop': outBox.dataset.txtTabDesktop || 'Desk Phones',
+        'mobile': outBox.dataset.txtTabMobile || 'Mobile App',
+        'web': outBox.dataset.txtTabWeb || 'Web Softphone & CRM'
+    };
+
+    var icon = typeIcons[type] || 'fa-phone';
+    var title = typeTitles[type] || type.toUpperCase();
+    var txtDirect = outBox.dataset.txtDirect || 'Direct Pass';
+    var txtMatched = outBox.dataset.txtMatched || 'Rule Matched';
+    var txtStripFront = outBox.dataset.txtStripFront || 'Strip Front';
+    var txtPrepend = outBox.dataset.txtPrepend || 'Prepend';
+
+    if (!clientData || !clientData.matched) {
+        var norm = clientData ? clientData.normalized : original;
+        return `
+            <div style="background: var(--bg-surface-secondary); padding: 10px 14px; border-radius: 6px; border-left: 4px solid var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                        <i class="fas ${icon}" style="margin-right: 6px; color: var(--color-primary);"></i> ${escapeHtml(title)}
+                    </div>
+                    <span class="badge badge-secondary u-fs-10">${escapeHtml(txtDirect)}</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                    <span class="u-fs-12 text-muted" style="font-family: monospace;">${escapeHtml(original)}</span>
+                    <i class="fas fa-arrow-right text-muted" style="font-size: 11px;"></i>
+                    <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: var(--text-primary);">${escapeHtml(norm)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    var r = clientData.rule || {};
+    var pattern = r.match_pattern || '';
+    var ruleName = r.rule_name || '';
+    var strip = r.strip_front || 0;
+    var prep = r.prepend || '-';
+
+    return `
+        <div style="background: rgba(46, 204, 113, 0.08); padding: 10px 14px; border-radius: 6px; border-left: 4px solid #2ecc71; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                    <i class="fas ${icon}" style="margin-right: 6px; color: #2ecc71;"></i> ${escapeHtml(title)}
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <span class="badge badge-success u-fs-10"><i class="fas fa-check-circle"></i> ${escapeHtml(txtMatched)}</span>
+                    <span class="badge badge-info u-fs-10"><code>${escapeHtml(pattern)}</code></span>
+                </div>
+            </div>
+            <div class="u-fs-11 text-muted" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${escapeHtml(ruleName)}</span>
+                <span>${escapeHtml(txtStripFront)}: <strong>${strip}</strong> | ${escapeHtml(txtPrepend)}: <strong>${escapeHtml(prep)}</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                <span class="u-fs-12 text-muted" style="font-family: monospace;">${escapeHtml(original)}</span>
+                <i class="fas fa-arrow-right" style="color: #2ecc71; font-size: 11px;"></i>
+                <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #2ecc71;">${escapeHtml(clientData.normalized)}</span>
+            </div>
+        </div>
+    `;
+}
+
 function renderSimulationResult(data) {
     var outBox = document.getElementById('sim_result_container');
     if (!outBox) return;
 
-    var txtDirect = outBox.dataset.txtDirect || 'Direct Pass (No Rule Matched)';
-    var txtDirectDesc = outBox.dataset.txtDirectDesc || 'Number passes directly to Outbound Routes without modification.';
-    var txtResult = outBox.dataset.txtResult || 'Result:';
-    var txtMatched = outBox.dataset.txtMatched || 'Rule Matched';
-    var txtDevice = outBox.dataset.txtDevice || 'Device';
-    var txtStripFront = outBox.dataset.txtStripFront || 'Strip Front';
-    var txtPrepend = outBox.dataset.txtPrepend || 'Prepend';
+    var original = data.original || '';
+    var desktopHtml = renderClientResultCard('desktop', data.desktop, original, outBox);
+    var mobileHtml = renderClientResultCard('mobile', data.mobile, original, outBox);
+    var webHtml = renderClientResultCard('web', data.web, original, outBox);
 
-    if (!data.matched) {
-        outBox.innerHTML = `
-            <div style="background: var(--bg-surface-secondary); padding: 14px; border-radius: 8px; border-left: 4px solid var(--text-muted);">
-                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
-                    <i class="fas fa-arrow-right"></i> ${escapeHtml(txtDirect)}
-                </div>
-                <div class="u-fs-12 text-muted">${escapeHtml(txtDirectDesc)}</div>
-                <div style="margin-top: 8px; font-family: monospace; font-size: 15px; font-weight: bold; color: var(--color-primary);">
-                    ${escapeHtml(txtResult)} ${escapeHtml(data.normalized)}
-                </div>
-            </div>
-        `;
-        return;
-    }
-
-    var r = data.rule;
     outBox.innerHTML = `
-        <div style="background: rgba(46, 204, 113, 0.08); padding: 14px; border-radius: 8px; border-left: 4px solid #2ecc71;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span class="badge badge-success"><i class="fas fa-check-circle"></i> ${escapeHtml(txtMatched)}</span>
-                <span class="badge badge-info"><code>${escapeHtml(r.match_pattern)}</code></span>
-            </div>
-            <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
-                ${escapeHtml(r.rule_name)}
-            </div>
-            <div class="u-fs-11 text-muted" style="margin-top: 4px;">
-                ${escapeHtml(txtDevice)}: <strong>${escapeHtml(data.client_type.toUpperCase())}</strong> | 
-                ${escapeHtml(txtStripFront)}: <strong>${r.strip_front}</strong> | 
-                ${escapeHtml(txtPrepend)}: <strong>${escapeHtml(r.prepend || '-')}</strong>
-            </div>
-            <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                <span class="text-muted" style="font-family: monospace;">${escapeHtml(data.original)}</span>
-                <i class="fas fa-long-arrow-alt-right" style="color: #2ecc71;"></i>
-                <span style="font-family: monospace; font-size: 16px; font-weight: bold; color: #2ecc71;">${escapeHtml(data.normalized)}</span>
-            </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${desktopHtml}
+            ${mobileHtml}
+            ${webHtml}
         </div>
     `;
 }

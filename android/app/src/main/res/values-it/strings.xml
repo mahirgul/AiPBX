@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">interni elencati</string>
     <string name="api_fcm_token_failed">Impossibile inviare il token FCM (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Impossibile eliminare il gruppo (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Mantieni il prefisso \'+\'</string>
+    <string name="pref_send_plus_desc">Invia il \'+\' internazionale direttamente al PBX per la normalizzazione (ATTIVO) o converti in 00 (NON ATTIVO)</string>
 </resources>

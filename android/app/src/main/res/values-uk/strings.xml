@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">внутрішніх номерів</string>
     <string name="api_fcm_token_failed">Не вдалося надіслати FCM-токен (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Не вдалося видалити групу (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Зберігати префікс \'+\'</string>
+    <string name="pref_send_plus_desc">Надсилати міжнародний префікс \'+\' на АТС для нормалізації (УВІМК) або перетворювати на 00 (ВИМК)</string>
 </resources>

@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">lokalnumre vist</string>
     <string name="api_fcm_token_failed">Kunne ikke sende FCM-token (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Kunne ikke slette gruppen (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Behold \'+\' præfiks</string>
+    <string name="pref_send_plus_desc">Send internationalt \'+\' direkte til PBX til normalisering (TIL) eller konverter til 00 (FRA)</string>
 </resources>

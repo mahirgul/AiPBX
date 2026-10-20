@@ -251,4 +251,26 @@ class DialplanRuleRepository extends BaseRepository
             'steps' => $steps,
         ];
     }
+
+    /**
+     * Simulates dialplan normalization across all three client devices (desktop, mobile, web)
+     * simultaneously for the live interactive preview.
+     *
+     * @return array{
+     *   original: string,
+     *   desktop: array,
+     *   mobile: array,
+     *   web: array
+     * }
+     */
+    public static function simulateAll(string $number): array
+    {
+        $num = trim($number);
+        return [
+            'original' => $num,
+            'desktop' => static::simulate($num, 'desktop'),
+            'mobile'  => static::simulate($num, 'mobile'),
+            'web'     => static::simulate($num, 'web'),
+        ];
+    }
 }

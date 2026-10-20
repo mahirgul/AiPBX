@@ -82,31 +82,6 @@ db/asterisk_db_dump.sql
 .ssh/
 
 # Personal shell files
-.bash_logout
-.bashrc
-.profile
-.bash_history
-*.prev
-8300/
-8500/
-8100/
-9100/
-Desktop/
-Documents/
-Downloads/
-snap/
-bulgular/
-CCIS_PROTOKOL_VE_GATEWAY_REHBERI.md
-.ICEauthority
-.Xauthority
-.antigravity-ide/
-.dbus/
-.dmrc
-.pam_environment
-.pki/
-.gnupg/
-.vboxclient*
-.xsession*
 
 # === TLS keys / certificates (never commit) ===
 *.pem

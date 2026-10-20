@@ -15,9 +15,15 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
                 <i class="fas fa-question-circle"></i>
             </button>
             <?php if ($can_edit): ?>
-                <form method="POST" style="display: inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('dialplan_rules.confirm_load_defaults')); ?>');">
+                <form method="POST" class="d-inline-flex align-items-center" style="display: inline-flex; align-items: center; gap: 6px;" onsubmit="return confirmLoadDefaultsWithCc(event, this);" data-confirm-tmpl="<?php echo htmlspecialchars(t('dialplan_rules.confirm_load_defaults_cc')); ?>">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCSRFToken()); ?>">
                     <input type="hidden" name="action" value="load_defaults">
+                    <div class="input-group input-group-sm" style="width: auto; display: inline-flex;">
+                        <span class="input-group-text" style="font-size: 11px; font-weight: bold; padding: 2px 7px;" title="<?php echo htmlspecialchars(t('dialplan_rules.country_code_hint')); ?>">
+                            <i class="fas fa-globe-americas"></i> +
+                        </span>
+                        <input type="text" name="country_code" id="preset_country_code" class="form-control form-control-sm" style="width: 55px; text-align: center; font-weight: bold; font-family: monospace;" value="<?php echo htmlspecialchars($country_code ?? '90'); ?>" placeholder="90" maxlength="4" pattern="[0-9]{1,4}" title="<?php echo htmlspecialchars(t('dialplan_rules.country_code_hint')); ?>">
+                    </div>
                     <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('dialplan_rules.btn_load_defaults'); ?>">
                         <i class="fas fa-magic"></i> <?php echo t('dialplan_rules.btn_load_defaults'); ?>
                     </button>
@@ -51,22 +57,25 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
         </div>
     </div>
     <div style="padding: 16px;">
-        <div style="display: grid; grid-template-columns: 200px 1fr 1fr; gap: 16px; align-items: start;">
-            <div>
-                <label class="form-label u-fs-12 u-strong"><?php echo t('dialplan_rules.col_client_type'); ?></label>
-                <select id="sim_select_client" class="form-control" onchange="runLiveSimulation()">
-                    <option value="mobile">📱 <?php echo t('dialplan_rules.tab_mobile'); ?></option>
-                    <option value="desktop">☎️ <?php echo t('dialplan_rules.tab_desktop'); ?></option>
-                    <option value="web">💻 <?php echo t('dialplan_rules.tab_web'); ?></option>
-                </select>
-            </div>
+        <div style="display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start;">
             <div>
                 <label class="form-label u-fs-12 u-strong"><?php echo t('dialplan_rules.sim_input_label'); ?></label>
                 <div class="input-group">
-                    <input type="text" id="sim_input_number" class="form-control" placeholder="<?php echo t('dialplan_rules.sim_placeholder'); ?>" value="+905379902352">
+                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                    <input type="text" id="sim_input_number" class="form-control" placeholder="<?php echo t('dialplan_rules.sim_placeholder'); ?>" value="+905379902352" oninput="debounceSimulation()">
                 </div>
-                <div class="u-fs-11 text-muted u-mt-4">
-                    <?php echo t('dialplan_rules.sim_hint'); ?>: <code>+905379902352</code>, <code>005379902352</code>, <code>5379902352</code>, <code>0012125551234</code>
+                <div class="u-fs-11 text-muted u-mt-2">
+                    <div style="margin-bottom: 4px;"><strong><?php echo t('dialplan_rules.sim_hint'); ?>:</strong></div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        <span class="badge badge-secondary" style="cursor: pointer;" onclick="setSimNumber('+905379902352')">+905379902352</span>
+                        <span class="badge badge-secondary" style="cursor: pointer;" onclick="setSimNumber('005379902352')">005379902352</span>
+                        <span class="badge badge-secondary" style="cursor: pointer;" onclick="setSimNumber('5379902352')">5379902352</span>
+                        <span class="badge badge-secondary" style="cursor: pointer;" onclick="setSimNumber('+12125551234')">+12125551234</span>
+                        <span class="badge badge-secondary" style="cursor: pointer;" onclick="setSimNumber('02129998877')">02129998877</span>
+                    </div>
+                </div>
+                <div class="alert alert-info u-fs-11 u-mt-3" style="padding: 8px 12px; margin-bottom: 0;">
+                    <i class="fas fa-info-circle"></i> <?php echo t('dialplan_rules.sim_all_devices_note'); ?>
                 </div>
             </div>
             <div>
@@ -79,7 +88,10 @@ $can_edit = hasModulePermission('outbound_routes', 'edit');
                      data-txt-matched="<?php echo htmlspecialchars(t('dialplan_rules.sim_rule_matched')); ?>"
                      data-txt-device="<?php echo htmlspecialchars(t('dialplan_rules.col_client_type')); ?>"
                      data-txt-strip-front="<?php echo htmlspecialchars(t('dialplan_rules.strip_front')); ?>"
-                     data-txt-prepend="<?php echo htmlspecialchars(t('dialplan_rules.prepend')); ?>">
+                     data-txt-prepend="<?php echo htmlspecialchars(t('dialplan_rules.prepend')); ?>"
+                     data-txt-tab-desktop="<?php echo htmlspecialchars(t('dialplan_rules.tab_desktop')); ?>"
+                     data-txt-tab-mobile="<?php echo htmlspecialchars(t('dialplan_rules.tab_mobile')); ?>"
+                     data-txt-tab-web="<?php echo htmlspecialchars(t('dialplan_rules.tab_web')); ?>">
                     <div class="text-muted u-fs-12" style="padding: 12px; text-align: center;">
                         <i class="fas fa-keyboard"></i> <?php echo t('dialplan_rules.sim_waiting'); ?>
                     </div>

@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">alanumeroa listattu</string>
     <string name="api_fcm_token_failed">FCM-tunnistetta ei voitu lähettää (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Ryhmää ei voitu poistaa (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Säilytä \'+\' etuliite</string>
+    <string name="pref_send_plus_desc">Lähetä kansainvälinen \'+\' suoraan PBX-palvelimelle normalisointia varten (PÄÄLLÄ) tai muunna 00:ksi (POIS)</string>
 </resources>

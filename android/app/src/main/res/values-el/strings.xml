@@ -422,4 +422,6 @@
     <string name="contacts_extensions_listed">εσωτερικά στη λίστα</string>
     <string name="api_fcm_token_failed">Δεν ήταν δυνατή η αποστολή του διακριτικού FCM (HTTP %1$s)</string>
     <string name="api_group_delete_failed">Δεν ήταν δυνατή η διαγραφή της ομάδας (HTTP %1$s)</string>
+    <string name="pref_send_plus_title">Διατήρηση προθέματος \'+\'</string>
+    <string name="pref_send_plus_desc">Αποστολή του διεθνούς \'+\' απευθείας στο PBX για εξομάλυνση (ΕΝΕΡΓΟ) ή μετατροπή σε 00 (ΑΝΕΝΕΡΓΟ)</string>
 </resources>
