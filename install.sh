@@ -926,7 +926,7 @@ info "Applying database migrations..."
 # seed.sql uses INSERT IGNORE: safe on a migrated or already-seeded database.
 mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
 # Ensure plg_* tables exist for all enabled plugins (schema.sql) on install/upgrade
-php -r "require '$INSTALL_DIR/web/config.php'; if (is_file('$INSTALL_DIR/web/src/core/PluginManager.php')) { require_once '$INSTALL_DIR/web/src/core/PluginManager.php'; PluginManager::syncAllEnabledPluginSchemas(); }" 2>/dev/null || true
+php -r "require '$INSTALL_DIR/web/config.php'; if (is_file('$INSTALL_DIR/web/src/core/PluginManager.php')) { require_once '$INSTALL_DIR/web/src/core/PluginManager.php'; PluginManager::syncAllEnabledPluginSchemas(); }" || warn "One or more plugin schema syncs reported an issue"
 
 if ! is_upgrade; then
 ADMIN_HASH=$(printf '%s' "$ADMIN_PASS" | php -r 'echo password_hash(stream_get_contents(STDIN), PASSWORD_BCRYPT);')

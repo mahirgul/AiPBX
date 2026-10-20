@@ -286,14 +286,16 @@ final class AutoDialerService
         self::ensureSchema();
         $db = getDB();
 
-        // 1. Recover stuck 'dialing' numbers older than 90 seconds
+        // 1. Recover stuck 'dialing' numbers older than max(90s, dial_timeout_sec + 30s)
+        $dialTimeoutSec = max(10, min(120, (int)($settings['dial_timeout_sec'] ?? 30)));
+        $stuckTimeoutSec = max(90, $dialTimeoutSec + 30);
         $stuckRows = $db->query(
             "SELECT n.id, n.campaign_id, n.attempts, c.max_retries, c.retry_interval_sec
              FROM plg_autodial_numbers n
              JOIN plg_autodial_campaigns c ON c.id = n.campaign_id
              WHERE n.status = 'dialing'
                AND n.last_attempt_at IS NOT NULL
-               AND n.last_attempt_at < DATE_SUB(NOW(), INTERVAL 90 SECOND)"
+               AND n.last_attempt_at < DATE_SUB(NOW(), INTERVAL {$stuckTimeoutSec} SECOND)"
         )->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         foreach ($stuckRows as $st) {

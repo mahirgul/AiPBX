@@ -981,6 +981,9 @@ final class PluginManager
                 self::applyPluginSchema($slug, (string)$m['dir']);
             } catch (\Throwable $e) {
                 self::recordPluginError($slug, 'schema_sync', $e);
+                if (defined('STDERR')) {
+                    @fwrite(STDERR, "[WARN] Plugin schema sync failed for '{$slug}': " . $e->getMessage() . "\n");
+                }
             }
         }
     }
