@@ -17,9 +17,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <form method="GET" action="/help" class="help-search">
             <input type="search" name="q" class="form-control" value="<?php echo $h($query); ?>" placeholder="<?php echo $h(t('help.search_placeholder')); ?>" maxlength="100">
         </form>
-        <div class="text-muted u-fs-11 help-note"><?php echo t('help.offline_note'); ?></div>
         <nav>
+            <?php $shownPluginHeader = false; ?>
             <?php foreach ($docs as $d): ?>
+                <?php if (!empty($d['plugin']) && !$shownPluginHeader): $shownPluginHeader = true; ?>
+                    <div class="text-muted u-fs-11" style="margin: 12px 10px 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; border-top: 1px solid var(--border-color, rgba(148,163,184,0.2)); padding-top: 10px;">
+                        <i class="fas fa-puzzle-piece" style="margin-right: 4px;"></i> Plugins
+                    </div>
+                <?php endif; ?>
                 <a href="/help?doc=<?php echo $h($d['name']); ?>" class="help-link<?php echo $d['name'] === $current ? ' active' : ''; ?>"><?php echo $h($d['title']); ?></a>
             <?php endforeach; ?>
         </nav>

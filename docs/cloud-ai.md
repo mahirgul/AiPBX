@@ -1,4 +1,6 @@
-# Cloud AI services
+# Cloud AI services (Plugin)
+
+> **Plugin (`ai-cloud` / `ai-voicemail`)**: Optional plugins from the official catalog. Enable them under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 **AI → Cloud services** (admin only) holds the accounts of cloud AI providers in one place and
 chooses, for each job and language, which engine AI features use: a local model of this server

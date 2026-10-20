@@ -60,6 +60,8 @@ if ($type === 'sent') {
     $db->prepare('UPDATE fax_received SET is_read = 1 WHERE id = ?')->execute([$fax_id]);
 }
 
+session_write_close();
+
 // In the S3 bucket (#69): streamed through the chat service, after the checks above.
 if (BucketFiles::isRemote($fax['pdf_path'])) {
     $disposition = ($is_view ? 'inline' : 'attachment') . '; filename="fax_' . $fax_id . '.pdf"';
