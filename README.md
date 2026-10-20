@@ -26,20 +26,21 @@
 </p>
 
 <p align="center">
-  <a href="#quick-install">Quick Install</a> •
-  <a href="#updating">Updating</a> •
-  <a href="#features">Features</a> •
-  <a href="#-global-privacy--telecom-compliance-privacy">Privacy & GDPR/KVKK</a> •
-  <a href="docs/README.md">Documentation</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="CHANGELOG.md">Changelog</a> •
-  <a href="docs/roadmap.md">Roadmap</a> •
-  <a href="#contributing">Contributing</a>
+  <a href="#-quick-install">🚀 Quick Install</a> •
+  <a href="#-updating">🔄 Updating</a> •
+  <a href="#-features">✨ Features</a> •
+  <a href="#-global-privacy--telecom-compliance-privacy">🛡️ Privacy & GDPR/KVKK</a> •
+  <a href="docs/README.md">📚 Documentation</a> •
+  <a href="#-architecture">🏗️ Architecture</a> •
+  <a href="CHANGELOG.md">📋 Changelog</a> •
+  <a href="docs/roadmap.md">🗺️ Roadmap</a> •
+  <a href="#-contributing">🤝 Contributing</a> •
+  <a href="#️-disclaimer--legal-notice--sorumluluk-reddi">⚖️ Disclaimer</a>
 </p>
 
 ---
 
-## Quick Install
+## 🚀 Quick Install
 
 ```bash
 # One-liner installation (installs the latest release)
@@ -56,22 +57,22 @@ sudo bash install.sh
 ```
 
 The installer:
-1. Asks for your **FQDN** — with Let's Encrypt if DNS points to the server, otherwise a self-signed
+1. 🌐 Asks for your **FQDN** — with Let's Encrypt if DNS points to the server, otherwise a self-signed
    certificate; leave it blank for a LAN-only install announced as `aipbx.local` via mDNS
-2. Generates **strong random secrets** for every service (no default passwords)
-3. Installs and configures Asterisk, MariaDB, Nginx + Apache, PHP, coturn, the Go chat service,
+2. 🔑 Generates **strong random secrets** for every service (no default passwords)
+3. ⚙️ Installs and configures Asterisk, MariaDB, Nginx + Apache, PHP, coturn, the Go chat service,
    firewalld and fail2ban, and builds the database from migrations
-4. Prints the credentials and saves them to `/root/aipbx-credentials.txt`
+4. 📄 Prints the credentials and saves them to `/root/aipbx-credentials.txt`
 
-> **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
+> 💡 **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
 >
-> Developers: `AIPBX_REF=main` installs the current development branch instead of the latest release.
+> 🛠️ **Developers**: `AIPBX_REF=main` installs the current development branch instead of the latest release.
 
 After installing, open `https://<your-server>` and log in with the admin credentials shown.
 
 ---
 
-## Updating
+## 🔄 Updating
 
 Releases are published as git tags (`vX.Y.Z`) with notes in [CHANGELOG.md](CHANGELOG.md).
 
@@ -84,11 +85,11 @@ Or from the portal: **System → System Update** (admin only) shows the installe
 release notes and an **Update** button with live progress. A new release is also checked for every night.
 
 Every update:
-- refuses to start during active calls (Asterisk is restarted) or over hand-edited code;
-- backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/`;
-- applies database migrations, new packages and system settings **without touching passwords,
+- 🛡️ refuses to start during active calls (Asterisk is restarted) or over hand-edited code;
+- 💾 backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/`;
+- 🔄 applies database migrations, new packages and system settings **without touching passwords,
   certificates, the admin password or your firewall choices**;
-- verifies services, the portal and every page — and **rolls back automatically** (code, database
+- ✅ verifies services, the portal and every page — and **rolls back automatically** (code, database
   and settings) if anything fails.
 
 Keep customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf`
@@ -96,7 +97,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 
 ---
 
-## Features
+## ✨ Features
 
 ### 📞 PBX Management
 - **Extension management** — PJSIP-based, one number on desk phone, browser and mobile at once
@@ -192,7 +193,8 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
-- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`, `signaling-capture`), dedicated `plg_*` MySQL table sandbox (`schema.sql`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+- **Auto Dialer & AMD Campaigns (`auto-dialer`)** — automated outbound calling campaigns with Asterisk Answering Machine Detection (`AMD()`), global & per-campaign AMD tuning, queue free-agent pacing, voicemail drop (`WaitForSilence`), and CSV call outcome export
 
 ### 🛡️ Global Privacy & Telecom Compliance (`/privacy`)
 - **100% Opt-In by Default (`Off / Custom`)** — zero rules enforced unless explicitly enabled by an administrator under **Security → GDPR & Data Privacy** (**KVKK ve Veri Gizliliği** in Turkish); see [docs/privacy.md](docs/privacy.md)
@@ -230,20 +232,20 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
-Internet ──443──▶ nginx (stream, ALPN, PROXY protocol)
-                    ├─ HTTPS / WSS ──▶ Apache + PHP (127.0.0.1:8443)
-                    │                    ├─ /ws       ──▶ Asterisk WebSocket (127.0.0.1:8088)
-                    │                    └─ /chat/…   ──▶ aipbx-chat (127.0.0.1:8086)
-                    └─ TURNS ─────────▶ coturn
-         ──5060/5061, RTP──▶ Asterisk 22 (PJSIP)  ──ODBC──▶ MariaDB (CDR, queue_log)
+🌐 Internet ──443──▶ 🛡️ nginx (stream, ALPN, PROXY protocol)
+                        ├─ 🔒 HTTPS / WSS ──▶ ⚙️ Apache + PHP (127.0.0.1:8443)
+                        │                       ├─ 📞 /ws       ──▶ Asterisk WebSocket (127.0.0.1:8088)
+                        │                       └─ 💬 /chat/…   ──▶ aipbx-chat (127.0.0.1:8086)
+                        └─ 🎧 TURNS ─────────▶ coturn
+            ──5060/5061, RTP──▶ ☎️ Asterisk 22 (PJSIP)  ──ODBC──▶ 🗄️ MariaDB (CDR, queue_log)
 ```
 
 ```
 AiPBX/
-├── web/                    # PHP MVC portal & REST API v1
+├── web/                    # 🌐 PHP MVC portal & REST API v1
 │   ├── src/
 │   │   ├── core/           # Router, PluginManager, ApiRequestContext, ResourceNormalizer
 │   │   ├── controllers/    # Page controllers + ApiV1Controller (+ api/ sub-handlers)
@@ -256,71 +258,87 @@ AiPBX/
 │   ├── lang/               # 23 interface languages (100% key parity)
 │   ├── db/migrations/      # Phinx migrations (the database schema)
 │   └── tests/              # PHPUnit
-├── plugins/                # Official first-class plugins (ms-teams, ldap-directory, crm-webhook, homer-hep, ai-voicemail, ai-assistant)
-├── ai/                     # Local & cloud AI service (aipbx-ai, Python)
-├── chat/                   # Go WebSocket chat service (aipbx-chat)
-├── android/                # Kotlin app
-├── ios/                    # SwiftUI app
-├── integrations/wordpress/ # WordPress click-to-call & callback plugin
-├── asterisk-config/        # Asterisk base configuration
-├── sounds/                 # bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
-├── asterisk-core-sounds-tr-*.tar.xz  # Turkish prompts, one package per format (+ SHA256SUMS)
-├── docs/                   # administrator & developer documentation
-├── conf/sbin/              # aipbx-priv (root helper), aipbx-update (updater)
-├── db/seed.sql             # initial roles, permissions, settings
-├── scripts/release.sh      # publishes a release
-├── install.sh              # installer (--upgrade mode used by aipbx-update)
+├── plugins/                # 🔌 Official first-class plugins (auto-dialer, ms-teams, web-widgets, ai-*, …)
+├── ai/                     # 🤖 Local & cloud AI service (aipbx-ai, Python)
+├── chat/                   # 💬 Go WebSocket chat service (aipbx-chat)
+├── android/                # 📱 Kotlin Android app
+├── ios/                    # 🍎 SwiftUI iOS app
+├── integrations/wordpress/ # 🧩 WordPress click-to-call & callback plugin
+├── asterisk-config/        # ☎️ Asterisk base configuration
+├── sounds/                 # 🔊 bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
+├── asterisk-core-sounds-tr-*.tar.xz  # 🇹🇷 Turkish prompts, one package per format (+ SHA256SUMS)
+├── docs/                   # 📚 administrator & developer documentation
+├── conf/sbin/              # 🔐 aipbx-priv (root helper), aipbx-update (updater)
+├── db/seed.sql             # 🗄️ initial roles, permissions, settings
+├── scripts/release.sh      # 🚀 publishes a release
+├── install.sh              # 🛠️ installer (--upgrade mode used by aipbx-update)
 ├── VERSION · CHANGELOG.md
 └── README.md · INSTALL.md · ARCHITECTURE.md
 ```
 
-### Technology Stack
+### 🧰 Technology Stack
 
 | Layer | Technology |
 |-------|-----------|
-| PBX | Asterisk 22 (PJSIP, res_fax, AMI, ODBC) |
-| Web | PHP 8, MVC, Composer; vanilla JS + CSS |
-| Database | MariaDB (Phinx migrations) |
-| Edge | nginx stream on 443 (ALPN + PROXY protocol) → Apache |
-| Chat | Go + gorilla/websocket |
-| WebRTC | coturn TURN/STUN, DTLS-SRTP, Opus |
-| Android | Kotlin, WebRTC, FCM |
-| iOS | Swift, SwiftUI, CallKit |
-| CI | GitHub Actions: PHPStan, PHPUnit, page smoke tests, Go tests, Android/iOS builds |
+| ☎️ **PBX** | Asterisk 22 (PJSIP, res_fax, AMD, AMI, ODBC) |
+| 🌐 **Web** | PHP 8, MVC, Composer; vanilla JS + CSS |
+| 🗄️ **Database** | MariaDB (Phinx migrations + `plg_*` plugin sandbox) |
+| 🛡️ **Edge** | nginx stream on 443 (ALPN + PROXY protocol) → Apache |
+| 💬 **Chat** | Go + gorilla/websocket |
+| 🎧 **WebRTC** | coturn TURN/STUN, DTLS-SRTP, Opus |
+| 🤖 **Android** | Kotlin, WebRTC, FCM |
+| 🍎 **iOS** | Swift, SwiftUI, CallKit |
+| ⚙️ **CI** | GitHub Actions: PHPStan, PHPUnit, page smoke tests, Go tests, Android/iOS builds |
 
 ---
 
-## After Installing
+## ✅ After Installing
 
-- Credentials are in `/root/aipbx-credentials.txt` — note them and delete the file.
-- Service secrets live in `/etc/ai-pbx.env`.
-- To switch a self-signed install to a Let's Encrypt or your own certificate, use **Security → Certificates** — see [docs/certificates.md](docs/certificates.md).
-- Ports and updating: [INSTALL.md](INSTALL.md).
-- Set an e-mail relay (fax-to-e-mail, voicemail, invitations): [docs/mail.md](docs/mail.md).
-- Configuring trunks, routes, roles and more: [documentation](docs/README.md).
+- 🔑 Credentials are in `/root/aipbx-credentials.txt` — note them and delete the file.
+- 🔒 Service secrets live in `/etc/ai-pbx.env`.
+- 📜 To switch a self-signed install to a Let's Encrypt or your own certificate, use **Security → Certificates** — see [docs/certificates.md](docs/certificates.md).
+- 🔥 Ports and updating: [INSTALL.md](INSTALL.md).
+- ✉️ Set an e-mail relay (fax-to-e-mail, voicemail, invitations): [docs/mail.md](docs/mail.md).
+- 📖 Configuring trunks, routes, roles and more: [documentation](docs/README.md).
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for code style, commit conventions
 and testing.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Commit your changes (`git commit -m 'feat: add awesome feature'`)
-4. Push the branch and open a Pull Request
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch (`git checkout -b feat/my-feature`)
+3. 💾 Commit your changes (`git commit -m 'feat: add awesome feature'`)
+4. 🚀 Push the branch and open a Pull Request
 
 Code comments, commit messages and documentation are written in English.
 
 ---
 
-## License
+## ⚖️ Disclaimer & Legal Notice / Sorumluluk Reddi
+
+> ⚠️ **English — Disclaimer of Warranty & Regulatory Responsibility**
+> 1. **Provided "AS IS":** AiPBX is open-source software provided under the [MIT License](LICENSE) **"AS IS"**, without warranty of any kind, express or implied. In no event shall the author or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, without limitation, service interruptions, data loss, or toll fraud) arising out of the use or inability to use this software.
+> 2. **Call Recording, AI Processing & Automated Outbound Dialing Compliance:** Features such as call recording, AI speech-to-text / LLM processing, and automated outbound dialing (`auto-dialer` / AMD) are subject to strict telecommunications, wiretapping, and data protection laws worldwide (including **GDPR**, **KVKK**, **FCC / TCPA**, **CCPA**, **HIPAA**, and local two-party consent statutes). Configuring appropriate pre-call disclosures, obtaining caller/callee consent, and complying with local laws are the **sole responsibility of the system administrator and deploying organization**.
+> 3. **Emergency Calls (`112` / `911` / `E911`):** VoIP and IP PBX telephony depend on electrical power, network connectivity, and properly configured upstream SIP trunks. AiPBX is **not** a certified replacement for traditional PSTN emergency lines unless explicitly configured, tested, and maintained with a compliant carrier by the operator.
+> 4. **Network Security & Toll Fraud:** While AiPBX generates strong random credentials and configures firewall/fail2ban rules by default, securing SIP trunks, outbound dial permissions, rate limits, and network exposure against unauthorized access or toll fraud remains the sole responsibility of the system administrator.
+
+> ⚠️ **Türkçe — Sorumluluk Reddi ve Yasal Uyarı**
+> 1. **"Olduğu Gibi" (AS-IS) Sunum:** AiPBX, [MIT Lisansı](LICENSE) kapsamında açık kaynaklı olarak, açık veya zımni hiçbir garanti verilmeksizin **"OLDUĞU GİBİ"** sunulmaktadır. Yazılımın kullanımından veya kullanılamamasından doğabilecek doğrudan ya da dolaylı hiçbir zarardan (hizmet kesintisi, veri kaybı, yetkisiz arama/fatura maliyeti vb. dahil) geliştirici veya katkıda bulunanlar sorumlu tutulamaz.
+> 2. **Çağrı Kaydı, Yapay Zeka ve Otomatik Arama Mevzuat Uyumu:** Çağrı ses kaydı, yapay zeka ile ses-metin dönüştürme (STT/LLM) ve otomatik dış arama (`auto-dialer` / AMD) özellikleri; **6698 sayılı KVKK**, **BTK düzenlemeleri**, **İYS / Ticari Elektronik İleti mevzuatı**, **GDPR** ve ilgili ülkelerin telekomünikasyon/dinleme yasalarına tabidir. Aydınlatma metinlerinin dinletilmesi, açık rıza alınması ve yasal saklama sürelerine uyum tamamen **sistemi kuran ve işleten kurumun/yöneticinin sorumluluğundadır**.
+> 3. **Acil Çağrı Hizmetleri (`112` / `911`):** VoIP ve IP santral üzerinden yapılan aramalar elektrik enerjisi, yerel ağ, internet erişimi ve SIP operatör (trunk) bağlantısına bağımlıdır. Uygun operatör yönlendirmesi ve yedeklilik sağlanmadığı sürece geleneksel sabit acil çağrı hatlarının (PSTN) yerini garanti etmez.
+> 4. **Ağ Güvenliği ve Ücretli Arama Güvenliği (Toll Fraud):** Kurulum aracı rastgele güçlü parolalar ve güvenlik duvarı kuralları oluştursa da; SIP trunk limitlerinin, dış arama yetkilerinin (Call Barring) ve sunucu erişim güvenliğinin korunması sistem yöneticisinin sorumluluğundadır.
+
+---
+
+## 📜 License
 
 [MIT License](LICENSE).
 
 ---
 
-## Author & Creator
+## 👤 Author & Creator
 
 **Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [@mahirgul](https://github.com/mahirgul)
