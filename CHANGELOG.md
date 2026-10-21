@@ -17,6 +17,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Plugin catalog:** no per-category search/paging boxes; hooks and permissions are folded under
   "Technical details".
 - Translations: texts that were still English in the other languages are translated.
+- Installer: Apache's PHP runs with `pcre.jit=0` (`99-aipbx.ini`); Ubuntu's apache2.service denies
+  executable memory, so the PCRE JIT failed and logged a warning for every new Apache process.
 
 ## 1.50.0
 
