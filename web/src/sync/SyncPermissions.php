@@ -94,7 +94,7 @@ function __syncPermissionsBody() {
 
         foreach ($rules as $r) {
             $raw_pattern = trim($r['pattern']);
-            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#-]/', '', $raw_pattern);
+            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', $raw_pattern);
             if ($pattern === '') continue;
 
             $is_exact = ($r['pattern_type'] === 'exact');
@@ -110,7 +110,7 @@ function __syncPermissionsBody() {
         $conf .= " same => n,Goto(p{$gid}_default)\n";
         foreach ($rules as $r) {
             $raw_pattern = trim($r['pattern']);
-            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#-]/', '', $raw_pattern);
+            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', $raw_pattern);
             if ($pattern === '') {
                 $conf .= "; rule " . intval($r['id']) . " sanitizes to nothing and never matches\n";
                 continue;
