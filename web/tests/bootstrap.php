@@ -45,6 +45,19 @@ foreach (['sounds', 'tts'] as $d) {
     if (!is_dir("{$tmpConf}/{$d}")) { mkdir("{$tmpConf}/{$d}", 0755, true); }
 }
 putenv('SOUNDS_CUSTOM_DIR=' . $tmpConf . '/sounds');
+
+// Spools and storage too: a test that sent a fax wrote .call files into the
+// host's real Asterisk spool, and Asterisk tried to place those calls.
+foreach ([
+    'FAX_OUTGOING_SPOOL'   => 'fax-outgoing',
+    'ASTERISK_CALL_SPOOL'  => 'call-spool',
+    'FAX_STORAGE_PATH'     => 'faxes',
+    'MONITOR_STORAGE_PATH' => 'monitor',
+    'MOH_BASE_DIR'         => 'moh',
+] as $envName => $sub) {
+    if (!is_dir("{$tmpConf}/{$sub}")) { mkdir("{$tmpConf}/{$sub}", 0755, true); }
+    putenv("{$envName}={$tmpConf}/{$sub}");
+}
 putenv('AI_TTS_DIR=' . $tmpConf . '/tts');
 putenv('AIPBX_SETTINGS_KEY=test-settings-key');
 putenv('TURN_SECRET=test-turn-secret');   // signs the mobile/chat tokens
