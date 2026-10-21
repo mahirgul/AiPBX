@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.34.8
+
+Android 15+ (targetSdk 35/36) Edge-to-Edge architectural compliance, eradication of deprecated window APIs, centralized `BaseActivity` pattern, and automated CI/test compliance guardrails (v1.0.81).
+
+- **Permanent BaseActivity Architectural Pattern:** Established `com.mhrgl.aipbx.ui.BaseActivity` centralizing standard zero-parameter `enableEdgeToEdge()` invocation prior to `super.onCreate()` and automatic context localization wrapping via `L10n.wrap()`. All 10 application UI activities migrated to inherit from `BaseActivity`.
+- **Eradication of Deprecated Window APIs:** Removed legacy `WindowCompat.setDecorFitsSystemWindows(win, false)` from `ImageViewerDialog` and stripped deprecated custom `SystemBarStyle.dark(...)` parameters from `IncomingCallActivity`, `CallActivity`, and `QrCaptureActivity` to eliminate Google Play Console edge-to-edge policy warnings.
+- **Unified WindowInsets Padding:** Standardized `applyEdgeToEdgeInsets(targetView, consumeIme)` across all screens to ensure UI elements, controls, and buttons correctly accommodate system bars, display cutouts, and software keyboards without overlapping or clipping.
+- **Automated Regression Guardrails:** Implemented `EdgeToEdgeComplianceTest` (JUnit) and `android/bin/edge_to_edge_audit.sh` enforcing that all activities extend `BaseActivity`, no deprecated edge-to-edge/window APIs exist in source files, and XML themes maintain compliance. Added Rule #4 to `AGENTS.md` and updated `ARCHITECTURE.md`.
+
 ## 1.34.7
 
 Global country calling codes directory, dynamic country badge & autocomplete, and reliable preset loader execution on the Call Normalization page (`/dialplan-rules`).
