@@ -15,6 +15,12 @@ final class SeedWebDialplanRules extends AbstractMigration
         if (!$this->hasTable('pbx_dialplan_rules')) {
             return;
         }
+        // Only for installations that already got the (former) seeded rules;
+        // a new installation starts without rules.
+        $any = $this->fetchRow('SELECT COUNT(*) AS c FROM pbx_dialplan_rules');
+        if (empty($any['c'])) {
+            return;
+        }
 
         // 1. Seed Web Rules if none exist
         $webCount = $this->fetchRow("SELECT COUNT(*) AS c FROM pbx_dialplan_rules WHERE client_type = 'web'");

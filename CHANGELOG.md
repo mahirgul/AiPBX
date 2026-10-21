@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## Unreleased
+
+- **Call normalization page (`/dialplan-rules`) reworked:** call normalization can be switched off
+  as a whole (every device then dials numbers as entered); the country is chosen from a list under
+  **Settings** and is empty until set — new installations start without any rules (no Turkey
+  default); the selected device tab is highlighted; the transformation column shows "Prepend 0"
+  instead of "-"; the simulator is a simple table below the rules; unused drag-to-reorder removed
+  (the most specific pattern wins, not the row order). Preset rules are English; rules still exactly
+  as loaded from the former Turkish presets are renamed to English by a migration.
+- **Plugin catalog:** no per-category search/paging boxes; hooks and permissions are folded under
+  "Technical details".
+- Translations: texts that were still English in the other languages are translated.
+
 ## 1.50.0
 
 **Bridge release.** Later releases update only installations that run 1.50.0 or newer; an older

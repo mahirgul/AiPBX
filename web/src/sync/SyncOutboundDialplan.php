@@ -32,11 +32,15 @@ function __syncOutboundDialplanBody() {
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
+    // Call normalization switched off as a whole: the per-device contexts stay
+    // (the phones point at them), only without rules.
     $dialplan_rules = [];
-    try {
-        $dialplan_rules = $db->query("SELECT * FROM pbx_dialplan_rules WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
-    } catch (\Exception $e) {
-        $dialplan_rules = [];
+    if ((string)getSystemSetting('dialplan_rules_enabled', '1') !== '0') {
+        try {
+            $dialplan_rules = $db->query("SELECT * FROM pbx_dialplan_rules WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            $dialplan_rules = [];
+        }
     }
 
     // Routes are split by group. Every group gets its own context; users can

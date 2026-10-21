@@ -254,31 +254,22 @@ class DialplanRuleService
         });
     }
 
-    public static function reorder(array $orderedIds, string $csrfToken): array
+    /** Call normalization as a whole (all rules of all devices); on unless switched off. */
+    public static function isEnabled(): bool
     {
-        return PBXHelper::handleAction($csrfToken, function() use ($orderedIds) {
-            $db = getDB();
-            $stmt = $db->prepare("UPDATE pbx_dialplan_rules SET sort_order = ? WHERE id = ?");
-            $order = 1;
-            foreach ($orderedIds as $id) {
-                $id = intval($id);
-                if ($id > 0) {
-                    $stmt->execute([$order++, $id]);
-                }
-            }
+        return (string)getSystemSetting('dialplan_rules_enabled', '1') !== '0';
+    }
 
+    public static function setEnabled(string $csrfToken, bool $enabled): array
+    {
+        return PBXHelper::handleAction($csrfToken, function() use ($enabled) {
+            $stmt = getDB()->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('dialplan_rules_enabled', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            $stmt->execute([$enabled ? '1' : '0']);
             if (function_exists('markPendingSync')) {
-                markPendingSync(
-                    'outbound_dialplan',
-                    'dialplan_rule',
-                    'reorder',
-                    "Dialplan rules reordered",
-                    'update',
-                    $_SESSION['user_id'] ?? null
-                );
+                markPendingSync('outbound_dialplan', 'dialplan_rule', 'enabled',
+                    'Call normalization ' . ($enabled ? 'enabled' : 'disabled'), 'update', $_SESSION['user_id'] ?? null);
             }
-
-            return t('dialplan_rules.msg_reordered');
+            return t($enabled ? 'dialplan_rules.msg_enabled' : 'dialplan_rules.msg_disabled');
         });
     }
 
@@ -311,47 +302,48 @@ class DialplanRuleService
         ];
     }
 
-    public static function getCountryName(string $code, string $lang = 'tr'): string
+    /** Country name in the portal language (Turkish names only for the Turkish UI). */
+    public static function getCountryName(string $code, ?string $lang = null): string
     {
         $info = self::getCountryInfo($code);
-        if ($lang === 'tr') {
-            return $info['name_tr'] ?? "+{$code}";
+        $lang ??= function_exists('getUserLanguage') ? getUserLanguage() : 'en';
+        if ($lang === 'tr' && !empty($info['name_tr'])) {
+            return $info['name_tr'];
         }
         return $info['name_en'] ?? "+{$code}";
     }
 
-    public static function getDefaultPresets(string $countryCode = '90'): array
+    /**
+     * Recommended rules for a country calling code (rows for the INSERT in
+     * loadDefaults). The desk phone "strip the outside-line 0" rule loads
+     * switched off: AiPBX's international format is 00 + country code, so it
+     * would turn 0049... into 049... — only offices whose phones dial 0 for an
+     * outside line switch it on.
+     */
+    public static function getDefaultPresets(string $countryCode): array
     {
         $cc = preg_replace('/[^0-9]/', '', $countryCode);
         if ($cc === '' || strlen($cc) > 4) {
-            $cc = '90';
+            return [];
         }
-        $stripLen = 1 + strlen($cc); // e.g. for +90 -> 3 digits (+, 9, 0)
-        $countryName = self::getCountryName($cc, 'tr');
+        $stripLen = 1 + strlen($cc); // "+" and the country code
+        $country = self::getCountryName($cc, 'en');
 
         $presets = [
-            // Desktop. The "strip the outside-line 0" rule is loaded switched
-            // off: AiPBX's international format is 00 + country code, so it
-            // would turn 0049... into 049... — only offices whose phones dial
-            // 0 for an outside line switch it on.
-            ['desktop', 'Masaüstü: Dış Hat Çıkış Kodunu (0) Temizle', '_00[1-9].', 1, '', 0, '', 1, 0,'Masaüstü telefonlardan 0 ile dış hat alıp ulusal numara (0xxx) çevrildiğinde baştaki fazla 0ı temizler.'],
-            ['desktop', 'Masaüstü: Dış Hat Uluslararası (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Masaüstü telefonlardan 0 dış hat koduyla uluslararası arama yapıldığında baştaki fazla 0ı temizler.'],
-            ['desktop', "Masaüstü: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 3, 1, "Masaüstü telefonlardan veya rehberden +{$cc} ile gelen aramaları ulusal 0 formatına çevirir."],
-            ['desktop', 'Masaüstü: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 4, 1, 'Masaüstü telefonlardan + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
-
-            // Mobile
-            ['mobile', "Mobil: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Mobil rehberdeki +{$cc} ülke numaralarını ulusal 0 formatına çevirir."],
-            ['mobile', 'Mobil: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 2, 1, 'Mobil rehberden + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
-
-            // Web
-            ['web', "Web: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Web softphone veya CRM üzerinden +{$cc} ile gelen aramaları ulusal 0 formatına çevirir."],
-            ['web', 'Web: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 2, 1, 'Web softphone üzerinden + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],
+            ['desktop', 'Desk phones: strip outside-line 0', '_00[1-9].', 1, '', 0, '', 1, 0, 'For desk phones that dial 0 for an outside line: 0 + 0xxx (national) becomes 0xxx. Off by default.'],
+            ['desktop', 'Desk phones: outside line international (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Outside-line 0 dialled before an international number: 000... becomes 00...'],
+            ['desktop', "Desk phones: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 3, 1, "+{$cc} numbers become national numbers with a leading 0."],
+            ['desktop', 'Desk phones: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 4, 1, 'International numbers with + are dialled with 00.'],
+            ['mobile', "Mobile app: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Contacts stored as +{$cc}... become national numbers with a leading 0."],
+            ['mobile', 'Mobile app: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 2, 1, 'Contacts stored with + are dialled with 00.'],
+            ['web', "Web phone: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "+{$cc} numbers from the web phone or CRM click-to-dial become national numbers with a leading 0."],
+            ['web', 'Web phone: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 2, 1, 'International numbers with + are dialled with 00.'],
         ];
 
-        // Specific national mobile formats (e.g. Turkey 10-digit GSM 5xx -> 05xx)
+        // Country-specific national formats (Turkey: 10-digit mobile 5xx -> 05xx)
         if ($cc === '90') {
-            $presets[] = ['mobile', 'Mobil: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobil rehberde 5xx şeklinde 10 hane kaydedilmiş numaraların başına 0 ekler.'];
-            $presets[] = ['web', 'Web: 10 Haneli GSM Başına 0 Ekle', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Web softphone üzerinden 10 hane girilen GSM numaralarına 0 ekler.'];
+            $presets[] = ['mobile', 'Mobile app: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobile numbers stored as 5xx xxx xx xx get the leading 0.'];
+            $presets[] = ['web', 'Web phone: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobile numbers typed as 5xx xxx xx xx get the leading 0.'];
         }
 
         return $presets;
@@ -362,7 +354,7 @@ class DialplanRuleService
         return PBXHelper::handleAction($csrfToken, function() use ($countryCode) {
             $cleanCc = preg_replace('/[^0-9]/', '', $countryCode);
             if ($cleanCc === '' || strlen($cleanCc) > 4) {
-                $cleanCc = '90';
+                throw new \Exception(t('dialplan_rules.err_country_required'));
             }
 
             $db = getDB();
