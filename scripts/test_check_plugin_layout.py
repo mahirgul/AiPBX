@@ -204,6 +204,15 @@ class Manifests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("'author_url' must be an https:// URL", out)
 
+    def test_a_file_beside_the_plugin_folders_is_not_a_plugin(self):
+        with Tree({
+            "plugins/README.md": "# Plugins\n",
+            "plugins/ai-assistant/plugin.json": manifest(ai_assistant_manifest()),
+        }) as root:
+            code, out = run(root, "--strict-manifests")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("no plugin.json", out)
+
     def test_manifests_must_agree_on_a_publisher(self):
         other = ai_assistant_manifest(slug="ai-traffic", author="Someone Else")
         with Tree({

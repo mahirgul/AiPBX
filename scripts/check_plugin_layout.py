@@ -219,6 +219,8 @@ def main(argv: list[str] | None = None) -> int:
     plugins_dir = os.path.join(ROOT, "plugins")
     if os.path.isdir(plugins_dir):
         for slug in sorted(os.listdir(plugins_dir)):
+            if not os.path.isdir(os.path.join(plugins_dir, slug)):
+                continue  # plugins/README.md and friends are not plugin folders
             manifest = os.path.join(plugins_dir, slug, "plugin.json")
             if not os.path.isfile(manifest):
                 manifest_problems.append(f"plugins/{slug}: no plugin.json")
