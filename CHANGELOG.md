@@ -17,6 +17,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Plugin catalog:** no per-category search/paging boxes; hooks and permissions are folded under
   "Technical details".
 - Translations: texts that were still English in the other languages are translated.
+- **Country presets follow each country's dialling plan:** `country_calling_codes.json` lists the
+  national and international prefixes of 104 countries (0/00 in Turkey and most of Europe, 1/011 in
+  the US and Canada, 8/810 in Russia, no national prefix in Italy or Spain, 0/0011 in Australia, …).
+  Presets used to assume 0/00 everywhere; countries whose plan is not listed get no presets.
+- **+ numbers:** outbound route and calling permission patterns may contain `+` (the mobile app sends
+  contacts as +E.164; without a normalization rule such calls matched no route, and a route for +
+  numbers was not covered by permission rules).
+- Tests: real call-flow checks in the e2e run (a SIP sink records what reaches the carrier) and unit
+  tests for the per-device call routing contexts.
 - Installer: Apache's PHP runs with `pcre.jit=0` (`99-aipbx.ini`); Ubuntu's apache2.service denies
   executable memory, so the PCRE JIT failed and logged a warning for every new Apache process.
 

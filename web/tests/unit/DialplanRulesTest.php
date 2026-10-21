@@ -140,6 +140,48 @@ final class DialplanRulesTest extends TestCase
         $this->assertStringContainsString('Pre-filter [mobile] rule', (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf'));
     }
 
+    /**
+     * Presets follow the country's dialling plan (country_calling_codes.json):
+     * national prefix 1 / none / 8, international prefix 011 / 00 / 810.
+     *
+     * @return array<string, array{string, string, string, string}>
+     */
+    public static function dialPlanCases(): array
+    {
+        return [
+            'US national'      => ['1', 'mobile', '+12125551234', '12125551234'],
+            'US international' => ['1', 'mobile', '+442071234567', '011442071234567'],
+            'Italy national'   => ['39', 'mobile', '+390612345678', '0612345678'],
+            'Italy intl'       => ['39', 'web', '+12125551234', '0012125551234'],
+            'Russia national'  => ['7', 'desktop', '+74951234567', '84951234567'],
+            'Russia intl'      => ['7', 'desktop', '+905321234567', '810905321234567'],
+            'Japan intl'       => ['81', 'mobile', '+12125551234', '01012125551234'],
+            'Turkey national'  => ['90', 'web', '+902121234567', '02121234567'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('dialPlanCases')]
+    public function testPresetsFollowCountryDialPlan(string $cc, string $device, string $dialled, string $expected): void
+    {
+        $res = DialplanRuleService::loadDefaults('test-token', $cc);
+        $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
+        $sim = DialplanRuleRepository::simulate($dialled, $device);
+        $this->assertTrue($sim['matched'], "$dialled should match a $cc preset");
+        $this->assertSame($expected, $sim['normalized']);
+    }
+
+    public function testNoPresetsForUnknownDialPlan(): void
+    {
+        $this->assertNull(DialplanRuleService::getDialPlan('55'));
+        $this->assertSame([], DialplanRuleService::getDefaultPresets('55'));
+        $res = DialplanRuleService::loadDefaults('test-token', '55');
+        $this->assertFalse($res['success'] ?? true, 'Brazil has no known plan: nothing must be loaded');
+        // Outside-line 0 rules only for 0/00 countries
+        $usPatterns = array_column(DialplanRuleService::getDefaultPresets('1'), 2);
+        $this->assertNotContains('_000.', $usPatterns);
+        $this->assertContains('_000.', array_column(DialplanRuleService::getDefaultPresets('49'), 2));
+    }
+
     public function testPresetsAreEnglish(): void
     {
         foreach (DialplanRuleService::getDefaultPresets('90') as $p) {
