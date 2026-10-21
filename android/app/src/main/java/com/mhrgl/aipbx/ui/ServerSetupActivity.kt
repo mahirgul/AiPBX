@@ -11,8 +11,6 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -28,7 +26,7 @@ import com.mhrgl.aipbx.service.PbxForegroundService
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-class ServerSetupActivity : AppCompatActivity() {
+class ServerSetupActivity : BaseActivity() {
 
     private lateinit var binding: ActivityServerSetupBinding
     private lateinit var prefs: AppPreferences
@@ -41,12 +39,7 @@ class ServerSetupActivity : AppCompatActivity() {
         }
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         prefs = AppPreferences.getInstance(this)
 
@@ -65,15 +58,7 @@ class ServerSetupActivity : AppCompatActivity() {
         com.mhrgl.aipbx.util.DisclaimerPrompt.showIfNeeded(this)
 
         // Edge-to-edge WindowInsets support
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val bottom = maxOf(systemBars.bottom, ime.bottom)
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
-            insets
-        }
+        applyEdgeToEdgeInsets(binding.root, consumeIme = true)
 
         binding.btnQrScan.setOnClickListener {
             val options = ScanOptions().apply {

@@ -27,9 +27,6 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -41,7 +38,7 @@ import com.mhrgl.aipbx.model.CallStatus
 import com.mhrgl.aipbx.model.ConnectionStatus
 import com.mhrgl.aipbx.service.PbxForegroundService
 
-class CallActivity : AppCompatActivity(), SipEngineListener {
+class CallActivity : BaseActivity(), SipEngineListener {
 
     private lateinit var binding: ActivityCallBinding
     private lateinit var prefs: AppPreferences
@@ -102,28 +99,14 @@ class CallActivity : AppCompatActivity(), SipEngineListener {
         }
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-        )
         super.onCreate(savedInstanceState)
         binding = ActivityCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = AppPreferences.getInstance(this)
 
         // Edge-to-edge WindowInsets support (the controls; video stays edge to edge)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.callContent) { view, insets ->
-            val systemBars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        applyEdgeToEdgeInsets(binding.callContent, consumeIme = false)
 
         // Keep screen on during call setup
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

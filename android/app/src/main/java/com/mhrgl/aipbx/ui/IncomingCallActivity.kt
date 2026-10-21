@@ -14,10 +14,7 @@ import android.os.IBinder
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -28,7 +25,7 @@ import com.mhrgl.aipbx.model.CallStatus
 import com.mhrgl.aipbx.model.ConnectionStatus
 import com.mhrgl.aipbx.service.PbxForegroundService
 
-class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
+class IncomingCallActivity : BaseActivity(), SipEngineListener {
 
     private lateinit var binding: ActivityIncomingCallBinding
     private var pbxService: PbxForegroundService? = null
@@ -57,15 +54,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         }
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-        )
         super.onCreate(savedInstanceState)
         wakeAndUnlockScreen()
 
@@ -73,13 +62,7 @@ class IncomingCallActivity : AppCompatActivity(), SipEngineListener {
         setContentView(binding.root)
 
         // Edge-to-edge WindowInsets support
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        applyEdgeToEdgeInsets(binding.root, consumeIme = false)
 
         val callerName = intent.getStringExtra(EXTRA_CALLER_NAME)?.takeIf { it.isNotBlank() } ?: getString(R.string.vm_unknown_caller)
         val callerNumber = intent.getStringExtra(EXTRA_CALLER_NUMBER)?.trim().orEmpty()

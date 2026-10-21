@@ -232,6 +232,12 @@ Granular security policies are enforced via the `sys_role_permissions` database 
   - Firebase Cloud Messaging (FCM) wakeup service with conversation-level notification grouping.
 - **Diagnostics System**: Integrated [`AppLogManager`](android/app/src/main/java/com/mhrgl/aipbx/util/AppLogManager.kt) capturing runtime system parameters and Logcat traces with one-click export/sharing.
 
+### 5.2 Android 15 (API 35+) Edge-to-Edge Architectural Standard
+- **Centralized Pattern**: All UI activities strictly extend [`BaseActivity`](android/app/src/main/java/com/mhrgl/aipbx/ui/BaseActivity.kt), which invokes standard `enableEdgeToEdge()` prior to `super.onCreate()`.
+- **Zero Deprecation Guarantee**: Direct calls to `Window.setDecorFitsSystemWindows`, `WindowCompat.setDecorFitsSystemWindows`, `setStatusBarColor`, `setNavigationBarColor`, or custom `SystemBarStyle` parameters are strictly forbidden.
+- **Window Insets Management**: Layout roots dynamically dispatch insets with `applyEdgeToEdgeInsets(view, consumeIme)` to preserve padding against status/navigation bars, display cutouts, and IME soft keyboards.
+- **Automated Guardrails**: `EdgeToEdgeComplianceTest` (JUnit) and `android/bin/edge_to_edge_audit.sh` run on every build to halt builds upon any violation.
+
 ---
 
 ## 6. Real-Time Messaging Engine (Go)

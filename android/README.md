@@ -42,12 +42,23 @@ is optional.
 Requirements: Android SDK 36, JDK 17; the Gradle wrapper is included.
 
 ```bash
-./gradlew testReleaseUnitTest      # unit tests
+./gradlew testReleaseUnitTest      # unit tests (including EdgeToEdgeComplianceTest)
 ./gradlew assembleDebug            # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew assembleRelease          # signed release APK
 ./gradlew bundleRelease            # signed AAB for Google Play
 bin/tls_audit.sh                   # checks that no TLS bypass came back (Play policy)
+bin/edge_to_edge_audit.sh          # checks Android 15 edge-to-edge compliance & deprecations
 ```
+
+## Android 15 (API 35+) Edge-to-Edge Standards
+
+Android 15 enforces edge-to-edge display by default and deprecates explicit bar color and decor fitting APIs. To permanently satisfy Google Play Console policies:
+
+1. **`BaseActivity` Pattern:** All UI screens inherit from `com.mhrgl.aipbx.ui.BaseActivity`.
+2. **Zero-Parameter `enableEdgeToEdge()`:** Invoked automatically by `BaseActivity.onCreate()`. Never pass custom parameters (like `SystemBarStyle.dark/light(...)`).
+3. **No Deprecated APIs:** Never call `Window.setDecorFitsSystemWindows`, `WindowCompat.setDecorFitsSystemWindows`, `setStatusBarColor`, or `setNavigationBarColor`.
+4. **Window Insets:** Root layouts must call `applyEdgeToEdgeInsets(rootView, consumeIme = true/false)` to prevent system bars or keyboards from overlapping UI elements.
+5. **Continuous Verification:** `EdgeToEdgeComplianceTest` and `bin/edge_to_edge_audit.sh` strictly guard the codebase against regressions.
 
 Release signing reads `keystore.properties` (not in git). `sdk.dir` goes into `local.properties`.
 

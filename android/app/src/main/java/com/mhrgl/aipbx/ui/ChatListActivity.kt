@@ -12,8 +12,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -36,7 +34,7 @@ import com.mhrgl.aipbx.model.ContactItem
 import com.mhrgl.aipbx.util.SearchUtils
 import kotlinx.coroutines.launch
 
-class ChatListActivity : AppCompatActivity(), ChatEventListener {
+class ChatListActivity : BaseActivity(), ChatEventListener {
 
     companion object {
         fun start(context: Context) {
@@ -59,25 +57,12 @@ class ChatListActivity : AppCompatActivity(), ChatEventListener {
     private enum class ChatFilter { ALL, DIRECT, GROUP }
     private var chatFilterMode = ChatFilter.ALL
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_list)
 
         findViewById<View>(R.id.rootChatList)?.let { root ->
-            ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
-                val systemBars = insets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-                )
-                val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-                val bottom = maxOf(systemBars.bottom, ime.bottom)
-                view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
-                insets
-            }
+            applyEdgeToEdgeInsets(root, consumeIme = true)
         }
 
         prefs = AppPreferences.getInstance(this)
