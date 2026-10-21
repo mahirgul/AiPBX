@@ -792,6 +792,15 @@ a2enmod rewrite proxy proxy_wstunnel proxy_http ssl headers remoteip php* 2>/dev
 a2dismod mpm_event 2>/dev/null || true
 a2enmod mpm_prefork 2>/dev/null || true
 
+# Ubuntu's apache2.service has MemoryDenyWriteExecute=yes: PHP's PCRE JIT cannot
+# get executable memory, falls back to the interpreter and logged "Allocation of
+# JIT memory failed" for every request. Switch the JIT off for Apache's PHP.
+for php_conf_d in /etc/php/*/apache2/conf.d; do
+    if [[ -d "$php_conf_d" ]]; then
+        printf '; AiPBX (install.sh): apache2.service denies executable memory\npcre.jit=0\n' > "$php_conf_d/99-aipbx.ini"
+    fi
+done
+
 # Apache ports: Listen 80 for HTTP/ACME, 127.0.0.1:8443 for HTTPS behind Nginx
 cat > /etc/apache2/ports.conf << 'PORTS'
 # Apache listens on 80 for HTTP and 127.0.0.1:8443 for HTTPS (behind nginx)
