@@ -13,12 +13,16 @@ class ExtensionModule implements PBXDestinationInterface {
     public function getOptions(): array {
         $db = \getDB();
         $stmt = $db->query("SELECT extension AS id, CONCAT(extension, ' - ', full_name) AS name FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 ORDER BY extension ASC");
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        array_unshift($rows, [
-            'id' => '__did__',
-            'name' => '🔄 ' . \t('dest.extension_auto_did'),
-        ]);
-        return $rows;
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * "Extension = the called DID number": only meaningful on an inbound DID route
+     * (it needs the DID in ${EXTEN}); in an IVR or time condition it would send
+     * every call to congestion. Offered by /api/destinations.php?context=did only.
+     */
+    public static function autoDidOption(): array {
+        return ['id' => '__did__', 'name' => '🔄 ' . \t('dest.extension_auto_did')];
     }
 
     public function resolve($agi, string $destId): array {

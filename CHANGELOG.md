@@ -5,7 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
-## Unreleased
+## 1.50.1
+
+Call normalization page reworked, presets follow each country's dialling plan, + numbers in
+routes and permissions, fixes from a full review, and real call-flow tests.
 
 - **Call normalization page (`/dialplan-rules`) reworked:** call normalization can be switched off
   as a whole (every device then dials numbers as entered); the country is chosen from a list under
@@ -24,6 +27,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **+ numbers:** outbound route and calling permission patterns may contain `+` (the mobile app sends
   contacts as +E.164; without a normalization rule such calls matched no route, and a route for +
   numbers was not covered by permission rules).
+- **Review fixes:** faxes to a pattern DID (`_X.`) reached the literal extension "EXTEN"; the
+  "extension = called DID" destination was offered in IVRs and time conditions too (only inbound DID
+  routes can use it); the AI voicemail plugin listened for an event nothing emits (`voicemail.received`)
+  and never ran; an auto-dialer campaign's caller ID only applied to the answered leg, not to the call
+  the callee sees; the auto-dialer dialplan is written with rollback like every other config.
+- **Android:** declining a call before the app had connected to its service could crash on Android 8+;
+  a chat room closed while it was being created kept its notifications silenced; the QR scanner's
+  padding grew on every layout pass. **iOS:** the caller's number is shown when there is no display name.
 - Tests: real call-flow checks in the e2e run (a SIP sink records what reaches the carrier) and unit
   tests for the per-device call routing contexts.
 - Installer: Apache's PHP runs with `pcre.jit=0` (`99-aipbx.ini`); Ubuntu's apache2.service denies

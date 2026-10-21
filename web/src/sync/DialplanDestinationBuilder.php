@@ -148,7 +148,11 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             // context matches the _X. pattern (single-digit sequence numbers would not).
             // Only number characters: the value comes from a form, and a line
             // break in it would have added its own dialplan lines (System()).
-            $target = preg_replace('/[^0-9A-Za-z_.+*#-]/', '', (string) (!empty($orig_did) ? $orig_did : $dest_id));
+            // A pattern DID (_X. ...) passes ${EXTEN} itself: kept as is, the
+            // filter would turn it into the literal extension "EXTEN".
+            $target = ($orig_did === '${EXTEN}')
+                ? '${EXTEN}'
+                : preg_replace('/[^0-9A-Za-z_.+*#-]/', '', (string) (!empty($orig_did) ? $orig_did : $dest_id));
             $target = $target !== '' ? $target : 'default';
             $lines[] = " same => n,Goto(from-trunk-fax,{$target},1)";
             break;

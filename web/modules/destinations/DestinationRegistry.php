@@ -65,6 +65,10 @@ class DestinationRegistry {
      */
     public static function resolveLabel(?string $destType, $destId, array &$cache = []): ?string {
         if (empty($destType)) return null;
+        if ($destType === 'extension' && (string)$destId === '__did__') {
+            self::init();
+            return ExtensionModule::autoDidOption()['name'];
+        }
         $mod = self::getModule($destType);
         if (!$mod) return null;
         if (!isset($cache[$destType])) {

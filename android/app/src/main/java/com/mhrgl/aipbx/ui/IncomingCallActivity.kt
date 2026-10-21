@@ -92,10 +92,8 @@ class IncomingCallActivity : BaseActivity(), SipEngineListener {
             if (pbxService != null) {
                 pbxService?.engine?.rejectCall()
             } else {
-                val declineIntent = Intent(this, PbxForegroundService::class.java).apply {
-                    action = PbxForegroundService.ACTION_DECLINE
-                }
-                startService(declineIntent)
+                // Not bound yet: the helper starts the service the way Android 8+ allows
+                PbxForegroundService.startWithAction(this, PbxForegroundService.ACTION_DECLINE)
             }
             finish()
         }

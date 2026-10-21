@@ -25,15 +25,18 @@ class QrCaptureActivity : BaseActivity() {
 
         barcodeScannerView = findViewById(com.google.zxing.client.android.R.id.zxing_barcode_scanner)
         val statusView = findViewById<View>(com.google.zxing.client.android.R.id.zxing_status_view)
+        // Base paddings: insets are dispatched more than once and must not add up.
+        val baseLeftPadding = statusView?.paddingLeft ?: 0
+        val baseRightPadding = statusView?.paddingRight ?: 0
         val baseBottomPadding = statusView?.paddingBottom ?: 0
         ViewCompat.setOnApplyWindowInsetsListener(barcodeScannerView) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
             statusView?.setPadding(
-                statusView.paddingLeft + bars.left,
+                baseLeftPadding + bars.left,
                 statusView.paddingTop,
-                statusView.paddingRight + bars.right,
+                baseRightPadding + bars.right,
                 baseBottomPadding + bars.bottom
             )
             insets

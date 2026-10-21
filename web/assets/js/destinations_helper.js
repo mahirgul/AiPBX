@@ -14,7 +14,9 @@ function loadDestinationOptions(typeSelectId, idSelectId, selectedValue = '') {
         return;
     }
 
-    fetch('/api/destinations.php?module=' + encodeURIComponent(moduleKey))
+    // window.DEST_CONTEXT = 'did' on the inbound route page: adds the "extension = DID" option
+    const ctx = window.DEST_CONTEXT ? '&context=' + encodeURIComponent(window.DEST_CONTEXT) : '';
+    fetch('/api/destinations.php?module=' + encodeURIComponent(moduleKey) + ctx)
         .then(response => response.json())
         .then(data => {
             if (data.success && Array.isArray(data.options)) {
