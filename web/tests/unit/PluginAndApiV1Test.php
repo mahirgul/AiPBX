@@ -190,14 +190,14 @@ final class PluginAndApiV1Test extends TestCase
         $kvItems = PluginManager::kvList('signaling-capture', 'recent_events');
         $this->assertNotEmpty($kvItems);
 
-        // Enable ai-voicemail and test voicemail.received event hook + AI sidebar group
+        // Enable ai-voicemail and test voicemail.created event hook + AI sidebar group
         $enVm = PluginManager::enable('ai-voicemail', 'test-csrf-token');
         $this->assertTrue($enVm['success']);
         $aiSidebar = PluginManager::dynamicSidebarItems(true, 'ai');
         $this->assertNotEmpty($aiSidebar);
 
-        PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.received', [
-            'event' => 'voicemail.received',
+        PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.created', [
+            'event' => 'voicemail.created',
             'occurred_at' => date(DATE_ATOM),
             'data' => [
                 'mailbox' => '101',

@@ -1520,8 +1520,12 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
             val token = prefs.token ?: return@launch
 
             if (!currentChatIsGroup && currentChatConvId <= 0 && currentChatTargetExt.isNotEmpty()) {
-                val createRes = apiClient.createDirectChat(sUrl, token, currentChatTargetExt)
+                val requestedExt = currentChatTargetExt
+                val createRes = apiClient.createDirectChat(sUrl, token, requestedExt)
                 createRes.onSuccess { conv ->
+                    // The room was closed (or another one opened) while the request ran:
+                    // marking this conversation "on screen" would silence its notifications.
+                    if (!isChatRoomOpen() || currentChatTargetExt != requestedExt) return@onSuccess
                     currentChatConvId = conv.id
                     ChatKeys.activeConversationId = conv.id
                     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager

@@ -3,18 +3,20 @@
 declare(strict_types=1);
 
 /**
- * Event handler for `ai-voicemail` plugin (`voicemail.received`).
+ * Event handler for `ai-voicemail` plugin (`voicemail.created`, emitted by
+ * web/bin/voicemail_notify.php for every new message; it used to listen for
+ * `voicemail.received`, which nothing emits, so it never ran).
  *
  * Connects to the configured OpenAI-compatible endpoint to transcribe/summarize
  * the voicemail and stores the structured result in the plugin KV store.
  */
 return static function (string $eventName, array $envelope, array $settings): void {
-    if ($eventName !== 'voicemail.received') {
+    if ($eventName !== 'voicemail.created') {
         return;
     }
 
     $data = is_array($envelope['data'] ?? null) ? $envelope['data'] : [];
-    $mailbox = (string)($data['mailbox'] ?? 'unknown');
+    $mailbox = (string)($data['mailbox'] ?? $data['extension'] ?? 'unknown');
     $caller = (string)($data['caller'] ?? 'unknown');
     $duration = (int)($data['duration'] ?? 0);
     $msgNum = (string)($data['msg_num'] ?? '1');

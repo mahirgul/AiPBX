@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.50.0",
+  "version": "1.50.1",
   "notes": {
-    "en-US": "The app now has the same version number as the AiPBX server (1.50.0). Call screens keep the status bar readable in light mode; an unused phone permission was removed.",
-    "tr-TR": "Uygulama artık AiPBX sunucusuyla aynı sürüm numarasını kullanıyor (1.50.0). Arama ekranlarında durum çubuğu açık temada da okunuyor; kullanılmayan bir telefon izni kaldırıldı."
+    "en-US": "Fixes: declining a call right after the app starts no longer crashes; chat notifications are no longer silenced after leaving a new chat early; the QR scanner layout stays correct.",
+    "tr-TR": "Düzeltmeler: uygulama açılır açılmaz gelen aramayı reddetmek artık çökmeye yol açmıyor; yeni sohbetten erken çıkınca bildirimler susmuyor; QR okuyucu ekranı düzgün kalıyor."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

@@ -26,7 +26,7 @@ class EdgeToEdgeComplianceTest {
         var dir = File(System.getProperty("user.dir") ?: ".")
         if (dir.name == "app") dir = dir.parentFile ?: dir
         if (!File(dir, "app/src/main/AndroidManifest.xml").exists()) {
-            dir = File("/mnt/data/projects/AiPBX/android")
+            dir = File(dir, "android")
         }
         dir
     }

@@ -477,4 +477,14 @@ final class CallRoutingContextsTest extends TestCase
         $this->assertStringContainsString("SetVar: FAX_SENDER=8888\n", $content);
         $this->assertStringContainsString("SetVar: FAX_ID={$faxId}\n", $content);
     }
+
+    public function testFaxDestinationOfPatternDidKeepsTheDialledNumber(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/DialplanDestinationBuilder.php';
+        // A pattern DID (_X.) passes ${EXTEN}; the fax context needs the real number, not "EXTEN".
+        $lines = buildDestinationLines('fax', '', '${EXTEN}');
+        $this->assertStringContainsString('Goto(from-trunk-fax,${EXTEN},1)', $lines);
+        // A plain DID still goes in as filtered digits
+        $this->assertStringContainsString('Goto(from-trunk-fax,02121234567,1)', buildDestinationLines('fax', '', "0212123\n4567"));
+    }
 }

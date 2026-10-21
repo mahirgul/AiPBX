@@ -377,9 +377,10 @@ final class AutoDialerService
                 }
 
                 $cmd = sprintf(
-                    'channel originate Local/dial_%d_%s@aipbx-autodial-out/n extension route_%d_%d@aipbx-autodial-amd',
+                    'channel originate Local/dial_%d_%s_%d@aipbx-autodial-out/n extension route_%d_%d@aipbx-autodial-amd',
                     $numId,
                     $phone,
+                    $campId,
                     $campId,
                     $numId
                 );
@@ -540,6 +541,13 @@ final class AutoDialerService
         if ($defaultCid !== '') {
             $lines[] = " same => n,Set(CALLERID(num)={$defaultCid})";
         }
+        // The campaign's own caller ID on the leg the callee sees (dial_<num>_<phone>_<campaign>).
+        foreach ($campaigns as $c) {
+            $campCid = preg_replace('/[^0-9+]/', '', (string)($c['caller_id'] ?? ''));
+            if ($campCid !== '') {
+                $lines[] = ' same => n,ExecIf($["${CUT(EXTEN,_,4)}" = "' . (int)$c['id'] . '"]?Set(CALLERID(num)=' . $campCid . '))';
+            }
+        }
         $lines[] = " same => n,Dial(Local/\${AUTODIAL_PHONE}@from-internal-pbx/n,{$dialTimeout},g)";
         $lines[] = ' same => n,GotoIf($["${DIALSTATUS}" = "ANSWER"]?done)';
         $lines[] = ' same => n,Set(AD_CB=${CURL(http://127.0.0.1/api/plugins/auto-dialer/callback?num_id=${AUTODIAL_NUM_ID}&event=dial_failed&dialstatus=${DIALSTATUS}&uniqueid=${UNIQUEID})})';
@@ -599,7 +607,12 @@ final class AutoDialerService
         }
 
         $content = implode("\n", $lines) . "\n";
-        if (function_exists('writePBXConf')) {
+        if (function_exists('writeConfWithRollback')) {
+            // Like every other sync: the previous file comes back if Asterisk rejects the new one.
+            writeConfWithRollback('extensions_plugin_auto-dialer.conf', $content, function () {
+                AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'auto-dialer');
+            }, 'auto-dialer');
+        } elseif (function_exists('writePBXConf')) {
             writePBXConf('extensions_plugin_auto-dialer.conf', $content);
             AsteriskHelper::reloadDialplan();
         }

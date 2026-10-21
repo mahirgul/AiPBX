@@ -31,6 +31,10 @@ try {
 
     if (!empty($module)) {
         $options = DestinationRegistry::getOptionsFor($module);
+        // "Extension = called DID" only where the DID is known: inbound DID routes.
+        if ($module === 'extension' && ($_GET['context'] ?? '') === 'did') {
+            array_unshift($options, \PBX\Destinations\ExtensionModule::autoDidOption());
+        }
         echo json_encode([
             'success' => true,
             'module' => $module,

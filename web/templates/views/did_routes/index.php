@@ -161,5 +161,6 @@ $destOptionsCache = [];
     </div>
 </div>
 
+<script>window.DEST_CONTEXT = 'did';</script>
 <script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/did_routes.js'); ?>"></script>

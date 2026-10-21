@@ -12,7 +12,7 @@
     "icon_style": "color: #8b5cf6;",
     "description": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint.",
     "description_i18n": {
-        "tr": "Gelen sesli mesajları (`voicemail.received`) OpenAI veya OpenAI şeması uyumlu uzak AI sunucuları üzerinden otomatik metne döker ve özetler.",
+        "tr": "Gelen sesli mesajları (`voicemail.created`) OpenAI veya OpenAI şeması uyumlu uzak AI sunucuları üzerinden otomatik metne döker ve özetler.",
         "en": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint."
     },
     "scopes": [
@@ -21,7 +21,7 @@
     ],
     "hooks": {
         "events": [
-            "voicemail.received"
+            "voicemail.created"
         ],
         "admin_page": {
             "group": "ai"

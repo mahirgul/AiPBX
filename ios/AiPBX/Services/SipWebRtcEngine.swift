@@ -340,8 +340,10 @@ public final class SipWebRtcEngine: NSObject, ObservableObject, WKScriptMessageH
             AppLogManager.shared.warn("SipEngine", L("Camera not available: the call continues with audio only."))
 
         case "onIncomingCall":
-            let name = body["name"] as? String ?? L("Unknown Number")
             let number = body["number"] as? String ?? ""
+            // The engine sends "" when the caller has no display name: show the number then.
+            let rawName = (body["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let name = !rawName.isEmpty ? rawName : (!number.isEmpty ? number : L("Unknown Number"))
             DispatchQueue.main.async {
                 self.activeCallerName = name
                 self.activeCallerNumber = number
