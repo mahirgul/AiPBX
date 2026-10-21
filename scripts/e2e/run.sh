@@ -34,6 +34,7 @@ prepare() {
     for _ in $(seq 1 60); do in_c 'getent hosts archive.ubuntu.com >/dev/null' 2>/dev/null && break; sleep 2; done
     lxc file push "$BUNDLE" "$C/root/aipbx.bundle" || return 1
     lxc file push "$REPO/scripts/e2e/checks.sh" "$C/root/e2e-checks.sh" || return 1
+    lxc file push "$REPO/scripts/e2e/call_flows.sh" "$C/root/e2e-call-flows.sh" || return 1
 }
 
 run_mode() {
@@ -57,7 +58,11 @@ run_mode() {
     fi
     echo "== [$mode] checks"
     in_c 'bash /root/e2e-checks.sh' 2>&1 | tee -a "$log"
-    return "${PIPESTATUS[0]}"
+    local rc_checks="${PIPESTATUS[0]}"
+    echo "== [$mode] call flows (what really reaches the carrier)"
+    in_c 'bash /root/e2e-call-flows.sh' 2>&1 | tee -a "$log"
+    local rc_calls="${PIPESTATUS[0]}"
+    [[ "$rc_checks" -eq 0 && "$rc_calls" -eq 0 ]]
 }
 
 rc=0
