@@ -5,6 +5,33 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.0
+
+**Bridge release.** Later releases update only installations that run 1.50.0 or newer; an older
+installation updates to 1.50.0 first (from 1.50.0 on, `aipbx-update` does this step by itself).
+The Android app now has the same version number as the server.
+
+- **Call normalization fixes:** the desk phone rule "strip the outside-line 0" (`_00.`), switched on by
+  the 1.34.4 update, turned international numbers into national ones (`0049…` → `049…`) — also for
+  faxes and call forwarding. It is now off (on installations where it was not changed) and loads
+  switched off with the defaults. Turkey-only rules (`+90` → `0`, `5XXXXXXXXX` → `05…`) are switched
+  off on installations that are not set up for Turkey; load the defaults for your country on
+  **Trunks → Call Normalization**. The help text explains that the most specific pattern wins, not the row order.
+- **Plugins:** an uploaded plugin can no longer show itself as "Official"; the badge depends on where
+  the plugin is installed, not on its manifest.
+- **Installer & updater:** a failing Asterisk configuration sync is reported instead of being ignored;
+  `install.sh` records the installed version (`/var/lib/aipbx/installed-version`); a release can name
+  the oldest version it updates (`UPGRADE_FROM`) and `aipbx-update` goes through that bridge release first.
+- **Android app 1.50.0:**
+  - Version name and code come from the server version (versionCode `1500000`); Google Play gets the
+    build of each published release.
+  - No Android 15-deprecated window APIs in the app any more (also not inside libraries), so Google
+    Play's edge-to-edge warnings do not come back; CI checks the built app. Android 15+ is
+    edge-to-edge as before; Android 8–14 shows the regular status bar.
+  - Call screens keep the status bar readable in light mode; unused chat screens and the unused
+    `MANAGE_OWN_CALLS` permission were removed.
+- Auto-dialer: PHP 8.5 `str_getcsv()` deprecation fixed.
+
 ## 1.34.8
 
 Android 15+ (targetSdk 35/36) Edge-to-Edge architectural compliance, eradication of deprecated window APIs, centralized `BaseActivity` pattern, and automated CI/test compliance guardrails (v1.0.81).
