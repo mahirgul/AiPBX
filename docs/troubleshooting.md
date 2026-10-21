@@ -84,6 +84,22 @@ journalctl -t aipbx-voicemail -n 20
 "push off" means push is not set up, "push to 0 device(s)" that the extension has no registered
 phone (open the app once after signing in), and "failed: ..." carries Firebase's error.
 
+## System Update fails with "Code was modified by hand"
+
+`aipbx-update` refuses to update when files under `/opt/aipbx` were changed.
+Installations on **1.34.0 – 1.34.2** hit this without anyone editing anything:
+their installer made `web/bin/aipbx_ops.php` executable, and the updater of those
+versions counts that as a change. Restore the file once, then update as usual:
+
+```bash
+sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php
+sudo aipbx-update
+```
+
+From 1.50.2 on the updater ignores file mode changes. For any other file listed by
+the error, keep your change outside the code (portal, `/etc/ai-pbx.env`,
+`*_custom.conf`) and restore the file the same way.
+
 ## Useful commands
 
 ```bash

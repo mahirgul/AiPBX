@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## Unreleased
+
+- **Updater:** file mode changes no longer count as "Code was modified by hand". Installations on
+  1.34.0 – 1.34.2 could not update at all (their installer made `web/bin/aipbx_ops.php`
+  executable); on those, run `sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php` once
+  (see docs/troubleshooting.md).
+
 ## 1.50.1
 
 Call normalization page reworked, presets follow each country's dialling plan, + numbers in

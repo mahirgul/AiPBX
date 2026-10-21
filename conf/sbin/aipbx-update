@@ -144,7 +144,10 @@ fi
 
 # ------------------------------------------------------------------ pre-checks
 # Hand-edited code would be overwritten by the update.
-dirty="$(git_in status --porcelain --untracked-files=no)"
+# File mode changes do not count: an installer that chmods a script (1.34.0-1.34.2
+# did that with web/bin/aipbx_ops.php) must not block every later update; the
+# checkout below restores the modes anyway.
+dirty="$(git_in -c core.fileMode=false status --porcelain --untracked-files=no)"
 if [[ -n "$dirty" ]]; then
     echo "Files under $INSTALL_DIR were modified; the update would discard them:" >&2
     echo "$dirty" >&2
