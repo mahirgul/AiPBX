@@ -14,8 +14,17 @@ android {
         applicationId = "com.mhrgl.AiPBX"
         minSdk = 26
         targetSdk = 36
-        versionCode = 81
-        versionName = "1.0.81"
+        // The app has the PBX's version (repo VERSION file, e.g. 1.50.0):
+        // versionCode = MAJOR*1_000_000 + MINOR*10_000 + PATCH*100 + androidBuild.
+        // androidBuild (0..99, -PandroidBuild=N) is only for an Android-only
+        // rebuild of the same release: Play takes every versionCode once.
+        val pbxVersion = rootProject.file("../VERSION").readText().trim()
+        val (major, minor, patch) = pbxVersion.split(".").map { it.toInt() }
+        val androidBuild = (project.findProperty("androidBuild") as String?)?.toInt() ?: 0
+        require(androidBuild in 0..99) { "androidBuild must be 0..99" }
+        require(minor < 100 && patch < 100) { "VERSION $pbxVersion does not fit the versionCode scheme" }
+        versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + androidBuild
+        versionName = pbxVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

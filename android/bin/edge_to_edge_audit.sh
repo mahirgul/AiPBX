@@ -34,6 +34,8 @@ check_pattern 'setDecorFitsSystemWindows' "Deprecated Window.setDecorFitsSystemW
 check_pattern 'setStatusBarColor|setNavigationBarColor' "Deprecated Window bar color call"
 check_pattern 'SystemBarStyle\.(dark|light)\(' "Deprecated/custom SystemBarStyle factory call"
 check_pattern 'FLAG_LAYOUT_NO_LIMITS' "Legacy FLAG_LAYOUT_NO_LIMITS window flag"
+check_pattern 'enableEdgeToEdge|EdgeToEdge\.enable' "androidx enableEdgeToEdge (its Android 8-14 code uses deprecated bar APIs; see BaseActivity)"
+check_pattern 'setStatusBarContrastEnforced|setNavigationBarContrastEnforced|LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES' "API deprecated in Android 15"
 
 # Check themes
 check_res 'windowOptOutEdgeToEdgeEnforcement' "Opt-out from edge-to-edge in XML theme"

@@ -14,7 +14,8 @@ import java.io.File
  *
  * Requirements:
  * 1. Every UI Activity must inherit from [com.mhrgl.aipbx.ui.BaseActivity].
- * 2. No calls to deprecated window APIs (setDecorFitsSystemWindows, setStatusBarColor, setNavigationBarColor).
+ * 2. No calls to deprecated window APIs (setDecorFitsSystemWindows, setStatusBarColor, setNavigationBarColor),
+ *    and no androidx enableEdgeToEdge(): its Android 8–14 code calls them (see BaseActivity).
  * 3. No calls to deprecated SystemBarStyle factory methods with custom color parameters.
  * 4. No theme opt-out attributes (windowOptOutEdgeToEdgeEnforcement, android:statusBarColor, android:navigationBarColor).
  */
@@ -76,7 +77,12 @@ class EdgeToEdgeComplianceTest {
             "setNavigationBarColor" to "Window.setNavigationBarColor is deprecated in Android 15",
             "SystemBarStyle.dark(" to "SystemBarStyle.dark(...) with custom parameters triggers Play Console deprecation warnings",
             "SystemBarStyle.light(" to "SystemBarStyle.light(...) with custom parameters triggers Play Console deprecation warnings",
-            "FLAG_LAYOUT_NO_LIMITS" to "FLAG_LAYOUT_NO_LIMITS is incompatible with Android 15 edge-to-edge standard insets"
+            "FLAG_LAYOUT_NO_LIMITS" to "FLAG_LAYOUT_NO_LIMITS is incompatible with Android 15 edge-to-edge standard insets",
+            "enableEdgeToEdge" to "androidx enableEdgeToEdge() calls Window.setStatusBarColor/setNavigationBarColor on Android 8-14, which Play flags (see BaseActivity)",
+            "EdgeToEdge.enable" to "androidx EdgeToEdge.enable() calls Window.setStatusBarColor/setNavigationBarColor on Android 8-14, which Play flags (see BaseActivity)",
+            "setStatusBarContrastEnforced" to "Window.setStatusBarContrastEnforced is deprecated in Android 15",
+            "setNavigationBarContrastEnforced" to "Window.setNavigationBarContrastEnforced is deprecated in Android 15",
+            "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES" to "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES is deprecated in Android 15"
         )
 
         val violations = mutableListOf<String>()
@@ -135,10 +141,6 @@ class EdgeToEdgeComplianceTest {
         assertTrue("BaseActivity.kt must exist", baseActivityFile.exists())
         val content = baseActivityFile.readText()
 
-        assertTrue(
-            "BaseActivity must call zero-parameter enableEdgeToEdge()",
-            content.contains("enableEdgeToEdge()")
-        )
         assertTrue(
             "BaseActivity must wrap base context with L10n.wrap",
             content.contains("L10n.wrap(newBase)")

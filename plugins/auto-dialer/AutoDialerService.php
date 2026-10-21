@@ -186,7 +186,7 @@ final class AutoDialerService
             if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
-            $parts = str_getcsv($line, str_contains($line, ';') && !str_contains($line, ',') ? ';' : ',');
+            $parts = str_getcsv($line, str_contains($line, ';') && !str_contains($line, ',') ? ';' : ',', '"', '\\');
             $rawPhone = trim((string)($parts[0] ?? ''));
             // Skip CSV header row if present
             if ($added === 0 && preg_match('/^(phone|number|numara|telefon|tel)$/i', $rawPhone)) {

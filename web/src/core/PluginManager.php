@@ -147,8 +147,12 @@ final class PluginManager
                 $settingsUrl = '/plugins/' . $slug;
             }
 
-            $rawType = (string)($m['type'] ?? (($m['source'] ?? $dbRow['source'] ?? 'official') === 'official' ? 'official' : 'community'));
-            $type = in_array($rawType, ['official', 'community'], true) ? $rawType : 'community';
+            // "Official" comes from where the plugin is installed, never from
+            // its own manifest: an uploaded .zip could claim "type": "official"
+            // and get the badge. A bundled plugin may still mark itself community.
+            $source = (string)($m['source'] ?? $dbRow['source'] ?? 'official');
+            $rawType = (string)($m['type'] ?? ($source === 'official' ? 'official' : 'community'));
+            $type = ($source === 'official' && $rawType === 'official') ? 'official' : 'community';
 
             $rawAuthorUrl = trim((string)($m['author_url'] ?? ''));
             $authorUrl = (preg_match('#^https?://#i', $rawAuthorUrl) === 1) ? $rawAuthorUrl : '';

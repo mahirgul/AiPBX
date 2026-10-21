@@ -101,8 +101,7 @@ class ChatWebSocketManager private constructor() {
     fun connect(baseUrl: String, token: String) {
         if (baseUrl.isEmpty() || token.isEmpty()) return
 
-        // ChatListActivity, ChatActivity, DialerActivity and PbxForegroundService
-        // all call connect(). A call arriving during the handshake used to cancel
+        // DialerActivity and PbxForegroundService both call connect(). A call arriving during the handshake used to cancel
         // the old socket and open a new one: the server counted the same phone as
         // two devices, and the cancelled socket's late onFailure wiped the new
         // connection's online list (everyone looked "Offline").

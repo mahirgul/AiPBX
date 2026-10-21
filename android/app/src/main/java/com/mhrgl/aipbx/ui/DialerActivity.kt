@@ -245,10 +245,10 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
 
     private fun handleIncomingIntent(intent: Intent?) {
         if (intent == null) return
-        val convId = intent.getIntExtra(ChatActivity.EXTRA_CONV_ID, 0)
-        val targetExt = intent.getStringExtra(ChatActivity.EXTRA_TARGET_EXT) ?: ""
-        val targetName = intent.getStringExtra(ChatActivity.EXTRA_TARGET_NAME)
-        val isGroup = intent.getBooleanExtra(ChatActivity.EXTRA_IS_GROUP, false)
+        val convId = intent.getIntExtra(ChatKeys.EXTRA_CONV_ID, 0)
+        val targetExt = intent.getStringExtra(ChatKeys.EXTRA_TARGET_EXT) ?: ""
+        val targetName = intent.getStringExtra(ChatKeys.EXTRA_TARGET_NAME)
+        val isGroup = intent.getBooleanExtra(ChatKeys.EXTRA_IS_GROUP, false)
         val dialNum = intent.getStringExtra("extra_dial_number")
 
         if (convId > 0 || targetExt.isNotEmpty()) {
@@ -277,7 +277,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
             loadCallHistory(currentFilter)
         } else if (currentTab == Tab.CHAT) {
             if (isChatRoomOpen()) {
-                ChatActivity.activeConversationId = currentChatConvId
+                ChatKeys.activeConversationId = currentChatConvId
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
                 nm?.cancel(10000 + (currentChatConvId % 1000))
                 loadChatRoomMessages()
@@ -315,8 +315,8 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
     override fun onPause() {
         super.onPause()
         sendChatTypingState(false)
-        if (ChatActivity.activeConversationId == currentChatConvId) {
-            ChatActivity.activeConversationId = 0
+        if (ChatKeys.activeConversationId == currentChatConvId) {
+            ChatKeys.activeConversationId = 0
         }
     }
 
@@ -331,8 +331,8 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (ChatActivity.activeConversationId == currentChatConvId) {
-            ChatActivity.activeConversationId = 0
+        if (ChatKeys.activeConversationId == currentChatConvId) {
+            ChatKeys.activeConversationId = 0
         }
         ChatWebSocketManager.instance.removeListener(this)
     }
@@ -475,7 +475,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
         binding.layoutFeatures.visibility = View.GONE
 
         if (tab != Tab.CHAT) {
-            ChatActivity.activeConversationId = 0
+            ChatKeys.activeConversationId = 0
         }
 
         when (tab) {
@@ -499,7 +499,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
                 binding.ivTabChat.setColorFilter(colorActive)
                 binding.tvTabChat.setTextColor(colorActive)
                 if (isChatRoomOpen()) {
-                    ChatActivity.activeConversationId = currentChatConvId
+                    ChatKeys.activeConversationId = currentChatConvId
                 }
             }
             Tab.FEATURES -> {
@@ -1437,7 +1437,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
         currentChatTargetName = targetName ?: targetExt
         currentChatIsGroup = isGroup
         currentChatGroupDetails = null
-        ChatActivity.activeConversationId = convId
+        ChatKeys.activeConversationId = convId
 
         if (convId > 0) {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
@@ -1469,7 +1469,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
         currentChatTargetName = ""
         currentChatIsGroup = false
         currentChatGroupDetails = null
-        ChatActivity.activeConversationId = 0
+        ChatKeys.activeConversationId = 0
 
         loadConversations()
         updateChatUnreadBadge()
@@ -1523,7 +1523,7 @@ class DialerActivity : BaseActivity(), SipEngineListener, ChatEventListener {
                 val createRes = apiClient.createDirectChat(sUrl, token, currentChatTargetExt)
                 createRes.onSuccess { conv ->
                     currentChatConvId = conv.id
-                    ChatActivity.activeConversationId = conv.id
+                    ChatKeys.activeConversationId = conv.id
                     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
                     nm?.cancel(10000 + (conv.id % 1000))
                     loadChatRoomMessages()

@@ -12,7 +12,7 @@ import androidx.core.app.RemoteInput
 import com.mhrgl.aipbx.R
 import com.mhrgl.aipbx.data.ApiClient
 import com.mhrgl.aipbx.data.AppPreferences
-import com.mhrgl.aipbx.ui.ChatActivity
+import com.mhrgl.aipbx.ui.ChatKeys
 import com.mhrgl.aipbx.ui.DialerActivity
 import com.mhrgl.aipbx.util.L10n
 import kotlinx.coroutines.CoroutineScope
@@ -48,10 +48,10 @@ object ChatNotifications {
 
         val openIntent = Intent(context, DialerActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra(ChatActivity.EXTRA_CONV_ID, convId)
-            putExtra(ChatActivity.EXTRA_TARGET_EXT, targetExt)
-            putExtra(ChatActivity.EXTRA_TARGET_NAME, targetName)
-            putExtra(ChatActivity.EXTRA_IS_GROUP, isGroup)
+            putExtra(ChatKeys.EXTRA_CONV_ID, convId)
+            putExtra(ChatKeys.EXTRA_TARGET_EXT, targetExt)
+            putExtra(ChatKeys.EXTRA_TARGET_NAME, targetName)
+            putExtra(ChatKeys.EXTRA_IS_GROUP, isGroup)
         }
         val openPending = PendingIntent.getActivity(
             context, convId, openIntent,
@@ -59,10 +59,10 @@ object ChatNotifications {
         )
 
         val replyIntent = Intent(context, ChatReplyReceiver::class.java).apply {
-            putExtra(ChatActivity.EXTRA_CONV_ID, convId)
-            putExtra(ChatActivity.EXTRA_TARGET_EXT, targetExt)
-            putExtra(ChatActivity.EXTRA_TARGET_NAME, targetName)
-            putExtra(ChatActivity.EXTRA_IS_GROUP, isGroup)
+            putExtra(ChatKeys.EXTRA_CONV_ID, convId)
+            putExtra(ChatKeys.EXTRA_TARGET_EXT, targetExt)
+            putExtra(ChatKeys.EXTRA_TARGET_NAME, targetName)
+            putExtra(ChatKeys.EXTRA_IS_GROUP, isGroup)
             putExtra(EXTRA_SENDER_TITLE, title)
             putExtra(EXTRA_BODY, body)
         }
@@ -121,15 +121,15 @@ class ChatReplyReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val rawText = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(ChatNotifications.KEY_REPLY)
             ?.toString()?.trim().orEmpty()
-        val convId = intent.getIntExtra(ChatActivity.EXTRA_CONV_ID, 0)
+        val convId = intent.getIntExtra(ChatKeys.EXTRA_CONV_ID, 0)
         if (rawText.isEmpty() || convId <= 0) return
         val text = rawText.take(4000)
 
         val title = intent.getStringExtra(ChatNotifications.EXTRA_SENDER_TITLE).orEmpty()
         val body = intent.getStringExtra(ChatNotifications.EXTRA_BODY).orEmpty()
-        val targetExt = intent.getStringExtra(ChatActivity.EXTRA_TARGET_EXT).orEmpty()
-        val targetName = intent.getStringExtra(ChatActivity.EXTRA_TARGET_NAME)
-        val isGroup = intent.getBooleanExtra(ChatActivity.EXTRA_IS_GROUP, false)
+        val targetExt = intent.getStringExtra(ChatKeys.EXTRA_TARGET_EXT).orEmpty()
+        val targetName = intent.getStringExtra(ChatKeys.EXTRA_TARGET_NAME)
+        val isGroup = intent.getBooleanExtra(ChatKeys.EXTRA_IS_GROUP, false)
 
         val prefs = AppPreferences.getInstance(context)
         val token = prefs.token

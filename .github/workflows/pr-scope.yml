@@ -1,0 +1,122 @@
+# PR scope check — asks contributors to keep one topic per pull request.
+#
+# Runs on pull_request_target so it can label and comment on PRs from forks.
+# It never checks out or runs the PR's code: it only reads the list of changed
+# files through the API, so the write token is never exposed to PR code.
+#
+# A PR is flagged (label `needs-split` + one comment, updated in place) when it
+# touches too many components or is too large. It is a warning, not a failing
+# check: a single feature can legitimately span e.g. web + asterisk-config.
+name: PR scope
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    # The maintainer's own PRs and bots are not checked.
+    if: github.event.pull_request.user.login != github.repository_owner && github.event.pull_request.user.type != 'Bot'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const MAX_AREAS = 2;      // more distinct components than this → split
+            const MAX_LINES = 1000;   // changed lines, generated/translation files excluded
+            const MAX_FILES = 40;
+            const MARKER = '<!-- aipbx-pr-scope -->';
+            const LABEL = 'needs-split';
+
+            const pr = context.payload.pull_request;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100,
+            });
+
+            // Which component a path belongs to. null = neutral (docs, changelog):
+            // it does not count as a separate topic.
+            function area(p) {
+              if (/^(docs\/|[^/]+\.md$)/.test(p)) return null;
+              if (/^web\/lang\//.test(p) || /\/values-[a-z]{2}(-r[A-Z]{2})?\//.test(p) || /\.lproj\//.test(p)) return 'translations';
+              const m = p.match(/^plugins\/([^/]+)\//);
+              if (m) return `plugin:${m[1]}`;
+              if (/^(install\.sh|conf\/|scripts\/)/.test(p)) return 'installer/system';
+              if (/^\.github\//.test(p)) return 'ci';
+              const top = p.split('/')[0];
+              return ['web', 'android', 'ios', 'chat', 'ai', 'signaling', 'asterisk-config', 'sounds', 'db'].includes(top) ? top : 'other';
+            }
+            const generated = p => /(^|\/)(vendor\/|composer\.lock$|package-lock\.json$|go\.sum$)/.test(p) || /^web\/lang\//.test(p);
+
+            const areas = {};
+            let lines = 0;
+            for (const f of files) {
+              const a = area(f.filename);
+              if (a) areas[a] = (areas[a] || 0) + 1;
+              if (!generated(f.filename)) lines += f.additions + f.deletions;
+            }
+            const areaNames = Object.keys(areas);
+
+            const reasons = [];
+            if (areaNames.length > MAX_AREAS) reasons.push(`it touches **${areaNames.length} different parts** of the project: ${areaNames.map(a => '`' + a + '`').join(', ')}`);
+            if (lines > MAX_LINES) reasons.push(`it changes **${lines} lines** (limit ~${MAX_LINES}, translations and lock files not counted)`);
+            if (files.length > MAX_FILES) reasons.push(`it changes **${files.length} files** (limit ~${MAX_FILES})`);
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, per_page: 100,
+            });
+            const mine = comments.find(c => c.body && c.body.includes(MARKER));
+            const hasLabel = pr.labels.some(l => l.name === LABEL);
+
+            if (reasons.length === 0) {
+              if (hasLabel) {
+                await github.rest.issues.removeLabel({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, name: LABEL }).catch(() => {});
+              }
+              if (mine) {
+                await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: mine.id,
+                  body: `${MARKER}\n✅ Thanks — this PR now looks focused on a single topic.` });
+              }
+              return;
+            }
+
+            const body = [
+              MARKER,
+              `Thank you for your contribution, @${pr.user.login}! 🙏`,
+              '',
+              'AiPBX accepts **one topic per pull request**, and this PR looks like it may contain several:',
+              '',
+              ...reasons.map(r => `- ${r}`),
+              '',
+              'Mixed PRs are very hard to review and test on a live PBX, so they usually wait a long time or cannot be merged.',
+              'Could you split it into separate PRs — one per bug fix or feature? Each one can then be reviewed and merged on its own.',
+              '',
+              '<details><summary>How to split a branch into several PRs</summary>',
+              '',
+              '```bash',
+              'git fetch upstream',
+              '# one new branch per topic, starting from the latest main',
+              'git switch -c fix/first-topic upstream/main',
+              'git cherry-pick <commit-of-first-topic>          # whole commits, or:',
+              'git checkout your-big-branch -- path/to/file.php  # only the files of this topic',
+              'git commit -m "fix(scope): first topic"',
+              'git push origin fix/first-topic                   # open a PR from this branch',
+              '```',
+              'Repeat for each topic, then close this PR (or keep it for one of the topics).',
+              '</details>',
+              '',
+              'If this really is a single change that has to touch all of these parts, just say so in a comment and a maintainer will review it as is.',
+            ].join('\n');
+
+            if (mine) {
+              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, body });
+            }
+            if (!hasLabel) {
+              await github.rest.issues.addLabels({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number, labels: [LABEL] });
+            }
+            core.warning(`PR may contain several topics: ${reasons.join('; ').replace(/\*\*|`/g, '')}`);
