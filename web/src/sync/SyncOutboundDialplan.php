@@ -81,7 +81,7 @@ function __syncOutboundDialplanBody() {
     if (!empty($routes)) {
         foreach ($routes as $r) {
             $name = toCleanAscii($r['route_name']);
-            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#-]/', '', trim($r['match_pattern']));
+            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($r['match_pattern']));
             $prepend = preg_replace('/[^0-9]/', '', trim($r['prepend'] ?? ''));
             $append = preg_replace('/[^0-9]/', '', trim($r['append'] ?? ''));
             $strip_front = intval($r['strip_front'] ?? 0);
