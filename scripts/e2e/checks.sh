@@ -15,6 +15,7 @@ FAIL=0
 pass() { echo "PASS  $1"; PASS=$((PASS + 1)); }
 fail() { echo "FAIL  $1${2:+ — $2}"; FAIL=$((FAIL + 1)); }
 check() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then pass "$name"; else fail "$name"; fi; }
+skip() { echo "SKIP  $1${2:+ — $2}"; }
 
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 DOMAIN="$(sed -n 's/^PORTAL_DOMAIN=//p' /etc/ai-pbx.env | tail -n 1)"
@@ -150,16 +151,33 @@ rm -f "$E2E_DP"; asterisk -rx "dialplan reload" >/dev/null
 # Every prompt listed in sounds/core-sounds-tr.txt is installed from the
 # package in exactly the shipped formats (a leftover .g729/.sln of the same
 # name would win on format cost).
-tr_bad=""
-while IFS='|' read -r name _; do
-    got=$(cd /var/lib/asterisk/sounds/tr && compgen -G "$name.*" | sed 's/.*\.//' | sort | tr '\n' ' ')
-    [[ "$got" == "alaw g722 gsm sln16 ulaw wav " ]] || tr_bad+=" $name($got)"
-done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/core-sounds-tr.txt")
-if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (all six formats)"; else fail "Turkish prompts installed (all six formats)" "${tr_bad:0:200}"; fi
+# A fresh install is English and leaves the Turkish packages out (install.sh,
+# AIPBX_TR_SOUNDS=auto); they are checked when installed.
+if compgen -G "/var/lib/aipbx/sound-packs/core-tr-*.list" >/dev/null; then
+    tr_bad=""
+    while IFS='|' read -r name _; do
+        got=$(cd /var/lib/asterisk/sounds/tr && compgen -G "$name.*" | sed 's/.*\.//' | sort | tr '\n' ' ')
+        [[ "$got" == "alaw g722 gsm sln16 ulaw wav " ]] || tr_bad+=" $name($got)"
+    done < <(grep -E '^[A-Za-z0-9_/-]+\|' "$INSTALL_DIR/sounds/core-sounds-tr.txt")
+    if [[ -z "$tr_bad" ]]; then pass "Turkish prompts installed (all six formats)"; else fail "Turkish prompts installed (all six formats)" "${tr_bad:0:200}"; fi
+    check "Asterisk finds a Turkish prompt" bash -c 'asterisk -rx "core show file formats" >/dev/null && test -r /usr/share/asterisk/sounds/tr/vm-intro.wav'
+else
+    skip "Turkish prompts" "not installed (English install)"
+fi
 check "clients are given TURNS on 443" grep -q "^TURNS_PORT=443$" /etc/ai-pbx.env
-check "Asterisk finds a Turkish prompt" bash -c 'asterisk -rx "core show file formats" >/dev/null && test -r /usr/share/asterisk/sounds/tr/vm-intro.wav'
-tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts?tab=providers")"
-check "Cloud TTS page renders" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "save_provider" <<<"$1"' _ "$tts_page"
+# Port 80: plugin endpoints answer plain HTTP only for the PBX itself (Asterisk
+# CURL callbacks); any other client is redirected to HTTPS.
+lan_ip="$(hostname -I | awk '{print $1}')"
+check "port 80 plugin callback not redirected for 127.0.0.1" bash -c '[[ "$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/api/plugins/auto-dialer/callback)" != 301 ]]'
+check "port 80 plugin endpoint redirected to HTTPS for others" bash -c '[[ "$(curl -s -o /dev/null -w "%{http_code}" "http://$1/api/plugins/auto-dialer/callback")" == 301 ]]' _ "$lan_ip"
+# Cloud TTS is the ai-tts plugin (off by default): its page only exists when enabled.
+if [[ "$(mysql -N asterisk -e "SELECT enabled FROM sys_plugins WHERE slug='ai-tts'" 2>/dev/null)" == 1 ]]; then
+    tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts?tab=providers")"
+    check "Cloud TTS page renders" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "save_provider" <<<"$1"' _ "$tts_page"
+else
+    plugins_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/plugins")"
+    check "plugins page renders and lists ai-tts" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "ai-tts" <<<"$1"' _ "$plugins_page"
+fi
 
 # --- Security and maintenance --------------------------------------------------
 check "Asterisk WSS 8089 listens on loopback only" bash -c '! ss -ltn | grep -E "(0\.0\.0\.0|\*|\[::\]):8089 "'
