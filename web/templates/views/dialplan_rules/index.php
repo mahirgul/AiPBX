@@ -88,7 +88,7 @@ $deviceBadge = static function (string $type): string {
                         <option value=""><?php echo t('dialplan_rules.country_none'); ?></option>
                         <?php foreach (($all_countries ?? []) as $cCode => $cInfo): ?>
                             <option value="<?php echo htmlspecialchars((string)$cCode); ?>" <?php echo ((string)$cCode === $country_code) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars(trim(($cInfo['flag'] ?? '') . ' ' . DialplanRuleService::getCountryName((string)$cCode) . ' (+' . $cCode . ')')); ?>
+                                <?php echo htmlspecialchars(trim(($cInfo['flag'] ?? '') . ' ' . DialplanRuleService::getCountryName((string)$cCode) . ' (+' . $cCode . ')' . (isset($cInfo['trunk_prefix'], $cInfo['intl_prefix']) ? '' : ' ' . t('dialplan_rules.no_presets_suffix')))); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

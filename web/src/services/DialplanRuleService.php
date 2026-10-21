@@ -314,36 +314,61 @@ class DialplanRuleService
     }
 
     /**
+     * The country's dialling plan from config/country_calling_codes.json:
+     * ['trunk' => national (trunk) prefix, 'intl' => international prefix],
+     * or null when it is not known (no presets are offered then).
+     */
+    public static function getDialPlan(string $countryCode): ?array
+    {
+        $info = self::getAllCountries()[preg_replace('/[^0-9]/', '', $countryCode)] ?? null;
+        if (!is_array($info) || !isset($info['trunk_prefix'], $info['intl_prefix'])) {
+            return null;
+        }
+        return ['trunk' => (string)$info['trunk_prefix'], 'intl' => (string)$info['intl_prefix']];
+    }
+
+    /**
      * Recommended rules for a country calling code (rows for the INSERT in
-     * loadDefaults). The desk phone "strip the outside-line 0" rule loads
-     * switched off: AiPBX's international format is 00 + country code, so it
-     * would turn 0049... into 049... — only offices whose phones dial 0 for an
-     * outside line switch it on.
+     * loadDefaults), built from the country's dialling plan: +<cc> numbers get
+     * the national prefix (0 in Turkey, 1 in the US, 8 in Russia, none in
+     * Italy), other + numbers the international prefix (00, 011, 0011 ...).
+     * Empty when the country's plan is not known.
+     *
+     * The desk phone "outside-line 0" rules only exist for 0/00 countries; the
+     * "strip the outside-line 0" one loads switched off (it would turn 0049...
+     * into 049... — only offices whose phones dial 0 for an outside line need it).
      */
     public static function getDefaultPresets(string $countryCode): array
     {
         $cc = preg_replace('/[^0-9]/', '', $countryCode);
-        if ($cc === '' || strlen($cc) > 4) {
+        $plan = ($cc !== '' && strlen($cc) <= 4) ? self::getDialPlan($cc) : null;
+        if ($plan === null) {
             return [];
         }
+        $trunk = $plan['trunk'];
+        $intl = $plan['intl'];
         $stripLen = 1 + strlen($cc); // "+" and the country code
         $country = self::getCountryName($cc, 'en');
+        $national = $trunk === '' ? "+{$cc}" : "+{$cc} -> {$trunk}";
+        $nationalDesc = $trunk === ''
+            ? "+{$cc} numbers are dialled as national numbers (without +{$cc})."
+            : "+{$cc} numbers become national numbers with the prefix {$trunk}.";
+        $intlDesc = "International numbers with + are dialled with {$intl}.";
 
-        $presets = [
-            ['desktop', 'Desk phones: strip outside-line 0', '_00[1-9].', 1, '', 0, '', 1, 0, 'For desk phones that dial 0 for an outside line: 0 + 0xxx (national) becomes 0xxx. Off by default.'],
-            ['desktop', 'Desk phones: outside line international (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Outside-line 0 dialled before an international number: 000... becomes 00...'],
-            ['desktop', "Desk phones: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 3, 1, "+{$cc} numbers become national numbers with a leading 0."],
-            ['desktop', 'Desk phones: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 4, 1, 'International numbers with + are dialled with 00.'],
-            ['mobile', "Mobile app: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "Contacts stored as +{$cc}... become national numbers with a leading 0."],
-            ['mobile', 'Mobile app: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 2, 1, 'Contacts stored with + are dialled with 00.'],
-            ['web', "Web phone: E.164 {$country} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 1, 1, "+{$cc} numbers from the web phone or CRM click-to-dial become national numbers with a leading 0."],
-            ['web', 'Web phone: E.164 international (+ -> 00)', '_+X.', 1, '00', 0, '', 2, 1, 'International numbers with + are dialled with 00.'],
-        ];
+        $presets = [];
+        if ($trunk === '0' && $intl === '00') {
+            $presets[] = ['desktop', 'Desk phones: strip outside-line 0', '_00[1-9].', 1, '', 0, '', 1, 0, 'For desk phones that dial 0 for an outside line: 0 + 0xxx (national) becomes 0xxx. Off by default.'];
+            $presets[] = ['desktop', 'Desk phones: outside line international (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Outside-line 0 dialled before an international number: 000... becomes 00...'];
+        }
+        foreach (['desktop' => 'Desk phones', 'mobile' => 'Mobile app', 'web' => 'Web phone'] as $type => $label) {
+            $presets[] = [$type, "{$label}: E.164 {$country} ({$national})", "_+{$cc}.", $stripLen, $trunk, 0, '', 3, 1, $nationalDesc];
+            $presets[] = [$type, "{$label}: E.164 international (+ -> {$intl})", '_+X.', 1, $intl, 0, '', 4, 1, $intlDesc];
+        }
 
         // Country-specific national formats (Turkey: 10-digit mobile 5xx -> 05xx)
         if ($cc === '90') {
-            $presets[] = ['mobile', 'Mobile app: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobile numbers stored as 5xx xxx xx xx get the leading 0.'];
-            $presets[] = ['web', 'Web phone: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 3, 1, 'Mobile numbers typed as 5xx xxx xx xx get the leading 0.'];
+            $presets[] = ['mobile', 'Mobile app: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 5, 1, 'Mobile numbers stored as 5xx xxx xx xx get the leading 0.'];
+            $presets[] = ['web', 'Web phone: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 5, 1, 'Mobile numbers typed as 5xx xxx xx xx get the leading 0.'];
         }
 
         return $presets;
@@ -355,6 +380,9 @@ class DialplanRuleService
             $cleanCc = preg_replace('/[^0-9]/', '', $countryCode);
             if ($cleanCc === '' || strlen($cleanCc) > 4) {
                 throw new \Exception(t('dialplan_rules.err_country_required'));
+            }
+            if (self::getDialPlan($cleanCc) === null) {
+                throw new \Exception(t('dialplan_rules.err_no_presets'));
             }
 
             $db = getDB();
