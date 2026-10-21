@@ -34,22 +34,14 @@ class DialplanRuleController extends BaseController
             exit;
         }
 
-        // Handle AJAX reorder request
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reorder') {
-            header('Content-Type: application/json; charset=utf-8');
-            $csrf = (string)($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-            $ids = (array)($_POST['rule_ids'] ?? []);
-            $res = DialplanRuleService::reorder($ids, $csrf);
-            echo json_encode($res);
-            exit;
-        }
 
         $action = (string)($_POST['action'] ?? '');
         $postActions = [
             'save_rule' => fn() => DialplanRuleService::saveRule($_POST),
             'delete_rule' => fn() => DialplanRuleService::deleteRule(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
             'toggle_status' => fn() => DialplanRuleService::toggleStatus(intval($_POST['rule_id'] ?? 0), static::csrfToken()),
-            'load_defaults' => fn() => DialplanRuleService::loadDefaults(static::csrfToken(), (string)($_POST['country_code'] ?? '90')),
+            'load_defaults' => fn() => DialplanRuleService::loadDefaults(static::csrfToken(), (string)($_POST['country_code'] ?? '')),
+            'set_enabled' => fn() => DialplanRuleService::setEnabled(static::csrfToken(), !empty($_POST['enabled'])),
         ];
 
         $notices = ['message' => '', 'error' => ''];
@@ -61,13 +53,13 @@ class DialplanRuleController extends BaseController
             }
         }
 
-        $active_tab = trim((string)($_GET['tab'] ?? 'mobile'));
-        if (!in_array($active_tab, ['mobile', 'desktop', 'web', 'all', 'simulator'], true)) {
-            $active_tab = 'mobile';
+        $active_tab = trim((string)($_GET['tab'] ?? 'all'));
+        if (!in_array($active_tab, ['mobile', 'desktop', 'web', 'all'], true)) {
+            $active_tab = 'all';
         }
 
-        $country_code = (string)getSystemSetting('dialplan_rules_country_code', '90');
-        $country_info = DialplanRuleService::getCountryInfo($country_code);
+        // No country until the administrator picks one (no Turkey default).
+        $country_code = preg_replace('/[^0-9]/', '', (string)getSystemSetting('dialplan_rules_country_code', ''));
         $all_countries = DialplanRuleService::getAllCountries();
 
         $all_rules = DialplanRuleRepository::allOrdered();
@@ -94,8 +86,8 @@ class DialplanRuleController extends BaseController
         static::renderPage('dialplan_rules/index', [
             'active_tab' => $active_tab,
             'country_code' => $country_code,
-            'country_info' => $country_info,
             'all_countries' => $all_countries,
+            'rules_enabled' => DialplanRuleService::isEnabled(),
             'all_rules' => $all_rules,
             'rules_by_type' => $rules_by_type,
         ], ['title' => $page_title] + $notices);

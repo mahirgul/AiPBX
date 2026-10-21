@@ -1,0 +1,141 @@
+/* Call normalization rules (/dialplan-rules) */
+
+/* Settings rows (on/off, country presets) under the page header */
+.dpr-settings {
+    border-top: 1px solid var(--border-color);
+    padding: 4px 20px 8px;
+}
+.dpr-setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+}
+.dpr-setting + .dpr-setting {
+    border-top: 1px dashed var(--border-color);
+}
+.dpr-setting-title {
+    font-weight: 700;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dpr-setting-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.dpr-country-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+.dpr-country-form select {
+    width: 260px;
+}
+
+/* Rule counts in the device tabs */
+.dpr-count {
+    display: inline-block;
+    min-width: 20px;
+    padding: 0 6px;
+    margin-left: 4px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+    background: rgba(125, 125, 125, 0.15);
+}
+.settings-tab-btn.active .dpr-count {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* Rules table */
+.dpr-pattern {
+    font-family: monospace;
+    font-size: 12.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(125, 125, 125, 0.12);
+    white-space: nowrap;
+}
+.dpr-row-off td:not(:last-child) {
+    opacity: 0.55;
+}
+
+/* Simulator */
+.dpr-sim {
+    padding: 16px 20px 20px;
+}
+.dpr-sim-input {
+    max-width: 520px;
+    margin-bottom: 14px;
+}
+.dpr-sim-examples {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+.dpr-chip {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-family: monospace;
+    font-size: 12px;
+    cursor: pointer;
+}
+.dpr-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.dpr-result {
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 700;
+}
+.dpr-result-changed {
+    color: var(--primary);
+}
+
+/* Live preview in the rule modal */
+.dpr-preview {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+}
+.dpr-preview-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.dpr-preview-row input {
+    max-width: 200px;
+}
+.dpr-preview-result {
+    font-family: monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+@media (max-width: 760px) {
+    .dpr-setting {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dpr-country-form {
+        flex-wrap: wrap;
+    }
+    .dpr-country-form select {
+        width: 100%;
+    }
+}

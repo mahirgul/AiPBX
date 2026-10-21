@@ -119,6 +119,34 @@ final class DialplanRulesTest extends TestCase
         $this->assertNull(DialplanRuleRepository::findById($ruleId));
     }
 
+    public function testSwitchedOffWritesNoRulesButKeepsContexts(): void
+    {
+        $_SESSION['csrf_token'] = 'test-token';
+        $off = DialplanRuleService::setEnabled('test-token', false);
+        $this->assertTrue($off['success'] ?? false, $off['error'] ?? '');
+        try {
+            $this->assertFalse(DialplanRuleService::isEnabled());
+            syncOutboundDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+            $this->assertStringContainsString('[from-internal-mobile-1]', $conf);
+            $this->assertStringContainsString('[sub-norm-mobile-1]', $conf);
+            $this->assertStringNotContainsString('Pre-filter [mobile] rule', $conf);
+            $this->assertFalse(DialplanRuleRepository::simulateAll('+12125551234')['enabled']);
+        } finally {
+            DialplanRuleService::setEnabled('test-token', true);
+        }
+        $this->assertTrue(DialplanRuleService::isEnabled());
+        syncOutboundDialplan();
+        $this->assertStringContainsString('Pre-filter [mobile] rule', (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf'));
+    }
+
+    public function testPresetsAreEnglish(): void
+    {
+        foreach (DialplanRuleService::getDefaultPresets('90') as $p) {
+            $this->assertDoesNotMatchRegularExpression('/[çğıöşüÇĞİÖŞÜ]/u', $p[1] . ' ' . $p[9], 'Preset texts must be English');
+        }
+    }
+
     public function testSyncOutboundDialplanGeneratesIngressContexts(): void
     {
         syncOutboundDialplan();
@@ -191,7 +219,12 @@ final class DialplanRulesTest extends TestCase
         $token = 'test-token';
         $_SESSION['csrf_token'] = $token;
 
-        $res = DialplanRuleService::loadDefaults($token);
+        // No country, no presets (there is no Turkey default any more)
+        $none = DialplanRuleService::loadDefaults($token, '');
+        $this->assertFalse($none['success'] ?? true);
+        $this->assertSame([], DialplanRuleService::getDefaultPresets(''));
+
+        $res = DialplanRuleService::loadDefaults($token, '90');
         $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
 
         // Verify all 3 client types have default presets loaded
@@ -299,10 +332,10 @@ final class DialplanRulesTest extends TestCase
                 $foundAt = true;
                 $this->assertSame(3, (int)$rule['strip_front']);
                 $this->assertSame('0', $rule['prepend']);
-                $this->assertStringContainsString('Avusturya', $rule['rule_name']);
+                $this->assertStringContainsString('Austria', $rule['rule_name']);
             }
         }
-        $this->assertTrue($foundAt, 'Mobile should have _+43. Avusturya rule');
+        $this->assertTrue($foundAt, 'Mobile should have _+43. Austria rule');
 
         // Test simulation for Austria number
         $simAt = DialplanRuleRepository::simulateAll('+436641234567');
@@ -326,7 +359,7 @@ final class DialplanRulesTest extends TestCase
                 $foundDe = true;
                 $this->assertSame(3, (int)$rule['strip_front']); // '+' and '49' = 3
                 $this->assertSame('0', $rule['prepend']);
-                $this->assertStringContainsString('Almanya', $rule['rule_name']);
+                $this->assertStringContainsString('Germany', $rule['rule_name']);
             }
         }
         $this->assertTrue($foundDe, 'Mobile should have _+49. rule with strip 3 and prepend 0');

@@ -258,6 +258,7 @@ class DialplanRuleRepository extends BaseRepository
      *
      * @return array{
      *   original: string,
+     *   enabled: bool,
      *   desktop: array,
      *   mobile: array,
      *   web: array
@@ -268,6 +269,8 @@ class DialplanRuleRepository extends BaseRepository
         $num = trim($number);
         return [
             'original' => $num,
+            // Switched off as a whole: Asterisk applies no rule, the simulator shows what each rule would do.
+            'enabled' => (string)getSystemSetting('dialplan_rules_enabled', '1') !== '0',
             'desktop' => static::simulate($num, 'desktop'),
             'mobile'  => static::simulate($num, 'mobile'),
             'web'     => static::simulate($num, 'web'),

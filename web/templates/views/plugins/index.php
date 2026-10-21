@@ -25,6 +25,7 @@ foreach ($plugins as $p) {
     $grouped[$cat][] = $p;
 }
 ?>
+<link rel="stylesheet" href="<?php echo asset('/assets/css/pages/plugins.css'); ?>">
 
 <div class="card u-mb-20">
     <div class="card-header">
@@ -82,7 +83,7 @@ foreach ($plugins as $p) {
             </div>
         </div>
         <div class="table-responsive">
-            <table class="data-table">
+            <table class="data-table no-dt">
                 <thead>
                     <tr>
                         <th style="width: 32%;"><?php echo htmlspecialchars(t('plugins.col_plugin', 'Plugin')); ?></th>
@@ -123,14 +124,17 @@ foreach ($plugins as $p) {
                                 <div style="font-size: 13px; color: var(--text-main); margin-bottom: 4px;">
                                     <?php echo htmlspecialchars($p['description']); ?>
                                 </div>
-                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                    <?php foreach (array_keys($p['hooks']) as $hookName): ?>
-                                        <span class="badge badge-info u-fs-11"><i class="fas fa-link"></i> <?php echo htmlspecialchars((string)$hookName); ?></span>
-                                    <?php endforeach; ?>
-                                    <?php foreach ($p['scopes'] as $sc): ?>
-                                        <span class="badge badge-secondary u-fs-11"><?php echo htmlspecialchars((string)$sc); ?></span>
-                                    <?php endforeach; ?>
-                                </div>
+                                <?php if (!empty($p['hooks']) || !empty($p['scopes'])): ?>
+                                    <details class="plugin-tech">
+                                        <summary><?php echo htmlspecialchars(t('plugins.tech_details', 'Technical details')); ?></summary>
+                                        <?php if (!empty($p['hooks'])): ?>
+                                            <div><span class="text-muted"><?php echo htmlspecialchars(t('plugins.tech_hooks', 'Hooks')); ?>:</span> <code><?php echo htmlspecialchars(implode(', ', array_map('strval', array_keys($p['hooks'])))); ?></code></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($p['scopes'])): ?>
+                                            <div><span class="text-muted"><?php echo htmlspecialchars(t('plugins.tech_scopes', 'Permissions')); ?>:</span> <code><?php echo htmlspecialchars(implode(', ', array_map('strval', $p['scopes']))); ?></code></div>
+                                        <?php endif; ?>
+                                    </details>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ($p['enabled']): ?>

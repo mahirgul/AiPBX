@@ -1,0 +1,23 @@
+/* Plugin catalog (/plugins) */
+
+/* Hooks and permissions: folded, they matter to developers, not to choosing a plugin */
+.plugin-tech {
+    margin-top: 6px;
+    font-size: 11.5px;
+}
+.plugin-tech summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    width: fit-content;
+}
+.plugin-tech summary:hover {
+    color: var(--primary);
+}
+.plugin-tech > div {
+    margin-top: 4px;
+    line-height: 1.6;
+}
+.plugin-tech code {
+    font-size: 11px;
+    word-break: break-word;
+}
