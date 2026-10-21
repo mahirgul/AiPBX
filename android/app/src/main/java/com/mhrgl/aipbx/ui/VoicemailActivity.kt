@@ -10,9 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -32,7 +30,7 @@ import java.time.OffsetDateTime
  * The user's own voicemail: list, listen (a new message then counts as heard,
  * which also turns off the phones' voicemail lamp) and delete.
  */
-class VoicemailActivity : AppCompatActivity() {
+class VoicemailActivity : BaseActivity() {
 
     companion object {
         fun start(context: Context) = context.startActivity(Intent(context, VoicemailActivity::class.java))
@@ -46,21 +44,12 @@ class VoicemailActivity : AppCompatActivity() {
     private var player: MediaPlayer? = null
     private var playingId: String? = null
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         prefs = AppPreferences.getInstance(this)
         binding = ActivityVoicemailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
+        applyEdgeToEdgeInsets(binding.root, consumeIme = false)
         binding.btnBack.setOnClickListener { finish() }
         binding.btnRefresh.setOnClickListener { load() }
         binding.rvVoicemail.layoutManager = LinearLayoutManager(this)

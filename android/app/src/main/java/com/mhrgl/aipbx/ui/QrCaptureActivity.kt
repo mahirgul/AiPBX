@@ -5,33 +5,21 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.journeyapps.barcodescanner.CaptureManager
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
-import com.mhrgl.aipbx.util.L10n
 
 /**
  * Edge-to-edge QR scanner activity replacing ZXing's non-ComponentActivity CaptureActivity
  * so every activity in the manifest supports Android 15+ edge-to-edge and WindowInsets.
  */
-class QrCaptureActivity : AppCompatActivity() {
+class QrCaptureActivity : BaseActivity() {
 
     private lateinit var capture: CaptureManager
     private lateinit var barcodeScannerView: DecoratedBarcodeView
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
-        )
         super.onCreate(savedInstanceState)
         setContentView(com.google.zxing.client.android.R.layout.zxing_capture)
 

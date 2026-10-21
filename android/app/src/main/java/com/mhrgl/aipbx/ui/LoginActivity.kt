@@ -14,8 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -31,7 +29,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import org.json.JSONObject
 
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var prefs: AppPreferences
@@ -44,12 +42,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(L10n.wrap(newBase))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         prefs = AppPreferences.getInstance(this)
 
@@ -58,15 +51,7 @@ class LoginActivity : AppCompatActivity() {
         com.mhrgl.aipbx.util.DisclaimerPrompt.showIfNeeded(this)
 
         // Edge-to-edge WindowInsets support
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val bottom = maxOf(systemBars.bottom, ime.bottom)
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, bottom)
-            insets
-        }
+        applyEdgeToEdgeInsets(binding.root, consumeIme = true)
 
         if (intent.getBooleanExtra(SessionExpiry.EXTRA_SESSION_EXPIRED, false)) {
             showError(L10n.str(R.string.session_expired_text))

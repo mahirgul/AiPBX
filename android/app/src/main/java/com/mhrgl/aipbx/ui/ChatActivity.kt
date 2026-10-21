@@ -7,10 +7,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,7 +32,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
-class ChatActivity : AppCompatActivity(), ChatEventListener {
+class ChatActivity : BaseActivity(), ChatEventListener {
 
     companion object {
         const val EXTRA_CONV_ID = "extra_conv_id"
@@ -107,10 +105,6 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
         else Toast.makeText(this, getString(R.string.err_camera_permission), Toast.LENGTH_LONG).show()
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.mhrgl.aipbx.util.L10n.wrap(newBase))
-    }
-
     private fun showChatPhotoSourceMenu(anchor: View) {
         val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
         popup.menu.add(0, 1, 0, getString(R.string.menu_take_photo))
@@ -133,7 +127,6 @@ class ChatActivity : AppCompatActivity(), ChatEventListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 

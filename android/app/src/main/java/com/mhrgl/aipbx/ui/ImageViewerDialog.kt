@@ -29,10 +29,7 @@ object ImageViewerDialog {
 
     fun show(context: Context, imageUrl: String, authToken: String?) {
         val dialog = Dialog(context, R.style.Theme_AiPbxPhone_FullScreen)
-        dialog.window?.let { win ->
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(win, false)
-            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        }
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         val root = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
 
         val image = ZoomImageView(context) { dialog.dismiss() }
