@@ -31,7 +31,6 @@
     <!-- Lockscreen & Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
@@ -108,19 +107,6 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:excludeFromRecents="true" />
-
-        <!-- Chat List Activity -->
-        <activity
-            android:name=".ui.ChatListActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
-
-        <!-- 1-on-1 Chat Activity -->
-        <activity
-            android:name=".ui.ChatActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
-            android:windowSoftInputMode="adjustResize" />
 
         <!-- Own voicemail: list, listen, delete -->
         <activity

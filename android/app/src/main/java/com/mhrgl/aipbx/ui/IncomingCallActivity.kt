@@ -27,6 +27,8 @@ import com.mhrgl.aipbx.service.PbxForegroundService
 
 class IncomingCallActivity : BaseActivity(), SipEngineListener {
 
+    override val darkSystemBars = true
+
     private lateinit var binding: ActivityIncomingCallBinding
     private var pbxService: PbxForegroundService? = null
     private var isBound = false

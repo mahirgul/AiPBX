@@ -29,6 +29,11 @@ on:
           - internal
           - beta
           - production
+      android_build:
+        description: 'Android-only rebuild of the same release: 1..99 (versionCode = release code + this). 0 = the release build'
+        required: false
+        default: '0'
+        type: string
       upload_to_play:
         description: 'Upload AAB to Google Play Console'
         required: true
@@ -105,8 +110,19 @@ jobs:
 
       - name: Build Android Release Bundle (AAB) & APK
         working-directory: ./android
+        env:
+          ANDROID_BUILD: ${{ inputs.android_build || '0' }}
         run: |
-          ./gradlew bundleRelease assembleRelease --stacktrace
+          ./gradlew testDebugUnitTest bundleRelease assembleRelease -PandroidBuild="$ANDROID_BUILD" --stacktrace
+
+      # Google Play warns about edge-to-edge ("deprecated APIs or parameters"):
+      # the source rules and the BUILT app (libraries included) must be clean,
+      # or the release does not leave CI. See app/src/main/java/.../ui/BaseActivity.kt.
+      - name: Edge-to-edge checks (source + built app)
+        working-directory: ./android
+        run: |
+          bash bin/edge_to_edge_audit.sh
+          bash bin/check_deprecated_window_apis.sh app/build/outputs/apk/release/app-release.apk app/build/outputs/mapping/release/mapping.txt
 
       - name: Upload Android Build Artifacts
         uses: actions/upload-artifact@v4
@@ -133,12 +149,21 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          IS_PUSH: ${{ github.event_name == 'push' }}
+          EVENT: ${{ github.event_name }}
           INPUT_UPLOAD: ${{ inputs.upload_to_play }}
-          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+          DISPATCH_TAG: ${{ inputs.release_tag }}
         run: |
-          if [ -n "$RELEASE_TAG" ]; then
-            echo "Building for GitHub Release $RELEASE_TAG -> Google Play upload skipped."
+          # The app's versionCode comes from VERSION, so it changes only with a
+          # release: Google Play gets the build of a published release (and a
+          # manual run). A push to main only builds and tests — a second push
+          # would have the same versionCode, which Play rejects.
+          if [ "$EVENT" = "push" ]; then
+            echo "Push to main -> build and tests only; Google Play gets published releases."
+            echo "can_upload=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          if [ -n "$DISPATCH_TAG" ]; then
+            echo "Attaching the APK to $DISPATCH_TAG -> Google Play upload skipped."
             echo "can_upload=false" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -152,7 +177,7 @@ jobs:
           if [ -z "$PLAY_KEY_JSON" ]; then
             echo "::warning::PLAY_STORE_JSON_KEY secret is missing; skipping the Google Play Console upload."
             echo "can_upload=false" >> $GITHUB_OUTPUT
-          elif [ "$IS_PUSH" = "true" ] || [ "$INPUT_UPLOAD" = "true" ] || [ -z "$INPUT_UPLOAD" ]; then
+          elif [ "$EVENT" = "release" ] || [ "$INPUT_UPLOAD" = "true" ]; then
             echo "Google Play upload requirements met -> uploading."
             echo "can_upload=true" >> $GITHUB_OUTPUT
           else

@@ -339,4 +339,32 @@ final class PluginAndApiV1Test extends TestCase
             $this->assertSame('community', $bySlug['signaling-capture']['type']);
         }
     }
+
+    public function testUploadedPluginCannotClaimOfficialType(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx_custom_plugins_' . bin2hex(random_bytes(4));
+        mkdir($dir . '/fake-official', 0700, true);
+        file_put_contents($dir . '/fake-official/plugin.json', json_encode([
+            'slug' => 'fake-official',
+            'name' => 'Fake Official',
+            'version' => '1.0.0',
+            'type' => 'official',
+        ]));
+
+        $prev = getenv('AIPBX_CUSTOM_PLUGINS_DIR');
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR=' . $dir);
+        PluginManager::resetCache();
+        try {
+            $bySlug = array_column(PluginManager::allPlugins(), null, 'slug');
+            $this->assertArrayHasKey('fake-official', $bySlug);
+            $this->assertSame('community', $bySlug['fake-official']['type']);
+            $this->assertSame('official', $bySlug['auto-dialer']['type']);
+        } finally {
+            putenv($prev === false ? 'AIPBX_CUSTOM_PLUGINS_DIR' : 'AIPBX_CUSTOM_PLUGINS_DIR=' . $prev);
+            PluginManager::resetCache();
+            unlink($dir . '/fake-official/plugin.json');
+            rmdir($dir . '/fake-official');
+            rmdir($dir);
+        }
+    }
 }

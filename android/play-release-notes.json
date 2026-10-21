@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.0.81",
+  "version": "1.50.0",
   "notes": {
-    "en-US": "Full Android 15 edge-to-edge architectural compliance, deprecated window fitting APIs removed, and unified insets handling across all screens.",
-    "tr-TR": "Android 15 tam uçtan uca (edge-to-edge) mimari uyumluluğu, eskiyen pencere API'lerinin kaldırılması ve tüm ekranlarda birleşik sistem çubuğu payı yönetimi."
+    "en-US": "The app now has the same version number as the AiPBX server (1.50.0). Call screens keep the status bar readable in light mode; an unused phone permission was removed.",
+    "tr-TR": "Uygulama artık AiPBX sunucusuyla aynı sürüm numarasını kullanıyor (1.50.0). Arama ekranlarında durum çubuğu açık temada da okunuyor; kullanılmayan bir telefon izni kaldırıldı."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",

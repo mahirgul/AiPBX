@@ -52,7 +52,7 @@ class AiPbxFirebaseMessagingService : FirebaseMessagingService() {
             }
             "new_message", "group_created", "group_member_added" -> {
                 val convId = data["conversation_id"]?.toIntOrNull() ?: 0
-                if (convId > 0 && com.mhrgl.aipbx.ui.ChatActivity.activeConversationId == convId) {
+                if (convId > 0 && com.mhrgl.aipbx.ui.ChatKeys.activeConversationId == convId) {
                     return
                 }
                 val title = data["title"] ?: L10n.str(R.string.push_new_message_title)

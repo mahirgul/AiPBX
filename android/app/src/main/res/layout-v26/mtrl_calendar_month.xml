@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Overrides Material's layout of the same name (the app has no date picker).
+    The original uses MaterialCalendarGridView; through it R8 had to keep
+    MaterialDatePicker, whose onStart() calls Window.setStatusBarColor /
+    setNavigationBarColor / setDecorFitsSystemWindows — deprecated in Android 15
+    and flagged by Google Play. See bin/check_deprecated_window_apis.sh.
+-->
+<GridView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/month_grid"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />

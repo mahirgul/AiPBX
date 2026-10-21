@@ -128,6 +128,20 @@ if ! ver_lt "$CURRENT" "$TARGET"; then
     echo "Installed version ($CURRENT) is already $TARGET or newer."; exit 0
 fi
 
+# Bridge release: a release with an UPGRADE_FROM file applies only to that
+# version or newer (install.sh --upgrade refuses older ones). An older
+# installation goes to the bridge release first, then on to the target.
+FINAL_TARGET=""
+need_from="$(git_in show "$TARGET:UPGRADE_FROM" 2>/dev/null | tr -d '[:space:]')"
+if [[ -n "$need_from" ]] && ver_lt "$CURRENT" "v$need_from"; then
+    if [[ -z "$(git_in tag -l "v$need_from")" ]]; then
+        echo "$TARGET needs AiPBX $need_from first, but release v$need_from was not found." >&2; exit 1
+    fi
+    log "$TARGET needs $need_from or newer: updating to the bridge release v$need_from first"
+    FINAL_TARGET="$TARGET"
+    TARGET="v$need_from"
+fi
+
 # ------------------------------------------------------------------ pre-checks
 # Hand-edited code would be overwritten by the update.
 dirty="$(git_in status --porcelain --untracked-files=no)"
@@ -258,3 +272,13 @@ status done "Updated: $CURRENT → $TARGET"
 # Refresh the portal's "update available" information.
 /bin/bash "${AIPBX_UPDATE_REEXEC:-$0}" --check >/dev/null 2>&1 || true
 echo "AiPBX updated to $TARGET. Backup: $BACKUP_DIR"
+
+# Continue from the bridge release to the requested one with the bridge's own
+# (just installed) updater.
+if [[ -n "$FINAL_TARGET" ]]; then
+    log "Bridge release $TARGET installed, continuing to $FINAL_TARGET"
+    next=(--to "$FINAL_TARGET" --yes)
+    [[ "$ALLOW_CALLS" == true ]] && next+=(--allow-calls)
+    rm -f "${AIPBX_UPDATE_REEXEC:-}"
+    exec env -u AIPBX_UPDATE_REEXEC -u AIPBX_UPDATE_COPIED /usr/local/sbin/aipbx-update "${next[@]}"
+fi

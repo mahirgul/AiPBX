@@ -17,6 +17,18 @@ require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 final class DialplanRulesTest extends TestCase
 {
+    /**
+     * Every test starts from the Turkey (+90) defaults: the rows left by the
+     * migrations depend on the installation's country, and other tests load
+     * other countries' defaults.
+     */
+    protected function setUp(): void
+    {
+        $_SESSION['csrf_token'] = 'test-token';
+        $res = DialplanRuleService::loadDefaults('test-token', '90');
+        $this->assertTrue($res['success'] ?? false, $res['error'] ?? '');
+    }
+
     public function testAsteriskPatternToRegex(): void
     {
         $this->assertSame('/^\\+90.+$/', DialplanRuleRepository::asteriskPatternToRegex('_+90.'));
@@ -25,8 +37,18 @@ final class DialplanRulesTest extends TestCase
         $this->assertSame('/^9.+$/', DialplanRuleRepository::asteriskPatternToRegex('_9.'));
     }
 
-    public function testDesktopTrunkZeroNormalization(): void
+    public function testDesktopInternationalNumberIsNotStrippedByDefault(): void
     {
+        // AiPBX's international format is 00 + country code: the "strip the
+        // outside-line 0" rule is loaded switched off, 0049... stays 0049...
+        $res = DialplanRuleRepository::simulate('00493012345678', 'desktop');
+        $this->assertFalse($res['matched'], 'Desktop international 0049... must not be rewritten by default');
+        $this->assertSame('00493012345678', $res['normalized']);
+    }
+
+    public function testDesktopTrunkZeroNormalizationWhenSwitchedOn(): void
+    {
+        getDB()->exec("UPDATE pbx_dialplan_rules SET is_active = 1 WHERE client_type = 'desktop' AND match_pattern = '_00[1-9].'");
         $res = DialplanRuleRepository::simulate('005379902352', 'desktop');
         $this->assertTrue($res['matched'], 'Desktop 005379902352 should match desktop trunk strip rule');
         $this->assertSame('05379902352', $res['normalized']);

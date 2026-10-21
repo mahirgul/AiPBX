@@ -330,8 +330,11 @@ class DialplanRuleService
         $countryName = self::getCountryName($cc, 'tr');
 
         $presets = [
-            // Desktop
-            ['desktop', 'Masaüstü: Dış Hat Çıkış Kodunu (0) Temizle', '_00[1-9].', 1, '', 0, '', 1, 1, 'Masaüstü telefonlardan 0 ile dış hat alıp ulusal numara (0xxx) çevrildiğinde baştaki fazla 0ı temizler.'],
+            // Desktop. The "strip the outside-line 0" rule is loaded switched
+            // off: AiPBX's international format is 00 + country code, so it
+            // would turn 0049... into 049... — only offices whose phones dial
+            // 0 for an outside line switch it on.
+            ['desktop', 'Masaüstü: Dış Hat Çıkış Kodunu (0) Temizle', '_00[1-9].', 1, '', 0, '', 1, 0,'Masaüstü telefonlardan 0 ile dış hat alıp ulusal numara (0xxx) çevrildiğinde baştaki fazla 0ı temizler.'],
             ['desktop', 'Masaüstü: Dış Hat Uluslararası (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Masaüstü telefonlardan 0 dış hat koduyla uluslararası arama yapıldığında baştaki fazla 0ı temizler.'],
             ['desktop', "Masaüstü: E.164 {$countryName} (+{$cc} -> 0)", "_+{$cc}.", $stripLen, '0', 0, '', 3, 1, "Masaüstü telefonlardan veya rehberden +{$cc} ile gelen aramaları ulusal 0 formatına çevirir."],
             ['desktop', 'Masaüstü: E.164 (+) Kaldır ve 00 Yap', '_+X.', 1, '00', 0, '', 4, 1, 'Masaüstü telefonlardan + ile başlayan uluslararası numaraları standart 00 formatına çevirir.'],

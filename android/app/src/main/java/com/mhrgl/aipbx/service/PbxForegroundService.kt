@@ -41,7 +41,7 @@ import com.mhrgl.aipbx.model.CallStatus
 import com.mhrgl.aipbx.model.ChatMessage
 import com.mhrgl.aipbx.model.ConnectionStatus
 import com.mhrgl.aipbx.ui.CallActivity
-import com.mhrgl.aipbx.ui.ChatActivity
+import com.mhrgl.aipbx.ui.ChatKeys
 import com.mhrgl.aipbx.ui.DialerActivity
 import com.mhrgl.aipbx.ui.IncomingCallActivity
 import kotlinx.coroutines.CoroutineScope
@@ -851,7 +851,7 @@ class PbxForegroundService : Service(), SipEngineListener, ChatEventListener {
             return
         }
         // Do not post a notification while the user is on that chat screen (they see it live)
-        if (ChatActivity.activeConversationId == message.conversationId) {
+        if (ChatKeys.activeConversationId == message.conversationId) {
             return
         }
 

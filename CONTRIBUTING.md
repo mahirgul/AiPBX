@@ -140,6 +140,22 @@ guide: [docs/translating.md](docs/translating.md).
 
 ## 🔄 Submitting a Pull Request (PR)
 
+### One topic per pull request
+
+Every PR must be about **one** bug fix or **one** feature. Do not mix in
+unrelated fixes, refactors, renames, reformatting or translations — send each
+of them as its own PR. A small, focused PR can be reviewed and tested on a real
+PBX in minutes; a PR that mixes many changes waits a long time and is usually
+asked to be split.
+
+- If you found three bugs, open three PRs (or one issue per bug).
+- Keep the diff to what the change needs: no editor-wide reformatting.
+- A PR that touches many parts of the project or is very large (roughly more than
+  ~1000 changed lines or ~40 files) is labelled `needs-split` automatically.
+  If it really is a single change, say so in a comment.
+
+### Steps
+
 1. Ensure your code is formatted and tested.
 2. Push your branch to your GitHub fork:
    ```bash

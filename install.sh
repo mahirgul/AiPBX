@@ -82,6 +82,20 @@ env_ensure() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 
+# --- Bridge releases ---
+# A release may contain UPGRADE_FROM (a version): it can then only be applied
+# to installations of that version or newer — it carries no code for older ones.
+# Older installations update to that bridge release first (aipbx-update does it
+# by itself from 1.50.0 on). The installed version is recorded at the end of
+# every successful install/upgrade in /var/lib/aipbx/installed-version.
+if is_upgrade && [[ -f "$INSTALL_DIR/UPGRADE_FROM" ]]; then
+    need_from="$(tr -d '[:space:]' < "$INSTALL_DIR/UPGRADE_FROM")"
+    have="$(tr -d '[:space:]' < /var/lib/aipbx/installed-version 2>/dev/null || true)"
+    if [[ -z "$have" || "$(printf '%s\n%s\n' "$have" "$need_from" | sort -V | head -1)" != "$need_from" ]]; then
+        error "This release can only update AiPBX ${need_from} or newer (installed: ${have:-older than 1.50.0}). Update to v${need_from} first: sudo aipbx-update --to v${need_from}"
+    fi
+fi
+
 # Helper for interactive prompts when running via piped curl (reading from /dev/tty)
 prompt_read() {
     local prompt="$1"
@@ -1401,7 +1415,10 @@ systemctl enable asterisk
 
 # Sync initial endpoints, dialplans, and transports from DB to Asterisk
 info "Syncing database endpoints and dialplan to Asterisk..."
-php /var/www/html/src/asterisk_sync.php 2>/dev/null || true
+# Not silent: phones point at generated contexts (from-internal-desktop/-mobile/-web);
+# if this fails they cannot call until the configuration is applied from the portal.
+php /var/www/html/src/asterisk_sync.php \
+    || warn "Asterisk configuration sync reported an error — open the portal and apply the pending changes"
 
 ok "Asterisk configured"
 
@@ -1752,6 +1769,11 @@ chmod 644 /etc/fail2ban/jail.d/zz-ai-pbx.local
 systemctl enable fail2ban 2>/dev/null || true
 systemctl restart fail2ban 2>/dev/null || true
 ok "firewall and fail2ban configured"
+
+# The installed version, for the bridge check of later releases (see UPGRADE_FROM).
+install -d -m 0755 /var/lib/aipbx
+tr -d '[:space:]' < "$INSTALL_DIR/VERSION" > /var/lib/aipbx/installed-version
+chmod 0644 /var/lib/aipbx/installed-version
 
 if is_upgrade; then
     echo ""

@@ -40,6 +40,11 @@ fi
 NOTES="$(awk -v v="## $VER" '$0 == v {f=1; next} /^## / && f {exit} f' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
 [[ -n "${NOTES// }" ]] || { echo "CHANGELOG.md has no (or an empty) '## $VER' section" >&2; exit 1; }
 
+# The Android app has the same version and the release goes to Google Play:
+# its "What's new" must be written for this version (else Play shows a generic text).
+PLAY_VER="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version",""))' android/play-release-notes.json)"
+[[ "$PLAY_VER" == "$VER" ]] || { echo "android/play-release-notes.json is for '$PLAY_VER': write the Play notes for $VER (en-US + tr-TR) and commit them first" >&2; exit 1; }
+
 echo "$VER" > VERSION
 git add VERSION CHANGELOG.md
 git diff --cached --quiet || git commit -q -m "release: v$VER"
