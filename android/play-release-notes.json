@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.50.1",
+  "version": "1.50.2",
   "notes": {
-    "en-US": "Fixes: declining a call right after the app starts no longer crashes; chat notifications are no longer silenced after leaving a new chat early; the QR scanner layout stays correct.",
-    "tr-TR": "Düzeltmeler: uygulama açılır açılmaz gelen aramayı reddetmek artık çökmeye yol açmıyor; yeni sohbetten erken çıkınca bildirimler susmuyor; QR okuyucu ekranı düzgün kalıyor."
+    "en-US": "Version number follows the AiPBX server release 1.50.2. No changes in the app itself; the server release improves fax reception and trunk reliability.",
+    "tr-TR": "Sürüm numarası AiPBX sunucu sürümü 1.50.2 ile aynı. Uygulamanın kendisinde değişiklik yok; sunucu sürümü faks alımını ve trunk güvenilirliğini iyileştiriyor."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
