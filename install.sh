@@ -55,6 +55,13 @@ if [[ "${AIPBX_SKIP_OS_CHECK:-0}" != 1 ]]; then
     fi
 fi
 
+# Raise this number in a change that needs Asterisk RESTARTED on update (a new
+# Asterisk package or module, the service unit, anything read only at start).
+# aipbx-update compares it between releases (scripts/asterisk-restart-needed.sh):
+# when it and asterisk-config/ are unchanged, Asterisk is only reloaded and
+# calls in progress stay up.
+ASTERISK_RESTART_EPOCH=1
+
 # --- Mode: fresh install (default) or --upgrade ---
 AIPBX_MODE=install
 for arg in "$@"; do
@@ -1438,7 +1445,11 @@ systemctl daemon-reload
 # unit's Restart=on-failure (seen once on an update: the new process got a
 # SIGKILL at start and was running 2 s later). Wait for that before failing
 # the whole install — a failed upgrade rolls back.
-if ! systemctl restart asterisk; then
+if is_upgrade && [[ "${AIPBX_ASTERISK_RESTART:-yes}" == no ]] && systemctl is-active --quiet asterisk; then
+    # aipbx-update found nothing that needs a restart: reload instead, calls stay up.
+    asterisk -rx "core reload" >/dev/null 2>&1 || true
+    ok "Asterisk reloaded (no restart needed, calls kept)"
+elif ! systemctl restart asterisk; then
     warn "Asterisk did not start on the first try — waiting for the automatic restart"
     for _ in $(seq 1 20); do
         systemctl is-active --quiet asterisk && break
@@ -1633,7 +1644,7 @@ for ip in $(hostname -I); do
     TURN_ALLOWED+="allowed-peer-ip=${ip}"$'\n'
 done
 
-cat > /etc/turnserver.conf << TURNCONF
+cat > /etc/turnserver.conf.new << TURNCONF
 listening-port=3478
 tls-listening-port=5349
 fingerprint
@@ -1684,7 +1695,15 @@ chmod 755 /etc/letsencrypt/renewal-hooks/deploy/aipbx.sh
 
 mkdir -p /var/log/turnserver
 chown turnserver:turnserver /var/log/turnserver 2>/dev/null || true
-systemctl restart coturn 2>/dev/null || true
+# Restart only when the configuration changed (or coturn is down): a restart
+# drops every WebRTC/app call relayed through TURN, and an update that keeps
+# Asterisk running must not drop them here instead.
+if cmp -s /etc/turnserver.conf.new /etc/turnserver.conf && systemctl is-active --quiet coturn; then
+    rm -f /etc/turnserver.conf.new
+else
+    mv -f /etc/turnserver.conf.new /etc/turnserver.conf
+    systemctl restart coturn 2>/dev/null || true
+fi
 systemctl enable coturn 2>/dev/null || true
 
 ok "coturn configured"

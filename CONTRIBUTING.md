@@ -122,6 +122,11 @@ Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/
 - **Page scripts and styles** live in `web/assets/js/<page>.js` and `web/assets/css/pages/<page>.css`;
   PHP values reach them through a small data block (`window.X = {...}`), not PHP inside the script.
 - **Sidebar** entries are data in `web/templates/sidebar_menu.php`.
+- **Asterisk restarts on update:** `aipbx-update` restarts Asterisk only when the update needs it
+  (`scripts/asterisk-restart-needed.sh`): when a file in `asterisk-config/` (outside `pbx/`) changed,
+  or `ASTERISK_RESTART_EPOCH` at the top of `install.sh` was raised. Raise it in a change that needs
+  a restart to take effect — a new Asterisk package or module, the service unit, anything read only
+  at start. Everything else is reloaded and calls stay up.
 
 ### 4. Security First 🔒
 - **Zero Static Passwords**: Never hardcode credentials or tokens anywhere in the codebase.

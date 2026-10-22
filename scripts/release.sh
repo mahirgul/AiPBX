@@ -52,6 +52,19 @@ else
     [[ "$PLAY_VER" == "$VER" ]] || { echo "android/play-release-notes.json is for '$PLAY_VER': write the Play notes for $VER (en-US + tr-TR) and commit them first" >&2; exit 1; }
 fi
 
+# Say in the notes whether updating to this release restarts Asterisk (the
+# updater decides the same way, scripts/asterisk-restart-needed.sh).
+PREV_TAG="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
+if [[ -n "$PREV_TAG" ]]; then
+    RESTART="$(scripts/asterisk-restart-needed.sh "$ROOT" "$PREV_TAG" HEAD)"
+    if [[ "$RESTART" == no ]]; then
+        NOTES+=$'\n\n'"Update from $PREV_TAG: Asterisk is reloaded, not restarted; calls in progress stay up."
+    else
+        NOTES+=$'\n\n'"Update from $PREV_TAG: Asterisk is restarted (${RESTART#yes: }); calls in progress drop."
+    fi
+    echo "Asterisk on update from $PREV_TAG: $RESTART"
+fi
+
 echo "$VER" > VERSION
 git add VERSION CHANGELOG.md
 git diff --cached --quiet || git commit -q -m "release: v$VER"

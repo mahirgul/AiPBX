@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.6
+
+Updates restart Asterisk only when they have to: most releases now keep calls up.
+
+- **Updates no longer drop calls when nothing Asterisk loads at start changed.** Every update
+  used to restart Asterisk, so it waited for an idle PBX. The updater now compares the installed
+  code with the release: when the Asterisk configuration files and the installer's
+  `ASTERISK_RESTART_EPOCH` are unchanged, Asterisk is only reloaded and the update runs even
+  while calls are in progress (verified with a call held across an update). System → System
+  Update says beforehand whether the update restarts Asterisk, and why. coturn is restarted only
+  when its configuration changed, so WebRTC calls through TURN stay up too.
+- **Release notes say whether updating restarts Asterisk.**
+- **Android:** a release without app changes no longer builds or uploads the app to Google Play;
+  the previous APK stays available for download.
+
 ## 1.50.5
 
 Fax: uploads work after an update, T.38 can pass the firewall, and outgoing faxes get their

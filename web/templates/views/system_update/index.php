@@ -1,6 +1,8 @@
 <?php
 $latest = $check['latest'] ?? '';
 $available = !empty($check['available']);
+// Older updaters did not say; then the update restarts Asterisk.
+$restart = !array_key_exists('restart', $check ?? []) || !empty($check['restart']);
 $state = $status['state'] ?? '';
 $state_labels = [
     'running' => t('system_update.state_running'),
@@ -47,9 +49,17 @@ $state_colors = ['running' => 'var(--info, #0ea5e9)', 'done' => 'var(--success)'
         <button type="button" class="btn btn-primary" id="su-start-btn" onclick="suStart()" <?php echo ($available && $state !== 'running') ? '' : 'disabled'; ?>>
             <i class="fas fa-download"></i> <?php echo t('system_update.btn_update'); ?>
         </button>
-        <label class="u-check-label u-fs-12">
+        <label class="u-check-label u-fs-12" id="su-allow-calls-label" style="<?php echo $restart ? '' : 'display: none;'; ?>">
             <input type="checkbox" id="su-allow-calls" class="u-accent"> <?php echo t('system_update.allow_calls'); ?>
         </label>
+    </div>
+
+    <div id="su-restart" class="u-fs-12" style="margin-bottom: 12px; <?php echo $available ? '' : 'display: none;'; ?> color: <?php echo $restart ? 'var(--warning)' : 'var(--success)'; ?>;">
+        <?php if ($restart): ?>
+            <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars(sprintf(t('system_update.restart_yes'), (string)($check['restart_reason'] ?? ''))); ?>
+        <?php else: ?>
+            <i class="fas fa-circle-check"></i> <?php echo htmlspecialchars(t('system_update.restart_no')); ?>
+        <?php endif; ?>
     </div>
 
     <div id="su-state" class="u-fw-600" style="margin-bottom: 10px; color: <?php echo $state_colors[$state] ?? 'inherit'; ?>;">
@@ -72,12 +82,16 @@ $state_colors = ['running' => 'var(--info, #0ea5e9)', 'done' => 'var(--success)'
 <script>
 window.SYSTEM_UPDATE_PAGE = {
     running: <?php echo json_encode($state === 'running'); ?>,
+    restart: <?php echo json_encode($restart); ?>,
     text: {
     running: <?php echo json_encode(t('system_update.state_running')); ?>,
     done: <?php echo json_encode(t('system_update.state_done')); ?>,
     failed: <?php echo json_encode(t('system_update.state_failed')); ?>,
     rolled_back: <?php echo json_encode(t('system_update.state_rolled_back')); ?>,
     confirm: <?php echo json_encode(t('system_update.confirm')); ?>,
+    confirm_no_restart: <?php echo json_encode(t('system_update.confirm_no_restart')); ?>,
+    restart_yes: <?php echo json_encode(t('system_update.restart_yes')); ?>,
+    restart_no: <?php echo json_encode(t('system_update.restart_no')); ?>,
     up_to_date: <?php echo json_encode(t('system_update.up_to_date')); ?>,
     unreachable: <?php echo json_encode(t('system_update.unreachable')); ?>
     }
