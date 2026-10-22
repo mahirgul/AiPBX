@@ -1730,6 +1730,7 @@ firewall-cmd --permanent --add-port=5060/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5060/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5061/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=10000-20000/udp 2>/dev/null || true
+firewall-cmd --permanent --add-port=4100-4999/udp 2>/dev/null || true   # T.38 (UDPTL, udptl.conf)
 firewall-cmd --permanent --add-port=3478/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=3478/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=5349/tcp 2>/dev/null || true
@@ -1737,6 +1738,16 @@ firewall-cmd --permanent --add-port=5349/udp 2>/dev/null || true
 firewall-cmd --permanent --add-port=49152-65535/udp 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
 fi   # install mode
+# T.38 fax travels on the UDPTL ports (udptl.conf, 4100-4999), which the first
+# install never opened: a carrier accepted T.38 and every packet was dropped
+# ("Disconnected after permitted retries", live system 2026-10-22). Opened on
+# upgrade too, but only where the RTP range is open as installed, so an admin
+# who closed media ports on purpose is not overruled.
+if command -v firewall-cmd >/dev/null 2>&1 \
+   && firewall-cmd --permanent --query-port=10000-20000/udp >/dev/null 2>&1 \
+   && ! firewall-cmd --permanent --query-port=4100-4999/udp >/dev/null 2>&1; then
+    firewall-cmd --permanent --add-port=4100-4999/udp >/dev/null 2>&1 && firewall-cmd --reload >/dev/null 2>&1 || true
+fi
 
 # Asterisk's direct WSS (8089) now listens on loopback only; clients use 443 /ws.
 # Close the port that earlier versions opened.
