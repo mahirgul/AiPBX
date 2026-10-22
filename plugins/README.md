@@ -1,6 +1,6 @@
 # AiPBX Plugin Catalog (Official & Community)
 
-This directory contains the **Official Plugin Catalog** for AiPBX. Starting with the modular plugin architecture, optional external integrations, telemetry collectors, and AI modules live here as self-contained plugin manifests (`<slug>/plugin.json`) rather than being force-enabled on every PBX installation.
+This directory contains the plugins bundled with AiPBX: **official plugins** and **community plugins** (listed separately below). Starting with the modular plugin architecture, optional external integrations, telemetry collectors, and AI modules live here as self-contained plugin manifests (`<slug>/plugin.json`) rather than being force-enabled on every PBX installation.
 
 - **Lean Core by Default**: Fresh installations start with a clean, fast core PBX. Administrators can browse, install, enable, configure, or disable any plugin with a single click under **Integrations → Plugins** (`/plugins`) or via the **REST API v1** (`POST /api/v1/plugins/{slug}/enable`).
 - **Zero-Disruption Upgrades**: Existing servers that already have Google Sign-In, Microsoft Teams, Website Call Widgets, or AI settings configured automatically keep those plugins enabled during database migration.

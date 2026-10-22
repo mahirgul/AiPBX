@@ -19,6 +19,8 @@ Updates restart Asterisk only when they have to: most releases now keep calls up
 - **Release notes say whether updating restarts Asterisk.**
 - **IVR, inbound routes, time plans:** a queue destination stored by its number (as the REST API
   and the services accept it) showed as "not found" although calls reached the queue.
+- **Docs:** the community plugins bundled with AiPBX (`ai-assistant`, `signaling-capture`) were
+  described as official; they now name their author.
 - **Android:** a release without app changes no longer builds or uploads the app to Google Play;
   the previous APK stays available for download.
 

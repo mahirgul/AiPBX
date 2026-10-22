@@ -264,7 +264,7 @@ AiPBX/
 │   ├── lang/               # 23 interface languages (100% key parity)
 │   ├── db/migrations/      # Phinx migrations (the database schema)
 │   └── tests/              # PHPUnit
-├── plugins/                # 🔌 Official first-class plugins (auto-dialer, ms-teams, web-widgets, ai-*, …)
+├── plugins/                # 🔌 Bundled plugins: official (auto-dialer, ms-teams, web-widgets, ai-*, …) and community
 ├── ai/                     # 🤖 Local & cloud AI service (aipbx-ai, Python)
 ├── chat/                   # 💬 Go WebSocket chat service (aipbx-chat)
 ├── android/                # 📱 Kotlin Android app
