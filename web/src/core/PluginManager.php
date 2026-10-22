@@ -24,6 +24,13 @@ final class PluginManager
     /** @var array<string, array<string, mixed>>|null */
     private static ?array $manifestCache = null;
 
+    /**
+     * Set when this request enabled, disabled, removed or installed a plugin:
+     * the sidebar shows plugin pages, and an SPA form submission does not
+     * redraw the sidebar, so the layout tells the browser to fetch a new one.
+     */
+    public static bool $menuChanged = false;
+
     public static function catalogDir(): string
     {
         return dirname(__DIR__, 3) . '/plugins';

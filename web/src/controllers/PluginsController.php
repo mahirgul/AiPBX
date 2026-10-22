@@ -35,6 +35,7 @@ class PluginsController extends BaseController
                     $res = PluginManager::installFromZip($_FILES['plugin_zip'], $csrf);
                     ['message' => $message, 'error' => $error] = static::notices($res);
                 }
+                PluginManager::$menuChanged = !empty($res['success'] ?? false);
             }
         }
 

@@ -293,6 +293,9 @@
             setTimeout(() => {
                 updateActiveSidebarNav(url);
                 updatePendingSyncBadge(pageData);
+                if (pageData && pageData.getAttribute('data-menu-changed') === '1') {
+                    refreshSidebarMenu(url);
+                }
 
                 // The <script src> tags injected by executePageScripts() load
                 // ASYNCHRONOUSLY in the browser — firing spa:pageLoaded right
@@ -305,6 +308,24 @@
                 });
             }, 0);
         });
+    }
+
+    // The SPA response carries only .content-area, so a page that changes the
+    // menu itself (a plugin switched on or off) marks its response with
+    // data-menu-changed; the full page is then fetched once and only its menu
+    // is taken. Open groups and the active link are set again afterwards.
+    function refreshSidebarMenu(url) {
+        fetch(url, { credentials: 'same-origin' })
+            .then(res => (res.ok && isHtmlResponse(res)) ? res.text() : null)
+            .then(html => {
+                if (!html) return;
+                const fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('#app-sidebar .nav-menu');
+                const current = document.querySelector('#app-sidebar .nav-menu');
+                if (!fresh || !current) return;
+                current.innerHTML = fresh.innerHTML;
+                updateActiveSidebarNav(url);
+            })
+            .catch(() => {});
     }
 
     function updateActiveSidebarNav(url) {
