@@ -93,7 +93,10 @@ Or from the portal: **System → System Update** (admin only) shows the installe
 release notes and an **Update** button with live progress. A new release is also checked for every night.
 
 Every update:
-- 🛡️ refuses to start during active calls (Asterisk is restarted) or over hand-edited code;
+- 📞 restarts Asterisk only when the release needs it (new Asterisk configuration or package); otherwise
+  Asterisk is reloaded and calls stay up. The update page says which beforehand, and an update that
+  restarts Asterisk waits for an idle PBX;
+- 🛡️ refuses to run over hand-edited code;
 - 💾 backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/`;
 - 🔄 applies database migrations, new packages and system settings **without touching passwords,
   certificates, the admin password or your firewall choices**;

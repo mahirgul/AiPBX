@@ -95,7 +95,9 @@ sudo aipbx-update           # update to the latest release
 ```
 
 or from the portal: **System → System Update** (admin only). The update:
-1. refuses to run while calls are active (`--allow-calls` to force) or when files under `/opt/aipbx` were edited by hand;
+1. refuses to run when files under `/opt/aipbx` were edited by hand. Asterisk is restarted only when the release needs it (an
+   Asterisk configuration file or package changed); then the update waits for an idle PBX (`--allow-calls` to force).
+   Otherwise Asterisk is only reloaded and calls stay up. `--check` and the portal page say which applies;
 2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
 3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;
 4. verifies services, the portal and every page; on any failure it restores the previous code, database and settings automatically.
@@ -118,6 +120,7 @@ portal's **Firewall** page, or with `firewall-cmd`. Ports opened by default:
 | 80/tcp, 443/tcp | Portal, WebRTC (WSS `/ws`), chat; TURNS too with `TURNS_PORT=443` ([WebRTC, NAT and TURN](docs/webrtc-nat.md)) |
 | 5060/udp+tcp, 5061/tcp | SIP / SIP-TLS |
 | 10000-20000/udp | RTP media |
+| 4100-4999/udp | T.38 fax (UDPTL) |
 | 3478/udp+tcp, 5349/udp+tcp | STUN/TURN |
 | 49152-65535/udp | TURN relay media |
 

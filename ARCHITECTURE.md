@@ -278,6 +278,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 | **443** | TCP | Ingress (Nginx / Apache) | HTTPS Web Portal, WebRTC WSS (`/ws`), Chat WSS (`/chat/ws`) | Public |
 | **5060** | UDP/TCP | Asterisk PJSIP | SIP Signaling for IP Desk Phones & Trunks | Trusted IPs / LAN |
 | **10000–20000** | UDP | Asterisk RTP | Voice & Video Media Streams | Public |
+| **4100–4999** | UDP | Asterisk UDPTL | T.38 Fax | Public |
 | **3478** | UDP/TCP | coturn STUN/TURN | WebRTC NAT Traversal | Public |
 | **5349** | TCP | coturn TURNS | WebRTC Secure TLS NAT Traversal | Public |
 | **49152–65535** | UDP | coturn Relay | Relayed WebRTC Media Streams | Public |

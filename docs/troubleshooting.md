@@ -52,6 +52,20 @@ off since 1.50.2; turn it on only for a carrier that supports T.38.
 Not every failed call is a lost fax: people often dial a fax number by mistake (a mobile caller,
 a call of 10–20 seconds). The reason Asterisk gives is in the inbox under *FAILED*.
 
+## Outgoing faxes fail or hang
+
+- **"Permission denied" / nothing is sent on Ubuntu 26.04:** its AppArmor profile for Ghostscript
+  blocks the fax directories, so the PDF cannot be converted. The installer allows them in
+  `/etc/apparmor.d/local/gs` (1.50.4); run `sudo aipbx-update` or `sudo bash /opt/aipbx/install.sh --upgrade`.
+- **A fax that cannot complete its handshake** is hung up two minutes after it started if not a
+  single page has moved (the line used to stay busy for many minutes). A fax that is sending pages is
+  never cut, however long it is. The reason is in **Fax → Outbound Fax** under *FAILED*.
+- **Do not test by faxing your own number through the carrier.** Many carriers do not carry fax
+  between the two legs of such a loop (neither as audio nor as T.38), so it fails although faxes to
+  and from other numbers work. Test against a real fax machine elsewhere.
+- **T.38 needs the UDPTL ports** (4100–4999/udp) open in the firewall; the installer opens them
+  since 1.50.5.
+
 ## Capturing SIP
 
 ```bash
