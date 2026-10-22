@@ -55,6 +55,7 @@ Optional applications and integrations included in the official plugin catalog (
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|
 | 🧩 [Plugin system & developer guide](plugin-development.md) | — | Official plugin catalog (`plugins/`), `plg_*` database tables, enabling/disabling integrations (`google-auth`, `ms-teams`, …), and building custom `.zip` plugins |
+| ⏱️ [Plugin cron & catalog PHP](plugin-cron.md) | — | Scheduled jobs declared in `plugin.json` (`cron[]`), a plugin's own classes and commands run from its directory without copying into `web/`, `sys_plugin_cron_runs`, and how that relates to the 2-second `worker/tick.php` |
 | 🤖 [Auto dialer & AMD campaigns (Plugin)](auto-dialer.md) | `auto-dialer` | Automated outbound calling campaigns with Answering Machine Detection (`AMD`), queue free-agent pacing, voicemail drop, and CSV call results |
 | 🌐 [Website call widget (Plugin)](web-widgets.md) | `web-widgets` | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
 | ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `ai-cloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
