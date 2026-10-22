@@ -189,6 +189,15 @@ class TestRtcp(unittest.TestCase):
         self.assertEqual(12, event["rtcp_jitter"])
         self.assertIsNone(event["rtcp_fraction_lost"], "an absent counter stays absent")
 
+    def test_counters_outside_the_column_range_are_dropped(self):
+        event = hep.parse_event(hep_packet(
+            json.dumps({"SSRC": 7, "TYPE": 201, "lost": -1,
+                        "jitter": 2 ** 40, "fraction_lost": "inf"}).encode(),
+            family=1))
+        self.assertIsNone(event["rtcp_lost"])
+        self.assertIsNone(event["rtcp_jitter"])
+        self.assertIsNone(event["rtcp_fraction_lost"])
+
     def test_a_non_rtcp_event_has_no_quality_counters(self):
         event = hep.parse_event(hep_packet(INVITE.encode()))
         self.assertEqual("", event["rtcp_ssrc"])
