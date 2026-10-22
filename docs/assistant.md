@@ -1,6 +1,6 @@
 # Dialplan editor / AI assistant (Plugin)
 
-> **Plugin (`ai-assistant`)**: Optional plugin from the official catalog. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
+> **Plugin (`ai-assistant`)**: Community plugin by Gregory Merriweather ([@shido6](https://github.com/shido6)), bundled with AiPBX. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
 
 The page at **AI → Dialplan editor** turns a plain-language sentence into a
 PBX change — with three hard rules that are not excuses, they are the design:
