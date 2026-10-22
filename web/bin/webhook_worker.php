@@ -143,6 +143,12 @@ function sweepCdrAndFaxEvents(): void
 $isDaemon = in_array('--daemon', $argv ?? [], true);
 
 do {
+    if (class_exists('PluginManager')) {
+        // The daemon runs for weeks and PluginManager caches the plugin list:
+        // a plugin enabled or uploaded in the portal got no events and no
+        // worker ticks until the service restarted, and a disabled one kept both.
+        PluginManager::resetCache();
+    }
     sweepCdrAndFaxEvents();
     if (class_exists('PluginManager')) {
         PluginManager::tickAllEnabledWorkers();
