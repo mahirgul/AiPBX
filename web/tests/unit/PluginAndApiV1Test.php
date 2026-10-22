@@ -367,4 +367,39 @@ final class PluginAndApiV1Test extends TestCase
             rmdir($dir);
         }
     }
+
+    public function testZipUploadIsStagedInsideThePluginsDirectory(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx_custom_plugins_' . bin2hex(random_bytes(4));
+        mkdir($dir, 0700, true);
+        $zipFile = $dir . '.zip';
+        $zip = new ZipArchive();
+        $zip->open($zipFile, ZipArchive::CREATE);
+        $zip->addFromString('plugin.json', json_encode(['slug' => 'zip-upload-test', 'name' => 'Zip Upload Test']));
+        $zip->addFromString('admin/page.php', "<?php echo 'ok';\n");
+        $zip->close();
+
+        $prev = getenv('AIPBX_CUSTOM_PLUGINS_DIR');
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR=' . $dir);
+        PluginManager::resetCache();
+        try {
+            $res = PluginManager::installFromZip(
+                ['error' => UPLOAD_ERR_OK, 'tmp_name' => $zipFile, 'size' => filesize($zipFile)],
+                'test-csrf-token'
+            );
+            $this->assertTrue($res['success'], (string)($res['error'] ?? ''));
+            $this->assertFileExists($dir . '/zip-upload-test/admin/page.php');
+            // The archive is unpacked next to the plugins (Apache has a private
+            // /tmp, and rename() cannot move a directory out of it) and nothing
+            // is left behind. A test cannot reproduce that mount boundary; the
+            // fix was verified by uploading through the portal on a real install.
+            $this->assertSame([], glob($dir . '/.stage-*', GLOB_ONLYDIR));
+        } finally {
+            PluginManager::uninstall('zip-upload-test', 'test-csrf-token');
+            putenv($prev === false ? 'AIPBX_CUSTOM_PLUGINS_DIR' : 'AIPBX_CUSTOM_PLUGINS_DIR=' . $prev);
+            PluginManager::resetCache();
+            @unlink($zipFile);
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
 }
