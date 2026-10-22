@@ -79,7 +79,9 @@ env_ensure() {
 }
 
 # --- Script and install directories ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
+# BASH_SOURCE is empty when the script comes through `curl ... | bash`; with
+# `set -u` that printed "BASH_SOURCE[0]: unbound variable" as the first line.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd || echo "")"
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 
 # --- Bridge releases ---
@@ -147,6 +149,9 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     fi
     info "Installing AiPBX ${AIPBX_REF}"
     # Re-run the installer from the checked-out release (it may differ from this copy).
+    # Through `curl | bash` the rest of this script is still in the pipe: read it
+    # first, or curl ends the install with "(23) Failure writing output".
+    [[ -t 0 ]] || cat > /dev/null
     exec bash "$INSTALL_DIR/install.sh" "$@"
 fi
 
