@@ -270,7 +270,9 @@ function __syncGeneralDialplanBody() {
     $conf .= "; Enterprise Adaptive Jitter Buffer (AJB) Subroutine for Callee Channels\n";
     $conf .= "[sub-callee-jb]\n";
     $conf .= "exten => s,1,NoOp(Applying Adaptive Jitter Buffer to Callee Channel \${CHANNEL})\n";
-    $conf .= " same => n,Set(JITTERBUFFER(adaptive)=default)\n";
+    // Not for a fax sent from the portal (AIPBX_FAX, inherited): a jitter buffer
+    // reshapes the modem's timing.
+    $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)=default))\n";
     $conf .= " same => n,Return()\n\n";
 
     $ok = writeConfWithRollback('extensions_general.conf', $conf, function() {

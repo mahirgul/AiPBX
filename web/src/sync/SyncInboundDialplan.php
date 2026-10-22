@@ -136,7 +136,8 @@ function __syncInboundDialplanBody() {
                 $conf .= " same => n,Gosub(sub-privacy-consent,s,1)\n";
             }
             // Mandatory call recording (unless caller opted out via KVKK/GDPR consent key).
-            if (!empty($d['record_call'])) {
+            // Never for a fax number: the recording is modem noise and only costs disk.
+            if (!empty($d['record_call']) && $d['dest_type'] !== 'fax') {
                 $rec = "/var/spool/asterisk/monitor/inbound_"
                      . "\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$rec_to}.wav";
                 $conf .= " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?skip_did_rec_{$label_id})\n";

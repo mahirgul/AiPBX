@@ -229,7 +229,10 @@ class FaxSendService {
                              "SetVar: FAX_DEST=$safe_fax_dest\n" .
                              "SetVar: FAX_SENDER=$safe_fax_sender\n" .
                              "SetVar: FAX_SENDER_NAME=$safe_sender_name\n" .
-                             "SetVar: FAX_ID=$faxId\n";
+                             "SetVar: FAX_ID=$faxId\n" .
+                             // Inherited by the outbound leg: the route skips call recording
+                             // and the jitter buffer for a fax.
+                             "SetVar: __AIPBX_FAX=1\n";
 
         // The temp file is written on the SAME file system as the spool: only
         // then is rename() atomic — moving from /tmp becomes copy+delete and

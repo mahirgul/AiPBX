@@ -11,6 +11,13 @@ the git tag message and the GitHub Release notes, and installations show it as
   lets it open files only under HOME, /mnt, /media and /tmp, so every outgoing fax failed at the
   PDF → TIFF conversion (and the TIFF → PDF fallback for received faxes failed the same way).
   The installer now allows the two fax directories in `/etc/apparmor.d/local/gs`.
+- **A fax that cannot complete its handshake no longer holds the line.** Both ends used to wait
+  for each other for many minutes (seven on a live system). A fax session that has not moved a
+  single page two minutes after it started is now hung up and recorded as failed; a fax that
+  has sent or received a page is never cut, however long it is.
+- **Faxes are not recorded and get no jitter buffer:** a fax sent from the portal went through
+  the outbound route like a call (recording = modem noise, and the jitter buffer reshapes the
+  modem's timing), and a fax number with "record calls" on was recorded too.
 
 ## 1.50.3
 

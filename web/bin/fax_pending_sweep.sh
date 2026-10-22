@@ -23,6 +23,36 @@ else
     MYSQL_CMD="mysql -N -s asterisk"
 fi
 
+# ---- Faxes that never got through the handshake --------------------------
+# A fax session that has not moved a single page two minutes after it started
+# will not: the two ends failed to agree and then wait for each other for many
+# minutes, keeping the line busy (live system, 2026-10-22: seven minutes until
+# it was hung up by hand). A normal fax completes its handshake in 15-20 s.
+# Only sessions with 0 pages are ended; a fax that has sent or received a page
+# is left alone however long it runs. Hanging up lets the dialplan record the
+# fax as FAILED with Asterisk's reason, as for any other failure.
+# This runs once a minute, so a stalled session ends 2-3 minutes after it began.
+STALL_SECONDS=120
+STALL_STATE=/var/lib/aipbx/fax-stall.state
+if command -v asterisk >/dev/null 2>&1; then
+    now=$(date +%s)
+    new_state=""
+    for faxid in $(asterisk -rx "fax show sessions" 2>/dev/null | awk '$3 ~ /^[0-9]+$/ {print $3}'); do
+        details=$(asterisk -rx "fax show session $faxid" 2>/dev/null)
+        chan=$(awk -F' : ' '/^channel /{print $2; exit}' <<<"$details")
+        [ -z "$chan" ] && continue
+        pages=$(awk -F: '/^(Tx|Rx) Pages/{gsub(/ /, "", $2); s += $2} END {print s + 0}' <<<"$details")
+        first=$(awk -v k="$faxid" '$1 == k {print $2; exit}' "$STALL_STATE" 2>/dev/null)
+        first=${first:-$now}
+        new_state+="$faxid $first"$'\n'
+        if [ "$pages" -eq 0 ] && [ $((now - first)) -ge $STALL_SECONDS ]; then
+            asterisk -rx "channel request hangup $chan" >/dev/null 2>&1
+            log "FAX session $faxid on $chan: no page after $((now - first)) s, handshake failed; hung up"
+        fi
+    done
+    printf '%s' "$new_state" > "$STALL_STATE" 2>/dev/null
+fi
+
 # Asterisk call-file worst-case suresi: (MaxRetries+1) * RetryTime + WaitTime.
 # fax_max_retries can change, so a safe fixed threshold (15 min) is used.
 STALE_MINUTES=15
