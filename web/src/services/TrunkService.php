@@ -13,7 +13,7 @@ class TrunkService {
             $port = intval(($data['port'] ?? '') ?: 5060);
             $transport = trim($data['transport'] ?? 'udp');
             $codecs = trim($data['codecs'] ?? 'alaw,ulaw');
-            $t38 = intval($data['t38_support'] ?? 1);
+            $t38 = intval($data['t38_support'] ?? 0);
             $qualify = intval(($data['qualify_frequency'] ?? '') ?: 60);
             $send_caller_name = isset($data['send_caller_name']) ? intval($data['send_caller_name']) : 0;
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;

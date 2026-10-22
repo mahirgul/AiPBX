@@ -72,7 +72,9 @@ function openCreateTrunkModal() {
 
     // Tab 4: Signaling & Advanced
     document.getElementById('modal_dtmf_mode').value = 'rfc4733';
-    document.getElementById('modal_t38_support').value = 1;
+    // Off for a new trunk: a carrier that refuses T.38 makes every fax fail
+    // (the fallback to audio does not recover); switch it on only for carriers that support it.
+    document.getElementById('modal_t38_support').value = 0;
     document.getElementById('modal_t38_udptl_ec').value = 'redundancy';
     document.getElementById('modal_t38_udptl_nat').value = 'yes';
     document.getElementById('modal_t38_udptl_maxdatagram').value = 400;
