@@ -525,6 +525,20 @@ for spec in "0750 /var/spool/asterisk" "2750 /var/spool/asterisk/monitor" \
     dpkg-statoverride --list "$dir" >/dev/null 2>&1 && dpkg-statoverride --remove "$dir" >/dev/null 2>&1
     dpkg-statoverride --update --add asterisk asterisk "$mode" "$dir"
 done
+# Ubuntu 26.04 confines Ghostscript with an AppArmor profile that reaches only
+# HOME, /mnt, /media and /tmp: every outgoing fax failed at the PDF -> TIFF step
+# ("Could not open the file"), and so did the TIFF -> PDF fallback for received
+# faxes. The local include extends the packaged profile instead of replacing it.
+if [ -f /etc/apparmor.d/gs ]; then
+    mkdir -p /etc/apparmor.d/local
+    cat > /etc/apparmor.d/local/gs <<'EOF'
+# AiPBX: Ghostscript converts faxes here (PDF -> TIFF to send, TIFF -> PDF for
+# received faxes). Written by install.sh; rewritten on every upgrade.
+file rw /var/www/faxes/**,
+file rw /var/spool/asterisk/fax/**,
+EOF
+    command -v apparmor_parser >/dev/null 2>&1 && { apparmor_parser -r /etc/apparmor.d/gs 2>/dev/null || true; }
+fi
 chgrp -R asterisk /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
 chmod -R g+rX /var/spool/asterisk/voicemail /var/spool/asterisk/monitor 2>/dev/null || true
 # Portal login failures (read by the aipbx-web fail2ban jail)
