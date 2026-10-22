@@ -1136,10 +1136,18 @@ final class PluginManager
         if ($safe === '' || !defined('ASTERISK_PBX_DIR')) {
             return;
         }
-        foreach (["pjsip_plugin_{$safe}.conf", "extensions_plugin_{$safe}.conf", "hep_plugin_{$safe}.conf"] as $f) {
+        // Reload what was removed: without it a disabled plugin's dialplan and
+        // endpoints stayed live in Asterisk until the next Apply.
+        $reloads = [
+            "pjsip_plugin_{$safe}.conf"      => 'pjsip reload',
+            "extensions_plugin_{$safe}.conf" => 'dialplan reload',
+            "hep_plugin_{$safe}.conf"        => 'module reload res_hep.so',
+        ];
+        foreach ($reloads as $f => $reload) {
             $path = ASTERISK_PBX_DIR . '/' . $f;
-            if (is_file($path)) {
-                @unlink($path);
+            if (is_file($path) && @unlink($path)) {
+                require_once dirname(__DIR__) . '/asterisk_helper.php';
+                AsteriskHelper::execCLI($reload);
             }
         }
     }
