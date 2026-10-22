@@ -25,6 +25,17 @@ function suRender(d) {
     const running = st.state === 'running';
     document.getElementById('su-start-btn').disabled = running || !ck.available;
     document.getElementById('su-check-btn').disabled = running;
+    // Older updaters do not say: then the update restarts Asterisk.
+    const restart = ck.restart !== false;
+    const rEl = document.getElementById('su-restart');
+    if (rEl) {
+        rEl.style.display = ck.available ? '' : 'none';
+        rEl.style.color = restart ? 'var(--warning)' : 'var(--success)';
+        rEl.textContent = restart ? SU_TEXT.restart_yes.replace('%s', ck.restart_reason || '') : SU_TEXT.restart_no;
+    }
+    const allowLabel = document.getElementById('su-allow-calls-label');
+    if (allowLabel) allowLabel.style.display = restart ? '' : 'none';
+    window.SYSTEM_UPDATE_PAGE.restart = restart;
     if (ck.notes) {
         document.getElementById('su-notes').textContent = ck.notes;
         document.getElementById('su-notes-box').style.display = ck.available ? '' : 'none';
@@ -58,7 +69,8 @@ function suCheck() {
 
 function suStart() {
     const target = document.getElementById('su-latest').textContent;
-    if (!confirm(SU_TEXT.confirm.replace('%s', target))) return;
+    const restart = window.SYSTEM_UPDATE_PAGE.restart !== false;
+    if (!confirm((restart ? SU_TEXT.confirm : SU_TEXT.confirm_no_restart).replace('%s', target))) return;
     const allow = document.getElementById('su-allow-calls').checked ? '1' : '';
     suPost('start', allow ? { allow_calls: '1' } : {}).then(res => {
         if (!res.success) { suToast(res.error, 'error'); return; }

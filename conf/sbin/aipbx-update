@@ -7,6 +7,10 @@
 #   aipbx-update --yes                no confirmation (portal / automation)
 #   aipbx-update --allow-calls        continue even with active calls (they will drop)
 #
+# Asterisk is restarted only when the update needs it
+# (scripts/asterisk-restart-needed.sh of the target release decides); otherwise it
+# is reloaded and the update runs even while calls are in progress.
+#
 # Flow: checks → backup (database, /etc/ai-pbx.env, /etc/asterisk) → check out
 # the tag → `install.sh --upgrade` (migrations, permissions, service settings;
 # secrets are never regenerated) → verification. If any step fails, code,
@@ -101,6 +105,15 @@ if ! git_in fetch --quiet --tags --force --prune --prune-tags origin 2>>"$LOG_FI
 fi
 LATEST="$(git_in tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
 
+# "no" or "yes: <reason>" for an update from the installed code to release $1.
+# The target release's own rules decide; a release without them restarts.
+restart_needed() {
+    local script
+    script="$(git_in show "$1:scripts/asterisk-restart-needed.sh" 2>/dev/null)"
+    if [[ -z "$script" ]]; then echo "yes: $1 does not say"; return; fi
+    bash -c "$script" _ "$INSTALL_DIR" "$CURRENT_COMMIT" "$1" 2>/dev/null || echo "yes: check failed"
+}
+
 if [[ "$MODE" == check ]]; then
     available=false; notes=""
     if [[ -n "$LATEST" ]] && ver_lt "$CURRENT" "$LATEST"; then
@@ -111,9 +124,14 @@ if [[ "$MODE" == check ]]; then
             notes+="## ${t}"$'\n'"$(git_in tag -l --format='%(contents)' "$t")"$'\n\n'
         done < <(git_in tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname)
     fi
-    printf '{"ok":true,"current":%s,"latest":%s,"available":%s,"notes":%s,"checked_at":%s}\n' \
-        "$(json_str "$CURRENT")" "$(json_str "${LATEST:-}")" "$available" "$(json_str "$notes")" \
-        "$(json_str "$(date -Iseconds)")" | write_check_file
+    restart=true; restart_reason=""
+    if [[ "$available" == true ]]; then
+        r="$(restart_needed "$LATEST")"
+        [[ "$r" == no ]] && restart=false || restart_reason="${r#yes: }"
+    fi
+    printf '{"ok":true,"current":%s,"latest":%s,"available":%s,"restart":%s,"restart_reason":%s,"notes":%s,"checked_at":%s}\n' \
+        "$(json_str "$CURRENT")" "$(json_str "${LATEST:-}")" "$available" "$restart" "$(json_str "$restart_reason")" \
+        "$(json_str "$notes")" "$(json_str "$(date -Iseconds)")" | write_check_file
     echo "Installed: $CURRENT   Latest: ${LATEST:-none}   $([[ $available == true ]] && echo 'UPDATE AVAILABLE' || echo 'up to date')"
     exit 0
 fi
@@ -156,8 +174,14 @@ if [[ -n "$dirty" ]]; then
     exit 1
 fi
 
+RESTART_REASON="$(restart_needed "$TARGET")"
+if [[ "$RESTART_REASON" == no ]]; then
+    export AIPBX_ASTERISK_RESTART=no
+else
+    export AIPBX_ASTERISK_RESTART=yes
+fi
 calls="$(asterisk -rx 'core show channels count' 2>/dev/null | sed -n 's/^\([0-9]\+\) active call.*/\1/p')"
-if [[ "${calls:-0}" -gt 0 && "$ALLOW_CALLS" != true ]]; then
+if [[ "$AIPBX_ASTERISK_RESTART" == yes && "${calls:-0}" -gt 0 && "$ALLOW_CALLS" != true ]]; then
     echo "${calls} call(s) in progress; the update restarts Asterisk and they would drop." >&2
     echo "Try again when the calls have ended, or force it with --allow-calls." >&2
     status failed "Calls in progress (${calls})"
@@ -170,6 +194,11 @@ if [[ "$ASSUME_YES" != true ]]; then
 fi
 
 log "===== Update started: $CURRENT → $TARGET ====="
+if [[ "$AIPBX_ASTERISK_RESTART" == no ]]; then
+    log "Asterisk: reload only, calls in progress stay up"
+else
+    log "Asterisk: restart (${RESTART_REASON#yes: })"
+fi
 status running "Taking a backup"
 
 # ------------------------------------------------------------------ backup
