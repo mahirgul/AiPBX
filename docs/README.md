@@ -63,6 +63,7 @@ Optional applications and integrations included in the official plugin catalog (
 | 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | ✨ [Dialplan editor / AI assistant (Plugin)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
 | 📡 [Signaling capture (Plugin)](signaling.md) | `signaling-capture` | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, and retention (off by default) |
+| 📈 [Call quality (Plugin)](call-quality.md) | `call-quality` | Scoring calls from the RTCP reports Asterisk already sends: loss and jitter, per-call evidence, a notice when a trunk is losing media, and one reversible trunk demotion for new calls |
 
 ## 📱 Mobile apps
 

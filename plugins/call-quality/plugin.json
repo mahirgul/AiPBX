@@ -1,0 +1,75 @@
+{
+    "slug": "call-quality",
+    "name": "Call Quality Evidence (RTCP, Jitter, MOS)",
+    "name_i18n": {
+        "tr": "Çağrı Kalitesi Kanıtı (RTCP, Jitter, MOS)",
+        "en": "Call Quality Evidence (RTCP, Jitter, MOS)"
+    },
+    "version": "1.0.0",
+    "author": "EchoGuard Communications",
+    "author_url": "https://www.echoguard.ca",
+    "type": "community",
+    "category": "telemetry",
+    "icon": "fas fa-chart-line",
+    "icon_style": "color: #22c55e;",
+    "description": "Score calls from the RTCP reports Asterisk already sends: packet loss, jitter, per-call evidence, a notice when a trunk is losing media, and one reversible trunk demotion for new calls.",
+    "description_i18n": {
+        "tr": "Asterisk'in zaten gönderdiği RTCP raporlarından çağrıları puanlar: paket kaybı, jitter, çağrı başına kanıt, bir trunk medya kaybediyorsa bildirim ve yeni çağrılar için geri alınabilir tek bir trunk sıralama değişikliği.",
+        "en": "Score calls from the RTCP reports Asterisk already sends: packet loss, jitter, per-call evidence, a notice when a trunk is losing media, and one reversible trunk demotion for new calls."
+    },
+    "scopes": ["calls:read", "system:read"],
+    "hooks": {
+        "admin_page": {
+            "group": "integrations"
+        }
+    },
+    "tables": ["plg_call_quality_evidence"],
+    "php": {
+        "files": {
+            "web/src/services/CaptureState.php": ["CaptureState"],
+            "web/src/services/CallQualityService.php": ["CallQualityService"]
+        }
+    },
+    "cron": [
+        {
+            "job": "collect",
+            "schedule": "*/5 * * * *",
+            "class": "CallQualityService::run",
+            "timeout": 120
+        }
+    ],
+    "cli": {
+        "report": {"class": "CallQualityService::cliReport"},
+        "evidence": {"class": "CallQualityService::cliEvidence"},
+        "tick": {"class": "CallQualityService::cliTick"},
+        "capture": {"class": "CallQualityService::cliCapture"}
+    },
+    "settings_schema": [
+        {
+            "key": "evidence_days",
+            "type": "number",
+            "default": "180",
+            "label": "Quality evidence retention (days)",
+            "label_i18n": {
+                "tr": "Kalite kanıtı saklama süresi (gün)"
+            },
+            "help": "Between 7 and 3650 days. Older evidence is pruned when the collector runs.",
+            "help_i18n": {
+                "tr": "7 ile 3650 gün arasında. Toplayıcı çalıştığında daha eski kanıtlar silinir."
+            }
+        },
+        {
+            "key": "auto_fix",
+            "type": "boolean",
+            "default": "0",
+            "label": "Move a persistently lossy trunk to the end of outbound routes",
+            "label_i18n": {
+                "tr": "Sürekli paket kaybeden trunk'ı dış arama rotalarının sonuna taşı"
+            },
+            "help": "New calls only, at most once per trunk every six hours, audited and reversible on the Outbound routes page. Off by default: installing a telemetry package must not reorder your routes.",
+            "help_i18n": {
+                "tr": "Yalnızca yeni çağrılar, trunk başına en sık altı saatte bir, denetim kaydına yazılır ve Dış Arama Rotaları sayfasından geri alınabilir. Varsayılan olarak kapalıdır."
+            }
+        }
+    ]
+}
