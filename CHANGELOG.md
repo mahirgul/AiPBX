@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.5
+
+- **Fax uploads no longer fail with "Permission denied" after an update.** The year directory
+  (`/var/www/faxes/sent/2026`) was created without group write, and once an update handed it to
+  `asterisk` the portal could not save the uploaded PDF. The installer makes every fax directory
+  group-writable, and the portal and the fax processor create new ones that way.
+
 ## 1.50.4
 
 Fax sending: works again on Ubuntu 26.04, a fax stuck in the handshake no longer holds the line,

@@ -95,7 +95,7 @@ fi
 # 2. Archive to web-accessible directory (/var/www/faxes/recvd/YYYY/)
 YEAR=$(date +%Y)
 ARCHIVE_DIR="/var/www/faxes/recvd/$YEAR"
-mkdir -p "$ARCHIVE_DIR"
+mkdir -p -m 2775 "$ARCHIVE_DIR"   # group asterisk (the portal) must be able to write, too
 
 ARCHIVE_TIF="$ARCHIVE_DIR/$(basename "$TIF_FILE")"
 ARCHIVE_PDF="$ARCHIVE_DIR/$(basename "$PDF_FILE")"

@@ -512,6 +512,10 @@ chown www-data:www-data "$INSTALL_DIR/web/assets/images/brand"
 mkdir -p /var/www/faxes/recvd /var/www/faxes/sent /var/spool/asterisk/outgoing
 chown -R asterisk:asterisk /var/www/faxes
 chmod 2775 /var/www/faxes /var/www/faxes/recvd /var/www/faxes/sent
+# Year directories (sent/2026, recvd/2026) were made with the creator's umask
+# (0755). After the chown above the portal could not write into them, and every
+# fax upload failed with "Permission denied" (live system, 2026-10-22).
+find /var/www/faxes -type d -exec chmod 2775 {} +
 # /var/spool/asterisk: the Debian asterisk package resets EVERY directory here
 # to "asterisk: 750" on each upgrade (postinst) but leaves directories with a
 # dpkg-statoverride alone. The permissions the portal needs — reading call

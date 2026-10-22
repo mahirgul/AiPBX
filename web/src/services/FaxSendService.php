@@ -96,6 +96,13 @@ class FaxSendService {
             @mkdir($sent_archive_dir, 0775, true);
             @chown($sent_archive_dir, 'asterisk');
         }
+        // Group-writable whoever made it: mkdir's mode goes through the umask
+        // (0775 -> 0755), and once an upgrade hands the directory to asterisk
+        // (chown -R), the portal, which writes through group asterisk, could
+        // no longer save an upload ("Permission denied", live system 2026-10-22).
+        if (is_dir($sent_archive_dir) && (fileperms($sent_archive_dir) & 0020) === 0) {
+            @chmod($sent_archive_dir, 02775);
+        }
 
         $spool_dir = FAX_OUTGOING_SPOOL; // /etc/ai-pbx.env
         if (!is_dir($spool_dir)) {
