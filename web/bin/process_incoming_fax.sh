@@ -41,7 +41,12 @@ if [ "$FAX_STATUS" != "SUCCESS" ]; then
 fi
 # Asterisk's reason ("NO_FAX: ..."); the dialplan filters it, and so does this.
 FAX_ERROR="$(printf '%s' "${6:-}" | tr -cd 'A-Za-z0-9_ .:/' | cut -c1-250)"
-[ "$FAX_ERROR" = ": " ] && FAX_ERROR=""
+# The dialplan sends "<error>: <statusstr>": ": OK" for a fax that arrived and
+# often the same word twice ("NO_FAX: NO_FAX") for one that did not.
+FAX_ERROR="${FAX_ERROR#: }"
+FAX_ERROR="${FAX_ERROR%: }"
+[[ "$FAX_ERROR" =~ ^([^:]+):\ (.+)$ && "${BASH_REMATCH[1]}" == "${BASH_REMATCH[2]}" ]] && FAX_ERROR="${BASH_REMATCH[1]}"
+[ "$FAX_STATUS" = "SUCCESS" ] && FAX_ERROR=""
 
 log "=== New incoming FAX: DID=$EXTEN CALLERID=$CALLERID PAGES=$PAGES STATUS=$FAX_STATUS ERROR=${FAX_ERROR:-none} TIF=$TIF_FILE ==="
 
