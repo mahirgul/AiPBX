@@ -7,6 +7,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.50.4
 
+Fax sending: works again on Ubuntu 26.04, a fax stuck in the handshake no longer holds the line,
+and faxes are neither recorded nor run through a jitter buffer.
+
 - **Sending faxes works again on Ubuntu 26.04.** The new AppArmor profile for Ghostscript
   lets it open files only under HOME, /mnt, /media and /tmp, so every outgoing fax failed at the
   PDF → TIFF conversion (and the TIFF → PDF fallback for received faxes failed the same way).
