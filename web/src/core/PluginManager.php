@@ -431,8 +431,16 @@ final class PluginManager
                 throw new \Exception(sprintf(t('plugins.err_reserved_slug', 'Slug "%s" is reserved by an official catalog plugin.'), $slug));
             }
 
-            // Extract to a staging directory and syntax-check all PHP files before moving into place
-            $stageDir = sys_get_temp_dir() . '/aipbx_plugin_stage_' . bin2hex(random_bytes(8));
+            // Extract to a staging directory and syntax-check all PHP files before moving into place.
+            // The staging directory sits inside the plugins directory: Apache runs with
+            // PrivateTmp, and rename() cannot move a directory from that /tmp to another
+            // mount (EXDEV), so every upload failed with "Failed to move extracted plugin".
+            // glob('*') in discoverManifests() skips the dot directory.
+            $targetBase = self::customDir();
+            if (!is_dir($targetBase)) {
+                @mkdir($targetBase, 0750, true);
+            }
+            $stageDir = $targetBase . '/.stage-' . bin2hex(random_bytes(8));
             @mkdir($stageDir, 0700, true);
 
             try {
@@ -469,10 +477,6 @@ final class PluginManager
                 }
                 $zip->close();
 
-                $targetBase = self::customDir();
-                if (!is_dir($targetBase)) {
-                    @mkdir($targetBase, 0750, true);
-                }
                 $targetDir = $targetBase . '/' . $slug;
                 if (is_dir($targetDir)) {
                     self::removeDirectoryRecursive($targetDir);
