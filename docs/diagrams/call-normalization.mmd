@@ -5,20 +5,21 @@ config:
 flowchart TB
 %% @classes
   desk["`**Desk phone**
-  dials 0 / 000 for an outside line`"]:::client
+  0 or 000 first`"]:::client
   mob["`**Mobile app**
-  contacts in +90…, +1… format`"]:::client
+  +90…, +1… contacts`"]:::client
   web["`**Browser phone**
   click-to-dial`"]:::client
 
-  subgraph ctx["Per-device context (from-internal-desktop / -mobile / -web)"]
+  subgraph ctx["from-internal-DEVICE"]
     direction TB
     int["`**Internal numbers first**
-    extensions, feature codes, IVR, queues
-    never reach the rules`"]:::core
+    extensions, feature codes,
+    IVR, queues: never rewritten`"]:::core
     norm["`**Normalization rules**
     sub-norm-DEVICE-N
-    one pass, most specific pattern wins`"]:::svc
+    one pass, most specific
+    pattern wins`"]:::svc
   end
 
   out["`**Outbound routes**
