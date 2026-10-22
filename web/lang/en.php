@@ -140,7 +140,7 @@ return [
     'trunks.help_title' => 'SIP Trunk Management Guide',
     'trunks.help_body' => 'Defines the signaling and media channels between the PBX and an external system (NEC SV9100), carrier IP-PBX, or SIP provider trunks.',
     'trunks.help_transport' => 'Transport & Port: UDP 5060 is the default VoIP signaling port.',
-    'trunks.help_t38' => 'T.38 UDPTL: Enables lossless fax transmission over IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax over IP. Switch it on only when the carrier supports T.38: a carrier that refuses it makes faxes fail.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): Periodically tests the trunk connection status.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Description',

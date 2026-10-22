@@ -34,6 +34,24 @@ silent: check the external IP under **PBX Settings**, the certificate (**Securit
 TURNS fails silently with a self-signed one) and `relay-ip` in `/etc/turnserver.conf`. Full checklist:
 [WebRTC, NAT and TURN](webrtc-nat.md#troubleshooting).
 
+## Incoming faxes fail (0 pages)
+
+**Fax Inbox** shows the call as *FAILED* with no file (installations before 1.50.2 do not show it at
+all), and `/var/log/asterisk/messages.log` has:
+
+```
+res_fax.c: channel 'PJSIP/<trunk>-...' refused to negotiate T.38
+res_fax_spandsp.c: WARNING T.30 Non-ECM carrier not found
+```
+
+The trunk offers T.38 and the carrier refuses it; the fax then falls back to audio and fails there.
+Switch T.38 off on that trunk (**Trunks → edit → T.38 UDPTL Fax Support: Inactive**, then **Apply**):
+the fax goes as audio (G.711) from the start, which works with every carrier. New trunks have T.38
+off since 1.50.2; turn it on only for a carrier that supports T.38.
+
+Not every failed call is a lost fax: people often dial a fax number by mistake (a mobile caller,
+a call of 10–20 seconds). The reason Asterisk gives is in the inbox under *FAILED*.
+
 ## Capturing SIP
 
 ```bash
