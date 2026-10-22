@@ -68,8 +68,43 @@ jobs:
           # branch it was started from (otherwise another version's app would be
           # attached to the release).
           ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0   # tags, to compare with the previous release
+
+      # A server-only release does not rebuild or upload the app: Google Play
+      # would get an identical app under a new version. The previous release's
+      # APK is carried over instead, so releases/latest/download/aipbx-latest.apk
+      # (the website's download link) keeps working.
+      - name: Android changes since the previous release
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "$EVENT" != "release" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT; exit 0
+          fi
+          prev="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -vx "$TAG" | head -1)"
+          echo "previous=$prev" >> $GITHUB_OUTPUT
+          if [ -z "$prev" ] || ! git diff --quiet "$prev" "$TAG" -- android ':!android/play-release-notes.json'; then
+            echo "Android changed since ${prev:-the beginning} -> build and upload."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No Android change since $prev -> no build, no Google Play upload; the APK is carried over."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Carry the previous release's APK over
+        if: ${{ steps.changes.outputs.changed == 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          PREV: ${{ steps.changes.outputs.previous }}
+        run: |
+          gh release download "$PREV" -p aipbx-latest.apk --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" aipbx-latest.apk --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Set up JDK 17
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -77,10 +112,12 @@ jobs:
           cache: 'gradle'
 
       - name: Accept Android SDK Licenses
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: Configure Keystore & Signing
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         id: prep_signing
         working-directory: ./android
         env:
@@ -105,10 +142,12 @@ jobs:
           fi
 
       - name: Grant execute permission for gradlew
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         working-directory: ./android
         run: chmod +x gradlew
 
       - name: Build Android Release Bundle (AAB) & APK
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         working-directory: ./android
         env:
           ANDROID_BUILD: ${{ inputs.android_build || '0' }}
@@ -119,12 +158,14 @@ jobs:
       # the source rules and the BUILT app (libraries included) must be clean,
       # or the release does not leave CI. See app/src/main/java/.../ui/BaseActivity.kt.
       - name: Edge-to-edge checks (source + built app)
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         working-directory: ./android
         run: |
           bash bin/edge_to_edge_audit.sh
           bash bin/check_deprecated_window_apis.sh app/build/outputs/apk/release/app-release.apk app/build/outputs/mapping/release/mapping.txt
 
       - name: Upload Android Build Artifacts
+        if: ${{ steps.changes.outputs.changed == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: AiPBX-Android-Release
@@ -135,7 +176,7 @@ jobs:
           retention-days: 14
 
       - name: Attach APK to GitHub Release
-        if: ${{ github.event_name == 'release' || inputs.release_tag != '' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (github.event_name == 'release' || inputs.release_tag != '') }}
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
@@ -146,7 +187,7 @@ jobs:
 
       - name: Check Google Play Upload Eligibility
         id: check_upload
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (github.event_name != 'pull_request') }}
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
           EVENT: ${{ github.event_name }}
@@ -186,18 +227,18 @@ jobs:
           fi
 
       - name: Set up Python for Play Console Upload
-        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (steps.check_upload.outputs.can_upload == 'true') }}
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Google API Client
-        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (steps.check_upload.outputs.can_upload == 'true') }}
         run: |
           pip install --upgrade google-api-python-client google-auth
 
       - name: Deploy AAB to Google Play Console
-        if: ${{ steps.check_upload.outputs.can_upload == 'true' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (steps.check_upload.outputs.can_upload == 'true') }}
         working-directory: ./android
         env:
           PLAY_KEY_JSON: ${{ secrets.PLAY_STORE_JSON_KEY }}
