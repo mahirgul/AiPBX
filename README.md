@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  📖 <a href="docs/README.md"><strong>Documentation</strong></a> · 🌐 <a href="https://aipbx.bid"><strong>Website: aipbx.bid</strong></a>
+  📖 <a href="docs/README.md"><strong>Documentation</strong></a> · 🌐 <a href="https://aipbx.bid"><strong>Website: aipbx.bid</strong></a> · 📺 <a href="https://www.youtube.com/@aipbx"><strong>YouTube</strong></a>
 </p>
 
 <p align="center">
@@ -69,6 +69,14 @@ The installer:
 > 🛠️ **Developers**: `AIPBX_REF=main` installs the current development branch instead of the latest release.
 
 After installing, open `https://<your-server>` and log in with the admin credentials shown.
+
+### 📺 Video guide
+
+The whole installation, step by step, narrated and with subtitles — on the [AiPBX YouTube channel](https://www.youtube.com/@aipbx):
+
+| English | Türkçe | Deutsch |
+|:---:|:---:|:---:|
+| [![Install AiPBX (English)](https://img.youtube.com/vi/lH1-k_z5jFE/mqdefault.jpg)](https://www.youtube.com/watch?v=lH1-k_z5jFE) | [![AiPBX kurulumu (Türkçe)](https://img.youtube.com/vi/eDHHHW6ZcvQ/mqdefault.jpg)](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) | [![AiPBX installieren (Deutsch)](https://img.youtube.com/vi/1QuOM6Rtcbg/mqdefault.jpg)](https://www.youtube.com/watch?v=1QuOM6Rtcbg) |
 
 ---
 

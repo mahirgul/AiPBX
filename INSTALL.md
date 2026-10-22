@@ -2,6 +2,10 @@
 
 This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 
+> 📺 **Prefer to watch?** The installation step by step, narrated and subtitled:
+> [English](https://www.youtube.com/watch?v=lH1-k_z5jFE) · [Türkçe](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) ·
+> [Deutsch](https://www.youtube.com/watch?v=1QuOM6Rtcbg) — more on the [AiPBX YouTube channel](https://www.youtube.com/@aipbx).
+
 ---
 
 ## System Requirements
