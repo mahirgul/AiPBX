@@ -75,16 +75,19 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <?php echo uiStatusBadge($fax['status'], ['SUCCESS' => 'success'], 'danger'); ?>
+                                <?php if (($fax['error_message'] ?? '') !== ''): ?><div class="text-muted u-fs-12"><?php echo htmlspecialchars($fax['error_message']); ?></div><?php endif; ?>
                                 <i class="fas fa-envelope<?php echo empty($fax['email_sent']) ? '-open' : ''; ?>" style="margin-left: 4px; color: <?php echo empty($fax['email_sent']) ? 'var(--text-muted)' : 'var(--success)'; ?>; font-size: 11px;" title="<?php echo empty($fax['email_sent']) ? t('fax_inbox.email_not_sent') : t('fax_inbox.email_sent'); ?>"></i>
                             </td>
                             <td class="text-right">
                                 <div class="table-actions-cell">
+                                    <?php if (($fax['pdf_path'] ?? '') !== ''): // a fax that failed before its first page has no file ?>
                                     <button class="btn btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&view=1')" title="<?php echo t('fax_inbox.view_tooltip'); ?>">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <a href="/api/fax_download.php?id=<?php echo $fax['id']; ?>" class="btn btn-primary btn-sm" target="_blank" title="<?php echo t('fax_inbox.download_tooltip'); ?>">
                                         <i class="fas fa-download"></i>
                                     </a>
+                                    <?php endif; ?>
                                     <?php echo uiDeleteForm($fax['id'], 'fax_id', 'delete_fax', t('fax_inbox.delete_confirm')); ?>
                                 </div>
                             </td>

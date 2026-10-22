@@ -7,6 +7,11 @@
 # ==========================================================
 
 LOGFILE="/var/log/fax_incoming.log"
+# An unwritable log must not cost the fax: every `2>>"$LOGFILE"` below would
+# fail, and with it the database insert it is attached to.
+if ! { : >>"$LOGFILE"; } 2>/dev/null; then
+    LOGFILE=/dev/null
+fi
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-RX] $*" | tee -a "$LOGFILE"
 }
@@ -34,16 +39,33 @@ FAX_STATUS="${5:-SUCCESS}"
 if [ "$FAX_STATUS" != "SUCCESS" ]; then
     FAX_STATUS="FAILED"
 fi
+# Asterisk's reason ("NO_FAX: ..."); the dialplan filters it, and so does this.
+FAX_ERROR="$(printf '%s' "${6:-}" | tr -cd 'A-Za-z0-9_ .:/' | cut -c1-250)"
+[ "$FAX_ERROR" = ": " ] && FAX_ERROR=""
 
-log "=== New incoming FAX: DID=$EXTEN CALLERID=$CALLERID PAGES=$PAGES STATUS=$FAX_STATUS TIF=$TIF_FILE ==="
+log "=== New incoming FAX: DID=$EXTEN CALLERID=$CALLERID PAGES=$PAGES STATUS=$FAX_STATUS ERROR=${FAX_ERROR:-none} TIF=$TIF_FILE ==="
 
-if [ -z "$TIF_FILE" ] || [ ! -f "$TIF_FILE" ]; then
-    log "ERROR: TIF file not found: $TIF_FILE"
-    exit 1
-fi
+# The password goes in the environment, not on the command line: -p<password> was visible to everyone in `ps`.
+export MYSQL_PWD="${DB_PASS}"
+MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
+MYSQL_QUERY="$MYSQL_EXEC -N -s"
 
 if ! [[ "$PAGES" =~ ^[0-9]+$ ]]; then
-    PAGES=1
+    PAGES=0
+fi
+
+# No file: the fax failed before a page arrived. This used to stop here with no
+# trace, so a fax that never came through could not be seen anywhere (116 such
+# calls on a live system in a month). It is recorded as FAILED with the reason,
+# already marked read: most of these are people who dialled a fax number, and
+# they must not show up as unread faxes.
+if [ -z "$TIF_FILE" ] || [ ! -f "$TIF_FILE" ]; then
+    $MYSQL_EXEC <<EOF 2>>"$LOGFILE" || log "ERROR: could not save the failed fax in the database"
+INSERT INTO fax_received (did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, error_message, is_read, email_sent)
+VALUES ('$EXTEN', '$CALLERID', $PAGES, '', '', 0, 'FAILED', '$FAX_ERROR', 1, 0);
+EOF
+    log "FAILED: no fax received (${FAX_ERROR:-no reason given}); recorded without a file"
+    exit 0
 fi
 
 # 1. Convert TIF to PDF
@@ -79,15 +101,10 @@ chown asterisk:asterisk "$ARCHIVE_TIF" "$ARCHIVE_PDF" 2>/dev/null
 
 log "Archived: $ARCHIVE_PDF"
 
-# The password goes in the environment, not on the command line: -p<password> was visible to everyone in `ps`.
-export MYSQL_PWD="${DB_PASS}"
-MYSQL_EXEC="mysql -h${DB_HOST:-localhost} -u${DB_USER} ${DB_NAME:-asterisk}"
-MYSQL_QUERY="$MYSQL_EXEC -N -s"
-
 # 3. Insert record into MySQL 'asterisk' database (use archived paths)
 $MYSQL_EXEC <<EOF 2>>"$LOGFILE" || log "ERROR: could not save the fax in the database"
-INSERT INTO fax_received (did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, is_read, email_sent)
-VALUES ('$EXTEN', '$CALLERID', $PAGES, '$ARCHIVE_TIF', '$ARCHIVE_PDF', $FILE_SIZE, '$FAX_STATUS', 0, 0);
+INSERT INTO fax_received (did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, error_message, is_read, email_sent)
+VALUES ('$EXTEN', '$CALLERID', $PAGES, '$ARCHIVE_TIF', '$ARCHIVE_PDF', $FILE_SIZE, '$FAX_STATUS', '$FAX_ERROR', 0, 0);
 EOF
 
 FAX_DB_ID=$($MYSQL_QUERY -e \

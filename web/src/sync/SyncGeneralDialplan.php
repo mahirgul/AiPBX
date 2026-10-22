@@ -213,10 +213,14 @@ function __syncGeneralDialplanBody() {
     // automatic fallback to voice band/G.711 when negotiation fails).
     $conf .= " same => n,ReceiveFAX(\${FAX_FILE},df)\n";
     $conf .= " same => n,Hangup()\n\n";
-    $conf .= "exten => h,1,NoOp(FAX Receive Completed: Status=\${FAXOPT(status)}, Pages=\${FAXOPT(pages)})\n";
+    $conf .= "exten => h,1,NoOp(FAX Receive Completed: Status=\${FAXOPT(status)}, Pages=\${FAXOPT(pages)}, Error=\${FAXOPT(error)})\n";
     $conf .= " same => n,Set(FAX_CNUM=\${FILTER(0-9+,\${CALLERID(num)})})\n";
     $conf .= " same => n,Set(FAX_DID=\${FILTER(0-9+,\${IF(\$[\"\${CDR(did)}\" != \"\"]?\${CDR(did)}:\${EXTEN})})})\n";
-    $conf .= " same => n,ExecIf(\$[\"\${FAX_FILE}\" != \"\"]?System(/usr/local/bin/process_incoming_fax.sh \"\${FAX_FILE}\" \"\${FAX_DID}\" \"\${FAX_CNUM}\" \"\${FAXOPT(pages)}\" \"\${FAXOPT(status)}\"))\n";
+    // Why it failed (e.g. "NO_FAX: no fax tone"): without it a failed fax could not
+    // be told apart from a person who dialled a fax number. Filtered like the
+    // numbers: it goes into the shell command below.
+    $conf .= " same => n,Set(FAX_ERR=\${FILTER(A-Za-z0-9_ .:/,\${FAXOPT(error)}: \${FAXOPT(statusstr)})})\n";
+    $conf .= " same => n,ExecIf(\$[\"\${FAX_FILE}\" != \"\"]?System(/usr/local/bin/process_incoming_fax.sh \"\${FAX_FILE}\" \"\${FAX_DID}\" \"\${FAX_CNUM}\" \"\${FAXOPT(pages)}\" \"\${FAXOPT(status)}\" \"\${FAX_ERR}\"))\n";
 
     $fax_header_info = toCleanAscii(getSystemSetting('fax_header_info', 'AI PBX Fax Server'));
     $fax_station_id = toCleanAscii(getSystemSetting('fax_local_station_id', 'AiPBX'));

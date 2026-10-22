@@ -422,7 +422,7 @@ class HealthService
             return (int) $s->fetchColumn();
         })();
         return [
-            'received' => $q('SELECT COUNT(*) FROM fax_received WHERE received_at BETWEEN ? AND ?'),
+            'received' => $q("SELECT COUNT(*) FROM fax_received WHERE status = 'SUCCESS' AND received_at BETWEEN ? AND ?"),
             'sent' => $q("SELECT COUNT(*) FROM fax_sent WHERE status <> 'FAILED' AND status <> 'PENDING' AND created_at BETWEEN ? AND ?"),
             'failed' => $q("SELECT COUNT(*) FROM fax_sent WHERE status = 'FAILED' AND created_at BETWEEN ? AND ?"),
         ];
