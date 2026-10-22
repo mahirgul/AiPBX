@@ -19,7 +19,7 @@ firewall-cmd --reload
 ```
 
 The web softphone and the mobile apps connect over 443 and are not affected. RTP (10000–20000/udp) must
-stay open for carrier audio. The **Firewall** page shows and removes these rules.
+stay open for carrier audio, and UDPTL (4100–4999/udp) for T.38 fax. The **Firewall** page shows and removes these rules.
 
 Asterisk's own TLS WebSocket (8089) listens on loopback only: browsers and the mobile apps use 443
 `/ws`, which goes through the nginx/Apache edge. Earlier versions opened 8089 publicly; installing or
