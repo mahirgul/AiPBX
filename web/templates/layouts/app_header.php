@@ -42,7 +42,11 @@ if ($is_spa_request) {
     require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
     $pending_sync_count_for_spa = hasModulePermission('pending_sync', 'view') ? getPendingSyncCount() : 0;
     ob_start();
-    echo '<div id="spa-page-data" data-title="' . htmlspecialchars(($page_title ?? '') . ' - ' . $site_title) . '" data-page="' . htmlspecialchars($active_page) . '" data-pending-sync-count="' . (int)$pending_sync_count_for_spa . '"></div>';
+    // A plugin was switched on/off: the sidebar's plugin pages changed, and
+    // spa_router.js fetches the new sidebar (it is not in this response).
+    $menu_changed_for_spa = class_exists('PluginManager', false) && PluginManager::$menuChanged;
+    echo '<div id="spa-page-data" data-title="' . htmlspecialchars(($page_title ?? '') . ' - ' . $site_title) . '" data-page="' . htmlspecialchars($active_page) . '" data-pending-sync-count="' . (int)$pending_sync_count_for_spa . '"'
+        . ($menu_changed_for_spa ? ' data-menu-changed="1"' : '') . '></div>';
     return;
 }
 $is_cc_agent = ($user['role'] === 'cc_agent');
