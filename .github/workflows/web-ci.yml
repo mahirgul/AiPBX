@@ -1,7 +1,7 @@
 name: Web & Chat CI
 
 # Checks that run on every push for the web portal (PHP), the chat service (Go)
-# and the local AI service (Python).
+# and the Python services (local AI, signaling capture).
 # Until 2026-09-27 only Android/iOS were built; that is why bugs breaking the
 # conference/ring group saves and the push settings went unnoticed.
 
@@ -12,6 +12,7 @@ on:
       - 'web/**'
       - 'chat/**'
       - 'ai/**'
+      - 'signaling/**'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - 'web/**'
       - 'chat/**'
       - 'ai/**'
+      - 'signaling/**'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   workflow_dispatch:
@@ -151,3 +153,7 @@ jobs:
       # Fake model backend: no torch or model download needed.
       - name: Unit tests
         run: python -m unittest discover -v ai/tests
+      # The signaling capture daemon (HEP parser, row shape); stdlib only.
+      - name: Signaling capture tests
+        run: python -m unittest discover -v -s tests
+        working-directory: signaling
