@@ -180,34 +180,90 @@ def sip_summary(text: str) -> Optional[dict]:
     return summary
 
 
+def _rtcp_int(value) -> Optional[int]:
+    """An RTCP counter as an int; strings are accepted (Asterisk sends some)."""
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
 def rtcp_summary(text: str) -> Optional[dict]:
     """Summary of an RTCP report, or None when the text is not one.
 
-    res_hep_rtcp sends the report as a JSON object (Asterisk's own
-    representation), so that is what is parsed here; a report that is not JSON
-    still gets a proto of "rtcp" with the type read off the first byte pair
-    when it looks like raw RTCP.
+    res_hep_rtcp serializes Asterisk's `rtcp_report` object, whose shape is
+    fixed by main/rtp_engine.c:
+
+        {"ssrc": N, "type": 200|201, "report_count": N,
+         "sender_information": {...}|null,
+         "report_blocks": [{"source_ssrc": N, "fraction_lost": 0..255,
+                            "packets_lost": N, "highest_seq_no": N,
+                            "ia_jitter": N, "lsr": "N", "dlsr": N}, ...]}
+
+    One datagram can carry several report blocks (one per source). The worst
+    block is the one kept: a call is as good as its lossiest stream.
+    `fraction_lost` is the 8-bit fixed-point value from RFC 3550 (255 = 100 %);
+    `ia_jitter` is in RTP timestamp units, NOT milliseconds — the sample rate
+    is not part of the report, so the raw value is stored rather than a
+    converted one that would be a guess.
+
+    The older flat shape ("SSRC"/"TYPE"/"lost"/"jitter") is still accepted:
+    a collector or a test may send it, and rejecting it would lose reports.
     """
     text = text.strip()
-    if text.startswith("{"):
-        try:
-            report = json.loads(text)
-        except ValueError:
-            return None
-        if not isinstance(report, dict):
-            return None
-        rtype = report.get("TYPE", report.get("type", ""))
-        ssrc = report.get("SSRC", report.get("ssrc", ""))
-        name = _RTCP_TYPES.get(int(rtype), "") if str(rtype).isdigit() else ""
-        label = "RTCP %s" % (name or rtype) if (name or rtype != "") else "RTCP"
-        return {
-            "first_line": ("RTCP %s SSRC=%s" % (name, ssrc)).strip()[:160] if name
-            else ("RTCP SSRC=%s" % ssrc)[:160],
-            "method": label[:32] if name else "RTCP"[:32],
-            "ssrc": str(ssrc)[:32],
-            "report_type": str(rtype)[:16],
+    if not text.startswith("{"):
+        return None
+    try:
+        report = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(report, dict):
+        return None
+
+    rtype = report.get("TYPE", report.get("type", ""))
+    ssrc = report.get("SSRC", report.get("ssrc", ""))
+
+    blocks = report.get("report_blocks")
+    if not isinstance(blocks, list):
+        blocks = []
+    worst = None
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        fraction = _rtcp_int(block.get("fraction_lost"))
+        candidate = {
+            "ssrc": block.get("source_ssrc", ssrc),
+            "fraction_lost": fraction,
+            "lost": _rtcp_int(block.get("packets_lost")),
+            "jitter": _rtcp_int(block.get("ia_jitter")),
         }
-    return None
+        if worst is None or (fraction or 0) > (worst.get("fraction_lost") or 0):
+            worst = candidate
+
+    # Flat reports: res_hep_rtcp's own JSON is nested, but the flat spelling is
+    # what older captures and hand-written tests use. Do not lose them.
+    if worst is None:
+        fraction = _rtcp_int(report.get("fraction_lost"))
+        worst = {
+            "ssrc": ssrc,
+            "fraction_lost": fraction,
+            "lost": _rtcp_int(report.get("lost")),
+            "jitter": _rtcp_int(report.get("jitter", report.get("ia_jitter"))),
+        }
+
+    name = _RTCP_TYPES.get(int(rtype), "") if str(rtype).isdigit() else ""
+    label = "RTCP %s" % (name or rtype) if (name or rtype != "") else "RTCP"
+    summary = {
+        "first_line": ("RTCP %s SSRC=%s" % (name, ssrc)).strip()[:160] if name
+        else ("RTCP SSRC=%s" % ssrc)[:160],
+        "method": label[:32] if name else "RTCP"[:32],
+        "ssrc": str(worst.get("ssrc", ssrc))[:32],
+        "report_type": str(rtype)[:16],
+    }
+    for key in ("fraction_lost", "lost", "jitter"):
+        if worst.get(key) is not None:
+            summary[key] = worst[key]
+    return summary
 
 
 def classify(payload: bytes, family: int = 0) -> tuple[str, Optional[dict]]:
@@ -312,6 +368,13 @@ def parse_event(data: bytes) -> Optional[dict]:
         "first_line": (summary or {}).get("first_line", "")[:200],
         "line": "",
         "capture_id": str(_u32(fields.get(HEP_CAPTURE_ID, b"")))[:32],
+        # RTCP quality counters. None when this is not an RTCP report or the
+        # report did not carry them: an absent measurement must stay absent,
+        # never become a zero that looks healthy.
+        "rtcp_ssrc": str((summary or {}).get("ssrc", ""))[:32],
+        "rtcp_lost": (summary or {}).get("lost"),
+        "rtcp_fraction_lost": (summary or {}).get("fraction_lost"),
+        "rtcp_jitter": (summary or {}).get("jitter"),
     }
     event["line"] = summary_line(event)
     return event

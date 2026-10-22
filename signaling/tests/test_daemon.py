@@ -22,7 +22,7 @@ from aipbx_signaling import db as sigdb  # noqa: E402
 from aipbx_signaling import hep  # noqa: E402
 from aipbx_signaling.__main__ import Capture, parse_listen  # noqa: E402
 
-from test_hep import INVITE, hep_packet  # noqa: E402
+from test_hep import INVITE, RTCP_REPORT, hep_packet  # noqa: E402
 
 
 class FakeStore:
@@ -78,11 +78,28 @@ class TestConfig(unittest.TestCase):
     def test_row_shapes_an_event(self):
         event = hep.parse_event(hep_packet(INVITE.encode()))
         row = sigdb.Store.row(event, fallback_ts=1792181287)
-        self.assertEqual(14, len(row))
+        self.assertEqual(18, len(row))
         self.assertTrue(row[0].startswith("20"))
         self.assertEqual(event["call_id"], row[1])
         self.assertEqual("INVITE", row[2])
         self.assertEqual("sip", row[3])
+
+    def test_row_carries_rtcp_quality_counters(self):
+        event = hep.parse_event(hep_packet(RTCP_REPORT.encode(), family=1))
+        row = sigdb.Store.row(event, fallback_ts=1792181287)
+        self.assertEqual(18, len(row))
+        self.assertEqual("4001170063", row[14])
+        self.assertEqual(143, row[15])
+        self.assertEqual(26, row[16])
+        self.assertEqual(96, row[17])
+
+    def test_a_sip_row_has_null_rtp_metrics(self):
+        event = hep.parse_event(hep_packet(INVITE.encode()))
+        row = sigdb.Store.row(event, fallback_ts=1792181287)
+        self.assertEqual("", row[14])
+        self.assertIsNone(row[15])
+        self.assertIsNone(row[16])
+        self.assertIsNone(row[17])
 
     def test_row_uses_the_clock_when_the_packet_has_no_timestamp(self):
         row = sigdb.Store.row({"method": "INVITE"}, fallback_ts=1792181287)

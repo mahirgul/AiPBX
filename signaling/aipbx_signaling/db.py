@@ -29,8 +29,9 @@ DEFAULT_RETENTION_DAYS = 30
 INSERT_SQL = (
     "INSERT INTO pbx_signaling_events "
     "(ts, call_id, method, proto, transport, src, dst, from_uri, to_uri, "
-    " cseq, status_code, first_line, line, capture_id) "
-    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    " cseq, status_code, first_line, line, capture_id, "
+    " rtcp_ssrc, rtcp_lost, rtcp_fraction_lost, rtcp_jitter) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 )
 
 
@@ -123,6 +124,10 @@ class Store:
             event.get("first_line", ""),
             event.get("line", ""),
             event.get("capture_id", ""),
+            event.get("rtcp_ssrc", ""),
+            event.get("rtcp_lost"),
+            event.get("rtcp_fraction_lost"),
+            event.get("rtcp_jitter"),
         )
 
     def write(self, events: Iterable[dict], now: Optional[int] = None) -> int:

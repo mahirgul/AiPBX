@@ -49,9 +49,23 @@ OPTIONS = (
     "CSeq: 102 OPTIONS\r\n\r\n"
 )
 
-#: What res_hep_rtcp actually sends: a JSON report.
-RTCP_REPORT = json.dumps({"SSRC": 4001170063, "TYPE": 201, "R": 0,
-                          "lost": 0, "jitter": 12})
+#: What res_hep_rtcp actually sends: Asterisk's `rtcp_report` JSON, with one
+#: report block. The shape is pinned by main/rtp_engine.c.
+RTCP_REPORT = json.dumps({
+    "ssrc": 4001170063,
+    "type": 201,
+    "report_count": 1,
+    "sender_information": None,
+    "report_blocks": [{
+        "source_ssrc": 4001170063,
+        "fraction_lost": 26,       # 8-bit fixed point: ~10 %
+        "packets_lost": 143,
+        "highest_seq_no": 9001,
+        "ia_jitter": 96,           # timestamp units, not ms
+        "lsr": "0",
+        "dlsr": 0,
+    }],
+})
 
 
 def tlv(tlv_type: int, value: bytes) -> bytes:
@@ -150,6 +164,35 @@ class TestRtcp(unittest.TestCase):
             json.dumps({"SSRC": 4001170051, "TYPE": 200}).encode(), family=1))
         self.assertEqual("rtcp", event["proto"])
         self.assertEqual("RTCP sender-report", event["method"])
+
+    def test_report_metrics_are_kept_and_the_worst_block_wins(self):
+        report = json.dumps({
+            "ssrc": 11, "type": 201, "report_count": 2,
+            "report_blocks": [
+                {"source_ssrc": 21, "fraction_lost": 0, "packets_lost": 0,
+                 "ia_jitter": 8},
+                {"source_ssrc": 22, "fraction_lost": 64, "packets_lost": 900,
+                 "ia_jitter": 240},
+            ],
+        })
+        event = hep.parse_event(hep_packet(report.encode(), family=1))
+        self.assertEqual("22", event["rtcp_ssrc"])
+        self.assertEqual(64, event["rtcp_fraction_lost"])
+        self.assertEqual(900, event["rtcp_lost"])
+        self.assertEqual(240, event["rtcp_jitter"])
+
+    def test_flat_legacy_report_still_carries_metrics(self):
+        event = hep.parse_event(hep_packet(
+            json.dumps({"SSRC": 7, "TYPE": 201, "lost": 3, "jitter": 12}).encode(),
+            family=1))
+        self.assertEqual(3, event["rtcp_lost"])
+        self.assertEqual(12, event["rtcp_jitter"])
+        self.assertIsNone(event["rtcp_fraction_lost"], "an absent counter stays absent")
+
+    def test_a_non_rtcp_event_has_no_quality_counters(self):
+        event = hep.parse_event(hep_packet(INVITE.encode()))
+        self.assertEqual("", event["rtcp_ssrc"])
+        self.assertIsNone(event["rtcp_fraction_lost"])
 
     def test_unknown_rtcp_type_stays_rtcp(self):
         event = hep.parse_event(hep_packet(
