@@ -228,6 +228,14 @@ function __syncAllTrunksBody() {
         }
         $conf .= "max_contacts={$max_contacts}\n";
         $conf .= "qualify_frequency={$qualify}\n";
+        // Asterisk's 3 s left room for only two UDP retransmits of the OPTIONS
+        // probe: a 2-3 s network hiccup marked the trunk Unavailable until the
+        // next probe, and for that minute every call to it failed at once
+        // ("Could not create dialog to invalid URI '<trunk>'"; ~100 calls in
+        // two weeks on a live system). 8 s also covers the retransmit at 7.5 s.
+        if ($qualify > 0) {
+            $conf .= "qualify_timeout=8\n";
+        }
         if ($outbound_proxy !== '') {
             $conf .= "outbound_proxy={$outbound_proxy}\n";
         }

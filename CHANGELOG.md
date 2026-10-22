@@ -19,6 +19,10 @@ the git tag message and the GitHub Release notes, and installations show it as
   fallback to audio does not recover: "T.30 Non-ECM carrier not found"); reproduced on a live
   system, where plain G.711 received the same fax. Existing trunks keep their setting; see
   docs/troubleshooting.md, "Incoming faxes fail".
+- **Trunks no longer drop out for a minute after one lost probe:** with Asterisk's 3 s
+  `qualify_timeout` a 2-3 s network hiccup marked a trunk Unavailable until the next probe, and
+  every call to it failed meanwhile ("Could not create dialog to invalid URI '<trunk>'"; about
+  100 calls in two weeks on a live system). Trunks are probed with an 8 s timeout.
 - **Webhooks:** `fax.received` was never sent (the query used a column that does not exist), and
   once a received fax existed it also stopped the `fax.sent` / `fax.failed` events. Fixed;
   `fax.received` is sent only for faxes that arrived.

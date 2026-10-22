@@ -70,6 +70,8 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringContainsString('allow=alaw,ulaw', $conf);
         $this->assertStringContainsString('t38_udptl=yes', $conf);
         $this->assertStringContainsString('192.0.2.10', $conf);
+        // a lost OPTIONS probe must not take the trunk down for a minute
+        $this->assertStringContainsString("qualify_frequency=60\nqualify_timeout=8\n", $conf);
     }
 
     public function testT38IsNotWrittenWhenOff(): void
