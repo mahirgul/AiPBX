@@ -6,6 +6,9 @@ AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`Plug
 - 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. The plugins above are maintained only here, in this repository.
 - 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integrations → Plugins → Upload Custom Plugin (`.zip`)**.
 
+**A working example of every hook:** [`examples/sample-plugin`](https://github.com/mahirgul/AiPBX-plugins/tree/main/examples/sample-plugin)
+in AiPBX-plugins. It changes nothing on the PBX; copy it to start a new plugin.
+
 ---
 
 ## 📦 1. Package Layout & `plg_*` Database Tables
@@ -157,6 +160,18 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
     </div>
 </div>
 ```
+
+### D. Other hooks
+
+- **`worker/tick.php`** (`"worker": true`): returns `function (string $slug, array $settings)`, called by
+  `aipbx-webhook-worker` every ~2 s. Keep your own clock (e.g. in `sys_plugin_kv`) for slower jobs and
+  keep each call short.
+- **`public/handler.php`** (`"public_endpoints": true`): returns `function (string $subPath, array $settings)`
+  for `/api/plugins/<slug>/<subPath>`. **There is no sign-in on this URL**; check the caller yourself.
+  Plain HTTP is accepted only from `127.0.0.1` (Asterisk `CURL()`), everyone else is redirected to HTTPS.
+- **`admin/action.php`**: returns `function (string $slug, array $settings): array`, run on every request
+  to `/plugins/<slug>` before the page is drawn. Check CSRF (`verifyCSRFToken($_POST['csrf_token'])`) for
+  your own forms; return `['message' => ...]`, `['error' => ...]` or `[]`.
 
 ---
 

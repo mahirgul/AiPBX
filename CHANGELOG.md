@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.3
+
+- **Plugins: uploading a custom `.zip` plugin works again.** Every upload failed with "Failed to
+  move extracted plugin into plugins directory": the archive was unpacked in Apache's private
+  `/tmp`, and a directory cannot be moved from there to `/var/lib/aipbx/plugins`.
+- **Plugins: the worker sees plugin changes without a restart.** `aipbx-webhook-worker` kept the
+  plugin list it read at start: a plugin enabled or uploaded later got no events and no worker
+  ticks until the service restarted, and a disabled one kept getting both.
+- **Plugins: disabling or removing a plugin takes its Asterisk configuration out at once**
+  (dialplan, PJSIP, HEP reloaded); before, it stayed live until the next Apply.
+- **Docs:** a sample plugin that shows every hook, in AiPBX-plugins (`examples/sample-plugin`).
+
 ## 1.50.2
 
 Incoming faxes: failed ones are visible, T.38 off for new trunks; trunks no longer drop out for a
