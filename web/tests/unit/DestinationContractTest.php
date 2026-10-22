@@ -71,4 +71,16 @@ final class DestinationContractTest extends TestCase
         $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
         $this->assertStringContainsString("[outbound-route-{$id}]", $conf);
     }
+
+    public function testQueueLabelResolvesFromNameAndFromId(): void
+    {
+        // The dialplan accepts a queue by name or by numeric id; the label
+        // shown on the IVR, inbound route and time plan pages must do the same.
+        $id = (int)getDB()->query('SELECT id FROM pbx_queues WHERE queue_name = ' . getDB()->quote(Fixtures::QUEUE_NAME))->fetchColumn();
+        $cache = [];
+        $byName = DestinationRegistry::resolveLabel('queue', Fixtures::QUEUE_NAME, $cache);
+        $this->assertNotNull($byName);
+        $this->assertSame($byName, DestinationRegistry::resolveLabel('queue', (string)$id, $cache));
+        $this->assertNull(DestinationRegistry::resolveLabel('queue', '999999', $cache));
+    }
 }

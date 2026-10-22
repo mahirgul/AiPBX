@@ -17,6 +17,8 @@ Updates restart Asterisk only when they have to: most releases now keep calls up
   Update says beforehand whether the update restarts Asterisk, and why. coturn is restarted only
   when its configuration changed, so WebRTC calls through TURN stay up too.
 - **Release notes say whether updating restarts Asterisk.**
+- **IVR, inbound routes, time plans:** a queue destination stored by its number (as the REST API
+  and the services accept it) showed as "not found" although calls reached the queue.
 - **Android:** a release without app changes no longer builds or uploads the app to Google Play;
   the previous APK stays available for download.
 
