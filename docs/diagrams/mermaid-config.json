@@ -1,0 +1,21 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif",
+    "fontSize": "15px",
+    "lineColor": "#868e96",
+    "edgeLabelBackground": "#ffffff",
+    "clusterBkg": "#f8f9fa",
+    "clusterBorder": "#adb5bd",
+    "primaryTextColor": "#212529"
+  },
+  "flowchart": {
+    "curve": "rounded",
+    "nodeSpacing": 45,
+    "rankSpacing": 55,
+    "padding": 14,
+    "htmlLabels": false,
+    "wrappingWidth": 320
+  },
+  "htmlLabels": false
+}

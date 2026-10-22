@@ -10,8 +10,8 @@
  * The Markdown is turned into HTML here (no library, no CDN): only what the
  * documents use — headings with GitHub-style anchors, paragraphs, lists (one
  * level of nesting), tables, fenced code, block quotes, rules, inline code,
- * bold, italics and links. All text is HTML-escaped first, so a document can
- * never inject markup. Links to other documents (troubleshooting.md#capturing-sip)
+ * bold, italics, links and diagrams (docs/img/*.svg). All text is HTML-escaped
+ * first, so a document can never inject markup. Links to other documents (troubleshooting.md#capturing-sip)
  * become /help?doc=troubleshooting#capturing-sip; other links open in a new tab.
  *
  * Single source: the same docs/*.md are read on GitHub, in the portal and on
@@ -216,6 +216,12 @@ class DocsService
                 $i++;
                 continue;
             }
+            // A diagram on its own line: ![alt](img/name.svg).
+            if (preg_match('~^\s*!\[([^\]]*)\]\((?:\.\./)?(?:docs/)?img/([a-z0-9-]+)\.svg\)\s*$~', $line, $m)) {
+                $html .= self::diagram($m[2], $m[1]);
+                $i++;
+                continue;
+            }
             if (preg_match('/^(#{1,6})\s+(.+?)\s*#*\s*$/', $line, $m)) {
                 $level = strlen($m[1]);
                 $html .= sprintf("<h%d id=\"%s\">%s</h%d>\n", $level, self::e(self::slug($m[2])), self::inline($m[2]), $level);
@@ -396,6 +402,24 @@ class DocsService
                 . $inner . '</a>';
         }
         return $inner . ' <code>' . self::e($path) . '</code>';
+    }
+
+    /**
+     * docs/img/<name>.svg, rendered from docs/diagrams/<name>.mmd by
+     * scripts/render-diagrams.sh, put into the page as it is: the portal does not
+     * serve docs/ as files, and an inline SVG needs no extra URL on the website.
+     * Only a plain SVG is taken (no script, event handler or embedded HTML);
+     * anything else is shown as its alt text.
+     */
+    private static function diagram(string $name, string $alt): string
+    {
+        $svg = @file_get_contents(self::dir() . '/img/' . $name . '.svg');
+        $svg = is_string($svg) ? trim((string) preg_replace('/^<\?xml[^>]*>\s*/', '', $svg)) : '';
+        if (!str_starts_with($svg, '<svg') || preg_match('/<script|<foreignObject|\son\w+\s*=|javascript:/i', $svg)) {
+            return '<p><em>' . self::e($alt !== '' ? $alt : $name) . "</em></p>\n";
+        }
+        $label = $alt !== '' ? ' role="img" aria-label="' . self::e($alt) . '"' : '';
+        return '<figure class="doc-diagram"' . $label . '>' . $svg . "</figure>\n";
     }
 
     private static function e(string $s): string

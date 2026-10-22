@@ -13,18 +13,7 @@ and survives the database going away (events are lost, capture continues).
 
 ## The chain
 
-```
-Asterisk (res_hep, res_hep_pjsip, res_hep_rtcp)
-    │  HEPv3 over UDP, loopback only
-    ▼
-aipbx-signaling (systemd: aipbx-signaling.service, 127.0.0.1:9061)
-    │  parsed -> batched rows
-    ▼
-MariaDB: pbx_signaling_events
-    │  read
-    ▼
-AI → Dialplan editor (Echo box)
-```
+![Signaling capture chain](img/signaling.svg)
 
 **Asterisk side** — `hep.conf`:
 

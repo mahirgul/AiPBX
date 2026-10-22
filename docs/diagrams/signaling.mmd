@@ -1,0 +1,18 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+%% @classes
+  ast["`**Asterisk**
+  res_hep, res_hep_pjsip, res_hep_rtcp`"]:::core
+  daemon["`**aipbx-signaling**
+  127.0.0.1:9061`"]:::svc
+  db[("`**MariaDB**
+  pbx_signaling_events`")]:::db
+  ui["`**Dialplan editor**
+  Echo box`"]:::client
+
+  ast -->|"HEPv3 over UDP, loopback"| daemon
+  daemon -->|"batched rows"| db
+  db -->|read| ui

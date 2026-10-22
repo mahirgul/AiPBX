@@ -1,0 +1,23 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+%% @classes
+  client["`**Browser / app**
+  WebRTC`"]:::client
+  nginx["`**nginx** :443
+  picks by ALPN`"]:::edge
+  apache["`**Apache**
+  /ws`"]:::svc
+  coturn["`**coturn**
+  TURNS media relay`"]:::edge
+  ast["`**Asterisk**
+  signalling + RTP`"]:::core
+
+  client -->|"TLS 443"| nginx
+  nginx -->|"ALPN present"| apache
+  apache -->|"SIP over WebSocket"| ast
+  nginx -->|"no ALPN (TURNS)"| coturn
+  client <-.->|"media, direct when possible"| ast
+  coturn <-.->|"relayed media"| ast

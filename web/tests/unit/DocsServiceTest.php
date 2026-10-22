@@ -62,6 +62,18 @@ final class DocsServiceTest extends TestCase
         $this->assertStringContainsString('<hr>', $html);
     }
 
+    public function testDiagramIsInlinedOnlyFromDocsImg(): void
+    {
+        $html = DocsService::render("![System map](img/system-map.svg)");
+        $this->assertStringStartsWith('<figure class="doc-diagram" role="img" aria-label="System map"><svg', $html);
+        $this->assertStringContainsString('id="diagram-system-map"', $html);
+        // Only names under docs/img: no path tricks, no other file types.
+        foreach (['![x](img/../../web/config.svg)', '![x](/etc/img/a.svg)', '![x](img/logo.png)'] as $md) {
+            $this->assertStringNotContainsString('<svg', DocsService::render($md));
+        }
+        $this->assertSame("<p><em>Missing</em></p>\n", DocsService::render('![Missing](img/no-such-diagram.svg)'));
+    }
+
     public function testSlugMatchesGithub(): void
     {
         $this->assertSame('ntp-server-time', DocsService::slug('NTP server (time)'));

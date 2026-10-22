@@ -7,11 +7,7 @@ what AiPBX does about it and what you need to configure.
 
 ## How a WebRTC call reaches Asterisk
 
-```
-browser / app ──443──▶ nginx ─┬─ ALPN present ──▶ Apache ── /ws ──▶ Asterisk (signalling)
-                              └─ no ALPN / stun.turn ──▶ coturn TURNS (media relay)
-media: client ⇄ Asterisk RTP directly when possible, otherwise client ⇄ coturn relay ⇄ Asterisk
-```
+![How a WebRTC call reaches Asterisk](img/webrtc-nat.svg)
 
 ICE tries the candidates in order of preference: the direct path (client to Asterisk's address) and,
 when that is blocked, the **TURN relay** on the same server. Clients are given only a **TURNS**

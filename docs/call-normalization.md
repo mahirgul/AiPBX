@@ -1,31 +1,8 @@
 # Call Normalization & Ingress Dialplan Rules
 
-Call Normalization rules act as an intelligent **pre-filter (Kademe 1)** between subscriber endpoints and the PBX Outbound Routes.
+Call Normalization rules act as an intelligent **pre-filter** between subscriber endpoints and the PBX Outbound Routes.
 
-```
-[ Incoming Call ]
-   ├─ 📱 Mobile App (E.164 contacts: "+90537...", "+1212...", "537...")
-   ├─ ☎️ Desk Phone (Office trunk prefix habits: "0" or "9")
-   └─ 💻 Web Softphone / CRM Click-to-Dial
-            │
-            ▼
-┌────────────────────────────────────────────────────────┐
-│ 1. INGRESS NORMALIZATION PRE-FILTER                   │
-│    • Slices & normalizes numbers per client device     │
-│    • Converts E.164 '+' into canonical trunk formats   │
-│    • Strips legacy desk phone trunk codes ('0' / '9')  │
-│    • Internal extensions (*97, 101) stay untouched    │
-│    ➜ Output: Single Standard Number ("05379902352")    │
-└────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌────────────────────────────────────────────────────────┐
-│ 2. OUTBOUND ROUTES & TRUNKS                            │
-│    • Matched against clean, standard patterns          │
-│    • Applied permission checks and route groups        │
-│    • Dispatched across trunk failover chains           │
-└────────────────────────────────────────────────────────┘
-```
+![Where normalization rules sit between the device and the trunk](img/call-normalization.svg)
 
 ---
 
@@ -42,7 +19,7 @@ Without ingress normalization, supporting both desk phones and mobile apps requi
 
 ## Safe Asterisk Dialplan Hierarchy
 
-To guarantee that call centers, queues, faks, and IVRs are never disrupted:
+To guarantee that call centers, queues, faxes and IVRs are never disrupted:
 1. **Internal Extensions & Features:** Evaluated first (`from-internal-pbx-ortak`, `featurecodes-pbx`). Numbers like `101`, `1002`, `*97` (Voicemail), `7000` (IVR) never reach normalization rules.
 2. **Ingress Sub-Contexts:** Slices are applied only to calls leaving the PBX:
    - `from-internal-desktop` → includes `sub-norm-desktop-N`
