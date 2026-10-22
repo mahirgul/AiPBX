@@ -31,6 +31,7 @@ class MailTemplateService
         'health_recovered' => ['count', 'checks', '*problems', 'host', 'date', 'brand', 'portal_link'],
         'health_summary' => ['day', 'state', 'alarms', '*calls', '*checks', 'host', 'date', 'brand', 'portal_link'],
         'test' => ['brand', 'date', 'from_name', 'from_address', 'to', 'host'],
+        'notice' => ['title', 'severity', 'body', 'date', 'brand', 'portal_link'],
     ];
 
     /** Tags a template body may contain; everything else is unwrapped (its text kept). */
@@ -513,6 +514,8 @@ class MailTemplateService
                 'error' => 'NO ANSWER', 'from_name' => 'AiPBX', 'from_address' => 'no-reply@example.com', 'to' => 'admin@example.com',
                 'host' => gethostname() ?: 'pbx',
                 'request' => 'Towels', 'transcript' => 'could I get two more towels please', 'app' => 'Hotel reception',
+                'title' => t('notices.sample_title'), 'severity' => t('notices.severity_warn'),
+                'body' => t('notices.sample_body'),
             ];
             if ($key === 'ai_request') {
                 $vars['portal_link'] = $link . '/ai-apps';

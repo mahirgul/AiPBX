@@ -77,8 +77,32 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
         </div>
     </div>
 
-    <!-- Top Bar Right: Pending Sync (Uygula) Dropdown & Actions -->
+    <!-- Top Bar Right: Notices, Pending Sync (Uygula) Dropdown & Actions -->
     <div class="top-bar-right">
+        <?php require_once dirname(__DIR__) . '/src/services/NoticeService.php'; ?>
+        <div class="header-notices-wrapper" id="notices-bell-wrapper">
+            <button type="button" class="topbar-btn" id="notices-bell"
+                    data-csrf="<?php echo htmlspecialchars(getCSRFToken()); ?>"
+                    onclick="noticesToggle(event)"
+                    title="<?php echo htmlspecialchars(t('notices.bell_tooltip')); ?>"
+                    aria-label="<?php echo htmlspecialchars(t('notices.bell_tooltip')); ?>">
+                <i class="fas fa-bell"></i>
+                <span class="header-notices-count" id="notices-bell-count" style="display: none;">0</span>
+            </button>
+            <div class="header-notices-dropdown" id="notices-dropdown" style="display: none;">
+                <div class="header-notices-head">
+                    <span class="header-notices-head-title">
+                        <i class="fas fa-bell"></i> <?php echo htmlspecialchars(t('notices.title')); ?>
+                    </span>
+                    <button type="button" class="header-notices-mark-all" onclick="noticesMarkAll(event)">
+                        <?php echo htmlspecialchars(t('notices.mark_all_read')); ?>
+                    </button>
+                </div>
+                <div class="header-notices-list" id="notices-list">
+                    <div class="header-notices-empty"><?php echo htmlspecialchars(t('notices.empty')); ?></div>
+                </div>
+            </div>
+        </div>
         <?php
         if (!isset($pending_sync_count)) {
             require_once __DIR__ . '/../src/asterisk_sync.php';

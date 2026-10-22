@@ -240,6 +240,14 @@ function submitAipbxLicenseAccept(btn) {
 <!-- 100% Offline Local JavaScript Modules -->
 <script src="<?php echo asset('/assets/js/theme.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/nav.js'); ?>"></script>
+<script>
+    window.NOTICES_I18N = {
+        empty: <?php echo json_encode(t('notices.empty'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        load_failed: <?php echo json_encode(t('notices.load_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        emailed: <?php echo json_encode(t('notices.emailed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+    };
+</script>
+<script src="<?php echo asset('/assets/js/notices.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/modal.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/footer_notify.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/datatable_enhancer.js'); ?>"></script>

@@ -1833,3 +1833,22 @@ tr.row-dragging { opacity: 0.45; }
 .auth-support-contact { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 12.5px; line-height: 1.7; text-align: center; color: var(--text-main); word-break: break-word; }
 .auth-support-contact a { color: var(--primary); text-decoration: none; white-space: nowrap; }
 .auth-support-contact a:hover { text-decoration: underline; }
+
+/* Top bar notice cabinet (assets/js/notices.js, api/notices.php) */
+.header-notices-wrapper { position: relative; display: inline-flex; }
+.header-notices-count { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--danger, #dc2626); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.header-notices-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 360px; max-width: 92vw; background: var(--bg-card, #fff); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18); z-index: 1200; overflow: hidden; }
+.header-notices-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border-color); font-size: 12.5px; font-weight: 600; }
+.header-notices-mark-all { background: none; border: 0; color: var(--primary); font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 2px 4px; }
+.header-notices-mark-all:hover { text-decoration: underline; }
+.header-notices-list { max-height: 380px; overflow-y: auto; }
+.header-notices-item { display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+.header-notices-item:last-child { border-bottom: 0; }
+.header-notices-item:hover { background: var(--bg-hover, rgba(15, 23, 42, 0.04)); }
+.header-notices-item.is-unread { background: color-mix(in srgb, var(--primary) 7%, transparent); }
+.header-notices-icon { margin-top: 2px; font-size: 13px; flex-shrink: 0; }
+.header-notices-text { min-width: 0; }
+.header-notices-title { font-size: 12.5px; font-weight: 600; line-height: 1.4; word-break: break-word; }
+.header-notices-body { font-size: 11.5px; line-height: 1.5; color: var(--text-muted, #64748b); margin-top: 2px; word-break: break-word; }
+.header-notices-meta { font-size: 10.5px; color: var(--text-muted, #94a3b8); margin-top: 4px; }
+.header-notices-empty { padding: 18px 14px; font-size: 12px; color: var(--text-muted, #64748b); text-align: center; line-height: 1.6; }

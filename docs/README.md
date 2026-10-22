@@ -13,6 +13,7 @@ Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
 |------|----------------|
 | 🚀 [Installation & updating](../INSTALL.md) | Requirements, one-line installer, certificates, ports, `aipbx-update` |
 | 🖥️ [Portal basics](portal.md) | The *Apply* workflow, edit dialogs, ordering lists, copying records |
+| 🔔 [Notices](notices.md) | The bell in the top bar: what the PBX found, one notice per problem (dedupe window), quiet hours and alarm e-mails |
 | 🏗️ [Architecture](../ARCHITECTURE.md) | Components, traffic flow, security model |
 
 ## 📞 Telephony
