@@ -250,40 +250,63 @@ function applyPendingSync($user_id = null) {
 
     $results = [];
     foreach ($domains as $domain) {
-        $fn = PENDING_SYNC_DOMAIN_MAP[$domain] ?? null;
-        if (!$fn || !function_exists($fn)) {
-            $results[$domain] = ['success' => false, 'error' => "Unknown domain: {$domain}"];
-            continue;
-        }
-        try {
-            $fn();
-            if ($domain === 'general_dialplan' && class_exists('PluginManager')) {
-                PluginManager::syncAllEnabledPlugins();
-            }
-            $del = $db->prepare("DELETE FROM sys_pending_sync WHERE domain = ?");
-            $del->execute([$domain]);
-            $results[$domain] = ['success' => true, 'error' => null];
-            writeAuditLog($domain, 'sync_apply', $domain, $domain, 'apply', $user_id);
-            if (class_exists('WebhookService')) {
-                WebhookService::emit('config.sync_applied', ['domain' => $domain]);
-            }
-        } catch (\Throwable $e) {
-            $results[$domain] = ['success' => false, 'error' => $e->getMessage()];
-            // 2026-08-25: only the domain name ("queues") used to be written
-            // here — the REAL text of the rollback/reload error (including
-            // writeConfWithRollback()'s "AUTOMATICALLY ROLLED BACK"/"MANUAL
-            // INTERVENTION NEEDED" messages) only appeared in that HTTP
-            // response and was lost from the permanent record.
-            // entity_label is varchar(255) — raw Asterisk output can exceed
-            // it, so it is trimmed safely.
-            $label = "{$domain}: " . mb_substr($e->getMessage(), 0, 230);
-            writeAuditLog($domain, 'sync_apply', $domain, $label, 'apply_failed', $user_id);
-            if (class_exists('WebhookService')) {
-                WebhookService::emit('config.sync_failed', ['domain' => $domain, 'error' => $e->getMessage()]);
-            }
-        }
+        $results[$domain] = applyPendingSyncDomain($domain, $user_id);
     }
     return $results;
+}
+
+/**
+ * The same Apply, for ONE domain.
+ *
+ * Exists so a caller that changed exactly one domain does not push every
+ * other administrator's queued edits to Asterisk as a side effect — the
+ * quality collector demoting a trunk is the first such caller. A successful
+ * domain's rows are deleted; a failed one keeps them (retried on the next
+ * Apply) and the file has already been rolled back by the sync function.
+ *
+ * Returns: ['success' => bool, 'error' => string|null].
+ */
+function applyPendingSyncDomain($domain, $user_id = null) {
+    $db = getDB();
+    $fn = PENDING_SYNC_DOMAIN_MAP[$domain] ?? null;
+    if (!$fn || !function_exists($fn)) {
+        return ['success' => false, 'error' => "Unknown domain: {$domain}"];
+    }
+
+    if (is_file(__DIR__ . '/services/WebhookService.php')) {
+        require_once __DIR__ . '/services/WebhookService.php';
+    }
+    if (is_file(__DIR__ . '/core/PluginManager.php')) {
+        require_once __DIR__ . '/core/PluginManager.php';
+    }
+
+    try {
+        $fn();
+        if ($domain === 'general_dialplan' && class_exists('PluginManager')) {
+            PluginManager::syncAllEnabledPlugins();
+        }
+        $del = $db->prepare("DELETE FROM sys_pending_sync WHERE domain = ?");
+        $del->execute([$domain]);
+        writeAuditLog($domain, 'sync_apply', $domain, $domain, 'apply', $user_id);
+        if (class_exists('WebhookService')) {
+            WebhookService::emit('config.sync_applied', ['domain' => $domain]);
+        }
+        return ['success' => true, 'error' => null];
+    } catch (\Throwable $e) {
+        // 2026-08-25: only the domain name ("queues") used to be written
+        // here — the REAL text of the rollback/reload error (including
+        // writeConfWithRollback()'s "AUTOMATICALLY ROLLED BACK"/"MANUAL
+        // INTERVENTION NEEDED" messages) only appeared in that HTTP
+        // response and was lost from the permanent record.
+        // entity_label is varchar(255) — raw Asterisk output can exceed it,
+        // so it is trimmed safely.
+        $label = "{$domain}: " . mb_substr($e->getMessage(), 0, 230);
+        writeAuditLog($domain, 'sync_apply', $domain, $label, 'apply_failed', $user_id);
+        if (class_exists('WebhookService')) {
+            WebhookService::emit('config.sync_failed', ['domain' => $domain, 'error' => $e->getMessage()]);
+        }
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
 }
 
 // Require Domain Sync Modules
