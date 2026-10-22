@@ -11,6 +11,11 @@ the git tag message and the GitHub Release notes, and installations show it as
   (`/var/www/faxes/sent/2026`) was created without group write, and once an update handed it to
   `asterisk` the portal could not save the uploaded PDF. The installer makes every fax directory
   group-writable, and the portal and the fax processor create new ones that way.
+- **T.38 fax could never work through the firewall:** the installer opened the RTP ports but not
+  the UDPTL ports T.38 uses (4100–4999/udp), so a carrier that accepted T.38 got no answer.
+  They are opened on install, and on upgrade wherever the RTP range is open as installed.
+- **Outgoing faxes ran without the audio fallback option:** `SendFAX(…,d,f)` passed the options
+  wrongly (Asterisk: "Unrecognized option: ','"); now `df`.
 
 ## 1.50.4
 

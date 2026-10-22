@@ -235,7 +235,7 @@ function __syncGeneralDialplanBody() {
     // set in the .call file by fax_send.php) — e.g. prefix 0312555 + extension
     // 1234 = 03125551234 (2026-08-31, user request).
     $conf .= " same => n,Set(FAXOPT(localstationid)={$fax_station_id}\${FAX_SENDER})\n";
-    $conf .= " same => n,SendFAX(\${FAX_TIF_PATH},d,f)\n";
+    $conf .= " same => n,SendFAX(\${FAX_TIF_PATH},df)\n";
     $conf .= " same => n,Hangup()\n\n";
     $conf .= "exten => h,1,NoOp(Outbound FAX Completed. Status=\${FAXOPT(status)})\n";
     $conf .= " same => n,System(/usr/local/bin/process_outgoing_fax_result.sh \"\${FAX_ID}\" \"\${FAXOPT(status)}\" \"\${FAXOPT(error)}\" \"\${FAXOPT(pages)}\")\n\n";
