@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.50.4",
+  "version": "1.50.5",
   "notes": {
-    "en-US": "Version number follows the AiPBX server release 1.50.4. No changes in the app itself; the server release fixes fax sending.",
-    "tr-TR": "Sürüm numarası AiPBX sunucu sürümü 1.50.4 ile aynı. Uygulamanın kendisinde değişiklik yok; sunucu sürümü faks göndermeyi düzeltiyor."
+    "en-US": "Version number follows the AiPBX server release 1.50.5. No changes in the app itself; the server release fixes fax uploads and T.38.",
+    "tr-TR": "Sürüm numarası AiPBX sunucu sürümü 1.50.5 ile aynı. Uygulamanın kendisinde değişiklik yok; sunucu sürümü faks yüklemeyi ve T.38'i düzeltiyor."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
