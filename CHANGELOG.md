@@ -5,7 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
-## Unreleased
+## 1.50.2
+
+Incoming faxes: failed ones are visible, T.38 off for new trunks; trunks no longer drop out for a
+minute after one lost probe; webhook, updater and plugin sidebar fixes; documentation diagrams.
 
 - **Updater:** file mode changes no longer count as "Code was modified by hand". Installations on
   1.34.0 – 1.34.2 could not update at all (their installer made `web/bin/aipbx_ops.php`
