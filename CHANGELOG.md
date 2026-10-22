@@ -7,6 +7,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.50.3
 
+Plugins: uploading a custom plugin works again, and the worker and Asterisk follow plugin
+changes at once; a sample plugin for plugin authors.
+
 - **Plugins: uploading a custom `.zip` plugin works again.** Every upload failed with "Failed to
   move extracted plugin into plugins directory": the archive was unpacked in Apache's private
   `/tmp`, and a directory cannot be moved from there to `/var/lib/aipbx/plugins`.
