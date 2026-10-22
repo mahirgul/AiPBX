@@ -1,0 +1,51 @@
+---
+config:
+  layout: elk
+  elk:
+    nodePlacementStrategy: BRANDES_KOEPF
+---
+flowchart TB
+%% @classes
+
+  browser["`Browser · mobile app`"]:::client
+  phones["`Desk phones`"]:::client
+
+  nginx["`**nginx** :443
+TLS passthrough, picks by ALPN`"]:::edge
+  coturn["`**coturn** :5349
+WebRTC media relay (TURNS)`"]:::edge
+
+  subgraph apache["`Apache · 127.0.0.1:8443`"]
+    portal["`**/** PHP portal
+/opt/aipbx/web`"]:::svc
+    ws["`**/ws**
+SIP over WebSocket`"]:::svc
+    chatp["`**/chat/ws**`"]:::svc
+    prov["`**/provision/**
+phone files, also HTTP :80`"]:::svc
+  end
+
+  chat["`**Chat service**
+127.0.0.1:8086`"]:::svc
+  ast["`**Asterisk 22**
+SIP 5060 UDP/TCP · 5061 TLS
+WebSocket 127.0.0.1:8088`"]:::core
+  priv["`**aipbx-priv**
+the only root entry point`"]:::core
+  ai["`**Local AI service**
+127.0.0.1:8790 / 8791`"]:::svc
+  db[("`**MariaDB**
+database asterisk`")]:::db
+
+  browser -->|443| nginx
+  nginx -->|"http/1.1, h2"| apache
+  nginx -->|no ALPN| coturn
+  phones -->|SIP| ast
+  phones -.->|config| prov
+  ws --> ast
+  chatp --> chat
+  portal <-->|"AMI 127.0.0.1:5038"| ast
+  portal -->|sudo| priv
+  ast -->|"CURL, AudioSocket"| ai
+  portal --> db
+  ast -->|"CDR, queue log"| db

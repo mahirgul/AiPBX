@@ -29,7 +29,7 @@ AI PBX is organized as a unified monorepo:
 | `signaling/` | Local Loopback HEPv3 SIP Signaling Capture (`aipbx-signaling`) | Python |
 | `android/` | Android Mobile Application | Kotlin, WebRTC, Jetpack, FCM |
 | `ios/` | iOS Mobile Application | SwiftUI, CallKit, WebRTC, PushKit |
-| `docs/` | Built-in Offline System Guide (`/help`) &amp; Documentation | Markdown, PNG, JPG |
+| `docs/` | Built-in Offline System Guide (`/help`) &amp; Documentation | Markdown, Mermaid diagrams (SVG), PNG, JPG |
 | `sounds/` | Bundled Sounds &amp; Turkish Prompt Packages | `scripts/build_tr_sounds.sh` |
 | `install.sh` | Turnkey Auto-Installer &amp; Upgrader | Bash (Ubuntu 26.04 LTS) |
 
@@ -129,6 +129,19 @@ Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/
 - **Input Validation**: Sanitize and validate all user inputs (CSRF, XSS, SQL injection protection).
 
 ---
+
+## 📐 Diagrams in the documentation
+
+Draw diagrams with [Mermaid](https://mermaid.js.org/), not with ASCII arrows: the source goes to
+`docs/diagrams/<name>.mmd` (start it with `%% @classes` for the shared colours), then
+
+```bash
+scripts/render-diagrams.sh <name>   # writes docs/img/<name>.svg (needs Node and Chrome/Chromium)
+```
+
+and put `![What it shows](img/<name>.svg)` on a line of its own in the document. Commit the `.mmd`
+and the `.svg` together. The SVG is shown as it is on GitHub, in the portal's Help page (offline)
+and on aipbx.bid/docs; no JavaScript is needed to read it.
 
 ## 🌍 Translations
 

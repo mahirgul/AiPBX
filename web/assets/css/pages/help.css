@@ -30,3 +30,5 @@
 .help-result-doc a, .help-hits a { color: var(--primary); text-decoration: none; }
 .help-hits { margin: 0 0 8px; padding-left: 18px; }
 .help-hits a:hover, .help-result-doc a:hover { text-decoration: underline; }
+.doc-body figure.doc-diagram { margin: 16px 0; padding: 12px; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow-x: auto; }
+.doc-body figure.doc-diagram svg { display: block; margin: 0 auto; height: auto; }

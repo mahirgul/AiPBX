@@ -9,20 +9,7 @@ automatic checks).
 
 ## 1. The big picture
 
-```
- browser / app ──443──► nginx (TLS passthrough, picks by ALPN)
-                         ├─ http/1.1, h2 ──► Apache 127.0.0.1:8443 (TLS)
-                         │                   ├─ /            PHP portal (/opt/aipbx/web)
-                         │                   ├─ /ws          Asterisk WebSocket 127.0.0.1:8088 (SIP for browsers/apps)
-                         │                   ├─ /chat/ws     chat service 127.0.0.1:8086
-                         │                   └─ /provision/  desk phone files (also over plain HTTP, port 80)
-                         └─ no ALPN (TURNS) ──► coturn 5349 (media relay for WebRTC)
- desk phones ──5060 UDP/TCP, 5061 TLS──► Asterisk
- Asterisk ──AMI 127.0.0.1:5038──► portal (live state, originate, reload)
- Asterisk ──CURL / AudioSocket 127.0.0.1:8790/8791──► local AI service
- portal ──sudo──► /usr/local/sbin/aipbx-priv (the only root entry point)
- everything ──► MariaDB, database "asterisk"
-```
+![How the parts of AiPBX connect](img/system-map.svg)
 
 Changes made in the portal are stored in the database first. **Apply** (top bar) writes the Asterisk
 files under `/etc/asterisk/pbx/` and reloads Asterisk (section 5).

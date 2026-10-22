@@ -1,0 +1,35 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+%% @classes
+  desk["`**Desk phone**
+  dials 0 / 000 for an outside line`"]:::client
+  mob["`**Mobile app**
+  contacts in +90…, +1… format`"]:::client
+  web["`**Browser phone**
+  click-to-dial`"]:::client
+
+  subgraph ctx["Per-device context (from-internal-desktop / -mobile / -web)"]
+    direction TB
+    int["`**Internal numbers first**
+    extensions, feature codes, IVR, queues
+    never reach the rules`"]:::core
+    norm["`**Normalization rules**
+    sub-norm-DEVICE-N
+    one pass, most specific pattern wins`"]:::svc
+  end
+
+  out["`**Outbound routes**
+  from-internal-outbound-N
+  patterns, permissions`"]:::core
+  trunk["`**Trunks**
+  failover in route order`"]:::edge
+
+  desk --> int
+  mob --> int
+  web --> int
+  int -->|"not internal"| norm
+  norm -->|"rewritten or unchanged"| out
+  out --> trunk

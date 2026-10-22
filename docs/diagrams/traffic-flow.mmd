@@ -1,0 +1,34 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+%% @classes
+  net["`**Internet**`"]:::client
+  nginx["`**nginx** :443
+  stream: ALPN + PROXY protocol
+  no TLS termination`"]:::edge
+  subgraph apache["Apache + PHP · 127.0.0.1:8443"]
+    direction TB
+    portal["`**/** portal and API`"]:::svc
+    ws["`**/ws**`"]:::svc
+    chatp["`**/chat/…**`"]:::svc
+  end
+  relay["`**PROXY relay**
+  strips the header`"]:::edge
+  coturn["`**coturn**
+  TURNS`"]:::edge
+  ast["`**Asterisk WebSocket**
+  127.0.0.1:8088`"]:::core
+  chat["`**aipbx-chat**
+  127.0.0.1:8086`"]:::svc
+  http["`**Apache :80**
+  Let's Encrypt HTTP-01,
+  redirect to HTTPS`"]:::svc
+
+  net -->|443| nginx
+  nginx -->|"HTTPS / WSS"| apache
+  nginx -->|TURNS| relay --> coturn
+  ws --> ast
+  chatp --> chat
+  net -->|80| http
