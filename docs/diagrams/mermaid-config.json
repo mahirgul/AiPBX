@@ -11,8 +11,8 @@
   },
   "flowchart": {
     "curve": "rounded",
-    "nodeSpacing": 45,
-    "rankSpacing": 55,
+    "nodeSpacing": 30,
+    "rankSpacing": 45,
     "padding": 14,
     "htmlLabels": false,
     "wrappingWidth": 320

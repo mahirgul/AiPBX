@@ -418,6 +418,12 @@ class DocsService
         if (!str_starts_with($svg, '<svg') || preg_match('/<script|<foreignObject|\son\w+\s*=|javascript:/i', $svg)) {
             return '<p><em>' . self::e($alt !== '' ? $alt : $name) . "</em></p>\n";
         }
+        // Fit the column, but never below 80 % of the drawn size: the text would
+        // become unreadable; the figure scrolls sideways instead.
+        $svg = (string) preg_replace_callback('/style="max-width:\s*([\d.]+)px;\s*/', function ($m) {
+            $w = (float) $m[1];
+            return sprintf('style="width: clamp(%dpx, 100%%, %dpx); max-width: none; ', (int) ($w * 0.8), (int) ceil($w));
+        }, $svg, 1);
         $label = $alt !== '' ? ' role="img" aria-label="' . self::e($alt) . '"' : '';
         return '<figure class="doc-diagram"' . $label . '>' . $svg . "</figure>\n";
     }

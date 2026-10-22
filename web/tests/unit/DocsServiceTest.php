@@ -67,6 +67,7 @@ final class DocsServiceTest extends TestCase
         $html = DocsService::render("![System map](img/system-map.svg)");
         $this->assertStringStartsWith('<figure class="doc-diagram" role="img" aria-label="System map"><svg', $html);
         $this->assertStringContainsString('id="diagram-system-map"', $html);
+        $this->assertMatchesRegularExpression('/<svg [^>]*style="width: clamp\(\d+px, 100%, \d+px\); max-width: none; /', $html);
         // Only names under docs/img: no path tricks, no other file types.
         foreach (['![x](img/../../web/config.svg)', '![x](/etc/img/a.svg)', '![x](img/logo.png)'] as $md) {
             $this->assertStringNotContainsString('<svg', DocsService::render($md));

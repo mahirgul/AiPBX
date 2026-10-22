@@ -6,36 +6,34 @@ config:
 ---
 flowchart TB
 %% @classes
-
-  browser["`Browser · mobile app`"]:::client
-  phones["`Desk phones`"]:::client
+  browser["`**Browser, mobile app**`"]:::client
+  phones["`**Desk phones**`"]:::client
 
   nginx["`**nginx** :443
-TLS passthrough, picks by ALPN`"]:::edge
-  coturn["`**coturn** :5349
-WebRTC media relay (TURNS)`"]:::edge
+  picks by ALPN`"]:::edge
+  coturn["`**coturn**
+  TURNS media relay`"]:::edge
 
-  subgraph apache["`Apache · 127.0.0.1:8443`"]
-    portal["`**/** PHP portal
-/opt/aipbx/web`"]:::svc
+  subgraph apache["`Apache 127.0.0.1:8443`"]
+    portal["`**/**
+    portal`"]:::svc
     ws["`**/ws**
-SIP over WebSocket`"]:::svc
-    chatp["`**/chat/ws**`"]:::svc
+    SIP`"]:::svc
+    chatp["`**/chat/ws**
+    chat`"]:::svc
     prov["`**/provision/**
-phone files, also HTTP :80`"]:::svc
+    also HTTP :80`"]:::svc
   end
 
   chat["`**Chat service**
-127.0.0.1:8086`"]:::svc
+  :8086`"]:::svc
   ast["`**Asterisk 22**
-SIP 5060 UDP/TCP · 5061 TLS
-WebSocket 127.0.0.1:8088`"]:::core
+  SIP 5060, TLS 5061`"]:::core
   priv["`**aipbx-priv**
-the only root entry point`"]:::core
-  ai["`**Local AI service**
-127.0.0.1:8790 / 8791`"]:::svc
-  db[("`**MariaDB**
-database asterisk`")]:::db
+  root helper`"]:::core
+  ai["`**Local AI**
+  :8790, :8791`"]:::svc
+  db[("`**MariaDB**`")]:::db
 
   browser -->|443| nginx
   nginx -->|"http/1.1, h2"| apache
@@ -44,8 +42,8 @@ database asterisk`")]:::db
   phones -.->|config| prov
   ws --> ast
   chatp --> chat
-  portal <-->|"AMI 127.0.0.1:5038"| ast
+  portal <-->|"AMI :5038"| ast
   portal -->|sudo| priv
-  ast -->|"CURL, AudioSocket"| ai
+  ast -->|AudioSocket| ai
   portal --> db
   ast -->|"CDR, queue log"| db

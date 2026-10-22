@@ -2,7 +2,7 @@
 config:
   layout: elk
 ---
-flowchart LR
+flowchart TB
 %% @classes
   client["`**Browser / app**
   WebRTC`"]:::client
@@ -17,7 +17,7 @@ flowchart LR
 
   client -->|"TLS 443"| nginx
   nginx -->|"ALPN present"| apache
+  nginx -->|"no ALPN"| coturn
   apache -->|"SIP over WebSocket"| ast
-  nginx -->|"no ALPN (TURNS)"| coturn
-  client <-.->|"media, direct when possible"| ast
   coturn <-.->|"relayed media"| ast
+  client <-.->|"media, direct when possible"| ast
