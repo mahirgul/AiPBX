@@ -54,14 +54,7 @@ development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default 
 
 ## 🌐 2. How Traffic Flows
 
-```
-Internet ──443──▶ nginx (stream: ALPN + PROXY protocol, no TLS termination)
-                    ├─ HTTPS / WSS ──▶ Apache + PHP on 127.0.0.1:8443
-                    │                    ├─ /ws      ──▶ Asterisk WebSocket (127.0.0.1:8088)
-                    │                    └─ /chat/…  ──▶ aipbx-chat (127.0.0.1:8086)
-                    └─ TURNS ─────────▶ coturn (via a local PROXY-protocol-stripping relay)
-Internet ──80───▶ Apache (Let's Encrypt HTTP-01, redirect to HTTPS)
-```
+![How traffic reaches the server](docs/img/traffic-flow.svg)
 
 - nginx stream config: `/etc/nginx/aipbx-stream.conf`
 - Apache virtual host: `/etc/apache2/sites-available/aipbx.conf`
@@ -102,6 +95,12 @@ or from the portal: **System → System Update** (admin only). The update:
 2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
 3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;
 4. verifies services, the portal and every page; on any failure it restores the previous code, database and settings automatically.
+
+**Installations older than 1.50.0** are updated in two steps: `aipbx-update` first installs 1.50.0
+(the bridge release, which carries the old-to-new migrations), then the latest release. It does both
+steps in one run. An installation on 1.34.0–1.34.2 must
+first run `sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php`, see
+[Troubleshooting](docs/troubleshooting.md#system-update-fails-with-code-was-modified-by-hand).
 
 Keep local customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf` files) — they survive updates.
 

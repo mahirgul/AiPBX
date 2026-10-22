@@ -93,7 +93,8 @@ Every update:
   and settings) if anything fails.
 
 Keep customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf`
-files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
+files) so they survive updates. Installations older than 1.50.0 go through the 1.50.0 bridge
+release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTALL.md) for details.
 
 ---
 
@@ -115,6 +116,9 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
   normalization** (keep last N digits + prefix, e.g. extension `7840` → `903704187840`)
 - **Outbound routes** — Asterisk patterns, strip/prepend, trunk failover chain, route groups for PBXes
   with different number formats, copy and ordering, duplicate patterns rejected
+- **Call normalization** — per-device rules (desk phone, mobile app, browser) turn what users dial
+  (`+90…`, `000…`) into one format before the outbound routes; recommended rules per country,
+  a simulator, and one switch to turn them all off
 - **DID routing, time conditions, multi-level IVR**
 - **Queues** — dynamic agent login/logout, static agents, hold music, recording
 - **Feature codes** — `*81`/`*80` queue login/logout, `*72` call forward, `*60` DND, `*43` intercom,
@@ -168,6 +172,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 - **iOS** (SwiftUI, CallKit) — calling with native incoming-call screen, chat, directory, features
 - **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
   one-time link in the invitation e-mail
+- **Same version as the server** — the Android app of release 1.50.1 is 1.50.1 too
 
 <p align="center">
   <img src="docs/img/app_dialer.jpg" width="18%" alt="Dialer">
@@ -234,14 +239,7 @@ files) so they survive updates. See [INSTALL.md](INSTALL.md) for details.
 
 ## 🏗️ Architecture
 
-```
-🌐 Internet ──443──▶ 🛡️ nginx (stream, ALPN, PROXY protocol)
-                        ├─ 🔒 HTTPS / WSS ──▶ ⚙️ Apache + PHP (127.0.0.1:8443)
-                        │                       ├─ 📞 /ws       ──▶ Asterisk WebSocket (127.0.0.1:8088)
-                        │                       └─ 💬 /chat/…   ──▶ aipbx-chat (127.0.0.1:8086)
-                        └─ 🎧 TURNS ─────────▶ coturn
-            ──5060/5061, RTP──▶ ☎️ Asterisk 22 (PJSIP)  ──ODBC──▶ 🗄️ MariaDB (CDR, queue_log)
-```
+![AiPBX architecture](docs/img/system-map.svg)
 
 ```
 AiPBX/
