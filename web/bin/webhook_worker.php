@@ -76,11 +76,17 @@ function sweepCdrAndFaxEvents(): void
             $maxRx = (int)$db->query('SELECT IFNULL(MAX(id), 0) FROM fax_received')->fetchColumn();
             $upsertSetting->execute(['webhook_last_fax_rx_id', (string)$maxRx]);
         } else {
-            $stmt = $db->prepare('SELECT id, caller_id, did_number, pages, received_at FROM fax_received WHERE id > ? ORDER BY id ASC LIMIT 50');
+            // did_extension: the column was never called did_number, so this query
+            // failed on every poll and no fax.received was ever sent. Failed faxes
+            // (no pages, recorded since 1.50.2) are not "received".
+            $stmt = $db->prepare('SELECT id, caller_id, did_extension AS did_number, pages, status, received_at FROM fax_received WHERE id > ? ORDER BY id ASC LIMIT 50');
             $stmt->execute([$lastRxId]);
             $rxRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rxRows as $rx) {
                 $lastRxId = (int)$rx['id'];
+                if ($rx['status'] !== 'SUCCESS') {
+                    continue;
+                }
                 WebhookService::emit('fax.received', [
                     'fax_id'      => $lastRxId,
                     'caller_id'   => $rx['caller_id'],
