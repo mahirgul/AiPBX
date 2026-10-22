@@ -16,6 +16,8 @@ the git tag message and the GitHub Release notes, and installations show it as
   when a report does not carry them), so call quality can be queried from the capture the PBX
   already sends (@shido6, #116). Values outside the column range are dropped instead of failing
   the whole batch.
+- **Plugins:** the sidebar shows a plugin's page as soon as it is enabled (and drops it when it is
+  disabled or removed); it used to need a full page reload.
 - **Documentation diagrams** are drawn with Mermaid (`docs/diagrams/`) and shown as SVG on GitHub,
   in the portal's Help page and on aipbx.bid/docs.
 
