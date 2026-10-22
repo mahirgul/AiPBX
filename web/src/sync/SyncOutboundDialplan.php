@@ -137,9 +137,13 @@ function __syncOutboundDialplanBody() {
             $conf .= buildTrunkCallerIdLine($trunk_chain[0], $is_internal);
             $conf .= buildTrunkCidNormalizeLine($trunk_cid_norm[$trunk_chain[0]['trunk_name']] ?? null);
 
+            // A fax sent from the portal (AIPBX_FAX=1, set in its call file) takes
+            // the same route but is not recorded: the recording is modem noise.
+            $conf .= " same => n,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\"]?norec)\n";
             $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
             $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
             $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
+            $conf .= " same => n(norec),NoOp()\n";
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";
 
             // Try in order: when a trunk returns CHANUNAVAIL/CONGESTION, move on to the next.
@@ -169,7 +173,8 @@ function __syncOutboundDialplanBody() {
                 // D-1: the 'r' option was removed (only 'T' is used).
                 // The carrier's early media (183 Session Progress / announcement / real busy tone)
                 // thus reaches the caller directly instead of being masked by a fake local ring.
-                $conf .= " same => n,Set(JITTERBUFFER(adaptive)=default)\n";
+                // No jitter buffer for a fax: it reshapes the modem's timing.
+                $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)=default))\n";
                 $conf .= " same => n,Dial(PJSIP/{$dial_num}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limit > 0) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";

@@ -591,6 +591,51 @@ final class SyncGeneratorTest extends TestCase
             'the outbound dialplan must not have the r option, which fakes ringing and drowns early media (D-1)');
     }
 
+    public function testFaxCallsAreNotRecordedAndGetNoJitterBuffer(): void
+    {
+        // A fax sent from the portal goes through the outbound route like a
+        // call. Recording it stores modem noise, and a jitter buffer reshapes
+        // the modem's timing; the call file marks it with __AIPBX_FAX=1.
+        syncOutboundDialplan();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+        if (str_contains($conf, 'MixMonitor(${REC_FILE})')) {
+            $this->assertStringContainsString('GotoIf($["${AIPBX_FAX}" = "1"]?norec)', $conf);
+            $this->assertStringContainsString(' same => n(norec),NoOp()', $conf);
+        }
+        $this->assertStringNotContainsString(" same => n,Set(JITTERBUFFER(adaptive)=default)\n", $conf);
+
+        syncGeneralDialplan();
+        $general = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_general.conf');
+        $this->assertStringContainsString('ExecIf($["${AIPBX_FAX}" != "1"]?Set(JITTERBUFFER(adaptive)=default))', $general);
+    }
+
+    public function testFaxNumberIsNeverRecorded(): void
+    {
+        $_SESSION['csrf_token'] = 'test-csrf';
+        $res = RouteService::saveDIDRoute([
+            'csrf_token' => 'test-csrf',
+            'route_id' => 0,
+            'did_number' => '7999',
+            'title' => 'Recorded fax test',
+            'dest_type' => 'fax',
+            'dest_id' => '',
+            'record_call' => 1,
+            'is_active' => 1,
+        ]);
+        try {
+            $this->assertEmpty($res['error'] ?? '');
+            syncInboundDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+            $start = strpos($conf, 'exten => 7999,1,');
+            $this->assertNotFalse($start);
+            $end = strpos($conf, "\n\n", $start);
+            $block = substr($conf, $start, $end === false ? null : $end - $start);
+            $this->assertStringNotContainsString('MixMonitor', $block);
+        } finally {
+            getDB()->exec("DELETE FROM pbx_dids WHERE did_number = '7999' AND title = 'Recorded fax test'");
+        }
+    }
+
     public function testOutboundRouteHasStatusHandlingAndHangupCause(): void
     {
         syncOutboundDialplan();

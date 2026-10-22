@@ -428,6 +428,7 @@ final class CallRoutingContextsTest extends TestCase
         $this->assertStringContainsString("Channel: Local/02129990001@from-internal-desktop/n\n", $content);
         $this->assertStringContainsString("SetVar: FAX_SENDER=7921\n", $content);
         $this->assertStringContainsString("SetVar: FAX_ID={$faxId}\n", $content);
+        $this->assertStringContainsString("SetVar: __AIPBX_FAX=1\n", $content, 'the route must know it carries a fax');
     }
 
     public function testFaxDialContextUsesDesktopContextForSpecificGroup(): void
