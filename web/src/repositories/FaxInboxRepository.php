@@ -69,7 +69,7 @@ class FaxInboxRepository extends BaseRepository
         $total_count = (int)$count_stmt->fetchColumn();
         $total_pages = max(1, (int)ceil($total_count / $perPage));
 
-        $sql = "SELECT id, did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, is_read, email_sent, received_at FROM fax_received{$where} ORDER BY received_at DESC LIMIT $perPage OFFSET $offset";
+        $sql = "SELECT id, did_extension, caller_id, pages, tif_path, pdf_path, file_size, status, error_message, is_read, email_sent, received_at FROM fax_received{$where} ORDER BY received_at DESC LIMIT $perPage OFFSET $offset";
         $stmt = static::db()->prepare($sql);
         $stmt->execute($params);
 

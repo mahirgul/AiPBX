@@ -43,7 +43,8 @@ if ($type === 'sent') {
     $stmt->execute([$fax_id]);
     $fax = $stmt->fetch();
     
-    if (!$fax) {
+    // A fax that failed before its first page is recorded without a file.
+    if (!$fax || (string)$fax['pdf_path'] === '') {
         http_response_code(404);
         die(t('api.err_fax_not_found'));
     }

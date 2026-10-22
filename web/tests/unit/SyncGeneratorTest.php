@@ -317,6 +317,42 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    public function testIncomingFaxHandsTheFailureReasonToTheProcessor(): void
+    {
+        syncGeneralDialplan();
+        $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_general.conf');
+
+        // Filtered: the reason goes into a shell command.
+        $this->assertStringContainsString('Set(FAX_ERR=${FILTER(A-Za-z0-9_ .:/,${FAXOPT(error)}: ${FAXOPT(statusstr)})})', $conf);
+        $this->assertStringContainsString('"${FAXOPT(status)}" "${FAX_ERR}"))', $conf);
+    }
+
+    /**
+     * A fax that failed before its first page has no file. The processor used
+     * to stop there without a trace; it now records the call as FAILED with
+     * the reason. `mysql` is a stub that keeps the SQL it is given.
+     */
+    public function testFailedFaxWithoutAFileIsRecorded(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx-fax-test-' . getmypid();
+        @mkdir($dir);
+        file_put_contents("$dir/mysql", "#!/bin/sh\ncat >> \"$dir/sql\"\n");
+        chmod("$dir/mysql", 0755);
+        @unlink("$dir/sql");
+
+        $script = dirname(__DIR__, 2) . '/bin/process_incoming_fax.sh';
+        $cmd = 'PATH=' . escapeshellarg($dir) . ':/usr/bin:/bin bash ' . escapeshellarg($script)
+            . ' /var/spool/asterisk/fax/20261022_104943_05427821260_1.494.tif 9399 05427821260 0 FAILED '
+            . escapeshellarg('NO_FAX: no fax tone; $(id)') . ' 2>/dev/null';
+        exec($cmd, $out, $rc);
+        $sql = (string)@file_get_contents("$dir/sql");
+        array_map('unlink', glob("$dir/*") ?: []);
+        @rmdir($dir);
+
+        $this->assertSame(0, $rc);
+        $this->assertStringContainsString("VALUES ('9399', '05427821260', 0, '', '', 0, 'FAILED', 'NO_FAX: no fax tone id', 1, 0);", $sql);
+    }
+
     // --- Internal destination numbers ---------------------------------------
 
     private function internalConf(): string

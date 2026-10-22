@@ -38,7 +38,7 @@ class DashboardRepository extends BaseRepository
             }
         }
 
-        $fax_rx_count = (int)$db->query('SELECT COUNT(*) FROM fax_received')->fetchColumn();
+        $fax_rx_count = (int)$db->query("SELECT COUNT(*) FROM fax_received WHERE status = 'SUCCESS'")->fetchColumn();
         $fax_tx_count = (int)$db->query('SELECT COUNT(*) FROM fax_sent')->fetchColumn();
         $cc_count = (int)$db->query('SELECT COUNT(*) FROM cdrs')->fetchColumn();
 

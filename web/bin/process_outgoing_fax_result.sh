@@ -7,6 +7,11 @@
 # ==========================================================
 
 LOGFILE="/var/log/fax_outgoing.log"
+# An unwritable log must not cost the result: every `2>>"$LOGFILE"` below would
+# fail, and with it the database update it is attached to.
+if ! { : >>"$LOGFILE"; } 2>/dev/null; then
+    LOGFILE=/dev/null
+fi
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [FAX-TX] $*" | tee -a "$LOGFILE"
 }
