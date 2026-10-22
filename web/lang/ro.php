@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Ghid de gestionare a trunchiurilor SIP',
     'trunks.help_body' => 'Definește canalele de semnalizare și media dintre PBX și un sistem extern (NEC SV9100), un IP-PBX al operatorului sau trunchiurile unui furnizor SIP.',
     'trunks.help_transport' => 'Transport și port: UDP 5060 este portul implicit de semnalizare VoIP.',
-    'trunks.help_t38' => 'T.38 UDPTL: Permite transmisia fax fără pierderi prin IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax prin IP. Activați-l doar atunci când operatorul acceptă T.38: un operator care îl refuză face ca faxurile să eșueze.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): Testează periodic starea conexiunii trunchiului.',
     'trunks.col_trunk' => 'Trunchi',
     'trunks.col_title' => 'Descriere',

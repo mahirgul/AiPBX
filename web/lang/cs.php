@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Průvodce správou SIP trunků',
     'trunks.help_body' => 'Definuje signalizační a mediální kanály mezi ústřednou a externím systémem (NEC SV9100), IP ústřednou operátora nebo trunky SIP poskytovatele.',
     'trunks.help_transport' => 'Transport a port: UDP 5060 je výchozí signalizační port VoIP.',
-    'trunks.help_t38' => 'T.38 UDPTL: Umožňuje bezztrátový přenos faxu přes IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax přes IP. Zapínejte pouze tehdy, když operátor podporuje T.38: operátor, který jej odmítne, způsobí selhání faxů.',
     'trunks.help_qualify' => 'Qualify (heartbeat): Pravidelně testuje stav připojení trunku.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Popis',

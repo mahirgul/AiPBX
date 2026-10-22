@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Guide de gestion des trunks SIP',
     'trunks.help_body' => 'Définit les canaux de signalisation et de média entre le PBX et un système externe (NEC SV9100), l\'IP-PBX d\'un opérateur ou les trunks d\'un fournisseur SIP.',
     'trunks.help_transport' => 'Transport et port : UDP 5060 est le port de signalisation VoIP par défaut.',
-    'trunks.help_t38' => 'T.38 UDPTL : permet une transmission de fax sans perte sur IP.',
+    'trunks.help_t38' => 'T.38 UDPTL : fax sur IP. Activez-le uniquement si l\'opérateur prend en charge le T.38 : un opérateur qui le refuse fait échouer les fax.',
     'trunks.help_qualify' => 'Qualify (Heartbeat) : teste périodiquement l\'état de la connexion du trunk.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Description',

@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Guida alla gestione dei trunk SIP',
     'trunks.help_body' => 'Definisce i canali di segnalazione e media tra il PBX e un sistema esterno (NEC SV9100), un IP-PBX dell\'operatore o i trunk di un provider SIP.',
     'trunks.help_transport' => 'Trasporto e porta: UDP 5060 è la porta di segnalazione VoIP predefinita.',
-    'trunks.help_t38' => 'T.38 UDPTL: abilita la trasmissione fax senza perdite su IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax su IP. Attivalo solo quando l\'operatore supporta T.38: un operatore che lo rifiuta fa fallire i fax.',
     'trunks.help_qualify' => 'Qualify (heartbeat): verifica periodicamente lo stato di connessione del trunk.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Descrizione',

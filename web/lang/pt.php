@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Guia de gestão de troncos SIP',
     'trunks.help_body' => 'Define os canais de sinalização e de media entre o PBX e um sistema externo (NEC SV9100), um IP-PBX de operador ou troncos de fornecedores SIP.',
     'trunks.help_transport' => 'Transporte e porta: UDP 5060 é a porta de sinalização VoIP predefinida.',
-    'trunks.help_t38' => 'T.38 UDPTL: permite a transmissão de fax sem perdas sobre IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax sobre IP. Ative-o apenas quando o operador suportar T.38: um operador que o recusa faz com que os faxes falhem.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): testa periodicamente o estado da ligação do tronco.',
     'trunks.col_trunk' => 'Tronco',
     'trunks.col_title' => 'Descrição',

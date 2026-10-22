@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Vodič za upravljanje SIP trankovima',
     'trunks.help_body' => 'Definiše signalizacione i medijske kanale između PBX-a i eksterne centrale (NEC SV9100), IP-PBX-a operatera ili SIP trankova provajdera.',
     'trunks.help_transport' => 'Transport i port: UDP 5060 je podrazumevani VoIP signalizacioni port.',
-    'trunks.help_t38' => 'T.38 UDPTL: Omogućava prenos faksa preko IP-a bez gubitaka.',
+    'trunks.help_t38' => 'T.38 UDPTL: faks preko IP-a. Uključite samo kada operater podržava T.38: operater koji ga odbija uzrokuje neuspeh faksova.',
     'trunks.help_qualify' => 'Qualify (heartbeat): Periodično proverava status veze sa trankom.',
     'trunks.col_trunk' => 'Trank',
     'trunks.col_title' => 'Opis',

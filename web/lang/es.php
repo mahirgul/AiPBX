@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Guía de gestión de troncales SIP',
     'trunks.help_body' => 'Define los canales de señalización y medios entre la PBX y un sistema externo (NEC SV9100), la IP-PBX del operador o las troncales de un proveedor SIP.',
     'trunks.help_transport' => 'Transporte y puerto: UDP 5060 es el puerto de señalización VoIP predeterminado.',
-    'trunks.help_t38' => 'T.38 UDPTL: permite la transmisión de fax sin pérdidas sobre IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax sobre IP. Actívelo solo cuando el operador admita T.38: un operador que lo rechaza hace que los faxes fallen.',
     'trunks.help_qualify' => 'Qualify (latido): comprueba periódicamente el estado de la conexión de la troncal.',
     'trunks.col_trunk' => 'Troncal',
     'trunks.col_title' => 'Descripción',
