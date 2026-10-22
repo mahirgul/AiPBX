@@ -7,6 +7,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.50.5
 
+Fax: uploads work after an update, T.38 can pass the firewall, and outgoing faxes get their
+options right. Verified on a live system: two faxes sent to external fax machines.
+
 - **Fax uploads no longer fail with "Permission denied" after an update.** The year directory
   (`/var/www/faxes/sent/2026`) was created without group write, and once an update handed it to
   `asterisk` the portal could not save the uploaded PDF. The installer makes every fax directory
