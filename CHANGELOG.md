@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.4
+
+- **Sending faxes works again on Ubuntu 26.04.** The new AppArmor profile for Ghostscript
+  lets it open files only under HOME, /mnt, /media and /tmp, so every outgoing fax failed at the
+  PDF → TIFF conversion (and the TIFF → PDF fallback for received faxes failed the same way).
+  The installer now allows the two fax directories in `/etc/apparmor.d/local/gs`.
+
 ## 1.50.3
 
 Plugins: uploading a custom plugin works again, and the worker and Asterisk follow plugin
