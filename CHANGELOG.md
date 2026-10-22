@@ -11,6 +11,17 @@ the git tag message and the GitHub Release notes, and installations show it as
   1.34.0 – 1.34.2 could not update at all (their installer made `web/bin/aipbx_ops.php`
   executable); on those, run `sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php` once
   (see docs/troubleshooting.md).
+- **Incoming faxes that fail are no longer lost without a trace:** a fax that failed before its
+  first page left no file and no record. It is now in the Fax Inbox as *FAILED* with Asterisk's
+  reason (`FAXOPT(error)`), without view/download buttons; dashboard and daily summary count only
+  faxes that arrived. An unwritable fax log no longer drops the database write.
+- **T.38 is off for new trunks:** with a carrier that refuses T.38 every incoming fax failed (the
+  fallback to audio does not recover: "T.30 Non-ECM carrier not found"); reproduced on a live
+  system, where plain G.711 received the same fax. Existing trunks keep their setting; see
+  docs/troubleshooting.md, "Incoming faxes fail".
+- **Webhooks:** `fax.received` was never sent (the query used a column that does not exist), and
+  once a received fax existed it also stopped the `fax.sent` / `fax.failed` events. Fixed;
+  `fax.received` is sent only for faxes that arrived.
 - **Signaling capture keeps the RTCP counters:** packet loss (count and RFC 3550 fraction) and
   jitter of the worst report block are stored in `pbx_signaling_events` (`rtcp_*` columns, `NULL`
   when a report does not carry them), so call quality can be queried from the capture the PBX
