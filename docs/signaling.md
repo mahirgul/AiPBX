@@ -58,8 +58,31 @@ at all is the `hep.conf` switch above.
 
 **Storage** — `pbx_signaling_events`: `ts, call_id, method, proto,
 transport, src, dst, from_uri, to_uri, cseq, status_code, first_line, line,
-capture_id`. Message text is kept in `first_line`/`line` (bounded); phones
-still show in `from_uri`. Rows are pruned by the retention setting.
+capture_id, rtcp_ssrc, rtcp_lost, rtcp_fraction_lost, rtcp_jitter`. Message
+text is kept in `first_line`/`line` (bounded); phones still show in
+`from_uri`. Rows are pruned by the retention setting.
+
+**RTCP counters** — an RTP stream reports its own quality. `res_hep_rtcp`
+sends each Sender/Receiver Report through the same datagram path, and the
+daemon keeps the worst report block of each report in four columns, so a
+quality question can be answered from the stream the PBX already sent:
+
+| column               | what it is                                                     |
+|----------------------|----------------------------------------------------------------|
+| `rtcp_ssrc`          | source SSRC of the worst report block                          |
+| `rtcp_lost`          | that block's cumulative packet count                            |
+| `rtcp_fraction_lost` | RFC 3550's 8-bit fraction (255 = 100 %), exactly as reported    |
+| `rtcp_jitter`        | `ia_jitter`, in RTP timestamp units — **not** milliseconds      |
+
+The sample rate is not part of a report, so jitter is stored raw: converting
+it to milliseconds would be a guess dressed up as a measurement. `NULL` means
+the report did not carry that counter; it is never stored as `0`, which would
+look healthy. SIP rows leave all four `NULL`.
+
+One report can carry several blocks (one per source) and a call is as good as
+its lossiest stream, so the block with the highest `fraction_lost` is the one
+kept. The full JSON body is still not stored — the counters are the part a
+decision needs.
 
 ## The Echo box (AI → Dialplan editor)
 
