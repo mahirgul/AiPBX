@@ -11,6 +11,13 @@ the git tag message and the GitHub Release notes, and installations show it as
   1.34.0 – 1.34.2 could not update at all (their installer made `web/bin/aipbx_ops.php`
   executable); on those, run `sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php` once
   (see docs/troubleshooting.md).
+- **Signaling capture keeps the RTCP counters:** packet loss (count and RFC 3550 fraction) and
+  jitter of the worst report block are stored in `pbx_signaling_events` (`rtcp_*` columns, `NULL`
+  when a report does not carry them), so call quality can be queried from the capture the PBX
+  already sends (@shido6, #116). Values outside the column range are dropped instead of failing
+  the whole batch.
+- **Documentation diagrams** are drawn with Mermaid (`docs/diagrams/`) and shown as SVG on GitHub,
+  in the portal's Help page and on aipbx.bid/docs.
 
 ## 1.50.1
 

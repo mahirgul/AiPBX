@@ -181,11 +181,17 @@ def sip_summary(text: str) -> Optional[dict]:
 
 
 def _rtcp_int(value) -> Optional[int]:
-    """An RTCP counter as an int; strings are accepted (Asterisk sends some)."""
+    """An RTCP counter as an int; strings are accepted (Asterisk sends some).
+
+    Asterisk's counters are unsigned 32-bit, and so are the columns. Anything
+    outside that range did not come from Asterisk and is dropped (None): one
+    value the column refuses would lose the whole batch, SIP rows included.
+    """
     try:
-        return int(float(value))
-    except (TypeError, ValueError):
+        number = int(float(value))
+    except (TypeError, ValueError, OverflowError):
         return None
+    return number if 0 <= number <= 0xFFFFFFFF else None
 
 
 def rtcp_summary(text: str) -> Optional[dict]:
