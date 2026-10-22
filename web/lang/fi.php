@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'SIP-runkolinjojen hallinnan opas',
     'trunks.help_body' => 'Määrittää signalointi- ja mediakanavat PBX:n ja ulkoisen järjestelmän (NEC SV9100), operaattorin IP-PBX:n tai SIP-palveluntarjoajan runkolinjojen välille.',
     'trunks.help_transport' => 'Siirtoprotokolla ja portti: UDP 5060 on VoIP-signaloinnin oletusportti.',
-    'trunks.help_t38' => 'T.38 UDPTL: Mahdollistaa häviöttömän faksinsiirron IP-verkossa.',
+    'trunks.help_t38' => 'T.38 UDPTL: faksi IP-verkon kautta. Kytke päälle vain silloin, kun operaattori tukee T.38:aa: sen hylkäävä operaattori aiheuttaa faksien epäonnistumisen.',
     'trunks.help_qualify' => 'Qualify (sykesignaali): Runkolinjan yhteyden tila testataan säännöllisesti.',
     'trunks.col_trunk' => 'Runkolinja',
     'trunks.col_title' => 'Kuvaus',

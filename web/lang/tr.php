@@ -140,7 +140,7 @@ return [
     'trunks.help_title' => 'SIP Dış Hat Yönetimi Rehberi',
     'trunks.help_body' => 'Dış santral (NEC SV9100), Türk Telekom IP-PBX veya operatör SIP hatları ile Santral arasındaki sinyalleşme ve ses taşıyıcı kanallarını tanımlar.',
     'trunks.help_transport' => 'Transport & Port: UDP 5060 varsayılan VoIP sinyalleşmesidir.',
-    'trunks.help_t38' => 'T.38 UDPTL: Faks iletiminin IP ağı üzerinden kayıpsız yapılmasını sağlar.',
+    'trunks.help_t38' => 'T.38 UDPTL: IP üzerinden faks. Yalnızca operatör T.38 desteklediğinde açın: bunu reddeden bir operatör faksların başarısız olmasına neden olur.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): Dış hat bağlantı durumunu düzenli aralıklarla test eder.',
     'trunks.col_trunk' => 'Dış Hat',
     'trunks.col_title' => 'Açıklama',

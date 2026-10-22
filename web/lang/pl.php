@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Przewodnik po zarządzaniu trunkami SIP',
     'trunks.help_body' => 'Definiuje kanały sygnalizacji i mediów między centralą a systemem zewnętrznym (NEC SV9100), centralą IP operatora lub trunkami dostawcy SIP.',
     'trunks.help_transport' => 'Transport i port: UDP 5060 to domyślny port sygnalizacji VoIP.',
-    'trunks.help_t38' => 'T.38 UDPTL: umożliwia bezstratną transmisję faksów przez IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: faks przez IP. Włączaj tylko wtedy, gdy operator obsługuje T.38: operator, który go odrzuca, powoduje błędy faksów.',
     'trunks.help_qualify' => 'Qualify (heartbeat): okresowo sprawdza stan połączenia trunku.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Opis',

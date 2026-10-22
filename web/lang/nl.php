@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Gids SIP-trunkbeheer',
     'trunks.help_body' => 'Definieert de signalerings- en mediakanalen tussen de PBX en een extern systeem (NEC SV9100), een IP-PBX van een provider of trunks van een SIP-provider.',
     'trunks.help_transport' => 'Transport & poort: UDP 5060 is de standaard VoIP-signaleringspoort.',
-    'trunks.help_t38' => 'T.38 UDPTL: maakt verliesvrije faxoverdracht via IP mogelijk.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax via IP. Schakel dit alleen in wanneer de provider T.38 ondersteunt: een provider die dit weigert, zorgt dat faxen mislukken.',
     'trunks.help_qualify' => 'Qualify (heartbeat): test periodiek de verbindingsstatus van de trunk.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Omschrijving',

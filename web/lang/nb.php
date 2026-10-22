@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Veiledning for SIP-trunker',
     'trunks.help_body' => 'Definerer signalerings- og mediekanalene mellom PBX-en og et eksternt system (NEC SV9100), operatørens IP-PBX eller trunker fra SIP-leverandører.',
     'trunks.help_transport' => 'Transport og port: UDP 5060 er standardporten for VoIP-signalering.',
-    'trunks.help_t38' => 'T.38 UDPTL: Gir tapsfri faksoverføring over IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: faks over IP. Slå det bare på når operatøren støtter T.38: en operatør som avviser det, gjør at fakser feiler.',
     'trunks.help_qualify' => 'Qualify (hjerteslag): Tester trunk-tilkoblingen med jevne mellomrom.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Beskrivelse',

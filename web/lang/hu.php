@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'SIP trönkök kezelése – útmutató',
     'trunks.help_body' => 'Meghatározza a jelzési és médiacsatornákat a PBX és egy külső rendszer (NEC SV9100), szolgáltatói IP-PBX vagy SIP-szolgáltatói trönkök között.',
     'trunks.help_transport' => 'Átvitel és port: az UDP 5060 az alapértelmezett VoIP jelzési port.',
-    'trunks.help_t38' => 'T.38 UDPTL: veszteségmentes faxátvitelt tesz lehetővé IP-n keresztül.',
+    'trunks.help_t38' => 'T.38 UDPTL: fax IP-n keresztül. Csak akkor kapcsolja be, ha a szolgáltató támogatja a T.38-at: az ezt elutasító szolgáltató a faxok sikertelenségét okozza.',
     'trunks.help_qualify' => 'Qualify (szívverés): rendszeresen ellenőrzi a trönkkapcsolat állapotát.',
     'trunks.col_trunk' => 'Trönk',
     'trunks.col_title' => 'Leírás',

@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'Hilfe zur SIP-Trunk-Verwaltung',
     'trunks.help_body' => 'Definiert die Signalisierungs- und Medienkanäle zwischen der PBX und einem externen System (NEC SV9100), einer Carrier-IP-PBX oder SIP-Provider-Trunks.',
     'trunks.help_transport' => 'Transport & Port: UDP 5060 ist der Standard-Port für VoIP-Signalisierung.',
-    'trunks.help_t38' => 'T.38 UDPTL: Ermöglicht verlustfreie Faxübertragung über IP.',
+    'trunks.help_t38' => 'T.38 UDPTL: Fax über IP. Nur einschalten, wenn der Carrier T.38 unterstützt: Ein Carrier, der dies ablehnt, lässt Faxe fehlschlagen.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): Prüft regelmäßig den Verbindungsstatus des Trunks.',
     'trunks.col_trunk' => 'Trunk',
     'trunks.col_title' => 'Beschreibung',

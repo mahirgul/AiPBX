@@ -87,7 +87,7 @@ return [
     'trunks.help_title' => 'SIP trankların idarə edilməsi bələdçisi',
     'trunks.help_body' => 'PBX ilə xarici sistem (NEC SV9100), operator IP-PBX-i və ya SIP provayder trankları arasında siqnal və media kanallarını müəyyən edir.',
     'trunks.help_transport' => 'Nəqliyyat və port: UDP 5060 standart VoIP siqnal portudur.',
-    'trunks.help_t38' => 'T.38 UDPTL: IP üzərindən itkisiz faks ötürülməsini təmin edir.',
+    'trunks.help_t38' => 'T.38 UDPTL: IP üzərindən faks. Yalnız operator T.38-i dəstəklədikdə aktiv edin: bunu rədd edən operator faksların uğursuz olmasına səbəb olur.',
     'trunks.help_qualify' => 'Qualify (Heartbeat): Trank bağlantısının vəziyyətini dövri olaraq yoxlayır.',
     'trunks.col_trunk' => 'Trank',
     'trunks.col_title' => 'Təsvir',
