@@ -591,6 +591,28 @@ final class SyncGeneratorTest extends TestCase
             'the outbound dialplan must not have the r option, which fakes ringing and drowns early media (D-1)');
     }
 
+    public function testCallFromATrunkIsNotSentBackThroughIt(): void
+    {
+        // A number the PBX behind a trunk routes to us and we route back looped
+        // (thousands of calls an hour on production, October 2026).
+        $db = getDB();
+        $db->prepare("INSERT INTO pbx_outbound_routes (route_name, match_pattern, is_active, route_group, trunks_json) VALUES ('Loop', '_5XXX', 1, 1, ?)")
+           ->execute([json_encode([['trunk_name' => Fixtures::TRUNK_NAME, 'callerid_override' => '']])]);
+        try {
+            syncOutboundDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+            $t = Fixtures::TRUNK_NAME;
+            $this->assertStringContainsString(
+                ' same => n,GotoIf($["${CF_HOPS}" = "" & ${REGEX("^PJSIP/' . preg_quote($t, '/') . '-[0-9a-f]+$" ${CHANNEL(name)})}]?hairpin1)', $conf);
+            $this->assertMatchesRegularExpression('/n\(hairpin1\),NoOp\([^\n]*\)\n same => n,Set\(DIALSTATUS=CONGESTION\)\n same => n\(afterhp1\),NoOp\(\)/', $conf);
+            // the guard comes before the Dial it skips
+            $block = substr($conf, strpos($conf, 'exten => _5XXX,1'));
+            $this->assertLessThan(strpos($block, 'Dial(PJSIP/'), strpos($block, '?hairpin1)'));
+        } finally {
+            $db->exec("DELETE FROM pbx_outbound_routes WHERE route_name = 'Loop'");
+        }
+    }
+
     public function testFaxCallsAreNotRecordedAndGetNoJitterBuffer(): void
     {
         // A fax sent from the portal goes through the outbound route like a

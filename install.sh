@@ -1434,12 +1434,31 @@ done
 # Voicemail/recording files created by Asterisk are group-writable (UMask 0002)
 # so the portal (www-data, group asterisk) can delete voicemail; with 0022
 # deletion silently failed.
+# Asterisk starts after MariaDB: started together (boot, or needrestart after
+# a library update) Asterisk came up first, cdr_adaptive_odbc found no
+# connection and wrote no CDRs until the next Asterisk restart (11 hours on
+# production, 2026-10-21).
 mkdir -p /etc/systemd/system/asterisk.service.d
 cat > /etc/systemd/system/asterisk.service.d/aipbx.conf << 'UNIT'
+[Unit]
+Wants=mariadb.service
+After=mariadb.service
+
 [Service]
 UMask=0002
 UNIT
 systemctl daemon-reload
+
+# needrestart (unattended-upgrades) restarted Asterisk after library updates
+# at 06:35 and dropped the calls in progress. Asterisk is left out; it picks
+# up new libraries on the next update or reboot.
+if [[ -d /etc/needrestart ]]; then
+    mkdir -p /etc/needrestart/conf.d
+    cat > /etc/needrestart/conf.d/aipbx.conf << 'NR'
+# Managed by AiPBX install.sh: never restart Asterisk automatically (drops calls).
+$nrconf{override_rc}{qr(^asterisk\.service$)} = 0;
+NR
+fi
 
 # A restart can fail although Asterisk comes up a moment later through the
 # unit's Restart=on-failure (seen once on an update: the new process got a
