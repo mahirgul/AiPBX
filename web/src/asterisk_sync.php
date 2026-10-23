@@ -304,6 +304,7 @@ require_once __DIR__ . '/sync/SyncFeatureCodes.php';
 require_once __DIR__ . '/sync/SyncInternalNumbers.php';
 require_once __DIR__ . '/sync/SyncRtpSettings.php';
 require_once __DIR__ . '/sync/SyncUdptlSettings.php';
+require_once __DIR__ . '/sync/SyncSignaling.php';
 require_once __DIR__ . '/sync/SyncRingGroups.php';
 require_once __DIR__ . '/sync/SyncConferences.php';
 require_once __DIR__ . '/sync/SyncVoicemail.php';
@@ -383,6 +384,7 @@ function syncEverything() {
     syncAsteriskMOH();
     syncRtpSettings();
     syncUdptlSettings();
+    syncSignalingCapture();
 
     return true;
 }

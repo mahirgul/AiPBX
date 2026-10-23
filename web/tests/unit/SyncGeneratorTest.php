@@ -613,6 +613,28 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    public function testSignalingCaptureSwitchAndTheOldPluginFileIsRemoved(): void
+    {
+        $db = getDB();
+        $set = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('signaling_capture', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        // The retired plugin's file sent the capture to 127.0.0.1:9060, where nothing listens.
+        file_put_contents(ASTERISK_PBX_DIR . '/hep_plugin_signaling-capture.conf', "[general]\ncapture_address = 127.0.0.1:9060\n");
+        try {
+            $set->execute(['1']);
+            syncSignalingCapture();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/hep_aipbx.conf');
+            $this->assertStringContainsString("[general]\nenabled = yes\n", $conf);
+            $this->assertStringNotContainsString('capture_address', $conf, 'always the local daemon of hep.conf');
+            $this->assertFileDoesNotExist(ASTERISK_PBX_DIR . '/hep_plugin_signaling-capture.conf');
+
+            $set->execute(['0']);
+            syncSignalingCapture();
+            $this->assertStringContainsString('enabled = no', (string) file_get_contents(ASTERISK_PBX_DIR . '/hep_aipbx.conf'));
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key = 'signaling_capture'");
+        }
+    }
+
     public function testFaxCallsAreNotRecordedAndGetNoJitterBuffer(): void
     {
         // A fax sent from the portal goes through the outbound route like a

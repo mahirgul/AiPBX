@@ -45,6 +45,21 @@ The texts are e-mail templates (*E-mail → Templates*: Health alarm, Health bac
 summary). A server that is completely down cannot send an e-mail itself: watch it from outside
 for that (e.g. a monitoring service that opens the sign-in page).
 
+## Alert bell
+
+Administrators have a **bell** in the top bar. Its number is how many problems are open now (red when one
+has failed); a dot marks changes since you last opened it. It lists:
+
+- every check that is *warning* or *failed* now;
+- problems other parts of AiPBX report (plugins, see [Plugin development](plugin-development.md#d-other-hooks));
+- **the alarm path itself**: no recipient chosen ("Alarm e-mails go to nobody"), or no check has run for
+  30 minutes ("Health checks are not running", i.e. the cron job stopped);
+- below, the changes of the last 7 days (went wrong / back to normal).
+
+It shows state, not a log: an item goes away by itself when its problem is fixed, nothing has to be
+cleared. It works without e-mail, so a PBX whose mail is not set up or broken still shows its problems.
+The e-mails above are unchanged.
+
 ## Daily summary
 
 At the chosen time (default 08:00), to the same people:
