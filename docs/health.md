@@ -19,6 +19,8 @@ managers: yesterday's calls and faxes and the state of every check.
 | Pending changes | 1 h | changes not applied for over an hour |
 | Outgoing faxes | 1 h | faxes waiting to be sent for over an hour |
 | Call records | 15 min | Asterisk has handled calls since it started (15 min or more ago) but none reached the call history — the CDR database connection is broken; restart Asterisk |
+| Call quality | 5 min | a trunk or extension is losing audio (from RTCP, see [Call quality](call-quality.md)); not used while signaling capture is off |
+| Other alerts | 5 min | a plugin reports a problem in the alert bell, so it is e-mailed too |
 | DHCP / TFTP / FTP | 15 min | switched on, but the service does not run |
 | Server address | 60 min | a stored address (server, phones, coturn, mDNS) is not this server's any more: see [Network settings](network-settings.md#when-the-servers-ip-address-changed) |
 | Local AI service | 15 min | installed and enabled, but not running |
@@ -51,14 +53,14 @@ Administrators have a **bell** in the top bar. Its number is how many problems a
 has failed); a dot marks changes since you last opened it. It lists:
 
 - every check that is *warning* or *failed* now;
-- problems other parts of AiPBX report (plugins, see [Plugin development](plugin-development.md#d-other-hooks));
+- problems plugins report (see [Plugin development](plugin-development.md#d-other-hooks)), e-mailed through the check *Other alerts*;
 - **the alarm path itself**: no recipient chosen ("Alarm e-mails go to nobody"), or no check has run for
   30 minutes ("Health checks are not running", i.e. the cron job stopped);
 - below, the changes of the last 7 days (went wrong / back to normal).
 
 It shows state, not a log: an item goes away by itself when its problem is fixed, nothing has to be
-cleared. It works without e-mail, so a PBX whose mail is not set up or broken still shows its problems.
-The e-mails above are unchanged.
+cleared. Everything in it is also e-mailed to the recipients above when they are set; the bell works
+without e-mail, so a PBX whose mail is not set up or broken still shows its problems.
 
 ## Daily summary
 

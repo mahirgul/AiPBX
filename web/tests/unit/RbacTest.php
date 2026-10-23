@@ -44,6 +44,7 @@ final class RbacTest extends TestCase
         'ai_apps',
         'assistant',
         'health',
+        'call_quality',
     ];
 
     protected function setUp(): void

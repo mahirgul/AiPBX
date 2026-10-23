@@ -28,6 +28,8 @@ final class HealthChecks
         'pending_changes' => 60,
         'fax_queue' => 60,
         'call_records' => 15,
+        'call_quality' => 5,
+        'alerts' => 5,
         'network_services' => 15,
         'server_address' => 60,
         'local_ai' => 15,
@@ -56,6 +58,8 @@ final class HealthChecks
                 'pending_changes' => self::pendingChanges(),
                 'fax_queue' => self::faxQueue(),
                 'call_records' => self::callRecords(),
+                'call_quality' => self::callQuality(),
+                'alerts' => self::alerts(),
                 'network_services' => self::networkServices(),
                 'server_address' => self::serverAddress(),
                 'local_ai' => self::localAi(),
@@ -244,6 +248,33 @@ final class HealthChecks
             return ['fail', sprintf(t('health.msg_cdr_missing'), $processed, self::duration($uptime))];
         }
         return ['ok', sprintf(t('health.msg_cdr_ok'), $records, self::duration($uptime))];
+    }
+
+    /** Trunks/extensions losing audio now (CallQualityService, from RTCP). */
+    private static function callQuality(): array
+    {
+        if (getSystemSetting('signaling_capture', '0') !== '1') {
+            return ['off', t('health.msg_cq_off')];
+        }
+        require_once dirname(__DIR__) . '/CallQualityService.php';
+        $problems = CallQualityService::problems();
+        if (!$problems) {
+            return ['ok', t('health.msg_cq_ok')];
+        }
+        $lines = array_map(fn($g) => CallQualityService::alertTitle($g) . ': ' . CallQualityService::alertMessage($g), $problems);
+        return ['warn', implode(' ', $lines)];
+    }
+
+    /** Problems other parts raised in the alert bell (plugins), so they are e-mailed too. */
+    private static function alerts(): array
+    {
+        require_once dirname(__DIR__) . '/NoticeService.php';
+        $open = NoticeService::openNotices();
+        if (!$open) {
+            return ['ok', t('health.msg_alerts_ok')];
+        }
+        $fail = in_array('fail', array_column($open, 'severity'), true);
+        return [$fail ? 'fail' : 'warn', implode('; ', array_map(fn($n) => $n['title'] . ($n['message'] !== '' ? ': ' . $n['message'] : ''), $open))];
     }
 
     private static function faxQueue(): array

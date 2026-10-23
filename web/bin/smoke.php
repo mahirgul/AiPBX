@@ -186,6 +186,7 @@ function check_rbac(): void
         '/mail-settings',
         '/system-update',
         '/health',
+        '/call-quality',
     ];
     $n = 0;
 

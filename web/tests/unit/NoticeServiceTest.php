@@ -115,4 +115,23 @@ final class NoticeServiceTest extends TestCase
         NoticeService::raise('x:2', 'warn', 'From a disabled plugin', '', '', (string) $off[0]['slug']);
         $this->assertNotContains('notice:x:2', $this->keys(NoticeService::forUser(self::USER)['open']));
     }
+
+    public function testTheAlertsCheckIsNotListedTwice(): void
+    {
+        // "alerts" only carries raised problems to the e-mails; the bell lists them one by one.
+        NoticeService::raise('p:1', 'warn', 'From a plugin');
+        getDB()->exec("INSERT INTO health_checks (check_key, status, message, checked_at, changed_at) VALUES ('alerts', 'warn', 'From a plugin', NOW(), NOW())");
+        $keys = $this->keys(NoticeService::forUser(self::USER)['open']);
+        $this->assertContains('notice:p:1', $keys);
+        $this->assertNotContains('health:alerts', $keys);
+        $this->assertSame(['p:1'], array_column(NoticeService::openNotices(), 'notice_key'));
+    }
+
+    public function testCallQualityLinksToItsPage(): void
+    {
+        getDB()->exec("INSERT INTO health_checks (check_key, status, message, checked_at, changed_at) VALUES ('call_quality', 'warn', 'Trunk VOIP is losing audio', NOW(), NOW())");
+        $open = NoticeService::forUser(self::USER)['open'];
+        $cq = array_values(array_filter($open, fn($i) => $i['key'] === 'health:call_quality'));
+        $this->assertSame('/call-quality', $cq[0]['link']);
+    }
 }

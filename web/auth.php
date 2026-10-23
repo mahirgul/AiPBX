@@ -182,6 +182,7 @@ function getModuleKeyForPage($page = null) {
         'mail_settings.php'         => 'mail_settings',
         'file_storage.php'          => 'file_storage',
         'health.php'                => 'health',
+        'call_quality.php'          => 'call_quality',
     ];
     if (str_starts_with((string)$page, 'plugin_') && str_ends_with((string)$page, '.php')) {
         return 'plugins';
@@ -255,7 +256,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'ai_cloud': holds the API keys of paid cloud AI services.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality'], true)) {
         return $role === 'admin';
     }
 

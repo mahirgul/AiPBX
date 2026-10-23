@@ -64,6 +64,7 @@ Optional applications and integrations bundled with AiPBX (`plugins/`: official 
 | 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | ✨ [Dialplan editor / AI assistant (Community plugin, @shido6)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
 | 📡 [Signaling capture](signaling.md) | PBX settings → Signaling | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, and retention (off by default) |
+| 📈 [Call quality](call-quality.md) | Reports → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |
 
 ## 📱 Mobile apps
 

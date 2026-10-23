@@ -174,10 +174,10 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
   your own forms; return `['message' => ...]`, `['error' => ...]` or `[]`.
 - **Alerts in the bell** (AiPBX 1.50.8+): `NoticeService::raise($key, 'warn'|'fail', $title, $message, $link, $slug)`
   opens or updates one problem, `NoticeService::resolve($key)` ends it. Raise the same key on every pass
-  while the problem lasts and resolve it when it is gone; the bell shows it to administrators until then.
+  while the problem lasts and resolve it when it is gone; the bell shows it to administrators until then,
+  and the health check *Other alerts* e-mails it to the health recipients.
   Prefix keys with your slug, pass your slug as the last argument (a disabled plugin's alerts are hidden),
-  and check `class_exists('NoticeService')` for older AiPBX versions. Example: the
-  [Call Quality plugin](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/call-quality).
+  and check `class_exists('NoticeService')` for older AiPBX versions.
 
 ---
 

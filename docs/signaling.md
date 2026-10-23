@@ -7,7 +7,7 @@
 
 AiPBX ships an optional signaling pipeline: what crosses the SIP stack can
 be captured, kept on this server and read by the dialplan editor's Echo box
-and the [Call Quality plugin](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/call-quality).
+and [Call quality](call-quality.md).
 Capture is opt-in and off by default, so a normal installation captures
 nothing and pays no overhead.
 
@@ -94,6 +94,6 @@ leaves this server.
 ## What stays on this server
 
 Captured events never leave the machine: `pbx_signaling_events` is read by
-the dialplan editor's Echo box and by plugins on this server. Sending
+the dialplan editor's Echo box and Call quality, on this server. Sending
 captures to an outside Homer server is not offered: Asterisk's `res_hep` has
 one capture address, and pointing it elsewhere stops the local capture.
