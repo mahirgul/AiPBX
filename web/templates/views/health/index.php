@@ -70,12 +70,22 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
 
 <div class="card">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-envelope u-primary"></i> <?php echo t('health.alarms_title'); ?></div>
+        <div class="card-title"><i class="fas fa-bell u-primary"></i> <?php echo t('health.alarms_title'); ?></div>
     </div>
     <div style="padding: 0 20px 20px;">
-        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.alarms_help'); ?></p>
+        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.alarms_notice'); ?></p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-chart-column u-primary"></i> <?php echo t('health.summary_title'); ?></div>
+    </div>
+    <div style="padding: 0 20px 20px;">
+        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.summary_help'); ?></p>
         <div class="form-group">
             <label class="form-label"><?php echo t('health.recipients'); ?></label>
+            <small class="u-hint u-fs-11" style="display: block; margin-bottom: 6px;"><?php echo t('health.recipients_help'); ?></small>
             <?php if ($users === []): ?>
                 <p class="u-muted u-fs-12"><?php echo t('health.no_users_with_email'); ?></p>
             <?php endif; ?>
@@ -86,30 +96,10 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
                 </label>
             <?php endforeach; ?>
         </div>
-        <div class="u-grid-2">
-            <div class="form-group">
-                <label class="form-label"><?php echo t('health.extra_emails'); ?></label>
-                <textarea name="health_extra_emails" class="form-control" rows="2" placeholder="it@example.com"><?php echo $h($settings['health_extra_emails']); ?></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label"><?php echo t('health.repeat'); ?></label>
-                <select name="health_repeat_hours" class="form-control">
-                    <?php foreach (HealthService::REPEAT_HOURS as $hrs): ?>
-                        <option value="<?php echo $hrs; ?>" <?php echo (int) $settings['health_repeat_hours'] === $hrs ? 'selected' : ''; ?>><?php echo $h(sprintf(t('health.repeat_hours'), $hrs)); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <small class="u-hint u-fs-11"><?php echo t('health.repeat_help'); ?></small>
-            </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('health.extra_emails'); ?></label>
+            <textarea name="health_extra_emails" class="form-control" rows="2" placeholder="it@example.com"><?php echo $h($settings['health_extra_emails']); ?></textarea>
         </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-chart-column u-primary"></i> <?php echo t('health.summary_title'); ?></div>
-    </div>
-    <div style="padding: 0 20px 20px;">
-        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.summary_help'); ?></p>
         <label class="u-check-label-6" style="display: block; margin-bottom: 8px;">
             <input type="checkbox" name="health_summary_enabled" value="1" class="u-accent" <?php echo $settings['health_summary_enabled'] === '1' ? 'checked' : ''; ?>>
             <?php echo t('health.summary_enabled'); ?>

@@ -3,11 +3,11 @@
 /**
  * Health checks (Admin → Health checks, docs/health.md).
  *
- *   aipbx_health.php           run the checks that are due, send alarm e-mails and
- *                              the daily summary (cron, every minute, as root)
+ *   aipbx_health.php           run the checks that are due, write the notices and
+ *                              send the daily summary (cron, every minute, as root)
  *   aipbx_health.php --all     run every check now and print the results; exit 1
  *                              when one fails (aipbx-selftest, CI, after installing)
- *   aipbx_health.php --all --no-mail   the same without sending e-mails
+ *   aipbx_health.php --all --no-mail   the same without writing notices or mailing
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);

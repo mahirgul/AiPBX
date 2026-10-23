@@ -1,8 +1,8 @@
 # Health checks
 
-**System → Health checks** watches the server and e-mails the chosen people when something stops
-working — and again when it works again. Every morning it can send a **daily summary** for
-managers: yesterday's calls and faxes and the state of every check.
+**System → Health checks** watches the server and writes a **notice** when something stops working
+— and another when it works again (see [Notices](notices.md)). Every morning it can send a **daily
+summary** for managers: yesterday's calls and faxes and the state of every check.
 
 ## Checks
 
@@ -31,25 +31,31 @@ A check that does not apply to the server (no trunks, FTP switched off) shows *N
 
 ## Alarms
 
-- E-mails go to the **users** ticked on the page (in their own language) and to **other e-mail
-  addresses**.
+Alarms are **notices**: they appear under the bell for every administrator, and the cabinet decides
+whether they are also e-mailed, when to stay quiet and how often a lasting problem is repeated
+(*gear icon in the bell*). The health checks keep no mail path of their own.
+
 - Checks that run every 15 minutes or more often report a problem only after **two bad results in
   a row**, so a short hiccup stays quiet. Less frequent checks report the first bad result.
-- While a problem lasts, the alarm is **repeated** after the chosen number of hours; a check that gets
-  worse (warning → failed) is reported at once.
-- When it works again, a **back to normal** e-mail follows.
-- All problems found in one run go into one e-mail.
+- One problem is one notice, keyed by the check and its status: a warning that escalates to failed
+  is a new notice at once; a failed check that improves to warning is not (the alarm row already
+  says what is wrong). While the problem lasts, the cabinet's window repeats it — six hours by
+  default.
+- When it works again, a **back to normal** notice follows. It is informational, so it is never
+  e-mailed.
 
-The texts are e-mail templates (*E-mail → Templates*: Health alarm, Health back to normal, Daily
-summary). A server that is completely down cannot send an e-mail itself: watch it from outside
-for that (e.g. a monitoring service that opens the sign-in page).
+The only e-mail the health checks send themselves is the daily summary; its text is the *Daily
+summary* template (*E-mail → Templates*). A server that is completely down cannot write a notice
+or send an e-mail: watch it from outside for that (e.g. a monitoring service that opens the
+sign-in page).
 
 ## Daily summary
 
-At the chosen time (default 08:00), to the same people:
+At the chosen time (default 08:00), to the people ticked on the page:
 
 - yesterday's calls: total, incoming, outgoing, internal, answered, missed, busy, average and total
   talk time (counted per call, as on the call report), and faxes received / sent / failed;
+- it goes to the users ticked on the page (each in their own language) and to the extra addresses;
 - the state of every check now;
 - the checks that raised an alarm yesterday.
 
@@ -62,13 +68,15 @@ sudo aipbx-selftest
 ```
 
 runs every check at once and prints the results; the exit code is 1 when a check fails. It sends no
-e-mail. `install.sh` runs it at the end of every installation and update, and CI runs it after a
+e-mail and writes no notice. `install.sh` runs it at the end of every installation and update, and CI runs it after a
 fresh install.
 
 ## How it works
 
 - `/etc/cron.d/aipbx` runs `/usr/local/bin/aipbx_health.php` every minute as root; it runs the checks
   whose interval has passed (most need root: Asterisk CLI, systemd, file owners), stores the
-  results in `health_checks`, status changes in `health_events` (kept 30 days) and sends the
-  e-mails. *Check now* on the page asks the next run to do every check.
+  results in `health_checks`, status changes in `health_events` (kept 30 days), writes the notices
+  and sends the daily summary. *Check now* on the page asks the next run to do every check.
+- `aipbx-selftest` (`aipbx_health.php --all --no-mail`) checks everything but writes no notice: a
+  test run must not raise an alarm.
 - Checks only read; none of them changes anything on the server.

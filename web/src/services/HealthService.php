@@ -1,34 +1,33 @@
 <?php
 require_once __DIR__ . '/health/HealthChecks.php';
 require_once __DIR__ . '/MailTemplateService.php';
+require_once __DIR__ . '/NoticeService.php';
 require_once dirname(__DIR__) . '/repositories/CdrReportRepository.php';
 require_once __DIR__ . '/ForgotPasswordService.php';
 
 /**
- * Admin → Health checks (docs/health.md): which checks are due, their results,
- * the alarm e-mails and the daily summary for managers.
+ * Admin → Health checks (docs/health.md): which checks are due, their results
+ * and the daily summary for managers.
  *
  * bin/aipbx_health.php runs every minute as root (cron) and calls runDue();
  * the page only changes settings and shows the results (a check it asks for
  * runs at the next minute, since most checks need root).
  *
- * Alarms: a check that turns warn/fail sends one e-mail to the chosen people
- * (checks every 15 minutes or more often only after two bad results in a row,
- * so a short hiccup stays quiet); it is repeated after health_repeat_hours
- * while the problem lasts, and a "back to normal" e-mail follows when it is
- * fixed. All problems of one run go into one e-mail.
+ * Alarms are notices: a check that turns warn/fail writes one notice per
+ * problem (checks every 15 minutes or more often only after two bad results in
+ * a row, so a short hiccup stays quiet), and a "back to normal" notice follows
+ * when it is fixed. The notice cabinet owns the e-mail, the quiet hours and
+ * how often a lasting problem is repeated, so the health checks keep no mail
+ * path of their own.
  */
 class HealthService
 {
     public const SETTINGS = [
         'health_recipients' => '[]',
         'health_extra_emails' => '',
-        'health_repeat_hours' => '6',
         'health_summary_enabled' => '1',
         'health_summary_time' => '08:00',
     ];
-
-    public const REPEAT_HOURS = [1, 3, 6, 12, 24];
 
     // ------------------------------------------------------------ settings
 
@@ -106,11 +105,9 @@ class HealthService
             if (!preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $time)) {
                 throw new \Exception(t('health.err_time'));
             }
-            $repeat = (int) ($data['health_repeat_hours'] ?? 6);
             $v = [
                 'health_recipients' => json_encode($ids),
                 'health_extra_emails' => implode("\n", self::extraEmails($extraText)),
-                'health_repeat_hours' => (string) (in_array($repeat, self::REPEAT_HOURS, true) ? $repeat : 6),
                 'health_summary_enabled' => !empty($data['health_summary_enabled']) ? '1' : '0',
                 'health_summary_time' => $time,
             ];
@@ -147,7 +144,7 @@ class HealthService
     /**
      * Every check with its interval and last result, in page order.
      *
-     * @return array<string, array{key: string, interval: int, status: string, message: string, checked_at: ?string, changed_at: ?string, bad_streak: int, alerted_status: string, alerted_at: ?string}>
+     * @return array<string, array{key: string, interval: int, status: string, message: string, checked_at: ?string, changed_at: ?string, bad_streak: int}>
      */
     public static function checks(): array
     {
@@ -166,8 +163,6 @@ class HealthService
                 'checked_at' => $r['checked_at'] ?? null,
                 'changed_at' => $r['changed_at'] ?? null,
                 'bad_streak' => (int) ($r['bad_streak'] ?? 0),
-                'alerted_status' => (string) ($r['alerted_status'] ?? ''),
-                'alerted_at' => $r['alerted_at'] ?? null,
             ];
         }
         return $out;
@@ -191,38 +186,44 @@ class HealthService
     }
 
     /**
-     * What a new result means for the e-mails: 'alarm', 'recovered' or null.
-     * Pure, so the rules are tested on their own.
+     * What a new result means for the notice cabinet: 'alarm', 'recovered' or
+     * null. Pure, so the rules are tested on their own.
+     *
+     * A lasting problem stays 'alarm' on every later run; writing it again is
+     * the cabinet's decision (its dedupe window repeats it, or does not), so a
+     * warning that escalates to failed is the only case that needs a key of its
+     * own — the caller puts the status in the dedupe key for that reason.
      */
-    public static function decide(array $prev, string $status, int $interval, int $now, int $repeatHours): ?string
+    public static function decide(array $prev, string $status, int $interval): ?string
     {
         $bad = in_array($status, ['warn', 'fail'], true);
-        if (!$bad) {
-            return ($status === 'ok' && $prev['alerted_status'] !== '') ? 'recovered' : null;
-        }
-        $streak = in_array($prev['status'], ['warn', 'fail'], true) ? $prev['bad_streak'] + 1 : 1;
         $needed = $interval <= 15 ? 2 : 1;
+        if (!$bad) {
+            $wasBad = in_array($prev['status'], ['warn', 'fail'], true);
+            // Only a problem that had long enough to be reported is worth a "back to normal".
+            return ($status === 'ok' && $wasBad && (int) $prev['bad_streak'] >= $needed) ? 'recovered' : null;
+        }
+        $streak = in_array($prev['status'], ['warn', 'fail'], true) ? (int) $prev['bad_streak'] + 1 : 1;
         if ($streak < $needed) {
             return null;
         }
-        if ($prev['alerted_status'] === '') {
-            return 'alarm';
+        // Better but not fixed (failed → warning): the alarm row already says so.
+        if ($prev['status'] === 'fail' && $status === 'warn') {
+            return null;
         }
-        // Worse than what was reported (warn → fail) or the repeat time has passed.
-        if ($prev['alerted_status'] === 'warn' && $status === 'fail') {
-            return 'alarm';
-        }
-        $last = $prev['alerted_at'] ? strtotime($prev['alerted_at']) : 0;
-        return $now - $last >= $repeatHours * 3600 ? 'alarm' : null;
+        return 'alarm';
     }
 
     /**
-     * Runs the due checks (cron) or all of them, stores the results and sends
-     * the e-mails. Returns the results by key.
+     * Runs the due checks (cron) or all of them, stores the results and writes
+     * the notices. Returns the results by key.
+     *
+     * $notify = false is the self-test: it checks and prints, but must not
+     * leave a notice, a mail or an alarm behind.
      *
      * @return array<string, array{0: string, 1: string}>
      */
-    public static function runDue(bool $all = false, bool $mail = true): array
+    public static function runDue(bool $all = false, bool $notify = true): array
     {
         $db = getDB();
         $now = time();
@@ -231,14 +232,13 @@ class HealthService
             $db->exec("UPDATE sys_settings SET setting_value = '0' WHERE setting_key = 'health_run_all'");
         }
         $checks = self::checks();
-        $repeat = (int) getSystemSetting('health_repeat_hours', '6') ?: 6;
         $alarms = [];
         $recovered = [];
         $results = [];
-        $save = $db->prepare('INSERT INTO health_checks (check_key, status, message, checked_at, changed_at, bad_streak, alerted_status, alerted_at)
-            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
+        $save = $db->prepare('INSERT INTO health_checks (check_key, status, message, checked_at, changed_at, bad_streak)
+            VALUES (?, ?, ?, NOW(), ?, ?)
             ON DUPLICATE KEY UPDATE status = VALUES(status), message = VALUES(message), checked_at = NOW(), changed_at = VALUES(changed_at),
-                bad_streak = VALUES(bad_streak), alerted_status = VALUES(alerted_status), alerted_at = VALUES(alerted_at)');
+                bad_streak = VALUES(bad_streak)');
         $event = $db->prepare('INSERT INTO health_events (check_key, status, message) VALUES (?, ?, ?)');
 
         foreach (self::due($checks, $now, $all) as $key) {
@@ -247,59 +247,69 @@ class HealthService
             $message = mb_substr($message, 0, 500);
             $results[$key] = [$status, $message];
 
-            // Without e-mails (aipbx-selftest) nothing counts as reported.
-            $decision = $mail ? self::decide($prev, $status, $prev['interval'], $now, $repeat) : null;
+            // The self-test (aipbx-selftest) leaves no notice behind.
+            $decision = $notify ? self::decide($prev, $status, $prev['interval']) : null;
             $bad = in_array($status, ['warn', 'fail'], true);
             $streak = $bad ? (in_array($prev['status'], ['warn', 'fail'], true) ? $prev['bad_streak'] + 1 : 1) : 0;
-            $alertedStatus = $prev['alerted_status'];
-            $alertedAt = $prev['alerted_at'];
             if ($decision === 'alarm') {
                 $alarms[$key] = [$status, $message];
-                $alertedStatus = $status;
-                $alertedAt = date('Y-m-d H:i:s', $now);
             } elseif ($decision === 'recovered') {
-                $recovered[$key] = [$status, $message];
-                $alertedStatus = '';
-                $alertedAt = null;
+                $recovered[$key] = $message;
             }
             $changed = $status !== $prev['status'] ? date('Y-m-d H:i:s', $now) : $prev['changed_at'];
-            $save->execute([$key, $status, $message, $changed, $streak, $alertedStatus, $alertedAt]);
+            $save->execute([$key, $status, $message, $changed, $streak]);
             if ($status !== $prev['status'] && $prev['status'] !== 'unknown') {
                 $event->execute([$key, $status, $message]);
             }
         }
         $db->exec('DELETE FROM health_events WHERE created_at < NOW() - INTERVAL 30 DAY');
 
-        if ($mail) {
-            if ($alarms) {
-                self::sendList('health_alarm', $alarms);
+        if ($notify) {
+            foreach ($alarms as $key => [$status, $message]) {
+                self::raiseNotice($key, $status, $message);
             }
-            if ($recovered) {
-                self::sendList('health_recovered', $recovered);
+            foreach ($recovered as $key => $message) {
+                self::clearNotice($key, $message);
             }
             self::maybeSendSummary($now);
         }
         return $results;
     }
 
-    // ------------------------------------------------------------ e-mails
+    // ------------------------------------------------------------ notices
 
-    /** One e-mail for all problems (or recoveries) of a run, to every recipient. */
-    private static function sendList(string $template, array $items): void
+    /**
+     * The notice a result writes: severity, title, body and dedupe key.
+     *
+     * The status is part of the dedupe key, so a warning that becomes a failure
+     * is a notice at once (a new key), while the same status repeats only when
+     * the cabinet's window has passed.
+     *
+     * @return array{severity: string, title: string, body: string, dedupe_key: string}
+     */
+    public static function noticeFor(string $key, string $status, string $message): array
     {
-        foreach (self::recipients() as $r) {
-            $blocks = MailTemplateService::inLanguage($r['lang'], function () use ($items) {
-                $rows = [];
-                foreach ($items as $key => [$status, $message]) {
-                    $rows[t('health.check_' . $key) . ' — ' . t('health.status_' . $status)] = $message;
-                }
-                return ['problems' => MailTemplateService::detailsBlock('', $rows)];
-            });
-            MailTemplateService::send($template, $r['email'], $r['lang'], self::commonVars() + [
-                'count' => (string) count($items),
-                'checks' => implode(', ', MailTemplateService::inLanguage($r['lang'], fn() => array_map(fn($k) => t('health.check_' . $k), array_keys($items)))),
-            ], $blocks);
-        }
+        $bad = in_array($status, ['warn', 'fail'], true);
+        return [
+            'severity' => $status === 'fail' ? 'critical' : ($status === 'warn' ? 'warn' : 'info'),
+            'title' => t($bad ? 'health.notice_problem' : 'health.notice_recovered') . ': ' . t('health.check_' . $key),
+            'body' => sprintf(t('health.notice_body'), t('health.status_' . $status), $message),
+            'dedupe_key' => 'health:' . $key . ':' . $status,
+        ];
+    }
+
+    /** One problem, one notice. Mail, quiet hours and repetition are the cabinet's. */
+    private static function raiseNotice(string $key, string $status, string $message): void
+    {
+        $notice = self::noticeFor($key, $status, $message);
+        NoticeService::notify($notice['severity'], $notice['title'], $notice['body'], $notice['dedupe_key'], 'health');
+    }
+
+    /** The "back to normal" row; info, so it is never e-mailed. */
+    private static function clearNotice(string $key, string $message): void
+    {
+        $notice = self::noticeFor($key, 'ok', $message);
+        NoticeService::notify($notice['severity'], $notice['title'], $notice['body'], $notice['dedupe_key'], 'health');
     }
 
     private static function maybeSendSummary(int $now): void

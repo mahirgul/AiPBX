@@ -27,8 +27,6 @@ class MailTemplateService
         'fax_sent' => ['destination', 'fax_id', 'pages', 'date', 'brand', 'portal_link'],
         'fax_failed' => ['destination', 'fax_id', 'pages', 'date', 'error', 'brand', 'portal_link'],
         'ai_request' => ['request', 'caller', 'caller_name', 'caller_number', 'transcript', 'app', 'date', 'brand', 'portal_link'],
-        'health_alarm' => ['count', 'checks', '*problems', 'host', 'date', 'brand', 'portal_link'],
-        'health_recovered' => ['count', 'checks', '*problems', 'host', 'date', 'brand', 'portal_link'],
         'health_summary' => ['day', 'state', 'alarms', '*calls', '*checks', 'host', 'date', 'brand', 'portal_link'],
         'test' => ['brand', 'date', 'from_name', 'from_address', 'to', 'host'],
         'notice' => ['title', 'severity', 'body', 'date', 'brand', 'portal_link'],
@@ -520,10 +518,8 @@ class MailTemplateService
             if ($key === 'ai_request') {
                 $vars['portal_link'] = $link . '/ai-apps';
             }
-            if (str_starts_with($key, 'health_')) {
+            if ($key === 'health_summary') {
                 $vars['portal_link'] = $link . '/health';
-                $vars['count'] = '2';
-                $vars['checks'] = t('health.check_trunks') . ', ' . t('health.check_disk');
                 $vars['day'] = date('Y-m-d', strtotime('-1 day'));
                 $vars['state'] = sprintf(t('health.sum_state_problems'), 1);
                 $vars['alarms'] = t('health.check_trunks');
@@ -537,12 +533,8 @@ class MailTemplateService
 
     private static function sampleBlocks(string $key, array $vars): array
     {
-        if (str_starts_with($key, 'health_')) {
+        if ($key === 'health_summary') {
             return [
-                'problems' => self::detailsBlock('', [
-                    t('health.check_trunks') . ' — ' . t('health.status_fail') => sprintf(t('health.msg_trunks_bad'), 'provider (' . t('health.trunk_unreachable') . ')'),
-                    t('health.check_disk') . ' — ' . t('health.status_warn') => '/ 88 % (4.1 GB free)',
-                ]),
                 'calls' => self::detailsBlock(sprintf(t('health.sum_calls_title'), $vars['day']), [
                     t('health.sum_calls_total') => '412', t('health.sum_calls_in') => '268', t('health.sum_calls_out') => '121',
                     t('health.sum_calls_internal') => '23', t('health.sum_answered') => '371', t('health.sum_missed') => '33',

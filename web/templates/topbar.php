@@ -95,13 +95,47 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
                     <span class="header-notices-head-title">
                         <i class="fas fa-bell"></i> <?php echo htmlspecialchars(t('notices.title')); ?>
                     </span>
-                    <button type="button" class="header-notices-mark-all" onclick="noticesMarkAll(event)">
-                        <?php echo htmlspecialchars(t('notices.mark_all_read')); ?>
-                    </button>
+                    <span class="header-notices-head-actions">
+                        <button type="button" class="header-notices-mark-all" onclick="noticesMarkAll(event)">
+                            <?php echo htmlspecialchars(t('notices.mark_all_read')); ?>
+                        </button>
+                        <button type="button" class="header-notices-gear" id="notices-settings-toggle"
+                                onclick="noticesToggleSettings(event)"
+                                title="<?php echo htmlspecialchars(t('notices.settings_title')); ?>"
+                                aria-label="<?php echo htmlspecialchars(t('notices.settings_title')); ?>">
+                            <i class="fas fa-gear"></i>
+                        </button>
+                    </span>
                 </div>
                 <div class="header-notices-list" id="notices-list">
                     <div class="header-notices-empty"><?php echo htmlspecialchars(t('notices.empty')); ?></div>
                 </div>
+                <?php $noticeSettings = NoticeService::settings(); ?>
+                <form class="header-notices-settings" id="notices-settings" style="display: none;" onsubmit="noticesSaveSettings(event)">
+                    <label class="header-notices-field">
+                        <input type="checkbox" name="notice_email" value="1" <?php echo $noticeSettings['email'] ? 'checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars(t('notices.settings_email')); ?></span>
+                    </label>
+                    <label class="header-notices-field">
+                        <span><?php echo htmlspecialchars(t('notices.settings_to')); ?></span>
+                        <input type="text" name="notice_email_to" value="<?php echo htmlspecialchars($noticeSettings['to']); ?>" placeholder="ops@example.com">
+                        <small><?php echo htmlspecialchars(t('notices.settings_to_hint')); ?></small>
+                    </label>
+                    <label class="header-notices-field">
+                        <span><?php echo htmlspecialchars(t('notices.settings_quiet')); ?></span>
+                        <input type="text" name="notice_quiet_hours" value="<?php echo htmlspecialchars($noticeSettings['quiet_hours']); ?>" placeholder="22:00-07:00">
+                        <small><?php echo htmlspecialchars(t('notices.settings_quiet_hint')); ?></small>
+                    </label>
+                    <label class="header-notices-field">
+                        <span><?php echo htmlspecialchars(t('notices.settings_window')); ?></span>
+                        <input type="number" name="notice_window_hours" min="0" max="168" value="<?php echo (int) $noticeSettings['window_hours']; ?>">
+                        <small><?php echo htmlspecialchars(t('notices.settings_window_hint')); ?></small>
+                    </label>
+                    <div class="header-notices-settings-foot">
+                        <button type="submit" class="header-notices-mark-all u-fw-700"><?php echo htmlspecialchars(t('notices.settings_save')); ?></button>
+                        <span class="header-notices-settings-msg" id="notices-settings-msg"></span>
+                    </div>
+                </form>
             </div>
         </div>
         <?php endif; ?>

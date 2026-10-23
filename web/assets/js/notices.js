@@ -15,6 +15,8 @@
     var list = null;
     var count = null;
     var csrf = '';
+    var settingsForm = null;
+    var settingsMsg = null;
 
     function t(key, fallback) {
         return (window.NOTICES_I18N && window.NOTICES_I18N[key]) || fallback;
@@ -111,6 +113,36 @@
         });
     };
 
+    /** The gear swaps the list for the cabinet's settings: mail, quiet hours, window. */
+    window.noticesToggleSettings = function (event) {
+        if (event) event.stopPropagation();
+        if (!settingsForm) return;
+        var opening = settingsForm.style.display === 'none';
+        settingsForm.style.display = opening ? 'block' : 'none';
+        if (list) list.style.display = opening ? 'none' : '';
+        if (opening && settingsMsg) settingsMsg.textContent = '';
+    };
+
+    window.noticesSaveSettings = function (event) {
+        if (event) event.preventDefault();
+        if (!settingsForm) return;
+        var form = new FormData(settingsForm);
+        form.append('csrf_token', csrf);
+        form.append('action', 'settings');
+        if (!form.get('notice_email')) form.append('notice_email', '0');
+        fetch('/api/notices.php', { method: 'POST', body: form, credentials: 'same-origin' })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (!settingsMsg) return;
+                settingsMsg.textContent = (data && data.success)
+                    ? (data.message || t('saved', 'Saved.'))
+                    : ((data && data.error) || t('load_failed', 'Could not be saved.'));
+            })
+            .catch(function () {
+                if (settingsMsg) settingsMsg.textContent = t('load_failed', 'Could not be saved.');
+            });
+    };
+
     window.noticesToggle = function (event) {
         if (event) event.stopPropagation();
         if (!dropdown) return;
@@ -118,6 +150,7 @@
         dropdown.style.display = opening ? 'block' : 'none';
         if (opening) load();
     };
+
 
     document.addEventListener('click', function (event) {
         if (!dropdown || dropdown.style.display === 'none') return;
@@ -136,6 +169,8 @@
         dropdown = document.getElementById('notices-dropdown');
         list = document.getElementById('notices-list');
         count = document.getElementById('notices-bell-count');
+        settingsForm = document.getElementById('notices-settings');
+        settingsMsg = document.getElementById('notices-settings-msg');
         if (!bell || !dropdown || !list) return;
         csrf = bell.dataset.csrf || '';
         load();

@@ -3,10 +3,10 @@
 A notice is one line of "the system noticed something". It shows in the bell in
 the top bar of every page, and — if you asked for it — arrives by e-mail.
 
-Nothing produces notices by default except the modules that opt in (health checks
-today, `call-quality` and others once they are installed). The point is that a
-module with something to say has one place to say it, with two rules that keep
-the cabinet readable.
+The health checks are the first writer: a check that fails or warns writes a
+notice, and another one when it works again
+([Health checks](health.md#alarms)). Other modules follow the same two rules,
+which are what keep the cabinet readable.
 
 ## The two rules
 
@@ -41,7 +41,9 @@ when the same problem was already reported inside the window.
 
 ## Settings
 
-Stored in `sys_settings`, so they survive an update:
+The gear in the bell edits them; `api/notices.php` validates and saves them
+through `NoticeService::saveSettings()`. Stored in `sys_settings`, so they
+survive an update:
 
 | key | default | meaning |
 |---|---|---|
@@ -52,7 +54,14 @@ Stored in `sys_settings`, so they survive an update:
 
 `NoticeService::saveSettings([...])` validates all four and writes them
 (`notice_email` as `1`/`0`). The e-mail body comes from the `notice` mail
-template, which is editable under **E-mail → Templates** like the others.
+template, which is editable under **E-mail → Templates** like the others; the
+mail goes to at most five addresses per notice.
+
+An installation that was mailing health alarms before the cabinet existed is
+carried over once: `RetireHealthAlarmMail` copies the alarm recipients into
+`notice_email_to`, switches `notice_email` on and turns `health_repeat_hours`
+into `notice_window_hours`, so nothing goes quiet on update. Settings an
+administrator already saved are never overwritten.
 
 ## Where it lives
 
@@ -60,16 +69,15 @@ template, which is editable under **E-mail → Templates** like the others.
 |---|---|
 | `web/src/services/NoticeService.php` | the rules: dedupe, quiet hours, mail |
 | `web/src/repositories/NoticeRepository.php` | `pbx_notices`: recent, unread, dedupe lookup, mark read |
-| `web/api/notices.php` | JSON for the bell: list + unread count, mark one/all read |
+| `web/api/notices.php` | JSON for the bell: list + unread count, mark one/all read, save the settings |
 | `web/assets/js/notices.js` | the dropdown; opening it re-reads the list |
 | `web/templates/topbar.php` | the bell itself |
 
 ## Limits
 
-- **Read state is per install, not per user.** The first person who opens a
-  notice marks it read for everyone. That is right for "the PBX found something"
-  and wrong for "this is your task"; a per-user table is the change if notices
-  ever need to be addressed to somebody.
+- **One text, one language.** A notice is stored as written, so everyone reads
+  it in the installation's language. The daily-summary e-mail is still built per
+  recipient; notice mail is not.
 - **The newest twenty.** The bell lists the newest 20 rows and stops; there is
   no archive page yet. The rows stay in the table (nothing prunes them) so a
   page can be added without a migration.

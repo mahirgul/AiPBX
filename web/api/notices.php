@@ -36,6 +36,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         NoticeService::markAllRead($userId);
     } elseif ($action === 'read') {
         NoticeService::markRead((int) ($_POST['id'] ?? 0), $userId);
+    } elseif ($action === 'settings') {
+        $saved = NoticeService::saveSettings($_POST);
+        if (empty($saved['success'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => $saved['error'] ?? 'invalid'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        echo json_encode([
+            'success' => true,
+            'message' => $saved['message'] ?? '',
+            'unread' => NoticeService::unreadCount($userId),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     } else {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'unknown action']);
