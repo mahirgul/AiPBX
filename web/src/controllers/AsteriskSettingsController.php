@@ -33,6 +33,7 @@ class AsteriskSettingsController extends BaseController
             'ring_sound_options' => $ring_sound_options,
             'active_codecs' => $active_codecs,
             'active_wired_codecs' => $active_wired_codecs,
+            'signaling_status' => AsteriskSettingsService::signalingStatus(),
         ], ['title' => $page_title] + $notices);
     }
 }

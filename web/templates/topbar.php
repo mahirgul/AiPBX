@@ -79,6 +79,20 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
 
     <!-- Top Bar Right: Pending Sync (Uygula) Dropdown & Actions -->
     <div class="top-bar-right">
+        <?php if (($_SESSION['user_role'] ?? '') === 'admin'): /* api/notices.php checks it too */ ?>
+            <div class="header-notices-wrapper" id="header-notices">
+                <button type="button" class="topbar-btn header-notices-btn" id="header-notices-btn" onclick="toggleNotices(event)"
+                        title="<?php echo htmlspecialchars(t('notices.title')); ?>" aria-label="<?php echo htmlspecialchars(t('notices.title')); ?>" aria-expanded="false">
+                    <i class="fas fa-bell"></i>
+                    <span class="header-notices-count" id="header-notices-count" hidden>0</span>
+                </button>
+                <div class="header-sync-dropdown header-notices-dropdown" id="header-notices-dropdown" role="dialog" aria-label="<?php echo htmlspecialchars(t('notices.title')); ?>">
+                    <div class="header-sync-dropdown-title"><i class="fas fa-bell"></i> <?php echo htmlspecialchars(t('notices.title')); ?></div>
+                    <div class="header-notices-list" id="header-notices-list"><div class="header-notices-empty"><?php echo htmlspecialchars(t('notices.loading')); ?></div></div>
+                    <a href="/health" class="header-notices-foot" onclick="closeNotices()"><?php echo htmlspecialchars(t('notices.all_checks')); ?> →</a>
+                </div>
+            </div>
+        <?php endif; ?>
         <?php
         if (!isset($pending_sync_count)) {
             require_once __DIR__ . '/../src/asterisk_sync.php';

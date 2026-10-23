@@ -2,7 +2,7 @@
 
 AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`PluginManager`) integrated with `/api/v1/*` and Outbound Webhooks.
 
-- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`. Community plugins bundled with AiPBX: `ai-assistant` and `signaling-capture` by Gregory Merriweather ([@shido6](https://github.com/shido6)). Fresh installations start lean; administrators enable only the plugins they need under **Integrations → Plugins** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
+- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`. Community plugin bundled with AiPBX: `ai-assistant` by Gregory Merriweather ([@shido6](https://github.com/shido6)) (his signaling capture is part of AiPBX itself since 1.50.8). Fresh installations start lean; administrators enable only the plugins they need under **Integrations → Plugins** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
 - 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. The plugins above are maintained only here, in this repository.
 - 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integrations → Plugins → Upload Custom Plugin (`.zip`)**.
 
@@ -172,6 +172,12 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 - **`admin/action.php`**: returns `function (string $slug, array $settings): array`, run on every request
   to `/plugins/<slug>` before the page is drawn. Check CSRF (`verifyCSRFToken($_POST['csrf_token'])`) for
   your own forms; return `['message' => ...]`, `['error' => ...]` or `[]`.
+- **Alerts in the bell** (AiPBX 1.50.8+): `NoticeService::raise($key, 'warn'|'fail', $title, $message, $link, $slug)`
+  opens or updates one problem, `NoticeService::resolve($key)` ends it. Raise the same key on every pass
+  while the problem lasts and resolve it when it is gone; the bell shows it to administrators until then.
+  Prefix keys with your slug, pass your slug as the last argument (a disabled plugin's alerts are hidden),
+  and check `class_exists('NoticeService')` for older AiPBX versions. Example: the
+  [Call Quality plugin](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/call-quality).
 
 ---
 

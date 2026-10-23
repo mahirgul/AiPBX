@@ -27,7 +27,6 @@ This directory contains the plugins bundled with AiPBX: **official plugins** and
 | Slug | Category | Author | Description |
 |---|---|---|---|
 | [`ai-assistant`](./ai-assistant/plugin.json) | `ai` | Gregory Merriweather (shido6) | Natural-language PBX assistant (TR/EN) with safe `/api/v1/*` preview & confirmation |
-| [`signaling-capture`](./signaling-capture/plugin.json) | `telemetry` | Gregory Merriweather (shido6) | Asterisk HEPv3 (`res_hep_pjsip` / `res_hep_rtcp`) SIP signaling & webhook telemetry forwarder |
 
 ---
 

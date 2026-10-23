@@ -7,8 +7,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.50.8
 
-Small additions from the IVR and voicemail check.
+An alert bell for administrators, signaling capture built in (and working), and smaller fixes from
+the IVR and voicemail check.
 
+- **Alert bell.** The top bar shows administrators what is wrong right now: every health check that
+  is warning or failed, problems plugins report, and the alarm path itself — no recipient chosen,
+  or the health checks stopped running. Items go away by themselves when fixed; the last 7 days of
+  changes are listed below them. It works without e-mail, so a PBX whose mail is not set up still
+  shows its problems. Thanks to @shido6, whose notices proposal (#121) gave the idea.
+- **Signaling capture is part of AiPBX** (PBX settings → Signaling: on/off, days kept, what arrived).
+  It never worked before: the capture daemon misread the HEPv3 format and stored every message as
+  "unknown", without its method or RTCP counters, and the signaling-capture plugin sent the capture
+  to a port nothing listens on. Both are fixed; the plugin is retired, and an installation that had
+  it on keeps capture on. Built by @shido6.
+- **Call quality** comes as a community plugin (AiPBX-plugins, `call-quality`): packet loss in both
+  directions and jitter per trunk and extension from the RTCP reports, with an alert in the bell.
 - **Health checks: call records.** A new check fails when Asterisk has handled calls since it
   started but none reached the call history (the CDR database connection is broken), so a loss
   like the 11 hours of 1.50.7 is noticed within 15 minutes.

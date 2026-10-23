@@ -150,45 +150,21 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertArrayHasKey('ai-models', $manifests);
         $this->assertArrayHasKey('ai-voicemail', $manifests);
         $this->assertArrayHasKey('ai-assistant', $manifests);
-        $this->assertArrayHasKey('signaling-capture', $manifests);
+        // Signaling capture is part of AiPBX since 1.50.8, not a plugin any more.
+        $this->assertArrayNotHasKey('signaling-capture', $manifests);
 
-        // Enable signaling-capture and configure settings
-        $en = PluginManager::enable('signaling-capture', 'test-csrf-token');
+        // Secret settings: decrypted by getSetting(), masked by getAllSettings(..., true)
+        $en = PluginManager::enable('ai-assistant', 'test-csrf-token');
         $this->assertTrue($en['success']);
-        $this->assertTrue(PluginManager::isEnabled('signaling-capture'));
-
-        $save = PluginManager::savePluginSettings('signaling-capture', [
-            'hep_enabled' => 1,
-            'capture_address' => '10.0.0.50:9060',
-            'capture_password' => 'my-hep-secret',
-            'capture_id' => 2001,
-            'uuid_type' => 'call-id',
+        $save = PluginManager::savePluginSettings('ai-assistant', [
+            'api_base_url' => 'https://api.example.com/v1',
+            'api_key' => 'my-secret-key',
+            'model' => 'test-model',
         ], 'test-csrf-token');
         $this->assertTrue($save['success']);
-
-        // Secret setting is decrypted when read via getSetting() and masked in getAllSettings(..., true)
-        $this->assertSame('my-hep-secret', PluginManager::getSetting('signaling-capture', 'capture_password'));
-        $masked = PluginManager::getAllSettings('signaling-capture', true);
-        $this->assertNotSame('my-hep-secret', $masked['capture_password']);
-
-        // Sync hook writes hep_plugin_signaling-capture.conf to ASTERISK_PBX_DIR
-        PluginManager::syncAllEnabledPlugins();
-
-        $hepPath = rtrim((string)getenv('ASTERISK_PBX_DIR'), '/') . '/hep_plugin_signaling-capture.conf';
-        $this->assertFileExists($hepPath);
-        $hepContent = (string)file_get_contents($hepPath);
-        $this->assertStringContainsString('enabled = yes', $hepContent);
-        $this->assertStringContainsString('capture_address = 10.0.0.50:9060', $hepContent);
-        $this->assertStringContainsString('capture_password = my-hep-secret', $hepContent);
-
-        // Delivering an event triggers signaling-capture's event handler -> writes to KV
-        PluginManager::deliverEventToPlugin('signaling-capture', 'call.started', [
-            'event' => 'call.started',
-            'timestamp' => date(DATE_ATOM),
-            'data' => ['from_extension' => '101', 'to_number' => '102'],
-        ]);
-        $kvItems = PluginManager::kvList('signaling-capture', 'recent_events');
-        $this->assertNotEmpty($kvItems);
+        $this->assertSame('my-secret-key', PluginManager::getSetting('ai-assistant', 'api_key'));
+        $masked = PluginManager::getAllSettings('ai-assistant', true);
+        $this->assertNotSame('my-secret-key', $masked['api_key']);
 
         // Enable ai-voicemail and test voicemail.created event hook + AI sidebar group
         $enVm = PluginManager::enable('ai-voicemail', 'test-csrf-token');
@@ -212,8 +188,8 @@ final class PluginAndApiV1Test extends TestCase
 
         // Disable plugins
         PluginManager::disable('ai-voicemail', 'test-csrf-token');
-        PluginManager::disable('signaling-capture', 'test-csrf-token');
-        $this->assertFalse(PluginManager::isEnabled('signaling-capture'));
+        PluginManager::disable('ai-assistant', 'test-csrf-token');
+        $this->assertFalse(PluginManager::isEnabled('ai-assistant'));
     }
 
     public function testPluginSchemaSandboxAndAutoDialerLifecycle(): void
@@ -334,9 +310,6 @@ final class PluginAndApiV1Test extends TestCase
         // Community plugins
         if (isset($bySlug['ai-assistant'])) {
             $this->assertSame('community', $bySlug['ai-assistant']['type']);
-        }
-        if (isset($bySlug['signaling-capture'])) {
-            $this->assertSame('community', $bySlug['signaling-capture']['type']);
         }
     }
 

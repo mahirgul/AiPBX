@@ -1,11 +1,19 @@
-# Signaling capture (Plugin)
+# Signaling capture
 
-> **Plugin (`signaling-capture`)**: Community plugin by Gregory Merriweather ([@shido6](https://github.com/shido6)), bundled with AiPBX. Enable it under **Integrations → Plugins** (see [Plugin system & developer guide](plugin-development.md)).
+> Built by Gregory Merriweather ([@shido6](https://github.com/shido6)). Part of AiPBX itself since 1.50.8:
+> **PBX settings → Signaling**. Until then it was switched by the bundled `signaling-capture` plugin, which
+> pointed Asterisk at a port nothing listened on; the update turns capture on when that plugin was on and
+> removes it.
 
 AiPBX ships an optional signaling pipeline: what crosses the SIP stack can
-be captured, kept on this server and read by the dialplan editor's Echo box.
-Capture is opt-in: `asterisk-config/hep.conf` ships with `enabled = no`, so
-a normal installation captures nothing and pays no overhead.
+be captured, kept on this server and read by the dialplan editor's Echo box
+and the [Call Quality plugin](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/call-quality).
+Capture is opt-in and off by default, so a normal installation captures
+nothing and pays no overhead.
+
+**Turning it on:** PBX settings → **Signaling** → Capture **On**, Save. It takes effect at once (only
+`res_hep` is reloaded; calls are not touched). The same tab sets how many days the messages are kept
+and shows how many arrived in the last 24 hours.
 
 Nothing on this path can affect a call. The capture is a UDP datagram that
 Asterisk sends and moves on; the daemon writes to the database in batches
@@ -26,10 +34,10 @@ capture_id = 1001
 ```
 
 `modules.conf` loads `res_hep.so`, `res_hep_pjsip.so`, `res_hep_rtcp.so`.
-Turning capture on: `enabled = yes` (one word), reload Asterisk. The address
-stays loopback unless you deliberately point it elsewhere — a capture port
-open to a network turns a PBX into a free SIP sniffer for anyone who finds
-it.
+`hep.conf` is replaced on every update; the portal's switch is
+`/etc/asterisk/pbx/hep_aipbx.conf` (`[general] enabled = yes|no`, included
+after it). The address stays loopback — a capture port open to a network
+turns a PBX into a free SIP sniffer for anyone who finds it.
 
 **Daemon side** — `python -m aipbx_signaling` (installed by `install.sh`,
 and therefore by `aipbx-update` on every upgrade, as
@@ -39,11 +47,12 @@ comes from `sys_settings` (default when absent, clamped 1..3650):
 
 | setting                    | meaning                                 |
 |----------------------------|-----------------------------------------|
-| `signaling_retention_days` | delete events older than this (1–3650)  |
+| `signaling_retention_days` | delete events older than this (1–3650; PBX settings → Signaling) |
 
-A Signaling page that edits this in the portal is a follow-up; today the
-setting is written to `sys_settings` directly, and whether Asterisk captures
-at all is the `hep.conf` switch above.
+The daemon reads HEPv3 as specified: a 6-byte packet header and chunks with
+a 6-byte header (vendor, type, length). Until 1.50.8 it read 4-byte chunk
+headers, lost the last chunk — the message itself — and stored every capture
+as `unknown`; a live Asterisk 22 datagram is now part of its tests.
 
 **Storage** — `pbx_signaling_events`: `ts, call_id, method, proto,
 transport, src, dst, from_uri, to_uri, cseq, status_code, first_line, line,
@@ -85,6 +94,6 @@ leaves this server.
 ## What stays on this server
 
 Captured events never leave the machine: `pbx_signaling_events` is read by
-the dialplan editor's Echo box, locally.
-Shipping captures to a third-party cloud is exactly the kind of connector
-the planned plugin system should carry — not core.
+the dialplan editor's Echo box and by plugins on this server. Sending
+captures to an outside Homer server is not offered: Asterisk's `res_hep` has
+one capture address, and pointing it elsewhere stops the local capture.

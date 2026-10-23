@@ -1,8 +1,9 @@
 """Tests for the HEPv3 parser (aipbx_signaling.hep).
 
-The fixtures are built here byte by byte, in the shape res_hep actually sends:
-padded TLV values, the payload under 0x000F, and a final payload TLV whose
-declared length can overshoot the datagram.
+The fixtures are built here byte by byte as HEPv3 datagrams: a 6-byte header
+("HEP3" + total length) and chunks with a 6-byte header (vendor, type,
+length), the shape Asterisk's res_hep sends (checked against a live capture,
+see test_live_asterisk_capture).
 
 Runs with either runner: `python3 -m unittest discover signaling/tests`
 or `pytest signaling/tests`.
@@ -68,40 +69,56 @@ RTCP_REPORT = json.dumps({
 })
 
 
-def tlv(tlv_type: int, value: bytes) -> bytes:
-    return struct.pack(">HH", tlv_type, len(value) + 4) + value
+def tlv(tlv_type: int, value: bytes, vendor: int = 0) -> bytes:
+    return struct.pack(">HHH", vendor, tlv_type, len(value) + 6) + value
 
 
-def hep_packet(payload: bytes, *, family: int = 1, transport: int = 0,
+def hep_packet(payload: bytes, *, family: int = 1, transport: int = 17,
                src: str = "192.0.2.10", sport: int = 5060,
                dst: str = "192.0.2.20", dport: int = 5060,
                ts: int = 1792181287, capture_id: int = 1234,
-               call_id: str = "", payload_tlv: int = hep.HEP_PAYLOAD_ALT,
-               gzip_payload: bool = False, overshoot: bool = True) -> bytes:
-    """A res_hep-shaped HEPv3 datagram."""
+               call_id: str = "", gzip_payload: bool = False) -> bytes:
+    """A HEPv3 datagram as res_hep builds it (`family` is the protocol type)."""
     body = b""
-    body += tlv(hep.HEP_PROTOCOL_FAMILY, bytes([family]))
-    body += tlv(hep.HEP_TRANSPORT, bytes([transport]))
-    # Addresses, timestamp and capture id are padded, as res_hep sends them.
-    body += tlv(hep.HEP_SRC_IP4, socket.inet_aton(src) + b"\x00" * 4)
-    body += tlv(hep.HEP_DST_IP4, socket.inet_aton(dst) + b"\x00" * 4)
-    body += tlv(hep.HEP_SRC_PORT, struct.pack(">H", sport) + b"\x00\x00")
-    body += tlv(hep.HEP_DST_PORT, struct.pack(">H", dport) + b"\x00\x00")
-    body += tlv(hep.HEP_TIMESTAMP, struct.pack(">I", ts) + b"\x00" * 4)
+    body += tlv(hep.HEP_IP_FAMILY, bytes([2]))
+    body += tlv(hep.HEP_IP_PROTO, bytes([transport]))
+    body += tlv(hep.HEP_SRC_PORT, struct.pack(">H", sport))
+    body += tlv(hep.HEP_DST_PORT, struct.pack(">H", dport))
+    body += tlv(hep.HEP_TIMESTAMP, struct.pack(">I", ts))
+    body += tlv(0x000A, struct.pack(">I", 0))
+    body += tlv(hep.HEP_PROTOCOL_TYPE, bytes([family]))
     body += tlv(hep.HEP_CAPTURE_ID, struct.pack(">I", capture_id))
+    body += tlv(hep.HEP_SRC_IP4, socket.inet_aton(src))
+    body += tlv(hep.HEP_DST_IP4, socket.inet_aton(dst))
+    body += tlv(hep.HEP_AUTH_KEY, b"aipbx")
     if call_id:
         body += tlv(hep.HEP_CALL_ID, call_id.encode())
     if gzip_payload:
         body += tlv(hep.HEP_PAYLOAD_GZ, gzip.compress(payload))
     else:
-        body += tlv(payload_tlv, payload)
+        body += tlv(hep.HEP_PAYLOAD, payload)
+    return hep.HEP_MAGIC + struct.pack(">H", len(body) + 6) + body
 
-    declared = len(body) + 8
-    if overshoot:
-        # res_hep's last TLV length can overshoot the datagram: the header
-        # says the whole packet is this long, while the bytes are not.
-        declared += 37
-    return hep.HEP_MAGIC + struct.pack(">HH", declared, 0) + body
+
+# One datagram of a live Asterisk 22 capture (res_hep_rtcp, a sender report
+# between two LXD test hosts), byte for byte. Until 1.50.8 the parser lost the
+# report itself, so no RTCP counter was ever stored.
+LIVE_RTCP = bytes.fromhex(
+    "4845503301d800000001000702000000020007110000000700082c8f0000000800082e4f"
+    "00000009000a6adbb76f0000000a000a000d17460000000b0007050000000c000a000003"
+    "e900000003000a0ada310100000004000a0ada31790000000e000b616970627800000011"
+    "002a31373731623766352d616132312d343633622d396639372d62316563326436373137"
+    "34620000000f01467b2273737263223a343030313737333033392c2274797065223a3230"
+    "302c227265706f72745f636f756e74223a312c2273656e6465725f696e666f726d617469"
+    "6f6e223a7b226e74705f74696d657374616d705f736563223a2231373932373834323339"
+    "222c226e74705f74696d657374616d705f75736563223a22383536393930222c22727470"
+    "5f74696d657374616d70223a34303030302c227061636b657473223a3235302c226f6374"
+    "657473223a34303030307d2c227265706f72745f626c6f636b73223a5b7b22736f757263"
+    "655f73737263223a323032313239373339372c226672616374696f6e5f6c6f7374223a30"
+    "2c227061636b6574735f6c6f7374223a302c22686967686573745f7365715f6e6f223a36"
+    "303636302c2269615f6a6974746572223a302c226c7372223a2230222c22646c7372223a"
+    "307d5d7d"
+)
 
 
 class TestSip(unittest.TestCase):
@@ -132,12 +149,14 @@ class TestSip(unittest.TestCase):
         self.assertEqual("101", hep.caller_number(event["from_uri"]))
 
     def test_tcp_transport_name(self):
-        event = hep.parse_event(hep_packet(OPTIONS.encode(), transport=1))
+        event = hep.parse_event(hep_packet(OPTIONS.encode(), transport=6))
         self.assertEqual("tcp", event["transport"])
 
-    def test_payload_under_0x000d(self):
-        event = hep.parse_event(hep_packet(INVITE.encode(), payload_tlv=hep.HEP_PAYLOAD))
-        self.assertEqual("INVITE", event["method"])
+    def test_vendor_chunks_are_skipped(self):
+        packet = hep_packet(INVITE.encode())
+        vendor = tlv(hep.HEP_PAYLOAD, b"not sip", vendor=0x0021)
+        packet = hep.HEP_MAGIC + struct.pack(">H", len(packet) + len(vendor)) + vendor + packet[6:]
+        self.assertEqual("INVITE", hep.parse_event(packet)["method"])
 
     def test_gzip_payload(self):
         event = hep.parse_event(hep_packet(INVITE.encode(), gzip_payload=True))
@@ -218,12 +237,25 @@ class TestRtcp(unittest.TestCase):
         self.assertEqual("rtcp-xr", event["proto"])
 
 
+class TestLiveCapture(unittest.TestCase):
+    def test_live_asterisk_capture(self):
+        event = hep.parse_event(LIVE_RTCP)
+        self.assertEqual("rtcp", event["proto"])
+        self.assertEqual("udp", event["transport"])
+        self.assertEqual("10.218.49.1:11407", event["src"])
+        self.assertEqual("10.218.49.121:11855", event["dst"])
+        self.assertTrue(event["call_id"].startswith("1771b7f5-"))
+        self.assertEqual(0, event["rtcp_fraction_lost"])
+        self.assertIsNotNone(event["rtcp_jitter"])
+
+
 class TestRobustness(unittest.TestCase):
-    def test_overshooting_payload_length_does_not_raise(self):
-        for payload in (INVITE.encode(), b"", RTCP_REPORT.encode()):
-            event = hep.parse_event(hep_packet(payload))
-            if payload:
-                self.assertIsNotNone(event)
+    def test_payload_running_past_the_datagram_is_refused(self):
+        packet = hep_packet(INVITE.encode())
+        # the last chunk says it is longer than what arrived
+        broken = packet[:-5]
+        event = hep.parse_event(broken)
+        self.assertNotEqual("INVITE", (event or {}).get("method"))
 
     def test_not_a_hep_packet(self):
         self.assertIsNone(hep.parse_event(b""))
@@ -239,7 +271,7 @@ class TestRobustness(unittest.TestCase):
         self.assertNotEqual("INVITE", (event or {}).get("method"))
 
     def test_tlv_length_below_header_is_refused(self):
-        body = hep.HEP_MAGIC + struct.pack(">HH", 16, 0) + struct.pack(">HH", 0x0001, 0)
+        body = hep.HEP_MAGIC + struct.pack(">H", 12) + struct.pack(">HHH", 0, 0x0001, 2)
         self.assertIsNone(hep.parse_event(body))
         self.assertEqual([], list(hep.iter_tlvs(body)))
 

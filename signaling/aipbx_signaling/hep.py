@@ -9,24 +9,25 @@ It is pure: no sockets, no database, no clock. Every function can therefore be
 unit-tested against fixtures (see ../tests), including the datagrams with the
 quirks below.
 
-Wire format ("HEPv3"):
+Wire format ("HEPv3", https://github.com/sipcapture/HEP):
 
-    "HEP3" magic (4) | total length (2, big-endian) | reserved (2)
-    then TLVs: type (2) + length (2, INCLUDING this 4-byte header) + value
+    "HEP3" magic (4) | total length (2, big-endian)
+    then chunks: vendor id (2) + chunk type (2) + length (2, INCLUDING this
+    6-byte header) + value
 
-Quirks of res_hep, all handled here (verified against live captures with
-tcpdump — a plain "obey the spec" parser silently drops most of these):
+Until 1.50.8 this parser read 4-byte chunk headers after an 8-byte packet
+header. Every value was then shifted by two bytes (which looked like
+"padding"), and the last chunk — the SIP or RTCP message itself — seemed to
+run past the datagram and was dropped, so every captured message was stored
+as "unknown" with no method and no RTCP counters (found with a live
+Asterisk 22 capture, 2026-10-23).
 
-  - TLV values are padded. An IPv4 address carries 4 trailing zero bytes, a
-    timestamp and a capture id carry trailing zeros, and a port carries two,
-    so a port is the FIRST two bytes, not the whole value.
-  - The last payload TLV's declared length can overshoot the datagram, so a
-    TLV whose value would run past the datagram is refused instead of read.
-  - The SIP payload arrives under TLV 0x000F; 0x000D is also seen.
-  - The protocol family of an RTCP report is NOT reliable. res_hep_rtcp
-    datagrams are seen carrying family 1 (SIP) with an RTCP body, which is why
-    payloads are classified by their CONTENT here and the family is only a
-    hint. Trusting the family makes RTCP reports end up labelled as SIP.
+What still needs care:
+
+  - The protocol type (chunk 0x000B: 1 SIP, 5 RTCP) is a hint only; payloads
+    are classified by their CONTENT, so a mislabelled datagram is still read
+    right.
+  - A chunk whose length would run past the datagram is refused, not read.
 """
 
 from __future__ import annotations
@@ -39,23 +40,27 @@ from typing import Iterator, Optional
 
 HEP_MAGIC = b"HEP3"
 
-# TLV types (Homer Encapsulation Protocol, the subset Asterisk sends).
-HEP_PROTOCOL_FAMILY = 0x0001
-HEP_TRANSPORT = 0x0002
+# Chunk types (Homer Encapsulation Protocol v3, the ones Asterisk's res_hep sends).
+HEP_IP_FAMILY = 0x0001        # 2 = IPv4, 10 = IPv6
+HEP_IP_PROTO = 0x0002         # 17 = UDP, 6 = TCP
 HEP_SRC_IP4 = 0x0003
 HEP_DST_IP4 = 0x0004
 HEP_SRC_IP6 = 0x0005
 HEP_DST_IP6 = 0x0006
 HEP_SRC_PORT = 0x0007
 HEP_DST_PORT = 0x0008
-HEP_TIMESTAMP = 0x0009
+HEP_TIMESTAMP = 0x0009        # seconds; 0x000A carries the microseconds
+HEP_PROTOCOL_TYPE = 0x000B    # 1 = SIP, 5 = RTCP (JSON)
 HEP_CAPTURE_ID = 0x000C
-HEP_PAYLOAD = 0x000D
-HEP_PAYLOAD_GZ = 0x000E
-HEP_PAYLOAD_ALT = 0x000F
+HEP_AUTH_KEY = 0x000E
+HEP_PAYLOAD = 0x000F
+HEP_PAYLOAD_GZ = 0x0010
 HEP_CALL_ID = 0x0011
 
-TRANSPORT_NAMES = {0: "udp", 1: "tcp", 2: "tls", 3: "sctp", 4: "ws", 5: "wss"}
+HEADER_LEN = 6
+CHUNK_HEADER_LEN = 6
+
+TRANSPORT_NAMES = {17: "udp", 6: "tcp", 132: "sctp"}
 
 PROTOCOL_NAMES = {
     1: "sip",
@@ -96,7 +101,7 @@ def _u32(raw: bytes) -> int:
 
 
 def _ip(raw: bytes) -> str:
-    """An address TLV value; res_hep pads IPv4 with 4 zero bytes."""
+    """An address chunk: 4 bytes IPv4, 16 bytes IPv6."""
     if len(raw) >= 16:
         try:
             return str(ipaddress.IPv6Address(raw[:16]))
@@ -111,24 +116,25 @@ def _ip(raw: bytes) -> str:
 
 
 def iter_tlvs(data: bytes) -> Iterator[tuple[int, bytes]]:
-    """Yields (type, value) for every complete TLV in a HEPv3 datagram.
+    """Yields (chunk type, value) for every complete chunk of a HEPv3 datagram.
 
-    Stops at the first TLV whose declared length would run past the datagram:
-    res_hep's final payload TLV can overshoot, and reading past it either
-    raises or invents garbage. Trailing bytes that cannot hold a TLV header
-    are ignored.
+    Stops at the first chunk whose declared length is shorter than its header
+    or would run past the datagram. Only the generic vendor (0) is read; a
+    vendor chunk is skipped.
     """
-    pos = 8
+    pos = HEADER_LEN
     end = len(data)
-    while pos + 4 <= end:
-        tlv_type = _u16(data[pos:pos + 2])
-        tlv_len = _u16(data[pos + 2:pos + 4])
-        if tlv_len < 4:
+    while pos + CHUNK_HEADER_LEN <= end:
+        vendor = _u16(data[pos:pos + 2])
+        chunk_type = _u16(data[pos + 2:pos + 4])
+        chunk_len = _u16(data[pos + 4:pos + 6])
+        if chunk_len < CHUNK_HEADER_LEN:
             return
-        value_end = pos + tlv_len
+        value_end = pos + chunk_len
         if value_end > end:
             return
-        yield tlv_type, data[pos + 4:value_end]
+        if vendor == 0:
+            yield chunk_type, data[pos + CHUNK_HEADER_LEN:value_end]
         pos = value_end
 
 
@@ -311,10 +317,10 @@ def parse_event(data: bytes) -> Optional[dict]:
         # makes parsing independent of how a packet was assembled.
         fields.setdefault(tlv_type, value)
 
-    family = fields.get(HEP_PROTOCOL_FAMILY, b"")
+    family = fields.get(HEP_PROTOCOL_TYPE, b"")
     family_id = family[0] if family else 0
 
-    payload = fields.get(HEP_PAYLOAD) or fields.get(HEP_PAYLOAD_ALT) or b""
+    payload = fields.get(HEP_PAYLOAD) or b""
     gz = fields.get(HEP_PAYLOAD_GZ)
     if not payload and gz:
         try:
@@ -322,7 +328,7 @@ def parse_event(data: bytes) -> Optional[dict]:
         except (OSError, EOFError):
             payload = b""
 
-    transport_raw = fields.get(HEP_TRANSPORT, b"")
+    transport_raw = fields.get(HEP_IP_PROTO, b"")
     transport = TRANSPORT_NAMES.get(transport_raw[0] if transport_raw else 0, "")
 
     src_ip = _ip(fields.get(HEP_SRC_IP4, b"")) or _ip(fields.get(HEP_SRC_IP6, b""))

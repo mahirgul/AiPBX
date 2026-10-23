@@ -74,7 +74,22 @@ class AsteriskSettingsService {
             'amd_between_words_silence'   => '50',
             'amd_maximum_number_of_words' => '2',
             'amd_silence_threshold'       => '256',
+
+            // Signaling capture (SIP ladder + RTCP quality) into the local daemon: off by default.
+            'signaling_capture'        => '0',
+            'signaling_retention_days' => '30',
         ];
+    }
+
+    /** Rows captured in the last 24 hours and the newest one, for the settings page. */
+    public static function signalingStatus(): array
+    {
+        try {
+            $r = getDB()->query('SELECT COUNT(*) AS n, MAX(ts) AS last FROM pbx_signaling_events WHERE ts >= NOW() - INTERVAL 1 DAY')->fetch(PDO::FETCH_ASSOC);
+            return ['rows' => (int) ($r['n'] ?? 0), 'last' => $r['last'] ?? null];
+        } catch (\Throwable $e) {
+            return ['rows' => 0, 'last' => null];
+        }
     }
 
     /**
@@ -173,7 +188,11 @@ class AsteriskSettingsService {
             'amd_between_words_silence'   => (string)max(10, min(2000, intval($post['amd_between_words_silence'] ?? 50))),
             'amd_maximum_number_of_words' => (string)max(1, min(20, intval($post['amd_maximum_number_of_words'] ?? 2))),
             'amd_silence_threshold'       => (string)max(1, min(32767, intval($post['amd_silence_threshold'] ?? 256))),
+
+            'signaling_capture'        => (($post['signaling_capture'] ?? '0') === '1') ? '1' : '0',
+            'signaling_retention_days' => (string)max(1, min(3650, intval($post['signaling_retention_days'] ?? 30))),
         ];
+        $signaling_changed = getSystemSetting('signaling_capture', '0') !== $new_settings['signaling_capture'];
 
         // --- RTP (media) settings --------------------------------------------
         $rtp_start = max(1024, min(65534, intval($post['rtp_start'] ?? 10000)));
@@ -262,6 +281,15 @@ class AsteriskSettingsService {
         markPendingSync('queues', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('rtp', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('udptl', 'system_setting', 'general', $label, 'update', $uid);
+
+        // Capture on/off only reloads res_hep (no call is touched), so it is applied now.
+        if ($signaling_changed) {
+            try {
+                syncSignalingCapture();
+            } catch (\Throwable $e) {
+                return ['success' => false, 'error' => t('srv_asterisk.saved') . ' ' . $e->getMessage()];
+            }
+        }
 
         try {
             $lang_changed = syncDefaultLanguage($new_settings['system_default_language']);
