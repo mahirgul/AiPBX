@@ -98,6 +98,9 @@ function voicemailGeneralConf(): string
     return "; Managed by AiPBX (SyncVoicemail) - changes are overwritten.\n"
         . "; Voicemail e-mails use the \"voicemail\" template: Admin -> E-Mail -> Templates.\n"
         . "mailcmd=/usr/bin/php {$script}\n"
+        // One file per message: the stock wav49|gsm|wav kept three copies, and
+        // the portal and the apps play the wav.
+        . "format=wav\n"
         . "charset=UTF-8\n"
         . "emaildateformat=%d.%m.%Y %H:%M\n"
         . "emailsubject=Voicemail \${VM_MAILBOX}\n"

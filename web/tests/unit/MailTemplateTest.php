@@ -153,6 +153,7 @@ final class MailTemplateTest extends TestCase
         $conf = voicemailGeneralConf();
         $this->assertMatchesRegularExpression('#^mailcmd=/usr/bin/php .*/bin/voicemail_mail\.php$#m', $conf);
         $this->assertStringContainsString('emailbody=AIPBX-VM\\nmailbox=${VM_MAILBOX}', $conf);
+        $this->assertMatchesRegularExpression('/^format=wav$/m', $conf, 'one file per message');
         $this->assertFileExists(dirname(__DIR__, 2) . '/bin/voicemail_mail.php');
     }
 

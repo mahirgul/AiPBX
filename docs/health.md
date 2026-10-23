@@ -8,7 +8,7 @@ managers: yesterday's calls and faxes and the state of every check.
 
 | Check | Default | Warning / failed when |
 |-------|---------|------------------------|
-| Asterisk | 5 min | Asterisk does not answer |
+| Asterisk | 5 min | Asterisk does not answer (failed); it still runs on libraries a system update replaced, so it needs a restart when no calls are in progress (warning) |
 | Database | 5 min | MariaDB does not answer |
 | Web portal | 5 min | the sign-in page does not answer 200 |
 | Chat service | 5 min | `aipbx-chat` is not running |
@@ -18,6 +18,7 @@ managers: yesterday's calls and faxes and the state of every check.
 | E-mail sending | 1 h | postfix not running (failed); messages queued for over an hour (warning) |
 | Pending changes | 1 h | changes not applied for over an hour |
 | Outgoing faxes | 1 h | faxes waiting to be sent for over an hour |
+| Call records | 15 min | Asterisk has handled calls since it started (15 min or more ago) but none reached the call history — the CDR database connection is broken; restart Asterisk |
 | DHCP / TFTP / FTP | 15 min | switched on, but the service does not run |
 | Server address | 60 min | a stored address (server, phones, coturn, mDNS) is not this server's any more: see [Network settings](network-settings.md#when-the-servers-ip-address-changed) |
 | Local AI service | 15 min | installed and enabled, but not running |

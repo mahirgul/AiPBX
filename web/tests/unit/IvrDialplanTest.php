@@ -65,6 +65,8 @@ final class IvrDialplanTest extends TestCase
 
         $this->assertStringContainsString('Set(IVR2FAILS=$[0${IVR2FAILS} + 1])', $conf);
         $this->assertStringContainsString('GotoIf($[0${IVR2FAILS} < 5]?s,1)', $conf);
+        // the caller hears that the key was wrong before the menu repeats
+        $this->assertStringContainsString("exten => i,1,NoOp(IVR 2 Invalid Digit)\n same => n,Playback(conf-errormenu)\n", $conf);
     }
 
     public function testIvrDirectDialDisabled(): void

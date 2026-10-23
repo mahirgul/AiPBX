@@ -33,6 +33,11 @@ A route lists one or more trunks. They are tried in order; if one is unavailable
 channel limit, the next is tried. Each entry can override the caller ID for that trunk. The trunk's own
 [outbound caller ID normalization](trunks.md#outbound-caller-id-normalization) is applied as well.
 
+**No trunk loops:** a call that came in on a trunk is not sent straight back out through the same
+trunk; that trunk counts as congested and the next one of the route is tried. Otherwise a number the
+PBX behind the trunk routes to AiPBX, and AiPBX back, loops thousands of times an hour. Call
+forwarding of an extension to a number behind the same trunk still works.
+
 **Internal** routes (to another PBX) keep the internal caller ID; external routes send the user's
 external caller ID or the trunk's.
 

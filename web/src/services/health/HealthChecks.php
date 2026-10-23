@@ -27,6 +27,7 @@ final class HealthChecks
         'mail' => 60,
         'pending_changes' => 60,
         'fax_queue' => 60,
+        'call_records' => 15,
         'network_services' => 15,
         'server_address' => 60,
         'local_ai' => 15,
@@ -54,6 +55,7 @@ final class HealthChecks
                 'mail' => self::mail(),
                 'pending_changes' => self::pendingChanges(),
                 'fax_queue' => self::faxQueue(),
+                'call_records' => self::callRecords(),
                 'network_services' => self::networkServices(),
                 'server_address' => self::serverAddress(),
                 'local_ai' => self::localAi(),
@@ -78,7 +80,16 @@ final class HealthChecks
         }
         $calls = self::sh('asterisk -rx "core show channels count"');
         $n = preg_match('/(\d+) active call/', $calls, $c) ? (int) $c[1] : 0;
-        return ['ok', sprintf(t('health.msg_asterisk_ok'), self::duration((int) $m[1]), $n)];
+        $msg = sprintf(t('health.msg_asterisk_ok'), self::duration((int) $m[1]), $n);
+        // needrestart leaves Asterisk alone (it dropped calls): after a library
+        // update it keeps running on the replaced files until restarted.
+        $pid = (int) trim(self::sh('pidof -s asterisk'));
+        $maps = $pid > 0 ? (string) @file_get_contents("/proc/{$pid}/maps") : '';
+        if (preg_match_all('#\s(/\S+\.so[.\d]*) \(deleted\)$#m', $maps, $d)) {
+            $libs = array_map('basename', array_unique($d[1]));
+            return ['warn', $msg . ' ' . sprintf(t('health.msg_asterisk_old_libs'), implode(', ', array_slice($libs, 0, 5)))];
+        }
+        return ['ok', $msg];
     }
 
     private static function database(): array
@@ -205,6 +216,34 @@ final class HealthChecks
     {
         $n = (int) getDB()->query('SELECT COUNT(*) FROM sys_pending_sync WHERE changed_at < NOW() - INTERVAL 1 HOUR')->fetchColumn();
         return $n > 0 ? ['warn', sprintf(t('health.msg_pending'), $n)] : ['ok', t('health.msg_pending_ok')];
+    }
+
+    /**
+     * Calls Asterisk handled since it started must be in the call history. On
+     * 2026-10-21 Asterisk started before MariaDB, the CDR backend found no
+     * connection and wrote nothing for 11 hours.
+     */
+    private static function callRecords(): array
+    {
+        $up = self::sh('asterisk -rx "core show uptime seconds"');
+        if (!preg_match('/System uptime:\s*(\d+)/', $up, $u)) {
+            return ['off', t('health.msg_asterisk_down')];
+        }
+        $calls = self::sh('asterisk -rx "core show channels count"');
+        $processed = preg_match('/(\d+) calls? processed/', $calls, $c) ? (int) $c[1] : 0;
+        $st = getDB()->prepare('SELECT COUNT(*) FROM asteriskcdr WHERE calldate >= NOW() - INTERVAL ? SECOND');
+        $st->execute([(int) $u[1]]);
+        return self::callRecordsStatus((int) $u[1], $processed, (int) $st->fetchColumn());
+    }
+
+    /** @return array{0: string, 1: string} Pure, so the rule is tested on its own. */
+    public static function callRecordsStatus(int $uptime, int $processed, int $records): array
+    {
+        // A few calls and 15 minutes first: a call in progress has no record yet.
+        if ($uptime >= 900 && $processed >= 3 && $records === 0) {
+            return ['fail', sprintf(t('health.msg_cdr_missing'), $processed, self::duration($uptime))];
+        }
+        return ['ok', sprintf(t('health.msg_cdr_ok'), $records, self::duration($uptime))];
     }
 
     private static function faxQueue(): array
