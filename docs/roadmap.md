@@ -4,6 +4,46 @@ Planned work, roughly in the order it is expected. Nothing here is a promise of 
 [issues](https://github.com/mahirgul/AiPBX/issues) hold the discussion of each item, and ideas are
 welcome there.
 
+## Next: after the 1.50 maintenance freeze
+
+Since 1.50 (October 2026) only bug fixes and tests go in. The items below are collected for the time
+after it, in three waves: small things with immediate use first, then platform features, then the
+large projects.
+
+### Wave 1: small, immediate use
+
+| Item | What |
+|---|---|
+| Trunk call limits | Concurrent calls and calls per minute per trunk; over the limit the trunk stops taking calls and an alarm goes out. Stops call loops and toll fraud early (a trunk loop once made 6 000 calls an hour). |
+| Voicemail settings page | Message length, minimum length, messages per box, silence cut-off, login attempts, PIN rules (minimum length, not the extension). |
+| IVR and queue announcements | IVR timeout prompt; queue position and hold-time announcements, periodic announcement, longest wait and an overflow destination; later a call-back offer. |
+| Spoken status instead of tones | No answer, busy and unreachable extensions play a prompt in the system language (early media, no billing) instead of only a tone; per case and per extension. |
+| Night dialling protection | International and premium numbers at night need a PIN or are blocked. |
+
+### Wave 2: platform features
+
+| Item | What |
+|---|---|
+| Scheduled tasks | System → Scheduled tasks: shell, PHP or Python scripts on a cron schedule, in a sandbox as an unprivileged user (never root), with run history, "run now", versions and audit. Database access through curated read-only views (calls, missed calls, queue statistics, extensions, trunks, fax, voicemail, call quality, health, audit …; personal data only with extra consent), a schema of their own to write to, and PBX changes only through the REST API with a scoped token. |
+| External database connections | Connections to MySQL/PostgreSQL (others with PHP drivers) stored encrypted, with a test button; used by IVR and plugins. |
+| IVR data step | A database query or HTTP request inside an IVR, the answer in a channel variable, branches for found / not found / timeout, 2–3 s limit. |
+| Number normalisation | One form for numbers dialled as 0532…, +90532…, 90532… before route matching (partly done in Call normalisation); per-trunk outbound format and caller ID format. |
+| PBX fine tuning | Per-trunk DTMF mode, session timers, 100rel, T.38 details; jitter buffer size; SIP timers; Asterisk log level and a "SIP debug for 10 minutes" button; a restart window at 0 calls (library updates since needrestart no longer restarts Asterisk). |
+| Asterisk ACL | A failed-registration threshold in Asterisk itself, next to Fail2ban. |
+
+### Wave 3: large projects
+
+| Item | What |
+|---|---|
+| Multi-tenant | One LXD/Incus container per tenant running the normal installer, a separate control panel (create, suspend, update, back up, quotas, audited log-in-as); tenants share an IP with their own port blocks, web/WSS routed by host name; soft limit of about 20 tenants per server. No Kamailio. |
+| Group voice call from chat | A conference room per chat group, started from the mobile app; members are notified and join. |
+| Community plugins | Move `ai-assistant` out of the core into a community plugin (needs a migration for installations that use it). |
+| Remote TTS server | The "nefes-0.5" voice as a remote engine for announcements (needs an NVIDIA GPU with 16 GB). |
+
+Also waiting: per-domain apply of pending changes (#120).
+
+## Earlier plans
+
 | # | Item | Issue | Size |
 |---|------|-------|------|
 | 1 | [Website call widget](#1-website-call-widget) and WordPress plugin | [#14](https://github.com/mahirgul/AiPBX/issues/14) | large |
