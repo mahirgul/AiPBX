@@ -18,6 +18,10 @@ final class NoticeServiceTest extends TestCase
         'notice_email', 'notice_email_to', 'notice_quiet_hours', 'notice_window_hours',
     ];
 
+    /** Two administrators, to prove read state is per person. */
+    private const USER_A = 101;
+    private const USER_B = 202;
+
     protected function setUp(): void
     {
         $this->wipe();
@@ -31,6 +35,7 @@ final class NoticeServiceTest extends TestCase
     private function wipe(): void
     {
         $db = getDB();
+        $db->exec('DELETE FROM pbx_notice_reads');
         $db->exec('DELETE FROM pbx_notices');
         $placeholders = implode(',', array_fill(0, count(self::SETTING_KEYS), '?'));
         $db->prepare('DELETE FROM sys_settings WHERE setting_key IN (' . $placeholders . ')')
@@ -108,19 +113,39 @@ final class NoticeServiceTest extends TestCase
     {
         $first = NoticeService::notify('info', 'One', '', 'one');
         NoticeService::notify('info', 'Two', '', 'two');
-        self::assertSame(2, NoticeService::unreadCount());
+        self::assertSame(2, NoticeService::unreadCount(self::USER_A));
 
-        self::assertTrue(NoticeService::markRead((int) $first['id']));
-        self::assertSame(1, NoticeService::unreadCount());
-        self::assertFalse(NoticeService::markRead((int) $first['id']), 'already read stays read');
+        self::assertTrue(NoticeService::markRead((int) $first['id'], self::USER_A));
+        self::assertSame(1, NoticeService::unreadCount(self::USER_A));
+        self::assertFalse(NoticeService::markRead((int) $first['id'], self::USER_A), 'already read stays read');
     }
 
     public function testMarkAllRead(): void
     {
         NoticeService::notify('info', 'One', '', 'one');
         NoticeService::notify('critical', 'Two', '', 'two');
-        self::assertSame(2, NoticeService::markAllRead());
-        self::assertSame(0, NoticeService::unreadCount());
+        self::assertSame(2, NoticeService::markAllRead(self::USER_A));
+        self::assertSame(0, NoticeService::unreadCount(self::USER_A));
+    }
+
+    public function testOneAdministratorReadingDoesNotDismissItForAnother(): void
+    {
+        $first = NoticeService::notify('critical', 'Trunk down', 'REGISTER failed', 'trunk-1-down');
+        self::assertSame(1, NoticeService::unreadCount(self::USER_A));
+        self::assertSame(1, NoticeService::unreadCount(self::USER_B));
+
+        self::assertTrue(NoticeService::markRead((int) $first['id'], self::USER_A));
+        self::assertSame(0, NoticeService::unreadCount(self::USER_A));
+        self::assertSame(1, NoticeService::unreadCount(self::USER_B), 'the other administrator still sees it unread');
+
+        $mine = NoticeService::recent(self::USER_A);
+        $theirs = NoticeService::recent(self::USER_B);
+        self::assertTrue((bool) $mine[0]['is_read']);
+        self::assertFalse((bool) $theirs[0]['is_read']);
+
+        self::assertSame(1, NoticeService::markAllRead(self::USER_B), 'mark-all only touches this user');
+        self::assertSame(0, NoticeService::unreadCount(self::USER_B));
+        self::assertSame(0, NoticeService::markAllRead(self::USER_B), 'nothing left to mark');
     }
 
     public function testAQuietWindowCrossingMidnight(): void

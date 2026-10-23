@@ -156,25 +156,30 @@ class NoticeService
         ) === 1;
     }
 
-    /** @return list<array<string, mixed>> newest first */
-    public static function recent(int $limit = 20): array
+    /**
+     * The cabinet as one person sees it. Read state is per user: an
+     * administrator who opens the bell does not dismiss it for the others.
+     *
+     * @return list<array<string, mixed>> newest first
+     */
+    public static function recent(int $userId, int $limit = 20): array
     {
-        return NoticeRepository::recent($limit);
+        return NoticeRepository::recent($userId, $limit);
     }
 
-    public static function unreadCount(): int
+    public static function unreadCount(int $userId): int
     {
-        return NoticeRepository::unreadCount();
+        return NoticeRepository::unreadCount($userId);
     }
 
-    public static function markRead(int $id): bool
+    public static function markRead(int $id, int $userId): bool
     {
-        return NoticeRepository::markRead($id) > 0;
+        return NoticeRepository::markRead($id, $userId) > 0;
     }
 
-    public static function markAllRead(): int
+    public static function markAllRead(int $userId): int
     {
-        return NoticeRepository::markAllRead();
+        return NoticeRepository::markAllRead($userId);
     }
 
     /** A severity as the UI shows it: colour class and icon. */

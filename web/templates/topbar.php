@@ -80,6 +80,7 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
     <!-- Top Bar Right: Notices, Pending Sync (Uygula) Dropdown & Actions -->
     <div class="top-bar-right">
         <?php require_once dirname(__DIR__) . '/src/services/NoticeService.php'; ?>
+        <?php if (($_SESSION['user_role'] ?? '') === 'admin'): /* administrator notices only; api/notices.php enforces it too */ ?>
         <div class="header-notices-wrapper" id="notices-bell-wrapper">
             <button type="button" class="topbar-btn" id="notices-bell"
                     data-csrf="<?php echo htmlspecialchars(getCSRFToken()); ?>"
@@ -103,6 +104,7 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
                 </div>
             </div>
         </div>
+        <?php endif; ?>
         <?php
         if (!isset($pending_sync_count)) {
             require_once __DIR__ . '/../src/asterisk_sync.php';
