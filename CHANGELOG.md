@@ -5,6 +5,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.7
+
+Fixes found while checking the IVR and voicemail on a production PBX.
+
+- **Call records were lost after automatic system updates.** When unattended-upgrades updated a
+  library, needrestart restarted MariaDB and Asterisk together; Asterisk came up first, the CDR
+  backend found no database connection and wrote no call records until the next Asterisk
+  restart (11 hours on one PBX). The same happened on a reboot. Asterisk now starts after
+  MariaDB, and needrestart no longer restarts Asterisk at all: that also dropped the calls in
+  progress at 06:35. Asterisk picks up updated libraries on the next AiPBX update or reboot.
+- **Trunk loops are cut.** A call that came in on a trunk and matched an outbound route of the
+  same trunk was sent straight back; when the PBX behind the trunk routed the number to AiPBX
+  again, the call looped, thousands of times an hour. Such a call now counts as congestion on
+  that trunk (the next trunk of the route is tried). Call forwarding of an extension to a
+  number behind the same trunk still works.
+- **Voicemail:** the sample mailboxes of Asterisk's stock `voicemail.conf` (1234 with PIN 4242)
+  are disabled; anyone allowed the general voicemail code could log in to them.
+
 ## 1.50.6
 
 Updates restart Asterisk only when they have to: most releases now keep calls up.

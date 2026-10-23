@@ -59,6 +59,22 @@ final class DialplanInjectionTest extends TestCase
         $this->assertMatchesRegularExpression('/^' . self::EXT . ' => \d+,Mail  Test,,,/m', $conf, 'comma in the name does not shift the fields');
     }
 
+    public function testStockSampleMailboxesAreDisabled(): void
+    {
+        $main = ASTERISK_CONF_DIR . '/voicemail.conf';
+        $before = is_file($main) ? file_get_contents($main) : null;
+        file_put_contents($main, "[general]\nformat=wav\n\n[default]\n1234 => 4242,Example Mailbox,root@localhost\n\n[other]\n1234 => 5678,Company2 User,root@localhost\n");
+        try {
+            syncVoicemail();
+            $conf = (string) file_get_contents($main);
+            $this->assertDoesNotMatchRegularExpression('/^1234 =>/m', $conf);
+            $this->assertStringContainsString(';1234 => 4242,Example Mailbox,root@localhost ; sample mailbox, disabled by AiPBX', $conf);
+            $this->assertStringContainsString('#include "pbx/voicemail_pbx.conf"', $conf);
+        } finally {
+            $before === null ? @unlink($main) : file_put_contents($main, $before);
+        }
+    }
+
     public function testRingGroupPrefixKeepsTheExpression(): void
     {
         $this->db->prepare("INSERT INTO pbx_ring_groups (group_number, internal_number, name, numbers_list, ring_strategy, ring_timeout, cid_prefix, fallback_dest_type, fallback_dest_id, record_call, is_active)

@@ -37,6 +37,13 @@ function __syncVoicemailBody() {
             $vm_content = preg_replace('/^\[general\][^\n]*$/m', "$0\n#include \"pbx/voicemail_general.conf\"", $vm_content, 1);
             @file_put_contents($main_vm_conf, $vm_content);
         }
+        // The stock file ships sample mailboxes (1234, PIN 4242, in [default]):
+        // anyone allowed the general voicemail code could log in to it.
+        $vm_content = @file_get_contents($main_vm_conf);
+        $samples = '/^(1234 => 4242,Example Mailbox,root@localhost|1234@devices => 1234@default|1234 => 5678,Company2 User,root@localhost)\s*$/m';
+        if ($vm_content !== false && preg_match($samples, $vm_content)) {
+            @file_put_contents($main_vm_conf, preg_replace($samples, ';$1 ; sample mailbox, disabled by AiPBX', $vm_content));
+        }
     }
     require_once dirname(__DIR__) . '/file_helper.php';
     FileHelper::writeFile(ASTERISK_PBX_DIR . '/voicemail_general.conf', voicemailGeneralConf());

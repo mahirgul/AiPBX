@@ -165,6 +165,13 @@ function __syncOutboundDialplanBody() {
                 // The GROUP counter is per channel; Asterisk drops it itself
                 // when the call ends. When the limit is full this trunk counts
                 // as CONGESTION so the next trunk in the chain is tried.
+                // A call that came in on this trunk is not sent straight back
+                // out through it: a number the PBX behind the trunk routes to
+                // us and we route back looped, thousands of calls an hour
+                // (production NEC trunk, October 2026). Call forwarding of an
+                // extension (CF_HOPS set) may still go back out.
+                $hp = preg_quote($t['trunk_name'], '/');
+                $conf .= " same => n,GotoIf(\$[\"\${CF_HOPS}\" = \"\" & \${REGEX(\"^PJSIP/{$hp}-[0-9a-f]+\$\" \${CHANNEL(name)})}]?hairpin{$step})\n";
                 $limit = intval($t['max_channels'] ?? 0);
                 if ($limit > 0) {
                     $conf .= " same => n,Set(GROUP(trunk)={$t['trunk_name']})\n";
@@ -182,6 +189,10 @@ function __syncOutboundDialplanBody() {
                     $conf .= " same => n,Set(DIALSTATUS=CONGESTION)\n";
                     $conf .= " same => n(afterdial{$step}),NoOp()\n";
                 }
+                $conf .= " same => n,Goto(afterhp{$step})\n";
+                $conf .= " same => n(hairpin{$step}),NoOp(Call came in on trunk {$t['trunk_name']}: not sent back out through it)\n";
+                $conf .= " same => n,Set(DIALSTATUS=CONGESTION)\n";
+                $conf .= " same => n(afterhp{$step}),NoOp()\n";
                 if ($step < $count) {
                     $next = $step + 1;
                     $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\"=\"CHANUNAVAIL\"|\"\${DIALSTATUS}\"=\"CONGESTION\"]?try{$next}:donecall)\n";
