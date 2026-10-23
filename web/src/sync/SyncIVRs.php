@@ -109,6 +109,9 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
 
     $conf .= "; Invalid Destination - {$max_failures} failed attempts repeat the menu\n";
     $conf .= "exten => i,1,NoOp(IVR {$ivr_id} Invalid Digit)\n";
+    // "Invalid choice." before the menu repeats: without it the caller heard
+    // the menu start again and could not tell the key was wrong.
+    $conf .= " same => n,Playback(conf-errormenu)\n";
     $conf .= " same => n,Set({$fail_var}=\$[0\${{$fail_var}} + 1])\n";
     $conf .= " same => n,GotoIf(\$[0\${{$fail_var}} < {$max_failures}]?s,1)\n";
     $conf .= " same => n,NoOp(IVR {$ivr_id} Max Invalid Attempts ({$max_failures}) Reached -> {$ivr['invalid_dest_type']})\n";

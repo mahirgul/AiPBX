@@ -63,4 +63,14 @@ final class HealthServiceTest extends TestCase
         }
         $this->assertSame(['fail', 'unknown check'], HealthChecks::run('nope'));
     }
+
+    public function testCallRecordsFailWhenCallsLeaveNoRecord(): void
+    {
+        // 2026-10-21: Asterisk started before MariaDB and wrote no CDRs for 11 hours.
+        $this->assertSame('fail', HealthChecks::callRecordsStatus(3600, 40, 0)[0]);
+        $this->assertSame('ok', HealthChecks::callRecordsStatus(3600, 40, 38)[0]);
+        // just started, or hardly any calls yet: no alarm
+        $this->assertSame('ok', HealthChecks::callRecordsStatus(300, 40, 0)[0]);
+        $this->assertSame('ok', HealthChecks::callRecordsStatus(3600, 2, 0)[0]);
+    }
 }

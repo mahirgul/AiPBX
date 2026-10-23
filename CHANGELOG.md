@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.8
+
+Small additions from the IVR and voicemail check.
+
+- **Health checks: call records.** A new check fails when Asterisk has handled calls since it
+  started but none reached the call history (the CDR database connection is broken), so a loss
+  like the 11 hours of 1.50.7 is noticed within 15 minutes.
+- **Health checks: Asterisk on replaced libraries.** Since 1.50.7 needrestart leaves Asterisk
+  alone; the Asterisk check now warns when a system update replaced libraries Asterisk still
+  uses, so it can be restarted when no calls are in progress.
+- **IVR:** a wrong key plays "Invalid choice." before the menu repeats; callers used to hear the
+  menu start again with no hint.
+- **Voicemail:** a message is stored once, as wav (the stock setting kept three copies: wav49, gsm
+  and wav).
+
 ## 1.50.7
 
 Fixes found while checking the IVR and voicemail on a production PBX.
