@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.10
+
+- **Audit log:** four changes left no trace: Google sign-in settings (the client secret itself is
+  never logged, only that it changed), deleting a time group, removing a waiting desk phone, and the
+  default e-mail language.
+
 ## 1.50.9
 
 Call quality is part of AiPBX, and everything in the alert bell is e-mailed too.

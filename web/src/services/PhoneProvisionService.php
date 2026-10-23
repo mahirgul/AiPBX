@@ -394,7 +394,12 @@ class PhoneProvisionService
     public static function deleteWaiting(int $waitingId, string $csrf): array
     {
         return PBXHelper::handleAction($csrf, function () use ($waitingId) {
-            getDB()->prepare('DELETE FROM pbx_phones_waiting WHERE id = ?')->execute([$waitingId]);
+            $db = getDB();
+            $mac = $db->prepare('SELECT mac FROM pbx_phones_waiting WHERE id = ?');
+            $mac->execute([$waitingId]);
+            $label = ($m = $mac->fetchColumn()) ? PhoneModels::formatMac((string) $m) : "#{$waitingId}";
+            $db->prepare('DELETE FROM pbx_phones_waiting WHERE id = ?')->execute([$waitingId]);
+            writeAuditLog('phones', 'phone_waiting', $waitingId, $label, 'delete', $_SESSION['user_id'] ?? null);
             return t('phones.waiting_removed');
         });
     }

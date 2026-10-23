@@ -159,8 +159,12 @@ class TimeConditionService {
             if ($check->fetchColumn() > 0) {
                 throw new \Exception(t('srv_tc.err_group_in_use'));
             }
+            $name = $db->prepare('SELECT title FROM pbx_time_groups WHERE id = ?');
+            $name->execute([$tg_id]);
+            $label = (string) ($name->fetchColumn() ?: "#{$tg_id}");
             $stmt = $db->prepare("DELETE FROM pbx_time_groups WHERE id = ?");
             $stmt->execute([$tg_id]);
+            writeAuditLog('time_conditions', 'time_group', $tg_id, $label, 'delete', $_SESSION['user_id'] ?? null);
             return t('srv_tc.group_deleted');
         });
     }

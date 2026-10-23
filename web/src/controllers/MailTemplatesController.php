@@ -23,6 +23,7 @@ class MailTemplatesController extends BaseController
                 }
                 getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
                     ->execute(['mail_default_language', $lang]);
+                writeAuditLog(null, 'mail_templates', 'default_language', "Default e-mail language: {$lang}", 'update', $_SESSION['user_id'] ?? null);
                 return ['success' => true, 'message' => t('mail_templates.default_language_saved')];
             },
         ]);

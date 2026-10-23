@@ -356,6 +356,9 @@ class GoogleAuthService
             if (!empty($clientSecret) || $enabled === '0') {
                 $stmt->execute(['google_client_secret', $clientSecret]);
             }
+            // The secret itself is never written to the log, only that it changed.
+            writeAuditLog('google_integration', 'settings', 0, 'Google sign-in: ' . ($enabled === '1' ? 'on' : 'off')
+                . ($clientSecret !== '' ? ', client secret changed' : ''), 'update', $_SESSION['user_id'] ?? null);
 
             return ['success' => true, 'message' => t('srv_google.saved')];
         } catch (\Exception $e) {
