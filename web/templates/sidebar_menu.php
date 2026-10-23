@@ -35,6 +35,7 @@ return [
             ['href' => '/my-phone', 'icon' => 'fas fa-phone-volume', 'label' => 'sidebar.item_my_phone', 'show' => $can('my_phone'), 'pages' => ['my_phone.php']],
             ['href' => '/chat', 'icon' => 'fas fa-comments', 'label' => 'sidebar.item_chat', 'show' => $can('chat'), 'pages' => ['chat.php']],
             ['href' => '/cdr-reports', 'icon' => 'fas fa-file-audio', 'label' => 'sidebar.item_cdr_reports', 'show' => $can('cdr_reports') || $can('cc_reports'), 'pages' => ['cdr_reports.php', 'reports.php']],
+            ['href' => '/call-quality', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_call_quality', 'show' => $isAdmin, 'pages' => ['call_quality.php']],
         ],
     ],
     [

@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.9
+
+Call quality is part of AiPBX, and everything in the alert bell is e-mailed too.
+
+- **Reports → Call quality** (administrators): packet loss in both directions and jitter per trunk and
+  extension from the RTCP reports, the poor and fair calls of the last 24 hours, and which way the audio
+  is lost ("mostly on the way from the carrier"). Needs signaling capture on (PBX settings →
+  Signaling). Idea and first version: @shido6; it was a community plugin for a day.
+- **Health check "Call quality"**: a trunk or extension losing audio is an alarm like the others — in
+  the alert bell and e-mailed to the health recipients, with a "back to normal" mail.
+- **Health check "Other alerts"**: problems plugins report in the alert bell are e-mailed too.
+
 ## 1.50.8
 
 An alert bell for administrators, signaling capture built in (and working), and smaller fixes from

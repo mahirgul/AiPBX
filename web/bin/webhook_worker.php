@@ -15,6 +15,7 @@ if (PHP_SAPI !== 'cli') {
 
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/WebhookService.php';
+require_once dirname(__DIR__) . '/src/services/CallQualityService.php';
 if (is_file(dirname(__DIR__) . '/src/core/PluginManager.php')) {
     require_once dirname(__DIR__) . '/src/core/PluginManager.php';
 }
@@ -152,6 +153,12 @@ do {
     sweepCdrAndFaxEvents();
     if (class_exists('PluginManager')) {
         PluginManager::tickAllEnabledWorkers();
+    }
+    // Call quality from the captured RTCP reports: one pass a minute, only while capture is on.
+    try {
+        CallQualityService::tick();
+    } catch (\Throwable $e) {
+        error_log('call quality: ' . $e->getMessage());
     }
     $stats = WebhookService::processPendingBatch(50);
     if (!$isDaemon) {

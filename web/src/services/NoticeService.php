@@ -15,7 +15,9 @@ require_once __DIR__ . '/HealthService.php';
  *    stopped running. Then alarms reach nobody, and the bell is the only
  *    place that can say so.
  *
- * The e-mails stay as they are (HealthService); the bell works without them,
+ * E-mail: health problems are mailed by HealthService as always, and the
+ * problems raised here through its "alerts" check, so everything in the bell
+ * is also e-mailed when recipients are set. The bell works without mail,
  * which is the point when mail is not set up or broken. "New" is per person:
  * changes after the user last opened the bell.
  */
@@ -27,6 +29,9 @@ class NoticeService
     private const STALE_MINUTES = 30;
 
     private const HISTORY_DAYS = 7;
+
+    /** Health checks whose own page explains them better than /health. */
+    private const HEALTH_LINKS = ['call_quality' => '/call-quality'];
 
     /**
      * Opens or updates a problem. Raising the same key again keeps its first
@@ -77,15 +82,12 @@ class NoticeService
         $open = [];
         $checks = HealthService::checks();
         foreach ($checks as $key => $c) {
-            if ($c['interval'] > 0 && in_array($c['status'], self::SEVERITIES, true)) {
-                $open[] = self::item('health:' . $key, $c['status'], t('health.check_' . $key), $c['message'], '/health', $c['changed_at']);
+            // "alerts" only carries the items below to the e-mails; they are listed one by one.
+            if ($key !== 'alerts' && $c['interval'] > 0 && in_array($c['status'], self::SEVERITIES, true)) {
+                $open[] = self::item('health:' . $key, $c['status'], t('health.check_' . $key), $c['message'], self::HEALTH_LINKS[$key] ?? '/health', $c['changed_at']);
             }
         }
-        foreach ($db->query('SELECT * FROM sys_notices WHERE resolved_at IS NULL ORDER BY raised_at')->fetchAll(PDO::FETCH_ASSOC) as $n) {
-            // A disabled plugin cannot resolve what it raised: its problems are not shown.
-            if (!self::sourceActive((string) $n['source'])) {
-                continue;
-            }
+        foreach (self::openNotices() as $n) {
             $open[] = self::item('notice:' . $n['notice_key'], $n['severity'], $n['title'], $n['message'], $n['link'], $php($n['raised_at']));
         }
         $age = $db->query('SELECT TIMESTAMPDIFF(SECOND, MAX(checked_at), NOW()) FROM health_checks')->fetchColumn();
@@ -97,10 +99,10 @@ class NoticeService
 
         $since = (string) $db->query('SELECT NOW() - INTERVAL ' . self::HISTORY_DAYS . ' DAY')->fetchColumn();
         $recent = [];
-        $ev = $db->prepare('SELECT check_key, status, message, created_at FROM health_events WHERE created_at >= ? ORDER BY created_at DESC LIMIT 15');
+        $ev = $db->prepare("SELECT check_key, status, message, created_at FROM health_events WHERE created_at >= ? AND check_key <> 'alerts' ORDER BY created_at DESC LIMIT 15");
         $ev->execute([$since]);
         foreach ($ev->fetchAll(PDO::FETCH_ASSOC) as $e) {
-            $recent[] = self::item('health:' . $e['check_key'], $e['status'], t('health.check_' . $e['check_key']), $e['message'], '/health', $php($e['created_at']));
+            $recent[] = self::item('health:' . $e['check_key'], $e['status'], t('health.check_' . $e['check_key']), $e['message'], self::HEALTH_LINKS[$e['check_key']] ?? '/health', $php($e['created_at']));
         }
         $nv = $db->prepare('SELECT * FROM sys_notices WHERE updated_at >= ? ORDER BY updated_at DESC LIMIT 15');
         $nv->execute([$since]);
@@ -132,6 +134,18 @@ class NoticeService
             $worst = ($i['severity'] === 'fail' || $worst === 'fail') ? 'fail' : 'warn';
         }
         return ['open' => $open, 'recent' => $recent, 'count' => count($open), 'worst' => $worst, 'new' => $new];
+    }
+
+    /**
+     * Open problems raised with raise(), of core and of enabled plugins
+     * (a disabled plugin cannot resolve what it raised).
+     *
+     * @return list<array>
+     */
+    public static function openNotices(): array
+    {
+        $rows = getDB()->query('SELECT * FROM sys_notices WHERE resolved_at IS NULL ORDER BY raised_at')->fetchAll(PDO::FETCH_ASSOC);
+        return array_values(array_filter($rows, fn($n) => self::sourceActive((string) $n['source'])));
     }
 
     /** The user opened the bell: what is there now is not new for them any more. */

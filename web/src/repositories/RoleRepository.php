@@ -28,6 +28,7 @@ class RoleRepository extends BaseRepository
             'my_phone'           => ['title' => 'My Phone', 'group' => 'General', 'actions' => self::VAE],
             'chat'               => ['title' => 'Chat', 'group' => 'General', 'actions' => self::VA],
             'cdr_reports'        => ['title' => 'Call Reports', 'group' => 'General', 'actions' => self::VAD],
+            'call_quality'       => ['title' => 'Call Quality', 'group' => 'General', 'actions' => self::VAE, 'admin_only' => true],
             'system_users'       => ['title' => 'Users', 'group' => 'Administration', 'actions' => $all, 'admin_only' => true],
             'roles'              => ['title' => 'Roles & Permissions', 'group' => 'Administration', 'actions' => $all, 'admin_only' => true],
             'asterisk_settings'  => ['title' => 'PBX Settings', 'group' => 'Administration', 'actions' => self::VAE],
