@@ -232,14 +232,29 @@ function __syncOutboundDialplanBody() {
             $conf .= " same => n,Congestion(10)\n";
             $conf .= " same => n,Hangup(34)\n\n";
         } else {
-            $conf .= "exten => _NXXXXXX,1,NoOp(Fallback Outbound Call)\n";
-            $conf .= " same => n,Set(CDR(direction)=outbound)\n";
-            $conf .= " same => n,Dial(PJSIP/\${EXTEN}@{$fallback_trunk},{$external_dial_timeout},T)\n";
-            $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n\n";
-            $conf .= "exten => _05XXXXXXXXX,1,NoOp(Fallback Mobile Outbound Call)\n";
-            $conf .= " same => n,Set(CDR(direction)=outbound)\n";
-            $conf .= " same => n,Dial(PJSIP/\${EXTEN}@{$fallback_trunk},{$external_dial_timeout},T)\n";
-            $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n\n";
+            // Without any route the same brakes as a route: dial permissions (and the
+            // night protection in it), no hairpin back out of the trunk the call came
+            // in on, the trunk's limits and number format. They were skipped here, so
+            // a fresh install had unlimited, unchecked outbound calling.
+            $limit = intval($trunk_limits[$fallback_trunk] ?? 0);
+            $rate = intval($trunk_rates[$fallback_trunk] ?? 0);
+            $hp = preg_quote($fallback_trunk, '/');
+            foreach (['_NXXXXXX' => 'Fallback Outbound Call', '_05XXXXXXXXX' => 'Fallback Mobile Outbound Call'] as $fbPattern => $fbLabel) {
+                $conf .= "exten => {$fbPattern},1,NoOp({$fbLabel})\n";
+                $conf .= " same => n,Set(CDR(direction)=outbound)\n";
+                $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
+                $conf .= " same => n,GotoIf(\$[\"\${CF_HOPS}\" = \"\" & \${REGEX(\"^PJSIP/{$hp}-[0-9a-f]+\$\" \${CHANNEL(name)})}]?refused)\n";
+                if ($limit > 0 || $rate > 0) {
+                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$fallback_trunk},{$limit},{$rate},trunk))\n";
+                    $conf .= " same => n,GotoIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?refused)\n";
+                }
+                $conf .= " same => n,Set(AIPBX_DIAL_TARGET=\${EXTEN})\n";
+                $conf .= buildTrunkCarrierDialLine($trunk_carrier_norm[$fallback_trunk] ?? null);
+                $conf .= jitterBufferLine();
+                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$fallback_trunk},{$external_dial_timeout},T)\n";
+                $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n";
+                $conf .= " same => n(refused),Goto(sub-outbound-status,CONGESTION,1)\n\n";
+            }
         }
     }
     } // end of the group loop

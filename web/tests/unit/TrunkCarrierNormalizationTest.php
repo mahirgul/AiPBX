@@ -96,4 +96,27 @@ final class TrunkCarrierNormalizationTest extends TestCase
         $this->assertSame('required', TrunkService::timersValue('required'));
         $this->assertSame('yes', TrunkService::timersValue('bogus'));
     }
+
+    public function testFallbackRouteWithoutRoutesStillChecksPermissionsAndLimits(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec('UPDATE pbx_outbound_routes SET is_active = 0');
+            $db->exec('UPDATE pbx_trunks SET is_active = 0');
+            $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active, max_channels, max_calls_per_minute, sort_order)
+                       VALUES ('fbtest', 'FB test', '203.0.113.9', 1, 2, 5, -100)");
+            syncOutboundDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+        } finally {
+            $db->rollBack();
+            syncOutboundDialplan();
+        }
+        $this->assertStringContainsString('exten => _05XXXXXXXXX,1,NoOp(Fallback Mobile Outbound Call)', $conf);
+        $fb = substr($conf, strpos($conf, 'Fallback Outbound Call'));
+        $this->assertStringContainsString('Gosub(sub-check-dial-permission,s,1(', $fb);
+        $this->assertStringContainsString('Gosub(sub-trunk-limit,s,1(fbtest,2,5,trunk))', $fb);
+        $this->assertStringContainsString('Dial(PJSIP/${AIPBX_TRUNK_DIAL}@fbtest,', $fb);
+        $this->assertStringContainsString('n(refused),Goto(sub-outbound-status,CONGESTION,1)', $fb);
+    }
 }
