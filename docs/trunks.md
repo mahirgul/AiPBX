@@ -9,14 +9,40 @@ managed on **Trunks**; the edit dialog is split into tabs.
 | Authentication | IP-based or registration mode, username/password, registration timers |
 | Caller ID | Outbound caller ID, From user/domain, send name, PAI / RPID headers |
 | Media & Fax | DTMF mode, T.38 options, fax detection |
-| Network & NAT | Qualify interval, direct media, RTP symmetric, rewrite contact, force rport, session timers |
-| Routing | Context, channel limit, inbound DID normalization, transit routing, outbound caller ID normalization |
+| Network & NAT | Qualify interval, direct media, RTP symmetric, rewrite contact, force rport, session timers, 100rel (PRACK) |
+| Routing | Context, max concurrent channels, max calls per minute, inbound DID normalization, transit routing, outbound caller ID normalization, carrier dialled number format |
 | Advanced | Extra PJSIP parameters, one per line |
 
 ## Identification
 
 Calls from a trunk are recognised by source IP (the trunk address plus *matched hosts*). Two trunks
 must not share an address: a call would match both. Change the IP when you copy a trunk.
+
+## Media and signaling
+
+Configured per trunk under **Media & Fax** and **Network & NAT**:
+
+- **DTMF mode:** How keypad touch tones are transmitted:
+  - `RFC 4733 / RFC 2833` (`rfc4733`, default and recommended): Out-of-band RTP payload (RFC 4733).
+  - `Inband` (`inband`): Transmitted within the voice audio stream (requires uncompressed G.711 codecs).
+  - `SIP INFO` (`info`): Sent in SIP `INFO` request messages.
+  - `Auto` (`auto`): Negotiated with the remote peer.
+- **Session timers:** Periodic `re-INVITE` or `UPDATE` messages to verify the call is still alive:
+  - `Yes` (`yes`): Session timers enabled (Asterisk default).
+  - `No` (`no`): Session timers disabled. (Older releases offered "Never", which Asterisk does not
+    know; 1.50.11 changed such trunks to "No".)
+  - `Required` (`required`): Rejects incoming calls if the remote peer does not support session timers.
+  - `Always` (`always`): Forces session timers even when the remote peer does not request them.
+- **100rel (PRACK):** Reliable transmission of provisional SIP responses (RFC 3262): `Supported (yes)`,
+  `Disabled (no)`, or `Required` (`required`).
+- **T.38 options:**
+  - **T.38 support:** `Active (T.38 UDPTL)` or `Inactive (Audio Pass-through)`. Keep off unless the
+    carrier explicitly supports T.38; carriers that reject T.38 make faxes fail.
+  - **Error correction:** `Redundancy` (recommended), `FEC` (Forward Error Correction), or `None`.
+  - **T.38 NAT:** `Yes` (behind NAT) or `No` (direct IP).
+  - **Max Datagram:** 100–2000 bytes (default 400).
+  - **Fax detection:** on or off; when on, a fax tone during the first seconds of a call (default 30 s)
+    sends the call to fax reception.
 
 ## Inbound DID normalization
 
@@ -61,6 +87,20 @@ keep `4`, prepend `90370418` → the carrier receives `903704187840`.
 
 When a route falls back to the next trunk, the original caller number is restored first, so each trunk
 applies its own rule to the original number.
+
+## Carrier dialled number format
+
+Configured under the **Routing** tab (*Carrier Dialled Number Format*):
+
+- **Strip prefix** only: a number starting with it loses it (e.g. `+90`).
+- **Add prefix** only: it is put in front of every number (e.g. `0` or a carrier routing code).
+- **Both:** a number starting with the strip prefix gets the add prefix instead of it (`+90532…` →
+  `0532…`); other numbers are sent unchanged.
+
+**Applied to every trunk attempt:** Unlike outbound route pattern manipulation (which applies once when
+the call enters the route), trunk dialled number format applies dynamically to every trunk that is tried.
+When an outbound route fails over to a secondary or backup trunk, the dialled number is transformed
+according to the secondary trunk's own format rules.
 
 ## Renaming, copying, ordering
 

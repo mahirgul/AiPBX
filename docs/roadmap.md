@@ -26,12 +26,12 @@ All of them are off (or unchanged) until switched on.
 
 | Item | Where |
 |---|---|
-| Scheduled tasks: sandboxed shell, PHP, Python background scripts | System → Scheduled tasks |
-| External database connections: encrypted MySQL/PostgreSQL storage & test | System → Database Connections |
-| IVR data step: caller lookup via external DB or HTTP API | PBX → IVR Data Steps |
-| Carrier format & dialled number normalisation per trunk | Trunks → Trunk edit modal |
-| PBX fine tuning: per-trunk DTMF, session timers, 100rel, T.38, jitter buffer tuning, SIP timers, night restart, SIP debug | PBX settings → Tuning & Ops; Trunks modal |
-| Asterisk ACL: failed-registration threshold alarm | Health checks → Failed Registrations |
+| Scheduled tasks: sandboxed shell, PHP, Python background scripts | System → Scheduled tasks; [Scheduled tasks](scheduled-tasks.md) |
+| External database connections: encrypted MySQL/PostgreSQL storage & test | Integrations → Database connections; [External databases](external-databases.md) |
+| IVR data step: caller lookup via external DB or HTTP API | PBX → IVR Data Steps; [IVR data steps](external-databases.md#ivr-data-steps) |
+| Carrier format & dialled number normalisation per trunk | Trunks → edit; [Trunks](trunks.md#carrier-dialled-number-format) |
+| PBX fine tuning: per-trunk DTMF, session timers, 100rel, T.38, jitter buffer tuning, SIP timers, night restart, SIP debug | PBX settings → Tuning & Ops; [PBX fine tuning](pbx-tuning.md), [Trunks](trunks.md#media-and-signaling) |
+| Failed-registration threshold alarm (an Asterisk-side ACL is still open) | Health checks → Failed Registrations; [Health checks](health.md#checks), [PBX tuning](pbx-tuning.md#failed-registration-alarm) |
 
 All of them are off (or unchanged) until switched on.
 

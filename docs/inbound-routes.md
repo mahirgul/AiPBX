@@ -1,7 +1,7 @@
 # Inbound routes (DIDs)
 
 An inbound route sends calls for a DID (the called number the trunk delivers) to a destination such
-as an extension, ring group, queue, IVR, time condition, announcement, conference or fax.
+as an extension, ring group, queue, IVR, [IVR data step](external-databases.md#ivr-data-steps), time condition, announcement, conference or fax.
 Optional per route: call recording and the channel language.
 
 ## Matching

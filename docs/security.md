@@ -36,6 +36,10 @@ from the PROXY protocol) and `sshd`. Ban time, find time, max retries and the ig
 it overrides the installer's defaults. Add your internal networks and carrier to the ignore list so a
 misconfigured phone cannot lock them out.
 
+- **Failed registration alarm:** The [Failed registrations](health.md#checks) health check monitors
+  Asterisk's security log and alarms in the bell and by e-mail when failed SIP authentication attempts
+  exceed the configured threshold (see [PBX fine tuning](pbx-tuning.md#failed-registration-alarm)).
+
 ## Toll fraud
 
 Three brakes, all off until switched on:
@@ -64,6 +68,14 @@ Ubuntu's `apache2.service` is hardened with systemd sandboxing. The installer's 
 - `/etc/asterisk`, `/etc/postfix` and `/etc/fail2ban/jail.d` writable (everything else under `/etc`
   stays read-only);
 - `/root`, `/boot`, `/etc/ssh`, `/etc/apt` stay inaccessible.
+
+## Scheduled task sandbox
+
+Scheduled background scripts run in a hardened `systemd-run` sandbox as the unprivileged user `aipbx-task` with an isolated filesystem, strict resource limits, and private network namespaces (see [Scheduled tasks](scheduled-tasks.md#sandbox-security)).
+
+## Read-only external databases
+
+External database queries in IVR data steps and plugins run in strictly enforced read-only sessions with a 2.5-second statement timeout, single statement restrictions, and encrypted credentials (see [External databases](external-databases.md#supported-engines-and-security)).
 
 ## Other measures
 

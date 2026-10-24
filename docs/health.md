@@ -20,8 +20,9 @@ managers: yesterday's calls and faxes and the state of every check.
 | Outgoing faxes | 1 h | faxes waiting to be sent for over an hour |
 | Call records | 15 min | Asterisk has handled calls since it started (15 min or more ago) but none reached the call history — the CDR database connection is broken; restart Asterisk |
 | Trunk limits | 5 min | a trunk refused calls over its channel or calls-per-minute limit in the last 15 minutes (see [Trunks](trunks.md#limits)) |
+| Failed registrations | 15 min | failed SIP registrations or auth attempts in Asterisk's security log exceed the threshold in 15 minutes (see [PBX tuning](pbx-tuning.md#failed-registration-alarm)) |
 | Call quality | 5 min | a trunk or extension is losing audio (from RTCP, see [Call quality](call-quality.md)); not used while signaling capture is off |
-| Other alerts | 5 min | a plugin reports a problem in the alert bell, so it is e-mailed too |
+| Other alerts | 5 min | problems raised in the alert bell (plugins, failed [scheduled tasks](scheduled-tasks.md#alarms-and-audit-log)), so they are e-mailed too |
 | DHCP / TFTP / FTP | 15 min | switched on, but the service does not run |
 | Server address | 60 min | a stored address (server, phones, coturn, mDNS) is not this server's any more: see [Network settings](network-settings.md#when-the-servers-ip-address-changed) |
 | Local AI service | 15 min | installed and enabled, but not running |
@@ -54,7 +55,7 @@ Administrators have a **bell** in the top bar. Its number is how many problems a
 has failed); a dot marks changes since you last opened it. It lists:
 
 - every check that is *warning* or *failed* now;
-- problems plugins report (see [Plugin development](plugin-development.md#d-other-hooks)), e-mailed through the check *Other alerts*;
+- problems plugins report (see [Plugin development](plugin-development.md#d-other-hooks)) and failed [scheduled tasks](scheduled-tasks.md#alarms-and-audit-log), e-mailed through the check *Other alerts*;
 - **the alarm path itself**: no recipient chosen ("Alarm e-mails go to nobody"), or no check has run for
   30 minutes ("Health checks are not running", i.e. the cron job stopped);
 - below, the changes of the last 7 days (went wrong / back to normal).
