@@ -4702,6 +4702,8 @@ return [
     'external_dbs.password_keep' => 'Залиште порожнім, щоб зберегти збережений пароль',
     'js.external_dbs.test_ok' => '✓ %s',
     'js.external_dbs.test_failed' => '✕ Помилка підключення: %s',
+    'trunks.opt_timers_required' => 'Обов\'язково (інша сторона повинна їх підтримувати)',
+    'trunks.opt_timers_always' => 'Завжди (навіть якщо інша сторона їх не запитує)',
     'notices.title' => 'Сповіщення',
     'notices.loading' => 'Завантаження…',
     'notices.all_checks' => 'Усі перевірки стану',

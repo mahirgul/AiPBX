@@ -4702,6 +4702,8 @@ return [
     'external_dbs.password_keep' => 'Оставьте пустым, чтобы сохранить текущий пароль',
     'js.external_dbs.test_ok' => '✓ %s',
     'js.external_dbs.test_failed' => '✕ Сбой подключения: %s',
+    'trunks.opt_timers_required' => 'Обязательно (другая сторона должна их поддерживать)',
+    'trunks.opt_timers_always' => 'Всегда (даже если другая сторона их не запрашивает)',
     'notices.title' => 'Оповещения',
     'notices.loading' => 'Загрузка…',
     'notices.all_checks' => 'Все проверки состояния',

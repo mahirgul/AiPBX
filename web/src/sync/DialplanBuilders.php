@@ -158,4 +158,3 @@ function jitterBufferLine(): string
         ? max(50, (int) ($max ?: 200)) . ',' . max(20, (int) ($init ?: 100)) : 'default';
     return " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)={$spec}))\n";
 }
-

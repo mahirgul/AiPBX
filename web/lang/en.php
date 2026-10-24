@@ -3947,6 +3947,8 @@ return [
     'asterisk_settings.yes_on' => 'Yes (on)',
     'asterisk_settings.no_off' => 'No (off)',
     'trunks.session_timers_on' => 'Yes (session timers on)',
+    'trunks.opt_timers_required' => 'Required (the other side must support them)',
+    'trunks.opt_timers_always' => 'Always (even if the other side does not ask)',
     'time_conditions.add_rule' => 'Add rule',
     'extensions.dial_group' => 'Dial permission group',
     'extensions.vm_box' => 'Voicemail box',

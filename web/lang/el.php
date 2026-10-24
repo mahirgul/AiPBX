@@ -4702,6 +4702,8 @@ return [
     'external_dbs.password_keep' => 'Αφήστε κενό για να διατηρήσετε τον αποθηκευμένο κωδικό πρόσβασης',
     'js.external_dbs.test_ok' => '✓ %s',
     'js.external_dbs.test_failed' => '✕ Η σύνδεση απέτυχε: %s',
+    'trunks.opt_timers_required' => 'Απαιτείται (η άλλη πλευρά πρέπει να τα υποστηρίζει)',
+    'trunks.opt_timers_always' => 'Πάντα (ακόμα και αν η άλλη πλευρά δεν το ζητά)',
     'notices.title' => 'Ειδοποιήσεις',
     'notices.loading' => 'Φόρτωση…',
     'notices.all_checks' => 'Όλοι οι έλεγχοι καλής λειτουργίας',

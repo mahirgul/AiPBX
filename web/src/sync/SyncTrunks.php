@@ -52,7 +52,7 @@ function __syncAllTrunksBody() {
         $t38 = (!empty($sip_map['t38_udptl']) && $sip_map['t38_udptl'] === 'yes') || !empty($t['t38_support']);
         $dtmf_mode = toCleanAscii(!empty($sip_map['dtmf_mode']) ? $sip_map['dtmf_mode'] : (!empty($t['dtmf_mode']) ? $t['dtmf_mode'] : 'rfc4733'));
         $direct_media = toCleanAscii(!empty($sip_map['direct_media']) ? $sip_map['direct_media'] : (!empty($t['direct_media']) ? $t['direct_media'] : 'no'));
-        $timers = toCleanAscii(!empty($sip_map['timers']) ? $sip_map['timers'] : (!empty($t['timers']) ? $t['timers'] : 'yes'));
+        $timers = TrunkService::timersValue((string)(!empty($sip_map['timers']) ? $sip_map['timers'] : ($t['timers'] ?? '')));
         $prack_100rel = toCleanAscii(!empty($sip_map['100rel']) ? $sip_map['100rel'] : (!empty($t['prack_100rel']) ? $t['prack_100rel'] : 'yes'));
 
         $rtp_symmetric = toCleanAscii(!empty($sip_map['rtp_symmetric']) ? $sip_map['rtp_symmetric'] : (!empty($t['rtp_symmetric']) ? $t['rtp_symmetric'] : 'yes'));
