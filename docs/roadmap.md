@@ -10,35 +10,122 @@ Since 1.50 (October 2026) only bug fixes and tests go in. The items below are co
 after it, in three waves: small things with immediate use first, then platform features, then the
 large projects.
 
-### Wave 1: small, immediate use
+### Wave 1: small, immediate use — done (1.50.10)
 
-| Item | What |
+| Item | Where |
 |---|---|
-| Trunk call limits | Concurrent calls and calls per minute per trunk; over the limit the trunk stops taking calls and an alarm goes out. Stops call loops and toll fraud early (a trunk loop once made 6 000 calls an hour). |
-| Voicemail settings page | Message length, minimum length, messages per box, silence cut-off, login attempts, PIN rules (minimum length, not the extension). |
-| IVR and queue announcements | IVR timeout prompt; queue position and hold-time announcements, periodic announcement, longest wait and an overflow destination; later a call-back offer. |
-| Spoken status instead of tones | No answer, busy and unreachable extensions play a prompt in the system language (early media, no billing) instead of only a tone; per case and per extension. |
-| Night dialling protection | International and premium numbers at night need a PIN or are blocked. |
+| Trunk limits: calls per minute and channels (inbound and outbound together), health alarm *Trunk limits* | Trunks → Routing; [Trunks](trunks.md#limits) |
+| Voicemail limits and PIN rules | PBX settings → Voicemail; [Voicemail](voicemail.md) |
+| IVR menu repeat on no key; queue position and periodic announcements | IVR and queue forms |
+| Spoken busy / no answer / unreachable messages (early media) | PBX settings → Ringtone |
+| Night dialling protection | Dial permissions; [Security](security.md#toll-fraud) |
+
+All of them are off (or unchanged) until switched on.
 
 ### Wave 2: platform features
 
-| Item | What |
-|---|---|
-| Scheduled tasks | System → Scheduled tasks: shell, PHP or Python scripts on a cron schedule, in a sandbox as an unprivileged user (never root), with run history, "run now", versions and audit. Database access through curated read-only views (calls, missed calls, queue statistics, extensions, trunks, fax, voicemail, call quality, health, audit …; personal data only with extra consent), a schema of their own to write to, and PBX changes only through the REST API with a scoped token. |
-| External database connections | Connections to MySQL/PostgreSQL (others with PHP drivers) stored encrypted, with a test button; used by IVR and plugins. |
-| IVR data step | A database query or HTTP request inside an IVR, the answer in a channel variable, branches for found / not found / timeout, 2–3 s limit. |
-| Number normalisation | One form for numbers dialled as 0532…, +90532…, 90532… before route matching (partly done in Call normalisation); per-trunk outbound format and caller ID format. |
-| PBX fine tuning | Per-trunk DTMF mode, session timers, 100rel, T.38 details; jitter buffer size; SIP timers; Asterisk log level and a "SIP debug for 10 minutes" button; a restart window at 0 calls (library updates since needrestart no longer restarts Asterisk). |
-| Asterisk ACL | A failed-registration threshold in Asterisk itself, next to Fail2ban. |
+#### 2.1 Scheduled tasks
+
+**Goal.** Administrators run their own shell, PHP or Python scripts on a schedule: nightly CDR export
+to an SFTP server, a CRM sync, a custom backup, polling a web service and raising an alert. Replaces
+the "plugin cron" idea of #118 with a feature for everyone.
+
+**Page** (*System → Scheduled tasks*, administrators only, the whole feature off by default):
+- task: name, description, on/off; schedule as a cron expression with presets (every 5 minutes,
+  hourly, nightly 03:00) and a preview of the next five runs; type shell / PHP / Python; the script in
+  an editor or uploaded; timeout (default 5 min), memory and CPU limit; network access on/off
+  (default off); environment variables, secret ones stored encrypted and masked;
+- "Run now" with live output; history per run (start, duration, exit code, last 64 KB of output);
+  script versions; a failed run raises an alert in the bell and the health alarm e-mail.
+
+**How it runs.** One dispatcher started every minute (like the health checks) starts the due tasks.
+Every run is a `systemd-run` sandbox: an unprivileged user `aipbx-task` (never root, never
+www-data), read-only system, only the task's own folder `/var/lib/aipbx/tasks/<id>/` writable,
+private `/tmp`, `NoNewPrivileges`, the limits above, no overlapping runs of the same task. Adding or
+changing a task asks for the password again (and 2FA when on); every change and run is in the audit
+log with the difference.
+
+**Data access.**
+- *Read*: curated views in their own schema `aipbx_export`, without any secret (SIP passwords, PINs,
+  password hashes, API keys, 2FA). Calls: `calls`, `call_legs`, `missed_calls` (call-back list),
+  `calls_daily`, `call_quality`, `recordings`. Call centre: `queue_calls`, `agent_stats`,
+  `agent_pauses`, `queue_sla`, `cc_notes`. PBX: `extensions`, `extension_status`, `trunks`, `dids`,
+  `routes`, `ivrs`, `queues`, `ring_groups`, `time_conditions`, `conferences`, `phones`. Fax:
+  `fax_in`, `fax_out`, `fax_files`. Voicemail: `voicemail`, `voicemail_text`. Chat: `chat_stats`,
+  `chat_messages`. System: `health`, `alerts`, `audit`, `logins`, `sip_messages`, `ai_usage`.
+  Views with personal data (recordings, notes, transcripts, chat messages, logins, file paths) need
+  an extra confirmation per task and every use is audited; their files are mounted read-only.
+  Administrators can save their own views as a SELECT over the allowed ones (checked on save).
+  Local time and UTC columns side by side.
+- *Write*: only the task's own tables in the schema `aipbx_tasks`.
+- *Change the PBX*: only through the REST API, with a token per task limited to the chosen scopes,
+  so validation, Apply and the audit log work as in the portal.
+- Each task has its own MariaDB user; its password changes on every run and is valid only during it;
+  at most 2 connections and a query budget per hour. Connection details come as `AIPBX_DB_*`
+  variables and a ready client file.
+
+#### 2.2 External database connections
+
+Connections to MySQL / MariaDB and PostgreSQL (MSSQL and Oracle where the PHP drivers are installed),
+stored encrypted like plugin secrets, with a "test connection" button, a timeout and the advice to
+use a read-only account. Used by the IVR data step and by plugins.
+
+#### 2.3 IVR data step
+
+A step in an IVR that runs a database query (2.2) or an HTTP request and puts the answer into a channel
+variable, with branches *found*, *not found* and *timeout*. Asterisk asks the portal on loopback; a hard
+limit of 2–3 seconds; HTTP requests go through the same guard as webhooks (no internal addresses).
+Example: "enter your customer number" → look up the customer → route VIP customers to their own queue.
+
+#### 2.4 Number normalisation
+
+- Numbers dialled by extensions in different forms (0532…, +90532…, 90532…) become one form before
+  route matching; partly done in [Call normalisation](call-normalization.md), to be finished there.
+- Per trunk: the form each carrier wants (strip +90, add 0, a prefix) and the caller ID format, on the
+  trunk page.
+
+#### 2.5 PBX fine tuning
+
+- Per trunk: DTMF mode, session timers, 100rel, T.38 details.
+- Jitter buffer size, or off (today always adaptive with defaults).
+- SIP timers (timer T1 / timer B), Max-Forwards.
+- Asterisk log level and rotation; a "SIP debug for 10 minutes" button that switches itself off.
+- A restart window: restart Asterisk at night when no call is in progress, so library updates take
+  effect (needrestart no longer restarts Asterisk since 1.50.7).
+
+#### 2.6 Asterisk ACL
+
+A failed-registration threshold in Asterisk itself (next to Fail2ban), with the result in the health
+checks.
 
 ### Wave 3: large projects
 
-| Item | What |
-|---|---|
-| Multi-tenant | One LXD/Incus container per tenant running the normal installer, a separate control panel (create, suspend, update, back up, quotas, audited log-in-as); tenants share an IP with their own port blocks, web/WSS routed by host name; soft limit of about 20 tenants per server. No Kamailio. |
-| Group voice call from chat | A conference room per chat group, started from the mobile app; members are notified and join. |
-| Community plugins | Move `ai-assistant` out of the core into a community plugin (needs a migration for installations that use it). |
-| Remote TTS server | The "nefes-0.5" voice as a remote engine for announcements (needs an NVIDIA GPU with 16 GB). |
+#### 3.1 Multi-tenant
+
+One AiPBX per tenant in its own LXD/Incus system container, running the normal installer, plus a
+separate control panel: create, suspend, update, back up, quotas, health, and an audited "log in as".
+Tenants share the server's IP with their own port blocks (SIP 5060 + 10·N, an RTP slice, own TURN
+ports, the same port inside and outside so SDP needs no rewriting); web and WSS go through the host's
+nginx by host name; extra IPs are used when the server has them. No Kamailio. A soft limit of about 20
+tenants per server (a warning that can be overridden). Before it: remove the places that assume port
+5060 (QR login, firewall service, installer firewall/fail2ban/coturn, the My phone page, NEC phone
+templates).
+
+#### 3.2 Group voice call from chat
+
+A conference room per chat group (hidden number), started from the mobile app; membership is checked
+before joining; the group gets a "call started — join" message and a push notification, members join
+when they want (no ringing everyone).
+
+#### 3.3 Community plugins
+
+Move `ai-assistant` out of the core into a community plugin, with a migration for installations that
+use it.
+
+#### 3.4 Remote TTS server
+
+The "nefes-0.5" voice (Hugging Face) as a remote engine for announcements; it needs an NVIDIA GPU with
+16 GB, so it runs on a separate machine and AiPBX calls it like a cloud TTS.
 
 Also waiting: per-domain apply of pending changes (#120).
 
