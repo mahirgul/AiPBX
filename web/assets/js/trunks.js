@@ -86,6 +86,7 @@ function openCreateTrunkModal() {
     document.getElementById('modal_rewrite_contact').value = 'yes';
     document.getElementById('modal_force_rport').value = 'yes';
     document.getElementById('modal_timers').value = 'yes';
+    document.getElementById('modal_prack_100rel').value = 'yes';
     document.getElementById('modal_context').value = 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = 0;
     document.getElementById('modal_max_calls_per_minute').value = 0;
@@ -96,7 +97,10 @@ function openCreateTrunkModal() {
     document.getElementById('modal_outbound_route_group').value = 1;
     document.getElementById('modal_cid_keep_last').value = 0;
     document.getElementById('modal_cid_prepend').value = '';
+    document.getElementById('modal_carrier_strip_prefix').value = '';
+    document.getElementById('modal_carrier_add_prefix').value = '';
     updateCidNormPreview();
+    updateCarrierNormPreview();
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);
@@ -165,6 +169,7 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_rewrite_contact').value = item.rewrite_contact || 'yes';
     document.getElementById('modal_force_rport').value = item.force_rport || 'yes';
     document.getElementById('modal_timers').value = item.timers || 'yes';
+    document.getElementById('modal_prack_100rel').value = item.prack_100rel || 'yes';
     document.getElementById('modal_context').value = item.context || 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = item.max_channels || 0;
     document.getElementById('modal_max_calls_per_minute').value = item.max_calls_per_minute || 0;
@@ -175,7 +180,10 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_outbound_route_group').value = item.outbound_route_group || 1;
     document.getElementById('modal_cid_keep_last').value = item.cid_keep_last || 0;
     document.getElementById('modal_cid_prepend').value = item.cid_prepend || '';
+    document.getElementById('modal_carrier_strip_prefix').value = item.carrier_strip_prefix || '';
+    document.getElementById('modal_carrier_add_prefix').value = item.carrier_add_prefix || '';
     updateCidNormPreview();
+    updateCarrierNormPreview();
 
     const firstTabBtn = document.querySelector('.trunk-tab-btn[data-tab="basic"]');
     switchTrunkTab('basic', firstTabBtn);
@@ -199,6 +207,26 @@ function updateCidNormPreview() {
     }
     const sample = '03704187840';
     const out = prepend + (keep > 0 ? sample.slice(-keep) : sample);
+    box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
+}
+
+// Mirrors buildTrunkCarrierDialLine(): strip prefix from dialled number, then prepend.
+function updateCarrierNormPreview() {
+    const box = document.getElementById('carrier_norm_preview');
+    if (!box) return;
+    const strip = document.getElementById('modal_carrier_strip_prefix').value.trim();
+    const add = document.getElementById('modal_carrier_add_prefix').value.trim();
+    if (strip === '' && add === '') {
+        box.textContent = '';
+        return;
+    }
+    const sample = '+905321234567';
+    let out = sample;
+    if (strip !== '' && out.startsWith(strip)) {
+        out = add + out.slice(strip.length);
+    } else if (strip === '' && add !== '') {
+        out = add + out;
+    }
     box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
 }
 

@@ -53,6 +53,7 @@ function __syncAllTrunksBody() {
         $dtmf_mode = toCleanAscii(!empty($sip_map['dtmf_mode']) ? $sip_map['dtmf_mode'] : (!empty($t['dtmf_mode']) ? $t['dtmf_mode'] : 'rfc4733'));
         $direct_media = toCleanAscii(!empty($sip_map['direct_media']) ? $sip_map['direct_media'] : (!empty($t['direct_media']) ? $t['direct_media'] : 'no'));
         $timers = toCleanAscii(!empty($sip_map['timers']) ? $sip_map['timers'] : (!empty($t['timers']) ? $t['timers'] : 'yes'));
+        $prack_100rel = toCleanAscii(!empty($sip_map['100rel']) ? $sip_map['100rel'] : (!empty($t['prack_100rel']) ? $t['prack_100rel'] : 'yes'));
 
         $rtp_symmetric = toCleanAscii(!empty($sip_map['rtp_symmetric']) ? $sip_map['rtp_symmetric'] : (!empty($t['rtp_symmetric']) ? $t['rtp_symmetric'] : 'yes'));
         $force_rport = toCleanAscii(!empty($sip_map['force_rport']) ? $sip_map['force_rport'] : (!empty($t['force_rport']) ? $t['force_rport'] : 'yes'));
@@ -130,6 +131,7 @@ function __syncAllTrunksBody() {
         $conf .= "rewrite_contact={$rewrite_contact}\n";
         $conf .= "dtmf_mode={$dtmf_mode}\n";
         $conf .= "timers={$timers}\n";
+        $conf .= "100rel={$prack_100rel}\n";
 
         if ($outbound_proxy !== '') {
             $conf .= "outbound_proxy={$outbound_proxy}\n";

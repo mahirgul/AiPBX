@@ -241,6 +241,14 @@ function getSystemSetting($key, $default = '') {
     }
 }
 
+function setSystemSetting(string $key, string $value): void {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->execute([$key, $value]);
+    } catch (\Throwable $e) {}
+}
+
 /**
  * Injects the custom main colours (--primary/--secondary) set on the Brand &
  * Appearance page (src/brand_settings.php). A bare `:root` selector is used —
@@ -467,7 +475,7 @@ function toCleanAscii($str) {
  * config-injection vector.
  */
 function sanitizeDestType($type) {
-    $valid = ['queue', 'ivr', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app'];
+    $valid = ['queue', 'ivr', 'ivr_data', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app'];
     $type = trim((string)$type);
     return in_array($type, $valid, true) ? $type : 'hangup';
 }

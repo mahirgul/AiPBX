@@ -41,6 +41,33 @@ function buildCatchAllExtensions(string $first, string $sameLines = ''): string 
 }
 
 /**
+ * Trunk outbound dialed number normalization (Roadmap 2.4):
+ * Transforms the destination number to the carrier's required format.
+ * E.g., strip '+90' and add '0': +905321234567 -> 05321234567.
+ * Or prepend carrier prefix: 532... -> 0532...
+ */
+function buildTrunkCarrierDialLine(?array $carrierNorm): string {
+    if (!$carrierNorm) {
+        return " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n";
+    }
+    $strip = preg_replace('/[^0-9+*#]/', '', (string)($carrierNorm['strip'] ?? ''));
+    $add = preg_replace('/[^0-9+*#]/', '', (string)($carrierNorm['add'] ?? ''));
+
+    if ($strip === '' && $add === '') {
+        return " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n";
+    }
+
+    $lines = " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n";
+    if ($strip !== '') {
+        $len = strlen($strip);
+        $lines .= " same => n,ExecIf(\$[\"\${AIPBX_TRUNK_DIAL:0:{$len}}\" = \"{$strip}\"]?Set(AIPBX_TRUNK_DIAL={$add}\${AIPBX_TRUNK_DIAL:{$len}}))\n";
+    } elseif ($add !== '') {
+        $lines .= " same => n,Set(AIPBX_TRUNK_DIAL={$add}\${AIPBX_TRUNK_DIAL})\n";
+    }
+    return $lines;
+}
+
+/**
  * Trunk outbound caller ID normalization: keep the last N digits, then prepend.
  * E.g. keep 4 + prepend 90370418: 7840 → 903704187840.
  */

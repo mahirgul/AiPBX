@@ -126,6 +126,7 @@ function getModuleKeyForPage($page = null) {
         'dial_permissions.php' => 'dial_permissions',
         'time_conditions.php'   => 'time_conditions',
         'ivrs.php'              => 'ivrs',
+        'ivr_data_steps.php'    => 'ivrs',
         'extensions.php'        => 'extensions',
         'phones.php'            => 'phones',
         'phone_keys.php'        => 'phones',
@@ -164,12 +165,14 @@ function getModuleKeyForPage($page = null) {
         'fail2ban.php'              => 'fail2ban',
         'certificates.php'          => 'certificates',
         'system_update.php'         => 'system_update',
+        'scheduled_tasks.php'       => 'scheduled_tasks',
         // Admin → Help (system guide): admins only (HelpController), listed with System update.
         'help.php'                  => 'system_update',
         'push_settings.php'         => 'push_settings',
         'plugins.php'               => 'plugins',
         'api_keys.php'              => 'api_keys',
         'webhooks.php'              => 'webhooks',
+        'external_dbs.php'          => 'external_dbs',
         'google_integration.php'    => 'google_integration',
         'ms_teams.php'              => 'ms_teams',
         'web_widgets.php'           => 'web_widgets',
@@ -256,7 +259,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'ai_cloud': holds the API keys of paid cloud AI services.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality'], true)) {
+    if (in_array($module_key, ['roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality'], true)) {
         return $role === 'admin';
     }
 

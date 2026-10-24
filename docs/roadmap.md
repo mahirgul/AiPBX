@@ -22,7 +22,18 @@ large projects.
 
 All of them are off (or unchanged) until switched on.
 
-### Wave 2: platform features
+### Wave 2: platform features — done (1.50.11)
+
+| Item | Where |
+|---|---|
+| Scheduled tasks: sandboxed shell, PHP, Python background scripts | System → Scheduled tasks |
+| External database connections: encrypted MySQL/PostgreSQL storage & test | System → Database Connections |
+| IVR data step: caller lookup via external DB or HTTP API | PBX → IVR Data Steps |
+| Carrier format & dialled number normalisation per trunk | Trunks → Trunk edit modal |
+| PBX fine tuning: per-trunk DTMF, session timers, 100rel, T.38, jitter buffer tuning, SIP timers, night restart, SIP debug | PBX settings → Tuning & Ops; Trunks modal |
+| Asterisk ACL: failed-registration threshold alarm | Health checks → Failed Registrations |
+
+All of them are off (or unchanged) until switched on.
 
 #### 2.1 Scheduled tasks
 

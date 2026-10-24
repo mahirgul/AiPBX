@@ -17,6 +17,9 @@ class AsteriskSettingsController extends BaseController
 
         $notices = static::handlePost([
             'save_asterisk_settings' => fn() => AsteriskSettingsService::saveSettings($_POST),
+            'enable_sip_debug' => fn() => AsteriskSettingsService::enableSipDebug(600),
+            'disable_sip_debug' => fn() => AsteriskSettingsService::disableSipDebug(),
+            'rotate_logs' => fn() => AsteriskSettingsService::rotateLogs(),
         ]);
 
         $defaults = AsteriskSettingsService::defaults();

@@ -415,6 +415,17 @@
                         </div>
                     </div>
 
+                    <div class="u-grid-2 u-mt-12">
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('trunks.field_100rel'); ?></label>
+                            <select name="prack_100rel" id="modal_prack_100rel" class="form-control">
+                                <option value="yes"><?php echo t('trunks.opt_100rel_yes'); ?></option>
+                                <option value="no"><?php echo t('trunks.opt_100rel_no'); ?></option>
+                                <option value="required"><?php echo t('trunks.opt_100rel_required'); ?></option>
+                            </select>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div id="trunk_tab_routing" class="trunk-tab-pane" style="display: none;">
@@ -486,6 +497,25 @@
                         </div>
                         <small class="u-hint u-fs-11"><?php echo t('trunks.outbound_cid_help'); ?></small>
                         <div class="u-fs-11 u-mt-12" id="cid_norm_preview" data-label="<?php echo htmlspecialchars(t('trunks.outbound_cid_preview'), ENT_QUOTES); ?>"></div>
+                    </div>
+
+                    <!-- Carrier dialed number normalization -->
+                    <div style="margin-top: 14px; background: var(--bg-card); padding: 14px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
+                            <i class="fas fa-random u-primary"></i> <?php echo t('trunks.section_carrier_norm'); ?>
+                        </h4>
+                        <div class="u-grid-2">
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_carrier_strip_prefix'); ?></label>
+                                <input type="text" name="carrier_strip_prefix" id="modal_carrier_strip_prefix" class="form-control" maxlength="30" placeholder="+90" oninput="updateCarrierNormPreview()">
+                            </div>
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_carrier_add_prefix'); ?></label>
+                                <input type="text" name="carrier_add_prefix" id="modal_carrier_add_prefix" class="form-control" maxlength="30" placeholder="0" oninput="updateCarrierNormPreview()">
+                            </div>
+                        </div>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.carrier_norm_help'); ?></small>
+                        <div class="u-fs-11 u-mt-12" id="carrier_norm_preview" data-label="<?php echo htmlspecialchars(t('trunks.carrier_norm_preview'), ENT_QUOTES); ?>"></div>
                     </div>
 
                 </div>
