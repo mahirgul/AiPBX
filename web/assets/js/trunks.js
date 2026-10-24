@@ -88,6 +88,7 @@ function openCreateTrunkModal() {
     document.getElementById('modal_timers').value = 'yes';
     document.getElementById('modal_context').value = 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = 0;
+    document.getElementById('modal_max_calls_per_minute').value = 0;
     document.getElementById('modal_custom_pjsip_params').value = '';
     document.getElementById('modal_did_trim_digits').value = 0;
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');
@@ -166,6 +167,7 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_timers').value = item.timers || 'yes';
     document.getElementById('modal_context').value = item.context || 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = item.max_channels || 0;
+    document.getElementById('modal_max_calls_per_minute').value = item.max_calls_per_minute || 0;
     document.getElementById('modal_custom_pjsip_params').value = item.custom_pjsip_params || '';
     document.getElementById('modal_did_trim_digits').value = item.did_trim_digits !== undefined ? item.did_trim_digits : 0;
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');

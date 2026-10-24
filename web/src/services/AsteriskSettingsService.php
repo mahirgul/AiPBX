@@ -78,6 +78,9 @@ class AsteriskSettingsService {
             // Signaling capture (SIP ladder + RTCP quality) into the local daemon: off by default.
             'signaling_capture'        => '0',
             'signaling_retention_days' => '30',
+            'status_prompt_busy'       => '0',
+            'status_prompt_noanswer'   => '0',
+            'status_prompt_unavail'    => '0',
         ];
     }
 
@@ -189,10 +192,15 @@ class AsteriskSettingsService {
             'amd_maximum_number_of_words' => (string)max(1, min(20, intval($post['amd_maximum_number_of_words'] ?? 2))),
             'amd_silence_threshold'       => (string)max(1, min(32767, intval($post['amd_silence_threshold'] ?? 256))),
 
+            'status_prompt_busy'       => (($post['status_prompt_busy'] ?? '0') === '1') ? '1' : '0',
+            'status_prompt_noanswer'   => (($post['status_prompt_noanswer'] ?? '0') === '1') ? '1' : '0',
+            'status_prompt_unavail'    => (($post['status_prompt_unavail'] ?? '0') === '1') ? '1' : '0',
             'signaling_capture'        => (($post['signaling_capture'] ?? '0') === '1') ? '1' : '0',
             'signaling_retention_days' => (string)max(1, min(3650, intval($post['signaling_retention_days'] ?? 30))),
         ];
         $signaling_changed = getSystemSetting('signaling_capture', '0') !== $new_settings['signaling_capture'];
+        require_once __DIR__ . '/VoicemailPolicy.php';
+        $new_settings += VoicemailPolicy::fromPost($post);
 
         // --- RTP (media) settings --------------------------------------------
         $rtp_start = max(1024, min(65534, intval($post['rtp_start'] ?? 10000)));
@@ -281,6 +289,7 @@ class AsteriskSettingsService {
         markPendingSync('queues', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('rtp', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('udptl', 'system_setting', 'general', $label, 'update', $uid);
+        markPendingSync('voicemail', 'system_setting', 'general', $label, 'update', $uid);
 
         // Capture on/off only reloads res_hep (no call is touched), so it is applied now.
         if ($signaling_changed) {

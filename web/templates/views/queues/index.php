@@ -251,6 +251,31 @@
 
                     <div class="u-grid-2">
                         <div class="form-group">
+                            <label class="form-label"><?php echo t('queues.field_announce_position'); ?></label>
+                            <select name="announce_position" id="modal_announce_position" class="form-control">
+                                <option value="yes"><?php echo t('queues.announce_position_yes'); ?></option>
+                                <option value="no"><?php echo t('queues.announce_position_no'); ?></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('queues.field_periodic_frequency'); ?></label>
+                            <input type="number" name="periodic_frequency" id="modal_periodic_frequency" class="form-control" value="45" min="0" max="600">
+                            <small class="u-hint"><?php echo t('queues.periodic_frequency_help'); ?></small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('queues.field_periodic_announce'); ?></label>
+                        <select name="periodic_announce" id="modal_periodic_announce" class="form-control">
+                            <option value=""><?php echo t('queues.periodic_announce_default'); ?></option>
+                            <?php foreach (($announcements ?? []) as $anc): ?>
+                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="u-grid-2">
+                        <div class="form-group">
                             <label class="form-label form-label-help">
                                 <span><?php echo t('queues.field_ringinuse'); ?></span>
                                 <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.ringinuse_help'); ?></span></span>

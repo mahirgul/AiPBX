@@ -275,6 +275,21 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)=default))\n";
     $conf .= " same => n,Return()\n\n";
 
+    // Spoken status before a busy / unanswered / unreachable extension's call
+    // ends (statusPromptLines): ARG1 busy|noanswer|unavail, ARG2 the extension.
+    // An unanswered call hears it as early media (Progress), so a trunk call is
+    // not answered and not billed; a fax gets nothing.
+    $conf .= "[sub-status-prompt]\n";
+    $conf .= "exten => s,1,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\"]?done)\n";
+    $conf .= " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Progress())\n";
+    $conf .= " same => n,GotoIf(\$[\"\${ARG1}\" = \"noanswer\"]?noans)\n";
+    $conf .= " same => n,Playback(vm-theperson,noanswer)\n";
+    $conf .= " same => n,SayDigits(\${ARG2})\n";
+    $conf .= " same => n,Playback(\${IF(\$[\"\${ARG1}\" = \"busy\"]?vm-isonphone:vm-isunavail)}&please-try-again,noanswer)\n";
+    $conf .= " same => n,Goto(done)\n";
+    $conf .= " same => n(noans),Playback(number-not-answering&please-try-again,noanswer)\n";
+    $conf .= " same => n(done),Return()\n\n";
+
     $ok = writeConfWithRollback('extensions_general.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_general'));
     }, t('sync.ctx_general'));

@@ -19,6 +19,7 @@ managers: yesterday's calls and faxes and the state of every check.
 | Pending changes | 1 h | changes not applied for over an hour |
 | Outgoing faxes | 1 h | faxes waiting to be sent for over an hour |
 | Call records | 15 min | Asterisk has handled calls since it started (15 min or more ago) but none reached the call history — the CDR database connection is broken; restart Asterisk |
+| Trunk limits | 5 min | a trunk refused calls over its channel or calls-per-minute limit in the last 15 minutes (see [Trunks](trunks.md#limits)) |
 | Call quality | 5 min | a trunk or extension is losing audio (from RTCP, see [Call quality](call-quality.md)); not used while signaling capture is off |
 | Other alerts | 5 min | a plugin reports a problem in the alert bell, so it is e-mailed too |
 | DHCP / TFTP / FTP | 15 min | switched on, but the service does not run |

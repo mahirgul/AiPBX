@@ -24,6 +24,7 @@ class IVRService {
             // the first wrong key), while a huge value could keep the caller
             // in a near-endless loop.
             $max_failures = max(1, min(10, intval($data['max_failures'] ?? 3)));
+            $timeout_repeat = !empty($data['timeout_repeat']) ? 1 : 0;
             $allow_direct_dial = isset($data['allow_direct_dial']) ? intval($data['allow_direct_dial']) : 0;
             $digit_timeout = max(1, min(10, intval($data['digit_timeout'] ?? 3)));
 
@@ -44,6 +45,7 @@ class IVRService {
                 'language' => $language ?: null,
                 'timeout_seconds' => $timeout_seconds,
                 'max_failures' => $max_failures,
+                'timeout_repeat' => $timeout_repeat,
                 'allow_direct_dial' => $allow_direct_dial,
                 'digit_timeout' => $digit_timeout,
                 'timeout_dest_type' => $timeout_dest_type,

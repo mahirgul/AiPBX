@@ -92,6 +92,7 @@ function __syncVoicemailBody() {
  */
 function voicemailGeneralConf(): string
 {
+    require_once dirname(__DIR__) . '/services/VoicemailPolicy.php';
     $script = realpath(dirname(__DIR__, 2) . '/bin/voicemail_mail.php') ?: dirname(__DIR__, 2) . '/bin/voicemail_mail.php';
     $body = 'AIPBX-VM\\nmailbox=${VM_MAILBOX}\\nname=${VM_NAME}\\nmsgnum=${VM_MSGNUM}\\nduration=${VM_DUR}'
         . '\\ncidnum=${VM_CIDNUM}\\ncidname=${VM_CIDNAME}\\ncallerid=${VM_CALLERID}\\ndate=${VM_DATE}\\n';
@@ -107,6 +108,7 @@ function voicemailGeneralConf(): string
         . "emailbody={$body}\n"
         // Messages listened to or deleted outside Asterisk (portal, mobile app)
         // update the voicemail lamp of the phones within 15 s.
+        . VoicemailPolicy::generalConf()
         . "pollmailboxes=yes\n"
         . "pollfreq=15\n"
         // New message → notification in the mobile apps (bin/voicemail_notify.php).

@@ -7,6 +7,30 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.50.10
 
+First items of the post-freeze roadmap (wave 1).
+
+- **Trunk limits.** Max calls per minute per trunk is new; max concurrent channels now counts inbound
+  calls too (it limited only outbound ones). A call over a limit is refused (inbound: cause 34;
+  outbound: the next trunk is tried), and the new health check *Trunk limits* alarms in the bell and
+  by e-mail. Stops call loops and toll fraud early.
+- **Voicemail settings** (PBX settings → Voicemail): longest and shortest message, messages per
+  mailbox, silence cut-off, wrong-PIN attempts, shortest PIN and "PIN may not be the extension". With
+  that rule on (default), a mailbox saved without a PIN gets a random one instead of the extension
+  number; the tab counts the mailboxes whose PIN still breaks the rules.
+- **IVR:** "Repeat the menu when no key is pressed" (per IVR, off for existing ones): "Please try
+  again." and the menu again, counted with wrong keys, then the timeout destination.
+- **Queues:** the position announcement can be switched off, and the periodic announcement has its
+  own frequency (0 = off) and file (until now fixed: every 45 s, the built-in prompts).
+- **Spoken status instead of tones** (PBX settings → Ringtone; busy, no answer and unreachable each
+  on or off, off by default): "The person at extension 3001 is on the phone. Please try again." in
+  the caller's language, played before answering, so trunk calls are not billed.
+- **Night dialling protection** (Dial permissions page, off by default): at night and at weekends
+  calls to protected prefixes (00, 0900 …) are blocked or need a night PIN; covers transit calls too.
+
+Every one of these can be switched off, and an update changes no behaviour until they are switched on
+(the voicemail defaults are what the stock configuration did) — with one exception on purpose: the
+voicemail rule "PIN may not be the extension" is on by default. Existing PINs are not touched; it
+applies when a PIN is saved and can be switched off under PBX settings → Voicemail.
 - **Audit log:** four changes left no trace: Google sign-in settings (the client secret itself is
   never logged, only that it changed), deleting a time group, removing a waiting desk phone, and the
   default e-mail language.

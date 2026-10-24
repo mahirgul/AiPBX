@@ -36,6 +36,19 @@ from the PROXY protocol) and `sshd`. Ban time, find time, max retries and the ig
 it overrides the installer's defaults. Add your internal networks and carrier to the ignore list so a
 misconfigured phone cannot lock them out.
 
+## Toll fraud
+
+Three brakes, all off until switched on:
+
+- **Night dialling protection** (*Dial permissions* page): outside the night hours set there (and all
+  weekend if wanted), calls to protected prefixes (default `00` international and `0900` premium) are
+  blocked ("Your call cannot be completed as dialled", without answering the call) or need a night PIN
+  (three tries). It runs before the permission groups, so it also covers trunk-to-trunk transit;
+  portal faxes are exempt. Blocked calls carry `NIGHT_GUARD` in the CDR user field.
+- **Trunk limits** (*Trunks → Routing*): concurrent channels and calls per minute, with the health
+  alarm *Trunk limits* (see [Trunks](trunks.md#limits)).
+- **Dial permission groups**: which numbers a group of users may dial at all.
+
 ## Root helper (`aipbx-priv`)
 
 The portal never runs arbitrary commands as root. `/etc/sudoers.d/aipbx` allows `www-data` to run only

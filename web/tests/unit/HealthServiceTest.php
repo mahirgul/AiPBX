@@ -73,4 +73,18 @@ final class HealthServiceTest extends TestCase
         $this->assertSame('ok', HealthChecks::callRecordsStatus(300, 40, 0)[0]);
         $this->assertSame('ok', HealthChecks::callRecordsStatus(3600, 2, 0)[0]);
     }
+
+    public function testTrunkLimitsWarnAboutRecentRefusals(): void
+    {
+        $astdb = "/trunkblock/nectip                               : 1799999000:412:rate:1799999950\n"
+            . "/trunkblock/VOIP                                 : 1799990000:3:channels:1799990100\n"
+            . "2 results found.\n";
+        [$status, $msg] = HealthChecks::trunkLimitsStatus($astdb, self::NOW);
+        $this->assertSame('warn', $status);
+        $this->assertStringContainsString('nectip', $msg);
+        $this->assertStringContainsString('412', $msg);
+        $this->assertStringNotContainsString('VOIP', $msg, 'older than 15 minutes');
+        $this->assertSame('ok', HealthChecks::trunkLimitsStatus("0 results found.\n", self::NOW)[0]);
+        $this->assertSame('info', HealthChecks::trunkLimitsStatus('', self::NOW)[0], 'Asterisk did not answer: not "all fine"');
+    }
 }

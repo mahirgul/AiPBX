@@ -427,6 +427,13 @@
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_max_channels'); ?></label>
                             <input type="number" name="max_channels" id="modal_max_channels" class="form-control" value="0" min="0">
+                            <small class="u-hint"><?php echo t('trunks.max_channels_help'); ?></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('trunks.field_max_calls_per_minute'); ?></label>
+                            <input type="number" name="max_calls_per_minute" id="modal_max_calls_per_minute" class="form-control" value="0" min="0" max="10000">
+                            <small class="u-hint"><?php echo t('trunks.max_calls_per_minute_help'); ?></small>
                         </div>
                     </div>
 

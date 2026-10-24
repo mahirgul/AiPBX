@@ -28,6 +28,15 @@ function __syncInboundDialplanBody() {
             $route_group = max(1, intval($t['outbound_route_group'] ?? 1));
             $is_busy_tone_wrapper = (($t['context'] ?? '') === 'from-trunk-kapanma-tonu');
 
+            // Channel and calls-per-minute limits: a refused call is hung up with
+            // cause 34 (no circuit), so the carrier may try another way.
+            $max_ch = max(0, intval($t['max_channels'] ?? 0));
+            $max_rate = max(0, intval($t['max_calls_per_minute'] ?? 0));
+            $limit_lines = ($max_ch > 0 || $max_rate > 0)
+                ? " same => n,Gosub(sub-trunk-limit,s,1({$t_name},{$max_ch},{$max_rate},trunkin))\n"
+                    . " same => n,ExecIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?Hangup(34))\n"
+                : '';
+
             $conf .= "; --- Trunk inbound: {$t_name} ({$title}) ---\n";
             $conf .= "[from-trunk-{$t_name}]\n";
             // Any DID: plain digits or +E.164 (see CATCH_ALL_EXTEN_PATTERNS).
@@ -47,6 +56,7 @@ function __syncInboundDialplanBody() {
             }
 
             $same .= " same => n,Set(CDR(did)=\${NORMALIZED_DID})\n";
+            $same .= $limit_lines;
             $same .= " same => n,Goto(from-trunk-{$t_name}-route,\${NORMALIZED_DID},1)\n";
             $conf .= buildCatchAllExtensions(
                 "NoOp(Inbound trunk call [{$t_name}] - caller: \${CALLERID(num)} - target: \${EXTEN})",
@@ -61,6 +71,7 @@ function __syncInboundDialplanBody() {
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
             $conf .= " same => n,Set(CDR(did)=s)\n";
+            $conf .= $limit_lines;
             $conf .= " same => n,Goto(from-trunk-{$t_name}-route,s,1)\n\n";
 
             // Routing context (route context)
@@ -107,6 +118,7 @@ function __syncInboundDialplanBody() {
         $conf .= " same => n,Return()\n\n";
     }
 
+    $conf .= trunkLimitSubroutine();
     $conf .= "[from-trunk-inbound]\n\n";
 
     $pattern_lengths = [];
@@ -197,3 +209,39 @@ function __syncInboundDialplanBody() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_inbound'));
     }, t('sync.ctx_inbound'));
 }
+
+/**
+ * [sub-trunk-limit]: channels (inbound "trunkin" and outbound "trunk" groups
+ * together) and calls per minute of one trunk. ARG1 trunk, ARG2 max channels,
+ * ARG3 calls per minute (0 = none), ARG4 group of this call. TRUNK_LIMIT is
+ * empty when the call may go on, "channels" or "rate" when it is refused; a
+ * refused call leaves the group and is counted in astdb trunkblock/<trunk>
+ * ("first:count:reason:last", a 15-minute window) for the health check
+ * "Trunk limits". The minute counter is astdb trunkrate/<trunk>.
+ */
+function trunkLimitSubroutine(): string
+{
+    return "[sub-trunk-limit]\n"
+        . "exten => s,1,Set(TRUNK_LIMIT=)\n"
+        . " same => n,Set(GROUP(\${ARG4})=\${ARG1})\n"
+        . " same => n,GotoIf(\$[0\${ARG2} = 0]?rate)\n"
+        . " same => n,GotoIf(\$[\${GROUP_COUNT(\${ARG1}@trunk)} + \${GROUP_COUNT(\${ARG1}@trunkin)} > \${ARG2}]?full)\n"
+        . " same => n(rate),GotoIf(\$[0\${ARG3} = 0]?ok)\n"
+        . " same => n,Set(LOCAL(min)=\${STRFTIME(\${EPOCH},,%Y%m%d%H%M)})\n"
+        . " same => n,Set(LOCAL(cnt)=\${DB(trunkrate/\${ARG1})})\n"
+        . " same => n,Set(LOCAL(cnt)=\${IF(\$[\"\${CUT(cnt,:,1)}\" = \"\${min}\"]?\$[0\${CUT(cnt,:,2)} + 1]:1)})\n"
+        . " same => n,Set(DB(trunkrate/\${ARG1})=\${min}:\${cnt})\n"
+        . " same => n,GotoIf(\$[\${cnt} > \${ARG3}]?over)\n"
+        . " same => n(ok),Return()\n"
+        . " same => n(full),Set(TRUNK_LIMIT=channels)\n"
+        . " same => n,Goto(refused)\n"
+        . " same => n(over),Set(TRUNK_LIMIT=rate)\n"
+        . " same => n(refused),Set(GROUP(\${ARG4})=)\n"
+        . " same => n,Set(LOCAL(blk)=\${DB(trunkblock/\${ARG1})})\n"
+        . " same => n,Set(LOCAL(first)=\${IF(\$[\${EPOCH} - 0\${CUT(blk,:,1)} < 900]?\${CUT(blk,:,1)}:\${EPOCH})})\n"
+        . " same => n,Set(LOCAL(n)=\${IF(\$[\${EPOCH} - 0\${CUT(blk,:,1)} < 900]?\$[0\${CUT(blk,:,2)} + 1]:1)})\n"
+        . " same => n,Set(DB(trunkblock/\${ARG1})=\${first}:\${n}:\${TRUNK_LIMIT}:\${EPOCH})\n"
+        . " same => n,NoOp(Trunk \${ARG1}: call refused, limit \${TRUNK_LIMIT})\n"
+        . " same => n,Return()\n\n";
+}
+

@@ -22,6 +22,7 @@ final class HealthChecks
         'web' => 5,
         'chat' => 5,
         'trunks' => 5,
+        'trunk_limits' => 5,
         'disk' => 60,
         'memory' => 15,
         'mail' => 60,
@@ -52,6 +53,7 @@ final class HealthChecks
                 'web' => self::web(),
                 'chat' => self::service('aipbx-chat'),
                 'trunks' => self::trunks(),
+                'trunk_limits' => self::trunkLimits(),
                 'disk' => self::disk(),
                 'memory' => self::memory(),
                 'mail' => self::mail(),
@@ -248,6 +250,39 @@ final class HealthChecks
             return ['fail', sprintf(t('health.msg_cdr_missing'), $processed, self::duration($uptime))];
         }
         return ['ok', sprintf(t('health.msg_cdr_ok'), $records, self::duration($uptime))];
+    }
+
+    /**
+     * Calls a trunk refused over its channel or calls-per-minute limit in the
+     * last 15 minutes (sub-trunk-limit counts them in astdb trunkblock/<trunk>).
+     */
+    private static function trunkLimits(): array
+    {
+        $limited = (int) getDB()->query('SELECT COUNT(*) FROM pbx_trunks WHERE is_active = 1 AND (max_channels > 0 OR max_calls_per_minute > 0)')->fetchColumn();
+        if ($limited === 0) {
+            return ['off', t('health.msg_trunk_limits_none')];
+        }
+        return self::trunkLimitsStatus(self::sh('asterisk -rx "database show trunkblock"'), time());
+    }
+
+    /** @return array{0: string, 1: string} Pure: `database show trunkblock` output → result. */
+    public static function trunkLimitsStatus(string $astdb, int $now): array
+    {
+        // Asterisk always answers "N results found."; nothing at all means it
+        // could not be asked (the Asterisk check reports that one).
+        if (!str_contains($astdb, 'results found')) {
+            return ['info', t('health.msg_trunk_limits_unread')];
+        }
+        $refused = [];
+        if (preg_match_all('#^/trunkblock/(\S+)\s*:\s*(\d+):(\d+):(channels|rate):(\d+)\s*$#m', $astdb, $m, PREG_SET_ORDER)) {
+            foreach ($m as [, $trunk, $first, $count, $reason, $last]) {
+                if ($now - (int) $last < 900) {
+                    $refused[] = sprintf(t('health.msg_trunk_limits_refused'), $trunk, (int) $count,
+                        t('health.limit_' . $reason), date('H:i', (int) $first));
+                }
+            }
+        }
+        return $refused ? ['warn', implode(' ', $refused)] : ['ok', t('health.msg_trunk_limits_ok')];
     }
 
     /** Trunks/extensions losing audio now (CallQualityService, from RTCP). */

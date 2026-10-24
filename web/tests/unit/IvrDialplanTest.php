@@ -195,5 +195,17 @@ final class IvrDialplanTest extends TestCase
         // 3. A route pattern colliding with menu option (1) must be skipped
         $this->assertStringNotContainsString('Direct Dial to Outbound Route Cakisan Rota', $conf);
     }
-}
 
+    public function testNoKeyRepeatsTheMenuWhenAskedThenGoesToTheTimeoutDestination(): void
+    {
+        $ivr = ['id' => 4, 'title' => 'Repeat', 'prompt_file' => 'custom/welcome', 'timeout_seconds' => 5, 'max_failures' => 3,
+            'language' => '', 'allow_direct_dial' => 0, 'digit_timeout' => 3, 'timeout_dest_type' => 'hangup', 'timeout_dest_id' => 0,
+            'invalid_dest_type' => 'hangup', 'invalid_dest_id' => 0, 'timeout_repeat' => 1];
+        $conf = buildIVRDialplanBlock($ivr, [], []);
+        $t = substr($conf, strpos($conf, 'exten => t,1'));
+        $this->assertStringContainsString("same => n,Set(IVR4FAILS=\$[0\${IVR4FAILS} + 1])\n same => n,GotoIf(\$[0\${IVR4FAILS} >= 3]?tdest)\n same => n,Playback(please-try-again)\n same => n,Goto(s,1)\n same => n(tdest)", $t);
+
+        $ivr['timeout_repeat'] = 0;
+        $this->assertStringNotContainsString('please-try-again', buildIVRDialplanBlock($ivr, [], []), 'off: straight to the timeout destination');
+    }
+}

@@ -37,6 +37,7 @@ class QueueController extends BaseController
             'legacy_agents' => $legacy_agents,
             'legacy_managers' => $legacy_managers,
             'moh_classes' => $moh_classes,
+            'announcements' => IvrRepository::activeAnnouncements(),
         ], ['title' => $page_title] + $notices);
     }
 }
