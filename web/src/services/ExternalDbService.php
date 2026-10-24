@@ -11,11 +11,15 @@ require_once __DIR__ . '/../repositories/ExternalDbRepository.php';
  */
 class ExternalDbService
 {
+    // No SQLite: its "database" is a file path on this server, which would let
+    // a connection open any SQLite file the portal can read (Asterisk's own).
     public const SUPPORTED_DRIVERS = [
         'mysql'  => 'MySQL / MariaDB',
         'pgsql'  => 'PostgreSQL',
-        'sqlite' => 'SQLite',
     ];
+
+    /** Longest a lookup may take on the remote server (an IVR caller is waiting). */
+    public const STATEMENT_TIMEOUT_MS = 2500;
 
     /**
      * @param array<string, mixed> $data
@@ -26,37 +30,39 @@ class ExternalDbService
         $errors = [];
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '' || strlen($name) > 100) {
-            $errors['name'] = 'Name must be between 1 and 100 characters';
+            $errors['name'] = t('external_dbs.err_name');
         }
 
         $driver = strtolower(trim((string)($data['driver'] ?? 'mysql')));
         if (!array_key_exists($driver, self::SUPPORTED_DRIVERS)) {
-            $errors['driver'] = 'Unsupported database driver';
+            $errors['driver'] = t('external_dbs.err_driver');
         }
 
-        $host = trim((string)($data['host'] ?? 'localhost'));
-        if ($driver !== 'sqlite' && $host === '') {
-            $errors['host'] = 'Host cannot be empty';
+        // Host, database and user name go into the PDO DSN: a ';' there would
+        // add DSN parameters of its own.
+        $host = trim((string)($data['host'] ?? ''));
+        if (!preg_match('/^[A-Za-z0-9.:\[\]-]{1,253}$/', $host)) {
+            $errors['host'] = t('external_dbs.err_host');
         }
 
         $port = (int)($data['port'] ?? ($driver === 'pgsql' ? 5432 : 3306));
-        if ($driver !== 'sqlite' && ($port <= 0 || $port > 65535)) {
-            $errors['port'] = 'Port must be between 1 and 65535';
+        if ($port <= 0 || $port > 65535) {
+            $errors['port'] = t('external_dbs.err_port');
         }
 
         $dbName = trim((string)($data['database_name'] ?? ''));
-        if ($dbName === '') {
-            $errors['database_name'] = 'Database name cannot be empty';
+        if (!preg_match('/^[A-Za-z0-9_$.-]{1,64}$/', $dbName)) {
+            $errors['database_name'] = t('external_dbs.err_database');
         }
 
         $username = trim((string)($data['username'] ?? ''));
-        if ($driver !== 'sqlite' && $username === '') {
-            $errors['username'] = 'Username cannot be empty';
+        if ($username === '' || strlen($username) > 128) {
+            $errors['username'] = t('external_dbs.err_username');
         }
 
         $timeout = (int)($data['timeout_sec'] ?? 3);
         if ($timeout < 1 || $timeout > 10) {
-            $errors['timeout_sec'] = 'Timeout must be between 1 and 10 seconds';
+            $errors['timeout_sec'] = t('external_dbs.err_timeout');
         }
 
         if (!empty($errors)) {
@@ -65,8 +71,10 @@ class ExternalDbService
 
         $id = !empty($data['id']) ? (int)$data['id'] : null;
         $isActive = isset($data['is_active']) ? (!empty($data['is_active']) ? 1 : 0) : 1;
-        $charset = trim((string)($data['charset'] ?? 'utf8mb4'));
-        $sslMode = trim((string)($data['ssl_mode'] ?? 'prefer'));
+        $charset = (string) ($data['charset'] ?? 'utf8mb4');
+        $charset = in_array($charset, ['utf8mb4', 'utf8', 'latin1', 'latin5'], true) ? $charset : 'utf8mb4';
+        $sslMode = (string) ($data['ssl_mode'] ?? 'prefer');
+        $sslMode = in_array($sslMode, ['disable', 'prefer', 'require'], true) ? $sslMode : 'prefer';
         $rawPassword = (string)($data['password'] ?? '');
 
         $db = getDB();
@@ -74,7 +82,7 @@ class ExternalDbService
         if ($id !== null) {
             $existing = ExternalDbRepository::findById($id);
             if (!$existing) {
-                return ['ok' => false, 'errors' => ['id' => 'Connection not found']];
+                return ['ok' => false, 'errors' => ['id' => t('external_dbs.err_not_found')]];
             }
 
             // Keep existing password if not provided
@@ -142,12 +150,25 @@ class ExternalDbService
     {
         $start = microtime(true);
         $id = !empty($params['id']) ? (int)$params['id'] : null;
+        // A saved connection: what the form leaves out (or the list's test
+        // button, which sends only the id) comes from the stored row; an empty
+        // password field means "the stored one".
+        if ($id !== null && ($stored = ExternalDbRepository::findById($id))) {
+            foreach ($stored as $k => $v) {
+                if (!isset($params[$k]) || $params[$k] === '') {
+                    $params[$k] = $v;
+                }
+            }
+            if ((string) ($params['password'] ?? '') === '') {
+                unset($params['password']);
+            }
+        }
 
         try {
             $pdo = self::connect($params);
             // Ping query
             $driver = (string)($params['driver'] ?? 'mysql');
-            $pingSql = ($driver === 'sqlite') ? 'SELECT 1' : 'SELECT 1';
+            $pingSql = 'SELECT 1';
             $stmt = $pdo->query($pingSql);
             $val = $stmt ? (int)$stmt->fetchColumn() : 0;
 
@@ -196,7 +217,11 @@ class ExternalDbService
 
         // Strict read-only query guard
         $cleanSql = trim(preg_replace('#/\*.*?\*/#s', '', $sql) ?? '');
-        $cleanSql = trim(preg_replace('#--.*?(\r?\n|$)#', '', $cleanSql) ?? '');
+        $cleanSql = trim(preg_replace('#(--|\#).*?(\r?\n|$)#', '', $cleanSql) ?? '');
+        // Writing files on the database server is not reading.
+        if (preg_match('/\bINTO\s+(OUTFILE|DUMPFILE)\b|\bLOAD_FILE\s*\(/i', $cleanSql)) {
+            throw new InvalidArgumentException('Only read-only SELECT or WITH queries are permitted on external connections');
+        }
 
         if (!preg_match('/^(SELECT|WITH)\b/i', $cleanSql)) {
             throw new InvalidArgumentException('Only read-only SELECT or WITH queries are permitted on external connections');
@@ -238,25 +263,43 @@ class ExternalDbService
             $password = SecretBox::decrypt((string)$config['password_encrypted']);
         }
 
+        if (!array_key_exists($driver, self::SUPPORTED_DRIVERS)
+            || !preg_match('/^[A-Za-z0-9.:\[\]-]{1,253}$/', $host)
+            || !preg_match('/^[A-Za-z0-9_$.-]{1,64}$/', $dbName)) {
+            throw new InvalidArgumentException(t('external_dbs.err_settings'));
+        }
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_TIMEOUT => $timeout,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
         ];
-
-        switch ($driver) {
-            case 'pgsql':
-                $dsn = "pgsql:host={$host};port={$port};dbname={$dbName}";
-                break;
-            case 'sqlite':
-                $dsn = "sqlite:{$dbName}";
-                break;
-            case 'mysql':
-            default:
-                $dsn = "mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}";
-                break;
+        $ms = self::STATEMENT_TIMEOUT_MS;
+        if ($driver === 'pgsql') {
+            $ssl = in_array($config['ssl_mode'] ?? 'prefer', ['disable', 'prefer', 'require'], true) ? $config['ssl_mode'] : 'prefer';
+            $pdo = new PDO("pgsql:host={$host};port={$port};dbname={$dbName};sslmode={$ssl}", $username, $password, $options);
+            // Read-only and time-boxed, whatever rights the account has.
+            $pdo->exec('SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY');
+            $pdo->exec("SET statement_timeout = {$ms}");
+            return $pdo;
         }
-
-        return new PDO($dsn, $username, $password, $options);
+        $charset = in_array($charset, ['utf8mb4', 'utf8', 'latin1', 'latin5'], true) ? $charset : 'utf8mb4';
+        $options[\Pdo\Mysql::ATTR_MULTI_STATEMENTS] = false;
+        if (($config['ssl_mode'] ?? '') === 'require') {
+            $options[\Pdo\Mysql::ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+        }
+        $pdo = new PDO("mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}", $username, $password, $options);
+        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        // MariaDB counts in seconds, MySQL in ms; whichever the server knows.
+        try {
+            $pdo->exec('SET SESSION max_statement_time = ' . ($ms / 1000));
+        } catch (\Throwable $e) {
+            try {
+                $pdo->exec("SET SESSION max_execution_time = {$ms}");
+            } catch (\Throwable $e2) {
+                // an old server without either: the connect timeout still applies
+            }
+        }
+        return $pdo;
     }
 }

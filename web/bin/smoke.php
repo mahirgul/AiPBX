@@ -187,6 +187,9 @@ function check_rbac(): void
         '/system-update',
         '/health',
         '/call-quality',
+        '/scheduled-tasks',
+        '/external-dbs',
+        '/ivr-data-steps',
     ];
     $n = 0;
 

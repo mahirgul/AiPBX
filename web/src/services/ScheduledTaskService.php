@@ -37,37 +37,37 @@ class ScheduledTaskService
         $errors = [];
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '' || strlen($name) > 100) {
-            $errors['name'] = 'Name must be between 1 and 100 characters';
+            $errors['name'] = t('scheduled_tasks.err_name');
         }
 
         $cronExpr = trim((string)($data['cron_expression'] ?? '0 3 * * *'));
         if (!CronScheduleHelper::isValid($cronExpr)) {
-            $errors['cron_expression'] = 'Invalid cron expression';
+            $errors['cron_expression'] = t('scheduled_tasks.err_cron');
         }
 
         $scriptType = (string)($data['script_type'] ?? 'shell');
         if (!in_array($scriptType, ['shell', 'php', 'python'], true)) {
-            $errors['script_type'] = 'Script type must be shell, php, or python';
+            $errors['script_type'] = t('scheduled_tasks.err_type');
         }
 
         $scriptContent = trim((string)($data['script_content'] ?? ''));
         if ($scriptContent === '') {
-            $errors['script_content'] = 'Script content cannot be empty';
+            $errors['script_content'] = t('scheduled_tasks.err_script');
         }
 
         $timeout = (int)($data['timeout_sec'] ?? 300);
         if ($timeout < 5 || $timeout > 3600) {
-            $errors['timeout_sec'] = 'Timeout must be between 5 and 3600 seconds';
+            $errors['timeout_sec'] = t('scheduled_tasks.err_timeout');
         }
 
         $memory = (int)($data['memory_limit_mb'] ?? 256);
         if ($memory < 32 || $memory > 4096) {
-            $errors['memory_limit_mb'] = 'Memory limit must be between 32 MB and 4096 MB';
+            $errors['memory_limit_mb'] = t('scheduled_tasks.err_memory');
         }
 
         $cpu = (int)($data['cpu_limit_pct'] ?? 50);
         if ($cpu < 5 || $cpu > 100) {
-            $errors['cpu_limit_pct'] = 'CPU limit must be between 5% and 100%';
+            $errors['cpu_limit_pct'] = t('scheduled_tasks.err_cpu');
         }
 
         if (!empty($errors)) {
@@ -87,7 +87,7 @@ class ScheduledTaskService
         if ($id !== null) {
             $existing = ScheduledTaskRepository::findById($id);
             if (!$existing) {
-                return ['ok' => false, 'errors' => ['id' => 'Task not found']];
+                return ['ok' => false, 'errors' => ['id' => t('scheduled_tasks.err_not_found')]];
             }
 
             $stmt = $db->prepare(

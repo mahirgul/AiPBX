@@ -42,7 +42,7 @@ $csrf = getCSRFToken();
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label class="form-label" for="step_name"><strong><?php echo htmlspecialchars(t('ivr_data.name', 'Step Name')); ?> *</strong></label>
-                    <input type="text" name="name" id="step_name" class="form-control" required maxlength="100" placeholder="e.g. Customer VIP Check">
+                    <input type="text" name="name" id="step_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_name')); ?>">
                 </div>
                 <div>
                     <label class="form-label" for="step_channel_var"><strong><?php echo htmlspecialchars(t('ivr_data.channel_var', 'Channel Variable Name')); ?> *</strong></label>
@@ -54,15 +54,15 @@ $csrf = getCSRFToken();
                 <div>
                     <label class="form-label" for="step_input_source"><strong><?php echo htmlspecialchars(t('ivr_data.input_source', 'Input Source')); ?></strong></label>
                     <select name="input_source" id="step_input_source" class="form-control" onchange="toggleInputFields(this.value)">
-                        <option value="dtmf">Keypad Digits (DTMF Prompt)</option>
-                        <option value="caller_id">Caller ID Number (${CALLERID(num)})</option>
+                        <option value="dtmf"><?php echo htmlspecialchars(t('ivr_data.input_dtmf')); ?></option>
+                        <option value="caller_id"><?php echo htmlspecialchars(t('ivr_data.input_callerid')); ?></option>
                     </select>
                 </div>
                 <div>
                     <label class="form-label" for="step_data_source"><strong><?php echo htmlspecialchars(t('ivr_data.data_source', 'Data Source')); ?></strong></label>
                     <select name="data_source" id="step_data_source" class="form-control" onchange="toggleDataSourceFields(this.value)">
-                        <option value="database">External Database (Roadmap 2.2)</option>
-                        <option value="http">External HTTP API (REST / Webhook)</option>
+                        <option value="database"><?php echo htmlspecialchars(t('ivr_data.source_db')); ?></option>
+                        <option value="http"><?php echo htmlspecialchars(t('ivr_data.source_http')); ?></option>
                     </select>
                 </div>
             </div>
@@ -76,8 +76,8 @@ $csrf = getCSRFToken();
                 <div>
                     <label class="form-label"><strong><?php echo htmlspecialchars(t('ivr_data.dtmf_limits', 'Input Limits')); ?></strong></label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="number" name="max_digits" id="step_max_digits" class="form-control" value="10" min="1" max="30" placeholder="Max Digits">
-                        <input type="number" name="input_timeout_sec" id="step_input_timeout" class="form-control" value="5" min="1" max="30" placeholder="Timeout (s)">
+                        <input type="number" name="max_digits" id="step_max_digits" class="form-control" value="10" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_max_digits')); ?>">
+                        <input type="number" name="input_timeout_sec" id="step_input_timeout" class="form-control" value="5" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_timeout')); ?>">
                     </div>
                 </div>
             </div>
@@ -98,7 +98,7 @@ $csrf = getCSRFToken();
                 <div>
                     <label class="form-label" for="step_query_sql"><strong><?php echo htmlspecialchars(t('ivr_data.query_sql', 'SQL Query (Read-Only SELECT)')); ?> *</strong></label>
                     <textarea name="query_sql" id="step_query_sql" class="form-control" rows="3" style="font-family: monospace;" placeholder="SELECT is_vip FROM customers WHERE phone = :input OR phone = :caller_id LIMIT 1"></textarea>
-                    <div class="u-muted u-fs-11" style="margin-top: 4px;">Available placeholders: <code>:input</code>, <code>:caller_id</code></div>
+                    <div class="u-muted u-fs-11" style="margin-top: 4px;"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>:input</code>, <code>:caller_id</code></div>
                 </div>
             </div>
 
@@ -108,13 +108,13 @@ $csrf = getCSRFToken();
                     <div>
                         <label class="form-label" for="step_http_url"><strong><?php echo htmlspecialchars(t('ivr_data.http_url', 'HTTP API URL')); ?> *</strong></label>
                         <input type="url" name="http_url" id="step_http_url" class="form-control" placeholder="https://api.example.com/customers/lookup?phone={input}">
-                        <div class="u-muted u-fs-11" style="margin-top: 4px;">Available placeholders: <code>{input}</code>, <code>{caller_id}</code></div>
+                        <div class="u-muted u-fs-11" style="margin-top: 4px;"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>{input}</code>, <code>{caller_id}</code></div>
                     </div>
                     <div>
                         <label class="form-label" for="step_http_method"><strong><?php echo htmlspecialchars(t('ivr_data.http_method', 'HTTP Method')); ?></strong></label>
                         <select name="http_method" id="step_http_method" class="form-control">
                             <option value="GET">GET</option>
-                            <option value="POST">POST (JSON Payload)</option>
+                            <option value="POST"><?php echo htmlspecialchars(t('ivr_data.method_post')); ?></option>
                         </select>
                     </div>
                 </div>

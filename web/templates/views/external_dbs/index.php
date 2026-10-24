@@ -42,7 +42,7 @@ $csrf = getCSRFToken();
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label class="form-label" for="db_name"><strong><?php echo htmlspecialchars(t('external_dbs.name', 'Connection Name')); ?> *</strong></label>
-                    <input type="text" name="name" id="db_name" class="form-control" required maxlength="100" placeholder="e.g. Production CRM Replica">
+                    <input type="text" name="name" id="db_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('external_dbs.ph_name')); ?>">
                 </div>
                 <div>
                     <label class="form-label" for="db_driver"><strong><?php echo htmlspecialchars(t('external_dbs.driver', 'Driver')); ?> *</strong></label>
@@ -57,7 +57,7 @@ $csrf = getCSRFToken();
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label class="form-label" for="db_host"><strong><?php echo htmlspecialchars(t('external_dbs.host', 'Host / IP Address')); ?> *</strong></label>
-                    <input type="text" name="host" id="db_host" class="form-control" required value="localhost" placeholder="db.example.com or 192.168.1.50">
+                    <input type="text" name="host" id="db_host" class="form-control" required value="" placeholder="db.example.com">
                 </div>
                 <div>
                     <label class="form-label" for="db_port"><strong><?php echo htmlspecialchars(t('external_dbs.port', 'Port')); ?> *</strong></label>
@@ -79,7 +79,7 @@ $csrf = getCSRFToken();
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label class="form-label" for="db_password"><strong><?php echo htmlspecialchars(t('external_dbs.password', 'Password')); ?></strong></label>
-                    <input type="password" name="password" id="db_password" class="form-control" autocomplete="new-password" placeholder="Leave empty to keep unchanged">
+                    <input type="password" name="password" id="db_password" class="form-control" autocomplete="new-password" placeholder="<?php echo htmlspecialchars(t('external_dbs.password_keep')); ?>">
                 </div>
                 <div>
                     <label class="form-label" for="db_timeout"><strong><?php echo htmlspecialchars(t('external_dbs.timeout', 'Timeout (seconds)')); ?></strong></label>
@@ -233,7 +233,7 @@ function editDb(c) {
 
 function testFormConnection() {
     var feedback = document.getElementById('testFeedback');
-    feedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing connection...';
+    feedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.external_dbs.testing');
 
     var data = new URLSearchParams();
     data.append('csrf_token', <?php echo jsArg($csrf); ?>);
@@ -278,15 +278,11 @@ function testSavedConnection(id) {
     })
     .then(function(r) { return r.json(); })
     .then(function(res) {
-        if (res.ok) {
-            alert('✓ ' + res.message);
-        } else {
-            alert('✕ Connection failed: ' + res.message);
-        }
+        alert(res.ok ? __('js.external_dbs.test_ok', res.message) : __('js.external_dbs.test_failed', res.message));
         location.reload();
     })
     .catch(function(err) {
-        alert('Error: ' + err.message);
+        alert(__('js.external_dbs.test_failed', err.message));
     });
 }
 </script>

@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 declare(strict_types=1);
@@ -29,41 +30,29 @@ try {
 }
 
 if (!ScheduledTaskService::isEnabled()) {
-    // Feature is disabled globally
-    exit(0);
-}
-
-$activeTasks = ScheduledTaskRepository::findActive();
-if (empty($activeTasks)) {
+    // Feature switched off: no task runs, a pending "run now" is dropped.
+    ScheduledTaskRepository::takeRunRequests();
     exit(0);
 }
 
 $now = new DateTimeImmutable();
-$dispatched = 0;
-
-foreach ($activeTasks as $task) {
-    $taskId = (int)$task['id'];
-    $cronExpr = (string)$task['cron_expression'];
-
-    if (!CronScheduleHelper::isDue($cronExpr, $now)) {
-        continue;
+$due = [];
+// "Run now" from the portal (it may not start a task itself).
+foreach (ScheduledTaskRepository::takeRunRequests() as $task) {
+    $due[(int) $task['id']] = [$task, 'manual'];
+}
+foreach (ScheduledTaskRepository::findActive() as $task) {
+    if (!isset($due[(int) $task['id']]) && CronScheduleHelper::isDue((string) $task['cron_expression'], $now)) {
+        $due[(int) $task['id']] = [$task, 'schedule'];
     }
-
-    if (ScheduledTaskRepository::isTaskRunning($taskId)) {
-        echo "[" . date('Y-m-d H:i:s') . "] Task #{$taskId} ('{$task['name']}') is already running, skipping overlapping run.\n";
-        continue;
-    }
-
-    echo "[" . date('Y-m-d H:i:s') . "] Dispatching Task #{$taskId} ('{$task['name']}')\n";
-
-    // Run task asynchronously in a background subprocess so multiple due tasks don't block each other
-    $cmd = 'php ' . escapeshellarg(dirname(__DIR__) . '/bin/run_task.php') . ' ' . $taskId . ' schedule >/dev/null 2>&1 &';
-    exec($cmd);
-    $dispatched++;
 }
 
-if ($dispatched > 0) {
-    echo "[" . date('Y-m-d H:i:s') . "] Dispatched {$dispatched} task(s).\n";
+foreach ($due as $taskId => [$task, $trigger]) {
+    if (ScheduledTaskRepository::isTaskRunning($taskId)) {
+        continue;   // no overlapping runs of one task
+    }
+    // In the background, so one long task does not hold up the others.
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/run_task.php') . ' ' . $taskId . ' ' . $trigger . ' >/dev/null 2>&1 &');
 }
 
 exit(0);

@@ -19,6 +19,30 @@ class AsteriskHelper {
      * success" — and the FULL output is returned to the caller in every case,
      * so the admin can see the raw text if needed.
      */
+    /**
+     * Libraries a system update replaced while Asterisk kept the old ones
+     * mapped (it needs a restart to use the new ones). Root only: it reads
+     * /proc/<pid>/maps of the asterisk process.
+     *
+     * @return list<string> file names, empty when none (or unknown)
+     */
+    public static function replacedLibraries(): array
+    {
+        $pid = (int) trim((string) @shell_exec('pidof -s asterisk 2>/dev/null'));
+        $maps = $pid > 0 ? (string) @file_get_contents("/proc/{$pid}/maps") : '';
+        if (!preg_match_all('#\s(/\S+\.so[.\d]*) \(deleted\)$#m', $maps, $d)) {
+            return [];
+        }
+        return array_values(array_unique(array_map('basename', $d[1])));
+    }
+
+    /** Calls in progress, or null when Asterisk did not answer clearly. */
+    public static function activeCallCount(): ?int
+    {
+        $res = self::execCLI('core show channels count');
+        return preg_match('/^(\d+) active calls?$/m', (string) ($res['output'] ?? ''), $m) ? (int) $m[1] : null;
+    }
+
     public static function execCLI($command) {
         // TEST LOCK: automated tests must NEVER send commands to the live
         // Asterisk. Generators such as syncAllTrunks() trigger reloads from

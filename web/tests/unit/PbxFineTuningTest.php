@@ -100,36 +100,37 @@ final class PbxFineTuningTest extends TestCase
         $this->assertTrue($res['success']);
     }
 
-    public function testNightRestartLogic(): void
+    public function testNightRestartWindowAndFailSafe(): void
     {
+        $this->assertTrue(NightRestartService::inWindow('03:30', '03:00', '05:00'));
+        $this->assertFalse(NightRestartService::inWindow('05:01', '03:00', '05:00'));
+        $this->assertTrue(NightRestartService::inWindow('23:30', '23:00', '04:00'), 'across midnight');
+        $this->assertTrue(NightRestartService::inWindow('02:00', '23:00', '04:00'));
+        $this->assertFalse(NightRestartService::inWindow('12:00', '23:00', '04:00'));
+
         setSystemSetting('night_restart_enabled', '0');
-        $this->assertFalse(NightRestartService::isDue(), 'Disabled night restart is not due');
+        $this->assertFalse(NightRestartService::isDue(), 'switched off');
 
+        // Switched on and inside the window, but nothing needs a restart (no
+        // replaced libraries, and in tests the call count cannot be read):
+        // never restart then.
         setSystemSetting('night_restart_enabled', '1');
-        // Set window to encompass current hour:minute
-        $currentMin = (int)date('i');
-        $startH = (int)date('H');
-        $endH = ($startH + 1) % 24;
-        setSystemSetting('night_restart_window_start', sprintf('%02d:00', $startH));
-        setSystemSetting('night_restart_window_end', sprintf('%02d:59', $startH));
+        setSystemSetting('night_restart_window_start', '00:00');
+        setSystemSetting('night_restart_window_end', '23:59');
         setSystemSetting('night_restart_last_date', '');
-
-        // In test mode, active calls are mocked to 0 via AsteriskHelper test lock
-        $this->assertTrue(NightRestartService::isDue());
-
-        $executed = NightRestartService::executeRestart();
-        $this->assertTrue($executed);
-        $this->assertSame(date('Y-m-d'), (string)getSystemSetting('night_restart_last_date', ''));
-
-        // Calling again today should return false
-        $this->assertFalse(NightRestartService::isDue(), 'Already restarted today');
+        $this->assertFalse(NightRestartService::isDue());
+        $this->assertFalse(NightRestartService::executeRestart());
+        $this->assertSame('', (string) getSystemSetting('night_restart_last_date', ''));
+        setSystemSetting('night_restart_enabled', '0');
     }
 
     public function testFailedRegistrationsHealthCheck(): void
     {
         setSystemSetting('failed_reg_threshold', '50');
         [$status, $msg] = HealthChecks::failedRegistrations();
-        $this->assertSame('ok', $status);
-        $this->assertStringContainsString('failed registration(s)', $msg);
+        $this->assertContains($status, ['ok', 'off'], 'no alarm (off when the log cannot be read)');
+        $line = 'SecurityEvent="ChallengeResponseFailed",EventTV="' . date('Y-m-d\\TH:i:s.000O') . '"';
+        $old = 'SecurityEvent="InvalidPassword",EventTV="' . date('Y-m-d\\TH:i:s.000O', time() - 3600) . '"';
+        $this->assertSame(1, HealthChecks::countRecentFailures($line . "\n" . $old, time() - 900), 'only the last 15 minutes count');
     }
 }

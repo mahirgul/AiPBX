@@ -6,9 +6,11 @@
             <i class="fas fa-microphone-alt u-primary"></i> <?php echo t('ivr.title'); ?>
         </div>
         <div class="u-flex-gap">
+            <?php if (hasModulePermission('external_dbs', 'access')): ?>
             <a href="/ivr-data-steps" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('ivr_data.page_title')); ?>">
                 <i class="fas fa-database"></i> <?php echo htmlspecialchars(t('ivr_data.nav_button')); ?>
             </a>
+            <?php endif; ?>
             <button type="button" class="btn-help" onclick="toggleModuleHelp('ivrHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>

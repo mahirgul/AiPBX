@@ -71,7 +71,7 @@ $csrf = getCSRFToken();
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
                 <div>
                     <label class="form-label" for="task_name"><strong><?php echo htmlspecialchars(t('scheduled_tasks.task_name', 'Task Name')); ?> *</strong></label>
-                    <input type="text" name="name" id="task_name" class="form-control" required maxlength="100" placeholder="e.g. Nightly CDR Export">
+                    <input type="text" name="name" id="task_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_name')); ?>">
                 </div>
                 <div>
                     <label class="form-label" for="task_script_type"><strong><?php echo htmlspecialchars(t('scheduled_tasks.script_type', 'Interpreter')); ?> *</strong></label>
@@ -85,7 +85,7 @@ $csrf = getCSRFToken();
 
             <div style="margin-bottom: 16px;">
                 <label class="form-label" for="task_description"><?php echo htmlspecialchars(t('scheduled_tasks.description', 'Description')); ?></label>
-                <input type="text" name="description" id="task_description" class="form-control" placeholder="Optional notes about what this task does">
+                <input type="text" name="description" id="task_description" class="form-control" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_description')); ?>">
             </div>
 
             <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
@@ -94,21 +94,21 @@ $csrf = getCSRFToken();
                     <div style="display: flex; gap: 8px;">
                         <input type="text" name="cron_expression" id="task_cron" class="form-control" required value="0 3 * * *" style="font-family: monospace;">
                         <select class="form-control" style="max-width: 160px;" onchange="if(this.value){ document.getElementById('task_cron').value = this.value; }">
-                            <option value="">Presets...</option>
-                            <option value="*/5 * * * *">Every 5 min</option>
-                            <option value="*/15 * * * *">Every 15 min</option>
-                            <option value="0 * * * *">Hourly</option>
-                            <option value="0 3 * * *">Nightly 03:00</option>
-                            <option value="0 3 * * 0">Weekly (Sun)</option>
+                            <option value=""><?php echo htmlspecialchars(t('scheduled_tasks.preset')); ?></option>
+                            <option value="*/5 * * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_5min')); ?></option>
+                            <option value="*/15 * * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_15min')); ?></option>
+                            <option value="0 * * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_hourly')); ?></option>
+                            <option value="0 3 * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_nightly')); ?></option>
+                            <option value="0 3 * * 0"><?php echo htmlspecialchars(t('scheduled_tasks.preset_weekly')); ?></option>
                         </select>
                     </div>
                 </div>
                 <div>
                     <label class="form-label"><strong><?php echo htmlspecialchars(t('scheduled_tasks.resource_limits', 'Resource Limits')); ?></strong></label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="number" name="timeout_sec" id="task_timeout" class="form-control" value="300" min="5" max="3600" title="Timeout (sec)" placeholder="Timeout (s)">
-                        <input type="number" name="memory_limit_mb" id="task_memory" class="form-control" value="256" min="32" max="4096" title="Memory (MB)" placeholder="RAM (MB)">
-                        <input type="number" name="cpu_limit_pct" id="task_cpu" class="form-control" value="50" min="5" max="100" title="CPU Limit (%)" placeholder="CPU (%)">
+                        <input type="number" name="timeout_sec" id="task_timeout" class="form-control" value="300" min="5" max="3600" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_timeout')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_timeout')); ?>">
+                        <input type="number" name="memory_limit_mb" id="task_memory" class="form-control" value="256" min="32" max="4096" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_memory')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_memory')); ?>">
+                        <input type="number" name="cpu_limit_pct" id="task_cpu" class="form-control" value="50" min="5" max="100" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_cpu')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_cpu')); ?>">
                     </div>
                 </div>
             </div>
@@ -341,36 +341,73 @@ function editTask(t) {
     document.getElementById('taskFormBox').scrollIntoView({ behavior: 'smooth' });
 }
 
+function taskPost(action, taskId) {
+    var data = new URLSearchParams();
+    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
+    data.append('action', action);
+    data.append('id', taskId);
+    return fetch('/scheduled-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+        body: data.toString()
+    }).then(function(r) { return r.json(); });
+}
+
+// "Run now" is queued: the dispatcher starts the task in its sandbox within a
+// minute; the newest run is then followed until it ends (at most 10 minutes).
 function runTaskNow(taskId) {
     var modal = document.getElementById('outputModal');
     var status = document.getElementById('outputModalStatus');
     var output = document.getElementById('outputModalText');
-
-    status.innerHTML = '<span class="u-muted"><i class="fas fa-spinner fa-spin"></i> Executing task sandbox...</span>';
+    var badge = function(cls, icon, text) {
+        status.innerHTML = '';
+        var b = document.createElement('span');
+        b.className = 'badge ' + cls;
+        b.innerHTML = '<i class="fas ' + icon + '"></i> ';
+        b.appendChild(document.createTextNode(text));
+        status.appendChild(b);
+    };
     output.textContent = '';
     modal.style.display = 'flex';
+    badge('badge-info', 'fa-spinner fa-spin', __('js.scheduled_tasks.queued'));
 
-    var data = new URLSearchParams();
-    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
-    data.append('action', 'run_now');
-    data.append('id', taskId);
-
-    fetch('/scheduled-tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
-        body: data.toString()
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(res) {
-        if (res.ok) {
-            status.innerHTML = '<span class="badge badge-success"><i class="fas fa-check"></i> Finished (Exit Code: ' + res.exit_code + ')</span>';
-        } else {
-            status.innerHTML = '<span class="badge badge-danger"><i class="fas fa-times"></i> Failed (Exit Code: ' + res.exit_code + ')</span> ' + (res.error || '');
+    var lastRun = 0;
+    taskPost('get_details', taskId).then(function(res) {
+        var runs = (res.task && res.task.runs) || [];
+        lastRun = runs.length ? parseInt(runs[0].id, 10) : 0;
+        return taskPost('run_now', taskId);
+    }).then(function(res) {
+        if (!res.ok) {
+            badge('badge-danger', 'fa-times', res.error || __('js.scheduled_tasks.failed'));
+            return;
         }
-        output.textContent = res.output || '(No output produced)';
-    })
-    .catch(function(err) {
-        status.innerHTML = '<span class="badge badge-danger">Error</span> ' + err.message;
+        var tries = 0;
+        var poll = function() {
+            if (++tries > 200) {
+                badge('badge-warning', 'fa-clock', __('js.scheduled_tasks.still_waiting'));
+                return;
+            }
+            taskPost('get_details', taskId).then(function(d) {
+                var runs = (d.task && d.task.runs) || [];
+                var run = runs.length && parseInt(runs[0].id, 10) > lastRun ? runs[0] : null;
+                if (!run) {
+                    setTimeout(poll, 3000);
+                    return;
+                }
+                if (run.status === 'running') {
+                    badge('badge-info', 'fa-spinner fa-spin', __('js.scheduled_tasks.running'));
+                    setTimeout(poll, 3000);
+                    return;
+                }
+                var ok = parseInt(run.exit_code, 10) === 0;
+                badge(ok ? 'badge-success' : 'badge-danger', ok ? 'fa-check' : 'fa-times',
+                    __(ok ? 'js.scheduled_tasks.finished' : 'js.scheduled_tasks.failed_code', String(run.exit_code)));
+                output.textContent = run.output || run.error_message || __('js.scheduled_tasks.no_output');
+            }).catch(function() { setTimeout(poll, 5000); });
+        };
+        setTimeout(poll, 3000);
+    }).catch(function(err) {
+        badge('badge-danger', 'fa-times', err.message);
     });
 }
 

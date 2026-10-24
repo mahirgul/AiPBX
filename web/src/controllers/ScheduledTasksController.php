@@ -31,9 +31,12 @@ class ScheduledTasksController extends BaseController
 
             $action = (string)($_POST['action'] ?? '');
 
+            $uid = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+
             if ($action === 'toggle_enable') {
                 $enabled = !empty($_POST['enabled']);
                 ScheduledTaskService::setEnabled($enabled);
+                writeAuditLog('scheduled_tasks', 'settings', 0, 'Scheduled tasks: ' . ($enabled ? 'on' : 'off'), 'update', $uid);
                 static::redirect('/scheduled-tasks');
             }
 
@@ -41,6 +44,8 @@ class ScheduledTasksController extends BaseController
                 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
                 $res = ScheduledTaskService::saveTask($_POST, $userId);
                 if ($res['ok']) {
+                    writeAuditLog('scheduled_tasks', 'task', $res['id'], mb_substr((string) ($_POST['name'] ?? ''), 0, 100),
+                        empty($_POST['id']) ? 'create' : 'update', $uid);
                     static::notifySuccess(t('scheduled_tasks.saved_successfully'));
                     static::redirect('/scheduled-tasks');
                 } else {
@@ -56,7 +61,9 @@ class ScheduledTasksController extends BaseController
             if ($action === 'delete_task') {
                 $id = (int)($_POST['id'] ?? 0);
                 if ($id > 0) {
+                    $name = (string) (ScheduledTaskRepository::findById($id)['name'] ?? "#{$id}");
                     ScheduledTaskService::deleteTask($id);
+                    writeAuditLog('scheduled_tasks', 'task', $id, $name, 'delete', $uid);
                     static::notifySuccess(t('scheduled_tasks.deleted_successfully'));
                 }
                 static::redirect('/scheduled-tasks');
@@ -67,6 +74,7 @@ class ScheduledTasksController extends BaseController
                 $isActive = !empty($_POST['is_active']);
                 if ($id > 0) {
                     ScheduledTaskService::toggleTask($id, $isActive);
+                    writeAuditLog('scheduled_tasks', 'task', $id, 'Task ' . ($isActive ? 'on' : 'off'), 'update', $uid);
                 }
                 static::redirect('/scheduled-tasks');
             }
@@ -76,8 +84,16 @@ class ScheduledTasksController extends BaseController
                 if ($id <= 0) {
                     static::json(['ok' => false, 'error' => 'Invalid task ID']);
                 }
-                $res = ScheduledTaskRunner::run($id, 'manual');
-                static::json($res);
+                // The portal (www-data) never runs a task itself: the root
+                // dispatcher starts it in the sandbox within a minute.
+                if (!ScheduledTaskService::isEnabled()) {
+                    static::json(['ok' => false, 'error' => t('scheduled_tasks.err_disabled')]);
+                }
+                if (!ScheduledTaskRepository::requestRun($id)) {
+                    static::json(['ok' => false, 'error' => t('scheduled_tasks.err_not_found')]);
+                }
+                writeAuditLog('scheduled_tasks', 'task', $id, 'Run now requested', 'update', $uid);
+                static::json(['ok' => true, 'queued' => true, 'message' => t('scheduled_tasks.run_queued')]);
             }
 
             if ($action === 'get_details') {

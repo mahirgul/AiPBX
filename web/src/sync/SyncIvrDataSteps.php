@@ -79,6 +79,6 @@ function __syncIvrDataStepsBody(): bool
     }
 
     return writeConfWithRollback('extensions_ivrdata.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'IVR veri adımı senkronizasyonu');
-    }, 'IVR veri adımı senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_ivr_data'));
+    }, t('sync.ctx_ivr_data'));
 }

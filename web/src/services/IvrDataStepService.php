@@ -21,29 +21,29 @@ class IvrDataStepService
         $errors = [];
         $name = trim((string)($data['name'] ?? ''));
         if ($name === '' || strlen($name) > 100) {
-            $errors['name'] = 'Name must be between 1 and 100 characters';
+            $errors['name'] = t('ivr_data.err_name');
         }
 
         $inputSource = (string)($data['input_source'] ?? 'dtmf');
         if (!in_array($inputSource, ['dtmf', 'caller_id'], true)) {
-            $errors['input_source'] = 'Input source must be dtmf or caller_id';
+            $errors['input_source'] = t('ivr_data.err_input');
         }
 
         $dataSource = (string)($data['data_source'] ?? 'database');
         if (!in_array($dataSource, ['database', 'http'], true)) {
-            $errors['data_source'] = 'Data source must be database or http';
+            $errors['data_source'] = t('ivr_data.err_source');
         }
 
         $dbId = !empty($data['external_db_id']) ? (int)$data['external_db_id'] : null;
         $querySql = trim((string)($data['query_sql'] ?? ''));
         if ($dataSource === 'database') {
             if ($dbId === null || !ExternalDbRepository::exists($dbId)) {
-                $errors['external_db_id'] = 'Please select a valid external database connection';
+                $errors['external_db_id'] = t('ivr_data.err_db');
             }
             if ($querySql === '') {
-                $errors['query_sql'] = 'Query SQL cannot be empty';
+                $errors['query_sql'] = t('ivr_data.err_sql_empty');
             } elseif (!preg_match('/^(SELECT|WITH)\b/i', $querySql)) {
-                $errors['query_sql'] = 'Query must be a read-only SELECT or WITH statement';
+                $errors['query_sql'] = t('ivr_data.err_sql_select');
             }
         }
 
@@ -51,7 +51,7 @@ class IvrDataStepService
         $httpMethod = strtoupper(trim((string)($data['http_method'] ?? 'GET')));
         if ($dataSource === 'http') {
             if ($httpUrl === '') {
-                $errors['http_url'] = 'HTTP URL cannot be empty';
+                $errors['http_url'] = t('ivr_data.err_url');
             } else {
                 try {
                     // Check URL without placeholder template variables
@@ -62,13 +62,13 @@ class IvrDataStepService
                 }
             }
             if (!in_array($httpMethod, ['GET', 'POST'], true)) {
-                $errors['http_method'] = 'HTTP method must be GET or POST';
+                $errors['http_method'] = t('ivr_data.err_method');
             }
         }
 
         $channelVar = trim((string)($data['channel_var_name'] ?? 'IVR_DATA_VAL'));
         if ($channelVar === '' || !preg_match('/^[A-Za-z0-9_]{1,64}$/', $channelVar)) {
-            $errors['channel_var_name'] = 'Channel variable name must be alphanumeric/underscore (up to 64 chars)';
+            $errors['channel_var_name'] = t('ivr_data.err_var');
         }
 
         if (!empty($errors)) {
@@ -144,6 +144,34 @@ class IvrDataStepService
         return ['ok' => true, 'id' => $newId, 'errors' => []];
     }
 
+    /**
+     * How many places route calls to this step (IVR keys, inbound routes, time
+     * plans …): deleting it would leave them pointing at nothing.
+     */
+    public static function usageCount(int $id): int
+    {
+        $db = getDB();
+        $pairs = [
+            ['pbx_dids', 'dest'], ['pbx_ring_groups', 'fallback_dest'], ['pbx_ivrs', 'timeout_dest'], ['pbx_ivrs', 'invalid_dest'],
+            ['pbx_announcements', 'post_dest'], ['pbx_ai_apps', 'dest'], ['pbx_web_widgets', 'dest'], ['pbx_ivr_entries', 'dest'],
+            ['pbx_boss_secretary_groups', 'fallback_dest'], ['pbx_time_conditions', 'match_dest'], ['pbx_time_conditions', 'nomatch_dest'],
+            ['pbx_ivr_data_steps', 'found_dest'], ['pbx_ivr_data_steps', 'not_found_dest'], ['pbx_ivr_data_steps', 'timeout_dest'],
+        ];
+        $n = 0;
+        foreach ($pairs as [$table, $col]) {
+            try {
+                $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$col}_type = 'ivr_data' AND {$col}_id = ?");
+                $st->execute([(string) $id]);
+                $n += (int) $st->fetchColumn();
+            } catch (\Throwable $e) {
+                // a table of a feature that is not installed
+            }
+        }
+        $st = $db->prepare("SELECT COUNT(*) FROM pbx_time_conditions WHERE rules_json REGEXP ?");
+        $st->execute(['"(match|nomatch)_dest_type":"ivr_data","(match|nomatch)_dest_id":"?' . $id . '"?[,}]']);
+        return $n + (int) $st->fetchColumn();
+    }
+
     public static function deleteStep(int $id): bool
     {
         $db = getDB();
@@ -161,7 +189,11 @@ class IvrDataStepService
         $db = getDB();
         $stmt = $db->prepare('UPDATE pbx_ivr_data_steps SET is_active = ?, updated_at = NOW() WHERE id = ?');
         $stmt->execute([$isActive ? 1 : 0, $id]);
-        return $stmt->rowCount() > 0;
+        $ok = $stmt->rowCount() > 0;
+        if ($ok && function_exists('markPendingSync')) {
+            markPendingSync('ivrs', 'ivr_data', $id, "IVR Data Step #{$id} " . ($isActive ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+        }
+        return $ok;
     }
 
     /**
@@ -200,8 +232,7 @@ class IvrDataStepService
                 $rows = ExternalDbService::executeQuery($dbId, $sql, $params);
                 if (!empty($rows)) {
                     $firstRow = $rows[0];
-                    $firstVal = (string)reset($firstRow);
-                    return ['status' => 'found', 'var' => $varName, 'val' => $firstVal];
+                    return ['status' => 'found', 'var' => $varName, 'val' => self::cleanValue((string) reset($firstRow))];
                 }
                 return ['status' => 'not_found', 'var' => $varName, 'val' => ''];
             }
@@ -247,10 +278,7 @@ class IvrDataStepService
                     if (is_array($json)) {
                         $val = (string)($json['value'] ?? $json['result'] ?? reset($json));
                     }
-                    if (strlen($val) > 64) {
-                        $val = substr($val, 0, 64);
-                    }
-                    return ['status' => 'found', 'var' => $varName, 'val' => $val];
+                    return ['status' => 'found', 'var' => $varName, 'val' => self::cleanValue($val)];
                 }
 
                 if ($httpCode === 404) {
@@ -264,5 +292,15 @@ class IvrDataStepService
         } catch (\Throwable $e) {
             return ['status' => 'timeout', 'var' => $varName, 'val' => ''];
         }
+    }
+
+    /**
+     * The answer goes into a channel variable through "status|value": no line
+     * breaks, no "|" and no control characters, at most 64 characters.
+     */
+    public static function cleanValue(string $val): string
+    {
+        $val = preg_replace('/[\x00-\x1F\x7F|]+/u', ' ', $val) ?? '';
+        return mb_substr(trim($val), 0, 64);
     }
 }
