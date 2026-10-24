@@ -177,7 +177,7 @@ $csrf = getCSRFToken();
                             <td>
                                 <code><?php echo htmlspecialchars((string)$t['cron_expression']); ?></code>
                                 <?php if (!empty($t['next_runs'])): ?>
-                                    <div class="u-muted u-fs-11" title="Next run">
+                                    <div class="u-muted u-fs-11" title="<?php echo htmlspecialchars(t('scheduled_tasks.next_run')); ?>">
                                         <i class="fas fa-clock"></i> <?php echo htmlspecialchars($t['next_runs'][0]); ?>
                                     </div>
                                 <?php endif; ?>
@@ -324,7 +324,7 @@ function showNewTaskForm() {
 }
 
 function editTask(t) {
-    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Task')); ?> + ': ' + (t.name || '');
+    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Task')); ?> + ': ' + escapeHtml(t.name || '');
     document.getElementById('task_id').value = t.id;
     document.getElementById('task_name').value = t.name || '';
     document.getElementById('task_description').value = t.description || '';
@@ -416,8 +416,8 @@ function showHistory(taskId) {
     var runsBody = document.getElementById('historyRunsBody');
     var versBody = document.getElementById('historyVersionsBody');
 
-    runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
-    versBody.innerHTML = '<tr><td colspan="3" class="text-center u-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted"><i class="fas fa-spinner fa-spin"></i> ' + __('js.common.loading') + '</td></tr>';
+    versBody.innerHTML = '<tr><td colspan="3" class="text-center u-muted"><i class="fas fa-spinner fa-spin"></i> ' + __('js.common.loading') + '</td></tr>';
     modal.style.display = 'flex';
 
     var data = new URLSearchParams();
@@ -433,44 +433,44 @@ function showHistory(taskId) {
     .then(function(r) { return r.json(); })
     .then(function(res) {
         if (!res.ok || !res.task) {
-            runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted">Failed to load details</td></tr>';
+            runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted">' + __('js.scheduled_tasks.load_failed') + '</td></tr>';
             return;
         }
 
         var t = res.task;
-        document.getElementById('historyModalTitle').innerHTML = '<i class="fas fa-history"></i> History: ' + (t.name || '');
+        document.getElementById('historyModalTitle').innerHTML = '<i class="fas fa-history"></i> ' + <?php echo jsArg(t('scheduled_tasks.btn_history')); ?> + ': ' + escapeHtml(t.name || '');
 
         if (!t.runs || t.runs.length === 0) {
-            runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted">No execution runs recorded yet.</td></tr>';
+            runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted">' + __('js.scheduled_tasks.no_runs') + '</td></tr>';
         } else {
             runsBody.innerHTML = t.runs.map(function(r) {
                 var badge = r.status === 'success' ? 'badge-success' : (r.status === 'running' ? 'badge-info' : 'badge-danger');
                 var dur = r.duration_ms ? (r.duration_ms / 1000).toFixed(2) + 's' : '—';
                 return '<tr>' +
-                    '<td>' + (r.started_at || '') + '</td>' +
-                    '<td><span class="badge badge-secondary">' + (r.triggered_by || 'schedule') + '</span></td>' +
+                    '<td>' + escapeHtml(r.started_at || '') + '</td>' +
+                    '<td><span class="badge badge-secondary">' + escapeHtml(r.triggered_by || 'schedule') + '</span></td>' +
                     '<td>' + dur + '</td>' +
-                    '<td><code>' + (r.exit_code !== null ? r.exit_code : '—') + '</code></td>' +
-                    '<td><span class="badge ' + badge + '">' + (r.status || '') + '</span></td>' +
+                    '<td><code>' + (r.exit_code !== null ? escapeHtml(String(r.exit_code)) : '—') + '</code></td>' +
+                    '<td><span class="badge ' + badge + '">' + escapeHtml(r.status || '') + '</span></td>' +
                 '</tr>';
             }).join('');
         }
 
         if (!t.versions || t.versions.length === 0) {
-            versBody.innerHTML = '<tr><td colspan="3" class="text-center u-muted">No versions recorded.</td></tr>';
+            versBody.innerHTML = '<tr><td colspan="3" class="text-center u-muted">' + __('js.scheduled_tasks.no_versions') + '</td></tr>';
         } else {
             versBody.innerHTML = t.versions.map(function(v) {
                 var snippet = (v.script_content || '').substring(0, 60).replace(/[\n\r]+/g, ' ');
                 return '<tr>' +
-                    '<td><strong>v' + v.version_num + '</strong></td>' +
-                    '<td>' + (v.created_at || '') + '</td>' +
-                    '<td><code>' + snippet + '</code></td>' +
+                    '<td><strong>v' + escapeHtml(String(v.version_num)) + '</strong></td>' +
+                    '<td>' + escapeHtml(v.created_at || '') + '</td>' +
+                    '<td><code>' + escapeHtml(snippet) + '</code></td>' +
                 '</tr>';
             }).join('');
         }
     })
     .catch(function(err) {
-        runsBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error: ' + err.message + '</td></tr>';
+        runsBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + __('js.common.error_colon') + escapeHtml(err.message) + '</td></tr>';
     });
 }
 </script>

@@ -255,7 +255,7 @@ function showNewStepForm() {
 }
 
 function editStep(s) {
-    document.getElementById('stepFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Data Step')); ?> + ': ' + (s.name || '');
+    document.getElementById('stepFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Data Step')); ?> + ': ' + escapeHtml(s.name || '');
     document.getElementById('step_id').value = s.id;
     document.getElementById('step_name').value = s.name || '';
     document.getElementById('step_channel_var').value = s.channel_var_name || 'IVR_DATA_VAL';

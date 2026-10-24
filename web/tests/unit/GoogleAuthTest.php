@@ -98,6 +98,21 @@ final class GoogleAuthTest extends TestCase
         $this->assertArrayHasKey('push_config', $response);
     }
 
+    /** A user without the mobile client gets no SIP password, also through Google sign-in. */
+    public function testMobileLoginResponseHonoursPhoneMode(): void
+    {
+        $db = getDB();
+        $db->prepare("UPDATE sys_users SET allowed_phone_mode = 'sip_only', sip_password = 'Secret123x' WHERE email = ?")->execute([self::$testEmail]);
+        try {
+            $user = GoogleAuthService::findUserByEmail(self::$testEmail);
+            $this->assertSame('', buildMobileLoginResponse($user)['sip']['sip_password']);
+            unset($user['allowed_phone_mode']); // a caller that did not select the column
+            $this->assertSame('', buildMobileLoginResponse($user)['sip']['sip_password']);
+        } finally {
+            $db->prepare("UPDATE sys_users SET allowed_phone_mode = NULL WHERE email = ?")->execute([self::$testEmail]);
+        }
+    }
+
     /** #9: the settings were never saved, the query wrote a column sys_settings does not have. */
     public function testSaveSettingsStoresValues(): void
     {

@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.12
+
+Fixes from a review of the portal.
+
+- **Mobile sign-in with Google or a QR code** returned the SIP password and TURN access also to users
+  whose extension does not allow the mobile app (password sign-in already refused it): the app could
+  register and make calls. All three sign-ins now apply the same rule.
+- **IVR data step:** a query using `:caller_id` or `:input` more than once failed on every call (the
+  timeout branch was taken). The HTTP lookup now pins the checked address, like webhooks, so a DNS
+  answer that changes after the check cannot reach an internal address.
+- **Scheduled tasks, database connections, IVR data steps:** names, script snippets and error messages
+  are escaped in the dialogs; the history dialog's texts are translated.
+- **REST API:** the `call.started` event of `/api/v1/calls/originate` no longer reports a caller ID that
+  was not applied.
+
 ## 1.50.11
 
 Platform features of the post-freeze roadmap (wave 2).

@@ -214,7 +214,7 @@ function showNewDbForm() {
 }
 
 function editDb(c) {
-    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Connection')); ?> + ': ' + (c.name || '');
+    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Connection')); ?> + ': ' + escapeHtml(c.name || '');
     document.getElementById('db_id').value = c.id;
     document.getElementById('db_name').value = c.name || '';
     document.getElementById('db_driver').value = c.driver || 'mysql';
@@ -255,13 +255,13 @@ function testFormConnection() {
     .then(function(r) { return r.json(); })
     .then(function(res) {
         if (res.ok) {
-            feedback.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> ' + res.message + '</span>';
+            feedback.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> ' + escapeHtml(res.message || '') + '</span>';
         } else {
-            feedback.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle"></i> ' + res.message + '</span>';
+            feedback.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle"></i> ' + escapeHtml(res.message || '') + '</span>';
         }
     })
     .catch(function(err) {
-        feedback.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> ' + err.message + '</span>';
+        feedback.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> ' + escapeHtml(err.message || '') + '</span>';
     });
 }
 

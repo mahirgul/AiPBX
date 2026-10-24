@@ -273,8 +273,8 @@ class GoogleAuthService
         $db = getDB();
         $stmt = $db->prepare('
             SELECT id, username, full_name, email, role, extension, extension_type,
-                   sip_password, theme_preference, language_preference, is_active, must_reset_password,
-                   two_factor_enabled
+                   sip_password, allowed_phone_mode, theme_preference, language_preference, is_active,
+                   must_reset_password, two_factor_enabled
             FROM sys_users
             WHERE LOWER(TRIM(email)) = ? AND is_active = 1
             LIMIT 1

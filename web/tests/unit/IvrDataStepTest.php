@@ -181,4 +181,23 @@ final class IvrDataStepTest extends TestCase
 
         IvrDataStepService::deleteStep($stepId);
     }
+
+    public function testRepeatedLookupParametersWorkWithNativePrepares(): void
+    {
+        [$sql, $params] = IvrDataStepService::bindLookupParams(
+            'SELECT :caller_id AS a, :caller_id AS b, :input AS c', '42', '05321234567');
+        $this->assertSame('SELECT :p1_caller_id AS a, :p2_caller_id AS b, :p3_input AS c', $sql);
+
+        // The same as an external connection: no emulation, so a repeated name would be HY093.
+        $pdo = getDB();
+        $old = $pdo->getAttribute(PDO::ATTR_EMULATE_PREPARES);
+        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+        try {
+            $st = $pdo->prepare($sql);
+            $st->execute($params);
+            $this->assertSame(['a' => '05321234567', 'b' => '05321234567', 'c' => '42'], $st->fetch(PDO::FETCH_ASSOC));
+        } finally {
+            $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, $old);
+        }
+    }
 }

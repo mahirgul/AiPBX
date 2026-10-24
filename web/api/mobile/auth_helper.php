@@ -180,6 +180,13 @@ function buildMobileLoginResponse(array $user): array
     $webrtc_suffix = getSystemSetting('webrtc_username_suffix', '-webrtc');
     $ws_path = getSystemSetting('pjsip_ws_path', '/ws');
 
+    // Read from the database when the caller's query did not select it: a missing
+    // column must not count as "every client allowed" (Google sign-in did that).
+    if (!array_key_exists('allowed_phone_mode', $user)) {
+        $st = getDB()->prepare('SELECT allowed_phone_mode FROM sys_users WHERE id = ?');
+        $st->execute([(int) $user['id']]);
+        $user['allowed_phone_mode'] = $st->fetchColumn() ?: null;
+    }
     $mobil_allowed = in_array('mobil', parsePhoneModes($user['allowed_phone_mode'] ?? null), true);
 
     // Coturn TURNS (TLS/TCP)

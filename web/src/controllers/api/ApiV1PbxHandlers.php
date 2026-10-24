@@ -729,14 +729,15 @@ final class ApiV1PbxHandlers
             if ($fromExt === '' || $toNumber === '') {
                 ApiResponse::error('VALIDATION_ERROR', 'Both from_extension and to_number are required.', 422);
             }
-            $callerId = trim((string)($body['caller_id'] ?? "ClickToCall <{$fromExt}>"));
+            // The CLI originate has no caller ID option: the call shows the extension's own
+            // caller ID, so the event does not claim another one (a "caller_id" in the body
+            // used to be echoed in the webhook without being applied).
             $cmd = sprintf('channel originate Local/%s@from-internal extension %s@from-internal', $fromExt, $toNumber);
             $out = AsteriskHelper::execCLI($cmd);
             WebhookService::emit('call.started', [
                 'source'         => 'api_originate',
                 'from_extension' => $fromExt,
                 'to_number'      => $toNumber,
-                'caller_id'      => $callerId,
             ]);
             ApiResponse::success([
                 'from_extension' => $fromExt,
