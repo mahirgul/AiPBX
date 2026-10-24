@@ -25,7 +25,9 @@ Platform features of the post-freeze roadmap (wave 2).
   entered or the caller's number in an external database or with an HTTP request (internal addresses
   refused), put the answer (64 characters at most) into a channel variable and go on to *found*, *not
   found* or *timeout*. A step that is a destination cannot be deleted.
-- **Per-trunk carrier format & number normalisation** (Trunks → Trunk edit modal): Allows configuring carrier-specific dialled number transformation (strip prefix such as +90, prepend prefix such as 0 or carrier routing prefix) and caller ID format per trunk, evaluated dynamically during outbound route matching and failover attempts.
+- **Per-trunk number format** (Trunks → edit): strip a prefix (such as +90) and/or prepend one (such as 0
+  or a carrier routing prefix) for the dialled number and the caller ID, applied on every trunk a call
+  tries, failover included.
 - **PBX fine tuning & maintenance** (PBX settings → Tuning & Ops, and Trunks modal):
   - Per-trunk DTMF mode (`rfc4733`, `inband`, `info`, `auto`), session timers (`yes`, `no`, `always`, `never`), 100rel PRACK (`yes`, `no`, `required`), and T.38 parameters.
   - Adaptive jitter buffer size tuning (`sys_settings.jitterbuffer_max_size`, `jitterbuffer_initial_size`), or full disable.
@@ -34,7 +36,8 @@ Platform features of the post-freeze roadmap (wave 2).
   - Night restart window (e.g. 03:00–05:00): Asterisk is restarted there only when a system update
     replaced libraries it still uses and no call is in progress — never when the call count cannot be
     read, at most once a day.
-- **Asterisk ACL & registration security alarm** (Health checks → Failed Registrations): Monitors failed SIP authentication and registration attempts against a configurable threshold (default 10 per 15 min), triggering health check alarms in the alert bell and health notification emails.
+- **Failed registration alarm** (Health checks → Failed registrations): more failed SIP logins than the
+  threshold (default 10 in 15 min, from Asterisk's security log) alarms in the bell and by e-mail.
 
 ## 1.50.10
 
