@@ -148,6 +148,26 @@ class IvrDataStepService
      * How many places route calls to this step (IVR keys, inbound routes, time
      * plans …): deleting it would leave them pointing at nothing.
      */
+    /**
+     * :input and :caller_id may each appear several times; native prepared
+     * statements (no emulation) refuse a repeated name (HY093), so every
+     * occurrence gets its own name. Only names in the query are bound.
+     *
+     * @return array{0: string, 1: array<string, string>}
+     */
+    public static function bindLookupParams(string $sql, string $input, string $callerId): array
+    {
+        $values = ['input' => $input, 'caller_id' => $callerId];
+        $params = [];
+        $n = 0;
+        $sql = (string) preg_replace_callback('/(?<!:):(input|caller_id)\b/', function (array $m) use (&$params, &$n, $values): string {
+            $name = ':p' . (++$n) . '_' . $m[1];
+            $params[$name] = $values[$m[1]];
+            return $name;
+        }, $sql);
+        return [$sql, $params];
+    }
+
     public static function usageCount(int $id): int
     {
         $db = getDB();
@@ -217,17 +237,7 @@ class IvrDataStepService
                 $dbId = (int)($step['external_db_id'] ?? 0);
                 $sql = (string)($step['query_sql'] ?? '');
 
-                // Bind only parameters that actually appear in the query to avoid PDO HY093
-                $candidateParams = [
-                    ':input' => $input,
-                    ':caller_id' => $callerId,
-                ];
-                $params = [];
-                foreach ($candidateParams as $paramKey => $paramVal) {
-                    if (str_contains($sql, $paramKey)) {
-                        $params[$paramKey] = $paramVal;
-                    }
-                }
+                [$sql, $params] = self::bindLookupParams($sql, $input, $callerId);
 
                 $rows = ExternalDbService::executeQuery($dbId, $sql, $params);
                 if (!empty($rows)) {
@@ -245,8 +255,8 @@ class IvrDataStepService
                     $rawUrl
                 );
 
-                // SSRF check
-                WebhookService::validateTargetUrl($url);
+                // SSRF check, with the checked address pinned for the request
+                $resolve = WebhookService::validatedResolve($url);
 
                 $method = (string)($step['http_method'] ?? 'GET');
                 $ch = curl_init();
@@ -257,6 +267,9 @@ class IvrDataStepService
                     CURLOPT_CONNECTTIMEOUT_MS => 1500,
                     CURLOPT_FOLLOWLOCATION => false,
                 ]);
+                if ($resolve) {
+                    curl_setopt($ch, CURLOPT_RESOLVE, $resolve);
+                }
 
                 if ($method === 'POST') {
                     curl_setopt($ch, CURLOPT_POST, true);

@@ -56,6 +56,33 @@ class WebhookService
     }
 
     /**
+     * Validates the URL and returns the CURLOPT_RESOLVE entry that pins the
+     * checked address, so a DNS answer that changes between the check and the
+     * request (rebinding) cannot reach an internal address. Throws like
+     * validateTargetUrl(); empty when private targets are allowed or the host
+     * is an IP literal.
+     *
+     * @return list<string>
+     */
+    public static function validatedResolve(string $url): array
+    {
+        self::validateTargetUrl($url);
+        if (portalEnv('ALLOW_PRIVATE_WEBHOOKS', '0') === '1') {
+            return [];
+        }
+        $parts = parse_url($url);
+        $host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
+        $scheme = strtolower((string)($parts['scheme'] ?? 'https'));
+        $port = (int)($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+        $ip = self::resolveAndValidatePublicIp($host);
+        if ($ip === '' || filter_var($host, FILTER_VALIDATE_IP)) {
+            return [];
+        }
+        $fmtIp = str_contains($ip, ':') ? "[{$ip}]" : $ip;
+        return ["{$host}:{$port}:{$fmtIp}"];
+    }
+
+    /**
      * Resolve a hostname or IP literal and verify that every resolved address is a
      * public, non-reserved IPv4/IPv6 address. Returns the first validated IP so
      * `deliverHttp()` can pin DNS resolution via `CURLOPT_RESOLVE`.
@@ -392,19 +419,7 @@ class WebhookService
         $url = (string)$wh['target_url'];
         $pinnedResolve = [];
         try {
-            self::validateTargetUrl($url);
-            $allowPrivate = portalEnv('ALLOW_PRIVATE_WEBHOOKS', '0') === '1';
-            if (!$allowPrivate) {
-                $parts = parse_url($url);
-                $host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
-                $scheme = strtolower((string)($parts['scheme'] ?? 'https'));
-                $port = (int)($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
-                $ip = self::resolveAndValidatePublicIp($host);
-                if ($ip !== '' && !filter_var($host, FILTER_VALIDATE_IP)) {
-                    $fmtIp = str_contains($ip, ':') ? "[{$ip}]" : $ip;
-                    $pinnedResolve = ["{$host}:{$port}:{$fmtIp}"];
-                }
-            }
+            $pinnedResolve = self::validatedResolve($url);
         } catch (\Throwable $e) {
             return ['ok' => false, 'http_code' => 0, 'error' => $e->getMessage()];
         }

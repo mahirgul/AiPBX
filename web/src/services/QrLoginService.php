@@ -274,7 +274,7 @@ class QrLoginService
         $db = getDB();
         $stmt = $db->prepare('SELECT q.id AS token_id, q.user_id, q.expires_at, q.used_at,
                                      u.id, u.username, u.full_name, u.role, u.extension,
-                                     u.extension_type, u.sip_password, u.is_active
+                                     u.extension_type, u.sip_password, u.allowed_phone_mode, u.is_active
                               FROM sys_user_qr_tokens q
                               JOIN sys_users u ON q.user_id = u.id
                               WHERE q.token = ?
@@ -315,9 +315,12 @@ class QrLoginService
             logLoginAttempt($clientIp, $record['username'], 'SUCCESS');
         }
 
+        // Like the password sign-in: without the mobile client allowed, no SIP password and no TURN.
+        $mobilAllowed = in_array('mobil', parsePhoneModes($record['allowed_phone_mode'] ?? null), true);
+
         // Coturn TURNS
         $turn = null;
-        if (defined('TURN_SECRET') && TURN_SECRET !== '') {
+        if ($mobilAllowed && defined('TURN_SECRET') && TURN_SECRET !== '') {
             $turn_username = (time() + 2592000) . ':' . $record['extension'];
             $turn_password = base64_encode(hash_hmac('sha1', $turn_username, TURN_SECRET, true));
             $turn_host = defined('TURN_HOST') && TURN_HOST !== '' ? TURN_HOST : ($_SERVER['HTTP_HOST'] ?? '127.0.0.1');
@@ -365,7 +368,7 @@ class QrLoginService
                 'sip_username' => $record['extension'] . '-mob-webrtc',
                 'native_sip_username' => $record['extension'],
                 'webrtc_username' => $record['extension'] . '-mob-webrtc',
-                'sip_password' => $record['sip_password'] ?? '',
+                'sip_password' => $mobilAllowed ? ($record['sip_password'] ?? '') : '',
                 'domain' => $domain,
                 'sip_port' => 5060,
                 'ws_url' => 'wss://' . $domain . $ws_path,
