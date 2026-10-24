@@ -427,7 +427,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php; do
+for script in feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php task_dispatcher.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -469,8 +469,18 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Nightly KVKK / GDPR data retention auto-purge (Security -> GDPR & Data Privacy)
 45 3 * * * root /usr/local/bin/privacy_purge.php >/dev/null 2>&1
+
+# Scheduled tasks (System -> Scheduled tasks; sandboxed, as aipbx-task), SIP debug
+# switch-off and the night restart window (PBX settings)
+* * * * * root /usr/local/bin/task_dispatcher.php >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
+
+# Scheduled tasks run as this user only (never root, never www-data), in a
+# systemd sandbox where nothing but their own folder is writable.
+id -u aipbx-task >/dev/null 2>&1 || useradd --system --no-create-home --home-dir /nonexistent \
+    --shell /usr/sbin/nologin --user-group aipbx-task
+install -d -o root -g root -m 0755 /var/lib/aipbx/tasks
 
 mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing
@@ -855,10 +865,11 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
     RewriteCond %{ENV:REDIRECT_STATUS} ^\$
     RewriteCond %{REQUEST_URI} !^/provision/
-    # Plugin endpoints stay on plain HTTP only for the PBX itself (Asterisk
-    # CURL() callbacks to http://127.0.0.1/api/plugins/...); everyone else is
-    # sent to HTTPS like the rest of the portal (sign-in callbacks, widgets).
-    RewriteCond %{REQUEST_URI} !^/api/plugins/ [OR]
+    # Plugin endpoints and the IVR data step lookup stay on plain HTTP only for
+    # the PBX itself (Asterisk CURL() to http://127.0.0.1/api/...; CURL() does
+    # not follow a redirect); everyone else is sent to HTTPS like the rest of
+    # the portal (sign-in callbacks, widgets).
+    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$) [OR]
     RewriteCond %{REMOTE_ADDR} !^(127\.0\.0\.1|::1)\$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 

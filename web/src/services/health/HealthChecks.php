@@ -91,10 +91,7 @@ final class HealthChecks
         $msg = sprintf(t('health.msg_asterisk_ok'), self::duration((int) $m[1]), $n);
         // needrestart leaves Asterisk alone (it dropped calls): after a library
         // update it keeps running on the replaced files until restarted.
-        $pid = (int) trim(self::sh('pidof -s asterisk'));
-        $maps = $pid > 0 ? (string) @file_get_contents("/proc/{$pid}/maps") : '';
-        if (preg_match_all('#\s(/\S+\.so[.\d]*) \(deleted\)$#m', $maps, $d)) {
-            $libs = array_map('basename', array_unique($d[1]));
+        if ($libs = AsteriskHelper::replacedLibraries()) {
             return ['warn', $msg . ' ' . sprintf(t('health.msg_asterisk_old_libs'), implode(', ', array_slice($libs, 0, 5)))];
         }
         return ['ok', $msg];
@@ -314,43 +311,31 @@ final class HealthChecks
         return [$fail ? 'fail' : 'warn', implode('; ', array_map(fn($n) => $n['title'] . ($n['message'] !== '' ? ': ' . $n['message'] : ''), $open))];
     }
 
+    /** Failure lines with an EventTV time stamp at or after $since. */
+    public static function countRecentFailures(string $lines, int $since): int
+    {
+        $n = 0;
+        foreach (explode("\n", $lines) as $line) {
+            if (preg_match('/EventTV="([^"]+)"/', $line, $tv) && ($ts = strtotime($tv[1])) && $ts >= $since) {
+                $n++;
+            }
+        }
+        return $n;
+    }
+
     public static function failedRegistrations(): array
     {
         $threshold = max(1, (int)getSystemSetting('failed_reg_threshold', '10'));
         $logFile = '/var/log/asterisk/security.log';
-        if (!is_file($logFile) || !is_readable($logFile)) {
-            $logFile = '/var/log/asterisk/messages.log';
+        if (!is_readable($logFile)) {
+            return ['off', t('health.msg_failed_reg_nolog')];
         }
-
-        if (!is_file($logFile) || !is_readable($logFile)) {
-            return ['ok', sprintf(t('health.msg_failed_reg_ok'), 0)];
-        }
-
-        $out = self::sh('tail -n 1000 ' . escapeshellarg($logFile) . ' 2>/dev/null');
-        $lines = explode("\n", (string)$out);
-        $since = time() - 900; // last 15 minutes
-        $failedCount = 0;
-
-        foreach ($lines as $line) {
-            if ($line === '') continue;
-            if (preg_match('/SecurityEvent="(InvalidAccountID|ChallengeResponseFailed|InvalidPassword|FailedACL|SessionLimit)"/i', $line)
-                || preg_match('/failed to authenticate|wrong password|no matching peer/i', $line)) {
-                if (preg_match('/EventTV="([^"]+)"/', $line, $tv)) {
-                    $ts = strtotime($tv[1]);
-                    if ($ts && $ts >= $since) {
-                        $failedCount++;
-                    }
-                } elseif (preg_match('/^\[([A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2})\]/', $line, $dt)) {
-                    $ts = strtotime($dt[1]);
-                    if ($ts && $ts >= $since) {
-                        $failedCount++;
-                    }
-                } else {
-                    $failedCount++;
-                }
-            }
-        }
-
+        // The log also holds every successful registration (hundreds a
+        // minute on a busy PBX): the failures are filtered first, then the
+        // last 15 minutes are counted by their own time stamp.
+        $out = self::sh('tail -n 200000 ' . escapeshellarg($logFile)
+            . ' | grep -E \'SecurityEvent="(InvalidAccountID|ChallengeResponseFailed|InvalidPassword|FailedACL)"\' | tail -n 5000');
+        $failedCount = self::countRecentFailures((string) $out, time() - 900);
         if ($failedCount >= $threshold) {
             return ['warn', sprintf(t('health.msg_failed_reg_warn'), $failedCount, $threshold)];
         }

@@ -83,55 +83,44 @@ final class ScheduledTasksTest extends TestCase
         $this->assertCount(2, $details2['versions']);
     }
 
-    public function testRunShellTask(): void
+    public function testThePortalNeverRunsATaskItself(): void
     {
-        $save = ScheduledTaskService::saveTask([
-            'name' => 'Test Hello Script',
-            'is_active' => 1,
-            'cron_expression' => '* * * * *',
-            'script_type' => 'shell',
-            'script_content' => 'echo "Hello from Scheduled Task"',
-        ]);
-
+        // Tests run as an ordinary user, like the portal (www-data): there is no
+        // unsandboxed fallback, the run is refused and recorded as failed.
+        $save = ScheduledTaskService::saveTask(['name' => 'Refused', 'is_active' => 1, 'cron_expression' => '* * * * *',
+            'script_type' => 'shell', 'script_content' => 'touch /tmp/aipbx_task_must_not_run']);
         $this->assertTrue($save['ok']);
-        $this->taskId = (int)$save['id'];
+        $this->taskId = (int) $save['id'];
+        @unlink('/tmp/aipbx_task_must_not_run');
 
         $result = ScheduledTaskRunner::run($this->taskId, 'manual');
-        $this->assertTrue($result['ok']);
-        $this->assertSame(0, $result['exit_code']);
-        $this->assertStringContainsString('Hello from Scheduled Task', $result['output']);
-
-        // Check run history
+        $this->assertFalse($result['ok']);
+        $this->assertSame(t('scheduled_tasks.err_not_root'), $result['error']);
+        $this->assertFileDoesNotExist('/tmp/aipbx_task_must_not_run');
         $details = ScheduledTaskService::getTaskDetails($this->taskId);
-        $this->assertCount(1, $details['runs']);
-        $this->assertSame('success', $details['runs'][0]['status']);
-        $this->assertSame('manual', $details['runs'][0]['triggered_by']);
+        $this->assertSame('failed', $details['runs'][0]['status']);
+        $this->assertContains('notice:scheduled_task_' . $this->taskId, array_column(NoticeService::forUser(1)['open'], 'key'), 'a failed run is an alert');
     }
 
-    public function testRunFailingTaskRaisesNotice(): void
+    public function testSandboxRunsAsTheTaskUserWithOnlyItsFolderWritable(): void
     {
-        $save = ScheduledTaskService::saveTask([
-            'name' => 'Failing Script',
-            'is_active' => 1,
-            'cron_expression' => '* * * * *',
-            'script_type' => 'shell',
-            'script_content' => 'echo "fatal error" >&2; exit 42',
-        ]);
+        $cmd = ScheduledTaskRunner::sandboxCommand(['id' => 7, 'timeout_sec' => 60, 'memory_limit_mb' => 128, 'cpu_limit_pct' => 20, 'network_access' => 0],
+            3, '/var/lib/aipbx/tasks/7', '/var/lib/aipbx/tasks/7/.run_3.sh', '/bin/bash');
+        foreach (["--uid=aipbx-task", "'ProtectSystem=strict'", "'ReadWritePaths=/var/lib/aipbx/tasks/7'", "'ProtectHome=yes'",
+                  "'NoNewPrivileges=yes'", "'MemoryMax=128M'", "'CPUQuota=20%'", "'RuntimeMaxSec=60'", "'PrivateNetwork=yes'"] as $part) {
+            $this->assertStringContainsString($part, $cmd);
+        }
+        $net = ScheduledTaskRunner::sandboxCommand(['id' => 7, 'network_access' => 1], 3, '/d', '/d/s.sh', '/bin/bash');
+        $this->assertStringNotContainsString('PrivateNetwork', $net, 'network access asked for');
+    }
 
-        $this->assertTrue($save['ok']);
-        $this->taskId = (int)$save['id'];
-
-        $result = ScheduledTaskRunner::run($this->taskId, 'schedule');
-        $this->assertFalse($result['ok']);
-        $this->assertSame(42, $result['exit_code']);
-
-        // Verify Notice was raised
-        $db = getDB();
-        $stmt = $db->prepare('SELECT * FROM sys_notices WHERE notice_key = ? AND resolved_at IS NULL');
-        $stmt->execute(['scheduled_task_' . $this->taskId]);
-        $notice = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertNotEmpty($notice);
-        $this->assertSame('fail', $notice['severity']);
-        $this->assertStringContainsString('Failing Script', $notice['title']);
+    public function testRunNowIsOnlyARequest(): void
+    {
+        $save = ScheduledTaskService::saveTask(['name' => 'Queued', 'cron_expression' => '0 3 * * *', 'script_type' => 'shell', 'script_content' => 'true']);
+        $this->taskId = (int) $save['id'];
+        $this->assertTrue(ScheduledTaskRepository::requestRun($this->taskId));
+        $taken = array_column(ScheduledTaskRepository::takeRunRequests(), 'id');
+        $this->assertContains((string) $this->taskId, array_map('strval', $taken));
+        $this->assertSame([], ScheduledTaskRepository::takeRunRequests(), 'taken once');
     }
 }

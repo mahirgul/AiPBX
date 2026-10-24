@@ -35,6 +35,12 @@ All of them are off (or unchanged) until switched on.
 
 All of them are off (or unchanged) until switched on.
 
+**Still open from wave 2:** the scheduled tasks' data access (curated views in `aipbx_export`, a MariaDB
+user per task, a REST API token per task, encrypted environment variables) — tasks run, but bring their
+own credentials for now; number normalisation of dialled numbers by extensions (2.4, first point);
+a failed-registration threshold inside Asterisk itself (2.6 has the alarm only). The sections below are
+the full plan.
+
 #### 2.1 Scheduled tasks
 
 **Goal.** Administrators run their own shell, PHP or Python scripts on a schedule: nightly CDR export

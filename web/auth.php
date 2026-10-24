@@ -126,7 +126,8 @@ function getModuleKeyForPage($page = null) {
         'dial_permissions.php' => 'dial_permissions',
         'time_conditions.php'   => 'time_conditions',
         'ivrs.php'              => 'ivrs',
-        'ivr_data_steps.php'    => 'ivrs',
+        // SQL against the external databases: administrators only, like them.
+        'ivr_data_steps.php'    => 'external_dbs',
         'extensions.php'        => 'extensions',
         'phones.php'            => 'phones',
         'phone_keys.php'        => 'phones',

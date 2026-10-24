@@ -29,7 +29,7 @@ class IvrDataStepsController extends BaseController
             $action = (string)($_POST['action'] ?? '');
 
             if ($action === 'save_step') {
-                static::requireModule('ivrs', 'edit');
+                static::requireModule('external_dbs', 'edit');
                 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
                 $res = IvrDataStepService::saveStep($_POST, $userId);
                 if ($res['ok']) {
@@ -46,8 +46,12 @@ class IvrDataStepsController extends BaseController
             }
 
             if ($action === 'delete_step') {
-                static::requireModule('ivrs', 'delete');
+                static::requireModule('external_dbs', 'delete');
                 $id = (int)($_POST['id'] ?? 0);
+                if ($id > 0 && ($used = IvrDataStepService::usageCount($id)) > 0) {
+                    static::notifyError(sprintf(t('ivr_data.err_in_use'), $used));
+                    static::redirect('/ivr-data-steps');
+                }
                 if ($id > 0) {
                     IvrDataStepService::deleteStep($id);
                     static::notifySuccess(t('ivr_data.deleted_successfully'));
@@ -56,7 +60,7 @@ class IvrDataStepsController extends BaseController
             }
 
             if ($action === 'toggle_active') {
-                static::requireModule('ivrs', 'edit');
+                static::requireModule('external_dbs', 'edit');
                 $id = (int)($_POST['id'] ?? 0);
                 $isActive = !empty($_POST['is_active']);
                 if ($id > 0) {

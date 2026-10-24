@@ -42,7 +42,9 @@ function __syncOutboundDialplanBody() {
     $jb_enabled = (string)getSystemSetting('jitterbuffer_enabled', '1') !== '0';
     $jb_max = getSystemSetting('jitterbuffer_max_size', '');
     $jb_init = getSystemSetting('jitterbuffer_initial_size', '');
-    $jb_spec = ($jb_max !== '' && $jb_max !== '200' && $jb_init !== '') ? "{$jb_max},{$jb_init}" : 'default';
+    // Asterisk's own defaults unless one of the two sizes was changed.
+    $jb_spec = (($jb_max !== '' && $jb_max !== '200') || ($jb_init !== '' && $jb_init !== '100'))
+        ? max(50, (int) ($jb_max ?: 200)) . ',' . max(20, (int) ($jb_init ?: 100)) : 'default';
 
     // Call normalization switched off as a whole: the per-device contexts stay
     // (the phones point at them), only without rules.

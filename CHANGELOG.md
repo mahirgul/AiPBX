@@ -9,16 +9,31 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 Platform features of the post-freeze roadmap (wave 2).
 
-- **Scheduled tasks** (System → Scheduled tasks, administrators only, off by default): Administrators can run custom Shell, PHP, or Python scripts on cron schedules inside an isolated systemd sandbox (`systemd-run` as unprivileged `aipbx-task`, read-only system, private `/tmp`, strict memory, CPU, and execution timeout limits). Features run history with exit codes and live output, version tracking, manual "Run now", and alert bell / health check alarm integration on failure.
-- **External database connections** (System → Database Connections, administrators only): Encrypted credential storage (`SecretBox`) for external MySQL/MariaDB and PostgreSQL connections with read-only connection test button, timeout enforcement, and security advice for read-only user configuration.
-- **IVR data step** (PBX → IVR Data Steps): Interactive IVR data lookups querying external databases or SSRF-protected HTTP endpoints during incoming calls. Sets Asterisk channel variables and routes dynamically to Found, Not Found, or Timeout destinations.
+- **Scheduled tasks** (System → Scheduled tasks, administrators only, off by default): shell, PHP or
+  Python scripts on a cron schedule, started every minute by the root dispatcher (cron) in a systemd
+  sandbox as the unprivileged user `aipbx-task` — never root, never the web server; without systemd-run
+  or that user a task is not run at all. Only the task's own folder is writable, home folders and devices
+  are hidden, memory, CPU and run time are limited, and there is no network unless allowed. Run history
+  with exit codes and output, script versions, "Run now" (starts within a minute), every change in the
+  audit log, a failed run as an alert in the bell. Data access through curated views and per-task
+  credentials is still to come (see the roadmap).
+- **External database connections** (Integrations → Database connections, administrators only):
+  MySQL/MariaDB and PostgreSQL with the password stored encrypted and a test button. Every session is
+  read-only and each statement is limited to 2.5 s, whatever rights the account has; one statement per
+  query, no files written on the server. A connection used by an IVR data step cannot be deleted.
+- **IVR data step** (IVR page → Data steps, administrators only): during a call, look up the digits
+  entered or the caller's number in an external database or with an HTTP request (internal addresses
+  refused), put the answer (64 characters at most) into a channel variable and go on to *found*, *not
+  found* or *timeout*. A step that is a destination cannot be deleted.
 - **Per-trunk carrier format & number normalisation** (Trunks → Trunk edit modal): Allows configuring carrier-specific dialled number transformation (strip prefix such as +90, prepend prefix such as 0 or carrier routing prefix) and caller ID format per trunk, evaluated dynamically during outbound route matching and failover attempts.
 - **PBX fine tuning & maintenance** (PBX settings → Tuning & Ops, and Trunks modal):
   - Per-trunk DTMF mode (`rfc4733`, `inband`, `info`, `auto`), session timers (`yes`, `no`, `always`, `never`), 100rel PRACK (`yes`, `no`, `required`), and T.38 parameters.
   - Adaptive jitter buffer size tuning (`sys_settings.jitterbuffer_max_size`, `jitterbuffer_initial_size`), or full disable.
   - SIP timers: timer T1 (RTT estimate), timer B (INVITE timeout), and Max-Forwards limit in PJSIP transports configuration.
   - 10-minute auto-disabling SIP debug button with live countdown badge, and on-demand Asterisk log rotation.
-  - Safe night restart window (e.g. 03:00 - 05:00): automatically restarts Asterisk during the maintenance window only when active calls = 0.
+  - Night restart window (e.g. 03:00–05:00): Asterisk is restarted there only when a system update
+    replaced libraries it still uses and no call is in progress — never when the call count cannot be
+    read, at most once a day.
 - **Asterisk ACL & registration security alarm** (Health checks → Failed Registrations): Monitors failed SIP authentication and registration attempts against a configurable threshold (default 10 per 15 min), triggering health check alarms in the alert bell and health notification emails.
 
 ## 1.50.10

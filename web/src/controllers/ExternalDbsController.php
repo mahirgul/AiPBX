@@ -38,6 +38,9 @@ class ExternalDbsController extends BaseController
                 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
                 $res = ExternalDbService::saveConnection($_POST, $userId);
                 if ($res['ok']) {
+                    // The password itself is never logged.
+                    writeAuditLog('external_dbs', 'connection', $res['id'], mb_substr((string) ($_POST['name'] ?? ''), 0, 100),
+                        empty($_POST['id']) ? 'create' : 'update', $userId);
                     static::notifySuccess(t('external_dbs.saved_successfully'));
                     static::redirect('/external-dbs');
                 } else {
@@ -52,8 +55,15 @@ class ExternalDbsController extends BaseController
 
             if ($action === 'delete_connection') {
                 $id = (int)($_POST['id'] ?? 0);
+                $inUse = (int) DBHelper::fetchColumn('SELECT COUNT(*) FROM pbx_ivr_data_steps WHERE external_db_id = ?', [$id]);
+                if ($inUse > 0) {
+                    static::notifyError(sprintf(t('external_dbs.err_in_use'), $inUse));
+                    static::redirect('/external-dbs');
+                }
                 if ($id > 0) {
+                    $name = (string) (ExternalDbRepository::findById($id)['name'] ?? "#{$id}");
                     ExternalDbService::deleteConnection($id);
+                    writeAuditLog('external_dbs', 'connection', $id, $name, 'delete', $_SESSION['user_id'] ?? null);
                     static::notifySuccess(t('external_dbs.deleted_successfully'));
                 }
                 static::redirect('/external-dbs');
@@ -64,6 +74,7 @@ class ExternalDbsController extends BaseController
                 $isActive = !empty($_POST['is_active']);
                 if ($id > 0) {
                     ExternalDbService::toggleActive($id, $isActive);
+                    writeAuditLog('external_dbs', 'connection', $id, 'Connection ' . ($isActive ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
                 }
                 static::redirect('/external-dbs');
             }

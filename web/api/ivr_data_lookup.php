@@ -8,8 +8,10 @@ declare(strict_types=1);
  * Returns: <status>|<value>
  * Status: 'found', 'not_found', 'timeout'
  */
+// Asterisk on this server only; a request that came through a proxy is not it.
 $remote = $_SERVER['REMOTE_ADDR'] ?? '';
-if (!in_array($remote, ['127.0.0.1', '::1', 'localhost'], true)) {
+if (!in_array($remote, ['127.0.0.1', '::1'], true)
+    || !empty($_SERVER['HTTP_X_FORWARDED_FOR']) || !empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
     http_response_code(403);
     echo "timeout|forbidden\n";
     exit(1);

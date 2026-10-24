@@ -29,13 +29,38 @@ class ScheduledTaskRepository extends BaseRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * A run is still going while it is marked running and younger than its
+     * timeout (plus slack): a run whose process died (reboot, kill) would
+     * otherwise block the task for ever.
+     */
     public static function isTaskRunning(int $taskId): bool
     {
         $stmt = self::db()->prepare(
-            'SELECT COUNT(*) FROM pbx_scheduled_task_runs WHERE task_id = ? AND status = "running"'
+            "SELECT COUNT(*) FROM pbx_scheduled_task_runs r JOIN pbx_scheduled_tasks t ON t.id = r.task_id
+             WHERE r.task_id = ? AND r.status = 'running' AND r.started_at > NOW() - INTERVAL (t.timeout_sec + 120) SECOND"
         );
         $stmt->execute([$taskId]);
         return ((int)$stmt->fetchColumn()) > 0;
+    }
+
+    /** "Run now" from the portal: the dispatcher picks it up within a minute. */
+    public static function requestRun(int $taskId): bool
+    {
+        $stmt = self::db()->prepare('UPDATE pbx_scheduled_tasks SET run_requested_at = NOW() WHERE id = ?');
+        $stmt->execute([$taskId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /** Tasks with a pending "run now", cleared as they are taken. @return list<array> */
+    public static function takeRunRequests(): array
+    {
+        $db = self::db();
+        $rows = $db->query('SELECT * FROM pbx_scheduled_tasks WHERE run_requested_at IS NOT NULL')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $r) {
+            $db->prepare('UPDATE pbx_scheduled_tasks SET run_requested_at = NULL WHERE id = ?')->execute([(int) $r['id']]);
+        }
+        return $rows;
     }
 
     public static function recordRunStart(int $taskId, string $triggeredBy = 'schedule'): int
