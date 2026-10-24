@@ -141,3 +141,21 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
 
     return $lines;
 }
+
+/**
+ * The jitter buffer line before a Dial (PBX settings → Tuning): nothing when
+ * switched off, Asterisk's defaults unless a size was changed, and never for
+ * a fax (it reshapes the modem's timing).
+ */
+function jitterBufferLine(): string
+{
+    if ((string) getSystemSetting('jitterbuffer_enabled', '1') === '0') {
+        return '';
+    }
+    $max = (string) getSystemSetting('jitterbuffer_max_size', '');
+    $init = (string) getSystemSetting('jitterbuffer_initial_size', '');
+    $spec = (($max !== '' && $max !== '200') || ($init !== '' && $init !== '100'))
+        ? max(50, (int) ($max ?: 200)) . ',' . max(20, (int) ($init ?: 100)) : 'default';
+    return " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)={$spec}))\n";
+}
+

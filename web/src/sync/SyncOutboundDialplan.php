@@ -39,12 +39,6 @@ function __syncOutboundDialplanBody() {
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
-    $jb_enabled = (string)getSystemSetting('jitterbuffer_enabled', '1') !== '0';
-    $jb_max = getSystemSetting('jitterbuffer_max_size', '');
-    $jb_init = getSystemSetting('jitterbuffer_initial_size', '');
-    // Asterisk's own defaults unless one of the two sizes was changed.
-    $jb_spec = (($jb_max !== '' && $jb_max !== '200') || ($jb_init !== '' && $jb_init !== '100'))
-        ? max(50, (int) ($jb_max ?: 200)) . ',' . max(20, (int) ($jb_init ?: 100)) : 'default';
 
     // Call normalization switched off as a whole: the per-device contexts stay
     // (the phones point at them), only without rules.
@@ -203,9 +197,7 @@ function __syncOutboundDialplanBody() {
                 // The carrier's early media (183 Session Progress / announcement / real busy tone)
                 // thus reaches the caller directly instead of being masked by a fake local ring.
                 // No jitter buffer for a fax: it reshapes the modem's timing.
-                if ($jb_enabled) {
-                    $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)={$jb_spec}))\n";
-                }
+                $conf .= jitterBufferLine();
                 $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limited) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";

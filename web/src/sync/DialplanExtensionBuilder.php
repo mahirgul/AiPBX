@@ -204,7 +204,9 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $lines[] = " same => n,Set(DIAL_CONTACTS=\${C_SIP}\${IF(\$[\"\${C_SIP}\" != \"\" & \"\${C_WEB}\" != \"\"]?&)}\${C_WEB})";
     $lines[] = " same => n,Set(DIAL_CONTACTS=\${DIAL_CONTACTS}\${IF(\$[\"\${DIAL_CONTACTS}\" != \"\" & \"\${C_MOB}\" != \"\"]?&)}\${C_MOB})";
     $lines[] = " same => n,GotoIf(\$[\"\${DIAL_CONTACTS}\" = \"\"]?lbl_unavail_{$lbl})";
-    $lines[] = " same => n,Set(JITTERBUFFER(adaptive)=default)";
+    if (($jb = rtrim(jitterBufferLine())) !== '') {
+        $lines[] = $jb;
+    }
     $lines[] = " same => n,Dial(\${DIAL_CONTACTS},{$dialTimeout},tTb(sub-callee-jb^s^1))";
 
     // 5. Post-Dial status routing
