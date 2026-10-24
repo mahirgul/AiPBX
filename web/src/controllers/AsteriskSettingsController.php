@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/AsteriskSettingsService.php';
+require_once __DIR__ . '/../services/VoicemailPolicy.php';
 
 /**
  * PBX Settings page (/asterisk-settings).
@@ -34,6 +35,8 @@ class AsteriskSettingsController extends BaseController
             'active_codecs' => $active_codecs,
             'active_wired_codecs' => $active_wired_codecs,
             'signaling_status' => AsteriskSettingsService::signalingStatus(),
+            'vm_settings' => VoicemailPolicy::settings(),
+            'vm_weak_pins' => VoicemailPolicy::weakPinCount(),
         ], ['title' => $page_title] + $notices);
     }
 }

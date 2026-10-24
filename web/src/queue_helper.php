@@ -65,6 +65,10 @@ class QueueHelper {
         $wrapuptime = intval($q['wrapuptime'] ?? 10) ?: 10;
         $announce_frequency = intval($q['announce_frequency'] ?? 30) ?: 30;
         $announce_holdtime = !empty($q['announce_holdtime']) ? $q['announce_holdtime'] : 'yes';
+        $announce_position = ($q['announce_position'] ?? 'yes') === 'no' ? 'no' : 'yes';
+        $periodic_frequency = max(0, intval($q['periodic_frequency'] ?? 45));
+        require_once __DIR__ . '/file_helper.php';
+        $periodic_file = FileHelper::sanitizeAudioPath((string) ($q['periodic_announce'] ?? ''));
         $ringinuse = ($q['ringinuse'] ?? 'no') === 'yes' ? 'yes' : 'no';
         $joinempty = ($q['joinempty'] ?? 'yes') === 'no' ? 'no' : 'yes';
         $leavewhenempty = ($q['leavewhenempty'] ?? 'no') === 'yes' ? 'yes' : 'no';
@@ -83,14 +87,14 @@ class QueueHelper {
             'ringinuse' => $ringinuse,
             'announce-frequency' => (string)$announce_frequency,
             'announce-holdtime' => $announce_holdtime,
-            'announce-position' => 'yes',
-            'periodic-announce-frequency' => '45',
+            'announce-position' => $announce_position,
+            'periodic-announce-frequency' => (string)$periodic_frequency,
             // Asterisk's default "queue-periodic-announce" file is missing from
             // the Turkish sound pack (only en/es/fr/pr/pt_BR have it) — when it
             // is not found Asterisk silently falls back to English. Listing the
             // youarenext+thankyou prompts, which exist in Turkish, makes them
             // repeat in turn periodically (2026-08-31, user request).
-            'periodic-announce' => 'queue-youarenext,queue-thankyou',
+            'periodic-announce' => $periodic_file !== '' ? $periodic_file : 'queue-youarenext,queue-thankyou',
             'monitor-format' => 'wav',
             'joinempty' => $joinempty,
             'leavewhenempty' => $leavewhenempty,

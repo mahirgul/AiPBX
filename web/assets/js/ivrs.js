@@ -29,6 +29,7 @@ function openCreateIvrModal() {
     document.getElementById('modal_timeout_dest_type').value = 'queue';
     document.getElementById('modal_invalid_dest_type').value = 'hangup';
     document.getElementById('modal_max_failures').value = '3';
+    document.getElementById('modal_timeout_repeat').checked = false;
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = true;
     const directCb = document.getElementById('modal_allow_direct_dial');
@@ -63,6 +64,7 @@ function openEditIvrModal(ivr) {
     document.getElementById('modal_timeout_dest_type').value = ivr.timeout_dest_type || 'queue';
     document.getElementById('modal_invalid_dest_type').value = ivr.invalid_dest_type || 'hangup';
     document.getElementById('modal_max_failures').value = ivr.max_failures || '3';
+    document.getElementById('modal_timeout_repeat').checked = parseInt(ivr.timeout_repeat || 0) === 1;
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = (parseInt(ivr.is_active) === 1);
     const directCb = document.getElementById('modal_allow_direct_dial');

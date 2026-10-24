@@ -27,6 +27,22 @@ Trimming applies to every call from the trunk. If the trunk also sends transit c
 cuts those numbers too — `4440478` becomes `0478`. Use it only when the trunk sends nothing but
 DIDs; otherwise define the inbound routes with the full numbers the trunk sends.
 
+## Limits
+
+Two limits per trunk (**Routing** tab), both for inbound and outbound calls together, 0 = none:
+
+- **Max concurrent channels**: calls on the trunk at the same time.
+- **Max calls per minute**: new calls in one minute.
+
+A call over a limit is refused: an inbound one is hung up with cause 34 (no circuit), so the carrier
+may try another way; an outbound one counts as congestion, so the next trunk of the route is tried.
+Refused calls raise the [health check](health.md) *Trunk limits* ("Trunk nectip refused 412 calls over
+its calls-per-minute limit since 15:00"), shown in the alert bell and e-mailed like every alarm.
+
+The per-minute count is kept in Asterisk's database and is approximate when many calls start in the
+same instant; it is meant as a brake, not for billing. A per-minute limit a little above the busiest real minute stops a call loop between two PBXes (one
+once made 6 000 calls an hour on one trunk) and toll fraud through a stolen account early.
+
 ## Transit routing
 
 **Allow outbound routing** lets calls arriving on this trunk use the outbound routes of the selected

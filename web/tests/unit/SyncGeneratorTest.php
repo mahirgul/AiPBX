@@ -635,6 +635,61 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    public function testTrunkLimitsAreCheckedInboundAndOutbound(): void
+    {
+        $db = getDB();
+        $t = Fixtures::TRUNK_NAME;
+        $db->prepare('UPDATE pbx_trunks SET max_channels = 4, max_calls_per_minute = 30 WHERE trunk_name = ?')->execute([$t]);
+        $db->prepare("INSERT INTO pbx_outbound_routes (route_name, match_pattern, is_active, route_group, trunks_json) VALUES ('Lim', '_6XXX', 1, 1, ?)")
+           ->execute([json_encode([['trunk_name' => $t, 'callerid_override' => '']])]);
+        try {
+            syncInboundDialplan();
+            $in = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+            $this->assertStringContainsString('[sub-trunk-limit]', $in);
+            $this->assertStringContainsString(" same => n,Gosub(sub-trunk-limit,s,1({$t},4,30,trunkin))\n same => n,ExecIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?Hangup(34))", $in);
+
+            syncOutboundDialplan();
+            $out = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+            $this->assertStringContainsString(" same => n,Gosub(sub-trunk-limit,s,1({$t},4,30,trunk))", $out);
+            $this->assertStringContainsString('?trunkfull1)', $out);
+            $this->assertStringNotContainsString('Set(GROUP(trunk)=', $out, 'the subroutine sets the group');
+
+            // No limit: no check at all.
+            $db->prepare('UPDATE pbx_trunks SET max_channels = 0, max_calls_per_minute = 0 WHERE trunk_name = ?')->execute([$t]);
+            syncInboundDialplan();
+            $this->assertStringNotContainsString("Gosub(sub-trunk-limit,s,1({$t},", (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf'));
+        } finally {
+            $db->prepare('UPDATE pbx_trunks SET max_channels = 0, max_calls_per_minute = 0 WHERE trunk_name = ?')->execute([$t]);
+            $db->exec("DELETE FROM pbx_outbound_routes WHERE route_name = 'Lim'");
+        }
+    }
+
+    public function testSpokenStatusIsPlayedOnlyWhenSwitchedOn(): void
+    {
+        $db = getDB();
+        $set = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role, voicemail_enabled) VALUES ('sptest', '', 'Status Prompt', '7088', ?, 1, 'sip', 1, 'user', 0)")->execute(['S' . bin2hex(random_bytes(8))]);
+        try {
+            syncGeneralDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_general.conf');
+            $this->assertStringContainsString('[sub-status-prompt]', $conf);
+            $this->assertStringNotContainsString('Gosub(sub-status-prompt', $conf, 'off by default: tones only');
+
+            foreach (['busy', 'noanswer', 'unavail'] as $case) {
+                $set->execute(['status_prompt_' . $case, '1']);
+            }
+            syncGeneralDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_general.conf');
+            $this->assertStringContainsString("Gosub(sub-status-prompt,s,1(busy,7088))\n same => n,Hangup(17)", $conf);
+            $this->assertStringContainsString("Gosub(sub-status-prompt,s,1(noanswer,7088))\n same => n,Hangup()", $conf);
+            $this->assertStringContainsString("Gosub(sub-status-prompt,s,1(unavail,7088))\n same => n,Hangup()", $conf);
+            $this->assertStringContainsString('ExecIf($["${CHANNEL(state)}" != "Up"]?Progress())', $conf, 'early media: a trunk call is not answered');
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'status_prompt_%'");
+            $db->exec("DELETE FROM sys_users WHERE username = 'sptest'");
+        }
+    }
+
     public function testFaxCallsAreNotRecordedAndGetNoJitterBuffer(): void
     {
         // A fax sent from the portal goes through the outbound route like a

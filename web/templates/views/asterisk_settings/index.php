@@ -25,6 +25,9 @@
         <button type="button" class="settings-tab-btn" data-tab="amd" onclick="switchSettingsTab('amd', this)">
             <i class="fas fa-robot"></i> <?php echo t('asterisk_settings.tab_amd', 'AMD'); ?>
         </button>
+        <button type="button" class="settings-tab-btn" data-tab="voicemail" onclick="switchSettingsTab('voicemail', this)">
+            <i class="fas fa-voicemail"></i> <?php echo t('asterisk_settings.tab_voicemail'); ?>
+        </button>
         <button type="button" class="settings-tab-btn" data-tab="signaling" onclick="switchSettingsTab('signaling', this)">
             <i class="fas fa-satellite-dish"></i> <?php echo t('asterisk_settings.tab_signaling'); ?>
         </button>
@@ -267,6 +270,27 @@
     <div id="tab_ring" class="settings-tab-pane" style="display: none;">
     <div class="card">
         <div class="card-header">
+            <div class="card-title"><i class="fas fa-comment-dots u-primary"></i> <?php echo t('asterisk_settings.status_prompt_title'); ?></div>
+        </div>
+        <div class="module-help-box" style="display: block;">
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+            <p><?php echo t('asterisk_settings.status_prompt_help'); ?></p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <?php foreach (['busy', 'noanswer', 'unavail'] as $spCase): ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.status_prompt_' . $spCase); ?></label>
+                    <select name="status_prompt_<?php echo $spCase; ?>" class="form-control">
+                        <option value="0" <?php echo ($s['status_prompt_' . $spCase] ?? '0') !== '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.status_prompt_tone'); ?></option>
+                        <option value="1" <?php echo ($s['status_prompt_' . $spCase] ?? '0') === '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.status_prompt_spoken'); ?></option>
+                    </select>
+                    <small class="u-hint"><?php echo t('asterisk_settings.status_prompt_' . $spCase . '_text'); ?></small>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
             <div class="card-title">
                 <i class="fas fa-bell u-primary"></i> <?php echo t('asterisk_settings.ring_section_title'); ?>
             </div>
@@ -446,6 +470,38 @@
                 <label class="form-label"><?php echo t('asterisk_settings.field_amd_silence_threshold', 'Silence Threshold (1–32767)'); ?></label>
                 <input type="number" name="amd_silence_threshold" class="form-control" value="<?php echo htmlspecialchars($s['amd_silence_threshold'] ?? '256'); ?>" min="1" max="32767" required>
                 <small class="u-hint"><?php echo t('asterisk_settings.amd_silence_threshold_help', 'Audio noise floor below which samples count as silence (default: 256)'); ?></small>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- SECTION: voicemail limits and PIN rules (VoicemailPolicy) -->
+    <div id="tab_voicemail" class="settings-tab-pane" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-voicemail u-primary"></i> <?php echo t('asterisk_settings.vm_title'); ?></div>
+        </div>
+        <div class="module-help-box" style="display: block;">
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+            <p><?php echo t('asterisk_settings.vm_help'); ?></p>
+            <?php if (($vm_weak_pins ?? 0) > 0): ?>
+                <p class="u-warning"><strong><?php echo htmlspecialchars(sprintf(t('asterisk_settings.vm_weak_pins'), (int) $vm_weak_pins)); ?></strong></p>
+            <?php endif; ?>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <?php foreach (VoicemailPolicy::LIMITS as $vmKey => [$vmDef, $vmMin, $vmMax]): ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_' . $vmKey); ?></label>
+                    <input type="number" name="<?php echo $vmKey; ?>" class="form-control" value="<?php echo (int) ($vm_settings[$vmKey] ?? $vmDef); ?>" min="<?php echo $vmMin; ?>" max="<?php echo $vmMax; ?>" required>
+                    <small class="u-hint"><?php echo htmlspecialchars(sprintf(t('asterisk_settings.vm_range'), $vmMin, $vmMax, $vmDef)); ?></small>
+                </div>
+            <?php endforeach; ?>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_vm_pin_not_extension'); ?></label>
+                <select name="vm_pin_not_extension" class="form-control">
+                    <option value="1" <?php echo !empty($vm_settings['vm_pin_not_extension']) ? 'selected' : ''; ?>><?php echo t('asterisk_settings.vm_rule_on'); ?></option>
+                    <option value="0" <?php echo empty($vm_settings['vm_pin_not_extension']) ? 'selected' : ''; ?>><?php echo t('asterisk_settings.vm_rule_off'); ?></option>
+                </select>
             </div>
         </div>
     </div>

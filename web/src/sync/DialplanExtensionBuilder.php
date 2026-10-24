@@ -25,6 +25,7 @@ function buildDndCfCheckLines($ext, $db) {
             'terminal' => true,
             'lines' => [
                 " same => n,NoOp(DND on - {$ext})",
+                ...statusPromptLines('busy', $ext),
                 " same => n,Hangup(17)"
             ]
         ];
@@ -100,6 +101,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
             'terminal' => true,
             'lines' => [
                 " same => n,NoOp(DND on - {$ext})",
+                ...statusPromptLines('busy', $ext),
                 " same => n,Hangup(17)"
             ]
         ];
@@ -227,6 +229,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,VoiceMail({$ext}@default,b)";
         $lines[] = " same => n(vm_skip_busy_{$lbl}),Hangup(17)";
     } else {
+        array_push($lines, ...statusPromptLines('busy', $ext));
         $lines[] = " same => n,Hangup(17)";
     }
 
@@ -245,6 +248,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
         $lines[] = " same => n(vm_skip_noans_{$lbl}),Hangup()";
     } else {
+        array_push($lines, ...statusPromptLines('noanswer', $ext));
         $lines[] = " same => n,Hangup()";
     }
 
@@ -270,6 +274,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,VoiceMail({$ext}@default,u)";
         $lines[] = " same => n(vm_skip_unavail_{$lbl}),Hangup()";
     } else {
+        array_push($lines, ...statusPromptLines('unavail', $ext));
         $lines[] = " same => n,Hangup()";
     }
 
@@ -284,3 +289,20 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         'lines' => $lines
     ];
 }
+
+/**
+ * A spoken message before an extension's call ends busy, unanswered or
+ * unreachable (PBX settings → Ringtone), instead of only a tone. Played by
+ * [sub-status-prompt] (SyncGeneralDialplan) in the channel's language.
+ *
+ * @return list<string> dialplan lines, none when the case is switched off
+ */
+function statusPromptLines(string $case, string $ext): array
+{
+    if (getSystemSetting('status_prompt_' . $case, '0') !== '1') {
+        return [];
+    }
+    $digits = preg_replace('/[^0-9]/', '', $ext);
+    return [" same => n,Gosub(sub-status-prompt,s,1({$case},{$digits}))"];
+}
+

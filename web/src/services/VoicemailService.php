@@ -30,6 +30,14 @@ class VoicemailService {
             $vm_on_unavail = isset($data['vm_on_unavail']) ? intval($data['vm_on_unavail']) : 0;
             $vm_always = isset($data['vm_always']) ? intval($data['vm_always']) : 0;
             $voicemail_enabled = isset($data['voicemail_enabled']) ? intval($data['voicemail_enabled']) : 1;
+            // A mailbox in use needs a PIN that passes the rules (PBX settings → Voicemail).
+            if ($voicemail_enabled) {
+                require_once __DIR__ . '/VoicemailPolicy.php';
+                $ext = (string) $db->query('SELECT extension FROM sys_users WHERE id = ' . (int) $userId)->fetchColumn();
+                if (($pinError = VoicemailPolicy::pinError($pin, $ext)) !== null) {
+                    throw new \Exception($pinError);
+                }
+            }
 
             $stmt = $db->prepare("UPDATE sys_users SET voicemail_enabled = ?, voicemail_pin = ?, voicemail_email = ?, voicemail_attach_audio = ?, vm_on_noanswer = ?, vm_on_busy = ?, vm_on_unavail = ?, vm_always = ? WHERE id = ?");
             $stmt->execute([$voicemail_enabled, $pin, $email, $attach, $vm_on_noanswer, $vm_on_busy, $vm_on_unavail, $vm_always, $userId]);

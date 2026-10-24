@@ -105,6 +105,15 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
 
     $conf .= "; Timeout Destination\n";
     $conf .= "exten => t,1,NoOp(IVR {$ivr_id} Timed Out -> {$ivr['timeout_dest_type']})\n";
+    if (!empty($ivr['timeout_repeat'])) {
+        // No key pressed: "Please try again." and the menu once more; it counts
+        // with the wrong keys, so after max_failures the timeout destination follows.
+        $conf .= " same => n,Set({$fail_var}=\$[0\${{$fail_var}} + 1])\n";
+        $conf .= " same => n,GotoIf(\$[0\${{$fail_var}} >= {$max_failures}]?tdest)\n";
+        $conf .= " same => n,Playback(please-try-again)\n";
+        $conf .= " same => n,Goto(s,1)\n";
+        $conf .= " same => n(tdest),NoOp(IVR {$ivr_id} no key {$max_failures} times -> {$ivr['timeout_dest_type']})\n";
+    }
     $conf .= buildDestinationLines($ivr['timeout_dest_type'], $ivr['timeout_dest_id']) . "\n\n";
 
     $conf .= "; Invalid Destination - {$max_failures} failed attempts repeat the menu\n";

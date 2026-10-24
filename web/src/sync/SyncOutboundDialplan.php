@@ -19,9 +19,11 @@ function __syncOutboundDialplanBody() {
     // Trunk channel limits. The route's trunks_json does not have them; the
     // limit is kept on the trunk's own record (pbx_trunks.max_channels).
     $trunk_limits = [];
+    $trunk_rates = [];
     $trunk_cid_norm = [];
-    foreach (getDB()->query("SELECT trunk_name, max_channels, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
+    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
+        $trunk_rates[$tl['trunk_name']] = intval($tl['max_calls_per_minute'] ?? 0);
         $trunk_cid_norm[$tl['trunk_name']] = [
             'keep_last' => max(0, min(20, intval($tl['cid_keep_last'] ?? 0))),
             'prepend' => preg_replace('/[^0-9+]/', '', (string)($tl['cid_prepend'] ?? '')),
@@ -103,7 +105,7 @@ function __syncOutboundDialplanBody() {
             if (empty($trunk_chain)) {
                 $fallback = AsteriskHelper::getPrimaryTrunkName();
                 if ($fallback !== null) {
-                    $trunk_chain[] = ['trunk_name' => $fallback, 'callerid_override' => '', 'max_channels' => 0];
+                    $trunk_chain[] = ['trunk_name' => $fallback, 'callerid_override' => '', 'max_channels' => intval($trunk_limits[$fallback] ?? 0)];
                 }
             }
 
@@ -172,10 +174,15 @@ function __syncOutboundDialplanBody() {
                 // extension (CF_HOPS set) may still go back out.
                 $hp = preg_quote($t['trunk_name'], '/');
                 $conf .= " same => n,GotoIf(\$[\"\${CF_HOPS}\" = \"\" & \${REGEX(\"^PJSIP/{$hp}-[0-9a-f]+\$\" \${CHANNEL(name)})}]?hairpin{$step})\n";
+                // Channels (inbound and outbound together) and calls per minute:
+                // sub-trunk-limit (SyncInboundDialplan) leaves TRUNK_LIMIT empty
+                // or says why the call is refused.
                 $limit = intval($t['max_channels'] ?? 0);
-                if ($limit > 0) {
-                    $conf .= " same => n,Set(GROUP(trunk)={$t['trunk_name']})\n";
-                    $conf .= " same => n,GotoIf(\$[\${GROUP_COUNT(" . $t['trunk_name'] . "@trunk)} > {$limit}]?trunkfull{$step})\n";
+                $rate = intval($trunk_rates[$t['trunk_name']] ?? 0);
+                $limited = $limit > 0 || $rate > 0;
+                if ($limited) {
+                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$t['trunk_name']},{$limit},{$rate},trunk))\n";
+                    $conf .= " same => n,GotoIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?trunkfull{$step})\n";
                 }
                 // D-1: the 'r' option was removed (only 'T' is used).
                 // The carrier's early media (183 Session Progress / announcement / real busy tone)
@@ -183,9 +190,9 @@ function __syncOutboundDialplanBody() {
                 // No jitter buffer for a fax: it reshapes the modem's timing.
                 $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)=default))\n";
                 $conf .= " same => n,Dial(PJSIP/{$dial_num}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
-                if ($limit > 0) {
+                if ($limited) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";
-                    $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} channel limit reached: {$limit})\n";
+                    $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} over its limit: \${TRUNK_LIMIT})\n";
                     $conf .= " same => n,Set(DIALSTATUS=CONGESTION)\n";
                     $conf .= " same => n(afterdial{$step}),NoOp()\n";
                 }

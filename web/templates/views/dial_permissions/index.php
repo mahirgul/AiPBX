@@ -13,7 +13,65 @@ if (!$selected_group && !empty($groups)) {
     $selected_group = $groups[0];
     $selected_group_id = (int)$selected_group['id'];
 }
+$ng = $night_guard ?? NightGuardService::DEFAULTS;
+$canEdit = hasModulePermission('dial_permissions', 'edit');
 ?>
+
+<form method="POST" class="card mb-3" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCSRFToken()); ?>">
+    <input type="hidden" name="save_night_guard" value="1">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-moon u-primary"></i> <?php echo t('night_guard.title'); ?>
+            <span class="badge <?php echo $ng['night_guard_enabled'] === '1' ? 'badge-success' : 'badge-primary'; ?>" style="margin-left: 8px; font-size: 11px;"><?php echo t($ng['night_guard_enabled'] === '1' ? 'night_guard.on' : 'night_guard.off'); ?></span>
+        </div>
+    </div>
+    <p class="u-muted u-fs-12" style="margin: 0 0 12px;"><?php echo t('night_guard.help'); ?></p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_enabled'); ?></label>
+            <select name="night_guard_enabled" class="form-control" <?php echo $canEdit ? '' : 'disabled'; ?>>
+                <option value="0" <?php echo $ng['night_guard_enabled'] !== '1' ? 'selected' : ''; ?>><?php echo t('night_guard.off'); ?></option>
+                <option value="1" <?php echo $ng['night_guard_enabled'] === '1' ? 'selected' : ''; ?>><?php echo t('night_guard.on'); ?></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_hours'); ?></label>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="time" name="night_guard_from" class="form-control" value="<?php echo htmlspecialchars($ng['night_guard_from']); ?>">
+                <span>–</span>
+                <input type="time" name="night_guard_to" class="form-control" value="<?php echo htmlspecialchars($ng['night_guard_to']); ?>">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_weekend'); ?></label>
+            <select name="night_guard_weekend" class="form-control">
+                <option value="1" <?php echo $ng['night_guard_weekend'] === '1' ? 'selected' : ''; ?>><?php echo t('night_guard.weekend_yes'); ?></option>
+                <option value="0" <?php echo $ng['night_guard_weekend'] !== '1' ? 'selected' : ''; ?>><?php echo t('night_guard.weekend_no'); ?></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_prefixes'); ?></label>
+            <input type="text" name="night_guard_prefixes" class="form-control" value="<?php echo htmlspecialchars($ng['night_guard_prefixes']); ?>" placeholder="00, 0900">
+            <small class="u-hint"><?php echo t('night_guard.prefixes_help'); ?></small>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_action'); ?></label>
+            <select name="night_guard_action" class="form-control">
+                <option value="block" <?php echo $ng['night_guard_action'] !== 'pin' ? 'selected' : ''; ?>><?php echo t('night_guard.action_block'); ?></option>
+                <option value="pin" <?php echo $ng['night_guard_action'] === 'pin' ? 'selected' : ''; ?>><?php echo t('night_guard.action_pin'); ?></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('night_guard.field_pin'); ?></label>
+            <input type="password" name="night_guard_pin" class="form-control" inputmode="numeric" autocomplete="new-password" placeholder="<?php echo $ng['night_guard_pin'] !== '' ? '••••' : ''; ?>">
+            <small class="u-hint"><?php echo t('night_guard.pin_help'); ?></small>
+        </div>
+    </div>
+    <?php if ($canEdit): ?>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+    <?php endif; ?>
+</form>
 
 <div class="card mb-3">
     <div class="card-header">

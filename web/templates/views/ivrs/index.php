@@ -144,6 +144,11 @@
                         <label class="form-label"><?php echo t('ivr.field_max_failures'); ?></label>
                         <input type="number" name="max_failures" id="modal_max_failures" class="form-control" value="3" min="1" max="10">
                         <small class="u-hint"><?php echo t('ivr.max_failures_help'); ?></small>
+                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+                            <input type="checkbox" name="timeout_repeat" id="modal_timeout_repeat" value="1" class="u-check">
+                            <span><?php echo t('ivr.field_timeout_repeat'); ?></span>
+                        </label>
+                        <small class="u-hint"><?php echo t('ivr.timeout_repeat_help'); ?></small>
                     </div>
                     <div class="form-group">
                         <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">

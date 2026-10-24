@@ -18,6 +18,15 @@ class QueueService {
             $maxlen = intval($data['maxlen'] ?? 0);
             $announce_frequency = intval($data['announce_frequency'] ?? 30);
             $announce_holdtime = trim($data['announce_holdtime'] ?? 'yes');
+            $announce_position = ($data['announce_position'] ?? 'yes') === 'no' ? 'no' : 'yes';
+            // 0 = no periodic announcement; otherwise 15–600 s.
+            $periodic_frequency = intval($data['periodic_frequency'] ?? 45);
+            $periodic_frequency = $periodic_frequency <= 0 ? 0 : max(15, min(600, $periodic_frequency));
+            // Only an announcement that exists may be played ('' = the built-in prompts).
+            $periodic_announce = trim((string) ($data['periodic_announce'] ?? ''));
+            if ($periodic_announce !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ?', [$periodic_announce])) {
+                $periodic_announce = '';
+            }
             $joinempty = trim($data['joinempty'] ?? 'yes');
             $leavewhenempty = trim($data['leavewhenempty'] ?? 'no');
             $ringinuse = trim($data['ringinuse'] ?? 'no');
@@ -94,6 +103,9 @@ class QueueService {
                 'maxlen' => $maxlen,
                 'announce_frequency' => $announce_frequency,
                 'announce_holdtime' => $announce_holdtime,
+                'announce_position' => $announce_position,
+                'periodic_frequency' => $periodic_frequency,
+                'periodic_announce' => $periodic_announce,
                 'joinempty' => $joinempty,
                 'leavewhenempty' => $leavewhenempty,
                 'ringinuse' => $ringinuse,

@@ -55,6 +55,12 @@ function __syncPermissionsBody() {
     $conf .= "[sub-check-dial-permission]\n";
     $conf .= "exten => s,1,NoOp(Dial Permission Check for Caller \${ARG1} -> Target \${ARG2} (Group: \${PERMISSION_GROUP_ID}))\n";
     $conf .= " same => n,Set(PERM_GROUP=\${PERMISSION_GROUP_ID})\n";
+    // Night protection first: it covers trunk-to-trunk transit too, which has no group.
+    require_once dirname(__DIR__) . '/services/NightGuardService.php';
+    $nightGuard = NightGuardService::dialplan();
+    if ($nightGuard !== '') {
+        $conf .= " same => n,Gosub(sub-night-guard,s,1(\${ARG2}))\n";
+    }
     // An empty group is allowed: calls from a trunk carry no group, and an
     // inbound call that goes out again must keep working (forwarding to a
     // mobile, an external DID/IVR destination, an external ring-group
@@ -65,6 +71,7 @@ function __syncPermissionsBody() {
     $conf .= " same => n,Gosub(perm-group-\${PERM_GROUP},s,1(\${ARG2}))\n";
     $conf .= " same => n(perm_allow),Return()\n\n";
 
+    $conf .= $nightGuard;
     $conf .= "[sub-permission-denied]\n";
     $conf .= "exten => s,1,NoOp(Dial permission restriction: destination not allowed!)\n";
     $conf .= " same => n,Set(CDR(userfield)=CALL_BARRED)\n";

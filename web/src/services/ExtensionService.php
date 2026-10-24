@@ -62,9 +62,18 @@ class ExtensionService {
             $vmSwitch = fn(string $k): int => isset($data[$k]) ? (intval($data[$k]) ? 1 : 0) : (int)($current[$k] ?? 1);
             $voicemail_enabled = $vmSwitch('voicemail_enabled');
             $voicemail_email_notify = $vmSwitch('voicemail_email_notify');
+            // An empty PIN becomes the extension number, which anyone can guess;
+            // with the rule "PIN may not be the extension" (PBX settings →
+            // Voicemail, on by default) it becomes a random PIN instead. A
+            // typed PIN must pass the rules.
+            require_once __DIR__ . '/VoicemailPolicy.php';
             $voicemail_pin = preg_replace('/[^0-9]/', '', trim($data['voicemail_pin'] ?? ''));
-            if (empty($voicemail_pin)) {
-                $voicemail_pin = $extension;
+            if ($voicemail_pin === '') {
+                $voicemail_pin = VoicemailPolicy::settings()['vm_pin_not_extension']
+                    ? VoicemailPolicy::randomPin((string) $extension)
+                    : (string) $extension;
+            } elseif ($extension_type !== 'fax' && ($pinError = VoicemailPolicy::pinError($voicemail_pin, (string) $extension)) !== null) {
+                throw new \Exception($pinError);
             }
             $voicemail_email = trim($data['voicemail_email'] ?? '');
             $voicemail_attach_audio = $vmSwitch('voicemail_attach_audio');

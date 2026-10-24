@@ -41,6 +41,12 @@ function openCreateQueueModal() {
     if (langEl) langEl.value = '';
     if (annFreqEl) annFreqEl.value = 30;
     if (annHoldEl) annHoldEl.value = 'yes';
+    const posEl = document.getElementById('modal_announce_position');
+    if (posEl) posEl.value = 'yes';
+    const perFreqEl = document.getElementById('modal_periodic_frequency');
+    if (perFreqEl) perFreqEl.value = 45;
+    const perAnnEl = document.getElementById('modal_periodic_announce');
+    if (perAnnEl) perAnnEl.value = '';
     if (joinEl) joinEl.value = 'yes';
     if (leaveEl) leaveEl.value = 'no';
     if (ringEl) ringEl.value = 'no';
@@ -110,6 +116,12 @@ function openEditQueueModal(item) {
     if (langEl) langEl.value = item.language || '';
     if (annFreqEl) annFreqEl.value = (item.announce_frequency !== undefined) ? item.announce_frequency : 30;
     if (annHoldEl) annHoldEl.value = item.announce_holdtime || 'yes';
+    const posEl = document.getElementById('modal_announce_position');
+    if (posEl) posEl.value = item.announce_position || 'yes';
+    const perFreqEl = document.getElementById('modal_periodic_frequency');
+    if (perFreqEl) perFreqEl.value = item.periodic_frequency !== undefined && item.periodic_frequency !== null ? item.periodic_frequency : 45;
+    const perAnnEl = document.getElementById('modal_periodic_announce');
+    if (perAnnEl) perAnnEl.value = item.periodic_announce || '';
     if (joinEl) joinEl.value = item.joinempty || 'yes';
     if (leaveEl) leaveEl.value = item.leavewhenempty || 'no';
     if (ringEl) ringEl.value = item.ringinuse || 'no';
