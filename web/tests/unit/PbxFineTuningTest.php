@@ -73,6 +73,22 @@ final class PbxFineTuningTest extends TestCase
         $this->assertStringContainsString('Set(JITTERBUFFER(adaptive)=350,150)', $general);
     }
 
+    public function testJitterBufferLineIsSharedByEveryDial(): void
+    {
+        // One helper for extension, general and outbound dials: off means no line at all.
+        setSystemSetting('jitterbuffer_enabled', '0');
+        $this->assertSame('', jitterBufferLine());
+
+        setSystemSetting('jitterbuffer_enabled', '1');
+        setSystemSetting('jitterbuffer_max_size', '200');
+        setSystemSetting('jitterbuffer_initial_size', '100');
+        $this->assertStringContainsString('Set(JITTERBUFFER(adaptive)=default)', jitterBufferLine());
+        $this->assertStringContainsString('${AIPBX_FAX}', jitterBufferLine(), 'faxes are exempt');
+
+        setSystemSetting('jitterbuffer_initial_size', '150');
+        $this->assertStringContainsString('Set(JITTERBUFFER(adaptive)=200,150)', jitterBufferLine());
+    }
+
     public function testSipDebugTenMinutesActivationAndExpiry(): void
     {
         $res = AsteriskSettingsService::enableSipDebug(600);

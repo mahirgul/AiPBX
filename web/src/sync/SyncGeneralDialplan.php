@@ -267,21 +267,13 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Return()\n\n";
 
     // Enterprise Adaptive Jitter Buffer (AJB) Subroutine for Callee Channels
-    $jb_enabled = (string)getSystemSetting('jitterbuffer_enabled', '1') !== '0';
-    $jb_max = getSystemSetting('jitterbuffer_max_size', '');
-    $jb_init = getSystemSetting('jitterbuffer_initial_size', '');
-    // Asterisk's own defaults unless one of the two sizes was changed.
-    $jb_spec = (($jb_max !== '' && $jb_max !== '200') || ($jb_init !== '' && $jb_init !== '100'))
-        ? max(50, (int) ($jb_max ?: 200)) . ',' . max(20, (int) ($jb_init ?: 100)) : 'default';
 
     $conf .= "; Enterprise Adaptive Jitter Buffer (AJB) Subroutine for Callee Channels\n";
     $conf .= "[sub-callee-jb]\n";
     $conf .= "exten => s,1,NoOp(Applying Adaptive Jitter Buffer to Callee Channel \${CHANNEL})\n";
     // Not for a fax sent from the portal (AIPBX_FAX, inherited): a jitter buffer
     // reshapes the modem's timing.
-    if ($jb_enabled) {
-        $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)={$jb_spec}))\n";
-    }
+    $conf .= jitterBufferLine();
     $conf .= " same => n,Return()\n\n";
 
     // Spoken status before a busy / unanswered / unreachable extension's call
