@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.13
+
+- **No more "restart Asterisk" warnings for harmless library updates.** The health check warned (and
+  e-mailed) whenever a system update replaced any library Asterisk uses, e.g. libsystemd or libudev,
+  although that changes nothing for calls, and a quiet weekend with no calls kept the warning up.
+  Now only security-relevant libraries count (OpenSSL, GnuTLS, the C library, SRTP, curl, libxml2 …),
+  and with the night restart window switched on there is no warning at all, only a note. The night
+  restart itself also happens only for those libraries.
+
 ## 1.50.12
 
 Fixes from a review of the portal.

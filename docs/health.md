@@ -8,7 +8,7 @@ managers: yesterday's calls and faxes and the state of every check.
 
 | Check | Default | Warning / failed when |
 |-------|---------|------------------------|
-| Asterisk | 5 min | Asterisk does not answer (failed); it still runs on libraries a system update replaced, so it needs a restart when no calls are in progress (warning) |
+| Asterisk | 5 min | Asterisk does not answer (failed); a security update (OpenSSL, the C library, SRTP …) waits for an Asterisk restart and the [night restart window](pbx-tuning.md#safe-night-maintenance-restart-window) is off (warning). Updates of other libraries are not reported |
 | Database | 5 min | MariaDB does not answer |
 | Web portal | 5 min | the sign-in page does not answer 200 |
 | Chat service | 5 min | `aipbx-chat` is not running |

@@ -27,8 +27,9 @@ class NightRestartService
         if (getSystemSetting('night_restart_last_date', '') === date('Y-m-d')) {
             return false;
         }
-        // Only when it is needed: Asterisk still maps libraries an update replaced.
-        if (!AsteriskHelper::replacedLibraries()) {
+        // Only when it is needed: Asterisk still maps a security-relevant library
+        // an update replaced (not for libsystemd and the like).
+        if (!AsteriskHelper::replacedSecurityLibraries()) {
             return false;
         }
         return AsteriskHelper::activeCallCount() === 0;
@@ -46,7 +47,7 @@ class NightRestartService
             return false;
         }
         setSystemSetting('night_restart_last_date', date('Y-m-d'));
-        writeAuditLog('asterisk', 'maintenance', 'night_restart', 'Night restart: 0 calls, replaced libraries in use', 'restart', null);
+        writeAuditLog('asterisk', 'maintenance', 'night_restart', 'Night restart: 0 calls, updated security libraries loaded', 'restart', null);
         if (getenv('AIPBX_NO_ASTERISK') !== '1') {
             exec('systemctl restart asterisk >/dev/null 2>&1 &');
         }

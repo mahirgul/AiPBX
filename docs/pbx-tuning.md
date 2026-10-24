@@ -72,8 +72,9 @@ of the following conditions are met:
 1. **Feature is enabled:** Night restart is switched on.
 2. **Current time is in window:** Local server time is between the configured start and end times.
 3. **At most once a day:** A restart has not already occurred today.
-4. **Replaced libraries exist:** Asterisk is actively holding file descriptors to deleted shared
-   libraries replaced by system updates. If no libraries were replaced, **no restart occurs**.
+4. **A security update is waiting:** Asterisk still uses a security-relevant library that an update
+   replaced (OpenSSL, GnuTLS, the C library, SRTP, curl, libxml2 …). Updates of other libraries
+   (libsystemd, libudev …) change nothing for calls and never cause a restart.
 5. **Zero active calls:** The active call count on Asterisk is strictly 0.
 6. **Call count is verifiable:** If Asterisk cannot be queried or the call count cannot be determined,
    the restart is aborted.

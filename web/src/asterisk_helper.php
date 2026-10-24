@@ -36,6 +36,22 @@ class AsteriskHelper {
         return array_values(array_unique(array_map('basename', $d[1])));
     }
 
+    /**
+     * The replaced libraries that matter: crypto/TLS, the C library, SRTP and
+     * the HTTP/XML parsers Asterisk uses for network input. Updates of
+     * everything else (libsystemd, libudev …) change nothing for calls, so
+     * they are no reason to restart a running PBX.
+     *
+     * @param list<string>|null $libs replacedLibraries(), for tests
+     * @return list<string>
+     */
+    public static function replacedSecurityLibraries(?array $libs = null): array
+    {
+        $libs ??= self::replacedLibraries();
+        return array_values(array_filter($libs, fn(string $l): bool =>
+            (bool) preg_match('/^lib(ssl|crypto|gnutls|nettle|hogweed|srtp2?|c|curl|xml2|nghttp2|ssh|jansson|pcre2?-[0-9a-z]+|sqlite3|z)\.so/', $l)));
+    }
+
     /** Calls in progress, or null when Asterisk did not answer clearly. */
     public static function activeCallCount(): ?int
     {
