@@ -19,8 +19,9 @@ function syncAllIVRs() {
  * max_failures: every time "i" (invalid key) fires, a per-channel counter
  * (IVR{id}FAILS) is incremented; below the threshold the menu (s,1) plays
  * again from the start, at the threshold the call goes to the
- * invalid_dest_type/id destination. The timeout (t) is not part of this
- * counter; its behaviour did not change.
+ * invalid_dest_type/id destination. The timeout (t) goes straight to the
+ * timeout destination, or — with timeout_repeat — counts in the same counter
+ * and plays the menu again first.
  *
  * allow_direct_dial: when on, dialing an active extension number while the
  * IVR menu plays goes straight to the real call logic in [from-internal-pbx]
