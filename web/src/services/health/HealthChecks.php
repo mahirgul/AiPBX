@@ -90,9 +90,15 @@ final class HealthChecks
         $n = preg_match('/(\d+) active call/', $calls, $c) ? (int) $c[1] : 0;
         $msg = sprintf(t('health.msg_asterisk_ok'), self::duration((int) $m[1]), $n);
         // needrestart leaves Asterisk alone (it dropped calls): after a library
-        // update it keeps running on the replaced files until restarted.
-        if ($libs = AsteriskHelper::replacedLibraries()) {
-            return ['warn', $msg . ' ' . sprintf(t('health.msg_asterisk_old_libs'), implode(', ', array_slice($libs, 0, 5)))];
+        // update it keeps running on the replaced files until restarted. Only a
+        // security fix is worth a note, and no alarm when the night restart
+        // window will load it anyway: a quiet weekend is not a problem.
+        if ($libs = AsteriskHelper::replacedSecurityLibraries()) {
+            $list = implode(', ', array_slice($libs, 0, 5));
+            if (getSystemSetting('night_restart_enabled', '0') === '1') {
+                return ['ok', $msg . ' ' . sprintf(t('health.msg_asterisk_libs_night'), $list)];
+            }
+            return ['warn', $msg . ' ' . sprintf(t('health.msg_asterisk_old_libs'), $list)];
         }
         return ['ok', $msg];
     }

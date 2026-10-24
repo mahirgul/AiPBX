@@ -73,6 +73,13 @@ final class PbxFineTuningTest extends TestCase
         $this->assertStringContainsString('Set(JITTERBUFFER(adaptive)=350,150)', $general);
     }
 
+    public function testOnlySecurityLibrariesCountAsReplaced(): void
+    {
+        // The production mail: libudev and libsystemd were updated on a quiet weekend.
+        $this->assertSame([], AsteriskHelper::replacedSecurityLibraries(['libudev.so.1.7.12', 'libsystemd.so.0.42.0', 'libcap.so.2.75']));
+        $this->assertSame(['libssl.so.3', 'libc.so.6'], AsteriskHelper::replacedSecurityLibraries(['libssl.so.3', 'libsystemd.so.0', 'libc.so.6']));
+    }
+
     public function testJitterBufferLineIsSharedByEveryDial(): void
     {
         // One helper for extension, general and outbound dials: off means no line at all.
