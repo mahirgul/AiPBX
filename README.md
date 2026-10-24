@@ -117,21 +117,31 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Calling permission groups (call barring)** — prefix and exact-match rules (`0`, `05`, `00`),
   per-extension assignment, default allow-all
 - **Voicemail** — Asterisk voicemail with unconditional / busy / no-answer / unavailable triggers,
-  managed in *My Phone* or with feature codes (`*97` own mailbox, `*98` mailbox login), in-browser player
+  managed in *My Phone* or with feature codes (`*97` own mailbox, `*98` mailbox login), in-browser player;
+  message limits and PIN rules (minimum length, not the extension number, random PIN for new mailboxes)
 - **Boss – secretary groups** — executive interception, simultaneous or sequential secretary ringing,
   VIP whitelist bypass, automatic failover
 - **Ring groups** — virtual numbers mixing extensions and external numbers, simultaneous or sequential
 - **Conference rooms** — ConfBridge with PINs, wait-for-leader, join muted and live web moderation (mute/kick)
 - **Trunks** — IP or registration based, tabbed settings, copy, rename and drag-and-drop ordering;
   inbound DID trimming, transit routing between PBXes and carriers, per-trunk **outbound caller ID
-  normalization** (keep last N digits + prefix, e.g. extension `7840` → `903704187840`)
+  normalization** (keep last N digits + prefix, e.g. extension `7840` → `903704187840`), per-trunk
+  dialled number format (strip / add a prefix), DTMF mode, session timers, 100rel and T.38 options;
+  **limits** for concurrent channels (inbound + outbound) and calls per minute stop loops and toll fraud
 - **Outbound routes** — Asterisk patterns, strip/prepend, trunk failover chain, route groups for PBXes
   with different number formats, copy and ordering, duplicate patterns rejected
 - **Call normalization** — per-device rules (desk phone, mobile app, browser) turn what users dial
   (`+90…`, `000…`) into one format before the outbound routes; recommended rules per country,
   a simulator, and one switch to turn them all off
-- **DID routing, time conditions, multi-level IVR**
-- **Queues** — dynamic agent login/logout, static agents, hold music, recording
+- **DID routing, time conditions, multi-level IVR** — optional menu repeat when no key is pressed, and
+  **IVR data steps**: look up the entered digits or the caller's number in an external database or over
+  HTTP and route on *found* / *not found* / *timeout* ([docs](docs/external-databases.md))
+- **Queues** — dynamic agent login/logout, static agents, hold music, recording, position and periodic
+  announcements that can be switched off or tuned
+- **Spoken status instead of tones** — "The person at extension 3001 is on the phone" in the caller's
+  language, played before answering so trunk calls are not billed
+- **PBX tuning** — jitter buffer, SIP timers, a 10-minute SIP debug switch, log rotation and a night
+  restart window used only when an update replaced libraries and no call is up ([docs](docs/pbx-tuning.md))
 - **Feature codes** — `*81`/`*80` queue login/logout, `*72` call forward, `*60` DND, `*43` intercom,
   `*90`/`*91`/`*92` spy/whisper/barge, `*97`/`*98` voicemail
 - **In-band disconnect supervision** — disconnect-tone detection for analog/legacy trunks
@@ -222,6 +232,13 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Subject Access Request (SAR) & Right to Erasure** — search any phone number or extension across dual CDR tables, recordings, voicemails, faxes, and SIP signaling events; download a portable **SAR JSON Data Package** (`PRIVACY_SAR_EXPORT`) or execute irreversible **Right to Erasure** (`PRIVACY_ERASURE`) with an immutable Audit Log certificate
 - **Cross-Border Cloud AI Lock** — single toggle that blocks all outbound Cloud AI / STT / LLM calls (`CloudAiService::configured() === false`) so audio and transcripts never leave the local PBX server
 
+### ⚙️ Automation & Data
+- **Scheduled tasks** (off by default, administrators only) — shell, PHP or Python scripts on a cron
+  schedule, run in a systemd sandbox as an unprivileged user (never root, never the web server), with
+  run history, *Run now* and alerts on failure ([docs](docs/scheduled-tasks.md))
+- **External database connections** — MySQL/MariaDB and PostgreSQL, password stored encrypted; every
+  session read-only with a 2.5 s statement limit, used by IVR data steps ([docs](docs/external-databases.md))
+
 ### 🔐 Authentication & Security
 - **Two-factor authentication (TOTP)** with offline QR codes and single-use recovery codes — enforced
   for portal, mobile and Google sign-in
@@ -236,6 +253,9 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Certificates page** — one certificate for portal, TURNS and SIP-TLS: Let's Encrypt (tested on
   staging first, renewed automatically), upload PEM or PFX/P12, or self-signed; problems that silently
   break WebRTC (self-signed, wrong name, missing chain) are flagged
+- **Night dialling protection** — at night and at weekends, calls to protected prefixes (`00`, `0900` …)
+  are blocked or need a PIN, transit calls included
+- **Failed registration alarm** — too many failed SIP logins alarm in the bell and by e-mail
 - **Nightly backups** — database, configuration, and uploaded plugins (`aipbx-backup`, 14 days, optional off-server copy)
 - **Firewall and fail2ban management** from the portal through a single, argument-validated root
   helper (`aipbx-priv`) — the portal never runs arbitrary commands as root
