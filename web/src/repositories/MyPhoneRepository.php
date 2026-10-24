@@ -445,6 +445,14 @@ class MyPhoneRepository extends BaseRepository
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException(t('my_phone.vm_email_invalid'));
         }
+        // A new PIN must follow the rules (PBX settings → Voicemail).
+        if ($pin !== '') {
+            require_once dirname(__DIR__) . '/services/VoicemailPolicy.php';
+            $ext = (string) static::db()->query('SELECT extension FROM sys_users WHERE id = ' . $userId)->fetchColumn();
+            if (($pinError = VoicemailPolicy::pinError($pin, $ext)) !== null) {
+                throw new \InvalidArgumentException($pinError);
+            }
+        }
 
         $stmt = static::db()->prepare(
             "UPDATE sys_users

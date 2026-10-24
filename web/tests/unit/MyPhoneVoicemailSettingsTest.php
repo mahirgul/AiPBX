@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/repositories/MyPhoneRepository.php';
 require_once __DIR__ . '/../../src/sync/SyncVoicemail.php';
+require_once __DIR__ . '/../../src/asterisk_sync.php';
 
 /**
  * My Phone: call settings and voicemail settings are saved separately. The
@@ -76,5 +77,20 @@ final class MyPhoneVoicemailSettingsTest extends TestCase
         $this->db->exec("UPDATE sys_users SET voicemail_email_notify = 0 WHERE id = {$this->id}");
         syncVoicemail();
         $this->assertMatchesRegularExpression('/^7402 => [^,]*,[^,]*,,/m', $conf());
+    }
+
+    public function testANewPinMustFollowTheRules(): void
+    {
+        $ext = (string) getDB()->query('SELECT extension FROM sys_users WHERE id = ' . $this->id)->fetchColumn();
+        foreach (['12', $ext] as $bad) {
+            try {
+                MyPhoneRepository::updateVoicemailSettings($this->id, ['voicemail_enabled' => 1, 'voicemail_pin' => $bad]);
+                $this->fail("PIN {$bad} must be refused");
+            } catch (\InvalidArgumentException $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+        MyPhoneRepository::updateVoicemailSettings($this->id, ['voicemail_enabled' => 1, 'voicemail_pin' => '839214']);
+        $this->assertSame('839214', (string) getDB()->query('SELECT voicemail_pin FROM sys_users WHERE id = ' . $this->id)->fetchColumn());
     }
 }
