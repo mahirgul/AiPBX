@@ -9,9 +9,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 Fixes from a review of the portal.
 
+- **Outbound calls without any outbound route** (a fresh install) went straight to the first trunk with
+  no dial permission check, no night protection, no trunk limits and no loop guard. That fallback now
+  has the same brakes as a route.
 - **Mobile sign-in with Google or a QR code** returned the SIP password and TURN access also to users
   whose extension does not allow the mobile app (password sign-in already refused it): the app could
-  register and make calls. All three sign-ins now apply the same rule.
+  register and make calls. All three sign-ins now build the same response, so the rule is in one place.
 - **IVR data step:** a query using `:caller_id` or `:input` more than once failed on every call (the
   timeout branch was taken). The HTTP lookup now pins the checked address, like webhooks, so a DNS
   answer that changes after the check cannot reach an internal address.
