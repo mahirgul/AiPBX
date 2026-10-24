@@ -299,6 +299,7 @@ require_once __DIR__ . '/sync/SyncExtensions.php';
 require_once __DIR__ . '/sync/SyncTrunks.php';
 require_once __DIR__ . '/sync/SyncQueues.php';
 require_once __DIR__ . '/sync/SyncIVRs.php';
+require_once __DIR__ . '/sync/SyncIvrDataSteps.php';
 require_once __DIR__ . '/sync/SyncTimeConditions.php';
 require_once __DIR__ . '/sync/SyncFeatureCodes.php';
 require_once __DIR__ . '/sync/SyncInternalNumbers.php';

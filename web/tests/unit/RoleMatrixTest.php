@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/src/core/BaseRepository.php';
 require_once dirname(__DIR__, 2) . '/src/repositories/RoleRepository.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
  * The Roles page's permission matrix must describe the real system: every

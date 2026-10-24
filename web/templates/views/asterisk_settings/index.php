@@ -31,6 +31,9 @@
         <button type="button" class="settings-tab-btn" data-tab="signaling" onclick="switchSettingsTab('signaling', this)">
             <i class="fas fa-satellite-dish"></i> <?php echo t('asterisk_settings.tab_signaling'); ?>
         </button>
+        <button type="button" class="settings-tab-btn" data-tab="tuning" onclick="switchSettingsTab('tuning', this)">
+            <i class="fas fa-sliders-h"></i> <?php echo t('asterisk_settings.tab_tuning'); ?>
+        </button>
     </div>
 
     <!-- SECTION 1: PJSIP, NAT & network global settings -->
@@ -535,6 +538,139 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- SECTION: Fine Tuning & Maintenance (Roadmap 2.5 & 2.6) -->
+    <div id="tab_tuning" class="settings-tab-pane" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-sliders-h u-primary"></i> <?php echo t('asterisk_settings.tuning_title'); ?>
+                </div>
+            </div>
+            <div class="module-help-box" style="display: block;">
+                <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.tuning_help_title'); ?></h4>
+                <p><?php echo t('asterisk_settings.tuning_help_body'); ?></p>
+            </div>
+
+            <!-- SIP Timers & Limits -->
+            <h4 style="font-size: 14px; font-weight: 700; margin: 16px 0 12px; color: var(--text-main);">
+                <i class="fas fa-stopwatch u-primary"></i> <?php echo t('asterisk_settings.sec_sip_timers'); ?>
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_max_forwards'); ?></label>
+                    <input type="number" name="pjsip_max_forwards" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_max_forwards'] ?? '70'); ?>" min="1" max="255" required>
+                    <small class="u-hint"><?php echo t('asterisk_settings.max_forwards_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_timer_t1'); ?></label>
+                    <input type="number" name="pjsip_timer_t1" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_timer_t1'] ?? '500'); ?>" min="50" max="10000" required>
+                    <small class="u-hint"><?php echo t('asterisk_settings.timer_t1_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_timer_b'); ?></label>
+                    <input type="number" name="pjsip_timer_b" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_timer_b'] ?? '32000'); ?>" min="500" max="64000" required>
+                    <small class="u-hint"><?php echo t('asterisk_settings.timer_b_help'); ?></small>
+                </div>
+            </div>
+
+            <!-- Jitter Buffer -->
+            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+                <i class="fas fa-wave-square u-primary"></i> <?php echo t('asterisk_settings.sec_jitter_buffer'); ?>
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_jitterbuffer_enabled'); ?></label>
+                    <select name="jitterbuffer_enabled" class="form-control">
+                        <option value="1" <?php echo ($s['jitterbuffer_enabled'] ?? '1') === '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.jb_adaptive_on'); ?></option>
+                        <option value="0" <?php echo ($s['jitterbuffer_enabled'] ?? '1') === '0' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.jb_off'); ?></option>
+                    </select>
+                    <small class="u-hint"><?php echo t('asterisk_settings.jitterbuffer_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_jb_max_size'); ?></label>
+                    <input type="number" name="jitterbuffer_max_size" class="form-control" value="<?php echo htmlspecialchars($s['jitterbuffer_max_size'] ?? '200'); ?>" min="50" max="2000">
+                    <small class="u-hint"><?php echo t('asterisk_settings.jb_max_size_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_jb_initial_size'); ?></label>
+                    <input type="number" name="jitterbuffer_initial_size" class="form-control" value="<?php echo htmlspecialchars($s['jitterbuffer_initial_size'] ?? '100'); ?>" min="20" max="1000">
+                    <small class="u-hint"><?php echo t('asterisk_settings.jb_initial_size_help'); ?></small>
+                </div>
+            </div>
+
+            <!-- Night Restart Window -->
+            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+                <i class="fas fa-moon u-primary"></i> <?php echo t('asterisk_settings.sec_night_restart'); ?>
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_night_restart_enabled'); ?></label>
+                    <select name="night_restart_enabled" class="form-control">
+                        <option value="0" <?php echo ($s['night_restart_enabled'] ?? '0') !== '1' ? 'selected' : ''; ?>><?php echo t('common.passive'); ?></option>
+                        <option value="1" <?php echo ($s['night_restart_enabled'] ?? '0') === '1' ? 'selected' : ''; ?>><?php echo t('common.active'); ?></option>
+                    </select>
+                    <small class="u-hint"><?php echo t('asterisk_settings.night_restart_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_night_window_start'); ?></label>
+                    <input type="text" name="night_restart_window_start" class="form-control" value="<?php echo htmlspecialchars($s['night_restart_window_start'] ?? '03:00'); ?>" placeholder="03:00">
+                    <small class="u-hint"><?php echo t('asterisk_settings.night_window_start_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_night_window_end'); ?></label>
+                    <input type="text" name="night_restart_window_end" class="form-control" value="<?php echo htmlspecialchars($s['night_restart_window_end'] ?? '05:00'); ?>" placeholder="05:00">
+                    <small class="u-hint"><?php echo t('asterisk_settings.night_window_end_help'); ?></small>
+                </div>
+            </div>
+
+            <!-- Security & ACL Threshold -->
+            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+                <i class="fas fa-shield-alt u-primary"></i> <?php echo t('asterisk_settings.sec_acl_security'); ?>
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_failed_reg_threshold'); ?></label>
+                    <input type="number" name="failed_reg_threshold" class="form-control" value="<?php echo htmlspecialchars($s['failed_reg_threshold'] ?? '10'); ?>" min="1" max="1000" required>
+                    <small class="u-hint"><?php echo t('asterisk_settings.failed_reg_threshold_help'); ?></small>
+                </div>
+            </div>
+
+            <!-- Diagnostics & Operations (Buttons) -->
+            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+                <i class="fas fa-tools u-primary"></i> <?php echo t('asterisk_settings.sec_diagnostics'); ?>
+            </h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: var(--bg-card); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <div>
+                    <?php
+                    $sipDebugUntil = (int)($s['sip_debug_until'] ?? 0);
+                    $isDebugActive = ($sipDebugUntil > time());
+                    $remainingSec = $isDebugActive ? ($sipDebugUntil - time()) : 0;
+                    ?>
+                    <?php if ($isDebugActive): ?>
+                        <span class="badge badge-success u-mr-8" style="padding: 8px 12px;">
+                            <i class="fas fa-check-circle"></i> <?php echo sprintf(t('asterisk_settings.sip_debug_active'), ceil($remainingSec / 60)); ?>
+                        </span>
+                        <button type="submit" name="disable_sip_debug" value="1" class="btn btn-warning btn-sm">
+                            <i class="fas fa-stop-circle"></i> <?php echo t('asterisk_settings.btn_stop_sip_debug'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="submit" name="enable_sip_debug" value="1" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-bug"></i> <?php echo t('asterisk_settings.btn_start_sip_debug'); ?>
+                        </button>
+                    <?php endif; ?>
+                    <small class="u-hint" style="display: block; margin-top: 4px;"><?php echo t('asterisk_settings.sip_debug_desc'); ?></small>
+                </div>
+
+                <div style="border-left: 1px solid var(--border-color); padding-left: 16px;">
+                    <button type="submit" name="rotate_logs" value="1" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sync-alt"></i> <?php echo t('asterisk_settings.btn_rotate_logs'); ?>
+                    </button>
+                    <small class="u-hint" style="display: block; margin-top: 4px;"><?php echo t('asterisk_settings.rotate_logs_desc'); ?></small>
+                </div>
+            </div>
+        </div>
     </div>
 
     <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>

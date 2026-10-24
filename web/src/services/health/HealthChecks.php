@@ -31,6 +31,7 @@ final class HealthChecks
         'call_records' => 15,
         'call_quality' => 5,
         'alerts' => 5,
+        'failed_registrations' => 15,
         'network_services' => 15,
         'server_address' => 60,
         'local_ai' => 15,
@@ -62,6 +63,7 @@ final class HealthChecks
                 'call_records' => self::callRecords(),
                 'call_quality' => self::callQuality(),
                 'alerts' => self::alerts(),
+                'failed_registrations' => self::failedRegistrations(),
                 'network_services' => self::networkServices(),
                 'server_address' => self::serverAddress(),
                 'local_ai' => self::localAi(),
@@ -310,6 +312,50 @@ final class HealthChecks
         }
         $fail = in_array('fail', array_column($open, 'severity'), true);
         return [$fail ? 'fail' : 'warn', implode('; ', array_map(fn($n) => $n['title'] . ($n['message'] !== '' ? ': ' . $n['message'] : ''), $open))];
+    }
+
+    public static function failedRegistrations(): array
+    {
+        $threshold = max(1, (int)getSystemSetting('failed_reg_threshold', '10'));
+        $logFile = '/var/log/asterisk/security.log';
+        if (!is_file($logFile) || !is_readable($logFile)) {
+            $logFile = '/var/log/asterisk/messages.log';
+        }
+
+        if (!is_file($logFile) || !is_readable($logFile)) {
+            return ['ok', sprintf(t('health.msg_failed_reg_ok'), 0)];
+        }
+
+        $out = self::sh('tail -n 1000 ' . escapeshellarg($logFile) . ' 2>/dev/null');
+        $lines = explode("\n", (string)$out);
+        $since = time() - 900; // last 15 minutes
+        $failedCount = 0;
+
+        foreach ($lines as $line) {
+            if ($line === '') continue;
+            if (preg_match('/SecurityEvent="(InvalidAccountID|ChallengeResponseFailed|InvalidPassword|FailedACL|SessionLimit)"/i', $line)
+                || preg_match('/failed to authenticate|wrong password|no matching peer/i', $line)) {
+                if (preg_match('/EventTV="([^"]+)"/', $line, $tv)) {
+                    $ts = strtotime($tv[1]);
+                    if ($ts && $ts >= $since) {
+                        $failedCount++;
+                    }
+                } elseif (preg_match('/^\[([A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2})\]/', $line, $dt)) {
+                    $ts = strtotime($dt[1]);
+                    if ($ts && $ts >= $since) {
+                        $failedCount++;
+                    }
+                } else {
+                    $failedCount++;
+                }
+            }
+        }
+
+        if ($failedCount >= $threshold) {
+            return ['warn', sprintf(t('health.msg_failed_reg_warn'), $failedCount, $threshold)];
+        }
+
+        return ['ok', sprintf(t('health.msg_failed_reg_ok'), $failedCount)];
     }
 
     private static function faxQueue(): array

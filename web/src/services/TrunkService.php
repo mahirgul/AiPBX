@@ -113,6 +113,15 @@ class TrunkService {
             $cid_prepend = preg_replace('/[^0-9+]/', '', trim($data['cid_prepend'] ?? ''));
             $cid_prepend = substr($cid_prepend, 0, 30);
 
+            $carrier_strip_prefix = preg_replace('/[^0-9+*#]/', '', trim($data['carrier_strip_prefix'] ?? ''));
+            $carrier_strip_prefix = substr($carrier_strip_prefix, 0, 30);
+            $carrier_add_prefix = preg_replace('/[^0-9+*#]/', '', trim($data['carrier_add_prefix'] ?? ''));
+            $carrier_add_prefix = substr($carrier_add_prefix, 0, 30);
+
+            $prack_100rel = in_array(strtolower(trim($data['prack_100rel'] ?? '')), ['yes', 'no', 'required'], true)
+                ? strtolower(trim($data['prack_100rel']))
+                : 'yes';
+
             $direct_media = in_array(strtolower(trim($data['direct_media'] ?? '')), ['no', 'yes', 'nonat'], true)
                 ? strtolower(trim($data['direct_media']))
                 : 'no';
@@ -162,6 +171,9 @@ class TrunkService {
                 'max_calls_per_minute' => $max_calls_per_minute,
                 'cid_keep_last' => $cid_keep_last,
                 'cid_prepend' => $cid_prepend !== '' ? $cid_prepend : null,
+                'carrier_strip_prefix' => $carrier_strip_prefix !== '' ? $carrier_strip_prefix : null,
+                'carrier_add_prefix' => $carrier_add_prefix !== '' ? $carrier_add_prefix : null,
+                'prack_100rel' => $prack_100rel,
                 'direct_media' => $direct_media,
                 'timers' => $timers,
                 'rtp_symmetric' => $rtp_symmetric,

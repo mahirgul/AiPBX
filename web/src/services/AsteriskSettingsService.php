@@ -81,6 +81,27 @@ class AsteriskSettingsService {
             'status_prompt_busy'       => '0',
             'status_prompt_noanswer'   => '0',
             'status_prompt_unavail'    => '0',
+
+            // SIP Timers & Max-Forwards (Roadmap 2.5)
+            'pjsip_max_forwards' => '70',
+            'pjsip_timer_t1' => '500',
+            'pjsip_timer_b' => '32000',
+
+            // Jitter Buffer (Roadmap 2.5)
+            'jitterbuffer_enabled' => '1',
+            'jitterbuffer_max_size' => '200',
+            'jitterbuffer_initial_size' => '100',
+
+            // Night Restart Window (Roadmap 2.5)
+            'night_restart_enabled' => '0',
+            'night_restart_window_start' => '03:00',
+            'night_restart_window_end' => '05:00',
+
+            // Failed Registration Threshold & ACL Alarm (Roadmap 2.6)
+            'failed_reg_threshold' => '10',
+
+            // 10-Minute SIP Debug
+            'sip_debug_until' => '0',
         ];
     }
 
@@ -197,6 +218,24 @@ class AsteriskSettingsService {
             'status_prompt_unavail'    => (($post['status_prompt_unavail'] ?? '0') === '1') ? '1' : '0',
             'signaling_capture'        => (($post['signaling_capture'] ?? '0') === '1') ? '1' : '0',
             'signaling_retention_days' => (string)max(1, min(3650, intval($post['signaling_retention_days'] ?? 30))),
+
+            // SIP Timers & Max-Forwards
+            'pjsip_max_forwards' => (string)max(1, min(255, intval($post['pjsip_max_forwards'] ?? 70))),
+            'pjsip_timer_t1' => (string)max(50, min(10000, intval($post['pjsip_timer_t1'] ?? 500))),
+            'pjsip_timer_b' => (string)max(500, min(64000, intval($post['pjsip_timer_b'] ?? 32000))),
+
+            // Jitter Buffer
+            'jitterbuffer_enabled' => (($post['jitterbuffer_enabled'] ?? '1') === '0') ? '0' : '1',
+            'jitterbuffer_max_size' => (string)max(50, min(2000, intval($post['jitterbuffer_max_size'] ?? 200))),
+            'jitterbuffer_initial_size' => (string)max(20, min(1000, intval($post['jitterbuffer_initial_size'] ?? 100))),
+
+            // Night Restart Window
+            'night_restart_enabled' => (($post['night_restart_enabled'] ?? '0') === '1') ? '1' : '0',
+            'night_restart_window_start' => preg_match('/^\d{2}:\d{2}$/', trim((string)($post['night_restart_window_start'] ?? ''))) ? trim((string)$post['night_restart_window_start']) : '03:00',
+            'night_restart_window_end' => preg_match('/^\d{2}:\d{2}$/', trim((string)($post['night_restart_window_end'] ?? ''))) ? trim((string)$post['night_restart_window_end']) : '05:00',
+
+            // Failed Registration Threshold
+            'failed_reg_threshold' => (string)max(1, min(1000, intval($post['failed_reg_threshold'] ?? 10))),
         ];
         $signaling_changed = getSystemSetting('signaling_capture', '0') !== $new_settings['signaling_capture'];
         require_once __DIR__ . '/VoicemailPolicy.php';
@@ -315,5 +354,39 @@ class AsteriskSettingsService {
         }
 
         return ['success' => true, 'message' => $message];
+    }
+
+    public static function enableSipDebug(int $duration = 600): array
+    {
+        $until = time() + max(60, min(3600, $duration));
+        setSystemSetting('sip_debug_until', (string)$until);
+        require_once dirname(__DIR__) . '/asterisk_helper.php';
+        AsteriskHelper::execCLI('pjsip set logger on');
+        return ['success' => true, 'until' => $until, 'message' => t('asterisk_settings.sip_debug_enabled')];
+    }
+
+    public static function disableSipDebug(): array
+    {
+        setSystemSetting('sip_debug_until', '0');
+        require_once dirname(__DIR__) . '/asterisk_helper.php';
+        AsteriskHelper::execCLI('pjsip set logger off');
+        return ['success' => true, 'message' => t('asterisk_settings.sip_debug_disabled')];
+    }
+
+    public static function rotateLogs(): array
+    {
+        require_once dirname(__DIR__) . '/asterisk_helper.php';
+        $res = AsteriskHelper::execCLI('logger rotate');
+        return ['success' => $res['success'], 'message' => t('asterisk_settings.logs_rotated')];
+    }
+
+    public static function checkSipDebugExpiry(): void
+    {
+        $until = (int)getSystemSetting('sip_debug_until', '0');
+        if ($until > 0 && time() >= $until) {
+            setSystemSetting('sip_debug_until', '0');
+            require_once dirname(__DIR__) . '/asterisk_helper.php';
+            AsteriskHelper::execCLI('pjsip set logger off');
+        }
     }
 }

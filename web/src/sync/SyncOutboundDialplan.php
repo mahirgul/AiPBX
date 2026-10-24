@@ -21,18 +21,28 @@ function __syncOutboundDialplanBody() {
     $trunk_limits = [];
     $trunk_rates = [];
     $trunk_cid_norm = [];
-    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
+    $trunk_carrier_norm = [];
+    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
         $trunk_rates[$tl['trunk_name']] = intval($tl['max_calls_per_minute'] ?? 0);
         $trunk_cid_norm[$tl['trunk_name']] = [
             'keep_last' => max(0, min(20, intval($tl['cid_keep_last'] ?? 0))),
             'prepend' => preg_replace('/[^0-9+]/', '', (string)($tl['cid_prepend'] ?? '')),
         ];
+        $trunk_carrier_norm[$tl['trunk_name']] = [
+            'strip' => preg_replace('/[^0-9+*#]/', '', (string)($tl['carrier_strip_prefix'] ?? '')),
+            'add' => preg_replace('/[^0-9+*#]/', '', (string)($tl['carrier_add_prefix'] ?? '')),
+        ];
     }
 
     $db = getDB();
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
+
+    $jb_enabled = (string)getSystemSetting('jitterbuffer_enabled', '1') !== '0';
+    $jb_max = getSystemSetting('jitterbuffer_max_size', '');
+    $jb_init = getSystemSetting('jitterbuffer_initial_size', '');
+    $jb_spec = ($jb_max !== '' && $jb_max !== '200' && $jb_init !== '') ? "{$jb_max},{$jb_init}" : 'default';
 
     // Call normalization switched off as a whole: the per-device contexts stay
     // (the phones point at them), only without rules.
@@ -131,6 +141,7 @@ function __syncOutboundDialplanBody() {
                 $core = ($strip_back > 0) ? "\${EXTEN:{$strip_front}:-{$strip_back}}" : "\${EXTEN:{$strip_front}}";
             }
             $dial_num = $prepend . $core . $append;
+            $conf .= " same => n,Set(AIPBX_DIAL_TARGET={$dial_num})\n";
 
             // The CID of the first trunk to try is applied before the recording file name is set.
             // The original caller number is restored before every trunk attempt,
@@ -184,12 +195,16 @@ function __syncOutboundDialplanBody() {
                     $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$t['trunk_name']},{$limit},{$rate},trunk))\n";
                     $conf .= " same => n,GotoIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?trunkfull{$step})\n";
                 }
+                // Per-trunk carrier dialed number normalization
+                $conf .= buildTrunkCarrierDialLine($trunk_carrier_norm[$t['trunk_name']] ?? null);
                 // D-1: the 'r' option was removed (only 'T' is used).
                 // The carrier's early media (183 Session Progress / announcement / real busy tone)
                 // thus reaches the caller directly instead of being masked by a fake local ring.
                 // No jitter buffer for a fax: it reshapes the modem's timing.
-                $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)=default))\n";
-                $conf .= " same => n,Dial(PJSIP/{$dial_num}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
+                if ($jb_enabled) {
+                    $conf .= " same => n,ExecIf(\$[\"\${AIPBX_FAX}\" != \"1\"]?Set(JITTERBUFFER(adaptive)={$jb_spec}))\n";
+                }
+                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limited) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";
                     $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} over its limit: \${TRUNK_LIMIT})\n";
@@ -343,6 +358,7 @@ function buildDialplanNormalizationRules(int $group_no, array $rules): string
                 $core = ($strip_back > 0) ? "\${EXTEN:{$strip_front}:-{$strip_back}}" : "\${EXTEN:{$strip_front}}";
             }
             $dial_num = $prepend . $core . $append;
+            $conf .= " same => n,Set(AIPBX_DIAL_TARGET={$dial_num})\n";
 
             $conf .= "; Pre-filter: {$name} ({$pattern} -> {$dial_num})\n";
             $conf .= "exten => {$pattern},1,NoOp(Pre-filter [{$type}] rule: {$name} \${EXTEN} -> {$dial_num})\n";

@@ -40,6 +40,11 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $lines[] = " same => n,Goto(aipbx-ai-app-" . (int) $dest_id . ",s,1)";
             break;
 
+        case 'ivr_data':
+            // Roadmap 2.3: IVR Data Step context (SyncIvrDataSteps.php).
+            $lines[] = " same => n,Goto(aipbx-ivr-data-" . (int) $dest_id . ",s,1)";
+            break;
+
         case 'queue':
             // 2026-08-19: queue timeout/fallback/recording settings are per queue (pbx_queues)
             // now, not global sys_settings — several queues can behave differently.

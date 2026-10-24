@@ -159,7 +159,13 @@ function __syncAllIVRsBody() {
         }
     }
 
-    return writeConfWithRollback("extensions_ivrs.conf", $conf, function() {
+    $ok = writeConfWithRollback("extensions_ivrs.conf", $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], 'IVR senkronizasyonu');
     }, 'IVR senkronizasyonu');
+
+    if (function_exists('__syncIvrDataStepsBody')) {
+        __syncIvrDataStepsBody();
+    }
+
+    return $ok;
 }
