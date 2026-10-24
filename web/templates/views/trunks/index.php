@@ -409,8 +409,8 @@
                             <select name="timers" id="modal_timers" class="form-control">
                                 <option value="yes"><?php echo t('trunks.session_timers_on'); ?></option>
                                 <option value="no"><?php echo t('trunks.opt_no_disabled'); ?></option>
-                                <option value="always">Always</option>
-                                <option value="never">Never</option>
+                                <option value="required"><?php echo t('trunks.opt_timers_required'); ?></option>
+                                <option value="always"><?php echo t('trunks.opt_timers_always'); ?></option>
                             </select>
                         </div>
                     </div>

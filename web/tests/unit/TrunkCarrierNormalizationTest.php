@@ -76,4 +76,24 @@ final class TrunkCarrierNormalizationTest extends TestCase
 
         $db->exec("DELETE FROM pbx_trunks WHERE trunk_name = '{$trunkName}'");
     }
+
+    public function testNormalizationPreFilterStartsEveryBlockWithItsExten(): void
+    {
+        $conf = buildDialplanNormalizationRules(1, [[
+            'is_active' => 1, 'client_type' => 'all', 'rule_name' => 'TR mobile',
+            'match_pattern' => '_05XXXXXXXXX', 'strip_front' => 1, 'prepend' => '90',
+        ]]);
+        // A "same =>" line right after a context header or a comment has no extension (Asterisk warns, line lost).
+        $this->assertDoesNotMatchRegularExpression('/^(\[[^\]]+\]|;[^\n]*)\n same =>/m', $conf);
+        $this->assertStringContainsString('Goto(from-internal-outbound-1,90${EXTEN:1},1)', $conf);
+    }
+
+    public function testSessionTimersOnlyValuesAsteriskAccepts(): void
+    {
+        // Asterisk refuses the whole endpoint on an unknown value (the trunk is gone).
+        $this->assertSame('no', TrunkService::timersValue('never'));
+        $this->assertSame('always', TrunkService::timersValue('Always'));
+        $this->assertSame('required', TrunkService::timersValue('required'));
+        $this->assertSame('yes', TrunkService::timersValue('bogus'));
+    }
 }

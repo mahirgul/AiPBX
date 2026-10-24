@@ -352,7 +352,6 @@ function buildDialplanNormalizationRules(int $group_no, array $rules): string
                 $core = ($strip_back > 0) ? "\${EXTEN:{$strip_front}:-{$strip_back}}" : "\${EXTEN:{$strip_front}}";
             }
             $dial_num = $prepend . $core . $append;
-            $conf .= " same => n,Set(AIPBX_DIAL_TARGET={$dial_num})\n";
 
             $conf .= "; Pre-filter: {$name} ({$pattern} -> {$dial_num})\n";
             $conf .= "exten => {$pattern},1,NoOp(Pre-filter [{$type}] rule: {$name} \${EXTEN} -> {$dial_num})\n";

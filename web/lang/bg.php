@@ -4702,6 +4702,8 @@ return [
     'external_dbs.password_keep' => 'Оставете празно, за да запазите запаметената парола',
     'js.external_dbs.test_ok' => '✓ %s',
     'js.external_dbs.test_failed' => '✕ Неуспешна връзка: %s',
+    'trunks.opt_timers_required' => 'Задължително (отсрещната страна трябва да ги поддържа)',
+    'trunks.opt_timers_always' => 'Винаги (дори ако отсрещната страна не ги изисква)',
     'notices.title' => 'Сигнали',
     'notices.loading' => 'Зареждане…',
     'notices.all_checks' => 'Всички проверки на състоянието',

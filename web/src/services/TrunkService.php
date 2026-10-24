@@ -4,6 +4,19 @@
  */
 
 class TrunkService {
+    /**
+     * A PJSIP "timers" value Asterisk accepts (yes, no, required, always). An
+     * unknown one makes Asterisk refuse the whole endpoint, so the trunk is gone;
+     * "never" was offered once and meant "no".
+     */
+    public static function timersValue(string $v): string {
+        $v = strtolower(trim($v));
+        if ($v === 'never') {
+            return 'no';
+        }
+        return in_array($v, ['yes', 'no', 'required', 'always'], true) ? $v : 'yes';
+    }
+
     public static function saveTrunk($data) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
             $trunk_id = intval($data['trunk_id'] ?? 0);
@@ -126,9 +139,7 @@ class TrunkService {
                 ? strtolower(trim($data['direct_media']))
                 : 'no';
 
-            $timers = in_array(strtolower(trim($data['timers'] ?? '')), ['yes', 'no', 'always', 'never'], true)
-                ? strtolower(trim($data['timers']))
-                : 'yes';
+            $timers = self::timersValue((string)($data['timers'] ?? ''));
 
             $send_pai = isset($data['send_pai']) ? intval($data['send_pai']) : 0;
             $send_rpid = isset($data['send_rpid']) ? intval($data['send_rpid']) : 0;

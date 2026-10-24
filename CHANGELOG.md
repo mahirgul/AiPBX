@@ -26,8 +26,10 @@ Platform features of the post-freeze roadmap (wave 2).
   refused), put the answer (64 characters at most) into a channel variable and go on to *found*, *not
   found* or *timeout*. A step that is a destination cannot be deleted.
 - **Per-trunk number format** (Trunks → edit): strip a prefix (such as +90) and/or prepend one (such as 0
-  or a carrier routing prefix) for the dialled number and the caller ID, applied on every trunk a call
-  tries, failover included.
+  or a carrier routing prefix) for the dialled number, applied on every trunk a call tries, failover
+  included.
+- **Fix:** trunk session timers offered "Never", which Asterisk does not know: such a trunk was refused
+  and did not work. It is now "No" (existing trunks are corrected); "Required" was added.
 - **PBX fine tuning & maintenance** (PBX settings → Tuning & Ops, and Trunks modal):
   - Per-trunk DTMF mode (`rfc4733`, `inband`, `info`, `auto`), session timers (`yes`, `no`, `always`, `never`), 100rel PRACK (`yes`, `no`, `required`), and T.38 parameters.
   - Adaptive jitter buffer size tuning (`sys_settings.jitterbuffer_max_size`, `jitterbuffer_initial_size`), or full disable.
