@@ -56,6 +56,11 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $q_name = $q['queue_name'] ?? (is_numeric($dest_id) ? 'queue_cc' : preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$dest_id));
 
             if (!empty($q['record_enabled'] ?? 1)) {
+                // Unique per use: a time condition can send several branches to the
+                // same queue inside one extension, and a repeated label made the
+                // GotoIf below jump back to the first branch.
+                static $queue_label_seq = 0;
+                $skip_label = 'kayit_var_' . $q_name . '_' . (++$queue_label_seq);
                 $rec_format = in_array($q['record_format'] ?? '', QUEUE_RECORD_FORMATS, true) ? $q['record_format'] : 'wav';
                 // Do not start a second recording if one is ALREADY running.
                 //
@@ -67,12 +72,12 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 // MixMonitor fills MIXMONITOR_FILENAME itself.
                 require_once __DIR__ . '/../services/PrivacyService.php';
                 $beepOpt = PrivacyService::mixMonitorOptionSuffix();
-                $lines[] = " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?kayit_var_{$q_name})";
-                $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?kayit_var_{$q_name})";
+                $lines[] = " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?{$skip_label})";
+                $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?{$skip_label})";
                 $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
                 $lines[] = " same => n,MixMonitor(\${REC_FILE}{$beepOpt})";
                 $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
-                $lines[] = " same => n(kayit_var_{$q_name}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
+                $lines[] = " same => n({$skip_label}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
             }
             // A language set on the queue itself overrides the language set so
             // far (inbound route/IVR) — queue hold prompts (announce-holdtime/
