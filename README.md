@@ -15,6 +15,7 @@
 
 <p align="center">
   <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?label=release" alt="Latest release"></a>
+  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-4285F4?logo=googleplay&logoColor=white" alt="Google Play"></a>
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
   <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
@@ -196,8 +197,15 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Presence, typing indicators, read receipts**; push notifications on mobile
 
 ### 📱 Mobile Apps
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX" target="_blank" rel="noopener">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54">
+  </a>
+</p>
+
 - **Android** (Kotlin) — WebRTC calling with push wake-up and a foreground service, chat,
-  directory with presence, call history, DND / call forward, in-app log viewer
+  directory with presence, call history, DND / call forward, in-app log viewer. Available on [Google Play](https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX).
 - **iOS** (SwiftUI, CallKit) — calling with native incoming-call screen, chat, directory, features
 - **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
   one-time link in the invitation e-mail
