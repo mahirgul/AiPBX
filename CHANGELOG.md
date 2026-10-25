@@ -5,6 +5,27 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.16
+
+- **Security hardening & input validation:** enforced caller dial permissions and internal channel
+  context restrictions on REST API originate actions; added channel name character sanitization on
+  hangup requests; restricted cURL protocols and redirects in AI webhooks; enforced audio file extension
+  and path traversal validation on prompt files; added 64 KB decompression ceiling to HEP packet parsing;
+  restricted cached FCM tokens to mode 0600; enforced admin role check on license acceptance.
+- **Dialplan destination & referential integrity:** added deletion safety guards across routes,
+  conferences, time conditions, ring groups, IVRs, hangup actions, sounds, AI apps, and queues to prevent
+  breaking polymorphic destination references and web widget mappings; automatic cleanup of orphaned
+  voicemail AI transcripts, TFTP configs, device keys, and scheduled task directories on deletion.
+- **Admin safety & session security:** prevented deactivation or deletion of the last active administrator
+  account; immediately invalidated active sessions (token epoch bump) upon user password changes;
+  added audit logging for auto-dialer campaign actions.
+- **Schema & updater reliability:** resolved database column and table mismatches across auto-dialer
+  and privacy compliance modules; updated `aipbx-update` script to dynamically read active database
+  credentials from system environment.
+- **Multi-language completeness:** eliminated hardcoded strings across role management, Microsoft Teams
+  integration, dial permissions, user controller, and push settings; updated all 23 supported language
+  translations to 100% parity.
+
 ## 1.50.15
 
 - **Privacy & Compliance portal CSRF security and notification fixes:** all POST actions on
