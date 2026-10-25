@@ -102,6 +102,16 @@ if (str_starts_with($_reqUriPath, '/api/v1/') && !empty($_SERVER['HTTP_AUTHORIZA
 }
 
 /**
+ * A session idle for over an hour no longer counts as signed in. Here and not
+ * in auth.php: the REST API (session fallback in ApiRequestContext) runs
+ * before auth.php is loaded and died with "undefined function".
+ */
+function _isSessionActivityFresh() {
+    $idle_limit = 3600;
+    return !isset($_SESSION['last_activity']) || (time() - $_SESSION['last_activity']) <= $idle_limit;
+}
+
+/**
  * Themed fatal-error page (follows the design of the auth.php 403 page). The
  * real technical detail (e.g. the PDOException message) always goes to
  * error_log() — during the DB outage of 2026-08-19,

@@ -103,11 +103,6 @@ function roleHomePath(string $role): string {
     };
 }
 
-function _isSessionActivityFresh() {
-    $idle_limit = 3600;
-    return !isset($_SESSION['last_activity']) || (time() - $_SESSION['last_activity']) <= $idle_limit;
-}
-
 /**
  * Maps page filenames to RBAC module keys
  */

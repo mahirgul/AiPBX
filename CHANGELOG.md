@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.14
+
+- **REST API with a portal session:** an administrator signed in to the portal who opened an
+  `/api/v1/…` address (other than the OpenAPI file) got an error page instead of the answer; the
+  session check was only loaded for the portal pages.
+- **Tests:** 119 new tests for the REST API (keys, scopes, IP allowlist, validation, no secrets in
+  answers), sign-in (two-factor, recovery codes, passkeys, Google), fail2ban settings, health checks and
+  alarm mails, and the time condition, conference, IVR data step and transport configuration.
+
 ## 1.50.13
 
 - **No more "restart Asterisk" warnings for harmless library updates.** The health check warned (and
