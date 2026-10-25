@@ -22,7 +22,7 @@ if not os.path.exists(KEY_FILE):
 
 PACKAGE_NAME = 'com.mhrgl.AiPBX'
 AAB_PATH = os.path.join(BASE_DIR, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab')
-TRACK = sys.argv[1] if len(sys.argv) > 1 else 'alpha'
+TRACK = sys.argv[1] if len(sys.argv) > 1 else 'production'
 DESIRED_STATUS = sys.argv[2] if len(sys.argv) > 2 else 'completed'
 
 
@@ -121,7 +121,7 @@ def upload_bundle():
                 print(f"    Mapping upload warning (optional): {map_err}")
 
         # --- TRACK ATAMA ---
-        track_label = "Kapali Test / Closed Testing" if TRACK == "alpha" else TRACK
+        track_label = "Uretim / Production" if TRACK == "production" else ("Kapali Test / Closed Testing" if TRACK == "alpha" else TRACK)
         print(f"4. Release -> '{TRACK}' ({track_label}) is being assigned to the track (status: {DESIRED_STATUS})...")
         release_notes = play_release_notes()
 
