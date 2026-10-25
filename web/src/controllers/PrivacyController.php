@@ -45,16 +45,30 @@ class PrivacyController extends BaseController
             }
         }
 
+        $csrf = static::csrfToken();
         $notices = static::handlePost([
-            'apply_profile'   => fn() => PrivacyService::applyProfile($_POST),
-            'save_notice'     => fn() => PrivacyService::saveNotice($_POST),
-            'save_retention'  => fn() => PrivacyService::saveRetention($_POST),
-            'run_purge'       => function (): array {
+            'apply_profile'   => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : PrivacyService::applyProfile($_POST),
+            'save_notice'     => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : PrivacyService::saveNotice($_POST),
+            'save_retention'  => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : PrivacyService::saveRetention($_POST),
+            'run_purge'       => function () use ($csrf): array {
+                if (!verifyCSRFToken($csrf)) {
+                    return ['success' => false, 'error' => t('common.invalid_csrf')];
+                }
                 $res = PrivacyService::runRetentionPurge();
-                return ['message' => sprintf(t('privacy.msg_purge_done'), $res['summary'])];
+                return ['success' => true, 'message' => sprintf(t('privacy.msg_purge_done'), $res['summary'])];
             },
-            'erase_subject'   => fn() => PrivacyService::eraseSubject((string)($_POST['subject_number'] ?? '')),
-            'save_compliance' => fn() => PrivacyService::saveCompliance($_POST),
+            'erase_subject'   => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : PrivacyService::eraseSubject((string)($_POST['subject_number'] ?? '')),
+            'save_compliance' => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : PrivacyService::saveCompliance($_POST),
         ]);
 
         $subjectQuery = trim((string)($_GET['subject'] ?? $_POST['subject_number'] ?? ''));

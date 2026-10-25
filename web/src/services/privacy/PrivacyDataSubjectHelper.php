@@ -355,13 +355,13 @@ final class PrivacyDataSubjectHelper
      * Deletes call recordings, voicemail transcripts, fax files/logs, signaling rows,
      * and anonymizes CDR rows across both asteriskcdr and cdrs for the given phone number.
      *
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function eraseSubject(string $rawNumber): array
     {
         $info = self::lookupSubject($rawNumber);
         if ($info === null) {
-            return ['error' => t('privacy.err_subject_short')];
+            return ['success' => false, 'error' => t('privacy.err_subject_short')];
         }
 
         $db = getDB();
@@ -486,6 +486,7 @@ final class PrivacyDataSubjectHelper
         }
 
         return [
+            'success' => true,
             'message' => sprintf(
                 t('privacy.msg_erased'),
                 $anonCdrs,

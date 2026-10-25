@@ -164,8 +164,8 @@ function __syncTransportsBody() {
     }
 
     return writeConfWithRollback("pjsip_transports.conf", $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], 'Transport senkronizasyonu');
-    }, 'Transport senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], t('pending_sync.domain_transports'));
+    }, t('pending_sync.domain_transports'));
 }
 
 

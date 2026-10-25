@@ -277,7 +277,7 @@ function __syncAllTrunksBody() {
     }
 
     return writeConfWithRollback("pjsip_trunks.conf", $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], 'Trunk senkronizasyonu');
-    }, 'Trunk senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], t('pending_sync.domain_trunks'));
+    }, t('pending_sync.domain_trunks'));
 }
 

@@ -31,6 +31,6 @@ function __syncAsteriskMOHBody() {
     }
 
     return writeConfWithRollback('musiconhold_pbx.conf', $conf, function() {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadMOH()], 'MOH senkronizasyonu');
-    }, 'MOH senkronizasyonu');
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadMOH()], t('pending_sync.domain_moh'));
+    }, t('pending_sync.domain_moh'));
 }

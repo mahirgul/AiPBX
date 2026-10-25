@@ -36,7 +36,15 @@ final class PrivacyServiceTest extends TestCase
             'ret_cdr_days'        => '365',
             'ret_cdr_action'      => 'anonymize',
         ]);
+        $this->assertTrue($res['success']);
         $this->assertArrayHasKey('message', $res);
+
+        $badCsrf = PrivacyService::saveRetention([
+            'csrf_token'          => 'invalid-token',
+            'retention_enabled'   => '0',
+        ]);
+        $this->assertFalse($badCsrf['success']);
+        $this->assertArrayHasKey('error', $badCsrf);
 
         $cfg = PrivacyService::settings();
         $this->assertTrue($cfg['retention_enabled']);

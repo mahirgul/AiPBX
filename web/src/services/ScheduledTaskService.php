@@ -140,7 +140,12 @@ class ScheduledTaskService
         $db->prepare('DELETE FROM pbx_scheduled_task_runs WHERE task_id = ?')->execute([$taskId]);
         $stmt = $db->prepare('DELETE FROM pbx_scheduled_tasks WHERE id = ?');
         $stmt->execute([$taskId]);
-        return $stmt->rowCount() > 0;
+        $deleted = $stmt->rowCount() > 0;
+        if ($deleted) {
+            require_once __DIR__ . '/NoticeService.php';
+            NoticeService::resolve('scheduled_task_' . $taskId);
+        }
+        return $deleted;
     }
 
     public static function toggleTask(int $taskId, bool $isActive): bool

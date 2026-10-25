@@ -81,12 +81,28 @@ class IvrDataStepService
         $maxDigits = max(1, min(30, (int)($data['max_digits'] ?? 10)));
         $inputTimeout = max(1, min(30, (int)($data['input_timeout_sec'] ?? 5)));
 
-        $foundDestType = (string)($data['found_dest_type'] ?? 'queue');
-        $foundDestId = (string)($data['found_dest_id'] ?? '');
-        $notFoundDestType = (string)($data['not_found_dest_type'] ?? 'hangup');
-        $notFoundDestId = (string)($data['not_found_dest_id'] ?? '');
-        $timeoutDestType = (string)($data['timeout_dest_type'] ?? 'hangup');
-        $timeoutDestId = (string)($data['timeout_dest_id'] ?? '');
+        $foundDestType = sanitizeDestType($data['found_dest_type'] ?? 'queue');
+        $foundDestId = toCleanAscii((string)($data['found_dest_id'] ?? ''));
+        $notFoundDestType = sanitizeDestType($data['not_found_dest_type'] ?? 'hangup');
+        $notFoundDestId = toCleanAscii((string)($data['not_found_dest_id'] ?? ''));
+        $timeoutDestType = sanitizeDestType($data['timeout_dest_type'] ?? 'hangup');
+        $timeoutDestId = toCleanAscii((string)($data['timeout_dest_id'] ?? ''));
+
+        // Prevent a step from pointing directly to itself (infinite dialplan loop)
+        if ($id !== null) {
+            if ($foundDestType === 'ivr_data' && (int)$foundDestId === $id) {
+                $foundDestType = 'hangup';
+                $foundDestId = '';
+            }
+            if ($notFoundDestType === 'ivr_data' && (int)$notFoundDestId === $id) {
+                $notFoundDestType = 'hangup';
+                $notFoundDestId = '';
+            }
+            if ($timeoutDestType === 'ivr_data' && (int)$timeoutDestId === $id) {
+                $timeoutDestType = 'hangup';
+                $timeoutDestId = '';
+            }
+        }
         $isActive = isset($data['is_active']) ? (!empty($data['is_active']) ? 1 : 0) : 1;
 
         $db = getDB();

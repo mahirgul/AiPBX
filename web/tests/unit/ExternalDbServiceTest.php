@@ -155,8 +155,9 @@ final class ExternalDbServiceTest extends TestCase
         $this->assertTrue($save['ok']);
         $this->connectionId = (int)$save['id'];
 
-        $rows = ExternalDbService::executeQuery($this->connectionId, 'SELECT 123 AS test_col');
+        $rows = ExternalDbService::executeQuery($this->connectionId, "SELECT 123 AS test_col, '#vip' AS tag_col");
         $this->assertCount(1, $rows);
         $this->assertSame(123, (int)$rows[0]['test_col']);
+        $this->assertSame('#vip', (string)$rows[0]['tag_col']);
     }
 }

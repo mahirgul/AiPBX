@@ -13,7 +13,7 @@ if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
 if ($action === 'get_call_note') {
     $call_id = trim($_GET['call_id'] ?? '');
     if ($call_id === '') {
-        echo json_encode(['success' => false, 'error' => 'call_id zorunludur']);
+        echo json_encode(['success' => false, 'error' => t('api_cc.err_channel')]);
         exit;
     }
 
