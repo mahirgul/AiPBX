@@ -3,7 +3,7 @@
 - **Package:** `com.mhrgl.AiPBX` (debug builds: `com.mhrgl.AiPBX.debug`)
 - **Android:** 8.0 (API 26) to 16 (API 36)
 - **Version:** `versionName` / `versionCode` in `app/build.gradle.kts`
-- **Distribution:** Google Play (CI uploads every build of `main` to the alpha track), or the signed
+- **Distribution:** Google Play (CI uploads releases to the production track), or the signed
   APK directly
 
 A native Android client for an AiPBX server: calls (audio and video) over WebRTC, chat, voicemail,

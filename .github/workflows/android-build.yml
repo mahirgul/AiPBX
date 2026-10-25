@@ -22,13 +22,13 @@ on:
       track:
         description: 'Google Play Track (alpha = Closed Testing, internal = Internal Testing, beta = Open Testing, production = Production)'
         required: true
-        default: 'alpha'
+        default: 'production'
         type: choice
         options:
+          - production
           - alpha
           - internal
           - beta
-          - production
       android_build:
         description: 'Android-only rebuild of the same release: 1..99 (versionCode = release code + this). 0 = the release build'
         required: false
@@ -246,7 +246,7 @@ jobs:
           echo "$PLAY_KEY_JSON" > play-service-account.json
           export PLAY_STORE_JSON_KEY_FILE="play-service-account.json"
           
-          TRACK="${{ inputs.track || 'alpha' }}"
+          TRACK="${{ inputs.track || 'production' }}"
           STATUS="${{ inputs.release_status || 'completed' }}"
           
           echo "=========================================="
