@@ -185,7 +185,15 @@ function __syncGeneralDialplanBody() {
     // Native Incoming FAX Context
     $conf .= "; Native Incoming FAX Context\n";
     $conf .= "[from-trunk-fax]\n";
+    // The destination builder also sends an E.164 DID (+90…) and "default" (fax
+    // reached from an IVR or time condition without a DID); _X! matches neither,
+    // so such a fax was dropped as "invalid extension".
+    $conf .= "exten => _+X!,1,Set(FAX_RX_EXTEN=\${EXTEN})\n";
+    $conf .= " same => n,Goto(from-trunk-fax,\${EXTEN:1},1)\n";
+    $conf .= "exten => default,1,Goto(from-trunk-fax,0,1)\n";
     $conf .= "exten => _X!,1,NoOp(Incoming FAX processing for \${EXTEN} from \${CALLERID(num)})\n";
+    // In the h extension ${EXTEN} is "h": keep the number for the fax e-mail.
+    $conf .= " same => n,ExecIf(\$[\"\${FAX_RX_EXTEN}\" = \"\"]?Set(FAX_RX_EXTEN=\${EXTEN}))\n";
     // The channel must be answered EXPLICITLY and the media path given time to settle.
     //
     // There was no Answer() here; ReceiveFAX tried to answer the channel
@@ -215,7 +223,7 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Hangup()\n\n";
     $conf .= "exten => h,1,NoOp(FAX Receive Completed: Status=\${FAXOPT(status)}, Pages=\${FAXOPT(pages)}, Error=\${FAXOPT(error)})\n";
     $conf .= " same => n,Set(FAX_CNUM=\${FILTER(0-9+,\${CALLERID(num)})})\n";
-    $conf .= " same => n,Set(FAX_DID=\${FILTER(0-9+,\${IF(\$[\"\${CDR(did)}\" != \"\"]?\${CDR(did)}:\${EXTEN})})})\n";
+    $conf .= " same => n,Set(FAX_DID=\${FILTER(0-9+,\${IF(\$[\"\${CDR(did)}\" != \"\"]?\${CDR(did)}:\${FAX_RX_EXTEN})})})\n";
     // Why it failed (e.g. "NO_FAX: no fax tone"): without it a failed fax could not
     // be told apart from a person who dialled a fax number. Filtered like the
     // numbers: it goes into the shell command below.

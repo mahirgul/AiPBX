@@ -173,7 +173,9 @@ function __syncFeatureCodesBody() {
 
             case 'cf_set':
                 $conf .= " same => n,Answer()\n";
-                $conf .= " same => n,Read(CFTARGET,,10,,3,10)\n";
+                // Up to 20 digits: a Turkish mobile number is 11 (0532…), with a trunk prefix 12;
+                // the old limit of 10 cut it off and saved a wrong forwarding number.
+                $conf .= " same => n,Read(CFTARGET,,20,,3,10)\n";
                 $conf .= " same => n,Set(CFTARGET=\${FILTER(0-9,\${CFTARGET})})\n";
                 $conf .= " same => n,GotoIf(\$[\"\${CFTARGET}\" = \"\"]?cfset_empty)\n";
                 $conf .= " same => n,System(/usr/local/bin/feature_code_action.php cf_set \${FILTER(0-9,\${CALLERID(num)})} \${CFTARGET} &)\n";
