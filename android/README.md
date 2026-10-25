@@ -1,5 +1,11 @@
 # AiPBX Android app
 
+<p align="left">
+  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX" target="_blank" rel="noopener">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54">
+  </a>
+</p>
+
 - **Package:** `com.mhrgl.AiPBX` (debug builds: `com.mhrgl.AiPBX.debug`)
 - **Android:** 8.0 (API 26) to 16 (API 36)
 - **Version:** `versionName` / `versionCode` in `app/build.gradle.kts`
