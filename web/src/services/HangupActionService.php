@@ -59,6 +59,32 @@ class HangupActionService {
             $action_id = intval($hangup_id);
             if ($action_id > 0) {
                 $db = getDB();
+                $action_key = (string) (DBHelper::fetchColumn("SELECT action_key FROM pbx_hangup_actions WHERE id = ?", [$action_id]) ?? '');
+                if ($action_key !== '' && !in_array($action_key, ['hangup', 'busy', 'congestion'], true)) {
+                    $refs = (int) DBHelper::fetchColumn(
+                        "SELECT COUNT(*) FROM (
+                            SELECT id FROM pbx_dids WHERE dest_type = 'hangup' AND dest_id = ?
+                            UNION ALL
+                            SELECT id FROM pbx_ivr_entries WHERE dest_type = 'hangup' AND dest_id = ?
+                            UNION ALL
+                            SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'hangup' AND timeout_dest_id = ?) OR (invalid_dest_type = 'hangup' AND invalid_dest_id = ?)
+                            UNION ALL
+                            SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'hangup' AND match_dest_id = ?) OR (nomatch_dest_type = 'hangup' AND nomatch_dest_id = ?)
+                            UNION ALL
+                            SELECT id FROM pbx_announcements WHERE post_dest_type = 'hangup' AND post_dest_id = ?
+                            UNION ALL
+                            SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'hangup' AND fallback_dest_id = ?
+                            UNION ALL
+                            SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'hangup' AND fallback_dest_id = ?
+                            UNION ALL
+                            SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'hangup' AND found_dest_id = ?) OR (not_found_dest_type = 'hangup' AND not_found_dest_id = ?) OR (timeout_dest_type = 'hangup' AND timeout_dest_id = ?)
+                        ) refs",
+                        [$action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key, $action_key]
+                    );
+                    if ($refs > 0) {
+                        throw new \Exception(t('srv_tc.err_in_use'));
+                    }
+                }
                 $title = DBHelper::fetchColumn("SELECT title FROM pbx_hangup_actions WHERE id = ?", [$action_id]);
                 $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_hangup_actions WHERE id = ?", [$action_id]) ?? '');
                 $stmt = $db->prepare("DELETE FROM pbx_hangup_actions WHERE id = ? AND action_key NOT IN ('hangup', 'busy', 'congestion')");

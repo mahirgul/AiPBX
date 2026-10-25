@@ -202,6 +202,8 @@ fi
 status running "Taking a backup"
 
 # ------------------------------------------------------------------ backup
+DB_NAME="$(grep -m1 '^DB_NAME=' /etc/ai-pbx.env 2>/dev/null | cut -d= -f2- | tr -d "\"'" || true)"
+[[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || DB_NAME=asterisk
 BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)_${CURRENT}"
 mkdir -p "$BACKUP_DIR"
 echo "$CURRENT_COMMIT" > "$BACKUP_DIR/commit"
@@ -211,7 +213,7 @@ tar czf "$BACKUP_DIR/etc-asterisk.tgz" -C / etc/asterisk 2>>"$LOG_FILE"
 if [[ -d /var/lib/aipbx/plugins ]]; then
     tar czf "$BACKUP_DIR/custom-plugins.tgz" -C / var/lib/aipbx/plugins 2>>"$LOG_FILE" || true
 fi
-mysqldump --single-transaction --routines --triggers --databases asterisk 2>>"$LOG_FILE" | gzip > "$BACKUP_DIR/asterisk-db.sql.gz"
+mysqldump --single-transaction --routines --triggers --databases "$DB_NAME" 2>>"$LOG_FILE" | gzip > "$BACKUP_DIR/asterisk-db.sql.gz"
 if ! zcat "$BACKUP_DIR/asterisk-db.sql.gz" 2>/dev/null | tail -n 1 | grep -q 'Dump completed'; then
     log "ERROR: database backup failed, nothing was changed"
     status failed "Database backup failed"
@@ -230,7 +232,7 @@ rollback() {
     # migrations are not in the dump, so the database is dropped first — but
     # ONLY when the dump is complete.
     if zcat "$BACKUP_DIR/asterisk-db.sql.gz" | tail -n 1 | grep -q 'Dump completed'; then
-        if mysql -e 'DROP DATABASE IF EXISTS asterisk' 2>>"$LOG_FILE" \
+        if mysql -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`" 2>>"$LOG_FILE" \
            && zcat "$BACKUP_DIR/asterisk-db.sql.gz" | mysql 2>>"$LOG_FILE"; then
             log "Database restored from backup"
         else

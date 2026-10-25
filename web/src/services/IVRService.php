@@ -91,15 +91,17 @@ class IVRService {
                     SELECT id FROM pbx_ivrs WHERE id != ? AND ((timeout_dest_type = 'ivr' AND timeout_dest_id = ?) OR (invalid_dest_type = 'ivr' AND invalid_dest_id = ?))
                     UNION ALL
                     SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'ivr' AND match_dest_id = ?) OR (nomatch_dest_type = 'ivr' AND nomatch_dest_id = ?) OR rules_json LIKE ?
+                    UNION ALL
+                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'ivr' AND dest_id = ?
                 ) refs",
-                [(string)$ivr_id, (string)$ivr_id, $ivr_id, $ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, '%"match_dest_type":"ivr","match_dest_id":"' . $ivr_id . '"%']
+                [(string)$ivr_id, (string)$ivr_id, $ivr_id, $ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, '%"match_dest_type":"ivr","match_dest_id":"' . $ivr_id . '"%', (string)$ivr_id]
             );
             if ($refs > 0) {
                 throw new \Exception(t('srv_ivr.err_in_use'));
             }
             $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_ivrs WHERE id = ?", [$ivr_id]) ?? '');
             DBHelper::delete('pbx_ivrs', 'id', $ivr_id);
-            markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'ivr', $ivr_id, "IVR: " . ($ivr_title ?: $ivr_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             if ($removed_number !== '') {
                 markPendingSync('internal_numbers', 'ivr', $ivr_id,
                     "Internal number removed: {$removed_number}", 'delete',

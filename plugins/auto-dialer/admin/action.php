@@ -60,6 +60,9 @@ return static function (string $slug, array $settings): array {
     try {
         if ($action === 'create_campaign') {
             $id = AutoDialerService::createCampaign($_POST);
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('plugins', 'autodial_campaign', $id, 'Auto-dialer campaign created: ' . trim((string)($_POST['name'] ?? "#{$id}")), 'create', $_SESSION['user_id'] ?? null);
+            }
             return [
                 'message' => $isTr
                     ? "Kampanya (#{$id}) oluşturuldu ve Asterisk dialplan güncellendi."
@@ -71,6 +74,9 @@ return static function (string $slug, array $settings): array {
             $campId = (int)($_POST['campaign_id'] ?? 0);
             $newStatus = (string)($_POST['new_status'] ?? 'paused');
             AutoDialerService::setCampaignStatus($campId, $newStatus);
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('plugins', 'autodial_campaign', $campId, "Auto-dialer campaign #{$campId} status: {$newStatus}", 'update', $_SESSION['user_id'] ?? null);
+            }
             if ($newStatus === 'running') {
                 AutoDialerService::tickCampaigns($settings);
             }
@@ -88,6 +94,9 @@ return static function (string $slug, array $settings): array {
                 $text .= "\n" . (string)file_get_contents($_FILES['numbers_csv']['tmp_name']);
             }
             $added = AutoDialerService::importNumbersFromText($campId, $text);
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('plugins', 'autodial_campaign', $campId, "Auto-dialer campaign #{$campId}: {$added} numbers imported", 'update', $_SESSION['user_id'] ?? null);
+            }
             return [
                 'message' => $isTr
                     ? "{$added} numara kampanyaya eklendi."
@@ -108,6 +117,9 @@ return static function (string $slug, array $settings): array {
             $campId = (int)($_POST['campaign_id'] ?? 0);
             $onlyFailed = !empty($_POST['only_failed']);
             $cnt = AutoDialerService::resetCampaignNumbers($campId, $onlyFailed);
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('plugins', 'autodial_campaign', $campId, "Auto-dialer campaign #{$campId}: {$cnt} numbers reset", 'update', $_SESSION['user_id'] ?? null);
+            }
             return [
                 'message' => $isTr
                     ? "{$cnt} numara tekrar aranmak üzere sıfırlandı."
@@ -118,6 +130,9 @@ return static function (string $slug, array $settings): array {
         if ($action === 'delete_campaign') {
             $campId = (int)($_POST['campaign_id'] ?? 0);
             AutoDialerService::deleteCampaign($campId);
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog('plugins', 'autodial_campaign', $campId, "Auto-dialer campaign #{$campId} deleted", 'delete', $_SESSION['user_id'] ?? null);
+            }
             return [
                 'message' => $isTr
                     ? "Kampanya (#{$campId}) ve bağlı numaraları silindi."

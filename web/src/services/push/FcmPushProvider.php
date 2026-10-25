@@ -320,6 +320,7 @@ class FcmPushProvider implements PushProviderInterface
             'access_token' => $accessToken,
             'expires_at' => $now + $expiresIn
         ]));
+        @chmod($cacheFile, 0600);
 
         return $accessToken;
     }

@@ -729,10 +729,20 @@ final class ApiV1PbxHandlers
             if ($fromExt === '' || $toNumber === '') {
                 ApiResponse::error('VALIDATION_ERROR', 'Both from_extension and to_number are required.', 422);
             }
+            $extUser = DBHelper::fetchOne(
+                'SELECT outbound_group, permission_group_id FROM sys_users WHERE extension = ? AND is_active = 1 LIMIT 1',
+                [$fromExt]
+            );
+            $permGroup = max(1, (int)($extUser['permission_group_id'] ?? 1));
+            if (!DialPermissionService::isDestinationAllowed($permGroup, $toNumber)) {
+                ApiResponse::error('FORBIDDEN', 'Destination is barred by the extension dial permission group.', 403);
+            }
+            $outboundGrp = max(1, (int)($extUser['outbound_group'] ?? 1));
+            $outboundContext = ($outboundGrp > 1) ? "from-internal-web-{$outboundGrp}" : 'from-internal-web';
             // The CLI originate has no caller ID option: the call shows the extension's own
             // caller ID, so the event does not claim another one (a "caller_id" in the body
             // used to be echoed in the webhook without being applied).
-            $cmd = sprintf('channel originate Local/%s@from-internal extension %s@from-internal', $fromExt, $toNumber);
+            $cmd = sprintf('channel originate Local/%s@cc-internal extension %s@%s', $fromExt, $toNumber, $outboundContext);
             $out = AsteriskHelper::execCLI($cmd);
             WebhookService::emit('call.started', [
                 'source'         => 'api_originate',
@@ -749,7 +759,7 @@ final class ApiV1PbxHandlers
         if ($sub === 'hangup' && $method === 'POST') {
             ApiRequestContext::requireScope('calls:write');
             $body = ApiRequestContext::jsonBody();
-            $channel = preg_replace('/[^A-Za-z0-9_\/.-]/', '', (string)($body['channel'] ?? ''));
+            $channel = preg_replace('/[^A-Za-z0-9\/_.@;-]/', '', (string)($body['channel'] ?? ''));
             if ($channel === '') {
                 ApiResponse::error('VALIDATION_ERROR', 'Channel identifier is required.', 422);
             }

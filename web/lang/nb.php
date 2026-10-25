@@ -5391,4 +5391,6 @@ Telefonen din vil ringe.',
     'dialplan_rules.sim_no_rule' => 'Ingen regel – ringes som oppgitt',
     'dialplan_rules.copy_suffix' => '(kopi)',
     'dialplan_rules.confirm_turn_off' => 'Slå av samtalenormalisering? Alle enheter vil ringe numre nøyaktig slik de tastes inn.',
+    'srv_tc.err_in_use' => 'Denne tidsbetingelsen kan ikke slettes fordi en innkommende rute, IVR eller en annen destinasjon peker på den!',
+    'srv_role.err_system_delete' => 'Systemets grunnroller (admin, read_only_admin, cc_agent, fax_user, user) kan ikke slettes!',
 ];

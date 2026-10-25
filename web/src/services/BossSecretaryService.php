@@ -56,6 +56,7 @@ class BossSecretaryService {
                 throw new \Exception(sprintf(t('srv_boss.err_exists'), $group_number));
             }
 
+            $is_new = ($id <= 0);
             if ($id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_boss_secretary_groups SET group_number = ?, group_name = ?, boss_extension = ?, secretaries_json = ?, ring_strategy = ?, ring_timeout = ?, whitelist_extensions = ?, fallback_dest_type = ?, fallback_dest_id = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$group_number, $group_name, $boss_extension, $secretaries_json, $ring_strategy, $ring_timeout, $whitelist, $fallback_dest_type, $fallback_dest_id, $is_active, $id]);
@@ -72,7 +73,7 @@ class BossSecretaryService {
                 $db->prepare("UPDATE sys_users SET boss_secretary_group_id = ?, boss_secretary_role = 'secretary' WHERE extension = ?")->execute([$id, $s_ext]);
             }
 
-            markPendingSync('general_dialplan', 'boss_secretary', $id, $group_name, $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'boss_secretary', $id, $group_name, $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return t('srv_boss.saved');
         });
     }

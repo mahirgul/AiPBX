@@ -156,6 +156,32 @@ class AiAppService
         if ($app === null) {
             return;
         }
+        $sid = (string) $id;
+        $refs = (int) DBHelper::fetchColumn(
+            "SELECT COUNT(*) FROM (
+                SELECT id FROM pbx_dids WHERE dest_type = 'ai_app' AND dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ivr_entries WHERE dest_type = 'ai_app' AND dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'ai_app' AND timeout_dest_id = ?) OR (invalid_dest_type = 'ai_app' AND invalid_dest_id = ?)
+                UNION ALL
+                SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'ai_app' AND match_dest_id = ?) OR (nomatch_dest_type = 'ai_app' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
+                UNION ALL
+                SELECT id FROM pbx_announcements WHERE post_dest_type = 'ai_app' AND post_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'ai_app' AND fallback_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'ai_app' AND fallback_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'ai_app' AND found_dest_id = ?) OR (not_found_dest_type = 'ai_app' AND not_found_dest_id = ?) OR (timeout_dest_type = 'ai_app' AND timeout_dest_id = ?)
+                UNION ALL
+                SELECT id FROM pbx_web_widgets WHERE dest_type = 'ai_app' AND dest_id = ?
+            ) refs",
+            [$sid, $sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"ai_app","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"ai_app","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
+        );
+        if ($refs > 0) {
+            throw new InvalidArgumentException(t('srv_tc.err_in_use'));
+        }
         getDB()->prepare('DELETE FROM pbx_ai_apps WHERE id = ?')->execute([$id]);
         $uid = $_SESSION['user_id'] ?? null;
         markPendingSync('ai_apps', 'ai_app', $id, 'AI application: ' . $app['title'], 'delete', $uid);

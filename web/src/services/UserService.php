@@ -124,6 +124,9 @@ class UserService {
                     $save_data['sip_password'] = $sip_password;
                 }
                 DBHelper::save('sys_users', $save_data);
+                if (!empty($password)) {
+                    getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
+                }
                 $msg = sprintf(t('srv_user.updated'), $username);
                 writeAuditLog(null, 'user_account', $user_id, "User: {$username} ({$full_name}, role: {$role})", 'update', $_SESSION['user_id'] ?? null);
             } else {
@@ -226,7 +229,20 @@ class UserService {
 
             $target_user = DBHelper::fetchOne("SELECT username, full_name, extension FROM sys_users WHERE id = ?", [$user_id]);
             $ext = $target_user['extension'] ?? null;
+            try {
+                $db = getDB();
+                $db->prepare('UPDATE pbx_phones SET user_id = NULL WHERE user_id = ?')->execute([$user_id]);
+                $db->prepare('DELETE FROM pbx_phone_keys WHERE user_id = ?')->execute([$user_id]);
+            } catch (\Throwable $e) {
+            }
             DBHelper::delete('sys_users', 'id', $user_id);
+            try {
+                if (is_file(__DIR__ . '/PhoneProvisionService.php')) {
+                    require_once __DIR__ . '/PhoneProvisionService.php';
+                    PhoneProvisionService::exportTftpQuietly();
+                }
+            } catch (\Throwable $e) {
+            }
             writeAuditLog(null, 'user_account', $user_id, "User: " . ($target_user['username'] ?? $user_id) . " (" . ($target_user['full_name'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
 
             if (!empty($ext)) {
@@ -269,7 +285,12 @@ class UserService {
                         QueueHelper::setMembership($ext, $qn, false);
                     }
                 }
-                markPendingSync('extensions', 'extension', $ext, "Extension: {$ext} (user deleted)", 'delete', $_SESSION['user_id'] ?? null);
+                $uid = $_SESSION['user_id'] ?? null;
+                markPendingSync('extensions', 'extension', $ext, "Extension: {$ext} (user deleted)", 'delete', $uid);
+                markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$ext} deleted)", 'update', $uid);
+                markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$ext} deleted)", 'update', $uid);
+                markPendingSync('voicemail', 'voicemail', 'all', "Voicemail ({$ext} deleted)", 'update', $uid);
+                markPendingSync('permissions', 'permissions', 'all', "Permission groups ({$ext} deleted)", 'update', $uid);
                 return t('srv_user.deleted_apply');
             }
             return t('srv_user.deleted');

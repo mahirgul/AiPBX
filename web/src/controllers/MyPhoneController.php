@@ -22,6 +22,8 @@ class MyPhoneController extends BaseController
         if (static::isPost() && isset($_POST['action']) && $_POST['action'] === 'save_settings') {
             if (!static::verifyCsrf()) {
                 static::notifyError(t('my_phone.msg_csrf_error'));
+            } elseif (!hasModulePermission('my_phone', 'edit')) {
+                static::notifyError(t('roles.read_only_badge'));
             } else {
                 $dnd = isset($_POST['dnd_enabled']) ? 1 : 0;
                 $forwardAlways = preg_replace('/[^0-9+*#]/', '', trim($_POST['call_forward_number'] ?? ''));

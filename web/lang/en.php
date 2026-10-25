@@ -3381,6 +3381,7 @@ return [
     'common.apply_hint' => 'Send it from the Apply page to take effect.',
     'srv_tc.err_group_id' => 'Invalid time group ID!',
     'srv_tc.err_group_in_use' => 'This time group cannot be deleted because an active time condition uses it!',
+    'srv_tc.err_in_use' => 'This time condition cannot be deleted because an inbound route, IVR or another destination points to it!',
     'srv_trunk.err_host' => 'Invalid IP address or host name: \'%s\'',
     'srv_trunk.err_exists' => 'A trunk with the system name \'%s\' already exists — enter a different name.',
     'srv_trunk.err_port' => 'The port must be between 1 and 65535!',
@@ -5538,4 +5539,5 @@ Your phone will ring.',
     'dialplan_rules.sim_no_rule' => 'No rule — dialled as entered',
     'dialplan_rules.copy_suffix' => '(copy)',
     'dialplan_rules.confirm_turn_off' => 'Turn off call normalization? Every device will dial numbers exactly as entered.',
+    'srv_role.err_system_delete' => 'Base system roles (admin, read_only_admin, cc_agent, fax_user, user) cannot be deleted!',
 ];

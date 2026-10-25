@@ -306,13 +306,20 @@ class AssistantPlanService
 
     private static function applyTimeCondition(array $a): void
     {
+        self::assertApplied(TimeConditionService::saveTimeGroup([
+            'csrf_token' => self::csrf(),
+            'title' => $a['title'],
+            'time_start' => $a['open'],
+            'time_end' => $a['close'],
+            'days' => (array) $a['days'],
+        ]));
+        $st = getDB()->prepare('SELECT id FROM pbx_time_groups WHERE title = ? ORDER BY id DESC LIMIT 1');
+        $st->execute([(string) $a['title']]);
+        $tgId = (int) ($st->fetchColumn() ?: 1);
         self::assertApplied(TimeConditionService::saveTimeCondition([
             'csrf_token' => self::csrf(),
             'title' => $a['title'],
-            'time_group_id' => '',
-            'open_hour' => $a['open'],
-            'close_hour' => $a['close'],
-            'days' => implode(',', (array) $a['days']),
+            'time_group_id' => $tgId,
         ]));
     }
 

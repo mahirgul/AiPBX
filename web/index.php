@@ -48,6 +48,11 @@ if ($path === '/set-language') {
 if ($path === '/accept-license' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     requireLogin();
     header('Content-Type: application/json; charset=utf-8');
+    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Admin privileges required.']);
+        exit;
+    }
     $csrf = (string)($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!verifyCSRFToken($csrf)) {
         http_response_code(403);

@@ -527,6 +527,7 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
         $this->assertTrue($resGood['json']['success']);
         $this->assertSame('7001', $resGood['json']['data']['from_extension']);
         $this->assertSame('7002', $resGood['json']['data']['to_number']);
+        $this->assertStringContainsString('Local/7001@cc-internal extension 7002@from-internal-web', $resGood['json']['data']['asterisk_reply']);
     }
 
     public function testCallsHangupValidationAndExecution(): void
@@ -538,13 +539,21 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
         $this->assertSame(422, $resBad['status']);
         $this->assertSame('VALIDATION_ERROR', $resBad['json']['error']['code']);
 
-        // 2. Valid channel -> 200
+        // 2. Valid PJSIP channel -> 200
         $resGood = $this->apiRequest('POST', '/api/v1/calls/hangup', [
             'channel' => 'PJSIP/7001-00000001',
         ]);
         $this->assertSame(200, $resGood['status']);
         $this->assertTrue($resGood['json']['success']);
         $this->assertSame('PJSIP/7001-00000001', $resGood['json']['data']['channel']);
+
+        // 3. Valid Local channel with '@' and ';' -> 200 (preserved intact)
+        $resLocal = $this->apiRequest('POST', '/api/v1/calls/hangup', [
+            'channel' => 'Local/7001@from-internal-pbx-00000001;1',
+        ]);
+        $this->assertSame(200, $resLocal['status']);
+        $this->assertTrue($resLocal['json']['success']);
+        $this->assertSame('Local/7001@from-internal-pbx-00000001;1', $resLocal['json']['data']['channel']);
     }
 
     public function testCallsActiveListEndpoint(): void

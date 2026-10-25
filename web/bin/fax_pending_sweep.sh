@@ -65,6 +65,6 @@ fi
 
 echo "$STALE_IDS" | while IFS= read -r id; do
     [ -z "$id" ] && continue
-    $MYSQL_CMD -e "UPDATE fax_sent SET status = 'FAILED', error_message = 'Hedef cevap vermedi / zaman asimi (otomatik kapatildi)', completed_at = NOW() WHERE id = $id AND status = 'PENDING';" 2>/dev/null
+    $MYSQL_CMD -e "UPDATE fax_sent SET status = 'FAILED', error_message = 'No answer / timeout (closed automatically)', completed_at = NOW() WHERE id = $id AND status = 'PENDING';" 2>/dev/null
     log "FAX #$id: PENDING -> FAILED (no answer for >${STALE_MINUTES} min, closed automatically)"
 done

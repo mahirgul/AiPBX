@@ -36,6 +36,7 @@ class DialPermissionService {
             }
 
             $db = getDB();
+            $is_new = ($id <= 0);
             if ($id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_permission_groups SET group_name = ?, description = ?, default_action = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$group_name, $description, $default_action, $is_active, $id]);
@@ -45,7 +46,7 @@ class DialPermissionService {
                 $id = (int)$db->lastInsertId();
             }
 
-            markPendingSync('permissions', 'group', $id, $group_name, $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            markPendingSync('permissions', 'group', $id, $group_name, $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return t('srv_dialperm.saved');
         });
     }
@@ -92,6 +93,7 @@ class DialPermissionService {
             }
 
             $db = getDB();
+            $is_new = ($id <= 0);
             if ($id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_permission_rules SET pattern = ?, pattern_type = ?, action = ?, priority = ?, description = ? WHERE id = ? AND group_id = ?");
                 $stmt->execute([$pattern, $pattern_type, $action, $priority, $description, $id, $group_id]);
@@ -101,7 +103,7 @@ class DialPermissionService {
                 $id = (int)$db->lastInsertId();
             }
 
-            markPendingSync('permissions', 'rule', $id, "Kural {$pattern}", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            markPendingSync('permissions', 'rule', $id, "Rule {$pattern}", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return t('srv_dialperm.rule_saved');
         });
     }
@@ -119,8 +121,36 @@ class DialPermissionService {
                 throw new \Exception(t('common.not_found'));
             }
 
-            markPendingSync('permissions', 'rule', $ruleId, "Kural #{$ruleId}", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('permissions', 'rule', $ruleId, "Rule #{$ruleId}", 'delete', $_SESSION['user_id'] ?? null);
             return t('srv_dialperm.rule_deleted');
         });
+    }
+
+    /**
+     * Evaluates whether a destination number is permitted for a given dial permission group.
+     */
+    public static function isDestinationAllowed(int $groupId, string $target): bool
+    {
+        if ($groupId <= 1 || $target === '') {
+            return true;
+        }
+        $group = self::getGroup($groupId);
+        if (!$group || empty($group['is_active'])) {
+            return true;
+        }
+        require_once dirname(__DIR__) . '/sync/SyncPermissions.php';
+        $rules = self::getRules($groupId);
+        foreach ($rules as $r) {
+            $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim((string)($r['pattern'] ?? '')));
+            if ($pattern === '') {
+                continue;
+            }
+            $isExact = (($r['pattern_type'] ?? 'prefix') === 'exact');
+            $regex = '/' . permissionPatternToRegex($pattern, $isExact) . '/';
+            if (@preg_match($regex, $target) === 1) {
+                return ($r['action'] ?? 'deny') === 'allow';
+            }
+        }
+        return ($group['default_action'] ?? 'allow') === 'allow';
     }
 }

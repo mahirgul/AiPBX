@@ -48,7 +48,7 @@ class FaxInboxService {
 
         $db->prepare("DELETE FROM fax_received WHERE id = ?")->execute([$fax_id]);
 
-        writeAuditLog(null, 'fax_inbox', $fax_id, "Incoming fax: " . ($fax['caller_id'] ?? '?') . " -> " . ($fax['did_extension'] ?? '?') . " (" . ($fax['received_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'fax_inbox', $fax_id, "Incoming fax: " . ($fax['caller_id'] ?? '?') . " -> " . ($fax['did_extension'] ?? '?') . " (" . ($fax['received_at'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('srv_fax.in_deleted')];
     }
 }

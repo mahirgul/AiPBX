@@ -130,11 +130,11 @@ class EchoReporter
         if ($has($q, ['top|busiest|busiest caller|most'])) {
             return 'calls.top';
         }
-        if ($has($q, ['answer|answered|cevap|cevaplanan|no answer|cevapsiz|cevapsız'])) {
-            return 'answered.rate';
-        }
         if ($has($q, ['no answer|failed|not connected|cevapsiz|cevapsız|arayan|yeni arayan'])) {
             return 'noanswer.hour';
+        }
+        if ($has($q, ['answer|answered|cevap|cevaplanan'])) {
+            return 'answered.rate';
         }
         if ($has($q, ['today|calls today|bugun|bugün|arama|calls'])) {
             return 'calls.today';

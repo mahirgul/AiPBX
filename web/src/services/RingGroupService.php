@@ -51,6 +51,7 @@ class RingGroupService {
             internalNumberValidate($group_number, 'ring_group', $id);
 
             $db = getDB();
+            $is_new = ($id <= 0);
             if ($id > 0) {
                 $stmt = $db->prepare("UPDATE pbx_ring_groups SET group_number = ?, internal_number = ?, name = ?, numbers_list = ?, ring_strategy = ?, ring_timeout = ?, cid_prefix = ?, fallback_dest_type = ?, fallback_dest_id = ?, record_call = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$group_number, $group_number, $name, $numbers_list, $ring_strategy, $ring_timeout, $cid_prefix, $fallback_dest_type, $fallback_dest_id, $record_call, $is_active, $id]);
@@ -60,8 +61,8 @@ class RingGroupService {
                 $id = (int)$db->lastInsertId();
             }
 
-            markPendingSync('ring_groups', 'ring_group', $id, "{$name} ({$group_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            markPendingSync('internal_numbers', 'ring_group', $id, "{$name} ({$group_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            markPendingSync('ring_groups', 'ring_group', $id, "{$name} ({$group_number})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('internal_numbers', 'ring_group', $id, "{$name} ({$group_number})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
             return t('srv_rg.saved');
         });
     }
@@ -97,8 +98,10 @@ class RingGroupService {
                     SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'ring_group' AND fallback_dest_id = ?
                     UNION ALL
                     SELECT id FROM pbx_ring_groups WHERE id != ? AND fallback_dest_type = 'ring_group' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'ring_group' AND dest_id = ?
                 ) refs",
-                [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"ring_group","match_dest_id":"' . $sid . '"%', $sid, $sid, $id, $sid]
+                [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"ring_group","match_dest_id":"' . $sid . '"%', $sid, $sid, $id, $sid, $sid]
             );
             if ($count > 0) {
                 $refs[] = "IVR / time condition / announcement / fallback destinations ({$count})";

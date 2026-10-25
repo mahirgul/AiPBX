@@ -5391,4 +5391,6 @@ Telefonunuz çalacaq.',
     'dialplan_rules.sim_no_rule' => 'Qayda yoxdur — daxil edildiyi kimi yığılır',
     'dialplan_rules.copy_suffix' => '(surət)',
     'dialplan_rules.confirm_turn_off' => 'Zənglərin normallaşdırılması söndürülsün? Hər bir cihaz nömrələri dəqiq daxil edildiyi kimi yığacaq.',
+    'srv_tc.err_in_use' => 'Bu Zaman Şərti Gələn Marşrut, IVR və ya başqa bir hədəf tərəfindən istifadə edildiyi üçün silinə bilməz!',
+    'srv_role.err_system_delete' => 'Sistem əsas rolları (admin, read_only_admin, cc_agent, fax_user, user) silinə bilməz!',
 ];

@@ -5391,4 +5391,6 @@ Votre téléphone va sonner.',
     'dialplan_rules.sim_no_rule' => 'Aucune règle — composé tel quel',
     'dialplan_rules.copy_suffix' => '(copie)',
     'dialplan_rules.confirm_turn_off' => 'Désactiver la normalisation des appels ? Chaque appareil composera les numéros exactement comme saisis.',
+    'srv_tc.err_in_use' => 'Cette condition horaire ne peut pas être supprimée car une route entrante, un SVI ou une autre destination pointe vers elle !',
+    'srv_role.err_system_delete' => 'Les rôles système de base (admin, read_only_admin, cc_agent, fax_user, user) ne peuvent pas être supprimés !',
 ];

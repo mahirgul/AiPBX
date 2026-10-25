@@ -144,6 +144,17 @@ class ScheduledTaskService
         if ($deleted) {
             require_once __DIR__ . '/NoticeService.php';
             NoticeService::resolve('scheduled_task_' . $taskId);
+            if ($taskId > 0) {
+                $taskDir = '/var/lib/aipbx/tasks/' . $taskId;
+                if (is_dir($taskDir)) {
+                    foreach (glob($taskDir . '/{,.}[!.,!..]*', GLOB_MARK | GLOB_BRACE) ?: [] as $f) {
+                        if (is_file($f) || is_link($f)) {
+                            @unlink($f);
+                        }
+                    }
+                    @rmdir($taskDir);
+                }
+            }
         }
         return $deleted;
     }

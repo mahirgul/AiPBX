@@ -164,8 +164,10 @@ class QueueService {
                         SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'queue' AND timeout_dest_id = ?) OR (invalid_dest_type = 'queue' AND invalid_dest_id = ?)
                         UNION ALL
                         SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'queue' AND match_dest_id = ?) OR (nomatch_dest_type = 'queue' AND nomatch_dest_id = ?) OR rules_json LIKE ?
+                        UNION ALL
+                        SELECT id FROM pbx_web_widgets WHERE dest_type = 'queue' AND (dest_id = ? OR dest_id = ?)
                     ) refs",
-                    [$q_name, $q_name, $q_name, $q_name, $q_name, $q_name, '%"match_dest_type":"queue","match_dest_id":"' . $q_name . '"%']
+                    [$q_name, $q_name, $q_name, $q_name, $q_name, $q_name, '%"match_dest_type":"queue","match_dest_id":"' . $q_name . '"%', $q_name, (string)$queue_id]
                 );
                 if ($refs > 0) {
                     throw new \Exception(t('srv_queue.err_in_use'));
@@ -174,7 +176,7 @@ class QueueService {
             }
             $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_queues WHERE id = ?", [$queue_id]) ?? '');
             DBHelper::delete('pbx_queues', 'id', $queue_id);
-            markPendingSync('queues', 'queue', $q_name ?: ('id_' . $queue_id), "Kuyruk: " . ($q_row['title'] ?? $q_name ?? $queue_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('queues', 'queue', $q_name ?: ('id_' . $queue_id), "Queue: " . ($q_row['title'] ?? $q_name ?? $queue_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             if ($removed_number !== '') {
                 markPendingSync('internal_numbers', 'queue', $queue_id,
                     "Internal number removed: {$removed_number}", 'delete',

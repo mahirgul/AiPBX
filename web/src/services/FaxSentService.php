@@ -63,7 +63,7 @@ class FaxSentService {
             $db->prepare("DELETE FROM fax_sent WHERE id = ? AND user_id = ?")->execute([$fax_id, $userId]);
         }
 
-        writeAuditLog(null, 'fax_sent', $fax_id, "Sent fax: " . ($fax['sender_extension'] ?? '?') . " -> " . ($fax['destination_number'] ?? '?') . " (" . ($fax['created_at'] ?? '') . ", silindi)", 'delete', $_SESSION['user_id'] ?? null);
+        writeAuditLog(null, 'fax_sent', $fax_id, "Sent fax: " . ($fax['sender_extension'] ?? '?') . " -> " . ($fax['destination_number'] ?? '?') . " (" . ($fax['created_at'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('srv_fax.out_deleted')];
     }
 

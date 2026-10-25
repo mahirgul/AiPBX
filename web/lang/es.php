@@ -5391,4 +5391,6 @@ Su teléfono sonará.',
     'dialplan_rules.sim_no_rule' => 'Sin regla: marcado tal como se introdujo',
     'dialplan_rules.copy_suffix' => '(copia)',
     'dialplan_rules.confirm_turn_off' => '¿Desactivar la normalización de llamadas? Cada dispositivo marcará los números exactamente como se introducen.',
+    'srv_tc.err_in_use' => '¡Esta condición horaria no se puede eliminar porque una ruta entrante, un IVR u otro destino apunta a ella!',
+    'srv_role.err_system_delete' => '¡Los roles base del sistema (admin, read_only_admin, cc_agent, fax_user, user) no se pueden eliminar!',
 ];

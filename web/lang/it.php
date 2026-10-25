@@ -5391,4 +5391,6 @@ Il suo telefono squillerà.',
     'dialplan_rules.sim_no_rule' => 'Nessuna regola — composto come inserito',
     'dialplan_rules.copy_suffix' => '(copia)',
     'dialplan_rules.confirm_turn_off' => 'Disattivare la normalizzazione chiamate? Ogni dispositivo comporrà i numeri esattamente come inseriti.',
+    'srv_tc.err_in_use' => 'Questa condizione oraria non può essere eliminata perché una rotta in ingresso, un IVR o un\'altra destinazione punta ad essa!',
+    'srv_role.err_system_delete' => 'I ruoli di sistema di base (admin, read_only_admin, cc_agent, fax_user, user) non possono essere eliminati!',
 ];

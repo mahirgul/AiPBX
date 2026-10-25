@@ -3284,6 +3284,7 @@ return [
     'common.apply_hint' => 'Etkili olması için Uygula sayfasından gönderin.',
     'srv_tc.err_group_id' => 'Geçersiz Zaman Grubu ID!',
     'srv_tc.err_group_in_use' => 'Bu Zaman Grubu aktif bir Zaman Koşuluna bağlı olduğu için silinemez!',
+    'srv_tc.err_in_use' => 'Bu Zaman Koşulu bir Gelen Rota, IVR veya başka bir hedef tarafından kullanıldığı için silinemez!',
     'srv_trunk.err_host' => 'Geçersiz IP adresi veya sunucu adı: \'%s\'',
     'srv_trunk.err_exists' => '\'%s\' sistem adıyla bir trunk zaten var — farklı bir ad girin.',
     'srv_trunk.err_port' => 'Port numarası 1-65535 aralığında olmalıdır!',
@@ -5540,4 +5541,5 @@ Telefonunuz çaldırılacak.',
     'dialplan_rules.sim_no_rule' => 'Kural yok — tuşlandığı gibi aranır',
     'dialplan_rules.copy_suffix' => '(kopya)',
     'dialplan_rules.confirm_turn_off' => 'Arama normalleştirme kapatılsın mı? Tüm cihazlar numaraları tuşlandığı gibi arar.',
+    'srv_role.err_system_delete' => 'Sistem temel rolleri (admin, read_only_admin, cc_agent, fax_user, user) silinemez!',
 ];

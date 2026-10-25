@@ -46,11 +46,21 @@ class AuditLogController extends BaseController
         $login_attempts = AuditLogRepository::searchLoginAttempts($start_ts, $end_ts, $login_status_filter, $login_search_query);
 
         $audit_domains = array_merge(PENDING_SYNC_DOMAIN_MAP, [
-            'privacy'  => 'privacy',
-            'security' => 'security',
-            'plugins'  => 'plugins',
-            'phones'   => 'phones',
-            'ai_cloud' => 'ai_cloud',
+            'privacy'            => 'privacy',
+            'security'           => 'security',
+            'plugins'            => 'plugins',
+            'phones'             => 'phones',
+            'ai_cloud'           => 'ai_cloud',
+            'webhooks'           => 'webhooks',
+            'api_keys'           => 'api_keys',
+            'scheduled_tasks'    => 'scheduled_tasks',
+            'external_dbs'       => 'external_dbs',
+            'asterisk_settings'  => 'asterisk_settings',
+            'file_storage'       => 'file_storage',
+            'network_services'   => 'network_services',
+            'network_settings'   => 'network_settings',
+            'ms_teams'           => 'ms_teams',
+            'google_integration' => 'google_integration',
         ]);
 
         $page_title = t('audit_log.title');
