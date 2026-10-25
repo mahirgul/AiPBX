@@ -81,7 +81,7 @@ switch ($action) {
             $stmt->execute([$target_clean, $target_clean, $target_clean]);
             $q_row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$q_row) {
-                fwrite(STDERR, "Kuyruk bulunamadi: {$target}\n");
+                fwrite(STDERR, "Queue not found: {$target}\n");
                 exit(1);
             }
             $queue_name = $q_row['queue_name'];
@@ -113,7 +113,7 @@ switch ($action) {
         $reasons_list = array_values(array_filter(array_map('trim', explode(',', $reasons_raw))));
 
         // Map the pause ID (1, 2, 3...) to its name
-        $reason_name = 'Mola';
+        $reason_name = 'Break';
         if (is_numeric($reason_id) && intval($reason_id) >= 1 && intval($reason_id) <= count($reasons_list)) {
             $reason_name = $reasons_list[intval($reason_id) - 1];
         } elseif (!empty($reason_id) && !is_numeric($reason_id)) {
@@ -131,7 +131,7 @@ switch ($action) {
         break;
 
     default:
-        fwrite(STDERR, "Bilinmeyen aksiyon: {$action}\n");
+        fwrite(STDERR, "Unknown action: {$action}\n");
         exit(1);
 }
 

@@ -362,6 +362,9 @@ class AsteriskSettingsService {
         setSystemSetting('sip_debug_until', (string)$until);
         require_once dirname(__DIR__) . '/asterisk_helper.php';
         AsteriskHelper::execCLI('pjsip set logger on');
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog('asterisk_settings', 'sip_debug', 'on', "Enabled PJSIP logger until {$until}", 'update', $_SESSION['user_id'] ?? null);
+        }
         return ['success' => true, 'until' => $until, 'message' => t('asterisk_settings.sip_debug_enabled')];
     }
 
@@ -370,6 +373,9 @@ class AsteriskSettingsService {
         setSystemSetting('sip_debug_until', '0');
         require_once dirname(__DIR__) . '/asterisk_helper.php';
         AsteriskHelper::execCLI('pjsip set logger off');
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog('asterisk_settings', 'sip_debug', 'off', 'Disabled PJSIP logger', 'update', $_SESSION['user_id'] ?? null);
+        }
         return ['success' => true, 'message' => t('asterisk_settings.sip_debug_disabled')];
     }
 
@@ -377,6 +383,9 @@ class AsteriskSettingsService {
     {
         require_once dirname(__DIR__) . '/asterisk_helper.php';
         $res = AsteriskHelper::execCLI('logger rotate');
+        if (function_exists('writeAuditLog')) {
+            writeAuditLog('asterisk_settings', 'logger', 'rotate', 'Triggered Asterisk logger rotate', 'update', $_SESSION['user_id'] ?? null);
+        }
         return ['success' => $res['success'], 'message' => t('asterisk_settings.logs_rotated')];
     }
 

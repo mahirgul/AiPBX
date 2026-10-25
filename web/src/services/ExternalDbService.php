@@ -215,26 +215,27 @@ class ExternalDbService
             throw new RuntimeException("External database connection '{$connRow['name']}' is disabled");
         }
 
-        // Strict read-only query guard
-        $cleanSql = trim(preg_replace('#/\*.*?\*/#s', '', $sql) ?? '');
-        $cleanSql = trim(preg_replace('#(--|\#).*?(\r?\n|$)#', '', $cleanSql) ?? '');
+        // Strict read-only query guard: strip single-quoted string literals and comments only for validation
+        $validationSql = preg_replace("/'(?:''|\\\\'|[^'])*'/s", "''", $sql) ?? $sql;
+        $validationSql = trim(preg_replace('#/\*.*?\*/#s', '', $validationSql) ?? '');
+        $validationSql = trim(preg_replace('#(--|\#).*?(\r?\n|$)#', '', $validationSql) ?? '');
         // Writing files on the database server is not reading.
-        if (preg_match('/\bINTO\s+(OUTFILE|DUMPFILE)\b|\bLOAD_FILE\s*\(/i', $cleanSql)) {
+        if (preg_match('/\bINTO\s+(OUTFILE|DUMPFILE)\b|\bLOAD_FILE\s*\(/i', $validationSql)) {
             throw new InvalidArgumentException('Only read-only SELECT or WITH queries are permitted on external connections');
         }
 
-        if (!preg_match('/^(SELECT|WITH)\b/i', $cleanSql)) {
+        if (!preg_match('/^(SELECT|WITH)\b/i', $validationSql)) {
             throw new InvalidArgumentException('Only read-only SELECT or WITH queries are permitted on external connections');
         }
 
         // Check for multiple semicolon-delimited statements
-        $semiCount = substr_count(rtrim($cleanSql, ';'), ';');
+        $semiCount = substr_count(rtrim($validationSql, "; \t\r\n"), ';');
         if ($semiCount > 0) {
             throw new InvalidArgumentException('Multiple SQL statements in a single query are not allowed');
         }
 
         $pdo = self::connect($connRow);
-        $stmt = $pdo->prepare($cleanSql);
+        $stmt = $pdo->prepare(rtrim(trim($sql), ';'));
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

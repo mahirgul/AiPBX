@@ -116,6 +116,26 @@ final class IvrDataStepTest extends TestCase
         $this->assertSame('custom/enter_id', $row['prompt_file']);
         $this->assertSame(8, (int)$row['max_digits']);
         $this->assertSame(6, (int)$row['input_timeout_sec']);
+
+        // Update with self-loop destination -> should sanitize to hangup
+        $update = IvrDataStepService::saveStep([
+            'id' => $this->stepId,
+            'name' => 'Customer Balance',
+            'channel_var_name' => 'CUST_BALANCE',
+            'input_source' => 'dtmf',
+            'data_source' => 'http',
+            'http_url' => 'https://example.com/api/balance?id={input}',
+            'http_method' => 'GET',
+            'found_dest_type' => 'ivr_data',
+            'found_dest_id' => (string)$this->stepId,
+            'not_found_dest_type' => 'invalid_type',
+            'not_found_dest_id' => 'xyz',
+        ]);
+        $this->assertTrue($update['ok']);
+        $rowAfter = IvrDataStepRepository::findById($this->stepId);
+        $this->assertSame('hangup', $rowAfter['found_dest_type']);
+        $this->assertSame('', $rowAfter['found_dest_id']);
+        $this->assertSame('hangup', $rowAfter['not_found_dest_type']);
     }
 
     public function testPerformLookupWithDatabase(): void

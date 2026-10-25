@@ -30,7 +30,7 @@ class ExtensionService {
                 throw new \Exception(t('srv_ext.err_number'));
             }
             if (empty($full_name)) {
-                throw new \Exception('Ad Soyad zorunludur!');
+                throw new \Exception(t('srv_user.err_required'));
             }
             // Fax users never register over SIP (no PJSIP endpoint is generated).
             // A password is required for SIP extensions with digest auth.

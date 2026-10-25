@@ -15,11 +15,18 @@ class AsteriskSettingsController extends BaseController
     {
         static::requireRole('admin');
 
+        $csrf = static::csrfToken();
         $notices = static::handlePost([
             'save_asterisk_settings' => fn() => AsteriskSettingsService::saveSettings($_POST),
-            'enable_sip_debug' => fn() => AsteriskSettingsService::enableSipDebug(600),
-            'disable_sip_debug' => fn() => AsteriskSettingsService::disableSipDebug(),
-            'rotate_logs' => fn() => AsteriskSettingsService::rotateLogs(),
+            'enable_sip_debug' => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : AsteriskSettingsService::enableSipDebug(600),
+            'disable_sip_debug' => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : AsteriskSettingsService::disableSipDebug(),
+            'rotate_logs' => fn() => !verifyCSRFToken($csrf)
+                ? ['success' => false, 'error' => t('common.invalid_csrf')]
+                : AsteriskSettingsService::rotateLogs(),
         ]);
 
         $defaults = AsteriskSettingsService::defaults();

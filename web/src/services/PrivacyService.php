@@ -181,14 +181,17 @@ final class PrivacyService
      * Apply a global regulatory jurisdiction preset in one click.
      *
      * @param array<string, mixed> $post
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function applyProfile(array $post): array
     {
+        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
         $key = (string)($post['jurisdiction_profile'] ?? '');
         $profiles = self::profiles();
         if (!isset($profiles[$key])) {
-            return ['error' => t('privacy.err_invalid_profile')];
+            return ['success' => false, 'error' => t('privacy.err_invalid_profile')];
         }
         $p = $profiles[$key];
 
@@ -225,17 +228,20 @@ final class PrivacyService
             writeAuditLog('privacy', 'profile', $key, "Applied jurisdiction preset: {$p['code']}", 'update', $uid);
         }
 
-        return ['message' => sprintf(t('privacy.msg_profile_applied'), $p['code'])];
+        return ['success' => true, 'message' => sprintf(t('privacy.msg_profile_applied'), $p['code'])];
     }
 
     /**
      * Save Pre-Call Notice, Opt-In/Opt-Out, Periodic Beep & PCI-DSS settings and queue dialplan sync.
      *
      * @param array<string, mixed> $post
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function saveNotice(array $post): array
     {
+        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
         $mode = self::validNoticeMode((string)($post['notice_mode'] ?? 'off'));
         $soundId = max(0, (int)($post['notice_sound_id'] ?? 0));
         $digit = self::validOptoutDigit((string)($post['optout_digit'] ?? '9'));
@@ -244,7 +250,7 @@ final class PrivacyService
         $pciPause = !empty($post['pci_pause_enabled']) ? '1' : '0';
 
         if ($mode !== 'off' && $soundId <= 0) {
-            return ['error' => t('privacy.err_sound_required')];
+            return ['success' => false, 'error' => t('privacy.err_sound_required')];
         }
 
         self::upsertSettings([
@@ -275,17 +281,20 @@ final class PrivacyService
             );
         }
 
-        return ['message' => t('privacy.msg_notice_saved')];
+        return ['success' => true, 'message' => t('privacy.msg_notice_saved')];
     }
 
     /**
      * Save Data Retention & Auto-Purge policy settings.
      *
      * @param array<string, mixed> $post
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function saveRetention(array $post): array
     {
+        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
         $enabled = !empty($post['retention_enabled']) ? '1' : '0';
         $recDays = max(0, min(3650, (int)($post['ret_recordings_days'] ?? 180)));
         $vmDays  = max(0, min(3650, (int)($post['ret_voicemail_days'] ?? 90)));
@@ -317,17 +326,20 @@ final class PrivacyService
             );
         }
 
-        return ['message' => t('privacy.msg_retention_saved')];
+        return ['success' => true, 'message' => t('privacy.msg_retention_saved')];
     }
 
     /**
      * Save Cross-Border Cloud AI Data Transfer Lock setting.
      *
      * @param array<string, mixed> $post
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function saveCompliance(array $post): array
     {
+        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
         $blockCloudAi = !empty($post['block_cloud_ai']) ? '1' : '0';
         self::upsertSettings([
             'privacy_block_cloud_ai' => $blockCloudAi,
@@ -337,7 +349,7 @@ final class PrivacyService
             writeAuditLog('privacy', 'compliance', 'block_cloud_ai', "Cross-border Cloud AI lock: block_cloud_ai={$blockCloudAi}", 'update', $_SESSION['user_id'] ?? null);
         }
 
-        return ['message' => t('privacy.msg_compliance_saved')];
+        return ['success' => true, 'message' => t('privacy.msg_compliance_saved')];
     }
 
     /**
@@ -372,7 +384,7 @@ final class PrivacyService
      * Deletes call recordings, voicemail transcripts, fax files/logs, signaling rows,
      * and anonymizes CDR rows across both asteriskcdr and cdrs for the given phone number.
      *
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function eraseSubject(string $rawNumber): array
     {

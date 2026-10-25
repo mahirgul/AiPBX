@@ -218,7 +218,7 @@ if ($action === 'spy_call') {
     }
     if (!empty($res['Response']) && strtolower($res['Response']) === 'success') {
         $mode_labels = ['spy' => t('api_cc.mode_spy'), 'whisper' => t('api_cc.mode_whisper'), 'barge' => t('api_cc.mode_barge')];
-        $label = $mode_labels[$mode] ?? 'Dinleme';
+        $label = $mode_labels[$mode] ?? t('api_cc.mode_spy');
         echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.spy_ringing'), $label, $target_ext)]);
     } else {
         echo json_encode(['success' => false, 'error' => sprintf(t('api_cc.err_spy'), ($res['Message'] ?? 'Unknown error'))]);
@@ -285,7 +285,7 @@ if ($action === 'get_live_calls') {
                 // Try to extract caller ID and uniqueid from channels output
                 // NOTE: "core show channels concise" fields are separated by '!', not ':'
                 // (see Asterisk main/cli.c CONCISE_FORMAT_STRING).
-                $caller_num = 'Bilinmeyen';
+                $caller_num = t('js.common.unknown');
                 $call_id = '';
                 if (is_array($chan_output)) {
                     foreach ($chan_output as $ch_line) {
