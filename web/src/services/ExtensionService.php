@@ -99,6 +99,13 @@ class ExtensionService {
 
             // Save/Update Extension
             if ($user_id > 0) {
+                $old_role = DBHelper::fetchColumn('SELECT role FROM sys_users WHERE id = ?', [$user_id]);
+                if ($old_role === 'admin' && $is_active == 0) {
+                    $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);
+                    if (intval($other_admins) < 1) {
+                        throw new \Exception(t('srv_user.err_last_admin_role'));
+                    }
+                }
                 // Existing record: clean up the old extension file too (the number may change)
                 $old_ext = DBHelper::fetchColumn('SELECT extension FROM sys_users WHERE id = ?', [$user_id]);
                 DBHelper::update('sys_users', [
@@ -209,9 +216,50 @@ class ExtensionService {
             // Remove the extension (the user account is kept)
             DBHelper::update('sys_users', ['extension' => null, 'sip_password' => null], 'id', $user_id);
             SIPHelper::deleteSettings($old_ext);
-            markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (removed)", 'delete', $_SESSION['user_id'] ?? null);
-            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
-            markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
+            $db = getDB();
+            try {
+                $db->prepare('UPDATE pbx_phones SET user_id = NULL WHERE user_id = ?')->execute([$user_id]);
+                $db->prepare('DELETE FROM pbx_phone_keys WHERE user_id = ?')->execute([$user_id]);
+                if (is_file(__DIR__ . '/PhoneProvisionService.php')) {
+                    require_once __DIR__ . '/PhoneProvisionService.php';
+                    PhoneProvisionService::exportTftpQuietly();
+                }
+            } catch (\Throwable $e) {
+            }
+            $queues = $db->query("SELECT id, queue_name, members_json, static_members_json, supervisors_json, supervisor_extension FROM pbx_queues")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($queues as $q) {
+                $m_list = json_decode($q['members_json'] ?? '[]', true) ?: [];
+                $s_list = json_decode($q['supervisors_json'] ?? '[]', true) ?: [];
+                $st_list = array_map('strval', json_decode($q['static_members_json'] ?? '[]', true) ?: []);
+                $m_new = array_values(array_diff(array_map('strval', $m_list), [(string)$old_ext]));
+                $s_new = array_values(array_diff(array_map('strval', $s_list), [(string)$old_ext]));
+                $st_new = array_values(array_diff($st_list, [(string)$old_ext]));
+                $update_data = [
+                    'members_json' => json_encode($m_new),
+                    'static_members_json' => json_encode($st_new),
+                    'supervisors_json' => json_encode($s_new),
+                ];
+                if (count($st_new) !== count($st_list)) {
+                    markPendingSync('queues', 'queue', $q['queue_name'], "Queue: {$q['queue_name']} (static agent {$old_ext} removed)", 'update', $_SESSION['user_id'] ?? null);
+                }
+                if ((string)$q['supervisor_extension'] === (string)$old_ext) {
+                    $update_data['supervisor_extension'] = !empty($s_new) ? $s_new[0] : null;
+                }
+                DBHelper::update('pbx_queues', $update_data, 'id', $q['id']);
+            }
+            require_once __DIR__ . '/../queue_helper.php';
+            $stmt_all_q = $db->query("SELECT queue_name FROM pbx_queues WHERE is_active = 1");
+            if ($stmt_all_q) {
+                foreach ($stmt_all_q->fetchAll(PDO::FETCH_COLUMN) as $qn) {
+                    QueueHelper::setMembership($old_ext, $qn, false);
+                }
+            }
+            $uid = $_SESSION['user_id'] ?? null;
+            markPendingSync('extensions', 'extension', $old_ext, "Extension: {$old_ext} (removed)", 'delete', $uid);
+            markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$old_ext} removed)", 'update', $uid);
+            markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$old_ext} removed)", 'update', $uid);
+            markPendingSync('voicemail', 'voicemail', 'all', "Voicemail ({$old_ext} removed)", 'update', $uid);
+            markPendingSync('permissions', 'permissions', 'all', "Permission groups ({$old_ext} removed)", 'update', $uid);
             return sprintf(t('srv_ext.removed'), $old_ext);
         });
     }

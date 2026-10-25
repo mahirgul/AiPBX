@@ -201,5 +201,11 @@ final class AssistantPlanServiceTest extends TestCase
         $answer = EchoReporter::ask('how many calls today?');
         $this->assertSame('calls.today', $answer['query']);
         $this->assertSame(2, (int) ($answer['rows'][0]['calls'] ?? 0));
+
+        $noAns = EchoReporter::ask('no answer calls');
+        $this->assertSame('noanswer.hour', $noAns['query']);
+
+        $ansRate = EchoReporter::ask('answered rate');
+        $this->assertSame('answered.rate', $ansRate['query']);
     }
 }

@@ -129,4 +129,41 @@ final class PrivacyServiceTest extends TestCase
         $this->assertStringContainsString('[REDACTED-EMAIL]', $redacted);
         $this->assertStringNotContainsString('4532 0151 1283 0366', $redacted);
     }
+
+    public function testDialplanNoticeConfigAndComplianceOverviewUsePbxAnnouncementsAndTwoFactorEnabled(): void
+    {
+        $db = getDB();
+        $db->exec("DELETE FROM pbx_announcements WHERE title = 'Privacy Test Notice'");
+        $stmt = $db->prepare("INSERT INTO pbx_announcements (title, audio_file, is_active) VALUES (?, ?, 1)");
+        $stmt->execute(['Privacy Test Notice', 'custom/privacy_test_notice']);
+        $soundId = (int)$db->lastInsertId();
+
+        $res = PrivacyService::saveNotice([
+            'notice_mode'      => 'optout',
+            'notice_sound_id'  => (string)$soundId,
+            'optout_digit'     => '9',
+            'optout_timeout'   => '4',
+            'recording_beep_sec' => '15',
+            'pci_pause_enabled'  => '1',
+        ]);
+        $this->assertTrue($res['success']);
+
+        $cfg = PrivacyService::dialplanNoticeConfig();
+        $this->assertNotNull($cfg);
+        $this->assertSame('optout', $cfg['mode']);
+        $this->assertSame('custom/privacy_test_notice', $cfg['sound_path']);
+        $this->assertSame('9', $cfg['optout_digit']);
+        $this->assertSame(4, $cfg['optout_timeout']);
+
+        $db->exec("DELETE FROM sys_users WHERE username = 'privacy_test_admin'");
+        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, role, is_active, two_factor_enabled) VALUES ('privacy_test_admin', 'x', 'Privacy Admin', 'admin', 1, 1)")->execute();
+
+        $overview = PrivacyService::complianceOverview();
+        $this->assertGreaterThanOrEqual(1, count($overview['sounds']));
+        $this->assertGreaterThanOrEqual(1, $overview['admin_total_count']);
+        $this->assertGreaterThanOrEqual(1, $overview['admin_2fa_count']);
+
+        $db->exec("DELETE FROM sys_users WHERE username = 'privacy_test_admin'");
+        $db->prepare("DELETE FROM pbx_announcements WHERE id = ?")->execute([$soundId]);
+    }
 }

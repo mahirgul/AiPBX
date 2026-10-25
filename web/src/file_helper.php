@@ -56,7 +56,11 @@ class FileHelper {
      * Sanitize audio file path for Asterisk dialplan playback (removes extensions like .wav, .gsm, .mp3)
      */
     public static function sanitizeAudioPath($path) {
-        $clean = preg_replace('/[^a-zA-Z0-9_.\/-]/', '', trim($path));
+        $clean = preg_replace('/[^a-zA-Z0-9_.\/-]/', '', trim((string)$path));
+        while (str_contains($clean, '..')) {
+            $clean = str_replace('..', '', $clean);
+        }
+        $clean = ltrim((string)preg_replace('#/+#', '/', $clean), '/');
         return preg_replace('/\.(wav|gsm|mp3|sln)$/i', '', $clean);
     }
 }

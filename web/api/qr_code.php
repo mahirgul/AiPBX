@@ -41,7 +41,7 @@ if ($action === 'generate') {
     $token = trim($_REQUEST['token'] ?? '');
     if (empty($token)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Token gereklidir.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'error' => t('mobile_api.qr_token_required')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

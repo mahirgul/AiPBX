@@ -5391,4 +5391,6 @@ Vaš telefon će zazvoniti.',
     'dialplan_rules.sim_no_rule' => 'Nema pravila — bira se kako je uneto',
     'dialplan_rules.copy_suffix' => '(kopija)',
     'dialplan_rules.confirm_turn_off' => 'Isključiti normalizaciju brojeva? Svaki uređaj biraće brojeve tačno onako kako su uneti.',
+    'srv_tc.err_in_use' => 'Овај временски услов се не може обрисати јер улазна рута, IVR или друго одредиште показује на њега!',
+    'srv_role.err_system_delete' => 'Osnovne sistemske uloge (admin, read_only_admin, cc_agent, fax_user, user) ne mogu se obrisati!',
 ];

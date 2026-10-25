@@ -5391,4 +5391,6 @@ Váš telefon zazvoní.',
     'dialplan_rules.sim_no_rule' => 'Žádné pravidlo — vytáčeno tak, jak bylo zadáno',
     'dialplan_rules.copy_suffix' => '(kopie)',
     'dialplan_rules.confirm_turn_off' => 'Vypnout normalizaci čísel? Každé zařízení bude vytáčet čísla přesně tak, jak byla zadána.',
+    'srv_tc.err_in_use' => 'Tuto časovou podmínku nelze smazat, protože na ni odkazuje příchozí trasa, IVR nebo jiný cíl!',
+    'srv_role.err_system_delete' => 'Základní systémové role (admin, read_only_admin, cc_agent, fax_user, user) nelze smazat!',
 ];

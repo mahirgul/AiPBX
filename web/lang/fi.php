@@ -5391,4 +5391,6 @@ Puhelimesi soi.',
     'dialplan_rules.sim_no_rule' => 'Ei sääntöä – valitaan syötetyssä muodossa',
     'dialplan_rules.copy_suffix' => '(kopio)',
     'dialplan_rules.confirm_turn_off' => 'Poistetaanko puhelujen normalisointi käytöstä? Jokainen laite valitsee numerot täsmälleen sellaisina kuin ne on syötetty.',
+    'srv_tc.err_in_use' => 'Tätä aikaehtoa ei voi poistaa, koska saapuva reitti, IVR tai muu kohde osoittaa siihen!',
+    'srv_role.err_system_delete' => 'Järjestelmän perusrooleja (admin, read_only_admin, cc_agent, fax_user, user) ei voi poistaa!',
 ];

@@ -35,7 +35,7 @@ class PushSettingsController extends BaseController
         $settings = PushSettingsRepository::currentSettings();
         $devices = PushSettingsRepository::activeMobileDevices();
 
-        $page_title = 'Mobil Bildirim';
+        $page_title = t('sidebar.item_push_settings');
         static::renderPage('push_settings/index', [
             'settings' => $settings,
             'devices' => $devices,

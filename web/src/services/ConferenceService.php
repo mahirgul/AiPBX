@@ -78,6 +78,30 @@ class ConferenceService {
             if ($d = $dids->fetchAll(PDO::FETCH_COLUMN)) {
                 $refs[] = "Inbound routes (" . implode(', ', $d) . ")";
             }
+            $sid = (string)$id;
+            $count = DBHelper::fetchColumn(
+                "SELECT COUNT(*) FROM (
+                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'conference' AND dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'conference' AND timeout_dest_id = ?) OR (invalid_dest_type = 'conference' AND invalid_dest_id = ?)
+                    UNION ALL
+                    SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'conference' AND match_dest_id = ?) OR (nomatch_dest_type = 'conference' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
+                    UNION ALL
+                    SELECT id FROM pbx_announcements WHERE post_dest_type = 'conference' AND post_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'conference' AND found_dest_id = ?) OR (not_found_dest_type = 'conference' AND not_found_dest_id = ?) OR (timeout_dest_type = 'conference' AND timeout_dest_id = ?)
+                    UNION ALL
+                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'conference' AND dest_id = ?
+                ) refs",
+                [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"conference","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"conference","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
+            );
+            if ($count > 0) {
+                $refs[] = "IVR / time condition / announcement / fallback destinations ({$count})";
+            }
 
             if (!empty($refs)) {
                 throw new \Exception(sprintf(t('srv_conf.err_in_use'), implode(', ', $refs)));
@@ -120,7 +144,7 @@ class ConferenceService {
     public static function kickMember($roomNumber, $channel, $csrf_token = '') {
         return PBXHelper::handleAction($csrf_token, function() use ($roomNumber, $channel) {
             $room = preg_replace('/[^0-9]/', '', (string)$roomNumber);
-            $chan = preg_replace('/[^a-zA-Z0-9\/@_.-]/', '', (string)$channel);
+            $chan = preg_replace('/[^a-zA-Z0-9\/@_;.-]/', '', (string)$channel);
             if ($room && $chan) {
                 @exec("asterisk -rx " . escapeshellarg("confbridge kick {$room} {$chan}"));
                 return t('srv_conf.kicked');
@@ -132,7 +156,7 @@ class ConferenceService {
     public static function muteMember($roomNumber, $channel, $mute = true, $csrf_token = '') {
         return PBXHelper::handleAction($csrf_token, function() use ($roomNumber, $channel, $mute) {
             $room = preg_replace('/[^0-9]/', '', (string)$roomNumber);
-            $chan = preg_replace('/[^a-zA-Z0-9\/@_.-]/', '', (string)$channel);
+            $chan = preg_replace('/[^a-zA-Z0-9\/@_;.-]/', '', (string)$channel);
             if ($room && $chan) {
                 $cmd = $mute ? "confbridge mute {$room} {$chan}" : "confbridge unmute {$room} {$chan}";
                 @exec("asterisk -rx " . escapeshellarg($cmd));

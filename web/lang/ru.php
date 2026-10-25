@@ -5391,4 +5391,6 @@ return [
     'dialplan_rules.sim_no_rule' => 'Нет правила — набирается как введено',
     'dialplan_rules.copy_suffix' => '(копия)',
     'dialplan_rules.confirm_turn_off' => 'Выключить нормализацию номеров? Каждое устройство будет набирать номера точно так, как они введены.',
+    'srv_tc.err_in_use' => 'Это временное условие нельзя удалить, так как на него ссылается входящий маршрут, IVR или другое назначение!',
+    'srv_role.err_system_delete' => 'Базовые системные роли (admin, read_only_admin, cc_agent, fax_user, user) нельзя удалить!',
 ];

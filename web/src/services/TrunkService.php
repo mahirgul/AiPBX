@@ -249,7 +249,7 @@ class TrunkService {
                 SIPHelper::deleteSettings($t_name);
             }
             DBHelper::delete('pbx_trunks', 'id', $trunk_id);
-            markPendingSync('trunks', 'trunk', $t_name ?: ('id_' . $trunk_id), "Trunk: " . ($t_row['title'] ?? $t_name ?? $trunk_id) . " (silindi)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('trunks', 'trunk', $t_name ?: ('id_' . $trunk_id), "Trunk: " . ($t_row['title'] ?? $t_name ?? $trunk_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             return t('srv_trunk.deleted');
         });
     }

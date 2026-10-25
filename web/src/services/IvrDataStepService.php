@@ -77,7 +77,7 @@ class IvrDataStepService
 
         $id = !empty($data['id']) ? (int)$data['id'] : null;
         $description = trim((string)($data['description'] ?? ''));
-        $promptFile = trim((string)($data['prompt_file'] ?? ''));
+        $promptFile = FileHelper::sanitizeAudioPath((string)($data['prompt_file'] ?? ''));
         $maxDigits = max(1, min(30, (int)($data['max_digits'] ?? 10)));
         $inputTimeout = max(1, min(30, (int)($data['input_timeout_sec'] ?? 5)));
 

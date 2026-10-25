@@ -5391,4 +5391,6 @@ return [
     'dialplan_rules.sim_no_rule' => 'Немає правила — набирається як введено',
     'dialplan_rules.copy_suffix' => '(копія)',
     'dialplan_rules.confirm_turn_off' => 'Вимкнути нормалізацію номерів? Кожен пристрій набиратиме номери точно так, як вони введені.',
+    'srv_tc.err_in_use' => 'Цю часову умову не можна видалити, оскільки на неї посилається вхідний маршрут, IVR або інше призначення!',
+    'srv_role.err_system_delete' => 'Базові системні ролі (admin, read_only_admin, cc_agent, fax_user, user) не можна видалити!',
 ];

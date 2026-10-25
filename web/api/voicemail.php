@@ -13,10 +13,22 @@ $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 // Digits only: the number becomes part of a spool path below (admins may name any).
 $targetExt = preg_replace('/[^0-9]/', '', (string) ($_GET['ext'] ?? ($_POST['ext'] ?? $userExt)));
 
-// Only the own extension can be listened to/managed, unless the user has the admin role
-if ($role !== 'admin' && ($targetExt === '' || $targetExt !== $userExt)) {
+if (!hasModulePermission('my_phone', 'view')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
+    exit;
+}
+
+// Only the own extension can be listened to/managed, unless the user has the admin/read_only_admin role
+if (!in_array($role, ['admin', 'read_only_admin'], true) && ($targetExt === '' || $targetExt !== $userExt)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => t('api.err_vm_access')]);
+    exit;
+}
+
+if ($action === 'delete' && !hasModulePermission('my_phone', 'delete')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
     exit;
 }
 

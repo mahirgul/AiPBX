@@ -66,6 +66,27 @@ final class VoicemailServiceTest extends TestCase
             $this->assertNull(VoicemailService::audioPath('1001', $id));
         }
         $this->expectException(\Exception::class);
-        VoicemailService::deleteFiles('1001', 'INBOX:../msg0000');
+        VoicemailService::deleteFiles('1001', 'INBOX:../msg0000', $this->spool);
+    }
+
+    public function testDeleteFilesRemovesSpoolFilesAndAiTranscript(): void
+    {
+        file_put_contents("{$this->spool}/1001/INBOX/msg0000.txt", "callerid=2001\norigtime=1700001234\nduration=12\n");
+        try {
+            getDB()->prepare('INSERT INTO voicemail_ai (mailbox, origtime, transcript, summary) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE transcript = VALUES(transcript)')
+                ->execute(['1001', 1700001234, 'Test transcript', 'Test summary']);
+        } catch (\Throwable $e) {
+        }
+
+        $msg = VoicemailService::deleteFiles('1001', 'INBOX:msg0000', $this->spool);
+        $this->assertNotSame('', $msg);
+        $this->assertSame([], glob("{$this->spool}/1001/INBOX/msg0000.*"));
+
+        try {
+            $st = getDB()->prepare('SELECT COUNT(*) FROM voicemail_ai WHERE mailbox = ? AND origtime = ?');
+            $st->execute(['1001', 1700001234]);
+            $this->assertSame(0, (int) $st->fetchColumn());
+        } catch (\Throwable $e) {
+        }
     }
 }

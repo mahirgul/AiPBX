@@ -5391,4 +5391,6 @@ Telefon zadzwoni.',
     'dialplan_rules.sim_no_rule' => 'Brak reguły — wybierany tak, jak wprowadzono',
     'dialplan_rules.copy_suffix' => '(kopia)',
     'dialplan_rules.confirm_turn_off' => 'Wyłączyć normalizację numerów? Każde urządzenie będzie wybierać numery dokładnie tak, jak zostały wprowadzone.',
+    'srv_tc.err_in_use' => 'Ten warunek czasowy nie może zostać usunięty, ponieważ wskazuje na niego trasa przychodząca, IVR lub inne miejsce docelowe!',
+    'srv_role.err_system_delete' => 'Podstawowe role systemowe (admin, read_only_admin, cc_agent, fax_user, user) nie mogą zostać usunięte!',
 ];

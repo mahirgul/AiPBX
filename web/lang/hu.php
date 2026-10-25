@@ -5391,4 +5391,6 @@ A telefonja csörögni fog.',
     'dialplan_rules.sim_no_rule' => 'Nincs szabály – tárcsázva a megadott formában',
     'dialplan_rules.copy_suffix' => '(másolat)',
     'dialplan_rules.confirm_turn_off' => 'Kikapcsolja a hívásnormalizálást? Minden eszköz pontosan úgy tárcsázza a számokat, ahogyan megadták.',
+    'srv_tc.err_in_use' => 'Ez az időfeltétel nem törölhető, mert bejövő útvonal, IVR vagy más célpont hivatkozik rá!',
+    'srv_role.err_system_delete' => 'Az alap rendszer-szerepkörök (admin, read_only_admin, cc_agent, fax_user, user) nem törölhetők!',
 ];

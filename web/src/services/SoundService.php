@@ -130,13 +130,44 @@ class SoundService {
             $removed_number = (string) ($anc['internal_number'] ?? '');
 
             if ($anc) {
+                $sid = (string) $anc_id;
+                $afile = (string) ($anc['audio_file'] ?? '');
+                $refs = (int) DBHelper::fetchColumn(
+                    "SELECT COUNT(*) FROM (
+                        SELECT id FROM pbx_dids WHERE dest_type = 'announcement' AND (dest_id = ? OR dest_id = ?)
+                        UNION ALL
+                        SELECT id FROM pbx_ivr_entries WHERE dest_type = 'announcement' AND (dest_id = ? OR dest_id = ?)
+                        UNION ALL
+                        SELECT id FROM pbx_ivrs WHERE prompt_file = ? OR (timeout_dest_type = 'announcement' AND (timeout_dest_id = ? OR timeout_dest_id = ?)) OR (invalid_dest_type = 'announcement' AND (invalid_dest_id = ? OR invalid_dest_id = ?))
+                        UNION ALL
+                        SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'announcement' AND (match_dest_id = ? OR match_dest_id = ?)) OR (nomatch_dest_type = 'announcement' AND (nomatch_dest_id = ? OR nomatch_dest_id = ?))
+                        UNION ALL
+                        SELECT id FROM pbx_announcements WHERE id != ? AND post_dest_type = 'announcement' AND (post_dest_id = ? OR post_dest_id = ?)
+                        UNION ALL
+                        SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'announcement' AND (fallback_dest_id = ? OR fallback_dest_id = ?)
+                        UNION ALL
+                        SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'announcement' AND (fallback_dest_id = ? OR fallback_dest_id = ?)
+                        UNION ALL
+                        SELECT id FROM pbx_ivr_data_steps WHERE prompt_file = ? OR (found_dest_type = 'announcement' AND (found_dest_id = ? OR found_dest_id = ?)) OR (not_found_dest_type = 'announcement' AND (not_found_dest_id = ? OR not_found_dest_id = ?)) OR (timeout_dest_type = 'announcement' AND (timeout_dest_id = ? OR timeout_dest_id = ?))
+                        UNION ALL
+                        SELECT id FROM pbx_queues WHERE periodic_announce = ?
+                        UNION ALL
+                        SELECT id FROM pbx_hangup_actions WHERE announcement_id = ?
+                        UNION ALL
+                        SELECT 1 AS id FROM sys_settings WHERE setting_key = 'privacy_notice_sound_id' AND setting_value = ?
+                    ) refs",
+                    [$sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $anc_id, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $anc_id, $sid]
+                );
+                if ($refs > 0) {
+                    throw new \Exception(t('srv_tc.err_in_use'));
+                }
                 $file_path = $custom_dir . '/' . str_replace('custom/', '', $anc['audio_file']) . '.wav';
                 FileHelper::deleteFile($file_path);
                 DBHelper::delete('pbx_announcements', 'id', $anc_id);
                 $uid = $_SESSION['user_id'] ?? null;
-                markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
-                markPendingSync('ivrs', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
-                markPendingSync('time_conditions', 'announcement', $anc_id, "Anons: " . ($anc['audio_file'] ?? $anc_id) . " (silindi)", 'delete', $uid);
+                markPendingSync('inbound_dialplan', 'announcement', $anc_id, "Announcement: " . ($anc['audio_file'] ?? $anc_id) . " (deleted)", 'delete', $uid);
+                markPendingSync('ivrs', 'announcement', $anc_id, "Announcement: " . ($anc['audio_file'] ?? $anc_id) . " (deleted)", 'delete', $uid);
+                markPendingSync('time_conditions', 'announcement', $anc_id, "Announcement: " . ($anc['audio_file'] ?? $anc_id) . " (deleted)", 'delete', $uid);
                 if (!empty($removed_number)) {
                     markPendingSync('internal_numbers', 'announcement', $anc_id,
                         "Internal number removed: {$removed_number}", 'delete', $uid);

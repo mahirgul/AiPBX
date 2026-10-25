@@ -5391,4 +5391,6 @@ O seu telefone vai tocar.',
     'dialplan_rules.sim_no_rule' => 'Sem regra — marcado como introduzido',
     'dialplan_rules.copy_suffix' => '(cópia)',
     'dialplan_rules.confirm_turn_off' => 'Desativar a normalização de chamadas? Cada dispositivo marcará os números exatamente como introduzidos.',
+    'srv_tc.err_in_use' => 'Esta condição de horário não pode ser excluída porque uma rota de entrada, URA ou outro destino aponta para ela!',
+    'srv_role.err_system_delete' => 'Os papéis base do sistema (admin, read_only_admin, cc_agent, fax_user, user) não podem ser excluídos!',
 ];

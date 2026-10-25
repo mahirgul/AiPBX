@@ -32,8 +32,8 @@ try {
 } catch (\Throwable $e) {
 }
 try {
-    foreach ($db->query("SELECT id, name FROM pbx_ivrs ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $ivr) {
-        $destOptions['ivr'][] = ['id' => (string)$ivr['id'], 'label' => $ivr['name'] . ' (#' . $ivr['id'] . ')'];
+    foreach ($db->query("SELECT id, title FROM pbx_ivrs ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $ivr) {
+        $destOptions['ivr'][] = ['id' => (string)$ivr['id'], 'label' => $ivr['title'] . ' (#' . $ivr['id'] . ')'];
     }
 } catch (\Throwable $e) {
 }
@@ -44,27 +44,27 @@ try {
 } catch (\Throwable $e) {
 }
 try {
-    foreach ($db->query("SELECT id, group_name, group_number FROM pbx_ring_groups ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $rg) {
-        $destOptions['ring_group'][] = ['id' => (string)$rg['id'], 'label' => $rg['group_name'] . ' (' . $rg['group_number'] . ')'];
+    foreach ($db->query("SELECT id, name, group_number FROM pbx_ring_groups ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $rg) {
+        $destOptions['ring_group'][] = ['id' => (string)$rg['id'], 'label' => $rg['name'] . ' (' . $rg['group_number'] . ')'];
     }
 } catch (\Throwable $e) {
 }
 try {
-    foreach ($db->query("SELECT id, name FROM pbx_announcements ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $an) {
-        $destOptions['announcement'][] = ['id' => (string)$an['id'], 'label' => $an['name']];
+    foreach ($db->query("SELECT id, title FROM pbx_announcements ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $an) {
+        $destOptions['announcement'][] = ['id' => (string)$an['id'], 'label' => $an['title']];
     }
 } catch (\Throwable $e) {
 }
 try {
-    foreach ($db->query("SELECT id, name, exten FROM pbx_ai_apps ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $ai) {
-        $destOptions['ai_app'][] = ['id' => (string)$ai['id'], 'label' => $ai['name'] . ' (' . $ai['exten'] . ')'];
+    foreach ($db->query("SELECT id, title, internal_number FROM pbx_ai_apps ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $ai) {
+        $destOptions['ai_app'][] = ['id' => (string)$ai['id'], 'label' => $ai['title'] . (!empty($ai['internal_number']) ? ' (' . $ai['internal_number'] . ')' : '')];
     }
 } catch (\Throwable $e) {
 }
 
 $soundOptions = [];
 try {
-    foreach ($db->query("SELECT title, audio_file FROM pbx_sounds ORDER BY title ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $snd) {
+    foreach ($db->query("SELECT title, audio_file FROM pbx_announcements WHERE audio_file IS NOT NULL AND audio_file != '' ORDER BY title ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [] as $snd) {
         $soundOptions[] = [
             'file'  => str_replace('custom/', '', (string)$snd['audio_file']),
             'title' => (string)$snd['title'],

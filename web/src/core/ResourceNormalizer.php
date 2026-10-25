@@ -20,6 +20,7 @@ final class ResourceNormalizer
         'secret_encrypted',
         'token_hash',
         'token',
+        'provision_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
     ];

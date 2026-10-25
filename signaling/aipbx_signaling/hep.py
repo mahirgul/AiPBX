@@ -32,13 +32,14 @@ What still needs care:
 
 from __future__ import annotations
 
-import gzip
 import ipaddress
 import json
 import re
+import zlib
 from typing import Iterator, Optional
 
 HEP_MAGIC = b"HEP3"
+MAX_GZ_PAYLOAD_LEN = 65536
 
 # Chunk types (Homer Encapsulation Protocol v3, the ones Asterisk's res_hep sends).
 HEP_IP_FAMILY = 0x0001        # 2 = IPv4, 10 = IPv6
@@ -324,8 +325,13 @@ def parse_event(data: bytes) -> Optional[dict]:
     gz = fields.get(HEP_PAYLOAD_GZ)
     if not payload and gz:
         try:
-            payload = gzip.decompress(gz)
-        except (OSError, EOFError):
+            d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            chunk = d.decompress(gz, MAX_GZ_PAYLOAD_LEN + 1)
+            if len(chunk) <= MAX_GZ_PAYLOAD_LEN and not d.unconsumed_tail:
+                payload = chunk + d.flush()
+                if len(payload) > MAX_GZ_PAYLOAD_LEN:
+                    payload = b""
+        except (zlib.error, OSError, EOFError):
             payload = b""
 
     transport_raw = fields.get(HEP_IP_PROTO, b"")

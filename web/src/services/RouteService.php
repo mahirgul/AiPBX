@@ -123,6 +123,32 @@ class RouteService {
     public static function deleteOutboundRoute($route_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($route_id) {
             $route_id = intval($route_id);
+            $sid = (string)$route_id;
+            $refs = (int)DBHelper::fetchColumn(
+                "SELECT COUNT(*) FROM (
+                    SELECT id FROM pbx_web_widgets WHERE outbound_route_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_dids WHERE dest_type = 'outbound_route' AND dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'outbound_route' AND dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'outbound_route' AND timeout_dest_id = ?) OR (invalid_dest_type = 'outbound_route' AND invalid_dest_id = ?)
+                    UNION ALL
+                    SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'outbound_route' AND match_dest_id = ?) OR (nomatch_dest_type = 'outbound_route' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
+                    UNION ALL
+                    SELECT id FROM pbx_announcements WHERE post_dest_type = 'outbound_route' AND post_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'outbound_route' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'outbound_route' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'outbound_route' AND found_dest_id = ?) OR (not_found_dest_type = 'outbound_route' AND not_found_dest_id = ?) OR (timeout_dest_type = 'outbound_route' AND timeout_dest_id = ?)
+                ) refs",
+                [$route_id, $sid, $sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"outbound_route","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"outbound_route","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid]
+            );
+            if ($refs > 0) {
+                throw new \Exception(t('srv_tc.err_in_use'));
+            }
             $route_name = DBHelper::fetchColumn("SELECT route_name FROM pbx_outbound_routes WHERE id = ?", [$route_id]);
             DBHelper::delete('pbx_outbound_routes', 'id', $route_id);
             markPendingSync('outbound_dialplan', 'outbound_route', $route_name ?: ('id_' . $route_id), "Outbound route: " . ($route_name ?: $route_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);

@@ -500,6 +500,22 @@ final class PluginManager
                  ON DUPLICATE KEY UPDATE name = VALUES(name), version = VALUES(version), source = 'custom', enabled = 1, updated_at = NOW()"
             )->execute([$slug, $name, $version, $hasWorker]);
 
+            if (!empty($manifest['settings_schema']) && is_array($manifest['settings_schema'])) {
+                foreach ($manifest['settings_schema'] as $field) {
+                    $k = (string)($field['key'] ?? '');
+                    if ($k === '' || !isset($field['default'])) {
+                        continue;
+                    }
+                    $existing = DBHelper::fetchColumn(
+                        'SELECT setting_value FROM sys_plugin_settings WHERE plugin_slug = ? AND setting_key = ?',
+                        [$slug, $k]
+                    );
+                    if ($existing === false) {
+                        self::setSetting($slug, $k, (string)$field['default'], !empty($field['secret']));
+                    }
+                }
+            }
+
             if ($hasWorker || !empty($manifest['scopes'])) {
                 $scopes = is_array($manifest['scopes'] ?? null) ? $manifest['scopes'] : [];
                 $rawToken = ApiTokenService::issuePluginToken($slug, $name, $scopes);
@@ -508,6 +524,16 @@ final class PluginManager
 
             // Apply plugin database schema (schema.sql -> plg_* tables only)
             self::applyPluginSchema($slug, $targetDir);
+
+            if (!empty($manifest['hooks']['sync_domain'])) {
+                try {
+                    require_once dirname(__DIR__) . '/asterisk_sync.php';
+                    $dom = (string)$manifest['hooks']['sync_domain'];
+                    $targetDom = defined('PENDING_SYNC_DOMAIN_MAP') && isset(PENDING_SYNC_DOMAIN_MAP[$dom]) ? $dom : 'general_dialplan';
+                    markPendingSync($targetDom, 'plugin', $slug, "Custom plugin uploaded & enabled: {$name}", 'update', $_SESSION['user_id'] ?? null);
+                } catch (\Throwable $e) {
+                }
+            }
 
             self::resetCache();
             writeAuditLog('plugins', 'plugin', $slug, "Custom plugin uploaded & enabled: {$name} (v{$version})", 'create', $_SESSION['user_id'] ?? null);

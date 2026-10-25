@@ -456,10 +456,10 @@ final class PrivacyService
         }
 
         try {
-            $rows = $db->query("SELECT totp_enabled FROM sys_users WHERE is_active = 1 AND role = 'admin'")->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $db->query("SELECT two_factor_enabled FROM sys_users WHERE is_active = 1 AND role = 'admin'")->fetchAll(PDO::FETCH_ASSOC);
             $adminTotalCount = count($rows);
             foreach ($rows as $r) {
-                if (!empty($r['totp_enabled'])) {
+                if (!empty($r['two_factor_enabled'])) {
                     $admin2faCount++;
                 }
             }
@@ -482,7 +482,7 @@ final class PrivacyService
 
         $sounds = [];
         try {
-            $sounds = $db->query("SELECT id, title, file_path, language FROM pbx_sounds ORDER BY title ASC")->fetchAll(PDO::FETCH_ASSOC);
+            $sounds = $db->query("SELECT id, title, audio_file AS file_path FROM pbx_announcements ORDER BY title ASC")->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
         }
 
@@ -512,7 +512,7 @@ final class PrivacyService
             return null;
         }
         try {
-            $stmt = getDB()->prepare("SELECT file_path FROM pbx_sounds WHERE id = ?");
+            $stmt = getDB()->prepare("SELECT audio_file FROM pbx_announcements WHERE id = ?");
             $stmt->execute([$soundId]);
             $filePath = (string)($stmt->fetchColumn() ?: '');
             if ($filePath === '') {

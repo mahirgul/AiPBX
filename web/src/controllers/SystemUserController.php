@@ -29,7 +29,7 @@ class SystemUserController extends BaseController
         // CSV template download (admin only — requireRole above)
         if (($_GET['download'] ?? '') === 'user_import_template') {
             header('Content-Type: text/csv; charset=UTF-8');
-            header('Content-Disposition: attachment; filename="kullanici_sablonu.csv"');
+            header('Content-Disposition: attachment; filename="user_import_template.csv"');
             echo UserImportService::templateCsv();
             exit;
         }

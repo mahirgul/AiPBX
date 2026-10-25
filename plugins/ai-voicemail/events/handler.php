@@ -28,7 +28,7 @@ return static function (string $eventName, array $envelope, array $settings): vo
     $lang = trim((string)($settings['summary_language'] ?? 'tr'));
 
     $summary = '';
-    if ($apiKey !== '' && $baseUrl !== '' && filter_var($baseUrl, FILTER_VALIDATE_URL)) {
+    if ($apiKey !== '' && $baseUrl !== '' && filter_var($baseUrl, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $baseUrl)) {
         $promptText = $transcript !== ''
             ? "Voicemail from {$caller} to mailbox {$mailbox} ({$duration}s):\n{$transcript}"
             : "New voicemail left by {$caller} for mailbox {$mailbox}, duration {$duration} seconds.";
@@ -49,7 +49,7 @@ return static function (string $eventName, array $envelope, array $settings): vo
 
         $ch = curl_init($baseUrl . '/chat/completions');
         if ($ch !== false && is_string($payload)) {
-            curl_setopt_array($ch, [
+            $curlOpts = [
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $payload,
                 CURLOPT_HTTPHEADER => [
@@ -57,9 +57,15 @@ return static function (string $eventName, array $envelope, array $settings): vo
                     'Authorization: Bearer ' . $apiKey,
                 ],
                 CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_TIMEOUT => 12,
                 CURLOPT_CONNECTTIMEOUT => 5,
-            ]);
+            ];
+            if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+                $curlOpts[CURLOPT_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+                $curlOpts[CURLOPT_REDIR_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+            }
+            curl_setopt_array($ch, $curlOpts);
             $resp = curl_exec($ch);
             $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);

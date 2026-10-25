@@ -130,7 +130,7 @@ func (s *Server) HandleCreateDirectConversation(w http.ResponseWriter, r *http.R
 		TargetExtension string `json:"target_extension"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.TargetExtension == "" {
-		writeJSONError(w, http.StatusBadRequest, "target_extension zorunludur.")
+		writeJSONError(w, http.StatusBadRequest, "target_extension is required.")
 		return
 	}
 
@@ -381,7 +381,7 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request, user *User
 	store := files.Primary()
 	if err := store.Put(ctx, subDir+"/"+savedFileName, reader, fileSize, detectedMime); err != nil {
 		log.Printf("[Upload] Could not store %s/%s (%s): %v", subDir, savedFileName, store.Name(), err)
-		writeInternalError(w, "Dosya kaydedilemedi", err)
+		writeInternalError(w, "Could not save the file", err)
 		return
 	}
 
@@ -1060,7 +1060,7 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 
 	err = DeleteGroup(body.ConversationID, user.Extension)
 	if err != nil {
-		writeInternalError(w, "Grup silinemedi", err)
+		writeInternalError(w, "Could not delete the group", err)
 		return
 	}
 

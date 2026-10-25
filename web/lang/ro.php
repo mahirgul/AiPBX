@@ -5391,4 +5391,6 @@ Telefonul dvs. va suna.',
     'dialplan_rules.sim_no_rule' => 'Nicio regulă — apelat cum a fost introdus',
     'dialplan_rules.copy_suffix' => '(copie)',
     'dialplan_rules.confirm_turn_off' => 'Dezactivați normalizarea apelurilor? Fiecare dispozitiv va apela numerele exact așa cum au fost introduse.',
+    'srv_tc.err_in_use' => 'Această condiție de timp nu poate fi ștearsă deoarece o rută de intrare, un IVR sau o altă destinație indică spre ea!',
+    'srv_role.err_system_delete' => 'Rolurile de bază ale sistemului (admin, read_only_admin, cc_agent, fax_user, user) nu pot fi șterse!',
 ];

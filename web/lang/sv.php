@@ -5391,4 +5391,6 @@ Din telefon kommer att ringa.',
     'dialplan_rules.sim_no_rule' => 'Ingen regel – rings som angivet',
     'dialplan_rules.copy_suffix' => '(kopia)',
     'dialplan_rules.confirm_turn_off' => 'Inaktivera samtalsnormalisering? Varje enhet ringer numren exakt som angivet.',
+    'srv_tc.err_in_use' => 'Detta tidsvillkor kan inte tas bort eftersom en inkommande rutt, IVR eller annan destination pekar på det!',
+    'srv_role.err_system_delete' => 'Systemets basroller (admin, read_only_admin, cc_agent, fax_user, user) kan inte tas bort!',
 ];

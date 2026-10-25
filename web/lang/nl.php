@@ -5391,4 +5391,6 @@ Je telefoon gaat over.',
     'dialplan_rules.sim_no_rule' => 'Geen regel — gekozen zoals ingevoerd',
     'dialplan_rules.copy_suffix' => '(kopie)',
     'dialplan_rules.confirm_turn_off' => 'Oproepnormalisatie uitschakelen? Elk apparaat kiest nummers precies zoals ingevoerd.',
+    'srv_tc.err_in_use' => 'Deze tijdsvoorwaarde kan niet worden verwijderd omdat een inkomende route, IVR of andere bestemming ernaar verwijst!',
+    'srv_role.err_system_delete' => 'Basissysteemrollen (admin, read_only_admin, cc_agent, fax_user, user) kunnen niet worden verwijderd!',
 ];

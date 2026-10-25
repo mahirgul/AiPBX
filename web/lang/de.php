@@ -5391,4 +5391,6 @@ Ihr Telefon wird klingeln.',
     'dialplan_rules.sim_no_rule' => 'Keine Regel — wie eingegeben gewählt',
     'dialplan_rules.copy_suffix' => '(Kopie)',
     'dialplan_rules.confirm_turn_off' => 'Rufnummern-Normalisierung ausschalten? Jedes Gerät wählt Nummern genau wie eingegeben.',
+    'srv_tc.err_in_use' => 'Diese Zeitbedingung kann nicht gelöscht werden, da eine eingehende Route, ein IVR oder ein anderes Ziel darauf verweist!',
+    'srv_role.err_system_delete' => 'System-Basisrollen (admin, read_only_admin, cc_agent, fax_user, user) können nicht gelöscht werden!',
 ];

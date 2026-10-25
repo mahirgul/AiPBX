@@ -79,6 +79,30 @@ class TimeConditionService {
     public static function deleteTimeCondition($tc_id, $csrf_token) {
         return PBXHelper::handleAction($csrf_token, function() use ($tc_id) {
             $tc_id = intval($tc_id);
+            $sid = (string)$tc_id;
+            $refs = DBHelper::fetchColumn(
+                "SELECT COUNT(*) FROM (
+                    SELECT id FROM pbx_dids WHERE dest_type = 'time_condition' AND dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'time_condition' AND dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'time_condition' AND timeout_dest_id = ?) OR (invalid_dest_type = 'time_condition' AND invalid_dest_id = ?)
+                    UNION ALL
+                    SELECT id FROM pbx_time_conditions WHERE id != ? AND ((match_dest_type = 'time_condition' AND match_dest_id = ?) OR (nomatch_dest_type = 'time_condition' AND nomatch_dest_id = ?) OR rules_json LIKE ?)
+                    UNION ALL
+                    SELECT id FROM pbx_announcements WHERE post_dest_type = 'time_condition' AND post_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'time_condition' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'time_condition' AND fallback_dest_id = ?
+                    UNION ALL
+                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'time_condition' AND dest_id = ?
+                ) refs",
+                [$sid, $sid, $sid, $sid, $tc_id, $sid, $sid, '%"match_dest_type":"time_condition","match_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid]
+            );
+            if ($refs > 0) {
+                throw new \Exception(t('srv_tc.err_in_use'));
+            }
             $tc_title = DBHelper::fetchColumn("SELECT title FROM pbx_time_conditions WHERE id = ?", [$tc_id]);
             $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_time_conditions WHERE id = ?", [$tc_id]) ?? '');
             DBHelper::delete('pbx_time_conditions', 'id', $tc_id);

@@ -92,9 +92,9 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
             foreach ($outbound_routes as $r) {
                 $pattern = trim($r['match_pattern'] ?? '');
                 if ($pattern === '') continue;
-                $pat_clean = preg_replace('/[^0-9NXZnxz.\[\]_!*#-]/', '', $pattern);
+                $pat_clean = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', $pattern);
                 if ($pat_clean === '') continue;
-                $ext_rule = ($pat_clean[0] === '_' || preg_match('/^[0-9*#]+$/', $pat_clean)) ? $pat_clean : "_{$pat_clean}";
+                $ext_rule = ($pat_clean[0] === '_' || preg_match('/^[+0-9*#]+$/', $pat_clean)) ? $pat_clean : "_{$pat_clean}";
                 if (isset($used_digits[$ext_rule]) || isset($dialable[$ext_rule])) continue;
                 if (in_array($ext_rule, ['_.', '_!', '_X.', '_X!'], true)) continue;
                 $r_name = toCleanAscii($r['route_name'] ?? 'Route');

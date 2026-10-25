@@ -202,7 +202,7 @@ class MsTeamsService
             'potentialAction' => [
                 [
                     '@type'   => 'OpenURI',
-                    'name'    => 'AiPBX Paneline Git',
+                    'name'    => t('ms_teams.title'),
                     'targets' => [
                         ['os' => 'default', 'uri' => ForgotPasswordService::portalUrl() . '/ms-teams'],
                     ],
@@ -285,8 +285,8 @@ class MsTeamsService
         $now = time();
         $daysRemaining = (int)floor(($validToTimestamp - $now) / 86400);
 
-        $cn = $parsed['subject']['CN'] ?? ($parsed['subject']['commonName'] ?? 'Bilinmiyor');
-        $issuer = $parsed['issuer']['O'] ?? ($parsed['issuer']['CN'] ?? 'Bilinmiyor');
+        $cn = $parsed['subject']['CN'] ?? ($parsed['subject']['commonName'] ?? t('ms_teams.cert_unknown'));
+        $issuer = $parsed['issuer']['O'] ?? ($parsed['issuer']['CN'] ?? t('ms_teams.cert_unknown'));
 
         $sans = [];
         if (!empty($parsed['extensions']['subjectAltName'])) {
@@ -331,7 +331,7 @@ class MsTeamsService
         $output = [];
         $output[] = "# ==============================================================================";
         $output[] = "# AiPBX - Microsoft Teams Direct Routing configuration script";
-        $output[] = "# Olusturuldu: " . date('Y-m-d H:i:s');
+        $output[] = "# Generated: " . date('Y-m-d H:i:s');
         $output[] = "# SBC FQDN: {$domain} (Port: {$port})";
         $output[] = "# ==============================================================================";
         $output[] = "";
@@ -343,7 +343,7 @@ class MsTeamsService
         $output[] = "Write-Host 'Connecting to Microsoft 365...' -ForegroundColor Cyan";
         $output[] = "Connect-MicrosoftTeams";
         $output[] = "";
-        $output[] = "# 2. AiPBX SBC Gateway Tanimlama";
+        $output[] = "# 2. Define AiPBX SBC gateway";
         $output[] = "Write-Host 'Defining SBC PSTN gateway: {$domain}:{$port}' -ForegroundColor Cyan";
         $output[] = "\$existingSbc = Get-CsOnlinePSTNGateway -Identity '{$domain}' -ErrorAction SilentlyContinue";
         $output[] = "if (\$null -eq \$existingSbc) {";
@@ -406,7 +406,7 @@ class MsTeamsService
 
         $output[] = "";
         $output[] = "# 5. Status check";
-        $output[] = "Write-Host '--- SBC Gateway Durumu ---' -ForegroundColor Yellow";
+        $output[] = "Write-Host '--- SBC Gateway Status ---' -ForegroundColor Yellow";
         $output[] = "Get-CsOnlinePSTNGateway -Identity '{$domain}' | Format-List Fqdn, SipSignalingPort, Enabled, Status";
         $output[] = "Write-Host 'Done! Your AiPBX - Teams Direct Routing connection is ready.' -ForegroundColor Green";
 

@@ -91,6 +91,19 @@ if ($action === 'pause') {
                 $db->rollBack();
             }
         });
+
+        require_once __DIR__ . '/../../src/services/LampService.php';
+        LampService::refresh();
+        try {
+            require_once __DIR__ . '/../../src/services/WebhookService.php';
+            WebhookService::emit('queue.member_paused', [
+                'extension'  => (string)$user_ext,
+                'paused'     => true,
+                'reason'     => $reason,
+                'queue_name' => null,
+            ]);
+        } catch (\Throwable $e) {
+        }
     }
     echo json_encode(['success' => true, 'message' => sprintf(t('api_cc.break_started'), $reason), 'reason' => $reason]);
     exit;
@@ -107,6 +120,18 @@ if ($action === 'unpause') {
             $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
             $stmt->execute([$user_ext]);
         });
+
+        require_once __DIR__ . '/../../src/services/LampService.php';
+        LampService::refresh();
+        try {
+            require_once __DIR__ . '/../../src/services/WebhookService.php';
+            WebhookService::emit('queue.member_paused', [
+                'extension'  => (string)$user_ext,
+                'paused'     => false,
+                'queue_name' => null,
+            ]);
+        } catch (\Throwable $e) {
+        }
     }
     echo json_encode(['success' => true, 'message' => t('api_cc.break_ended')]);
     exit;
@@ -173,7 +198,7 @@ if ($action === 'auto_login') {
         $last_queues = json_decode($_POST['last_queues'] ?? '[]', true) ?: [];
 
         // Fetch assigned active queues for this user
-        $stmt = $db->query("SELECT queue_name, members_json FROM pbx_queues WHERE is_active = 1");
+        $stmt = $db->query("SELECT queue_name, members_json, static_members_json FROM pbx_queues WHERE is_active = 1");
         $all_queues = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($all_queues as $q) {
@@ -182,10 +207,13 @@ if ($action === 'auto_login') {
 
             // STRICT ASSIGNMENT CHECK: Extension MUST be explicitly in members_json
             $is_assigned = in_array((string)$user_ext, array_map('strval', $members));
+            $is_static = in_array((string)$user_ext, QueueHelper::staticMembersOf($q), true);
 
-            // Only auto-login if explicitly assigned AND (either in last_queues or last_queues is empty)
-            if ($is_assigned && (empty($last_queues) || in_array($q_name, $last_queues))) {
-                @exec("asterisk -rx " . escapeshellarg("queue add member Local/$user_ext@from-internal-pbx/n to $q_name penalty 0 as \"Agent $user_ext\" state_interface hint:$user_ext@from-internal-pbx"), $out);
+            // Static members are always in the queue; dynamic members auto-login if in last_queues (or last_queues is empty)
+            if ($is_assigned && ($is_static || empty($last_queues) || in_array($q_name, $last_queues))) {
+                if (!$is_static) {
+                    @exec("asterisk -rx " . escapeshellarg("queue add member Local/$user_ext@from-internal-pbx/n to $q_name penalty 0 as \"Agent $user_ext\" state_interface hint:$user_ext@from-internal-pbx"), $out);
+                }
 
                 // After an Asterisk restart/reload the dynamic membership is
                 // reset and a newly added member starts UNPAUSED (active) by
@@ -204,12 +232,14 @@ if ($action === 'auto_login') {
                     $active_reason_cli = str_replace('"', '', (string)$active_reason);
                     @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$user_ext@from-internal-pbx/n queue $q_name reason \"$active_reason_cli\""), $out);
                 }
-            } else {
-                // If not assigned to this queue, strictly remove extension from Asterisk queue
+            } elseif (!$is_static) {
+                // If not assigned to this queue (and not static), strictly remove extension from Asterisk queue
                 @exec("asterisk -rx " . escapeshellarg("queue remove member Local/$user_ext@from-internal-pbx/n from $q_name"), $out);
                 @exec("asterisk -rx " . escapeshellarg("queue remove member PJSIP/$user_ext from $q_name"), $out);
             }
         }
+        require_once __DIR__ . '/../../src/services/LampService.php';
+        LampService::refresh();
     }
     echo json_encode(['success' => true, 'message' => t('api_cc.auto_check_done')]);
     exit;

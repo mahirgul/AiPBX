@@ -58,7 +58,7 @@ if [ "$RETENTION_DAYS" -gt 0 ]; then
         log "$TABLE: $COUNT old records deleted (retention=${RETENTION_DAYS}d)"
     done
 else
-    log "Retention sinirsiz (0), arsiv temizligi atlandi"
+    log "Retention unlimited (0), archive cleanup skipped"
 fi
 
 # 2. Stray temporary files left in the spool (unarchived/uncleaned leftovers)
