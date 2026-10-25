@@ -211,11 +211,22 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
         $this->assertArrayHasKey('summary', $resHealth['json']['data']);
         $this->assertArrayHasKey('checks', $resHealth['json']['data']);
 
-        $resSettings = $this->apiRequest('GET', '/api/v1/system/settings');
+        // The test database of CI starts empty: set the value the answer must contain.
+        $oldIp = getSystemSetting('pjsip_external_ip', null);
+        setSystemSetting('pjsip_external_ip', '203.0.113.5');
+        try {
+            $resSettings = $this->apiRequest('GET', '/api/v1/system/settings');
+        } finally {
+            if ($oldIp === null) {
+                getDB()->exec("DELETE FROM sys_settings WHERE setting_key = 'pjsip_external_ip'");
+            } else {
+                setSystemSetting('pjsip_external_ip', (string) $oldIp);
+            }
+        }
         $this->assertSame(200, $resSettings['status']);
         $this->assertTrue($resSettings['json']['success']);
         $this->assertIsArray($resSettings['json']['data']);
-        $this->assertArrayHasKey('pjsip_external_ip', $resSettings['json']['data']);
+        $this->assertSame('203.0.113.5', $resSettings['json']['data']['pjsip_external_ip'] ?? null);
     }
 
     // -------------------------------------------------------------------------
