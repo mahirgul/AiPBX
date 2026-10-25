@@ -70,13 +70,21 @@ The installer:
 
 After installing, open `https://<your-server>` and log in with the admin credentials shown.
 
-### 📺 Video guide
+### 📺 Video guides
 
-The whole installation, step by step, narrated and with subtitles — on the [AiPBX YouTube channel](https://www.youtube.com/@aipbx):
+Narrated and with subtitles — on the [AiPBX YouTube channel](https://www.youtube.com/@aipbx):
+
+#### 🚀 Installation step by step
 
 | English | Türkçe | Deutsch |
 |:---:|:---:|:---:|
 | [![Install AiPBX (English)](https://img.youtube.com/vi/lH1-k_z5jFE/mqdefault.jpg)](https://www.youtube.com/watch?v=lH1-k_z5jFE) | [![AiPBX kurulumu (Türkçe)](https://img.youtube.com/vi/eDHHHW6ZcvQ/mqdefault.jpg)](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) | [![AiPBX installieren (Deutsch)](https://img.youtube.com/vi/1QuOM6Rtcbg/mqdefault.jpg)](https://www.youtube.com/watch?v=1QuOM6Rtcbg) |
+
+#### 🗺️ Menu tour: every screen of the portal
+
+| English | Türkçe | Deutsch |
+|:---:|:---:|:---:|
+| [![AiPBX Menu Tour (English)](https://img.youtube.com/vi/xU0BYN6AKE4/mqdefault.jpg)](https://www.youtube.com/watch?v=xU0BYN6AKE4) | [![AiPBX Menü Turu (Türkçe)](https://img.youtube.com/vi/Teol14NgXbY/mqdefault.jpg)](https://www.youtube.com/watch?v=Teol14NgXbY) | [![AiPBX Menütour (Deutsch)](https://img.youtube.com/vi/8whV_DY3ZqQ/mqdefault.jpg)](https://www.youtube.com/watch?v=8whV_DY3ZqQ) |
 
 ---
 
