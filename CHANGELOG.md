@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.17
+
+- **Queue recording label uniqueness in multi-branch dialplans:** when multiple branches of a
+  time condition routed to the same queue, duplicate priority labels caused Asterisk GotoIf jumps
+  to loop back to the first branch. Labels now use an incremental sequence number per invocation.
+- **Call forwarding (`*72`) target length:** extended maximum input digit length from 10 to 20 digits,
+  preventing truncation of 11-digit Turkish mobile numbers (`05xx...`) or trunk-prefixed external numbers.
+- **Incoming fax destination handling:** added matching for E.164 (`+X!`) numbers and `default` targets
+  in `[from-trunk-fax]`, preventing dropped faxes routed from IVR or time conditions, and preserved the
+  received DID in `${FAX_RX_EXTEN}` across the `h` extension for accurate email notifications.
+
 ## 1.50.16
 
 - **Security hardening & input validation:** enforced caller dial permissions and internal channel
