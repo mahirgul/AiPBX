@@ -5,6 +5,23 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.15
+
+- **Privacy & Compliance portal CSRF security and notification fixes:** all POST actions on
+  `/privacy` (`apply_profile`, `save_notice`, `save_retention`, `run_purge`, `erase_subject`,
+  `save_compliance`) now strictly verify the CSRF security token and return status indicators,
+  ensuring action notices are displayed properly.
+- **Asterisk SIP diagnostics security:** SIP debug enable/disable and log rotation actions now
+  enforce CSRF token verification and record security audit log entries.
+- **External database `#` literal protection:** query comment stripping now preserves `#` and `--`
+  characters inside quoted SQL string literals, avoiding syntax errors when filtering tags.
+- **Scheduled tasks alert cleanup:** deleting a scheduled task resolves any pending failure
+  notification in the top bar alert bell.
+- **IVR data step routing safeguards:** destination types and identifiers are sanitized upon save,
+  and steps are guarded against circular self-loop references.
+- **Multi-language completeness:** hardcoded strings across extension service, Asterisk sync
+  modules, call center actions, and feature codes were replaced with translated language keys.
+
 ## 1.50.14
 
 - **REST API with a portal session:** an administrator signed in to the portal who opened an
