@@ -73,8 +73,101 @@ ASTERISK_RESTART_EPOCH=1
 #     connection that stops answering is simply waited on.
 # `-o DPkg::Lock::Timeout` gives apt a bound (it then fails with its own "Could
 # not get lock" message), and `timeout` bounds Composer, which has no such knob.
+#
+# Neither of those covers the third way this can stop: apt's own configure stage
+# runs postinst scripts that can block for ever, with nothing printed and no
+# timeout of apt's own. That is why the package phase below also runs under
+# stream_bounded (see APT_* there): a wall-clock budget for the phase, and a
+# bound on how long its output may stand still.
 APT_LOCK_WAIT=120      # seconds apt-get may wait for the dpkg lock
 COMPOSER_TIMEOUT=900   # seconds the whole `composer install` may take
+
+# --- Streaming, time-bounded apt ---------------------------------------------
+# This step used to end in `apt-get ... 2>&1 | tail -5`, and that pipe is why the
+# 2026-10-26 stall was invisible: it holds every line until apt exits, so a phase
+# that ran for 45 minutes wrote nothing to the log at all — and even the healthy
+# run showed 126 s of silence while dpkg configured, with no way to tell that
+# from a hang.
+#
+# So apt now runs under stream_bounded: every line reaches stdout as it arrives
+# (the CI keeps it through `tee`, so a cancelled job still has the evidence), a
+# copy stays in a file so the last lines can be shown after a kill, the phase
+# has a wall-clock budget, and the output may not stand still for long either.
+# A stall now ends in minutes, naming the phase and printing the last thing apt
+# said, instead of costing the caller's whole timeout.
+APT_UPDATE_TIMEOUT=300    # apt-get update: a mirror that cannot answer in 5 min is down
+APT_INSTALL_TIMEOUT=1200  # apt-get install of every package; the healthy run took ~2.5 min
+APT_SILENCE=300           # output standing still this long means a download or a postinst is stuck
+
+# stream_bounded <label> <budget-seconds> <silence-seconds> -- <command...>
+# Runs the command under both clocks, streaming its output. Returns the
+# command's own status, or
+#   124  the wall-clock budget ran out
+#   125  the output stood still for the silence bound
+stream_bounded() {
+    local label="$1" budget="$2" quiet="$3"
+    local log rc=0 shown=0 lines=0 start last_out reason="" pid i elapsed
+    shift 3
+    [[ "${1:-}" == "--" ]] && shift
+
+    log="$(mktemp)" || { "$@"; return $?; }
+    start=$SECONDS
+    last_out=$start
+    info "$label — up to ${budget}s, ${quiet}s without a line counts as stuck"
+
+    # `timeout` rather than a clock inside the loop: it puts the command in its
+    # own process group and signals the group, so a hung postinst goes with
+    # apt-get instead of being orphaned halfway through a configure.
+    timeout --signal=TERM --kill-after=60 "$budget" "$@" >>"$log" 2>&1 &
+    pid=$!
+
+    while kill -0 "$pid" 2>/dev/null; do
+        sleep 2
+        lines=$(wc -l <"$log" 2>/dev/null | tr -d ' ')
+        [ -n "$lines" ] || lines=0
+        if [ "$lines" -gt "$shown" ]; then
+            sed -n "$((shown + 1)),${lines}p" "$log"
+            shown=$lines
+            last_out=$SECONDS
+        fi
+        if [ $((SECONDS - last_out)) -ge "$quiet" ]; then
+            reason="went silent for $((SECONDS - last_out))s"
+            break
+        fi
+    done
+
+    if [ -n "$reason" ]; then
+        kill -TERM "$pid" 2>/dev/null || true
+        i=0
+        while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 30 ]; do
+            sleep 1
+            i=$((i + 1))
+        done
+        kill -KILL "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" 2>/dev/null || rc=$?
+
+    # The loop stops looking the moment the process ends, so whatever was
+    # printed between the last tick and the exit still has to be flushed: on a
+    # failure those lines are the whole diagnosis.
+    lines=$(wc -l <"$log" 2>/dev/null | tr -d ' ')
+    [ -n "$lines" ] || lines=0
+    if [ "$lines" -gt "$shown" ]; then
+        sed -n "$((shown + 1)),${lines}p" "$log"
+    fi
+    rm -f "$log"
+
+    elapsed=$((SECONDS - start))
+    if [ -n "$reason" ]; then
+        warn "$label $reason — killed after ${elapsed}s; the lines above are the last thing it printed"
+        return 125
+    fi
+    case $rc in
+        0)   ok "$label finished in ${elapsed}s" ; return 0 ;;
+        124) warn "$label hit the ${budget}s budget — killed; the lines above are where it stopped" ; return 124 ;;
+        *)   warn "$label failed (status $rc)" ; return "$rc" ;;
+    esac
+}
 
 # --- Mode: fresh install (default) or --upgrade ---
 AIPBX_MODE=install
@@ -402,12 +495,33 @@ if is_upgrade && [[ ${#MISSING[@]} -eq 0 ]]; then
     info "All system packages present — apt skipped"
 else
     is_upgrade && info "Installing new packages: ${MISSING[*]}"
-    apt-get "${APT_NET[@]}" update -qq || warn "apt-get update failed — using the existing package lists"
+    # Streamed and double-bounded (see stream_bounded): a silent `tail -5` pipe
+    # was what made this phase look like nothing at all for 45 minutes.
+    apt_rc=0
+    stream_bounded "apt-get update" "$APT_UPDATE_TIMEOUT" "$APT_SILENCE" -- \
+        apt-get "${APT_NET[@]}" update -qq || apt_rc=$?
+    case $apt_rc in
+        0) ;;
+        124|125) error "apt-get update stopped making progress (see above) — the mirror or the dpkg lock is wedged" ;;
+        *) warn "apt-get update failed — using the existing package lists" ;;
+    esac
+
+    apt_rc=0
     if is_upgrade; then
-        apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" 2>&1 | tail -5
+        stream_bounded "apt-get install (${#MISSING[@]} new packages)" \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" -- \
+            apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" || apt_rc=$?
     else
-        apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" 2>&1 | tail -5
+        stream_bounded "apt-get install (${#PACKAGES[@]} packages)" \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" -- \
+            apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" || apt_rc=$?
     fi
+    case $apt_rc in
+        0) ;;
+        124) error "apt-get install hit the ${APT_INSTALL_TIMEOUT}s budget — dpkg was still working (see above)" ;;
+        125) error "apt-get install printed nothing for ${APT_SILENCE}s — a download or a postinst script is stuck (see above)" ;;
+        *) error "apt-get install failed (status $apt_rc): the packages above are missing" ;;
+    esac
 fi
 
 ok "System packages installed"
