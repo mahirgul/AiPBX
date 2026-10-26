@@ -62,6 +62,20 @@ fi
 # calls in progress stay up.
 ASTERISK_RESTART_EPOCH=1
 
+# --- Bounded waits: a stall must become an error, not a 45-minute silence ---
+# On 2026-10-26 the install test sat inside `install.sh` until the job timeout
+# with nothing to show for it. Two of its steps can wait far longer than the
+# work they are waiting on, with nothing in the log to say so:
+#   * `apt-get` on a held dpkg lock (the runner's own unattended-upgrades, or an
+#     apt left behind by an earlier step): with no bound set, that wait has run
+#     into the quarter-hour range in the wild, and nothing here needs it to;
+#   * `composer install` has no network timeout at all, so a packagist or GitHub
+#     connection that stops answering is simply waited on.
+# `-o DPkg::Lock::Timeout` gives apt a bound (it then fails with its own "Could
+# not get lock" message), and `timeout` bounds Composer, which has no such knob.
+APT_LOCK_WAIT=120      # seconds apt-get may wait for the dpkg lock
+COMPOSER_TIMEOUT=900   # seconds the whole `composer install` may take
+
 # --- Mode: fresh install (default) or --upgrade ---
 AIPBX_MODE=install
 for arg in "$@"; do
@@ -133,7 +147,8 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     if ! command -v git >/dev/null 2>&1; then
         info "Installing git..."
         export DEBIAN_FRONTEND=noninteractive
-        apt-get update -qq && apt-get install -y -qq git
+        apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" update -qq \
+            && apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq git
     fi
     
     if [[ -d "$INSTALL_DIR/.git" ]]; then
@@ -371,8 +386,11 @@ PACKAGES=(
 # An upgrade only installs packages a newer release added: system package
 # updates are the OS's job, and on servers that cannot reach the Ubuntu
 # mirrors (e.g. behind a stalling proxy) apt-get used to hang the update for
-# many minutes. Short timeouts so an unreachable mirror fails fast.
-APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1)
+# many minutes. Short timeouts so an unreachable mirror fails fast, and a bound
+# on the dpkg lock (see APT_LOCK_WAIT) so a lock held by something else fails
+# with apt's own message instead of waiting out the caller's timeout.
+APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1
+         -o "DPkg::Lock::Timeout=$APT_LOCK_WAIT")
 # vsftpd's own unit would start right after installing, with local system
 # accounts allowed to log in: masked first, AiPBX runs its own (aipbx-vsftpd).
 systemctl mask vsftpd.service >/dev/null 2>&1 || true
@@ -980,8 +998,22 @@ a2enconf aipbx-routing 2>/dev/null
 # the install then stopped at the migrations with "vendor/bin/phinx" missing.
 info "Installing PHP dependencies (Composer)..."
 cd "$INSTALL_DIR/web"   # the migrations below run from here (vendor/bin/phinx)
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress 2>&1 | tail -20 \
-    || error "Composer install failed (see output above)"
+# `timeout` because Composer has no network timeout of its own (see
+# COMPOSER_TIMEOUT), and the log goes to a file rather than straight into
+# `tail` so the status is Composer's, not tail's, and a timeout can be named as
+# a timeout instead of "failed".
+COMPOSER_LOG="$(mktemp)"
+composer_status=0
+COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=300 \
+    timeout "$COMPOSER_TIMEOUT" composer install --no-dev --no-interaction --no-progress \
+    >"$COMPOSER_LOG" 2>&1 || composer_status=$?
+tail -20 "$COMPOSER_LOG" || true
+rm -f "$COMPOSER_LOG"
+case $composer_status in
+    0) ;;
+    124) error "Composer install timed out after ${COMPOSER_TIMEOUT}s: packagist or GitHub stopped answering (see output above)" ;;
+    *) error "Composer install failed (see output above)" ;;
+esac
 [[ -x "$INSTALL_DIR/web/vendor/bin/phinx" ]] || error "Composer did not install the PHP dependencies (see output above)"
 
 # Database schema (Phinx migrations), seed data, admin user, ODBC user.
@@ -1116,7 +1148,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/l
 # aipbx-update upgrades land the same components.
 if [ -d "$INSTALL_DIR/signaling" ]; then
     if command -v apt-get >/dev/null 2>&1; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
     fi
     if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
         install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
@@ -1635,7 +1667,7 @@ systemctl daemon-reload
 AI_READY_MARK="$AI_VENV/.aipbx-requirements"
 if [[ -f "$AI_READY_MARK" ]] && ! command -v espeak-ng >/dev/null 2>&1; then
     # Piper voices (1.9.3) need espeak-ng; runtimes installed before get it here.
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq espeak-ng >/dev/null 2>&1 \
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq espeak-ng >/dev/null 2>&1 \
         || warn "espeak-ng could not be installed: Piper voices will not load"
 fi
 if [[ -f "$AI_READY_MARK" ]]; then
