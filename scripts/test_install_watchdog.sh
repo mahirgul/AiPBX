@@ -7,15 +7,17 @@
 # minutes and left an empty log, three times. The helper is what turns that
 # into a named failure in minutes (see docs/health.md). It is easy to break it
 # again without noticing — a pipe that buffers the output, a clock that never
-# fires, a kill that leaves dpkg behind, or the two apt-get calls quietly going
-# back to `| tail -5` — because none of that shows up in a healthy install. The
-# five cases below fail loudly instead.
+# fires, a kill that leaves dpkg behind, the two apt-get calls quietly going back
+# to `| tail -5`, or a silence clock that forgot a download prints nothing while
+# it arrives (that last one failed the install test on 2026-10-26: a slow 24 MB
+# package was killed as if the mirror had died) — because none of that shows up
+# in a healthy install. The cases below fail loudly instead.
 #
 # Usage:
 #   bash scripts/test_install_watchdog.sh            # install.sh in the repo root
 #   bash scripts/test_install_watchdog.sh /path/to/install.sh
 #
-# Runtime is about 80 seconds, most of it case 3: the helper gives a child that
+# Runtime is about 100 seconds, most of it case 3: the helper gives a child that
 # ignores TERM 60 seconds before it SIGKILLs the process group.
 # ============================================================================
 set -uo pipefail   # deliberately no -e: the cases assert on failure statuses
@@ -103,7 +105,7 @@ rm -f "$log"
 
 log="$(mktemp)"
 echo
-echo '--- 3. a stuck package script is killed by the silence clock'
+echo '--- 3. a stuck package script is killed by the silence clock (no progress dir declared)'
 start=$SECONDS
 rc=0
 stream_bounded silent 300 6 -- \
@@ -135,6 +137,51 @@ echo '--- 5. an ordinary failure keeps its own status'
 rc=0
 stream_bounded fail 60 20 -- bash -c 'echo first; sleep 1; echo boom; exit 3' || rc=$?
 status_is 'failure case' 3 "$rc"
+
+echo
+echo '--- 6. a silent download that is still arriving is not a stall'
+# The install test died on this: apt printed nothing for 301 s while a 24 MB
+# source package came down a slow mirror, and the silence clock killed a phase
+# that was working. Bytes landing in the progress directory are progress.
+work="$(mktemp -d)"
+log="$(mktemp)"
+start=$SECONDS
+rc=0
+stream_bounded slow 120 6 --progress="$work" -- \
+    bash -c "for i in 1 2 3 4 5 6; do dd if=/dev/zero bs=1024 count=64 >>'$work/part.deb' 2>/dev/null; sleep 2; done" \
+    >"$log" 2>&1 || rc=$?
+elapsed=$((SECONDS - start))
+status_is 'progress case' 0 "$rc"
+if [ "$elapsed" -ge 8 ]; then
+    pass "waited ${elapsed}s through silence that was still moving"
+else
+    bad "finished in ${elapsed}s — the case did not outlive the 6 s silence bound"
+fi
+grep -q 'still downloading' "$log" \
+    && pass 'the log says the silent download was still running' \
+    || bad 'no note that a silent download was still arriving'
+rm -rf "$work" "$log"
+
+echo
+echo '--- 7. with a progress directory declared, a real stall is still killed'
+# Declaring --progress must not blind the clock: a postinst that prints nothing
+# and writes nothing is exactly what the bound is for.
+work="$(mktemp -d)"
+log="$(mktemp)"
+start=$SECONDS
+rc=0
+stream_bounded stalled 300 6 --progress="$work" -- \
+    bash -c 'echo "Setting up mariadb-server ..."; sleep 61 & echo "grandchild: $!"; wait' \
+    >"$log" 2>&1 || rc=$?
+elapsed=$((SECONDS - start))
+status_is 'stall with progress dir' 125 "$rc"
+if [ "$elapsed" -lt 30 ]; then
+    pass "killed after ${elapsed}s"
+else
+    bad "took ${elapsed}s to notice 6 s without a line or a byte"
+fi
+gone "$(pid_from grandchild "$log")" 'the grandchild of the stall'
+rm -rf "$work" "$log"
 
 echo
 if [ "$fail" -eq 0 ]; then

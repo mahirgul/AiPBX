@@ -95,25 +95,48 @@ COMPOSER_TIMEOUT=900   # seconds the whole `composer install` may take
 # has a wall-clock budget, and the output may not stand still for long either.
 # A stall now ends in minutes, naming the phase and printing the last thing apt
 # said, instead of costing the caller's whole timeout.
+#
+# Standing still is judged on progress, not on lines alone. A download prints
+# nothing while it arrives, and on 2026-10-26 that failed the install test: apt's
+# last line was 301 s old — "Get:147 ... golang-1.26-src [24.4 MB]", a 24 MB
+# source package still coming down a slow mirror — and the silence clock killed a
+# phase that was working (994 s in). Both apt calls therefore name the directory
+# apt writes into (--progress=), bytes landing there reset the same clock, and a
+# long download now shows in the log instead of looking like silence. A postinst
+# that hangs prints nothing AND writes nothing, so it is still killed at the bound.
 APT_UPDATE_TIMEOUT=300    # apt-get update: a mirror that cannot answer in 5 min is down
 APT_INSTALL_TIMEOUT=1200  # apt-get install of every package; the healthy run took ~2.5 min
-APT_SILENCE=300           # output standing still this long means a download or a postinst is stuck
+APT_SILENCE=300           # no line and no download progress for this long means a real stall
 
-# stream_bounded <label> <budget-seconds> <silence-seconds> -- <command...>
+# stream_bounded <label> <budget-seconds> <silence-seconds> [--progress=DIR] -- <command...>
 # Runs the command under both clocks, streaming its output. Returns the
 # command's own status, or
 #   124  the wall-clock budget ran out
-#   125  the output stood still for the silence bound
+#   125  the output stood still for the silence bound, with nothing arriving in DIR
+#
+# --progress is optional, for callers whose work lands in a directory (apt's
+# downloads): growth of that directory counts as progress, so a slow download is
+# not mistaken for a hang. Without it the silence bound is measured on output alone.
 stream_bounded() {
     local label="$1" budget="$2" quiet="$3"
-    local log rc=0 shown=0 lines=0 start last_out reason="" pid i elapsed
+    local log rc=0 shown=0 lines=0 start last_out last_prog reason="" pid i elapsed
+    local progress="" bytes=0 seen=0 waited=0 quiet_at=0
     shift 3
+    if [[ "${1:-}" == --progress=* ]]; then
+        progress="${1#--progress=}"
+        shift
+    fi
     [[ "${1:-}" == "--" ]] && shift
 
     log="$(mktemp)" || { "$@"; return $?; }
     start=$SECONDS
     last_out=$start
-    info "$label — up to ${budget}s, ${quiet}s without a line counts as stuck"
+    last_prog=$start
+    if [ -n "$progress" ]; then
+        info "$label — up to ${budget}s, ${quiet}s without a line or a byte counts as stuck"
+    else
+        info "$label — up to ${budget}s, ${quiet}s without a line counts as stuck"
+    fi
 
     # `timeout` rather than a clock inside the loop: it puts the command in its
     # own process group and signals the group, so a hung postinst goes with
@@ -130,8 +153,31 @@ stream_bounded() {
             shown=$lines
             last_out=$SECONDS
         fi
-        if [ $((SECONDS - last_out)) -ge "$quiet" ]; then
-            reason="went silent for $((SECONDS - last_out))s"
+        if [ -n "$progress" ]; then
+            # du, not a stat of one file: apt renames each download as it finishes,
+            # so the directory's total size is the measure that does not blink.
+            bytes=$(du -sk "$progress" 2>/dev/null | awk '{print $1}')
+            [ -n "$bytes" ] || bytes=0
+            if [ "$bytes" != "$seen" ]; then
+                seen=$bytes
+                last_prog=$SECONDS
+                # Say it once per quiet window: without this a slow download
+                # reads exactly like the silence this clock exists to catch.
+                if [ $((SECONDS - last_out)) -ge "$quiet" ] && [ $((SECONDS - waited)) -ge "$quiet" ]; then
+                    waited=$SECONDS
+                    info "$label: no output for $((SECONDS - last_out))s, but $((bytes / 1024)) MB is now in ${progress} — still downloading"
+                fi
+            fi
+        fi
+        # Stuck means neither the output nor the downloads have moved.
+        quiet_at=$last_out
+        [ "$last_prog" -gt "$quiet_at" ] && quiet_at=$last_prog
+        if [ $((SECONDS - quiet_at)) -ge "$quiet" ]; then
+            if [ -n "$progress" ]; then
+                reason="printed nothing for $((SECONDS - last_out))s and received nothing for $((SECONDS - last_prog))s"
+            else
+                reason="went silent for $((SECONDS - last_out))s"
+            fi
             break
         fi
     done
@@ -514,9 +560,11 @@ if is_upgrade && [[ ${#MISSING[@]} -eq 0 ]]; then
 else
     is_upgrade && info "Installing new packages: ${MISSING[*]}"
     # Streamed and double-bounded (see stream_bounded): a silent `tail -5` pipe
-    # was what made this phase look like nothing at all for 45 minutes.
+    # was what made this phase look like nothing at all for 45 minutes. Both apt
+    # calls hand over the directory they fill, so a slow download is progress.
     apt_rc=0
-    stream_bounded "apt-get update" "$APT_UPDATE_TIMEOUT" "$APT_SILENCE" -- \
+    stream_bounded "apt-get update" "$APT_UPDATE_TIMEOUT" "$APT_SILENCE" \
+        --progress=/var/lib/apt/lists -- \
         apt-get "${APT_NET[@]}" update -qq || apt_rc=$?
     case $apt_rc in
         0) ;;
@@ -527,17 +575,19 @@ else
     apt_rc=0
     if is_upgrade; then
         stream_bounded "apt-get install (${#MISSING[@]} new packages)" \
-            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" -- \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" \
+            --progress=/var/cache/apt/archives -- \
             apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" || apt_rc=$?
     else
         stream_bounded "apt-get install (${#PACKAGES[@]} packages)" \
-            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" -- \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" \
+            --progress=/var/cache/apt/archives -- \
             apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" || apt_rc=$?
     fi
     case $apt_rc in
         0) ;;
         124) error "apt-get install hit the ${APT_INSTALL_TIMEOUT}s budget — dpkg was still working (see above)" ;;
-        125) error "apt-get install printed nothing for ${APT_SILENCE}s — a download or a postinst script is stuck (see above)" ;;
+        125) error "apt-get install printed nothing and received nothing for ${APT_SILENCE}s — the mirror or a postinst script is stuck (see above)" ;;
         *) error "apt-get install failed (status $apt_rc): the packages above are missing" ;;
     esac
 fi
