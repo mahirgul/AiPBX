@@ -4,6 +4,13 @@ name: Install test
 # (docs/health.md). Catches what only shows on a new server: a package, a
 # folder owner, a firewall rule or a unit the installer forgot. Until
 # 2026-10-14 such bugs were found only by installing by hand.
+#
+# Output is streamed and kept (see "Logs on failure or cancellation" and the
+# artifact below). Before 2026-10-26 the installer's output went through
+# `tail -60`, which prints nothing until the pipe closes, and the only log step
+# was `if: failure()`. A run that stalled inside install.sh therefore showed an
+# empty step for 45 minutes and then lost its log to the job timeout, with no
+# way to tell a hung apt from a slow download.
 
 on:
   pull_request:
@@ -45,14 +52,39 @@ jobs:
           sudo mkdir -p /opt/aipbx
           sudo cp -a . /opt/aipbx/
           cd /opt/aipbx
-          sudo DEBIAN_FRONTEND=noninteractive bash install.sh </dev/null 2>&1 | tee /tmp/install.log | sed 's/\x1b\[[0-9;]*m//g' | tail -60
+          # Streamed line by line, so the live log says where the installer is
+          # and where it stopped. `tee` keeps the full log for the artifact,
+          # and `sed -u` stops sed from adding a buffer of its own on top of
+          # the pipe's. No `tail`: that was what hid a 45-minute stall.
+          sudo DEBIAN_FRONTEND=noninteractive bash install.sh </dev/null 2>&1 \
+            | tee /tmp/install.log \
+            | sed -u 's/\x1b\[[0-9;]*m//g'
           test "${PIPESTATUS[0]}" -eq 0
 
       - name: aipbx-selftest
         run: sudo /usr/local/sbin/aipbx-selftest
 
-      - name: Logs on failure
-        if: failure()
+      - name: Logs on failure or cancellation
+        # `cancelled()` as well as `failure()`: the job timeout cancels rather
+        # than fails, which is exactly the case that used to end with no log at
+        # all. Steps with `always()`/`cancelled()` run during cancellation, so
+        # this is where the last of the streamed output is turned into a file
+        # the upload step can see.
+        if: cancelled() || failure()
         run: |
-          sudo tail -100 /tmp/install.log || true
+          cp /tmp/install.log install.log 2>/dev/null || true
+          echo "::group::the installer log (last 200 lines; the full file is the install-log artifact)"
+          tail -200 /tmp/install.log 2>/dev/null || echo "(no /tmp/install.log — the installer did not start)"
+          echo "::endgroup::"
           sudo journalctl --no-pager -n 100 -u asterisk -u apache2 -u nginx -u aipbx-chat -u mariadb || true
+
+      - name: Upload the install log
+        if: cancelled() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-log
+          # /tmp is outside the workspace, so the step above copies it in; the
+          # uploader only sees workspace paths.
+          path: install.log
+          if-no-files-found: ignore
+          retention-days: 14
