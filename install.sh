@@ -137,15 +137,25 @@ stream_bounded() {
     done
 
     if [ -n "$reason" ]; then
-        kill -TERM "$pid" 2>/dev/null || true
+        # Signal the whole group (both GNU and uutils timeout make themselves
+        # the group leader, so the command's group id is their pid) and only
+        # fall back to the single pid: a postinst that ignores TERM must not be
+        # left orphaned in the middle of a configure step.
+        kill -s TERM -- "-$pid" 2>/dev/null || kill -s TERM "$pid" 2>/dev/null || true
         i=0
         while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 30 ]; do
             sleep 1
             i=$((i + 1))
         done
-        kill -KILL "$pid" 2>/dev/null || true
+        kill -s KILL -- "-$pid" 2>/dev/null || kill -s KILL "$pid" 2>/dev/null || true
     fi
     wait "$pid" 2>/dev/null || rc=$?
+    # timeout has exited by now. If it ended on a clock and something in its
+    # group outlived it (a postinst that ignored TERM), sweep the group: the
+    # others are gone already, so this is normally a no-op.
+    if [ "$rc" -ne 0 ]; then
+        kill -s KILL -- "-$pid" 2>/dev/null || true
+    fi
 
     # The loop stops looking the moment the process ends, so whatever was
     # printed between the last tick and the exit still has to be flushed: on a
@@ -161,6 +171,14 @@ stream_bounded() {
     if [ -n "$reason" ]; then
         warn "$label $reason — killed after ${elapsed}s; the lines above are the last thing it printed"
         return 125
+    fi
+    # Ubuntu 26.04 ships uutils' timeout, which reports a child that had to be
+    # SIGKILLed as 137 where GNU timeout says 124. The clock we know about is
+    # our own, so "it died at or after the budget" is what identifies this, and
+    # the caller still gets a name for it instead of "failed (status 137)".
+    if [ "$rc" -ne 0 ] && [ "$elapsed" -ge "$budget" ]; then
+        warn "$label hit the ${budget}s budget — killed; the lines above are where it stopped"
+        return 124
     fi
     case $rc in
         0)   ok "$label finished in ${elapsed}s" ; return 0 ;;
