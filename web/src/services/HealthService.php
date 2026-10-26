@@ -17,6 +17,13 @@ require_once __DIR__ . '/ForgotPasswordService.php';
  * so a short hiccup stays quiet); it is repeated after health_repeat_hours
  * while the problem lasts, and a "back to normal" e-mail follows when it is
  * fixed. All problems of one run go into one e-mail.
+ *
+ * Two rules keep that mail worth reading:
+ *  - one problem, one mail per health_repeat_hours: a check that fails,
+ *    recovers and fails again is the same incident, not two alarms;
+ *  - quiet hours (health_quiet_hours) hold warnings and recoveries, never a
+ *    failure, and hold them without recording them as reported, so the run
+ *    after the window mails what is still wrong.
  */
 class HealthService
 {
@@ -24,6 +31,7 @@ class HealthService
         'health_recipients' => '[]',
         'health_extra_emails' => '',
         'health_repeat_hours' => '6',
+        'health_quiet_hours' => '',
         'health_summary_enabled' => '1',
         'health_summary_time' => '08:00',
     ];
@@ -107,10 +115,15 @@ class HealthService
                 throw new \Exception(t('health.err_time'));
             }
             $repeat = (int) ($data['health_repeat_hours'] ?? 6);
+            $quiet = trim((string) ($data['health_quiet_hours'] ?? ''));
+            if ($quiet !== '' && !self::validQuietWindow($quiet)) {
+                throw new \Exception(t('health.err_quiet'));
+            }
             $v = [
                 'health_recipients' => json_encode($ids),
                 'health_extra_emails' => implode("\n", self::extraEmails($extraText)),
                 'health_repeat_hours' => (string) (in_array($repeat, self::REPEAT_HOURS, true) ? $repeat : 6),
+                'health_quiet_hours' => $quiet,
                 'health_summary_enabled' => !empty($data['health_summary_enabled']) ? '1' : '0',
                 'health_summary_time' => $time,
             ];
@@ -193,20 +206,32 @@ class HealthService
     /**
      * What a new result means for the e-mails: 'alarm', 'recovered' or null.
      * Pure, so the rules are tested on their own.
+     *
+     * $quiet holds a warning and a recovery, never a failure, and holds them by
+     * answering null: nothing is recorded as reported, so the run after the
+     * quiet window mails whatever is still wrong (and says nothing about a
+     * problem that fixed itself overnight).
      */
-    public static function decide(array $prev, string $status, int $interval, int $now, int $repeatHours): ?string
+    public static function decide(array $prev, string $status, int $interval, int $now, int $repeatHours,
+                                  bool $quiet = false): ?string
     {
         $bad = in_array($status, ['warn', 'fail'], true);
         if (!$bad) {
-            return ($status === 'ok' && $prev['alerted_status'] !== '') ? 'recovered' : null;
+            return ($status === 'ok' && $prev['alerted_status'] !== '' && !$quiet) ? 'recovered' : null;
         }
         $streak = in_array($prev['status'], ['warn', 'fail'], true) ? $prev['bad_streak'] + 1 : 1;
         $needed = $interval <= 15 ? 2 : 1;
         if ($streak < $needed) {
             return null;
         }
+        if ($quiet && $status !== 'fail') {
+            return null;
+        }
         if ($prev['alerted_status'] === '') {
-            return 'alarm';
+            // A problem that flaps is one problem: a fresh alarm waits for the
+            // window that starts at this check's last mail, not at its last alarm.
+            $last = $prev['alerted_at'] ? strtotime($prev['alerted_at']) : 0;
+            return ($last > 0 && $now - $last < $repeatHours * 3600) ? null : 'alarm';
         }
         // Worse than what was reported (warn → fail) or the repeat time has passed.
         if ($prev['alerted_status'] === 'warn' && $status === 'fail') {
@@ -214,6 +239,36 @@ class HealthService
         }
         $last = $prev['alerted_at'] ? strtotime($prev['alerted_at']) : 0;
         return $now - $last >= $repeatHours * 3600 ? 'alarm' : null;
+    }
+
+    /** True inside the configured quiet window, on the clock the summary uses. */
+    public static function quietHoursNow(?int $ts = null): bool
+    {
+        return self::inQuietWindow((string) getSystemSetting('health_quiet_hours', ''), date('H:i', $ts ?? time()));
+    }
+
+    /**
+     * "22:00-07:00" is a window that crosses midnight; "09:00-17:00" does not.
+     * Empty, malformed or zero-length is no window at all, which is the safe
+     * answer: a typo must never silence alarms.
+     */
+    public static function inQuietWindow(string $window, string $time): bool
+    {
+        if (!self::validQuietWindow($window) || !preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $time)) {
+            return false;
+        }
+        [$start, $end] = explode('-', $window, 2);
+        if ($start === $end) {
+            return false;
+        }
+        return $start < $end
+            ? ($time >= $start && $time < $end)
+            : ($time >= $start || $time < $end);
+    }
+
+    public static function validQuietWindow(string $window): bool
+    {
+        return preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]-([01][0-9]|2[0-3]):[0-5][0-9]$/', $window) === 1;
     }
 
     /**
@@ -232,6 +287,7 @@ class HealthService
         }
         $checks = self::checks();
         $repeat = (int) getSystemSetting('health_repeat_hours', '6') ?: 6;
+        $quiet = self::quietHoursNow($now);
         $alarms = [];
         $recovered = [];
         $results = [];
@@ -248,7 +304,7 @@ class HealthService
             $results[$key] = [$status, $message];
 
             // Without e-mails (aipbx-selftest) nothing counts as reported.
-            $decision = $mail ? self::decide($prev, $status, $prev['interval'], $now, $repeat) : null;
+            $decision = $mail ? self::decide($prev, $status, $prev['interval'], $now, $repeat, $quiet) : null;
             $bad = in_array($status, ['warn', 'fail'], true);
             $streak = $bad ? (in_array($prev['status'], ['warn', 'fail'], true) ? $prev['bad_streak'] + 1 : 1) : 0;
             $alertedStatus = $prev['alerted_status'];
@@ -260,7 +316,9 @@ class HealthService
             } elseif ($decision === 'recovered') {
                 $recovered[$key] = [$status, $message];
                 $alertedStatus = '';
-                $alertedAt = null;
+                // Kept, not nulled: when this check last mailed anything is what
+                // stops a flapping problem from mailing again inside the window.
+                $alertedAt = date('Y-m-d H:i:s', $now);
             }
             $changed = $status !== $prev['status'] ? date('Y-m-d H:i:s', $now) : $prev['changed_at'];
             $save->execute([$key, $status, $message, $changed, $streak, $alertedStatus, $alertedAt]);

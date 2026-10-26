@@ -100,6 +100,12 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
                 </select>
                 <small class="u-hint u-fs-11"><?php echo t('health.repeat_help'); ?></small>
             </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('health.quiet'); ?></label>
+                <input type="text" name="health_quiet_hours" class="form-control"
+                       placeholder="22:00-07:00" value="<?php echo $h($settings['health_quiet_hours']); ?>">
+                <small class="u-hint u-fs-11"><?php echo t('health.quiet_help'); ?></small>
+            </div>
         </div>
     </div>
 </div>
