@@ -13,13 +13,18 @@
  * notices older than 30 days, exactly as opening the bell does — noted here
  * because bin/smoke.php promises not to write.
  *
- * Usage: php bin/_smoke_api.php <endpoint under web/, e.g. api/notices.php> <role> <outfile>
+ * Usage: php bin/_smoke_api.php <endpoint under web/, e.g. api/notices.php> <role> <outfile> [query]
+ *
+ * The optional query is what the page itself sends (`action=status` and the
+ * like); without it most of these endpoints answer 400/405 and there would be
+ * nothing to compare the two roles on.
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
 
 $script  = $argv[1] ?? '';
 $role    = $argv[2] ?? 'admin';
 $outfile = $argv[3] ?? '';
+$query   = $argv[4] ?? '';
 
 if ($script === '' || $outfile === '') {
     fwrite(STDERR, "kullanim: php bin/_smoke_api.php <endpoint> <role> <outfile>\n");
@@ -38,11 +43,12 @@ if (!is_file($file)) {
 
 // The endpoint is addressed directly, as the browser's fetch() addresses it.
 $_SERVER['REQUEST_METHOD'] = 'GET';
-$_SERVER['REQUEST_URI']    = '/' . ltrim($script, '/');
+$_SERVER['REQUEST_URI']    = '/' . ltrim($script, '/') . ($query !== '' ? '?' . $query : '');
 $_SERVER['SCRIPT_NAME']    = '/' . ltrim($script, '/');
 $_SERVER['PHP_SELF']       = '/' . ltrim($script, '/');
 $_GET = [];
 $_POST = [];
+if ($query !== '') { parse_str($query, $_GET); }
 
 /** Same programmatic warning capture as bin/_smoke_render.php. */
 $GLOBALS['SMOKE_PHP_ERRORS'] = [];
@@ -63,7 +69,7 @@ set_error_handler(function ($no, $str, $file, $line) {
     return false;
 });
 
-register_shutdown_function(function () use ($script, $role, $outfile) {
+register_shutdown_function(function () use ($script, $query, $role, $outfile) {
     $body = '';
     while (ob_get_level() > 0) { $body .= (string) ob_get_clean(); }
 
@@ -77,6 +83,7 @@ register_shutdown_function(function () use ($script, $role, $outfile) {
 
     $result = [
         'script' => $script,
+        'query'  => $query,
         'role'   => $role,
         'status' => $error === '' ? 'ok' : 'fatal',
         'error'  => $error,

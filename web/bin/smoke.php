@@ -66,13 +66,14 @@ function render_route(string $path, string $lang, string $role): ?array
 /**
  * Calls one api/*.php endpoint in a subprocess and returns the decoded result.
  */
-function call_api(string $script, string $role): ?array
+function call_api(string $script, string $role, string $query = ''): ?array
 {
     $out = tempnam(sys_get_temp_dir(), 'smokeapi');
     $cmd = 'php ' . escapeshellarg(SMOKE_ROOT . '/bin/_smoke_api.php')
          . ' ' . escapeshellarg($script)
          . ' ' . escapeshellarg($role)
-         . ' ' . escapeshellarg($out) . ' 2>/dev/null';
+         . ' ' . escapeshellarg($out)
+         . ' ' . escapeshellarg($query) . ' 2>/dev/null';
     $o = [];
     exec($cmd, $o, $ret);
     $raw = is_file($out) ? (string) file_get_contents($out) : '';
@@ -267,52 +268,64 @@ if ($only === null || $only === 'rbac') { check_rbac(); }
  * could pass for the wrong reason), and as fax_user, which MUST answer 403.
  * GET only: no endpoint listed here has a side effect on GET (set a body and
  * REQUEST_METHOD=POST would be needed to reach the writing branches).
+ *
+ * SCOPE: only endpoints that answer a GET with data. A POST-only endpoint
+ * (ai_apps, ai_cloud) answers 403 for a signed-in admin too, because the CSRF
+ * token is missing, so a GET cannot tell a missing role check from a CSRF
+ * refusal — those are left to the unit tests.
  */
 function check_api(): void
 {
+    // [endpoint, query the page itself sends]
     $ADMIN_ONLY = [
-        'api/notices.php',
+        ['api/notices.php', ''],
+        ['api/dashboard_live.php', ''],
+        ['api/ai_models.php', 'action=status'],
+        ['api/assistant.php', 'action=changes'],
+        ['api/sound_packs.php', 'action=status'],
+        ['api/system_update.php', 'action=status'],
     ];
     $n = 0;
 
-    foreach ($ADMIN_ONLY as $script) {
-        $asAdmin = call_api($script, 'admin');
+    foreach ($ADMIN_ONLY as [$script, $query]) {
+        $label = $script . ($query !== '' ? '?' . $query : '');
+        $asAdmin = call_api($script, 'admin', $query);
         $n++;
         if ($asAdmin === null) {
-            fail('api', $script, 'the subprocess produced no result');
+            fail('api', $label, 'the subprocess produced no result');
             continue;
         }
         if (($asAdmin['status'] ?? '') === 'skip') { $n--; continue; }
         if (($asAdmin['status'] ?? '') === 'fatal') {
-            fail('api', $script, 'fatal: ' . $asAdmin['error']);
+            fail('api', $label, 'fatal: ' . $asAdmin['error']);
             continue;
         }
         foreach (($asAdmin['php_errors'] ?? []) as $e) {
-            fail('api', $script, 'PHP error: ' . $e);
+            fail('api', $label, 'PHP error: ' . $e);
         }
         // Canary: without a real answer as admin, a 403 for the low role says
         // nothing — the endpoint could be broken for everyone.
         if ((int) ($asAdmin['code'] ?? 0) !== 200 || !is_array($asAdmin['json'] ?? null)) {
-            fail('api', $script, 'CANARY: admin got HTTP ' . ($asAdmin['code'] ?? '?')
+            fail('api', $label, 'CANARY: admin got HTTP ' . ($asAdmin['code'] ?? '?')
                 . (is_array($asAdmin['json'] ?? null) ? ' (JSON ok)' : ' with a body that is not JSON')
                 . ' — the low-role check below would mean nothing');
             continue;
         }
 
-        $asLow = call_api($script, 'fax_user');
+        $asLow = call_api($script, 'fax_user', $query);
         $n++;
         if ($asLow === null) {
-            fail('api', $script, 'the subprocess produced no result');
+            fail('api', $label, 'the subprocess produced no result');
             continue;
         }
         if ((int) ($asLow['code'] ?? 0) !== 403) {
-            fail('api', $script, 'the fax_user role got HTTP ' . ($asLow['code'] ?? '?')
+            fail('api', $label, 'the fax_user role got HTTP ' . ($asLow['code'] ?? '?')
                 . ' instead of 403 — the endpoint has no permission check');
             continue;
         }
         if (($asLow['json']['success'] ?? null) !== false) {
-            fail('api', $script, '403 without the JSON error body: '
-                . mb_substr((string) ($asLow['body'] ?? ''), 0, 200));
+            fail('api', $label, '403 without the JSON error body: '
+                . mb_strcut((string) ($asLow['body'] ?? ''), 0, 200, 'UTF-8'));
         }
     }
     group_done('api', $n);
