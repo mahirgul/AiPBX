@@ -18,11 +18,14 @@ require_once __DIR__ . '/../src/services/ai/AssistantPlanService.php';
 require_once __DIR__ . '/../src/services/ai/AssistantModel.php';
 require_once __DIR__ . '/../src/services/ai/EchoReporter.php';
 
+header('Content-Type: application/json; charset=utf-8');
 if (($_SESSION['user_role'] ?? '') !== 'admin') {
+    // The JSON error, like every other admin api: the page's fetch() reads a
+    // body, and a bare 403 looks like a broken endpoint in its console.
     http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }
-header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
