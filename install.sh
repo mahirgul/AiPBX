@@ -1124,6 +1124,11 @@ if [ -d "$INSTALL_DIR/engine" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
     fi
     install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/engine
+    # dnsmasq's DHCP log is read with journalctl and it is the source that finds a
+    # phone whose lease has expired. Without this group www-data gets "No journal
+    # files were opened due to insufficient permissions" (exit 1) and the engine's
+    # journal reader returns nothing on every run, with no other sign of trouble.
+    usermod -a -G systemd-journal www-data 2>/dev/null || true
     install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-phone-discovery" /usr/local/sbin/aipbx-phone-discovery
     chmod 755 "$INSTALL_DIR/engine"
     # The CLI the wrapper and an operator both call, next to the other bin scripts.

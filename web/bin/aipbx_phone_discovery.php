@@ -67,7 +67,11 @@ if ($command !== 'provision') {
     exit(2);
 }
 
-$lock = fopen('/run/aipbx-phone-discovery.lock', 'c');
+// The same lock problem as in the wrapper, one step later: this script runs as
+// www-data too, and /run is root:root 0755 on Ubuntu, so the fopen failed and
+// the provisioning step ended here with exit 0 — silently, every five minutes.
+// The engine's state directory is www-data:www-data, so the lock works there.
+$lock = fopen('/var/lib/aipbx/engine/provision.lock', 'c');
 if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
     exit(0);
 }

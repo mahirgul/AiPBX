@@ -24,7 +24,12 @@ INSTALL_DIR="${INSTALL_DIR%/web}"
 [ -f "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" ] || INSTALL_DIR=/opt/aipbx
 
 # One run at a time: a sweep can take half a minute, a cron tick comes every five.
-exec 9>/run/aipbx-phone-discovery-tick.lock || exit 0
+# The lock is opened as www-data, so it belongs in the engine's own state
+# directory, which install.sh creates as www-data:www-data. /run is root:root
+# 0755 on Ubuntu: the redirection failed there, and in dash a failed exec ends
+# the script on the spot. Cron sends its stderr to /dev/null, so the run died
+# without a word every five minutes and discovery never happened.
+exec 9>/var/lib/aipbx/engine/discovery.lock || exit 0
 if command -v flock >/dev/null 2>&1; then
     flock -n 9 || exit 0
 fi
