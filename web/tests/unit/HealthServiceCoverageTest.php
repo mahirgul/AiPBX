@@ -160,12 +160,22 @@ final class HealthServiceCoverageTest extends TestCase
         $this->assertFalse($resMail['success']);
         $this->assertStringContainsString('invalid-email', $resMail['error'] ?? '');
 
-        // 4. Successful save
+        // 4. Invalid quiet hours (a typo must never silence alarms)
+        $resQuiet = HealthService::save([
+            'csrf_token' => $csrf,
+            'health_summary_time' => '08:00',
+            'health_quiet_hours' => '22:00',
+        ]);
+        $this->assertFalse($resQuiet['success']);
+        $this->assertStringContainsString(t('health.err_quiet'), $resQuiet['error'] ?? '');
+
+        // 5. Successful save
         $resOk = HealthService::save([
             'csrf_token' => $csrf,
             'health_summary_time' => '09:30',
             'health_extra_emails' => 'alert@example.com',
             'health_repeat_hours' => 12,
+            'health_quiet_hours' => '22:00-07:00',
             'health_summary_enabled' => '1',
             'health_recipients' => [$this->candidateUserId],
             'interval' => ['asterisk' => 15, 'disk' => 60],
@@ -174,6 +184,7 @@ final class HealthServiceCoverageTest extends TestCase
 
         $this->assertSame('09:30', (string)getSystemSetting('health_summary_time', ''));
         $this->assertSame('12', (string)getSystemSetting('health_repeat_hours', ''));
+        $this->assertSame('22:00-07:00', (string)getSystemSetting('health_quiet_hours', ''));
         $this->assertSame('alert@example.com', (string)getSystemSetting('health_extra_emails', ''));
     }
 
