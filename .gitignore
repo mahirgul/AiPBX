@@ -48,6 +48,7 @@ android/hosting-*.json
 android/__pycache__/
 ai/**/__pycache__/
 signaling/**/__pycache__/
+engine/**/__pycache__/
 android/app.aab
 android/app.apk
 
