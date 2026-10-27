@@ -84,7 +84,14 @@ $userOptions = function () use ($users) {
                             <td><code><?php echo htmlspecialchars(PhoneModels::formatMac($p['mac'])); ?></code>
                                 <?php if ($p['notes'] !== ''): ?><div class="text-muted u-fs-11"><?php echo htmlspecialchars($p['notes']); ?></div><?php endif; ?>
                             </td>
-                            <td><?php echo htmlspecialchars($m['label'] ?? $p['model']); ?></td>
+                            <td><?php echo htmlspecialchars($m['label'] ?? $p['model']); ?>
+                                <?php if (($p['firmware_state'] ?? '') !== ''): ?>
+                                    <div class="text-muted u-fs-11"<?php echo $p['firmware_note'] !== '' ? ' title="' . htmlspecialchars((string) $p['firmware_note']) . '"' : ''; ?>>
+                                        <?php echo t('phones.firmware_' . $p['firmware_state']); ?>
+                                        <?php if ($p['firmware_load'] !== ''): ?><code><?php echo htmlspecialchars((string) $p['firmware_load']); ?></code><?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ($p['extension'] !== null): ?>
                                     <span class="badge badge-info"><?php echo htmlspecialchars($p['extension']); ?></span>
@@ -320,6 +327,11 @@ $userOptions = function () use ($users) {
                     <label class="form-label"><?php echo t('phones.cisco_load'); ?></label>
                     <input type="text" name="provision_cisco_load" class="form-control" maxlength="40" placeholder="SIP42.9-4-2SR3-1S" value="<?php echo htmlspecialchars($settings['provision_cisco_load']); ?>">
                     <div class="text-muted u-fs-11"><?php echo t('phones.cisco_load_help'); ?></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.cisco_loads'); ?></label>
+                    <textarea name="provision_cisco_loads" class="form-control" rows="3" placeholder="cisco-cm-7962g=SIP42.9-4-2SR3-1S"><?php echo htmlspecialchars($settings['provision_cisco_loads']); ?></textarea>
+                    <div class="text-muted u-fs-11"><?php echo t('phones.cisco_loads_help'); ?></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('phones.codecs'); ?></label>

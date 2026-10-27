@@ -21,6 +21,8 @@ require_once dirname(__DIR__) . '/secret_box.php';
 require_once __DIR__ . '/ForgotPasswordService.php';
 require_once __DIR__ . '/phones/PhoneTemplates.php';
 require_once __DIR__ . '/phones/PhoneKeyAndTftpHelper.php';
+require_once __DIR__ . '/phones/CiscoFirmware.php';
+require_once __DIR__ . '/PhoneFirmwareService.php';
 
 class PhoneProvisionService
 {
@@ -56,6 +58,11 @@ class PhoneProvisionService
         // Empty: the element is left out and the phone keeps the load it runs,
         // which is the only safe default — the load is per model and per build.
         'provision_cisco_load' => '',
+        // Per model: one `model=load` line per Cisco 7900 model (e.g.
+        // cisco-cm-7962g=SIP42.9-4-2SR3-1S). This is what the automatic switch
+        // reads: a model named here is pointed at its SIP load when it is
+        // provisioned, and the load's files are checked first (PhoneFirmwareService).
+        'provision_cisco_loads' => '',
     ];
 
     /** Rows kept in the fetch log. */
@@ -146,7 +153,10 @@ class PhoneProvisionService
         $data += self::addressSettings();
         // Same for the Cisco load: a page that does not send it (an older form, or
         // another caller) must not wipe a value somebody set on purpose.
-        $data += ['provision_cisco_load' => (string) getSystemSetting('provision_cisco_load', '')];
+        $data += [
+            'provision_cisco_load' => (string) getSystemSetting('provision_cisco_load', ''),
+            PhoneFirmwareService::SETTING => (string) getSystemSetting(PhoneFirmwareService::SETTING, ''),
+        ];
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $transport = ($data['provision_transport'] ?? '') === 'tls' ? 'tls' : 'udp';
             $srtp = (string) max(0, min(2, (int) ($data['provision_srtp'] ?? 0)));
@@ -169,8 +179,17 @@ class PhoneProvisionService
             if ($ciscoLoad !== '' && !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/', $ciscoLoad)) {
                 throw new \Exception(t('phones.err_cisco_load'));
             }
+            $ciscoLoads = PhoneFirmwareService::parseLoads((string) ($data[PhoneFirmwareService::SETTING] ?? ''), $badLoads);
+            if ($badLoads !== []) {
+                throw new \Exception(sprintf(t('phones.err_cisco_loads'), implode(', ', array_slice($badLoads, 0, 3))));
+            }
             $values = [
                 'provision_cisco_load' => $ciscoLoad,
+                PhoneFirmwareService::SETTING => implode("\n", array_map(
+                    static fn (string $model, string $load): string => $model . '=' . $load,
+                    array_keys($ciscoLoads),
+                    array_values($ciscoLoads)
+                )),
                 'provision_transport' => $transport,
                 'provision_srtp' => $srtp,
                 'provision_codecs' => implode(',', $codecs),
@@ -352,6 +371,11 @@ class PhoneProvisionService
         }
         $db->prepare('DELETE FROM pbx_phones_waiting WHERE mac = ?')->execute([$mac]);
         writeAuditLog('phones', 'phone', $id, PhoneModels::formatMac($mac), $action, $_SESSION['user_id'] ?? null);
+        // The SIP firmware switch travels with provisioning: a Cisco 7900 that
+        // is added through any path (the automatic pool, the Approve button, the
+        // form, the CSV import) is pointed at its model's SIP load here, and the
+        // outcome is recorded even when the firmware itself is missing.
+        PhoneFirmwareService::armQuietly($id);
         return $id;
     }
 
@@ -711,6 +735,9 @@ class PhoneProvisionService
         getDB()->prepare('UPDATE pbx_phones SET last_fetch_at = NOW(), last_ip = ?, last_user_agent = ? WHERE id = ?')
             ->execute([$ip, $ua, $phone['id']]);
         self::log((int) $phone['id'], $phone['mac'], $file, 'served', $ip, $ua);
+        // A phone that fetches its file after the switch was armed has rebooted
+        // and taken the new configuration; the row says so from here on.
+        PhoneFirmwareService::noteFetched((int) $phone['id']);
         return ['status' => 200, 'body' => $body, 'type' => $tpl->contentType(), 'result' => 'served'];
     }
 
@@ -751,8 +778,9 @@ class PhoneProvisionService
             'language' => $s['provision_language'],
             'voicemail' => self::VOICEMAIL_CODE,
             'pickup_prefix' => self::PICKUP_PREFIX,
-            // Cisco CallManager-series phones only (CiscoCallManagerTemplate).
-            'cisco_load' => $s['provision_cisco_load'],
+            // Cisco CallManager-series phones only (CiscoCallManagerTemplate):
+            // the model's own load first, else the single fallback field.
+            'cisco_load' => PhoneFirmwareService::loadForModel((string) $phone['model']),
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
             'keys' => self::getKeys((int) $user['id']),
         ];
