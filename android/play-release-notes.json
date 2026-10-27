@@ -1,9 +1,9 @@
 {
   "_comment": "'What's new' text for Google Play (max 500 characters per language). Update it with every new versionName; upload_to_play_console.py uses it only when 'version' matches the app's versionName, otherwise a neutral text.",
-  "version": "1.50.17",
+  "version": "1.50.18",
   "notes": {
-    "en-US": "AiPBX mobile PBX production release. High-definition WebRTC voice/video calls, team messaging, corporate directory with presence, and PBX controls with stability enhancements.",
-    "tr-TR": "AiPBX kurumsal mobil santral üretim sürümü. HD ses/video WebRTC görüşmeleri, anlık mesajlaşma, canlı dahili rehber ve santral özellikleri ile kararlılık iyileştirmeleri."
+    "en-US": "AiPBX v1.50.18: High-definition WebRTC voice/video calls, team messaging, corporate directory with presence, and PBX controls with stability and server provisioning improvements.",
+    "tr-TR": "AiPBX v1.50.18: HD ses/video WebRTC görüşmeleri, anlık mesajlaşma, canlı dahili rehber ve santral özellikleri ile kararlılık ve sunucu uyumluluk iyileştirmeleri."
   },
   "fallback": {
     "en-US": "Bug fixes and improvements.",
