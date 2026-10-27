@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Tests for `stream_bounded` in install.sh — the helper that runs apt-get with
-# its output streaming and kills it on a wall clock or on silence.
+# Tests for `stream_bounded` in install.sh — the helper that runs apt-get and
+# composer with their output streaming and kills them on a wall clock or on
+# silence.
 #
 # Why this exists: on 2026-10-26 the install test sat inside install.sh for 45
 # minutes and left an empty log, three times. The helper is what turns that
@@ -11,7 +12,9 @@
 # to `| tail -5`, or a silence clock that forgot a download prints nothing while
 # it arrives (that last one failed the install test on 2026-10-26: a slow 24 MB
 # package was killed as if the mirror had died) — because none of that shows up
-# in a healthy install. The cases below fail loudly instead.
+# in a healthy install. Composer is bounded the same way and case 1 checks that
+# it stays that way, with its cache as the progress directory. The cases below
+# fail loudly instead.
 #
 # Usage:
 #   bash scripts/test_install_watchdog.sh            # install.sh in the repo root
@@ -72,7 +75,7 @@ gone() {
 }
 pid_from() { sed -n "s/^$1: \([0-9][0-9]*\)$/\1/p" "$2" | head -1; }
 
-echo '--- 1. install.sh still routes apt through the helper'
+echo '--- 1. install.sh still routes apt and Composer through the helper'
 # The helper can be perfect and still guard nothing if the calls are reverted
 # to `apt-get ... | tail -5`, which is the form that hid the stall.
 grep -q 'stream_bounded "apt-get update"' "$INSTALL_SH" \
@@ -85,6 +88,23 @@ if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*apt-get\b[^#]*\
     bad 'apt-get output is piped into tail again'
 else
     pass 'no apt-get output piped into tail'
+fi
+# Composer prints nothing while a dist file comes down, so it is only bounded
+# correctly if it also names the directory its downloads land in: without it a
+# slow packagist fetch is silence again and a working install gets killed.
+grep -q 'stream_bounded "composer install"' "$INSTALL_SH" \
+    && pass 'composer install goes through stream_bounded' \
+    || bad 'composer install no longer goes through stream_bounded'
+grep -qE 'COMPOSER_CACHE="\$\{COMPOSER_CACHE_DIR:-\$COMPOSER_HOME/cache\}"' "$INSTALL_SH" \
+    && pass 'the progress directory is the Composer cache' \
+    || bad 'the progress directory is not the Composer cache any more'
+grep -q -- '--progress="\$COMPOSER_CACHE"' "$INSTALL_SH" \
+    && pass 'composer install is told where its progress lands' \
+    || bad 'composer install passes no progress directory'
+if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*composer\b[^#]*\|[[:space:]]*tail' "$INSTALL_SH"; then
+    bad 'composer output is piped into tail again'
+else
+    pass 'no composer output piped into tail'
 fi
 
 echo

@@ -72,7 +72,8 @@ ASTERISK_RESTART_EPOCH=1
 #   * `composer install` has no network timeout at all, so a packagist or GitHub
 #     connection that stops answering is simply waited on.
 # `-o DPkg::Lock::Timeout` gives apt a bound (it then fails with its own "Could
-# not get lock" message), and `timeout` bounds Composer, which has no such knob.
+# not get lock" message); Composer has no such knob, so the whole command is
+# bounded here instead (see COMPOSER_TIMEOUT).
 #
 # Neither of those covers the third way this can stop: apt's own configure stage
 # runs postinst scripts that can block for ever, with nothing printed and no
@@ -81,6 +82,7 @@ ASTERISK_RESTART_EPOCH=1
 # bound on how long its output may stand still.
 APT_LOCK_WAIT=120      # seconds apt-get may wait for the dpkg lock
 COMPOSER_TIMEOUT=900   # seconds the whole `composer install` may take
+COMPOSER_SILENCE=300   # no line and no download progress for this long means a real stall
 
 # --- Streaming, time-bounded apt ---------------------------------------------
 # This step used to end in `apt-get ... 2>&1 | tail -5`, and that pipe is why the
@@ -1180,20 +1182,30 @@ a2enconf aipbx-routing 2>/dev/null
 # the install then stopped at the migrations with "vendor/bin/phinx" missing.
 info "Installing PHP dependencies (Composer)..."
 cd "$INSTALL_DIR/web"   # the migrations below run from here (vendor/bin/phinx)
-# `timeout` because Composer has no network timeout of its own (see
-# COMPOSER_TIMEOUT), and the log goes to a file rather than straight into
-# `tail` so the status is Composer's, not tail's, and a timeout can be named as
-# a timeout instead of "failed".
-COMPOSER_LOG="$(mktemp)"
+# Streamed and double-bounded exactly like the package phase above, and for the
+# same reason: `--no-progress` prints a line per package and NOTHING at all
+# while a dist file is coming down, so a slow packagist or GitHub fetch looked
+# like a hang and a working install was killed as one. Every download Composer
+# makes lands in its cache, so that directory is handed over as the progress
+# signal — bytes arriving there count as work, and only a fetch that neither
+# prints nor delivers for COMPOSER_SILENCE seconds is called a stall. Output
+# goes straight to stdout now (the CI tees it), so a cancelled job still has the
+# lines; a file-and-tail pipe was what hid the apt phase on 2026-10-26.
+COMPOSER_CACHE="${COMPOSER_CACHE_DIR:-$COMPOSER_HOME/cache}"   # where every dist lands (COMPOSER_CACHE_DIR wins if set)
+mkdir -p "$COMPOSER_CACHE" 2>/dev/null || true   # so the first byte of progress is measurable
 composer_status=0
-COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=300 \
-    timeout "$COMPOSER_TIMEOUT" composer install --no-dev --no-interaction --no-progress \
-    >"$COMPOSER_LOG" 2>&1 || composer_status=$?
-tail -20 "$COMPOSER_LOG" || true
-rm -f "$COMPOSER_LOG"
+# The two Composer variables are scoped to this call, as they always were: the
+# rest of the install has no business inheriting COMPOSER_PROCESS_TIMEOUT.
+(
+    export COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=300
+    stream_bounded "composer install" "$COMPOSER_TIMEOUT" "$COMPOSER_SILENCE" \
+        --progress="$COMPOSER_CACHE" -- \
+        composer install --no-dev --no-interaction --no-progress
+) || composer_status=$?
 case $composer_status in
     0) ;;
-    124) error "Composer install timed out after ${COMPOSER_TIMEOUT}s: packagist or GitHub stopped answering (see output above)" ;;
+    124) error "Composer install hit the ${COMPOSER_TIMEOUT}s budget: packagist or GitHub stopped answering (see output above)" ;;
+    125) error "Composer install printed nothing and downloaded nothing for ${COMPOSER_SILENCE}s: packagist or GitHub is wedged (see output above)" ;;
     *) error "Composer install failed (see output above)" ;;
 esac
 [[ -x "$INSTALL_DIR/web/vendor/bin/phinx" ]] || error "Composer did not install the PHP dependencies (see output above)"
