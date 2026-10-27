@@ -62,6 +62,179 @@ fi
 # calls in progress stay up.
 ASTERISK_RESTART_EPOCH=1
 
+# --- Bounded waits: a stall must become an error, not a 45-minute silence ---
+# On 2026-10-26 the install test sat inside `install.sh` until the job timeout
+# with nothing to show for it. Two of its steps can wait far longer than the
+# work they are waiting on, with nothing in the log to say so:
+#   * `apt-get` on a held dpkg lock (the runner's own unattended-upgrades, or an
+#     apt left behind by an earlier step): with no bound set, that wait has run
+#     into the quarter-hour range in the wild, and nothing here needs it to;
+#   * `composer install` has no network timeout at all, so a packagist or GitHub
+#     connection that stops answering is simply waited on.
+# `-o DPkg::Lock::Timeout` gives apt a bound (it then fails with its own "Could
+# not get lock" message); Composer has no such knob, so the whole command is
+# bounded here instead (see COMPOSER_TIMEOUT).
+#
+# Neither of those covers the third way this can stop: apt's own configure stage
+# runs postinst scripts that can block for ever, with nothing printed and no
+# timeout of apt's own. That is why the package phase below also runs under
+# stream_bounded (see APT_* there): a wall-clock budget for the phase, and a
+# bound on how long its output may stand still.
+APT_LOCK_WAIT=120      # seconds apt-get may wait for the dpkg lock
+COMPOSER_TIMEOUT=900   # seconds the whole `composer install` may take
+COMPOSER_SILENCE=300   # no line and no download progress for this long means a real stall
+
+# --- Streaming, time-bounded apt ---------------------------------------------
+# This step used to end in `apt-get ... 2>&1 | tail -5`, and that pipe is why the
+# 2026-10-26 stall was invisible: it holds every line until apt exits, so a phase
+# that ran for 45 minutes wrote nothing to the log at all — and even the healthy
+# run showed 126 s of silence while dpkg configured, with no way to tell that
+# from a hang.
+#
+# So apt now runs under stream_bounded: every line reaches stdout as it arrives
+# (the CI keeps it through `tee`, so a cancelled job still has the evidence), a
+# copy stays in a file so the last lines can be shown after a kill, the phase
+# has a wall-clock budget, and the output may not stand still for long either.
+# A stall now ends in minutes, naming the phase and printing the last thing apt
+# said, instead of costing the caller's whole timeout.
+#
+# Standing still is judged on progress, not on lines alone. A download prints
+# nothing while it arrives, and on 2026-10-26 that failed the install test: apt's
+# last line was 301 s old — "Get:147 ... golang-1.26-src [24.4 MB]", a 24 MB
+# source package still coming down a slow mirror — and the silence clock killed a
+# phase that was working (994 s in). Both apt calls therefore name the directory
+# apt writes into (--progress=), bytes landing there reset the same clock, and a
+# long download now shows in the log instead of looking like silence. A postinst
+# that hangs prints nothing AND writes nothing, so it is still killed at the bound.
+APT_UPDATE_TIMEOUT=300    # apt-get update: a mirror that cannot answer in 5 min is down
+APT_INSTALL_TIMEOUT=1200  # apt-get install of every package; the healthy run took ~2.5 min
+APT_SILENCE=300           # no line and no download progress for this long means a real stall
+
+# stream_bounded <label> <budget-seconds> <silence-seconds> [--progress=DIR] -- <command...>
+# Runs the command under both clocks, streaming its output. Returns the
+# command's own status, or
+#   124  the wall-clock budget ran out
+#   125  the output stood still for the silence bound, with nothing arriving in DIR
+#
+# --progress is optional, for callers whose work lands in a directory (apt's
+# downloads): growth of that directory counts as progress, so a slow download is
+# not mistaken for a hang. Without it the silence bound is measured on output alone.
+stream_bounded() {
+    local label="$1" budget="$2" quiet="$3"
+    local log rc=0 shown=0 lines=0 start last_out last_prog reason="" pid i elapsed
+    local progress="" bytes=0 seen=0 waited=0 quiet_at=0
+    shift 3
+    if [[ "${1:-}" == --progress=* ]]; then
+        progress="${1#--progress=}"
+        shift
+    fi
+    [[ "${1:-}" == "--" ]] && shift
+
+    log="$(mktemp)" || { "$@"; return $?; }
+    start=$SECONDS
+    last_out=$start
+    last_prog=$start
+    if [ -n "$progress" ]; then
+        info "$label — up to ${budget}s, ${quiet}s without a line or a byte counts as stuck"
+    else
+        info "$label — up to ${budget}s, ${quiet}s without a line counts as stuck"
+    fi
+
+    # `timeout` rather than a clock inside the loop: it puts the command in its
+    # own process group and signals the group, so a hung postinst goes with
+    # apt-get instead of being orphaned halfway through a configure.
+    timeout --signal=TERM --kill-after=60 "$budget" "$@" >>"$log" 2>&1 &
+    pid=$!
+
+    while kill -0 "$pid" 2>/dev/null; do
+        sleep 2
+        lines=$(wc -l <"$log" 2>/dev/null | tr -d ' ')
+        [ -n "$lines" ] || lines=0
+        if [ "$lines" -gt "$shown" ]; then
+            sed -n "$((shown + 1)),${lines}p" "$log"
+            shown=$lines
+            last_out=$SECONDS
+        fi
+        if [ -n "$progress" ]; then
+            # du, not a stat of one file: apt renames each download as it finishes,
+            # so the directory's total size is the measure that does not blink.
+            bytes=$(du -sk "$progress" 2>/dev/null | awk '{print $1}')
+            [ -n "$bytes" ] || bytes=0
+            if [ "$bytes" != "$seen" ]; then
+                seen=$bytes
+                last_prog=$SECONDS
+                # Say it once per quiet window: without this a slow download
+                # reads exactly like the silence this clock exists to catch.
+                if [ $((SECONDS - last_out)) -ge "$quiet" ] && [ $((SECONDS - waited)) -ge "$quiet" ]; then
+                    waited=$SECONDS
+                    info "$label: no output for $((SECONDS - last_out))s, but $((bytes / 1024)) MB is now in ${progress} — still downloading"
+                fi
+            fi
+        fi
+        # Stuck means neither the output nor the downloads have moved.
+        quiet_at=$last_out
+        [ "$last_prog" -gt "$quiet_at" ] && quiet_at=$last_prog
+        if [ $((SECONDS - quiet_at)) -ge "$quiet" ]; then
+            if [ -n "$progress" ]; then
+                reason="printed nothing for $((SECONDS - last_out))s and received nothing for $((SECONDS - last_prog))s"
+            else
+                reason="went silent for $((SECONDS - last_out))s"
+            fi
+            break
+        fi
+    done
+
+    if [ -n "$reason" ]; then
+        # Signal the whole group (both GNU and uutils timeout make themselves
+        # the group leader, so the command's group id is their pid) and only
+        # fall back to the single pid: a postinst that ignores TERM must not be
+        # left orphaned in the middle of a configure step.
+        kill -s TERM -- "-$pid" 2>/dev/null || kill -s TERM "$pid" 2>/dev/null || true
+        i=0
+        while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 30 ]; do
+            sleep 1
+            i=$((i + 1))
+        done
+        kill -s KILL -- "-$pid" 2>/dev/null || kill -s KILL "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" 2>/dev/null || rc=$?
+    # timeout has exited by now. If it ended on a clock and something in its
+    # group outlived it (a postinst that ignored TERM), sweep the group: the
+    # others are gone already, so this is normally a no-op.
+    if [ "$rc" -ne 0 ]; then
+        kill -s KILL -- "-$pid" 2>/dev/null || true
+    fi
+
+    # The loop stops looking the moment the process ends, so whatever was
+    # printed between the last tick and the exit still has to be flushed: on a
+    # failure those lines are the whole diagnosis.
+    lines=$(wc -l <"$log" 2>/dev/null | tr -d ' ')
+    [ -n "$lines" ] || lines=0
+    if [ "$lines" -gt "$shown" ]; then
+        sed -n "$((shown + 1)),${lines}p" "$log"
+    fi
+    rm -f "$log"
+
+    elapsed=$((SECONDS - start))
+    if [ -n "$reason" ]; then
+        warn "$label $reason — killed after ${elapsed}s; the lines above are the last thing it printed"
+        return 125
+    fi
+    # Ubuntu 26.04 ships uutils' timeout, which reports a child that had to be
+    # SIGKILLed as 137 where GNU timeout says 124. The clock we know about is
+    # our own, so "it died at or after the budget" is what identifies this, and
+    # the caller still gets a name for it instead of "failed (status 137)".
+    if [ "$rc" -ne 0 ] && [ "$elapsed" -ge "$budget" ]; then
+        warn "$label hit the ${budget}s budget — killed; the lines above are where it stopped"
+        return 124
+    fi
+    case $rc in
+        0)   ok "$label finished in ${elapsed}s" ; return 0 ;;
+        124) warn "$label hit the ${budget}s budget — killed; the lines above are where it stopped" ; return 124 ;;
+        *)   warn "$label failed (status $rc)" ; return "$rc" ;;
+    esac
+}
+
 # --- Mode: fresh install (default) or --upgrade ---
 AIPBX_MODE=install
 for arg in "$@"; do
@@ -133,7 +306,8 @@ if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     if ! command -v git >/dev/null 2>&1; then
         info "Installing git..."
         export DEBIAN_FRONTEND=noninteractive
-        apt-get update -qq && apt-get install -y -qq git
+        apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" update -qq \
+            && apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq git
     fi
     
     if [[ -d "$INSTALL_DIR/.git" ]]; then
@@ -371,8 +545,11 @@ PACKAGES=(
 # An upgrade only installs packages a newer release added: system package
 # updates are the OS's job, and on servers that cannot reach the Ubuntu
 # mirrors (e.g. behind a stalling proxy) apt-get used to hang the update for
-# many minutes. Short timeouts so an unreachable mirror fails fast.
-APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1)
+# many minutes. Short timeouts so an unreachable mirror fails fast, and a bound
+# on the dpkg lock (see APT_LOCK_WAIT) so a lock held by something else fails
+# with apt's own message instead of waiting out the caller's timeout.
+APT_NET=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1
+         -o "DPkg::Lock::Timeout=$APT_LOCK_WAIT")
 # vsftpd's own unit would start right after installing, with local system
 # accounts allowed to log in: masked first, AiPBX runs its own (aipbx-vsftpd).
 systemctl mask vsftpd.service >/dev/null 2>&1 || true
@@ -384,12 +561,37 @@ if is_upgrade && [[ ${#MISSING[@]} -eq 0 ]]; then
     info "All system packages present — apt skipped"
 else
     is_upgrade && info "Installing new packages: ${MISSING[*]}"
-    apt-get "${APT_NET[@]}" update -qq || warn "apt-get update failed — using the existing package lists"
+    # Streamed and double-bounded (see stream_bounded): a silent `tail -5` pipe
+    # was what made this phase look like nothing at all for 45 minutes. Both apt
+    # calls hand over the directory they fill, so a slow download is progress.
+    apt_rc=0
+    stream_bounded "apt-get update" "$APT_UPDATE_TIMEOUT" "$APT_SILENCE" \
+        --progress=/var/lib/apt/lists -- \
+        apt-get "${APT_NET[@]}" update -qq || apt_rc=$?
+    case $apt_rc in
+        0) ;;
+        124|125) error "apt-get update stopped making progress (see above) — the mirror or the dpkg lock is wedged" ;;
+        *) warn "apt-get update failed — using the existing package lists" ;;
+    esac
+
+    apt_rc=0
     if is_upgrade; then
-        apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" 2>&1 | tail -5
+        stream_bounded "apt-get install (${#MISSING[@]} new packages)" \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" \
+            --progress=/var/cache/apt/archives -- \
+            apt-get "${APT_NET[@]}" install -y "${MISSING[@]}" || apt_rc=$?
     else
-        apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" 2>&1 | tail -5
+        stream_bounded "apt-get install (${#PACKAGES[@]} packages)" \
+            "$APT_INSTALL_TIMEOUT" "$APT_SILENCE" \
+            --progress=/var/cache/apt/archives -- \
+            apt-get "${APT_NET[@]}" install -y "${PACKAGES[@]}" || apt_rc=$?
     fi
+    case $apt_rc in
+        0) ;;
+        124) error "apt-get install hit the ${APT_INSTALL_TIMEOUT}s budget — dpkg was still working (see above)" ;;
+        125) error "apt-get install printed nothing and received nothing for ${APT_SILENCE}s — the mirror or a postinst script is stuck (see above)" ;;
+        *) error "apt-get install failed (status $apt_rc): the packages above are missing" ;;
+    esac
 fi
 
 ok "System packages installed"
@@ -980,8 +1182,32 @@ a2enconf aipbx-routing 2>/dev/null
 # the install then stopped at the migrations with "vendor/bin/phinx" missing.
 info "Installing PHP dependencies (Composer)..."
 cd "$INSTALL_DIR/web"   # the migrations below run from here (vendor/bin/phinx)
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress 2>&1 | tail -20 \
-    || error "Composer install failed (see output above)"
+# Streamed and double-bounded exactly like the package phase above, and for the
+# same reason: `--no-progress` prints a line per package and NOTHING at all
+# while a dist file is coming down, so a slow packagist or GitHub fetch looked
+# like a hang and a working install was killed as one. Every download Composer
+# makes lands in its cache, so that directory is handed over as the progress
+# signal — bytes arriving there count as work, and only a fetch that neither
+# prints nor delivers for COMPOSER_SILENCE seconds is called a stall. Output
+# goes straight to stdout now (the CI tees it), so a cancelled job still has the
+# lines; a file-and-tail pipe was what hid the apt phase on 2026-10-26.
+COMPOSER_CACHE="${COMPOSER_CACHE_DIR:-$COMPOSER_HOME/cache}"   # where every dist lands (COMPOSER_CACHE_DIR wins if set)
+mkdir -p "$COMPOSER_CACHE" 2>/dev/null || true   # so the first byte of progress is measurable
+composer_status=0
+# The two Composer variables are scoped to this call, as they always were: the
+# rest of the install has no business inheriting COMPOSER_PROCESS_TIMEOUT.
+(
+    export COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=300
+    stream_bounded "composer install" "$COMPOSER_TIMEOUT" "$COMPOSER_SILENCE" \
+        --progress="$COMPOSER_CACHE" -- \
+        composer install --no-dev --no-interaction --no-progress
+) || composer_status=$?
+case $composer_status in
+    0) ;;
+    124) error "Composer install hit the ${COMPOSER_TIMEOUT}s budget: packagist or GitHub stopped answering (see output above)" ;;
+    125) error "Composer install printed nothing and downloaded nothing for ${COMPOSER_SILENCE}s: packagist or GitHub is wedged (see output above)" ;;
+    *) error "Composer install failed (see output above)" ;;
+esac
 [[ -x "$INSTALL_DIR/web/vendor/bin/phinx" ]] || error "Composer did not install the PHP dependencies (see output above)"
 
 # Database schema (Phinx migrations), seed data, admin user, ODBC user.
@@ -1116,7 +1342,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/l
 # aipbx-update upgrades land the same components.
 if [ -d "$INSTALL_DIR/signaling" ]; then
     if command -v apt-get >/dev/null 2>&1; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
     fi
     if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
         install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
@@ -1635,7 +1861,7 @@ systemctl daemon-reload
 AI_READY_MARK="$AI_VENV/.aipbx-requirements"
 if [[ -f "$AI_READY_MARK" ]] && ! command -v espeak-ng >/dev/null 2>&1; then
     # Piper voices (1.9.3) need espeak-ng; runtimes installed before get it here.
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq espeak-ng >/dev/null 2>&1 \
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq espeak-ng >/dev/null 2>&1 \
         || warn "espeak-ng could not be installed: Piper voices will not load"
 fi
 if [[ -f "$AI_READY_MARK" ]]; then
