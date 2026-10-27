@@ -157,3 +157,14 @@ jobs:
       - name: Signaling capture tests
         run: python -m unittest discover -v -s tests
         working-directory: signaling
+
+      # The desk-phone discovery engine (PBX -> Phones -> Discovered on the
+      # network); stdlib only. The parity tests read PhoneModels.php and
+      # PhoneDiscoveryService.php, so a vendor prefix or a setting added on the
+      # PHP side alone fails here. Skipped while the engine is not in the tree,
+      # so this step can land before the feature and guards it from the moment
+      # it does.
+      - name: Phone discovery engine tests
+        if: hashFiles('engine/tests/**') != ''
+        run: python -m unittest discover -v -s tests -t .
+        working-directory: engine
