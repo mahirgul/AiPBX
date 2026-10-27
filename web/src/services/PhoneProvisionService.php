@@ -712,7 +712,7 @@ class PhoneProvisionService
         }
         $phone = self::phoneBy('mac', $mac);
         if ($phone === null) {
-            self::recordWaiting($mac, PhoneModels::guessVendor($mac, $ua), $ip, $ua);
+            self::recordWaiting($mac, PhoneModels::guessVendor($mac, $ua, $file), $ip, $ua);
             self::log(null, $mac, $file, 'unknown', $ip, $ua);
             return self::answer(404, 'unknown');
         }

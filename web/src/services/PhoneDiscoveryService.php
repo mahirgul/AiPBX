@@ -342,6 +342,13 @@ class PhoneDiscoveryService
             $out['reason'] = t('phonedisc.off');
             return $out;
         }
+
+        // The table's invariant, restored before anything is decided on it:
+        // status = 'provisioned' exactly when a phone exists for that MAC. A
+        // phone added by hand (or by the CSV import) after the engine recorded
+        // the MAC would otherwise sit here as "new" for good.
+        $out['reconciled'] = self::reconcile();
+
         $pool = self::parsePool($settings['provision_discovery_pool']);
         if ($pool === []) {
             $out['reason'] = t('phonedisc.no_pool');
@@ -352,12 +359,6 @@ class PhoneDiscoveryService
             $out['reason'] = t('phonedisc.no_models');
             return $out;
         }
-
-        // The table's invariant, restored before anything is decided on it:
-        // status = 'provisioned' exactly when a phone exists for that MAC. A
-        // phone added by hand (or by the CSV import) after the engine recorded
-        // the MAC would otherwise sit here as "new" for good.
-        $out['reconciled'] = self::reconcile();
 
         $limit = max(1, min(self::AUTO_MAX_PER_RUN, $limit));
         $rows = self::candidates($limit);
