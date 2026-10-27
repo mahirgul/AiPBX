@@ -6,6 +6,8 @@ Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA**, **
 on the page).
 Cisco's enterprise **7900/8800 series** (CallManager firmware) are supported too, but they need firmware, an
 Asterisk patch and a folder of shared files that AiPBX cannot ship: see [Cisco 7900 / 8800 series](cisco-callmanager.md).
+A 7900 that is still running SCCP firmware is switched to Cisco's SIP load as part of provisioning — name the
+load for each model on the settings tab, and restart the phone once so it reads its file.
 
 The page is admin-only, like *Users* and *Firewall*: the provisioning URLs it shows hand out the
 SIP password of the extension.
