@@ -473,6 +473,11 @@ cat > /etc/cron.d/aipbx << 'CRON'
 # Scheduled tasks (System -> Scheduled tasks; sandboxed, as aipbx-task), SIP debug
 # switch-off and the night restart window (PBX settings)
 * * * * * root /usr/local/bin/task_dispatcher.php >/dev/null 2>&1
+
+# Desk phones found on the network (PBX -> Phones -> Discovered on the network):
+# the engine looks, then the portal provisions what its settings allow. Both halves
+# are in one script so the second can never run without the first.
+*/5 * * * * www-data /usr/local/sbin/aipbx-phone-discovery >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/aipbx
 
@@ -1110,6 +1115,23 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+# --- phone discovery engine (PBX -> Phones -> Discovered on the network):
+# looks at the DHCP lease file, the ARP table and dnsmasq's log (opt-in sweep)
+# and records what it found; the portal decides what happens to it. Installed on
+# fresh installs AND by --upgrade.
+if [ -d "$INSTALL_DIR/engine" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+    fi
+    install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/engine
+    install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-phone-discovery" /usr/local/sbin/aipbx-phone-discovery
+    chmod 755 "$INSTALL_DIR/engine"
+    # The CLI the wrapper and an operator both call, next to the other bin scripts.
+    if [ -f "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" ]; then
+        ln -sf "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" /usr/local/bin/aipbx_phone_discovery.php
+    fi
+fi
+
 # --- signaling capture (opt-in: asterisk-config/hep.conf decides whether
 # Asterisk sends HEP; the local daemon stores events for the portal's
 # Signaling page). Installed here on fresh installs AND by --upgrade, so

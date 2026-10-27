@@ -2,8 +2,9 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/PhoneProvisionService.php';
 require_once __DIR__ . '/../services/NetworkServicesService.php';
+require_once __DIR__ . '/../services/PhoneDiscoveryService.php';
 
-/** PBX → Phones: phone list, waiting phones, CSV import, provisioning settings. */
+/** PBX → Phones: phone list, waiting phones, phones found on the network, provisioning settings. */
 class PhoneController extends BaseController
 {
     public static function index(): void
@@ -55,6 +56,20 @@ class PhoneController extends BaseController
             'delete_waiting' => fn() => PhoneProvisionService::deleteWaiting((int) ($_POST['waiting_id'] ?? 0), $csrf),
             'import_csv' => fn() => PhoneProvisionService::importCsvAction(self::uploadedCsv(), $csrf),
             'save_settings' => fn() => PhoneProvisionService::saveSettings($_POST),
+            // The discovery switches are their own form (their own modal): they
+            // are read by a different service and a different process.
+            'save_discovery_settings' => function () {
+                PhoneDiscoveryService::saveDiscoverySettings($_POST);
+                return t('phonedisc.settings_saved');
+            },
+            'approve_discovery' => fn() => PhoneDiscoveryService::approve(
+                (int) ($_POST['discovery_id'] ?? 0),
+                (string) ($_POST['model'] ?? ''),
+                (int) ($_POST['user_id'] ?? 0),
+                $csrf
+            ),
+            'ignore_discovery' => fn() => PhoneDiscoveryService::ignore((int) ($_POST['discovery_id'] ?? 0), $csrf),
+            'restore_discovery' => fn() => PhoneDiscoveryService::restore((int) ($_POST['discovery_id'] ?? 0), $csrf),
         ]);
 
         // Phones that got an address from AiPBX's DHCP (Network services) wait here too.
@@ -75,6 +90,13 @@ class PhoneController extends BaseController
             'waiting' => PhoneProvisionService::listWaiting(),
             'users' => PhoneProvisionService::assignableUsers(),
             'settings' => PhoneProvisionService::settings(),
+            // Phones the discovery engine (cron, every 5 minutes) found on the
+            // network, plus the switches that decide what may happen to them.
+            'discovered' => PhoneDiscoveryService::listDiscovered(),
+            'discoverySummary' => PhoneDiscoveryService::summary(),
+            'discovery' => PhoneDiscoveryService::settings(),
+            'discoveryPoolFree' => PhoneDiscoveryService::poolFree(),
+            'discoveryEngine' => PhoneDiscoveryService::engineStatus(),
             'macBaseUrl' => ForgotPasswordService::portalUrl() . '/provision/',
         ], ['title' => t('phones.title')] + $notices);
     }

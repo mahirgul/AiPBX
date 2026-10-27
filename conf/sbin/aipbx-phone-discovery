@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# aipbx-phone-discovery — one desk-phone discovery run.
+#
+# The install puts this on a 5-minute cron entry as www-data:
+#
+#   */5 * * * * www-data /usr/local/sbin/aipbx-phone-discovery
+#
+# Two steps, in this order and never the other way round:
+#
+#   1. engine/aipbx_engine (Python) looks at the network and records what is on
+#      it in pbx_phone_discoveries. It writes no phone.
+#   2. web/bin/aipbx_phone_discovery.php provisions the phones the settings
+#      allow: an extension pool and a model for that vendor, and only for a MAC
+#      that is not a phone yet. Nothing else creates a phone here.
+#
+# A run that fails is a run that fails: the lock keeps two runs from overlapping,
+# and the second step is skipped when the first one could not write anything
+# (a database that is down would only make it fail too, and the log says so).
+set -u
+
+INSTALL_DIR="$(readlink -f /var/www/html 2>/dev/null)"
+INSTALL_DIR="${INSTALL_DIR%/web}"
+[ -f "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" ] || INSTALL_DIR=/opt/aipbx
+
+# One run at a time: a sweep can take half a minute, a cron tick comes every five.
+exec 9>/run/aipbx-phone-discovery-tick.lock || exit 0
+if command -v flock >/dev/null 2>&1; then
+    flock -n 9 || exit 0
+fi
+
+PYTHONPATH="$INSTALL_DIR/engine"
+export PYTHONPATH
+cd "$INSTALL_DIR/engine" || exit 0
+/usr/bin/python3 -m aipbx_engine once || true
+
+exec /usr/bin/php "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" provision
