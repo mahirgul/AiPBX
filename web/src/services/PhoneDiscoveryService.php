@@ -213,11 +213,18 @@ class PhoneDiscoveryService
         return ($row['status'] ?? '') === 'provisioned' ? 'deleted' : 'new';
     }
 
-    /** @return array<string, int> rows per state, for the panel's badges */
+    /**
+     * @return array<string, int> rows per state, for the panel's badges
+     *
+     * The joined phone has to be selected under the name stateOf() reads —
+     * the same `live_phone_id` listDiscovered() uses. Under any other alias the
+     * column is missing from every row, a row with a phone falls through to
+     * its status, and this count disagrees with the badges inside the table.
+     */
     public static function summary(): array
     {
         $counts = ['new' => 0, 'ignored' => 0, 'provisioned' => 0, 'deleted' => 0];
-        foreach (getDB()->query('SELECT d.status, p.id AS live FROM pbx_phone_discoveries d LEFT JOIN pbx_phones p ON p.mac = d.mac')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach (getDB()->query('SELECT d.status, p.id AS live_phone_id FROM pbx_phone_discoveries d LEFT JOIN pbx_phones p ON p.mac = d.mac')->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $counts[self::stateOf($row)]++;
         }
         return $counts;

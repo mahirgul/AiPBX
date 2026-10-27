@@ -129,6 +129,45 @@ final class PhoneDiscoveryServiceTest extends TestCase
         $this->assertSame('new', PhoneDiscoveryService::stateOf(['status' => 'new']));
     }
 
+    /**
+     * The header badge and the row badges are two readings of the same table,
+     * so they have to agree.
+     *
+     * summary() classifies rows with stateOf(), which looks for the joined
+     * phone under the name `live_phone_id`. Its own query used to alias the
+     * column `live` — a row with a phone then lost that column, fell through to
+     * its status, and a phone added by hand while the feature was off was
+     * counted as "new" forever while its own row said "provisioned". The
+     * comparison below fails on any such mismatch, whichever side drifts.
+     */
+    public function testSummaryCountsWhatTheRowBadgesShow(): void
+    {
+        // Not a phone: the only row that is genuinely new.
+        $this->discovery(self::MAC);
+        // A MAC added by hand while its row was still 'new'. reconcile() runs
+        // only inside a configured automatic run, so with the feature off this
+        // is the state the panel opens on.
+        $this->phone(self::MAC2);
+        $this->discovery(self::MAC2);
+        // The same, and ignored as well: the phone that exists still wins.
+        $this->phone('001565aabbcd');
+        $this->discovery('001565aabbcd', 'yealink', 'ignored');
+        // Provisioned, and that phone has since been deleted from the list.
+        $this->discovery('000b82112234', 'grandstream', 'provisioned');
+
+        $shown = ['new' => 0, 'ignored' => 0, 'provisioned' => 0, 'deleted' => 0];
+        foreach (PhoneDiscoveryService::listDiscovered() as $row) {
+            $shown[$row['state']]++;
+        }
+
+        $summary = PhoneDiscoveryService::summary();
+        $this->assertSame(1, $summary['new'], 'only the MAC that is not a phone is new');
+        $this->assertSame(2, $summary['provisioned'], 'a phone that exists makes its row provisioned, whatever its status says');
+        $this->assertSame(0, $summary['ignored'], 'an ignored row that is now a phone is provisioned, not ignored');
+        $this->assertSame(1, $summary['deleted'], 'a provisioned row whose phone is gone is deleted');
+        $this->assertSame($shown, $summary, 'the header badge counts the states the rows show');
+    }
+
     // ----------------------------------------------------- the automatic step
 
     public function testNothingIsProvisionedWithoutAPool(): void
