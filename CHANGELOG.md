@@ -5,6 +5,27 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.18
+
+- **Network desk-phone discovery & automatic pool provisioning (`/phones` & `engine/`):**
+  discovers desk phones on the local network every 5 minutes via DHCP leases, ARP tables,
+  `dnsmasq` journal logs, and an optional bounded UDP subnet sweep. Discovered phones can be
+  approved or ignored from the **Discovered on the network** panel, or provisioned automatically
+  from a configured extension pool (`provision_discovery_pool`) and vendor-to-model map
+  (`provision_discovery_models`).
+- **Cisco 7900/8800 CallManager-series phone provisioning & SCCP-to-SIP firmware switching:**
+  added 11 Cisco 7900/8800 models (`cisco-cm-*`), `SEP<MAC>.cnf.xml` XML configuration generation,
+  per-model SCCP-to-SIP firmware load switching (`provision_cisco_loads`), `.loads` manifest file
+  verification against `/var/lib/aipbx/tftp`, and firmware state tracking on `pbx_phones`.
+- **Health alarm quiet hours & incident deduplication (`/health`):** added configurable quiet hours
+  (`HH:MM-HH:MM`, may cross midnight) that hold warning and recovery emails until the window ends
+  while still sending critical `fail` alarms immediately, and deduplicated flapping checks within
+  `health_repeat_hours`.
+- **Installer & CI reliability:** bounded `apt-get` dpkg lock waits (`DPkg::Lock::Timeout`) and
+  wrapped `apt-get` and `composer install` in `stream_bounded` with wall-clock and download-progress
+  watchdogs; added smoke tests verifying that all admin-only JSON APIs reject non-admin roles with
+  HTTP 403 JSON responses; updated all 23 portal languages to 100% translation parity (`5,444` keys).
+
 ## 1.50.17
 
 - **Queue recording label uniqueness in multi-branch dialplans:** when multiple branches of a
