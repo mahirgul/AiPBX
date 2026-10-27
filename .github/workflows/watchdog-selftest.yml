@@ -1,0 +1,35 @@
+name: Installer watchdog test
+
+# `stream_bounded` in install.sh is what turns a silent apt stall into a named
+# failure: on 2026-10-26 the install test sat for 45 minutes, three times, with
+# an empty log. Breaking the helper is invisible in a healthy install — a pipe
+# that buffers again, a clock that never fires, a kill that leaves dpkg behind,
+# a silence clock that treats a slow download as a hang (that one failed the
+# install test), or the two apt-get calls quietly going back to `| tail -5` — so
+# the cases in scripts/test_install_watchdog.sh run here, on the same image as the
+# install test, in under two minutes instead of that job's 45.
+
+on:
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'scripts/test_install_watchdog.sh'
+      - '.github/workflows/watchdog-selftest.yml'
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+concurrency:
+  group: watchdog-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  watchdog:
+    name: stream_bounded — streaming, silence, wall clock
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: scripts/test_install_watchdog.sh
+        run: bash scripts/test_install_watchdog.sh
