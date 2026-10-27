@@ -24,13 +24,19 @@ OUI: dict[str, tuple[str, ...]] = {
     "nec": ("0060b9",),
 }
 
-#: The vendors of the table above, key -> the name shown on the page.
+#: The portal's vendor list, key -> the name shown on the page. It is copied
+#: whole, not just the detectable vendors: two lists compare key for key, and
+#: 'cisco-cm' (the CallManager series, provisioned by picking a model on the
+#: page) is in the portal's list even though its prefixes are not in OUI above —
+#: Cisco's prefixes cover routers and switches too, so a MAC cannot tell a 7962
+#: from a Catalyst, and the discovery sources would fill the list with the rack.
 VENDORS: dict[str, str] = {
     "yealink": "Yealink",
     "grandstream": "Grandstream",
     "fanvil": "Fanvil",
     "snom": "Snom",
     "cisco": "Cisco SPA",
+    "cisco-cm": "Cisco (CallManager)",
     "poly": "Poly",
     "nec": "NEC",
 }

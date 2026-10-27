@@ -18,14 +18,22 @@ WEB = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "web")
 MODELS_PHP = os.path.join(WEB, "src", "services", "phones", "PhoneModels.php")
 DISCOVERY_PHP = os.path.join(WEB, "src", "services", "PhoneDiscoveryService.php")
 
+#: A key on the left of an `=>`: `yealink`, `cisco-cm`, `provision_discovery_pool`.
+#: Vendor keys may carry a hyphen — the Cisco CallManager series is `cisco-cm` —
+#: so a pattern of `[a-z0-9]+` would skip that entry and compare two shorter
+#: tables, which is exactly what this test is here to prevent. entries() below
+#: also fails on a key this pattern still cannot read, so the next key form to
+#: appear breaks the test instead of quietly dropping out of the comparison.
+_KEY = r"([A-Za-z0-9][A-Za-z0-9_-]*)"
+
 #: The OUI block of PhoneModels.php is private, so it is parsed rather than
 #: included:  'yealink' => ['001565', ...],  inside  private const OUI = [ … ];
-_OUI_ENTRY = re.compile(r"'([a-z0-9]+)'\s*=>\s*\[([^\]]*)\]")
+_OUI_ENTRY = re.compile(rf"'{_KEY}'\s*=>\s*\[([^\]]*)\]")
 _PREFIX = re.compile(r"'([0-9a-f]{6})'")
 #: 'vendor' => 'Label',  inside the VENDORS constant.
-_LABEL = re.compile(r"'([a-z0-9]+)'\s*=>\s*'([^']+)'")
+_LABEL = re.compile(rf"'{_KEY}'\s*=>\s*'([^']+)'")
 #: 'provision_discovery_x' => 'default',  inside SETTINGS.
-_SETTING = re.compile(r"'(provision_discovery[a-z_]*)'\s*=>\s*'([^']*)'")
+_SETTING = re.compile(rf"'(provision_discovery[a-z_]*)'\s*=>\s*'([^']*)'")
 
 
 def read(path):
@@ -35,30 +43,72 @@ def read(path):
         return handle.read()
 
 
+def block(text, marker, what):
+    """The body of a PHP constant, or a failure when the constant is gone."""
+    split = text.split(marker, 1)
+    if len(split) == 1:
+        raise AssertionError(f"{what} is gone; this test needs updating")
+    return split[1].split("];", 1)[0]
+
+
+def entries(body, pattern, what):
+    """The pattern's matches in a constant body — every `=>` of it.
+
+    findall() alone is not enough: an entry the pattern cannot read is simply
+    missing from the result, and comparing two shorter tables passes. Every
+    `=>` left in the body after the matches are removed is an entry this test
+    would have skipped, so it is an error rather than a quiet success.
+    """
+    found = pattern.findall(body)
+    unread = [line.strip() for line in pattern.sub("", body).splitlines() if "=>" in line]
+    if unread:
+        raise AssertionError(
+            f"{what} has {len(unread)} entry(s) this test cannot read, so they "
+            f"would be missing from the comparison: {'; '.join(unread[:3])}")
+    return found
+
+
 def php_oui():
-    block = read(MODELS_PHP).split("private const OUI = [", 1)
-    if len(block) == 1:
-        raise AssertionError("PhoneModels::OUI is gone; this test needs updating")
-    body = block[1].split("];", 1)[0]
+    body = block(read(MODELS_PHP), "private const OUI = [", "PhoneModels::OUI")
     return {vendor: tuple(prefixes) for vendor, prefixes in
-            ((m.group(1), _PREFIX.findall(m.group(2))) for m in _OUI_ENTRY.finditer(body))}
+            ((vendor, _PREFIX.findall(prefixes))
+             for vendor, prefixes in entries(body, _OUI_ENTRY, "PhoneModels::OUI"))}
 
 
 def php_vendors():
-    block = read(MODELS_PHP).split("public const VENDORS = [", 1)
-    if len(block) == 1:
-        raise AssertionError("PhoneModels::VENDORS is gone; this test needs updating")
-    return dict(_LABEL.findall(block[1].split("];", 1)[0]))
+    body = block(read(MODELS_PHP), "public const VENDORS = [", "PhoneModels::VENDORS")
+    return dict(entries(body, _LABEL, "PhoneModels::VENDORS"))
 
 
 def php_settings():
-    block = read(DISCOVERY_PHP).split("public const SETTINGS = [", 1)
-    if len(block) == 1:
-        raise AssertionError("PhoneDiscoveryService::SETTINGS is gone; this test needs updating")
-    return dict(_SETTING.findall(block[1].split("];", 1)[0]))
+    body = block(read(DISCOVERY_PHP), "public const SETTINGS = [",
+                 "PhoneDiscoveryService::SETTINGS")
+    return dict(entries(body, _SETTING, "PhoneDiscoveryService::SETTINGS"))
+
+
+class Parsing(unittest.TestCase):
+    """The guard reads the PHP by pattern, so the pattern itself is checked."""
+
+    def test_a_hyphenated_vendor_key_is_read(self):
+        body = "'yealink' => 'Yealink', 'cisco-cm' => 'Cisco (CallManager)',"
+        self.assertEqual(entries(body, _LABEL, "PhoneModels::VENDORS"),
+                         [("yealink", "Yealink"),
+                          ("cisco-cm", "Cisco (CallManager)")])
+
+    def test_an_unreadable_entry_fails_instead_of_disappearing(self):
+        with self.assertRaises(AssertionError):
+            entries("'Yealink Pro' => 'Yealink',", _LABEL, "PhoneModels::VENDORS")
 
 
 class VendorTable(unittest.TestCase):
+    def test_a_hyphenated_vendor_is_compared(self):
+        # 'cisco-cm' has no prefix in PhoneModels::OUI (Cisco's prefixes cover
+        # routers and switches too), so the vendor list is the only place it can
+        # be checked. It used to be skipped by the pattern, which left the
+        # comparison passing while one key of the two tables was never read.
+        self.assertIn("cisco-cm", php_vendors(),
+                      "PhoneModels::VENDORS is not being read whole")
+
     def test_the_same_prefixes(self):
         self.assertEqual(php_oui(), oui.OUI,
                          "the MAC prefix table differs from PhoneModels::OUI")
