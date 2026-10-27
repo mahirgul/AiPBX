@@ -42,6 +42,16 @@ A check that does not apply to the server (no trunks, FTP switched off) shows *N
   a row**, so a short hiccup stays quiet. Less frequent checks report the first bad result.
 - While a problem lasts, the alarm is **repeated** after the chosen number of hours; a check that gets
   worse (warning → failed) is reported at once.
+- **One problem, one e-mail per window.** A check that fails, recovers and fails again inside that
+  window is the same incident, so it does not mail again: the window starts at the last e-mail the
+  check sent, and a different check is a different problem.
+- **Quiet hours** (off by default) hold e-mails for warnings and for "back to normal" inside the
+  chosen window (`HH:MM-HH:MM`, crossing midnight is fine). A **failed** check is never held: it is
+  mailed at once. Nothing is lost by holding: the alarm is not recorded as reported, so the first run
+  after the window ends mails whatever is still wrong, in one e-mail — and a warning that fixed itself
+  overnight mails nothing, because there is nothing left to say. The daily summary is not held; it is
+  a digest at the time you chose, not an alarm. Empty, malformed or zero-length hours mean no window,
+  so a typo cannot silence alarms; the clock is the server's, the same one the summary time uses.
 - When it works again, a **back to normal** e-mail follows.
 - All problems found in one run go into one e-mail.
 
