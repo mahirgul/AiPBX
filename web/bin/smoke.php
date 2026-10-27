@@ -2,11 +2,13 @@
 /**
  * AI PBX smoke test — a one-command "does nothing blow up?" check.
  *
- * Usage: php bin/smoke.php [--only=routes|rbac|conventions|lint]
+ * Usage: php bin/smoke.php [--only=routes|rbac|api|exports|conventions|lint]
  * Exit code: 0 = clean, 1 = at least one failure.
  *
  * SAFETY: this tool ONLY reads/renders. It never triggers a POST, a service
- * write, config generation or an Asterisk reload.
+ * write, config generation or an Asterisk reload. (The one exception is noted
+ * where it happens: a GET on api/notices.php prunes resolved notices older
+ * than 30 days, exactly as opening the bell does.)
  *
  * NOTE: run as root. The bin/ directory belongs to root and MUST be 755:
  * Asterisk runs the feature-code/fax scripts as the asterisk user through
@@ -53,6 +55,25 @@ function render_route(string $path, string $lang, string $role): ?array
          . ' ' . escapeshellarg($lang)
          . ' ' . escapeshellarg($role)
          . ' ' . escapeshellarg($out) . ' 2>/dev/null';
+    $o = [];
+    exec($cmd, $o, $ret);
+    $raw = is_file($out) ? (string) file_get_contents($out) : '';
+    @unlink($out);
+    $d = json_decode($raw, true);
+    return is_array($d) ? $d : null;
+}
+
+/**
+ * Calls one api/*.php endpoint in a subprocess and returns the decoded result.
+ */
+function call_api(string $script, string $role, string $query = ''): ?array
+{
+    $out = tempnam(sys_get_temp_dir(), 'smokeapi');
+    $cmd = 'php ' . escapeshellarg(SMOKE_ROOT . '/bin/_smoke_api.php')
+         . ' ' . escapeshellarg($script)
+         . ' ' . escapeshellarg($role)
+         . ' ' . escapeshellarg($out)
+         . ' ' . escapeshellarg($query) . ' 2>/dev/null';
     $o = [];
     exec($cmd, $o, $ret);
     $raw = is_file($out) ? (string) file_get_contents($out) : '';
@@ -233,6 +254,84 @@ function check_rbac(): void
 }
 
 if ($only === null || $only === 'rbac') { check_rbac(); }
+
+// ------------------------------------------------------------ API PERMISSIONS
+/**
+ * An api/*.php endpoint carries its own permission check; a page cannot prove
+ * it for you. api/notices.php is the case: the bell is administrator-only, but
+ * the JSON behind it answers to anyone signed in unless the endpoint checks the
+ * role itself — and a low-privilege user would then read the administrator
+ * notices (trunk failures, disk warnings) straight from the URL.
+ *
+ * Like check_rbac(), every endpoint is called TWICE: as admin, which MUST
+ * answer 200 with a JSON object (the canary — without it the low-role half
+ * could pass for the wrong reason), and as fax_user, which MUST answer 403.
+ * GET only: no endpoint listed here has a side effect on GET (set a body and
+ * REQUEST_METHOD=POST would be needed to reach the writing branches).
+ *
+ * SCOPE: only endpoints that answer a GET with data. A POST-only endpoint
+ * (ai_apps, ai_cloud) answers 403 for a signed-in admin too, because the CSRF
+ * token is missing, so a GET cannot tell a missing role check from a CSRF
+ * refusal — those are left to the unit tests.
+ */
+function check_api(): void
+{
+    // [endpoint, query the page itself sends]
+    $ADMIN_ONLY = [
+        ['api/notices.php', ''],
+        ['api/dashboard_live.php', ''],
+        ['api/ai_models.php', 'action=status'],
+        ['api/assistant.php', 'action=changes'],
+        ['api/sound_packs.php', 'action=status'],
+        ['api/system_update.php', 'action=status'],
+    ];
+    $n = 0;
+
+    foreach ($ADMIN_ONLY as [$script, $query]) {
+        $label = $script . ($query !== '' ? '?' . $query : '');
+        $asAdmin = call_api($script, 'admin', $query);
+        $n++;
+        if ($asAdmin === null) {
+            fail('api', $label, 'the subprocess produced no result');
+            continue;
+        }
+        if (($asAdmin['status'] ?? '') === 'skip') { $n--; continue; }
+        if (($asAdmin['status'] ?? '') === 'fatal') {
+            fail('api', $label, 'fatal: ' . $asAdmin['error']);
+            continue;
+        }
+        foreach (($asAdmin['php_errors'] ?? []) as $e) {
+            fail('api', $label, 'PHP error: ' . $e);
+        }
+        // Canary: without a real answer as admin, a 403 for the low role says
+        // nothing — the endpoint could be broken for everyone.
+        if ((int) ($asAdmin['code'] ?? 0) !== 200 || !is_array($asAdmin['json'] ?? null)) {
+            fail('api', $label, 'CANARY: admin got HTTP ' . ($asAdmin['code'] ?? '?')
+                . (is_array($asAdmin['json'] ?? null) ? ' (JSON ok)' : ' with a body that is not JSON')
+                . ' — the low-role check below would mean nothing');
+            continue;
+        }
+
+        $asLow = call_api($script, 'fax_user', $query);
+        $n++;
+        if ($asLow === null) {
+            fail('api', $label, 'the subprocess produced no result');
+            continue;
+        }
+        if ((int) ($asLow['code'] ?? 0) !== 403) {
+            fail('api', $label, 'the fax_user role got HTTP ' . ($asLow['code'] ?? '?')
+                . ' instead of 403 — the endpoint has no permission check');
+            continue;
+        }
+        if (($asLow['json']['success'] ?? null) !== false) {
+            fail('api', $label, '403 without the JSON error body: '
+                . mb_strcut((string) ($asLow['body'] ?? ''), 0, 200, 'UTF-8'));
+        }
+    }
+    group_done('api', $n);
+}
+
+if ($only === null || $only === 'api') { check_api(); }
 
 // ---------------------------------------------------------------- EXPORTS
 /**
