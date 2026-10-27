@@ -5540,4 +5540,7 @@ Your phone will ring.',
     'dialplan_rules.copy_suffix' => '(copy)',
     'dialplan_rules.confirm_turn_off' => 'Turn off call normalization? Every device will dial numbers exactly as entered.',
     'srv_role.err_system_delete' => 'Base system roles (admin, read_only_admin, cc_agent, fax_user, user) cannot be deleted!',
+    'phones.cisco_load' => 'Firmware load for Cisco 7900/8800 series',
+    'phones.cisco_load_help' => 'The name of the SIP firmware load without the .loads extension (e.g. SIP42.9-4-2SR3-1S), written to the Cisco CallManager-series phones only. Empty: the phone keeps the load it is running. See docs/cisco-callmanager.md.',
+    'phones.err_cisco_load' => 'The firmware load name may contain letters, digits, dots, dashes and underscores only.',
 ];

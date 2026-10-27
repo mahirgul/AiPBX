@@ -44,6 +44,26 @@ final class PhoneModels
         'cisco-spa508g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA508G', 'keys' => 8, 'exp_keys' => 32, 'exp_max' => 2],
         'cisco-spa509g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA509G', 'keys' => 12, 'exp_keys' => 32, 'exp_max' => 2],
         'cisco-spa525g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA525G2', 'keys' => 5, 'exp_keys' => 32, 'exp_max' => 2],
+        // Cisco CallManager-series phones running Cisco's SIP firmware (the "enterprise"
+        // 7900/8800 sets, not the SPA/Linksys line above). Their keys are the programmable
+        // line keys the SEP<MAC>.cnf.xml file defines; see CiscoCallManagerTemplate.
+        // Key counts are the programmable line keys per Cisco's data sheets: 2 on the 7941G/7942G,
+        // 4 on the 7945G (Cisco's own user guide describes 1-2 lines depending on the call
+        // appearance setting, 4 key slots), 6 on the 7961G/7962G/7965G, 8 on the 7975G, 5 on
+        // every 8800 model here. Expansion modules are NOT written: the 8800 KEM needs a
+        // <deviceType> per module part number (CP-8800-Audio/Video, BEKEM) and a wrong one is
+        // rejected by the phone, so it is left out until it can be tested on real hardware.
+        'cisco-cm-7941g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7941G', 'keys' => 2, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7942g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7942G', 'keys' => 2, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7945g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7945G', 'keys' => 4, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7961g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7961G', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7962g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7962G', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7965g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7965G', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7975g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7975G', 'keys' => 8, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-8841' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8841', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-8851' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8851', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-8861' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8861', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-8865' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8865', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
         // Poly (VVX Color Expansion Module: 28 keys x 3 pages, numbered after the phone's keys)
         'poly-vvx250' => ['vendor' => 'poly', 'label' => 'Poly VVX 250', 'keys' => 4, 'exp_keys' => 0, 'exp_max' => 0],
         'poly-vvx350' => ['vendor' => 'poly', 'label' => 'Poly VVX 350', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
@@ -61,10 +81,20 @@ final class PhoneModels
 
     public const VENDORS = [
         'yealink' => 'Yealink', 'grandstream' => 'Grandstream', 'fanvil' => 'Fanvil',
-        'snom' => 'Snom', 'cisco' => 'Cisco SPA', 'poly' => 'Poly', 'nec' => 'NEC',
+        'snom' => 'Snom', 'cisco' => 'Cisco SPA', 'cisco-cm' => 'Cisco (CallManager)',
+        'poly' => 'Poly', 'nec' => 'NEC',
     ];
 
-    /** MAC prefixes (OUI) per vendor, for phones that ask without a useful User-Agent. */
+    /**
+     * MAC prefixes (OUI) per vendor, for phones that ask without a useful User-Agent.
+     *
+     * 'cisco-cm' is deliberately absent: Cisco's prefixes cover routers, switches and
+     * access points as well as phones, so a prefix cannot tell a 7962 from a Catalyst.
+     * A CallManager phone is identified by the SEP<MAC>.cnf.xml file it asks for or by
+     * the model picked on the page, never by its MAC alone. (The network discovery
+     * engine filters by this table, which is the other reason it stays out: it would
+     * fill the discovered-phones list with the switches in the rack.)
+     */
     private const OUI = [
         'yealink' => ['001565', '805ec0', '249ad8', '44dbd2', '805e0c', 'c4fc22'],
         'grandstream' => ['000b82', 'c074ad', 'ec74d7'],
