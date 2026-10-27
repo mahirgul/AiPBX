@@ -317,6 +317,11 @@ $userOptions = function () use ($users) {
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.cisco_load'); ?></label>
+                    <input type="text" name="provision_cisco_load" class="form-control" maxlength="40" placeholder="SIP42.9-4-2SR3-1S" value="<?php echo htmlspecialchars($settings['provision_cisco_load']); ?>">
+                    <div class="text-muted u-fs-11"><?php echo t('phones.cisco_load_help'); ?></div>
+                </div>
+                <div class="form-group">
                     <label class="form-label"><?php echo t('phones.codecs'); ?></label>
                     <div class="phones-codecs">
                         <?php $selectedCodecs = explode(',', $settings['provision_codecs']); ?>

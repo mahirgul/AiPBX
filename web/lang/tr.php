@@ -5545,4 +5545,7 @@ Telefonunuz çaldırılacak.',
     'dialplan_rules.copy_suffix' => '(kopya)',
     'dialplan_rules.confirm_turn_off' => 'Arama normalleştirme kapatılsın mı? Tüm cihazlar numaraları tuşlandığı gibi arar.',
     'srv_role.err_system_delete' => 'Sistem temel rolleri (admin, read_only_admin, cc_agent, fax_user, user) silinemez!',
+    'phones.cisco_load' => 'Cisco 7900/8800 serisi için yazılım (firmware) yükü',
+    'phones.cisco_load_help' => '.loads uzantısı olmadan SIP yazılım yükünün adı (örn. SIP42.9-4-2SR3-1S). Yalnızca Cisco CallManager serisi telefonlara yazılır. Boş bırakılırsa telefon mevcut sürümünü korur. Bkz. docs/cisco-callmanager.md.',
+    'phones.err_cisco_load' => 'Yazılım yükü adı yalnızca harf, rakam, nokta, tire ve alt çizgi içerebilir.',
 ];

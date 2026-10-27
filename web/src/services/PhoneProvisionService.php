@@ -51,6 +51,11 @@ class PhoneProvisionService
         'provision_syslog' => '',
         // Also write each phone's files into the TFTP/FTP folder (exportTftp).
         'provision_tftp_export' => '0',
+        // Firmware load written to the Cisco CallManager-series phones
+        // (loadInformation, without the .loads extension, e.g. SIP42.9-4-2SR3-1S).
+        // Empty: the element is left out and the phone keeps the load it runs,
+        // which is the only safe default — the load is per model and per build.
+        'provision_cisco_load' => '',
     ];
 
     /** Rows kept in the fetch log. */
@@ -139,6 +144,9 @@ class PhoneProvisionService
     {
         // The address fields moved to Network settings: a form without them keeps the stored values.
         $data += self::addressSettings();
+        // Same for the Cisco load: a page that does not send it (an older form, or
+        // another caller) must not wipe a value somebody set on purpose.
+        $data += ['provision_cisco_load' => (string) getSystemSetting('provision_cisco_load', '')];
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $transport = ($data['provision_transport'] ?? '') === 'tls' ? 'tls' : 'udp';
             $srtp = (string) max(0, min(2, (int) ($data['provision_srtp'] ?? 0)));
@@ -156,7 +164,13 @@ class PhoneProvisionService
                 $lang = 'en';
             }
             $rate = max(5, min(1000, (int) ($data['provision_rate_limit'] ?? 60)));
+            // A firmware load name: a file name, never a path or a URL.
+            $ciscoLoad = trim((string) ($data['provision_cisco_load'] ?? ''));
+            if ($ciscoLoad !== '' && !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/', $ciscoLoad)) {
+                throw new \Exception(t('phones.err_cisco_load'));
+            }
             $values = [
+                'provision_cisco_load' => $ciscoLoad,
                 'provision_transport' => $transport,
                 'provision_srtp' => $srtp,
                 'provision_codecs' => implode(',', $codecs),
@@ -737,6 +751,8 @@ class PhoneProvisionService
             'language' => $s['provision_language'],
             'voicemail' => self::VOICEMAIL_CODE,
             'pickup_prefix' => self::PICKUP_PREFIX,
+            // Cisco CallManager-series phones only (CiscoCallManagerTemplate).
+            'cisco_load' => $s['provision_cisco_load'],
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
             'keys' => self::getKeys((int) $user['id']),
         ];

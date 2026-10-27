@@ -4,6 +4,8 @@
 configuration over HTTPS from AiPBX and registers with the right extension, keys and settings.
 Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
 on the page).
+Cisco's enterprise **7900/8800 series** (CallManager firmware) are supported too, but they need firmware, an
+Asterisk patch and a folder of shared files that AiPBX cannot ship: see [Cisco 7900 / 8800 series](cisco-callmanager.md).
 
 The page is admin-only, like *Users* and *Firewall*: the provisioning URLs it shows hand out the
 SIP password of the extension.
@@ -38,6 +40,7 @@ server in the phone's web interface:
 | Cisco SPA | *Admin login → Advanced → Voice → Provisioning → Profile Rule*: the copied URL followed by `spa$MA.xml` |
 | Poly | *Settings → Provisioning Server*: server type HTTPS, the copied URL as server address |
 | NEC | The phone's file (configuration) server setting, or DHCP option 66: the copied URL |
+| Cisco 79xx/88xx (CallManager) | Not a URL: these phones ask their server for `SEP<MAC>.cnf.xml` by name, so they are pointed at the PBX by DHCP **option 150** and read the file from the TFTP folder. See [Cisco 7900 / 8800 series](cisco-callmanager.md). |
 
 The phone then asks for its own file under that URL; AiPBX checks that the MAC in the file name
 is the phone's:
@@ -50,6 +53,7 @@ is the phone's:
 | Snom | `snom<model>-<MAC>.htm` (plug and play) or `snom-<mac>.xml` (setting URL) | `snom<model>.htm` |
 | Cisco SPA | `spa<mac>.xml` | `spa<model>.cfg` |
 | Poly | `<mac>.cfg` (master file, names the next one) and `phone<mac>.cfg` (settings) | `000000000000.cfg` |
+| Cisco 79xx/88xx | `SEP<MAC>.cnf.xml` | `SIPDefault.cnf.xml`, `Softkeys.xml`, `DialTemplate.xml` |
 | NEC | `dt-<mac>.cfg` (master), `dt-<mac>-phone.cfg`, `dt-<mac>-local.cfg` | `dt-000000000000.cfg`, `dt-sip.cfg` |
 
 Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, so zero touch
