@@ -158,7 +158,7 @@ stream_bounded() {
         if [ -n "$progress" ]; then
             # du, not a stat of one file: apt renames each download as it finishes,
             # so the directory's total size is the measure that does not blink.
-            bytes=$(du -sk "$progress" 2>/dev/null | awk '{print $1}')
+            bytes=$({ du -sk "$progress" 2>/dev/null || true; } | awk '{print $1}')
             [ -n "$bytes" ] || bytes=0
             if [ "$bytes" != "$seen" ]; then
                 seen=$bytes
@@ -1347,7 +1347,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/l
 # fresh installs AND by --upgrade.
 if [ -d "$INSTALL_DIR/engine" ]; then
     if command -v apt-get >/dev/null 2>&1; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pymysql
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
     fi
     install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/engine
     # dnsmasq's DHCP log is read with journalctl and it is the source that finds a

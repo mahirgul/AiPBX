@@ -131,12 +131,18 @@ final class PhoneModels
         return $page === 0 ? $m['keys'] : $m['exp_keys'];
     }
 
-    /** Vendor of an unknown phone: its User-Agent first, the MAC prefix second ('' when unsure). */
-    public static function guessVendor(string $mac, string $userAgent): string
+    /** Vendor of an unknown phone: its file/User-Agent first, the MAC prefix second ('' when unsure). */
+    public static function guessVendor(string $mac, string $userAgent, string $file = ''): string
     {
+        if (
+            ($file !== '' && preg_match('/^SEP[0-9a-fA-F]{12}\.cnf\.xml$/i', $file))
+            || preg_match('/Cisco-CP[ -]?(?:79|88)/i', $userAgent)
+        ) {
+            return 'cisco-cm';
+        }
         foreach (array_keys(self::VENDORS) as $vendor) {
             // At a word start: "nec" must not match "Connect".
-            if (preg_match('/(?<![a-z])' . $vendor . '/i', $userAgent)) {
+            if (preg_match('/(?<![a-z])' . preg_quote($vendor, '/') . '/i', $userAgent)) {
                 return $vendor;
             }
         }

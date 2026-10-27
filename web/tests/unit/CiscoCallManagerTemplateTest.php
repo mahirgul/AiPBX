@@ -58,6 +58,9 @@ final class CiscoCallManagerTemplateTest extends TestCase
     {
         $this->assertSame('SEP001565AABBCC.cnf.xml', $this->tpl->deviceFile('001565aabbcc'));
         $this->assertSame('001565aabbcc', $this->tpl->macFromFile('SEP001565AABBCC.cnf.xml'));
+        $this->assertSame('cisco-cm', PhoneModels::guessVendor('aabbccddeeff', 'Cisco-CP7962G/9.4.2'));
+        $this->assertSame('cisco-cm', PhoneModels::guessVendor('aabbccddeeff', '', 'SEPAABBCCDDEEFF.cnf.xml'));
+        $this->assertSame('cisco', PhoneModels::guessVendor('aabbccddeeff', 'Cisco/SPA504G-7.6.2'));
         $this->assertSame('001565aabbcc', $this->tpl->macFromFile('SEP001565aabbcc.cnf.xml'));
         $this->assertSame('', $this->tpl->macFromFile('SEP001565AABBCC.cnf'));           // not the .cnf.xml
         $this->assertSame('', $this->tpl->macFromFile('SIPDefault.cnf.xml'));           // a shared file
