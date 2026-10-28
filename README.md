@@ -18,6 +18,7 @@
   <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-4285F4?logo=googleplay&logoColor=white" alt="Google Play"></a>
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
+  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-$250_Free_Credit-7b1fa2?logo=cloud&amp;logoColor=white" alt="Deploy on UpCloud"></a>
   <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
@@ -35,7 +36,7 @@
   <a href="CHANGELOG.md">📋 Changelog</a> •
   <a href="docs/roadmap.md">🗺️ Roadmap</a> •
   <a href="#-contributing">🤝 Contributing</a> •
-  <a href="#-sponsor">💖 Sponsor</a> •
+  <a href="#-sponsor--cloud-partners">💖 Sponsor &amp; Partners</a> •
   <a href="#️-disclaimer--legal-notice--sorumluluk-reddi">⚖️ Disclaimer</a>
 </p>
 
@@ -66,6 +67,8 @@ The installer:
 4. 📄 Prints the credentials and saves them to `/root/aipbx-credentials.txt`
 
 > 💡 **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
+>
+> ☁️ **Cloud Server**: Deploy on **[UpCloud](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250)** (fast MaxIOPS storage) with **$250 free cloud credits** using promo code `affiliate-aipbx250`.
 >
 > 🛠️ **Developers**: `AIPBX_REF=main` installs the current development branch instead of the latest release.
 
@@ -385,7 +388,7 @@ Code comments, commit messages and documentation are written in English.
 
 ---
 
-## 💖 Sponsor
+## 💖 Sponsor & Cloud Partners
 
 If you find AiPBX useful for your organization or projects, consider sponsoring its ongoing development and maintenance:
 
@@ -394,6 +397,14 @@ If you find AiPBX useful for your organization or projects, consider sponsoring 
     <img src="https://img.shields.io/badge/Sponsor%20on%20GitHub-%E2%9D%A4-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub">
   </a>
 </p>
+
+### ☁️ Recommended Cloud Infrastructure — UpCloud
+
+AiPBX runs great on [UpCloud](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250) high-performance European and global cloud servers with ultra-fast MaxIOPS block storage.
+
+Sign up via our affiliate link to claim **$250 in free cloud credits**:
+- **Affiliate Link:** [signup.upcloud.com (with $250 credit)](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250)
+- **Promo Code:** `affiliate-aipbx250`
 
 ---
 

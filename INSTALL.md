@@ -16,6 +16,8 @@ This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 - **Network**: Static Public IPv4 and/or configured FQDN (e.g. `pbx.company.com`)
 - **Privileges**: Root access (`sudo -i`)
 
+> ☁️ **Need a Cloud Server?** We recommend **[UpCloud](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250)** for low VoIP jitter and enterprise-grade MaxIOPS storage. Sign up with promo code `affiliate-aipbx250` for **$250 in free cloud credits**.
+
 ---
 
 ## 🚀 1. Quick Automated Install (Recommended)
