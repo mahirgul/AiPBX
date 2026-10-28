@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.20
+
+- **Duplicate extension row stability in PJSIP and Voicemail sync:**
+  - Added deterministic deduplication (`ORDER BY extension ASC, id ASC`) in `SyncExtensions` and `SyncVoicemail` when multiple user rows share the same extension number (e.g. following CSV imports).
+  - Keeps the first created user and logs collisions, preventing Asterisk PJSIP duplicate object errors (`configuration contains a duplicate object`) that caused full endpoint registration drops.
+  - Added duplicate extension unit test in `SyncGeneratorTest`.
+- **Cisco CallManager firmware translation alignment:**
+  - Aligned Turkish `phones.cisco_loads_help` guidance with English documentation, explaining local server TFTP verification and firmware application upon phone reboot.
+
 ## 1.50.19
 
 - **Asterisk RTP & Voicemail configuration compliance:**
