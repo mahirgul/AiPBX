@@ -83,13 +83,13 @@ if ($is_spa_request) {
         <!-- Centered Floating Toast Notification Pill Container -->
         <div class="footer-toast-container" id="footer-toast-container"></div>
 
-        <!-- Left: version & sponsor -->
+        <!-- Left: version & GitHub repository -->
         <div class="footer-left-group">
             <button type="button" class="footer-stat-pill u-muted u-fs-11" onclick="openAipbxLicenseModal()" style="border:none; cursor:pointer; background:transparent;" title="<?php echo htmlspecialchars(t('license.modal_title', 'Open Source License & Disclaimer')); ?>">
                 <i class="fas fa-balance-scale" style="margin-right:4px;"></i>v<?php echo htmlspecialchars(AIPBX_VERSION); ?> · MIT
             </button>
-            <a href="https://github.com/sponsors/mahirgul" target="_blank" rel="noopener noreferrer" class="footer-stat-pill u-muted u-fs-11" style="text-decoration:none; color:#ea4aaa; font-weight:600;" title="Sponsor @mahirgul on GitHub">
-                <i class="fas fa-heart" style="margin-right:4px; color:#ea4aaa;"></i>Sponsor
+            <a href="https://github.com/mahirgul/AiPBX" target="_blank" rel="noopener noreferrer" class="footer-stat-pill u-muted u-fs-11" style="text-decoration:none; font-weight:600;" title="GitHub - mahirgul/AiPBX">
+                <i class="fab fa-github" style="margin-right:4px;"></i>GitHub
             </a>
         </div>
 
