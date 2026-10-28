@@ -34,7 +34,7 @@
   <a href="docs/README.md">📚 Documentation</a> •
   <a href="#-architecture">🏗️ Architecture</a> •
   <a href="CHANGELOG.md">📋 Changelog</a> •
-  <a href="docs/roadmap.md">🗺️ Roadmap</a> •
+  <a href="ROADMAP.md">🗺️ Roadmap</a> •
   <a href="#-contributing">🤝 Contributing</a> •
   <a href="#-sponsor--cloud-partners">💖 Sponsor &amp; Partners</a> •
   <a href="#️-disclaimer--legal-notice--sorumluluk-reddi">⚖️ Disclaimer</a>
@@ -355,6 +355,20 @@ AiPBX/
 - 🔥 Ports and updating: [INSTALL.md](INSTALL.md).
 - ✉️ Set an e-mail relay (fax-to-e-mail, voicemail, invitations): [docs/mail.md](docs/mail.md).
 - 📖 Configuring trunks, routes, roles and more: [documentation](docs/README.md).
+
+---
+
+## 🗺️ Project Roadmap & Architecture Vision
+
+AiPBX follows a transparent, phased engineering roadmap. For the complete specification, architectural diagrams, and upcoming milestones, see **[ROADMAP.md](ROADMAP.md)** (or online at [aipbx.bid/docs/roadmap](https://aipbx.bid/docs/roadmap)).
+
+- **✅ Wave 1 (Delivered in v1.50.10):** Trunk rate limits, early media announcements, night dialing protection, voicemail PIN policies.
+- **✅ Wave 2 (Delivered in v1.50.11):** Sandboxed scheduled background tasks (`systemd-run`), encrypted external database integrations, IVR caller lookup steps, PBX fine-tuning & Asterisk night restarts.
+- **🚀 Wave 3 (In Active Development & Planning):**
+  - **Modular Containerization (Decoupled Docker Compose):** High-performance decoupled service stack (`aipbx-asterisk` on host network for zero-jitter media, `aipbx-web` for zero-call-downtime hot updates, `aipbx-db`, `aipbx-ai`, `aipbx-signaling`).
+  - **True Multi-Tenant Cloud PBX:** Scalable SaaS carrier architecture with Edge SIP Session Border Controllers (SBC / Kamailio) and isolated per-tenant Asterisk nodes.
+  - **Group Voice Conferences from Instant Chat:** WebRTC conference rooms dynamically bridged from mobile and web chat groups.
+  - **Remote GPU Speech Engines:** Offloaded high-fidelity neural TTS engines on dedicated GPU compute instances.
 
 ---
 

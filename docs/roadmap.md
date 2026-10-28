@@ -117,18 +117,55 @@ checks.
 
 ### Wave 3: large projects
 
-#### 3.1 Multi-tenant
+#### 3.1 Modular Containerization (Decoupled Docker Compose)
 
-One AiPBX per tenant in its own LXD/Incus system container, running the normal installer, plus a
-separate control panel: create, suspend, update, back up, quotas, health, and an audited "log in as".
-Tenants share the server's IP with their own port blocks (SIP 5060 + 10·N, an RTP slice, own TURN
-ports, the same port inside and outside so SDP needs no rewriting); web and WSS go through the host's
-nginx by host name; extra IPs are used when the server has them. No Kamailio. A soft limit of about 20
-tenants per server (a warning that can be overridden). Before it: remove the places that assume port
-5060 (QR login, firewall service, installer firewall/fail2ban/coturn, the My phone page, NEC phone
-templates).
+**Goal.** Provide a turnkey, zero-downtime container deployment for AiPBX without sacrificing telecommunications-grade performance or reliability.
 
-#### 3.2 Group voice call from chat
+**Architecture: Decoupled Services vs. Monolithic "Fat Container".**
+An all-in-one container running `systemd`, Asterisk, MariaDB, Web, Cron, and AI in a single image is deliberately rejected because:
+1. **Zero-Call-Downtime Web Updates:** Rebuilding or restarting an all-in-one container drops all active phone calls. In decoupled services, `aipbx-web` restarts in seconds while `aipbx-asterisk` keeps running with zero interruption to ongoing calls.
+2. **RTP Performance:** Bridging 10,000 UDP RTP ports (`10000-20000/udp`) through Docker proxy creates high jitter and latency. Decoupled Asterisk runs with `network_mode: host` for wire-speed media forwarding.
+3. **Hardware & Resource Segregation:** Neural AI models (Whisper STT, Kokoro/Piper TTS) can be isolated to GPU-enabled nodes or scaled independently from the realtime PBX core.
+
+```
+                      ┌────────────────────────────────────────────────────────┐
+                      │                       HOST                             │
+                      │                                                        │
+                      │   ┌──────────────┐   ┌──────────────┐   ┌──────────┐   │
+                      │   │  aipbx-web   │   │   aipbx-db   │   │ aipbx-ai │   │
+ HTTP / HTTPS / API ──┼──>│  (PHP/Nginx) │──>│  (MariaDB)   │   │ (Python) │   │
+                      │   └──────┬───────┘   └──────────────┘   └────┬─────┘   │
+                      │          │ Shared Volume / Unix Socket       │ Audio   │
+                      │          ▼                                   ▼ Socket  │
+                      │   ┌────────────────────────────────────────────────┐   │
+ SIP / RTP (UDP) ─────┼──>│ aipbx-asterisk (Host Network: 5060 + 10k-20k)  │   │
+                      │   └────────────────────────────────────────────────┘   │
+                      └────────────────────────────────────────────────────────┘
+```
+
+**Services in the stack:**
+- **`aipbx-asterisk`**: Realtime Asterisk engine with host networking (`network_mode: host`), zero-NAT overhead, and independent lifecycle.
+- **`aipbx-web`**: PHP 8.2+ with Nginx, handling HTTP, WebSocket, and REST API calls. Can be updated and deployed independently.
+- **`aipbx-db`**: Official MariaDB container with dedicated persistent named volumes (`aipbx_db_data`).
+- **`aipbx-ai`**: Python FastAPI container housing Whisper STT, Kokoro/Piper TTS, and audio socket integrations.
+- **`aipbx-signaling`**: Lightweight daemon capturing Homer/HEPv3 signaling packets.
+
+---
+
+#### 3.2 True Multi-Tenant Cloud PBX (SaaS Architecture)
+
+**Goal.** Enable cloud telecom providers to offer isolated, branded PBX instances to multiple business customers (tenants) from a centralized control plane.
+
+**Design Principles:**
+Asterisk is a single-process engine; logical context partitioning alone is not safe against tenant-level crashes or transcoding CPU spikes. The enterprise cloud solution consists of:
+- **Central Control Plane:** Unified billing, tenant lifecycle management (create, suspend, quota, backup), audit logging, and domain routing.
+- **Edge SIP Proxy / Session Border Controller (SBC):** An edge proxy (Kamailio / OpenSIPS) routing incoming SIP INVITEs based on domain/tenant tags (`tenant1.aipbx.bid`, `tenant2.aipbx.bid`).
+- **Isolated Per-Tenant Asterisk Pods:** Each tenant runs an independent, lightweight Asterisk node with dedicated memory and RTP slices. A failure or misconfiguration in Tenant A never impacts Tenant B.
+- **Zero-Trust Multi-Tenancy:** Each tenant's call recordings, voicemail, CDR, and credentials live in isolated storage buckets and database schemas.
+
+---
+
+#### 3.3 Group voice call from chat
 
 A conference room per chat group (hidden number), started from the mobile app; membership is checked
 before joining; the group gets a "call started — join" message and a push notification, members join
