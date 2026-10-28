@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.21
+
+- **PJSIP TLS Settings in Admin UI & Config Sync:**
+  - Added configurable TLS port (`pjsip_tls_port`, default 5061), TLS SIP domain/FQDN (`pjsip_tls_domain`), and TLS protocol method selection (`pjsip_tls_method`, supporting `tlsv1_2`, `tlsv1_2,tlsv1_3`, and `tlsv1_3`) in PBX Settings -> Asterisk Settings (PJSIP tab).
+  - Synchronized TLS transport directives into `pjsip_transports.conf` (`domain=` and `method=`) so TLS registrations cleanly bind to the TLS transport.
+  - Mirrored TLS transport values into `pjsipsettings` (`tls_bindport`, `tls_domain`, `tls_method`) and aligned provisioning services.
+  - Added full multi-language translations across all 22 supported locales.
+  - Added test coverage in `PjsipTransportTest`.
+- **Installer SSH advisory fault tolerance (`install.sh`):**
+  - Made the post-installation SSH configuration advisory non-fatal (`sshd -T 2>/dev/null || true`), preventing aborted installs on containerized or minimal cloud environments without `sshd` or host keys.
+  - Added automated test case in `scripts/test_install_watchdog.sh`.
+- **Cisco CallManager firmware documentation i18n:**
+  - Completed `phones.cisco_loads_help` guidance across all 18 locales explaining automatic TFTP provisioning and firmware reboot handling.
+- **Unit test suite isolation:**
+  - Added database settings cleanup in `VoicemailPolicyTest` and `MyPhoneVoicemailSettingsTest` tearDown to prevent test state leakage across full test suite runs.
+
 ## 1.50.20
 
 - **Duplicate extension row stability in PJSIP and Voicemail sync:**
