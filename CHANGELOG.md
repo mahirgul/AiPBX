@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.23
+
+- **Core Stability, Linter Acceleration & Test Automation:**
+  - Optimized `web/bin/smoke.php` syntax checker to exclude `.phpstan-cache/` and `.phpunit.cache/` directories, preventing thousands of temporary cache files from being repeatedly scanned and reducing smoke lint execution time from minutes to under 3 seconds.
+  - Hardened `SecretBox` credential management to verify write permissions before attempting to write `/var/lib/aipbx/settings.key`, providing an in-memory encryption key fallback for non-root CLI processes, CI environments, and automated test runners without throwing unhandled exceptions or PHP warnings.
+- **Background Workers Logging & Hardening:**
+  - Added explicit error logging in `web/bin/webhook_worker.php` for CDR and fax event sweep cycles to surface database disconnects and transient polling failures.
+  - Enforced shell argument escaping (`escapeshellarg`) for task IDs and triggers in `web/bin/task_dispatcher.php` as part of defense-in-depth background task invocation.
+- **UI & Repository Navigation:**
+  - Updated web portal persistent footer bar to directly link to the official [AiPBX GitHub Repository](https://github.com/mahirgul/AiPBX).
+  - Integrated UpCloud cloud infrastructure partnership recommendations and \$250 promo credits across project documentation.
+  - Added project maintainer LinkedIn connectivity.
+
 ## 1.50.22
 
 - **Mobile Clients Decoupling & Independent Repositories:**
