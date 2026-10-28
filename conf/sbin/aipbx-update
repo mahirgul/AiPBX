@@ -302,7 +302,7 @@ fi
 
 log "===== Update completed: $CURRENT → $TARGET ====="
 FROM_VERSION="$CURRENT"
-status done "Updated: $CURRENT → $TARGET"
+status "done" "Updated: $CURRENT → $TARGET"
 # Refresh the portal's "update available" information.
 /bin/bash "${AIPBX_UPDATE_REEXEC:-$0}" --check >/dev/null 2>&1 || true
 echo "AiPBX updated to $TARGET. Backup: $BACKUP_DIR"

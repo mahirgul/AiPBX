@@ -119,7 +119,8 @@ PY
 # Makes /usr/share/asterisk/sounds/<lang> point at our directory.
 link_language() {
     local link="$SYS_SOUNDS_DIR/$LANG_CODE"
-    local alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
+    local alt
+    alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
     if update-alternatives --query "$alt" >/dev/null 2>&1; then
         update-alternatives --quiet --install "$link" "$alt" "$TARGET" "$ALT_PRIORITY" >>"$LOG_FILE" 2>&1
         return
@@ -135,7 +136,8 @@ link_language() {
 
 unlink_language() {
     local link="$SYS_SOUNDS_DIR/$LANG_CODE"
-    local alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
+    local alt
+    alt="asterisk-prompt-$(echo "$LANG_CODE" | tr 'A-Z_' 'a-z-')"
     if update-alternatives --query "$alt" 2>/dev/null | grep -qx "Alternative: $TARGET"; then
         update-alternatives --quiet --remove "$alt" "$TARGET" >>"$LOG_FILE" 2>&1
     elif [[ -L "$link" && "$(readlink -f "$link")" == "$(readlink -f "$TARGET")" ]]; then
@@ -224,7 +226,7 @@ do_install() {
         || fail "Could not record the installed pack"
 
     log "===== Installed $PKG ($files files → $TARGET) ====="
-    status done "Installed: $KEY"
+    status "done" "Installed: $KEY"
 }
 
 # ------------------------------------------------------------------ remove
@@ -258,7 +260,7 @@ do_remove() {
     [[ "$last_core" == true ]] && unlink_language
     [[ -d "$TARGET" && -z "$(ls -A "$TARGET")" ]] && rmdir "$TARGET"
     log "===== Removed $KEY ====="
-    status done "Removed: $KEY"
+    status "done" "Removed: $KEY"
 }
 
 "do_$ACTION"
