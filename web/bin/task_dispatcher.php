@@ -52,7 +52,7 @@ foreach ($due as $taskId => [$task, $trigger]) {
         continue;   // no overlapping runs of one task
     }
     // In the background, so one long task does not hold up the others.
-    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/run_task.php') . ' ' . $taskId . ' ' . $trigger . ' >/dev/null 2>&1 &');
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/run_task.php') . ' ' . escapeshellarg((string) $taskId) . ' ' . escapeshellarg((string) $trigger) . ' >/dev/null 2>&1 &');
 }
 
 exit(0);

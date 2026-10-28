@@ -33,11 +33,17 @@ final class SecretBox
         $raw = is_readable($file) ? (string) file_get_contents($file) : '';
         if (strlen($raw) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
             $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-            $old = umask(0077);
-            $ok = @file_put_contents($file, $raw, LOCK_EX);
-            umask($old);
-            if ($ok === false) {
-                throw new RuntimeException('Cannot create the settings key ' . $file);
+            $dir = dirname($file);
+            $canWrite = file_exists($file) ? is_writable($file) : (is_dir($dir) && is_writable($dir));
+            if ($canWrite) {
+                $old = umask(0077);
+                $ok = @file_put_contents($file, $raw, LOCK_EX);
+                umask($old);
+                if ($ok === false) {
+                    error_log('[SecretBox] Notice: could not persist key to ' . $file . ', using temporary in-memory key.');
+                }
+            } else {
+                error_log('[SecretBox] Notice: ' . $file . ' is not writable, using temporary in-memory key.');
             }
         }
         return self::$key = $raw;

@@ -138,6 +138,7 @@ function sweepCdrAndFaxEvents(): void
             }
         }
     } catch (\Throwable $e) {
+        error_log('[WebhookWorker] sweep error: ' . $e->getMessage());
     }
 }
 
