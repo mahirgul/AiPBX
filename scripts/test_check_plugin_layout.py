@@ -225,6 +225,31 @@ class Manifests(unittest.TestCase):
         self.assertIn("ai-traffic='Someone Else'", out)
 
 
+    def test_official_and_community_manifests_may_have_different_publishers(self):
+        """A tree with both tiers is the normal case, not a publisher mismatch."""
+        official = ai_assistant_manifest(
+            slug="ai-apps",
+            author="AiPBX Official Team",
+            author_url="https://github.com/mahirgul/AiPBX",
+            type="official",
+        )
+        with Tree({
+            "plugins/ai-apps/plugin.json": manifest(official),
+            "plugins/ai-assistant/plugin.json": manifest(ai_assistant_manifest()),
+        }) as root:
+            code, out = run(root, "--strict-manifests")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("manifests disagree on author", out)
+        self.assertIn("names its publisher", out)
+
+    def test_a_hook_the_loader_dispatches_is_accepted(self):
+        """The loader's own hook list, not only the three we used to ship."""
+        data = ai_assistant_manifest(hooks={"auth_provider": "google", "worker": True})
+        with Tree({"plugins/ai-assistant/plugin.json": manifest(data)}) as root:
+            code, out = run(root, "--strict-manifests")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("unknown hook", out)
+
 class CodeAgainstManifest(unittest.TestCase):
     """AssistantModel reads api_base_url/api_key/model — the declared three."""
 

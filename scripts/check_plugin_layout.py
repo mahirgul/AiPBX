@@ -94,7 +94,14 @@ PLATFORM_AUTHOR = "AiPBX"
 # (`$cfg = PluginManager::getAllSettings('slug', false); ... $cfg['key']`) count.
 SETTINGS_LOAD = re.compile(r"\$(\w+)\s*=\s*[^;]*?getAllSettings\(\s*'([^']+)'")
 SETTINGS_CHAINED = re.compile(r"getAllSettings\(\s*'([^']+)'(?:\s*,\s*(?:true|false))?\s*\)\s*\[\s*'(\w+)'\s*\]")
-HOOK_KEYS = ("admin_page", "sync_domain", "events")
+# The hooks the loader dispatches, from PluginManager's own list (admin_page,
+# auth_provider, sync_domain, events, public_endpoints, ai_provider, worker) and
+# docs/plugin-development.md. `tts_provider` is here because two manifests in this
+# tree declare it (ai-tts, ai-models) while nothing reads it yet: it is a hook the
+# catalog is still growing into, not a typo, and inventing a name is what this
+# list is meant to catch.
+HOOK_KEYS = ("admin_page", "auth_provider", "ai_provider", "public_endpoints",
+             "sync_domain", "events", "worker", "tts_provider")
 
 
 def read_text(path: str, errors: str = "strict") -> str:
@@ -214,8 +221,11 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest_problems: list[str] = []
     by_slug: dict[str, set[str]] = {}
-    authors: dict[str, str] = {}
-    author_urls: dict[str, str] = {}
+    # Keyed by catalog tier and slug: official plugins are published by the
+    # project and community ones by whoever wrote them, so the two tiers are
+    # allowed different names while a single tier is not.
+    authors: dict[tuple[str, str], str] = {}
+    author_urls: dict[tuple[str, str], str] = {}
     plugins_dir = os.path.join(ROOT, "plugins")
     if os.path.isdir(plugins_dir):
         for slug in sorted(os.listdir(plugins_dir)):
@@ -238,19 +248,24 @@ def main(argv: list[str] | None = None) -> int:
             manifest_problems += manifest_detail_problems(slug, data)
             manifest_problems += manifest_author_problems(slug, data)
             by_slug[slug] = manifest_settings_keys(data.get("settings_schema"))
+            tier = str(data.get("type") or "community")
             if isinstance(data.get("author"), str):
-                authors[slug] = data["author"]
+                authors[(tier, slug)] = data["author"]
             if isinstance(data.get("author_url"), str):
-                author_urls[slug] = data["author_url"]
+                author_urls[(tier, slug)] = data["author_url"]
 
-    # One publisher: a catalog page listing five plugins from five names is a
-    # data-entry accident waiting to happen, so disagreement is a manifest bug.
+    # One publisher per tier: a community catalog page listing five plugins from
+    # five names is a data-entry accident waiting to happen, so disagreement
+    # inside a tier is a manifest bug. Across tiers it is the point.
     for label, values in (("author", authors), ("author_url", author_urls)):
-        if len(set(values.values())) > 1:
-            listed = ", ".join(f"{slug}={value!r}" for slug, value in sorted(values.items()))
-            manifest_problems.append(
-                f"plugins/: manifests disagree on {label} ({listed}) - one publisher, one value"
-            )
+        for tier in sorted({tier for tier, _slug in values}):
+            in_tier = {slug: value for (t, slug), value in values.items() if t == tier}
+            if len(set(in_tier.values())) > 1:
+                listed = ", ".join(f"{slug}={value!r}" for slug, value in sorted(in_tier.items()))
+                manifest_problems.append(
+                    f"plugins/ ({tier}): manifests disagree on {label} ({listed}) "
+                    "- one publisher, one value"
+                )
 
     # Code against manifest: anything a plugin reads must be a declared setting.
     for path in files:
@@ -284,7 +299,14 @@ def main(argv: list[str] | None = None) -> int:
     # Worth saying even while the punch list is still open: the publisher is a
     # decision that has already been made, not a consequence of the move.
     if authors and not manifest_problems:
-        print(f"ok every manifest is published by {next(iter(set(authors.values())))}")
+        by_tier: dict[str, set[str]] = {}
+        for (tier, _slug), value in authors.items():
+            by_tier.setdefault(tier, set()).add(value)
+        if len(by_tier) == 1 and len({v for vs in by_tier.values() for v in vs}) == 1:
+            print(f"ok every manifest is published by {next(iter(by_tier.values())).pop()}")
+        else:
+            summary = ", ".join(f"{tier}={sorted(vs)[0]}" for tier, vs in sorted(by_tier.items()))
+            print(f"ok every manifest names its publisher ({summary})")
 
     if not misplaced and not manifest_problems:
         print(f"ok every plugin file lives under plugins/ ({len(OWNERSHIP)} plugins declared)")
