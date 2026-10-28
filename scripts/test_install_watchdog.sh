@@ -29,11 +29,102 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_SH="${1:-$ROOT/install.sh}"
 [ -f "$INSTALL_SH" ] || { echo "FAIL: no such file: $INSTALL_SH"; exit 2; }
 
-# The cases need timeout(1). Linux has it (GNU coreutils or uutils); a macOS
-# checkout only has it with coreutils installed, so say so instead of failing.
+fail=0
+pass() { printf 'PASS  %s\n' "$*"; }
+bad()  { printf 'FAIL  %s\n' "$*"; fail=1; }
+
+echo '--- 0. the SSH advisory cannot fail a finished install'
+# `sshd -T` is how the end of install.sh finds out whether the host still takes
+# passwords over SSH. On a host with no SSH server (a container, a minimal cloud
+# image) it exits 127, and on one with no host key yet it exits non-zero too —
+# under `set -e` that status ended the script after the last check had passed, so
+# a finished install reported failure and aipbx-update rolled the box back over
+# an advisory. The block is extracted from install.sh rather than copied, so a
+# revert to the bare `sshd -T` fails here.
+advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to:/{exit} p{print}' "$INSTALL_SH")"
+if [ -z "$advisory" ]; then
+    bad 'the SSH advisory is gone from install.sh (deleting it is not a fix)'
+else
+    # A PATH with the shell tools but no sshd: Ubuntu keeps it in /usr/sbin,
+    # which this one leaves out.
+    no_sshd=$(mktemp -d)
+    mkdir -p "$no_sshd/bin"
+    for tool in bash grep cat; do
+        if path=$(command -v "$tool"); then ln -s "$path" "$no_sshd/bin/$tool"; fi
+    done
+
+    # The advisory's echo lines use install.sh's colour variables.
+    run_advisory() {  # run_advisory PATH -> prints what the block prints
+        ( set -euo pipefail; YELLOW=; BOLD=; NC=; PATH="$1"; eval "$advisory" )
+    }
+
+    if PATH="$no_sshd/bin" command -v sshd >/dev/null 2>&1; then
+        bad 'cannot build the no-sshd case here: sshd is on the trimmed PATH'
+    else
+        # Status is read from a plain assignment on purpose: with `if
+        # run_advisory ...`, bash turns errexit off for the list in the
+        # condition, and the subshell would carry on after the failing line —
+        # the case would pass whatever install.sh did.
+        out=$(run_advisory "$no_sshd/bin" 2>&1)
+        status=$?
+        if [ "$status" -ne 0 ]; then
+            bad 'install.sh still exits non-zero when there is no sshd'
+        elif [ -n "$out" ]; then
+            bad "no sshd, but the advisory printed: $out"
+        else
+            pass 'a host with no sshd still finishes the install, silently'
+        fi
+    fi
+
+    cat > "$no_sshd/bin/sshd" <<'STUB'
+#!/bin/sh
+# An sshd that cannot answer: no host key yet, so it prints nothing and fails.
+exit 1
+STUB
+    chmod +x "$no_sshd/bin/sshd"
+    out=$(run_advisory "$no_sshd/bin:/usr/bin:/bin" 2>&1)
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        bad 'an sshd that cannot read its config still fails the install'
+    else
+        pass 'an sshd that fails for another reason does not fail the install'
+    fi
+
+    cat > "$no_sshd/bin/sshd" <<'STUB'
+#!/bin/sh
+printf 'permitrootlogin yes\npasswordauthentication yes\n'
+STUB
+    chmod +x "$no_sshd/bin/sshd"
+    out=$(run_advisory "$no_sshd/bin:/usr/bin:/bin" 2>&1)
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        bad 'sshd answered, but the advisory failed the install'
+    elif ! grep -q SSH <<<"$out"; then
+        bad "sshd reports a password root login but the advisory said: $out"
+    else
+        pass 'the advisory still speaks when sshd takes passwords'
+    fi
+
+    cat > "$no_sshd/bin/sshd" <<'STUB'
+#!/bin/sh
+printf 'permitrootlogin prohibit-password\npasswordauthentication no\n'
+STUB
+    chmod +x "$no_sshd/bin/sshd"
+    out=$(run_advisory "$no_sshd/bin:/usr/bin:/bin" 2>&1)
+    if [ -n "$out" ]; then
+        bad "a key-only host was told: $out"
+    else
+        pass 'a key-only host gets no advisory'
+    fi
+    rm -rf "$no_sshd"
+fi
+
+# The cases below need timeout(1). Linux has it (GNU coreutils or uutils); a
+# macOS checkout only has it with coreutils installed, so say so instead of
+# failing — but never instead of reporting a failure already found.
 if ! command -v timeout >/dev/null 2>&1; then
-    echo "SKIP: this test needs timeout(1); on macOS: brew install coreutils"
-    exit 77
+    echo "SKIP: the streaming cases need timeout(1); on macOS: brew install coreutils"
+    exit $([ "$fail" -eq 0 ] && echo 77 || echo 1)
 fi
 
 # --- the helper under test, taken from install.sh itself ---------------------
@@ -54,9 +145,6 @@ info() { echo "[INFO]  $*"; }
 ok()   { echo "[ OK ]  $*"; }
 warn() { echo "[WARN]  $*"; }
 
-fail=0
-pass() { printf 'PASS  %s\n' "$*"; }
-bad()  { printf 'FAIL  %s\n' "$*"; fail=1; }
 status_is() {
     if [ "$2" = "$3" ]; then pass "$1 (status $3)"; else bad "$1: expected $2, got $3"; fi
 }
