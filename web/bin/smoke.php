@@ -566,7 +566,7 @@ function check_lint(): void
     );
     foreach ($it as $f) {
         $p = $f->getPathname();
-        if (strpos($p, '/vendor/') !== false) { continue; }
+        if (strpos($p, '/vendor/') !== false || strpos($p, '/.phpstan-cache/') !== false || strpos($p, '/.phpunit.cache/') !== false) { continue; }
         if (substr($p, -4) !== '.php') { continue; }
         $files[] = $p;
     }
