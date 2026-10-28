@@ -49,6 +49,8 @@ android/__pycache__/
 ai/**/__pycache__/
 signaling/**/__pycache__/
 engine/**/__pycache__/
+scripts/__pycache__/
+**/__pycache__/
 android/app.aab
 android/app.apk
 

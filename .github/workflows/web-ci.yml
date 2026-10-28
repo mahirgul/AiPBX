@@ -14,6 +14,9 @@ on:
       - 'ai/**'
       - 'signaling/**'
       - 'engine/**'
+      - 'plugins/**'
+      - 'scripts/check_plugins.py'
+      - 'scripts/test_check_plugins.py'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   pull_request:
@@ -23,6 +26,9 @@ on:
       - 'ai/**'
       - 'signaling/**'
       - 'engine/**'
+      - 'plugins/**'
+      - 'scripts/check_plugins.py'
+      - 'scripts/test_check_plugins.py'
       - 'scripts/i18n.py'
       - '.github/workflows/web-ci.yml'
   workflow_dispatch:
@@ -170,3 +176,16 @@ jobs:
         if: hashFiles('engine/tests/**') != ''
         run: python -m unittest discover -v -s tests -t .
         working-directory: engine
+
+  plugins:
+    name: Plugins — manifests, hooks & schema checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Plugin checker unit tests
+        run: python3 scripts/test_check_plugins.py
+      - name: Validate catalog plugins
+        run: python3 scripts/check_plugins.py --no-php-lint
