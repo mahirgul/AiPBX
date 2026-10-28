@@ -40,16 +40,16 @@ fi
 NOTES="$(awk -v v="## $VER" '$0 == v {f=1; next} /^## / && f {exit} f' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
 [[ -n "${NOTES// }" ]] || { echo "CHANGELOG.md has no (or an empty) '## $VER' section" >&2; exit 1; }
 
-# The Android app has the same version and goes to Google Play — but only when
-# android/ changed since the last release (the CI skips the upload otherwise,
-# see .github/workflows/android-build.yml). Then its "What's new" must be
-# written for this version (else Play shows a generic text).
-LAST_TAG="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
-if [[ -n "$LAST_TAG" ]] && git diff --quiet "$LAST_TAG" HEAD -- android ':!android/play-release-notes.json'; then
-    echo "Android: no change since $LAST_TAG -> no app build, no Google Play upload (the APK is carried over)."
-else
-    PLAY_VER="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version",""))' android/play-release-notes.json)"
-    [[ "$PLAY_VER" == "$VER" ]] || { echo "android/play-release-notes.json is for '$PLAY_VER': write the Play notes for $VER (en-US + tr-TR) and commit them first" >&2; exit 1; }
+# The Android app has moved to https://github.com/mahirgul/AiPBX-Android.
+# If a local android directory with play notes still exists, validate it:
+if [[ -f "$ROOT/android/play-release-notes.json" ]]; then
+    LAST_TAG="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)"
+    if [[ -n "$LAST_TAG" ]] && git diff --quiet "$LAST_TAG" HEAD -- android ':!android/play-release-notes.json'; then
+        echo "Android: no change since $LAST_TAG -> no app build, no Google Play upload (the APK is carried over)."
+    else
+        PLAY_VER="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("version",""))' android/play-release-notes.json)"
+        [[ "$PLAY_VER" == "$VER" ]] || { echo "android/play-release-notes.json is for '$PLAY_VER': write the Play notes for $VER (en-US + tr-TR) and commit them first" >&2; exit 1; }
+    fi
 fi
 
 # Say in the notes whether updating to this release restarts Asterisk (the

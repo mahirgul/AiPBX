@@ -211,9 +211,9 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   </a>
 </p>
 
-- **Android** (Kotlin) — WebRTC calling with push wake-up and a foreground service, chat,
+- **Android** (Kotlin) — [AiPBX-Android](https://github.com/mahirgul/AiPBX-Android): WebRTC calling with push wake-up and a foreground service, chat,
   directory with presence, call history, DND / call forward, in-app log viewer. Available on [Google Play](https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX).
-- **iOS** (SwiftUI, CallKit) — calling with native incoming-call screen, chat, directory, features
+- **iOS** (SwiftUI, CallKit) — [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios): calling with native incoming-call screen, chat, directory, features.
 - **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
   one-time link in the invitation e-mail
 - **Same version as the server** — the Android app of release 1.50.1 is 1.50.1 too
@@ -313,8 +313,8 @@ AiPBX/
 ├── plugins/                # 🔌 Bundled plugins: official (auto-dialer, ms-teams, web-widgets, ai-*, …) and community
 ├── ai/                     # 🤖 Local & cloud AI service (aipbx-ai, Python)
 ├── chat/                   # 💬 Go WebSocket chat service (aipbx-chat)
-├── android/                # 📱 Kotlin Android app
-├── ios/                    # 🍎 SwiftUI iOS app
+├── android/                # 📱 Pointer to [AiPBX-Android](https://github.com/mahirgul/AiPBX-Android)
+├── ios/                    # 🍎 Pointer to [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios)
 ├── integrations/wordpress/ # 🧩 WordPress click-to-call & callback plugin
 ├── asterisk-config/        # ☎️ Asterisk base configuration
 ├── sounds/                 # 🔊 bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
@@ -338,9 +338,9 @@ AiPBX/
 | 🛡️ **Edge** | nginx stream on 443 (ALPN + PROXY protocol) → Apache |
 | 💬 **Chat** | Go + gorilla/websocket |
 | 🎧 **WebRTC** | coturn TURN/STUN, DTLS-SRTP, Opus |
-| 🤖 **Android** | Kotlin, WebRTC, FCM |
-| 🍎 **iOS** | Swift, SwiftUI, CallKit |
-| ⚙️ **CI** | GitHub Actions: PHPStan, PHPUnit, page smoke tests, Go tests, Android/iOS builds |
+| 🤖 **Android** | Kotlin, WebRTC, FCM ([AiPBX-Android](https://github.com/mahirgul/AiPBX-Android)) |
+| 🍎 **iOS** | Swift, SwiftUI, CallKit ([AiPBX-ios](https://github.com/mahirgul/AiPBX-ios)) |
+| ⚙️ **CI** | GitHub Actions: PHPStan, PHPUnit, page smoke tests, Go tests |
 
 ---
 
