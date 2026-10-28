@@ -1,0 +1,48 @@
+name: Plugin layout
+
+# The core/plugin split is only real if a machine catches the two mistakes:
+# a plugin file left in a core path, and a plugin.json the loader cannot read.
+# It runs for the plugin tree and for the checker itself — not for every web
+# change, because the PHP suite takes minutes and this takes seconds.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'plugins/**'
+      - 'scripts/check_plugin_layout.py'
+      - 'scripts/test_check_plugin_layout.py'
+      - '.github/workflows/plugin-layout.yml'
+  pull_request:
+    paths:
+      - 'plugins/**'
+      - 'scripts/check_plugin_layout.py'
+      - 'scripts/test_check_plugin_layout.py'
+      - '.github/workflows/plugin-layout.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-layout-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  layout:
+    name: Python — manifests and the core-path punch list
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # A checker nobody has seen fail is decoration: prove each check can
+      # fail before trusting a clean run.
+      - name: Checker self-tests
+        run: python3 scripts/test_check_plugin_layout.py
+
+      # A malformed manifest is a regression today; a plugin file still in a
+      # core path is the punch list for the loader, so it is printed but does
+      # not fail this step. Swap in --strict once the move is finished.
+      - name: plugin.json contract and core-path punch list
+        run: python3 scripts/check_plugin_layout.py --strict-manifests
