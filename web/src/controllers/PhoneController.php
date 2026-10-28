@@ -58,10 +58,7 @@ class PhoneController extends BaseController
             'save_settings' => fn() => PhoneProvisionService::saveSettings($_POST),
             // The discovery switches are their own form (their own modal): they
             // are read by a different service and a different process.
-            'save_discovery_settings' => function () {
-                PhoneDiscoveryService::saveDiscoverySettings($_POST);
-                return t('phonedisc.settings_saved');
-            },
+            'save_discovery_settings' => fn() => PhoneDiscoveryService::saveSettingsAction($_POST, $csrf),
             'approve_discovery' => fn() => PhoneDiscoveryService::approve(
                 (int) ($_POST['discovery_id'] ?? 0),
                 (string) ($_POST['model'] ?? ''),

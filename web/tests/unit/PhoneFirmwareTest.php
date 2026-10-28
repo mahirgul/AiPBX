@@ -311,6 +311,24 @@ final class PhoneFirmwareTest extends TestCase
         $this->assertSame($stored, (string) getSystemSetting('provision_cisco_loads'), 'a refused save changes nothing');
     }
 
+    public function testSavingSettingsArmsExistingCisco7900Phones(): void
+    {
+        $this->release();
+        putenv('AIPBX_TFTP_DIR=' . $this->dir);
+        $id = $this->phone('cisco-cm-7962g');
+        $this->assertSame('', PhoneFirmwareService::state($id)['state']);
+
+        $_SESSION = ['csrf_token' => 'fw-test-csrf', 'user_id' => null];
+        $base = ['csrf_token' => 'fw-test-csrf', 'provision_codecs' => PhoneProvisionService::CODECS]
+            + PhoneProvisionService::settings();
+        $res = PhoneProvisionService::saveSettings([
+            'provision_cisco_loads' => 'cisco-cm-7962g=' . self::LOAD,
+        ] + $base);
+        $this->assertTrue($res['success'], $res['error'] ?? '');
+        $this->assertSame(PhoneFirmwareService::ARMED, PhoneFirmwareService::state($id)['state']);
+        $this->assertSame(self::LOAD, PhoneFirmwareService::state($id)['load']);
+    }
+
     public function testAFleetWithoutTheModelListIsNotSwitched(): void
     {
         $this->release();

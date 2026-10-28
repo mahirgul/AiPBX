@@ -11,11 +11,12 @@ final class VoicemailPolicy
 {
     /** key => [default, min, max] */
     public const LIMITS = [
-        // Defaults are what the stock voicemail.conf did, so an update changes nothing.
+        // Defaults: minsecs=3 and maxsilence=2 ensure Asterisk does not emit
+        // "maxsilence should be less than minsecs or you may get empty messages" warning.
         'vm_max_secs' => [0, 0, 3600],        // longest message (s, 0 = no limit)
-        'vm_min_secs' => [0, 0, 60],          // shorter messages are not kept (s)
+        'vm_min_secs' => [3, 0, 60],          // shorter messages are not kept (s)
         'vm_max_msg' => [100, 10, 9999],      // messages per mailbox
-        'vm_max_silence' => [10, 0, 60],      // silence that ends a message (s, 0 = off)
+        'vm_max_silence' => [2, 0, 60],       // silence that ends a message (s, 0 = off)
         'vm_max_logins' => [3, 1, 10],        // wrong PINs before the call is ended
         'vm_pin_min' => [4, 4, 10],           // shortest PIN
     ];
@@ -86,10 +87,17 @@ final class VoicemailPolicy
     public static function generalConf(): string
     {
         $s = self::settings();
+        $minsecs = (int) $s['vm_min_secs'];
+        $maxsilence = (int) $s['vm_max_silence'];
+        // Asterisk app_voicemail warns if maxsilence > 0 and maxsilence >= minsecs:
+        // "maxsilence should be less than minsecs or you may get empty messages"
+        if ($maxsilence > 0 && $minsecs > 0 && $maxsilence >= $minsecs) {
+            $maxsilence = max(1, $minsecs - 1);
+        }
         return "maxsecs={$s['vm_max_secs']}\n"
-            . "minsecs={$s['vm_min_secs']}\n"
+            . "minsecs={$minsecs}\n"
             . "maxmsg={$s['vm_max_msg']}\n"
-            . "maxsilence={$s['vm_max_silence']}\n"
+            . "maxsilence={$maxsilence}\n"
             . "maxlogins={$s['vm_max_logins']}\n"
             // A PIN changed from the phone (VoiceMailMain) must be this long too.
             . "minpassword={$s['vm_pin_min']}\n";

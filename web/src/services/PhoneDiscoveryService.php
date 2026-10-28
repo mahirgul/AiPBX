@@ -105,6 +105,15 @@ class PhoneDiscoveryService
         writeAuditLog('phones', 'settings', 0, 'Phone discovery', 'update', $_SESSION['user_id'] ?? null);
     }
 
+    /** Controller wrapper of saveDiscoverySettings(): CSRF check + layout notice array. */
+    public static function saveSettingsAction(array $data, string $csrf): array
+    {
+        return PBXHelper::handleAction($csrf, function () use ($data) {
+            self::saveDiscoverySettings($data);
+            return t('phonedisc.settings_saved');
+        });
+    }
+
     /**
      * Extension pool from a text: ranges ("5000-5099") and single extensions,
      * separated by commas, spaces or lines. Returns the numbers in order.
@@ -296,6 +305,7 @@ class PhoneDiscoveryService
             // extension); nothing is written to this table when it does.
             $phoneId = PhoneProvisionService::upsertPhone(0, (string) $row['mac'], $model, $userId);
             self::markProvisioned($id, $phoneId, (int) ($_SESSION['user_id'] ?? 0));
+            PhoneProvisionService::exportTftpQuietly();
             return sprintf(t('phones.saved'), PhoneModels::formatMac((string) $row['mac']));
         });
     }
@@ -387,6 +397,9 @@ class PhoneDiscoveryService
             self::markProvisioned((int) $row['id'], $phoneId);
             $out['created'][] = PhoneModels::formatMac($mac) . ' → ' . $user['extension']
                 . ' (' . (PhoneModels::get($models[$vendor])['label'] ?? $models[$vendor]) . ')';
+        }
+        if ($out['created'] !== []) {
+            PhoneProvisionService::exportTftpQuietly();
         }
         return $out;
     }

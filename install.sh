@@ -1358,9 +1358,12 @@ if [ -d "$INSTALL_DIR/engine" ]; then
     install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-phone-discovery" /usr/local/sbin/aipbx-phone-discovery
     chmod 755 "$INSTALL_DIR/engine"
     # The CLI the wrapper and an operator both call, next to the other bin scripts.
-    if [ -f "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" ]; then
-        ln -sf "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" /usr/local/bin/aipbx_phone_discovery.php
-    fi
+    for script in aipbx_phone_discovery.php aipbx_cisco_firmware.php; do
+        if [ -f "$INSTALL_DIR/web/bin/$script" ]; then
+            chmod 755 "$INSTALL_DIR/web/bin/$script"
+            ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
+        fi
+    done
 fi
 
 # --- signaling capture (opt-in: asterisk-config/hep.conf decides whether
@@ -1550,6 +1553,12 @@ for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.co
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
 done
+
+# Voicemail: Ensure Asterisk app_voicemail doesn't emit "maxsilence should be less than minsecs"
+if [[ -f /etc/asterisk/voicemail.conf ]]; then
+    sed -i -E 's/^[; ]*minsecs\s*=.*/minsecs=3/' /etc/asterisk/voicemail.conf
+    sed -i -E 's/^[; ]*maxsilence\s*=.*/maxsilence=2/' /etc/asterisk/voicemail.conf
+fi
 # res_odbc.conf ships with a ${ODBC_PASS} placeholder (no secret in the repo).
 escaped_odbc_pass="$(printf '%s\n' "$ODBC_PASS" | sed 's/[&/\]/\\&/g')"
 sed -i "s/\${ODBC_PASS}/${escaped_odbc_pass}/" /etc/asterisk/res_odbc.conf
@@ -1684,10 +1693,10 @@ else
     fi
 fi
 chown -R asterisk:asterisk /etc/asterisk/
-chown asterisk:asterisk /etc/asterisk && chmod 0755 /etc/asterisk
+chown asterisk:asterisk /etc/asterisk && chmod 2775 /etc/asterisk
 chown -R asterisk:asterisk /etc/asterisk/pbx
 chmod 2775 /etc/asterisk/pbx
-chmod 664 /etc/asterisk/pbx/*.conf 2>/dev/null || true
+chmod 664 /etc/asterisk/pbx/*.conf /etc/asterisk/rtp.conf /etc/asterisk/voicemail.conf 2>/dev/null || true
 for secret_conf in /etc/asterisk/manager.conf /etc/asterisk/res_odbc.conf /etc/asterisk/keys/privkey.pem /etc/asterisk/keys/asterisk.key /etc/asterisk/keys/asterisk.pem; do
     if [[ -f "$secret_conf" ]]; then
         chown asterisk:root "$secret_conf"

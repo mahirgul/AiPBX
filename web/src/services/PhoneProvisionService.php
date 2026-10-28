@@ -203,6 +203,7 @@ class PhoneProvisionService
                 $stmt->execute([$k, $v]);
             }
             writeAuditLog('phones', 'settings', 0, 'Provisioning settings', 'update', $_SESSION['user_id'] ?? null);
+            PhoneFirmwareService::armAllQuietly();
             self::exportTftpQuietly();
             return t('phones.settings_saved');
         });
@@ -536,8 +537,13 @@ class PhoneProvisionService
         $hits = [];
         foreach (PhoneModels::MODELS as $key => $m) {
             $keyNorm = str_replace('-', '', $key);
-            $short = strtolower((string) preg_replace('/[^a-z0-9]/i', '', substr($key, strpos($key, '-') + 1)));
-            if ($norm === $keyNorm || $norm === $short) {
+            $labelNorm = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $m['label']));
+            $vendorPrefix = $m['vendor'] . '-';
+            $shortKey = str_starts_with($key, $vendorPrefix)
+                ? substr($key, strlen($vendorPrefix))
+                : substr($key, (int) strpos($key, '-') + 1);
+            $short = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $shortKey));
+            if ($norm === $keyNorm || $norm === $labelNorm || $norm === $short) {
                 $hits[] = $key;
             }
         }

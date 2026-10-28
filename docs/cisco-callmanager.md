@@ -112,7 +112,7 @@ What AiPBX checks, and what it will not do:
 A fleet that was provisioned before you filled in the list is armed with one command:
 
 ```sh
-sudo -u www-data php /var/www/aipbx/web/bin/aipbx_cisco_firmware.php
+sudo -u www-data php /opt/aipbx/web/bin/aipbx_cisco_firmware.php
 ```
 
 It prints each model's load, whether its files are on this server, what each phone's switch state is, and

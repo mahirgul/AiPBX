@@ -242,4 +242,13 @@ final class PhoneFirmwareService
         }
         return $out;
     }
+
+    public static function armAllQuietly(?string $dir = null): void
+    {
+        try {
+            self::armAll($dir);
+        } catch (\Throwable $e) {
+            error_log('phones: firmware switch not armed for fleet: ' . $e->getMessage());
+        }
+    }
 }
