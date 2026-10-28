@@ -37,6 +37,73 @@ new languages are welcome as pull requests.
 6. Short labels (buttons, table headers, menu items) should stay short; the
    layout has little room for them.
 
+## Terms that must not vary
+
+Four words carry most of AiPBX's phone vocabulary, and each of them drifts inside a
+single language: the same concept translated once from its label and then again from
+the sentence around it. In the current files `provisioning` sits as a loanword in
+sixteen German occurrences and twenty Italian ones while the label above them reads
+`Bereitgestellt` and `Configurato`; Greek has παραμετροποίηση in the badge and
+ρύθμιση in sixteen other occurrences; Turkish says "Dış Hat" where the label is and plain
+"hat" in most other strings.
+
+**One word per concept per language.** Decline it, compound it, put it in another
+case — but do not reach for a synonym because one sentence reads better with it. A
+reader who meets two words for the same button has to work out whether they are two
+things.
+
+| Term | In AiPBX it means | Not to be confused with | The word is fixed by |
+| --- | --- | --- | --- |
+| **provisioning** | Writing a phone's configuration file — and the address it fetches that file from — before the phone is used. | Changing settings in the portal, or installing AiPBX. | `phonedisc.state_provisioned`, `phones.settings_title`, `phones.col_url` |
+| **discovery** | Finding phones that are on the network but not in AiPBX yet. | Scanning ports for its own sake; searching the phone list you already have. | `phonedisc.settings_title`, `phonedisc.settings_btn`, `phonedisc.title` |
+| **extension** | A person's internal number and the SIP account behind it, e.g. 3010. Reachable without a trunk. | A trunk; a DID; a queue or ring group. | `extensions.col_extension`, `phones.col_extension` |
+| **trunk** | The connection off the box: a provider, a gateway, a SIP peer. | An extension; an outbound route or rule. | `trunks.col_trunk`, `sidebar.item_trunks`, `outbound.add_trunk` |
+
+### The word each language uses
+
+Read from the label keys above, so this is what the interface already shows — the
+provisioning column is the participle of the badge (`Bereitgestellt`,
+`Provisionado` as the labels have it); use that word's verb and noun forms.
+
+| Language | provisioning | discovery | extension | trunk |
+| --- | --- | --- | --- | --- |
+| en | Provisioned | Discovery | Extension | Trunk |
+| az | Tanıdılıb | Aşkarlama | Daxili nömrə | Trank |
+| bg | Провизиран | Откриване | Вътрешен номер | Транк |
+| cs | Nakonfigurován | Zjišťování | Pobočka | Trunk |
+| da | Provisioneret | Registrering | Lokalnummer | Trunk |
+| de | Bereitgestellt | Erkennung | Nebenstelle | Trunk |
+| el | Παραμετροποιήθηκε | Ανακάλυψη | Εσωτερικό | Trunk |
+| es | Aprovisionado | Descubrimiento | Extensión | Troncal |
+| fi | Käyttöönotettu | Etsintä | Alanumero | Runkolinja |
+| fr | Provisionné | Découverte | Poste | Trunk |
+| hr | Konfigurirano | Otkrivanje | Lokal | Trunk |
+| hu | Beállítva | Felderítés | Mellék | Trönk |
+| it | Configurato | Rilevamento | Interno | Trunk |
+| nb | Klargjort | Oppdagelse | Internnummer | Trunk |
+| nl | Geprovisioneerd | Detectie | Toestel | Trunk |
+| pl | Skonfigurowany | Wykrywanie | Numer wewn. | Trunk |
+| pt | Provisionado | Descoberta | Extensão | Tronco |
+| ro | Provizionat | Descoperire | Interior | Trunchi |
+| ru | Настроен | Обнаружение | Внутр. номер | Транк |
+| sr | Konfigurisano | Otkrivanje | Lokal | Trank |
+| sv | Provisionerad | Identifiering | Anknytning | Trunk |
+| tr | Tanımlandı | Keşif | Dahili | Dış Hat |
+| uk | Налаштований | Виявлення | Внутрішній номер | Транк |
+
+Two families, and the choice is per language rather than per string: some take the
+loanword (bg провизиран, fr provisionné, nl geprovisioneerd, pt provisionado, ro
+provizionat, sv provisionerad) and others a native verb for configuring or
+commissioning (cs nakonfigurován, it configurato, pl skonfigurowany, ru настроен,
+uk налаштований, de bereitgestellt, el παραμετροποιήθηκε, fi käyttöönotettu, hu
+beállítva, nb klargjort, tr tanımlandı). Either is fine; using both in one language
+is not.
+
+If a word in that table is wrong, change the label key and the table in the same
+commit — one decision for the language, never one string at a time. The az and el
+wording for provisioning is still open upstream; until it is settled, follow the
+label.
+
 ## Workflow with `scripts/i18n.py`
 
 The tool cuts English into numbered chunks, checks every translated line
