@@ -21,6 +21,7 @@ final class MyPhoneVoicemailSettingsTest extends TestCase
     protected function setUp(): void
     {
         $this->db = getDB();
+        $this->db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'vm\\_%'");
         $this->db->exec("DELETE FROM sys_users WHERE extension = '7402'");
         $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, extension, extension_type, is_active,
                 voicemail_enabled, voicemail_pin, voicemail_email, voicemail_attach_audio, vm_on_busy)
@@ -31,6 +32,7 @@ final class MyPhoneVoicemailSettingsTest extends TestCase
     protected function tearDown(): void
     {
         $this->db->exec("DELETE FROM sys_users WHERE extension = '7402'");
+        $this->db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'vm\\_%'");
     }
 
     private function row(): array
