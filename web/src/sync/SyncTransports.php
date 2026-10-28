@@ -34,6 +34,21 @@ function __syncTransportsBody() {
     $tls_cert = preg_replace('/[\r\n]+/', '', (string)($settings['tls_cert_file'] ?? ''));
     $tls_priv_key = preg_replace('/[\r\n]+/', '', (string)($settings['tls_priv_key_file'] ?? ''));
 
+    // The name phones are told to register against, e.g. sip-tls.echoguard.ca.
+    // A transport's `domain` is the default domain PJSIP uses for URIs on that
+    // transport, so a contact addressed to that name lands on the TLS transport
+    // instead of whichever UDP transport happens to answer first. Empty keeps
+    // the previous behaviour exactly: no domain= line at all.
+    $tls_domain = trim(preg_replace('/[\r\n]+/', '', (string)($settings['tls_domain'] ?? '')));
+
+    // Asterisk accepts a comma-separated method list (method=tlsv1_2,tlsv1_3).
+    // Empty stays on tlsv1_2, the value that was hardcoded, so an upgrade cannot
+    // silently change what existing phones negotiate.
+    $tls_method = trim(preg_replace('/[\r\n]+/', '', (string)($settings['tls_method'] ?? '')));
+    if ($tls_method === '') {
+        $tls_method = 'tlsv1_2';
+    }
+
     $wss_enabled = !isset($settings['wss_enabled']) || ($settings['wss_enabled'] !== '0' && strtolower($settings['wss_enabled']) !== 'no');
     $wss_bind = $cleanAddr((string)($settings['wss_bindaddr'] ?? ''));
     $wss_port = $cleanPort($settings['wss_bindport'] ?? '');
@@ -120,7 +135,10 @@ function __syncTransportsBody() {
         if (!empty($tls_priv_key)) {
             $conf .= "priv_key_file={$tls_priv_key}\n";
         }
-        $conf .= "method=tlsv1_2\n";
+        if ($tls_domain !== '') {
+            $conf .= "domain={$tls_domain}\n";
+        }
+        $conf .= "method={$tls_method}\n";
         $conf .= $local_net_lines;
         if (!empty($extern_ip)) {
             $conf .= "external_media_address={$extern_ip}\n";
