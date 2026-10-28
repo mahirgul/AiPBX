@@ -61,9 +61,11 @@ things.
 
 ### The word each language uses
 
-Read from the label keys above, so this is what the interface already shows — the
-provisioning column is the participle of the badge (`Bereitgestellt`,
-`Provisionado` as the labels have it); use that word's verb and noun forms.
+This table is the decision, and the label keys named above are where it is read
+from: the provisioning column is the participle of the badge (`Bereitgestellt`,
+`Provisionado` as the labels have it), and its verb and noun forms follow from it.
+Where a label below disagrees with its row, the label changes — see the three
+corrections and the Greek split under the table.
 
 | Language | provisioning | discovery | extension | trunk |
 | --- | --- | --- | --- | --- |
@@ -73,36 +75,57 @@ provisioning column is the participle of the badge (`Bereitgestellt`,
 | cs | Nakonfigurován | Zjišťování | Pobočka | Trunk |
 | da | Provisioneret | Registrering | Lokalnummer | Trunk |
 | de | Bereitgestellt | Erkennung | Nebenstelle | Trunk |
-| el | Παραμετροποιήθηκε | Ανακάλυψη | Εσωτερικό | Trunk |
+| el | Παραμετροποιήθηκε ‡ | Ανακάλυψη | Εσωτερικό | Trunk |
 | es | Aprovisionado | Descubrimiento | Extensión | Troncal |
 | fi | Käyttöönotettu | Etsintä | Alanumero | Runkolinja |
 | fr | Provisionné | Découverte | Poste | Trunk |
 | hr | Konfigurirano | Otkrivanje | Lokal | Trunk |
-| hu | Beállítva | Felderítés | Mellék | Trönk |
+| hu | Kiépítve † | Felderítés | Mellék | Trönk |
 | it | Configurato | Rilevamento | Interno | Trunk |
 | nb | Klargjort | Oppdagelse | Internnummer | Trunk |
 | nl | Geprovisioneerd | Detectie | Toestel | Trunk |
 | pl | Skonfigurowany | Wykrywanie | Numer wewn. | Trunk |
 | pt | Provisionado | Descoberta | Extensão | Tronco |
 | ro | Provizionat | Descoperire | Interior | Trunchi |
-| ru | Настроен | Обнаружение | Внутр. номер | Транк |
+| ru | Подготовлен † | Обнаружение | Внутр. номер | Транк |
 | sr | Konfigurisano | Otkrivanje | Lokal | Trank |
 | sv | Provisionerad | Identifiering | Anknytning | Trunk |
 | tr | Tanımlandı | Keşif | Dahili | Dış Hat |
-| uk | Налаштований | Виявлення | Внутрішній номер | Транк |
+| uk | Підготовлений † | Виявлення | Внутрішній номер | Транк |
+
+† **Three of those cells are corrections, not a description of today's labels.**
+Hungarian `Beállítva`, Russian `Настроен` and Ukrainian `Налаштований` are all
+built on the word those languages already use for **settings** — `beállítások`,
+`настройки`, `налаштування`, the `phones.settings_title` labels — so the badge
+reads "set up" and a reader cannot tell provisioning from changing a setting in
+the portal. Use the commissioning sense instead, the one German
+`Bereitgestellt` and Finnish `Käyttöönotettu` carry: `Kiépítve`, `Подготовлен`,
+`Підготовлений`. `phonedisc.state_provisioned` and the strings beside it
+(`phones.col_url`, still `Provisioning URL` in hu, `URL автонастройки` in ru,
+`URL автоналаштування` in uk) change with the badge, in one commit.
+
+‡ **Greek is split, and is listed as it is for now.** The badge says
+`Παραμετροποιήθηκε` while sixteen other occurrences say `ρύθμιση` — the settings
+word, as in `phones.settings_title` = `Ρυθμίσεις αυτόματης ρύθμισης`. One of the
+two has to go. Which one survives is open upstream together with az, so until it
+is answered follow the badge and do not introduce a third word.
 
 Two families, and the choice is per language rather than per string: some take the
 loanword (bg провизиран, fr provisionné, nl geprovisioneerd, pt provisionado, ro
-provizionat, sv provisionerad) and others a native verb for configuring or
-commissioning (cs nakonfigurován, it configurato, pl skonfigurowany, ru настроен,
-uk налаштований, de bereitgestellt, el παραμετροποιήθηκε, fi käyttöönotettu, hu
-beállítva, nb klargjort, tr tanımlandı). Either is fine; using both in one language
-is not.
+provizionat, sv provisionerad) and others a native word for commissioning (cs
+nakonfigurován, it configurato, pl skonfigurowany, de bereitgestellt, el
+παραμετροποιήθηκε, fi käyttöönotettu, hu kiépítve, nb klargjort, ru подготовлен,
+tr tanımlandı, uk підготовлений). Either is fine; using both in one language is not.
+
+A word meaning "configure" is only usable where the language's settings word is a
+*different* word (`cs nakonfigurován` beside `nastavení`, `it configurato` beside
+`impostazioni`, `pl skonfigurowany` beside `ustawienia`); where it is the same word
+it is a settings label wearing a provisioning badge, which is what † fixes.
 
 If a word in that table is wrong, change the label key and the table in the same
 commit — one decision for the language, never one string at a time. The az and el
 wording for provisioning is still open upstream; until it is settled, follow the
-label.
+label (for el, the badge — see ‡).
 
 ## Workflow with `scripts/i18n.py`
 
