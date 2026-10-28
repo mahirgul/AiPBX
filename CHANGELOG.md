@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.22
+
+- **Mobile Clients Decoupling & Independent Repositories:**
+  - Separated Android and iOS native mobile clients into dedicated standalone repositories ([AiPBX-Android](https://github.com/mahirgul/AiPBX-Android) and [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios)) with independent CI/CD build automation.
+  - Removed heavy mobile workflows (`android-build.yml`, `ios-build.yml`, `mobile-lang.yml`) from the core repository, accelerating core CI runs and eliminating redundant mobile builds on server releases.
+  - Audited all repositories to guarantee zero secrets, keystores, or private signing credentials in git history.
+- **Native Plugin Contract & Manifest Validator (`scripts/check_plugins.py`):**
+  - Added standalone plugin layout and manifest validator enforcing `plugin.json` contracts, hooks, and scopes across official and community plugins.
+  - Added static code analysis ensuring plugin PHP code does not read undeclared settings keys.
+  - Enforced `schema.sql` database security rules (`plg_*` table prefix sandbox and rejection of destructive DDL).
+  - Added 22 unit tests (`scripts/test_check_plugins.py`) and integrated into `Web & Chat CI` pipeline.
+- **Language Files & Translation Parity Cleanup:**
+  - Removed 46 orphan and unused external AI keys across all 23 language files (`web/lang/*.php`).
+  - Preserved 100% key parity across all 22 localized languages (5405/5405 keys aligned).
+
 ## 1.50.21
 
 - **PJSIP TLS Settings in Admin UI & Config Sync:**
