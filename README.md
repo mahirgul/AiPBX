@@ -165,6 +165,13 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Call recordings** — converted automatically to mono 16 kbps MP3 (~8× smaller than WAV), played in
   CDR reports, *My Phone* and the apps
 
+### ☎️ IP Desk Phones, Auto-Discovery & Zero-Touch Provisioning
+- **Local Network Phone Discovery (`/phones`)** — automated discovery daemon (`aipbx-phone-discovery`) monitors local subnets, DHCP lease files, ARP cache, and `dnsmasq` logs every 5 minutes; new devices appear instantly in the *Discovered on the network* panel
+- **Zero-Touch Pool Provisioning** — automatically allocates extensions from an administrator-configured pool (`provision_discovery_pool`) and maps detected OUI vendors to default models (`provision_discovery_models`), producing TFTP/HTTP configuration files without manual entry
+- **Multi-Vendor Provisioning Engine** — automated configuration generation for Yealink (T3x, T4x, T5x), Fanvil (X series), Grandstream (GXP, GRP), Snom, Gigaset, and Cisco (SPA series and CallManager enterprise series)
+- **Cisco 7900 & 8800 CallManager Series** — native `SEP<MAC>.cnf.xml` XML profile generation, XML directory services, and line keys across 11 enterprise models (`cisco-cm-7941g` through `7975g`, `8841`, `8851`, `8861`); see [docs/cisco-callmanager.md](docs/cisco-callmanager.md)
+- **Automated SCCP-to-SIP Firmware Switching** — model-by-model firmware migration pipeline that moves Cisco 7900 phones from proprietary SCCP to Cisco SIP firmware upon restart, with server-side `.loads` manifest validation before deployment
+
 ### 📠 Fax
 - **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
 - **Compose in the browser** (rich-text editor) or **upload a PDF**; resend failed faxes
