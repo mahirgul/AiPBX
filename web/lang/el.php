@@ -5400,7 +5400,7 @@ return [
     'phones.cisco_load_help' => 'Το όνομα του SIP firmware χωρίς την κατάληξη .loads (π.χ. SIP42.9-4-2SR3-1S), εγγράφεται μόνο σε τηλέφωνα Cisco CallManager. Κενό: το τηλέφωνο διατηρεί το τρέχον firmware. Δείτε docs/cisco-callmanager.md.',
     'phones.err_cisco_load' => 'Το όνομα firmware μπορεί να περιέχει μόνο γράμματα, ψηφία, τελείες, παύλες και κάτω παύλες.',
     'phones.cisco_loads' => 'SIP firmware ανά μοντέλο (αυτόματη εναλλαγή)',
-    'phones.cisco_loads_help' => 'Ένα model=load ανά γραμμή (π.χ. cisco-cm-7962g=SIP42.9-4-2SR3-1S). Ένα μοντέλο Cisco 7900 που αναφέρεται εδώ μεταβαίνει σε SIP firmware κατά την παραμετροποίηση: το firmware γράφεται στο αρχείο του τηλεφώνου, τα αρχεία του ελέγχονται σε αυτόν τον διακομιστή και το τηλέφωνο το εφαρμόζει στην επόμενη επανεκκίνηση. Η σειρά 8800 χρησιμοποιεί ήδη SIP. Δείτε docs/cisco-callmanager.md.',
+    'phones.cisco_loads_help' => 'Ένα model=load ανά γραμμή (π.χ. cisco-cm-7962g=SIP42.9-4-2SR3-1S). Ένα μοντέλο Cisco 7900 που αναφέρεται εδώ μεταβαίνει σε SIP firmware κατά την αυτόματη ρύθμιση: το firmware γράφεται στο αρχείο του τηλεφώνου, τα αρχεία του ελέγχονται σε αυτόν τον διακομιστή και το τηλέφωνο το εφαρμόζει στην επόμενη επανεκκίνηση. Η σειρά 8800 χρησιμοποιεί ήδη SIP. Δείτε docs/cisco-callmanager.md.',
     'phones.err_cisco_loads' => 'Μη έγκυρη γραμμή στη λίστα firmware: %s. Χρησιμοποιήστε model=load χωρίς .loads.',
     'phones.firmware_armed' => 'SIP firmware έτοιμο:',
     'phones.firmware_fetched' => 'SIP firmware ελήφθη:',
