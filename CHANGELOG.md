@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.19
+
+- **Asterisk RTP & Voicemail configuration compliance:**
+  - Aligned Asterisk ICE host candidate formatting in `SyncRtpSettings` (`<local_ip> => <external_ip>,include_local_address`), eliminating RTP syntax warnings on reload.
+  - Standardized `minsecs=3` and `maxsilence=2` defaults in `VoicemailPolicy` and `SyncVoicemail` to strictly satisfy Asterisk's `maxsilence < minsecs` constraint and prevent empty voicemail warnings.
+- **Desk-phone discovery & Cisco CallManager provisioning:**
+  - Moved the discovery tick lock file to `/var/lib/aipbx/engine/discovery.lock`, resolving permission failures when executing as `www-data`.
+  - Added CSRF validation and array response handling in `PhoneController` discovery settings to prevent `TypeError` during save.
+  - Added automatic TFTP file generation on phone approval and improved hyphenated model identification in `PhoneProvisionService`.
+- **Installer & system permissions hardening (`install.sh`):**
+  - Configured `/etc/asterisk` directory permissions (`02775 asterisk:asterisk`) and `0664` on managed conf files, enabling atomic writes by `www-data`.
+  - Added `systemd-journal` group to `www-data` for reading `dnsmasq` DHCP leases via `journalctl`.
+  - Added automated normalization of `/etc/asterisk/voicemail.conf` limits during installation and `--upgrade`.
+- **Test suite stability & flaky test elimination:**
+  - Transitioned `Fixtures::load()` from DDL `TRUNCATE` to DML `DELETE FROM` with `ON DUPLICATE KEY UPDATE` and automatic transaction rollback, eliminating MariaDB metadata lock timeouts and duplicate key violations across full test runs (971/971 clean).
+
 ## 1.50.18
 
 - **Network desk-phone discovery & automatic pool provisioning (`/phones` & `engine/`):**
