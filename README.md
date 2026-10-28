@@ -416,4 +416,4 @@ Sign up via our affiliate link to claim **$250 in free cloud credits**:
 
 ## 👤 Author & Creator
 
-**Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [@mahirgul](https://github.com/mahirgul)
+**Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [LinkedIn](https://www.linkedin.com/in/mhrgl/) · [@mahirgul](https://github.com/mahirgul)

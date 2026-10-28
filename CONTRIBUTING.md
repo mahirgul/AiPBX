@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to **AI PBX**! 🎉
 
-AI PBX is an open-source enterprise IP PBX and Unified Communications platform created by [Mahir Gül](https://mhrgl.com). We welcome contributions from developers, VoIP engineers, sysadmins, and technical writers worldwide.
+AI PBX is an open-source enterprise IP PBX and Unified Communications platform created by [Mahir Gül](https://mhrgl.com) ([LinkedIn](https://www.linkedin.com/in/mhrgl/)). We welcome contributions from developers, VoIP engineers, sysadmins, and technical writers worldwide.
 
 ---
 
@@ -189,7 +189,7 @@ asked to be split.
 
 ## 📬 Contact & Community
 
-- **Project Creator & Lead**: Mahir Gül ([mhrgl.com](https://mhrgl.com))
+- **Project Creator & Lead**: Mahir Gül ([mhrgl.com](https://mhrgl.com) · [LinkedIn](https://www.linkedin.com/in/mhrgl/))
 - **Privacy Policy**: [https://www.mhrgl.com/privacy](https://www.mhrgl.com/privacy)
 - **GitHub Issues**: [https://github.com/mahirgul/AiPBX/issues](https://github.com/mahirgul/AiPBX/issues)
 - **GitHub Discussions**: [https://github.com/mahirgul/AiPBX/discussions](https://github.com/mahirgul/AiPBX/discussions)
