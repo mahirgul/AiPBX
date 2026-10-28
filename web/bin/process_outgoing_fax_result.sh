@@ -82,6 +82,7 @@ FAX_INFO=$($MYSQL_QUERY -e \
    WHERE s.id = $FAX_ID LIMIT 1;" 2>/dev/null)
 
 if [ -n "$FAX_INFO" ]; then
+    # shellcheck disable=SC2034 # Unpacked fields PDF_PATH and FULL_NAME are part of the tabular query
     IFS=$'\t' read -r SENDER_EXT DEST_NUM PDF_PATH SENDER_EMAIL FULL_NAME <<< "$FAX_INFO"
     
     log "FAX #$FAX_ID Info -> Sender DID: $SENDER_EXT | Dest: $DEST_NUM | Email: ${SENDER_EMAIL:-NONE}"

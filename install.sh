@@ -60,6 +60,7 @@ fi
 # aipbx-update compares it between releases (scripts/asterisk-restart-needed.sh):
 # when it and asterisk-config/ are unchanged, Asterisk is only reloaded and
 # calls in progress stay up.
+# shellcheck disable=SC2034 # Read externally by scripts/asterisk-restart-needed.sh from git tree
 ASTERISK_RESTART_EPOCH=1
 
 # --- Bounded waits: a stall must become an error, not a 45-minute silence ---

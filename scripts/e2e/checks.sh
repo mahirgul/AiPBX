@@ -137,6 +137,7 @@ exten => 1,1,Answer()
 EOF
 asterisk -rx "dialplan reload" >/dev/null
 # One retry: a single call right after a restart can end early without a reason.
+# shellcheck disable=SC2034
 for attempt in 1 2; do
     mark="$(wc -l < /var/log/asterisk/messages.log)"
     asterisk -rx "channel originate Local/1@aipbx-e2e application Wait 30" >/dev/null

@@ -40,10 +40,10 @@ final class SecretBox
                 $ok = @file_put_contents($file, $raw, LOCK_EX);
                 umask($old);
                 if ($ok === false) {
-                    error_log('[SecretBox] Notice: could not persist key to ' . $file . ', using temporary in-memory key.');
+                    error_log('[SecretBox] WARNING: could not persist key to ' . $file . '; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
                 }
             } else {
-                error_log('[SecretBox] Notice: ' . $file . ' is not writable, using temporary in-memory key.');
+                error_log('[SecretBox] WARNING: ' . $file . ' is not writable; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
             }
         }
         return self::$key = $raw;

@@ -110,7 +110,11 @@ for _ in $(seq 1 20); do   # the PJSIP reload finishes after the sync returns
     asterisk -rx 'pjsip show endpoint e2esink' 2>/dev/null | grep -q 'Endpoint:  *e2esink ' && { trunk_ok=1; break; }
     sleep 0.5
 done
-[[ $trunk_ok -eq 1 ]] && pass "test trunk loaded" || fail "test trunk loaded"
+if [[ $trunk_ok -eq 1 ]]; then
+    pass "test trunk loaded"
+else
+    fail "test trunk loaded"
+fi
 expect mobile 05321234567 05321234567 "no rules"
 expect desktop 0049301234567 0049301234567 "no rules"
 
@@ -163,7 +167,11 @@ apply
 ext="$(db "SELECT extension FROM sys_users WHERE is_active = 1 AND extension <> '' AND extension_type = 'sip' ORDER BY id LIMIT 1")"
 if [[ -n "$ext" ]]; then
     got="$(dial mobile "$ext")"
-    [[ "$got" == "(nothing)" ]] && pass "internal extension $ext stays internal" || fail "internal extension $ext stays internal" "carrier got $got"
+    if [[ "$got" == "(nothing)" ]]; then
+        pass "internal extension $ext stays internal"
+    else
+        fail "internal extension $ext stays internal" "carrier got $got"
+    fi
 fi
 
 echo "== $PASS passed, $FAIL failed"

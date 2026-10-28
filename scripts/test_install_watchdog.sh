@@ -55,6 +55,7 @@ else
 
     # The advisory's echo lines use install.sh's colour variables.
     run_advisory() {  # run_advisory PATH -> prints what the block prints
+        # shellcheck disable=SC2034 # Variables mocked for the subshell eval of the advisory
         ( set -euo pipefail; YELLOW=; BOLD=; NC=; PATH="$1"; eval "$advisory" )
     }
 
@@ -124,7 +125,7 @@ fi
 # failing — but never instead of reporting a failure already found.
 if ! command -v timeout >/dev/null 2>&1; then
     echo "SKIP: the streaming cases need timeout(1); on macOS: brew install coreutils"
-    exit $([ "$fail" -eq 0 ] && echo 77 || echo 1)
+    if [ "$fail" -eq 0 ]; then exit 77; else exit 1; fi
 fi
 
 # --- the helper under test, taken from install.sh itself ---------------------
@@ -141,6 +142,7 @@ if ! declare -f stream_bounded >/dev/null; then
 fi
 
 # The helper reports through install.sh's own output functions.
+# shellcheck disable=SC2329 # Invoked dynamically by the evaluated stream_bounded helper
 info() { echo "[INFO]  $*"; }
 ok()   { echo "[ OK ]  $*"; }
 warn() { echo "[WARN]  $*"; }
