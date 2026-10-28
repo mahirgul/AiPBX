@@ -2263,7 +2263,12 @@ else
 fi
 echo ""
 
-ssh_cfg="$(sshd -T 2>/dev/null)"
+# Advisory only, so it may not decide whether this install succeeded: `sshd -T`
+# exits 127 on a host with no SSH server at all (a container, a minimal cloud
+# image) and non-zero when there is no host key yet to read the config with.
+# Under `set -e` that status ended the script here — everything installed, exit
+# 1 — and `aipbx-update` rolled a healthy box back over it.
+ssh_cfg="$(sshd -T 2>/dev/null || true)"
 if grep -qi '^permitrootlogin yes' <<<"$ssh_cfg" && grep -qi '^passwordauthentication yes' <<<"$ssh_cfg"; then
     echo -e "  ${YELLOW}⚠️  SSH allows root login with a password. Consider key-only logins and${NC}"
     echo -e "  ${YELLOW}   limiting port 22 to trusted networks (see docs/security.md).${NC}"

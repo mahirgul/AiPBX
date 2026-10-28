@@ -14,6 +14,11 @@ final class VoicemailPolicyTest extends TestCase
         getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'vm\\_%'");
     }
 
+    protected function tearDown(): void
+    {
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'vm\\_%'");
+    }
+
     public function testPinRules(): void
     {
         $this->assertNull(VoicemailPolicy::pinError('8364', '3001'));

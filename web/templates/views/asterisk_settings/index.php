@@ -57,15 +57,39 @@
         <div class="u-grid-2">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_wss_port'); ?></label>
-                <input type="number" name="pjsip_wss_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_wss_port']); ?>" required>
+                <input type="number" name="pjsip_wss_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_wss_port']); ?>" required min="1" max="65535">
                 <small class="u-hint"><?php echo t('asterisk_settings.wss_port_help'); ?></small>
             </div>
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_udp_port'); ?></label>
-                <input type="number" name="pjsip_udp_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_udp_port']); ?>" required>
+                <input type="number" name="pjsip_udp_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_udp_port']); ?>" required min="1" max="65535">
                 <small class="u-hint"><?php echo t('asterisk_settings.udp_port_help'); ?></small>
             </div>
+        </div>
+
+        <div class="u-grid-2 u-mt-12">
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_tls_port'); ?></label>
+                <input type="number" name="pjsip_tls_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_tls_port'] ?? '5061'); ?>" required min="1" max="65535">
+                <small class="u-hint"><?php echo t('asterisk_settings.tls_port_help'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_tls_method'); ?></label>
+                <select name="pjsip_tls_method" class="form-control">
+                    <option value="tlsv1_2" <?php echo (($s['pjsip_tls_method'] ?? 'tlsv1_2') === 'tlsv1_2') ? 'selected' : ''; ?>>TLSv1.2 (Default)</option>
+                    <option value="tlsv1_2,tlsv1_3" <?php echo (($s['pjsip_tls_method'] ?? '') === 'tlsv1_2,tlsv1_3') ? 'selected' : ''; ?>>TLSv1.2 + TLSv1.3</option>
+                    <option value="tlsv1_3" <?php echo (($s['pjsip_tls_method'] ?? '') === 'tlsv1_3') ? 'selected' : ''; ?>>TLSv1.3</option>
+                </select>
+                <small class="u-hint"><?php echo t('asterisk_settings.tls_method_help'); ?></small>
+            </div>
+        </div>
+
+        <div class="form-group u-mt-12">
+            <label class="form-label"><?php echo t('asterisk_settings.field_tls_domain'); ?></label>
+            <input type="text" name="pjsip_tls_domain" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_tls_domain'] ?? ''); ?>" placeholder="sip-tls.example.com">
+            <small class="u-hint"><?php echo t('asterisk_settings.tls_domain_help'); ?></small>
         </div>
 
         <!-- The public address and the local networks are on Network -> Network settings. -->

@@ -11,6 +11,9 @@ class AsteriskSettingsService {
             // Section 1: PJSIP & SIP
             'pjsip_wss_port' => '8089',
             'pjsip_udp_port' => '5060',
+            'pjsip_tls_port' => '5061',
+            'pjsip_tls_domain' => '',
+            'pjsip_tls_method' => 'tlsv1_2',
             'pjsip_external_ip' => '',
             'pjsip_local_net' => '192.168.1.0/24',
             'pjsip_codecs' => 'opus,alaw,ulaw',
@@ -165,13 +168,27 @@ class AsteriskSettingsService {
 
         $wss_port_val = filter_var(trim((string)($post['pjsip_wss_port'] ?? '8089')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
         $udp_port_val = filter_var(trim((string)($post['pjsip_udp_port'] ?? '5060')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
-        if ($wss_port_val === false || $udp_port_val === false) {
+        $tls_port_val = filter_var(trim((string)($post['pjsip_tls_port'] ?? '5061')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        if ($wss_port_val === false || $udp_port_val === false || $tls_port_val === false) {
             return ['success' => false, 'error' => 'Invalid PJSIP port (1-65535).'];
         }
+
+        $tls_domain_val = trim(preg_replace('/[\r\n]+/', '', (string)($post['pjsip_tls_domain'] ?? '')));
+        if ($tls_domain_val !== '' && !preg_match('/^[a-zA-Z0-9.\-_]+$/', $tls_domain_val)) {
+            return ['success' => false, 'error' => t('asterisk_settings.err_tls_domain', 'Invalid TLS domain name.')];
+        }
+
+        $allowed_tls_methods = ['tlsv1_2', 'tlsv1_2,tlsv1_3', 'tlsv1_3'];
+        $tls_method_val = in_array($post['pjsip_tls_method'] ?? '', $allowed_tls_methods, true)
+            ? $post['pjsip_tls_method']
+            : 'tlsv1_2';
 
         $new_settings = [
             'pjsip_wss_port' => (string)$wss_port_val,
             'pjsip_udp_port' => (string)$udp_port_val,
+            'pjsip_tls_port' => (string)$tls_port_val,
+            'pjsip_tls_domain' => $tls_domain_val,
+            'pjsip_tls_method' => $tls_method_val,
             // Edited on Network → Network settings (validated there); this form keeps them.
             'pjsip_external_ip' => (string) getSystemSetting('pjsip_external_ip', ''),
             'pjsip_local_net' => (string) getSystemSetting('pjsip_local_net', '192.168.1.0/24'),
@@ -292,6 +309,9 @@ class AsteriskSettingsService {
         $pj_stmt = $db->prepare('INSERT INTO pjsipsettings (keyword, data, seq, type) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE data = VALUES(data)');
         $pj_stmt->execute(['bindport', $new_settings['pjsip_udp_port']]);
         $pj_stmt->execute(['wss_bindport', $new_settings['pjsip_wss_port']]);
+        $pj_stmt->execute(['tls_bindport', $new_settings['pjsip_tls_port']]);
+        $pj_stmt->execute(['tls_domain', $new_settings['pjsip_tls_domain']]);
+        $pj_stmt->execute(['tls_method', $new_settings['pjsip_tls_method']]);
         $pj_stmt->execute(['externip_val', $new_settings['pjsip_external_ip']]);
 
         $net_index = 0;
