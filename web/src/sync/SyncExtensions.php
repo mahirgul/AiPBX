@@ -103,7 +103,36 @@ function __syncAllExtensionsBody() {
     // Fax users (extension_type='fax') never register over SIP (an incoming
     // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
-    $users = $db->query("SELECT extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $db->query("SELECT id, extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+    // Two `sys_users` rows can share one extension — an imported account plus one
+    // re-created by hand, say. The loop below writes a full endpoint/auth/identify
+    // set for every row, and PJSIP rejects the *whole* file when an object is
+    // defined twice ("configuration contains a duplicate object"): the reload
+    // fails and the box runs with no endpoints at all, so every phone unregisters,
+    // not only the duplicated extension. Keep the first row per extension — the
+    // id ASC in the ORDER BY above makes that choice stable between runs — and log
+    // the rows left out, because dropping them silently is how the duplicate
+    // stays invisible.
+    $unique = [];
+    $kept_id = [];
+    foreach ($users as $row) {
+        $key = preg_replace('/[^0-9]/', '', (string)$row['extension']);
+        // A non-numeric extension generates no endpoint below, so it cannot
+        // collide with another row; pass it through untouched.
+        if ($key === '') {
+            $unique[] = $row;
+            continue;
+        }
+        if (isset($kept_id[$key])) {
+            error_log("syncAllExtensions: extension {$key} appears in more than one user row"
+                . " — keeping user id {$kept_id[$key]}, skipping id {$row['id']}");
+            continue;
+        }
+        $kept_id[$key] = $row['id'];
+        $unique[] = $row;
+    }
+    $users = $unique;
 
     // Video codecs only while video calls are on (Admin -> Asterisk -> Video).
     $video_codecs = pbxVideoCodecs();

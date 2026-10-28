@@ -272,6 +272,42 @@ final class SyncGeneratorTest extends TestCase
         }
     }
 
+    /**
+     * Two `sys_users` rows can share one extension (an imported account plus one
+     * re-created by hand). One object per row makes PJSIP reject the whole file —
+     * "configuration contains a duplicate object" — so the reload fails and the box
+     * comes up with no endpoints at all: every phone unregisters, not just the
+     * duplicated extension. The generator keeps the first row (id ASC, so the
+     * winner is stable) and logs the row it skipped.
+     */
+    public function testDuplicateUserRowsForOneExtensionGenerateOneBlock(): void
+    {
+        $db = getDB();
+        try {
+            $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
+            $ins = $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES (?, '', ?, '7199', ?, 1, 'sip', 1, 'user')");
+            $ins->execute(['dupext1', 'Dup Winner', 'S' . bin2hex(random_bytes(8))]);
+            $ins->execute(['dupext2', 'Dup Loser', 'S' . bin2hex(random_bytes(8))]);
+
+            syncAllExtensions();
+            $conf = $this->endpointsConf();
+
+            $this->assertSame(1, substr_count($conf, '[7199-sip](endpoint-sip)'),
+                'the endpoint block was generated more than once');
+            $this->assertSame(1, substr_count($conf, '[auth7199-sip](auth-userpass)'),
+                'the auth block was generated more than once');
+            $this->assertSame(1, substr_count($conf, '[7199-sip-identify]'),
+                'the identify block was generated more than once');
+            $this->assertSame(1, substr_count($conf, '[7199](aor-dual)'),
+                'the AOR was generated more than once');
+            // The earliest row wins, so the output does not depend on row order.
+            $this->assertStringContainsString('Dup Winner', $conf);
+            $this->assertStringNotContainsString('Dup Loser', $conf);
+        } finally {
+            $db->prepare("DELETE FROM sys_users WHERE extension = '7199'")->execute();
+        }
+    }
+
     public function testEmptyIdentifyHostListFallsBackToTheOldWidePattern(): void
     {
         $db = getDB();

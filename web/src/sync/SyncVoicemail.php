@@ -10,11 +10,30 @@ function syncVoicemail() {
 function __syncVoicemailBody() {
     $db = getDB();
     $users = $db->query(
-        "SELECT extension, full_name, email, voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify, voicemail_attach_audio 
+        "SELECT id, extension, full_name, email, voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify, voicemail_attach_audio 
          FROM sys_users 
          WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip'
-         ORDER BY extension ASC"
+         ORDER BY extension ASC, id ASC"
     )->fetchAll(PDO::FETCH_ASSOC);
+
+    // Deduplicate extensions so conflicting rows don't produce duplicate mailboxes in voicemail_pbx.conf
+    $unique = [];
+    $kept_id = [];
+    foreach ($users as $row) {
+        $key = preg_replace('/[^0-9]/', '', (string)$row['extension']);
+        if ($key === '') {
+            $unique[] = $row;
+            continue;
+        }
+        if (isset($kept_id[$key])) {
+            error_log("syncVoicemail: extension {$key} appears in more than one user row"
+                . " — keeping user id {$kept_id[$key]}, skipping id {$row['id']}");
+            continue;
+        }
+        $kept_id[$key] = $row['id'];
+        $unique[] = $row;
+    }
+    $users = $unique;
 
     // 1. Ensure /etc/asterisk/voicemail.conf includes pbx/voicemail_pbx.conf
     $main_vm_conf = ASTERISK_CONF_DIR . '/voicemail.conf';
