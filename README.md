@@ -45,7 +45,14 @@
 ## 🚀 Quick Install
 
 ```bash
-# One-liner installation (installs the latest release)
+# Recommended one-liner installation (installs the latest release)
+curl -fsSL aipbx.bid/i | sudo bash
+```
+
+Or via direct GitHub raw URL:
+
+```bash
+# Alternative direct GitHub script
 curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
 ```
 

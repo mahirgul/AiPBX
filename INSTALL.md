@@ -27,6 +27,14 @@ the Go chat service and the security tooling in one command. It installs the **l
 release** (see [CHANGELOG.md](CHANGELOG.md)).
 
 ```bash
+# Ultra-fast one-liner installation
+curl -fsSL aipbx.bid/i | sudo bash
+```
+
+Or via direct GitHub raw URL:
+
+```bash
+# Alternative direct GitHub script
 curl -fsSL https://raw.githubusercontent.com/mahirgul/AiPBX/main/install.sh | sudo bash
 ```
 
