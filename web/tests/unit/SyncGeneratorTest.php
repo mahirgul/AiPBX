@@ -468,7 +468,7 @@ final class SyncGeneratorTest extends TestCase
         $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('server_ip', '10.8.0.12'), ('pjsip_external_ip', '203.0.113.7')")->execute();
         try {
             $conf = buildRtpConf();
-            $this->assertMatchesRegularExpression('/^\[ice_host_candidates\]\ninclude_local_address=yes\n10\.8\.0\.12 => 203\.0\.113\.7$/m', $conf);
+            $this->assertMatchesRegularExpression('/^\[ice_host_candidates\]\n10\.8\.0\.12 => 203\.0\.113\.7,include_local_address$/m', $conf);
             $general = substr($conf, 0, (int) strpos($conf, '[ice_host_candidates]'));
             $this->assertStringNotContainsString('ice_host_candidates', $general, 'Asterisk ignores it under [general]');
 

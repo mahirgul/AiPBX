@@ -386,4 +386,30 @@ final class PhoneDiscoveryServiceTest extends TestCase
         $this->expectException(Exception::class);
         PhoneDiscoveryService::saveDiscoverySettings(['provision_discovery_pool' => 'not-a-range']);
     }
+
+    public function testSaveSettingsActionChecksCsrfAndReturnsNoticeArray(): void
+    {
+        $badCsrf = PhoneDiscoveryService::saveSettingsAction([
+            'provision_discovery' => '1',
+            'provision_discovery_pool' => '5000-5001',
+        ], 'wrong-token');
+        $this->assertFalse($badCsrf['success']);
+
+        $badPool = PhoneDiscoveryService::saveSettingsAction([
+            'provision_discovery' => '1',
+            'provision_discovery_pool' => 'not-a-range',
+        ], self::CSRF);
+        $this->assertFalse($badPool['success']);
+        $this->assertStringContainsString('not-a-range', (string) ($badPool['error'] ?? ''));
+
+        $ok = PhoneDiscoveryService::saveSettingsAction([
+            'provision_discovery' => '1',
+            'provision_discovery_sweep' => '0',
+            'provision_discovery_networks' => '192.168.10.0/24',
+            'provision_discovery_pool' => '5000-5002',
+            'provision_discovery_models' => 'yealink=yealink-t46u',
+        ], self::CSRF);
+        $this->assertTrue($ok['success'], $ok['error'] ?? '');
+        $this->assertSame('5000,5001,5002', PhoneDiscoveryService::settings()['provision_discovery_pool']);
+    }
 }

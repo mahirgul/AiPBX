@@ -30,12 +30,16 @@ final class Fixtures
     private const TABLES = [
         'pbx_dids',
         'pbx_ivrs',
+        'pbx_ivr_entries',
         'pbx_queues',
         'pbx_trunks',
         'pbx_time_conditions',
         'pbx_announcements',
         'pbx_hangup_actions',
         'pbx_outbound_routes',
+        'pbx_phones',
+        'pbx_phones_waiting',
+        'pbx_phone_discoveries',
         'sip',
         'sys_pending_sync',
     ];
@@ -45,22 +49,48 @@ final class Fixtures
         self::productionGuard();
 
         $db = getDB();
+
+        // Release any uncommitted locks from a previous test that aborted
+        if ($db->inTransaction()) {
+            try {
+                $db->rollBack();
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
         $db->exec('SET FOREIGN_KEY_CHECKS=0');
         foreach (self::TABLES as $t) {
-            $db->exec("TRUNCATE TABLE `{$t}`");
+            // DELETE FROM is a DML operation that doesn't trigger DDL metadata lock timeouts
+            // or implicit commits, unlike TRUNCATE TABLE.
+            $db->exec("DELETE FROM `{$t}`");
         }
         $db->exec('SET FOREIGN_KEY_CHECKS=1');
 
         // Trunk: required columns trunk_name, title, ip_address.
+        // ON DUPLICATE KEY UPDATE ensures idempotence if any stale rows survive.
         $db->prepare(
             'INSERT INTO pbx_trunks
                 (trunk_name, title, ip_address, port, codecs, is_active, t38_support, send_caller_name)
-             VALUES (?, ?, ?, ?, ?, 1, 1, 0)'
+             VALUES (?, ?, ?, ?, ?, 1, 1, 0)
+             ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                ip_address = VALUES(ip_address),
+                port = VALUES(port),
+                codecs = VALUES(codecs),
+                is_active = 1,
+                t38_support = 1,
+                send_caller_name = 0'
         )->execute([self::TRUNK_NAME, 'Test Trunk', '192.0.2.10', 5060, 'alaw,ulaw']);
 
         // Queue: required columns queue_name, title.
         $db->prepare(
-            'INSERT INTO pbx_queues (queue_name, title, strategy, is_active) VALUES (?, ?, ?, 1)'
+            'INSERT INTO pbx_queues (queue_name, title, strategy, is_active)
+             VALUES (?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                strategy = VALUES(strategy),
+                is_active = 1'
         )->execute([self::QUEUE_NAME, 'Test Queue', 'ringall']);
 
         // IVR: required column title.
@@ -71,7 +101,12 @@ final class Fixtures
             'SELECT id FROM pbx_queues WHERE queue_name = ' . $db->quote(self::QUEUE_NAME)
         )->fetchColumn();
         $db->prepare(
-            'INSERT INTO pbx_dids (did_number, title, dest_type, dest_id) VALUES (?, ?, ?, ?)'
+            'INSERT INTO pbx_dids (did_number, title, dest_type, dest_id)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                dest_type = VALUES(dest_type),
+                dest_id = VALUES(dest_id)'
         )->execute([self::DID_NUMBER, 'Test DID', 'queue', $queueId]);
 
         // Two entities with an internal destination number — the
@@ -80,7 +115,12 @@ final class Fixtures
            ->execute(['1010', 'Test IVR']);
         $db->prepare(
             'INSERT INTO pbx_hangup_actions (action_key, title, action_type, internal_number, is_active)
-             VALUES (?, ?, ?, ?, 1)'
+             VALUES (?, ?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                action_type = VALUES(action_type),
+                internal_number = VALUES(internal_number),
+                is_active = 1'
         )->execute(['testbusy', 'Test Mesgul', 'busy', '1020']);
 
         // Outbound route: required columns route_name, match_pattern, trunks_json

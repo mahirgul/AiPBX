@@ -108,8 +108,7 @@ function buildRtpConf(): string
     // include_local_address keeps the private candidate for LAN clients.
     if ($local_ip !== '' && filter_var($extern_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && $extern_ip !== $local_ip) {
         $conf .= "\n[ice_host_candidates]\n";
-        $conf .= "include_local_address=yes\n";
-        $conf .= "{$local_ip} => {$extern_ip}\n";
+        $conf .= "{$local_ip} => {$extern_ip},include_local_address\n";
     }
 
     return $conf;

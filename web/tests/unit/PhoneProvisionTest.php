@@ -601,6 +601,12 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('yealink-t46u', PhoneProvisionService::modelFromText('yealink-t46u'));
         $this->assertSame('yealink-t46u', PhoneProvisionService::modelFromText('Yealink T46U'));
         $this->assertSame('grandstream-gxp2170', PhoneProvisionService::modelFromText('gxp2170'));
+        $this->assertSame('cisco-cm-7962g', PhoneProvisionService::modelFromText('cisco-cm-7962g'));
+        $this->assertSame('cisco-cm-7962g', PhoneProvisionService::modelFromText('Cisco 7962G'));
+        $this->assertSame('cisco-cm-7962g', PhoneProvisionService::modelFromText('7962G'));
+        $this->assertSame('cisco-cm-8861', PhoneProvisionService::modelFromText('Cisco 8861'));
+        $this->assertSame('cisco-cm-8861', PhoneProvisionService::modelFromText('8861'));
+        $this->assertSame('cisco-spa525g', PhoneProvisionService::modelFromText('Cisco SPA525G2'));
         $this->assertSame('', PhoneProvisionService::modelFromText('T99'));
     }
 

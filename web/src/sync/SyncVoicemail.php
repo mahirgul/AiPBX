@@ -40,9 +40,16 @@ function __syncVoicemailBody() {
         // The stock file ships sample mailboxes (1234, PIN 4242, in [default]):
         // anyone allowed the general voicemail code could log in to it.
         $vm_content = @file_get_contents($main_vm_conf);
-        $samples = '/^(1234 => 4242,Example Mailbox,root@localhost|1234@devices => 1234@default|1234 => 5678,Company2 User,root@localhost)\s*$/m';
-        if ($vm_content !== false && preg_match($samples, $vm_content)) {
-            @file_put_contents($main_vm_conf, preg_replace($samples, ';$1 ; sample mailbox, disabled by AiPBX', $vm_content));
+        if ($vm_content !== false) {
+            $samples = '/^(1234 => 4242,Example Mailbox,root@localhost|1234@devices => 1234@default|1234 => 5678,Company2 User,root@localhost)\s*$/m';
+            $cleaned = preg_replace($samples, ';$1 ; sample mailbox, disabled by AiPBX', $vm_content);
+            // Asterisk app_voicemail warns if maxsilence >= minsecs:
+            // ensure stock voicemail.conf entries do not conflict (minsecs=3, maxsilence=2).
+            $cleaned = preg_replace('/^[; ]*minsecs\s*=.*/m', 'minsecs=3', $cleaned);
+            $cleaned = preg_replace('/^[; ]*maxsilence\s*=.*/m', 'maxsilence=2', $cleaned);
+            if ($cleaned !== $vm_content) {
+                @file_put_contents($main_vm_conf, $cleaned);
+            }
         }
     }
     require_once dirname(__DIR__) . '/file_helper.php';

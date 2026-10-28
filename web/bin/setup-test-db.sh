@@ -41,6 +41,10 @@ mysql -e "INSERT IGNORE INTO \`$DB\`.sys_roles (role_key, role_name, description
 ('cc_manager', 'Queue manager', 'Queue manager', 1),
 ('user', 'User', 'User', 1);"
 
+mysql -e "INSERT IGNORE INTO \`$DB\`.sys_users
+(id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, is_active)
+VALUES (1, 'admin', '', 'Test Admin', 'admin@example.com', 'admin', '1000', 'sip', 'test-not-a-secret', 1);"
+
 echo ""
 echo "Ready: $DB"
 echo "Credentials: tests/.env.test (not in git)"
