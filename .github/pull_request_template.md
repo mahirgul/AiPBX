@@ -20,5 +20,5 @@ Fixes / relates to: #
 
 - [ ] This PR is about **one topic only** (no unrelated fixes, refactors or formatting changes mixed in)
 - [ ] No mass reformatting / renaming of code that the change does not need
-- [ ] Tests and linters from [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md#2-testing) pass locally
-- [ ] New user-facing texts are added in English (`web/lang/en.php`, `android/.../values/strings.xml`)
+- [ ] Tests and linters from [CONTRIBUTING.md](https://github.com/mahirgul/AiPBX/blob/main/CONTRIBUTING.md#2-testing) pass locally
+- [ ] New user-facing texts are added in English (`web/lang/en.php`)

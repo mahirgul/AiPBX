@@ -256,13 +256,14 @@ $filter_url = function (array $override) {
                                 <?php if ($dialed !== ''): ?>
                                     <div class="u-fw-700"><?php echo htmlspecialchars($dialed); ?></div>
                                 <?php endif; ?>
-                                <?php if (!empty($c['route'] ?? $c['queue_name'] ?? '')): ?>
-                                    <small class="u-muted" style="display: block; font-size: 11px;"><i class="fas fa-signs-post"></i> <?php echo htmlspecialchars($c['route'] ?? $c['queue_name']); ?></small>
+                                <?php $routeLabel = CdrReportRepository::formatRouteLabel($c['route'] ?? $c['queue_name'] ?? ''); ?>
+                                <?php if ($routeLabel !== ''): ?>
+                                    <small class="u-muted" style="display: block; font-size: 11px;"><i class="fas fa-signs-post"></i> <?php echo htmlspecialchars($routeLabel); ?></small>
                                 <?php endif; ?>
                                 <?php if (!empty($f['out_trunk'])): ?>
                                     <?php echo $chip('fa-right-from-bracket', $f['out_trunk_title'] . ($f['out_number'] !== '' && $f['out_number'] !== $dialed ? ' → ' . $f['out_number'] : ''), t('cdr_reports.out_trunk')); ?>
                                 <?php endif; ?>
-                                <?php if ($dialed === '' && empty($f['out_trunk']) && empty($c['route'] ?? $c['queue_name'] ?? '')): ?>
+                                <?php if ($dialed === '' && empty($f['out_trunk']) && $routeLabel === ''): ?>
                                     <span class="u-muted">-</span>
                                 <?php endif; ?>
                             </td>
