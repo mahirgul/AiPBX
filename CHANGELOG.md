@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.25
+
+- **Admin Documentation & Markdown Engine Hardening:**
+  - Fixed UTF-8 multibyte line-splitting flaw in `DocsService`: standard PCRE `\R` without `/u` treated byte `0x85` (the second byte of Greek upsilon `υ` / `\xCF\x85` and similar multibyte characters) as an isolated newline (NEL), inadvertently splitting words across lines. Switched to CommonMark-compliant `/\r\n|\r|\n/`.
+  - Prevented infinite loop in `DocsService::render()` when encountering non-table text starting with pipe (`|`) characters by guaranteeing paragraph loop consumption on the first line.
+  - Added regression test suite in `web/tests/unit/DocsServiceTest.php` verifying multibyte Greek characters and non-table pipes render correctly without stalling.
+- **Database Port Customization & Socket Fallback:**
+  - Added support for reading custom database ports via `DB_PORT` in `phinx.php`, `web/config.php`, and `PluginManager.php` (#142).
+  - Hardened local Unix socket fallback in `web/config.php` so custom ports (e.g. 3307 or forwarded ports) and remote hosts are not mistakenly forced to `/var/lib/mysql/mysql.sock`.
+- **Installer & Minimal Environment Robustness:**
+  - Added missing `curl` and `cron` package requirements to `install.sh` for minimal Linux installations, and enabled the `cron` service automatically (#141).
+  - Added `docker/web/aipbx-init.sh` first-boot provisioning script (#141).
+- **Internationalization (i18n) & Translation Standards:**
+  - Standardized Greek translations in `web/lang/el.php` for `provisioning` across discovery and phones management to `παραμετροποίηση` (#138).
+  - Added canonical terminology guide to `docs/translating.md` defining standardized terms across all 22 supported languages for core telephony concepts (`provisioning`, `discovery`, `extension`, `trunk`) (#140).
+
 ## 1.50.24
 
 - **CDR Reports & Multi-Language Support (i18n Compliance):**
