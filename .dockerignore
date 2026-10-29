@@ -1,0 +1,23 @@
+# The image copies two files from docker/ — the rest of the tree is only
+# context weight. The AiPBX source is cloned inside the container, so nothing
+# here ends up in the image.
+.git
+.github
+.env
+arenv
+src
+aipbx.git
+android
+ios
+chat
+ai
+docs
+sounds
+evidence
+node_modules
+**/node_modules
+web/vendor
+**/*.zip
+**/*.png
+**/*.jpg
+**/*.pdf
