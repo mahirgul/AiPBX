@@ -50,6 +50,32 @@ sudo bash install.sh
 Useful variables: `AIPBX_FQDN=pbx.example.com` (skip the domain prompt), `AIPBX_REF=main` (install the
 development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default `/opt/aipbx`).
 
+### Docker alternative
+
+Two compose deployments, same code:
+
+```bash
+# one container per tier: db, asterisk, web, signaling (+ optional ai),
+# plus two one-shots: init (schema, seed, admin, the RTP setting) and cfg
+# (the Asterisk config, once Asterisk is healthy); both exit when done
+# a portal update never restarts Asterisk, so it never drops a call
+git clone https://github.com/mahirgul/AiPBX.git && cd AiPBX
+./docker/gen-secrets.sh
+docker compose up -d --build
+```
+
+```bash
+# one container running this installer, for a quick testbed or a demo
+# (privileged; MariaDB and systemd live inside it)
+docker compose -f compose.allinone.yaml up -d --build
+```
+
+The split deployment is the recommended shape for anything carrying real calls: its services
+are separate images with separate lifecycles, and Asterisk is never touched by a web update. It is also younger — the 443 edge (nginx multiplexer, coturn) and the host-level admin
+pages are still the all-in-one's territory, which is why that one keeps running the real
+`install.sh`. Read [docker/README.md](docker/README.md) before either: topology, ports, volumes,
+what each deployment does and does not cover, and the post-install checklist.
+
 ### What the installer automates:
 1. **Interactive FQDN & TLS Provisioning**: Prompts for your domain. If your DNS is pointed to the server, it obtains a free **Let's Encrypt TLS** certificate via Certbot. If you do not have an active domain yet, it automatically provisions a secure **self-signed TLS certificate** with SAN support.
 2. **Dynamic Cryptographic Credentials**: Automatically generates unique, random secrets for:

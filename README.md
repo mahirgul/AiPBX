@@ -81,6 +81,27 @@ The installer:
 
 After installing, open `https://<your-server>` and log in with the admin credentials shown.
 
+### 🐳 Docker
+
+```bash
+# split deployment: db, asterisk, web, signaling (+ optional ai), plus two
+# one-shots — init (schema, seed, admin, the RTP setting) and cfg (the Asterisk
+# config, once Asterisk is healthy); both exit when done, and a web update
+# never restarts Asterisk, so it never drops a call
+git clone https://github.com/mahirgul/AiPBX.git && cd AiPBX
+./docker/gen-secrets.sh
+docker compose up -d --build
+```
+
+```bash
+# all-in-one: the real installer inside one container, for a testbed or a demo
+docker compose -f compose.allinone.yaml up -d --build
+```
+
+Read [docker/README.md](docker/README.md) first: the two deployments, why
+Asterisk gets host networking, what each one covers today, and what to configure
+after the first login.
+
 ### 📺 Video guides
 
 Narrated and with subtitles — on the [AiPBX YouTube channel](https://www.youtube.com/@aipbx):
