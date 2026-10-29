@@ -962,7 +962,10 @@ final class PluginManager
         $migPass = function_exists('portalEnv') ? (string)portalEnv('MIGRATOR_DB_PASS', '') : '';
         if ($migUser !== '' && $migPass !== '') {
             try {
-                $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+                // Same server and port as the portal: a plugin schema applied
+                // through the migrator user must reach the deployment's MariaDB,
+                // which is not necessarily on 3306 (DB_PORT).
+                $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
                 return new \PDO($dsn, $migUser, $migPass, [
                     \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
                     \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
