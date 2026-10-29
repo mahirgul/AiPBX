@@ -5,6 +5,23 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.24
+
+- **CDR Reports & Multi-Language Support (i18n Compliance):**
+  - Standardized `cdrs` SQL view (`web/db/migrations/20261029010000_standardize_cdrs_view_labels.php`) to generate canonical machine tokens (`fax_in`, `fax_out`, `internal`, `queue_call`, `did:...`) instead of hardcoded Turkish strings.
+  - Added `CdrReportRepository::formatRouteLabel()` to dynamically localize route and queue labels in the user's active language across all 23 supported languages in both the web portal and CSV exports, with full backwards compatibility for existing installations.
+- **Security & SecretBox Concurrency Hardening:**
+  - Implemented atomic file locking (`flock(LOCK_EX)`) during encryption key initialization in `web/src/secret_box.php`, eliminating race conditions when multiple processes start concurrently on uninitialized systems.
+  - Hardened Apache HTTP routing configuration in `install.sh` and `web/etc/apache2/aipbx-routing.conf.example` to deny direct access to developer files (`composer.*`, `phpunit.xml`, `phinx.php`, `phpstan.neon`, `.env*`) and the `tests/` directory.
+  - Strengthened system Content Security Policy (CSP) header with `base-uri 'self'` and `object-src 'none'`.
+- **System Scripts & Linter Polish:**
+  - Eliminated ShellCheck warnings and improved robustness in `install.sh`, `conf/sbin/aipbx-sounds`, `conf/sbin/aipbx-update`, `web/bin/process_incoming_fax.sh`, `web/bin/process_outgoing_fax_result.sh`, and `scripts/e2e/` scripts.
+  - Enhanced `web/bin/setup-test-db.sh` with automatic `sudo` and environment credential fallback for seamless local test runs.
+  - Removed lingering diagnostic `console.log` statements from the production WebRTC header softphone (`web/assets/js/header_phone.js`).
+- **Documentation & Navigation Polish:**
+  - Fixed 22 broken relative links in root `ROADMAP.md` and repaired links in `.github/pull_request_template.md`.
+  - Updated `ARCHITECTURE.md`, `AGENTS.md`, and `docs/translating.md` to cleanly point to decoupled native client repositories ([AiPBX-Android](https://github.com/mahirgul/AiPBX-Android) and [AiPBX-iOS](https://github.com/mahirgul/AiPBX-iOS)).
+
 ## 1.50.23
 
 - **Core Stability, Linter Acceleration & Test Automation:**
