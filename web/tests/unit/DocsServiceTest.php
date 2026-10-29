@@ -113,4 +113,18 @@ final class DocsServiceTest extends TestCase
         $this->assertSame('aipbx-selftest — Runs every health check', mb_substr(DocsService::plain('| `aipbx-selftest` | Runs every health check now |'), 0, 40));
         $this->assertSame('Start with aipbx-selftest and the *Health* page', DocsService::plain('**Start with** `aipbx-selftest` and the *Health* page'));
     }
+
+    public function testNonTablePipeAndUnicodeLineSplitDoesNotHang(): void
+    {
+        // An isolated pipe line without separator row should render as a paragraph without hanging.
+        $html = DocsService::render("| not a table |");
+        $this->assertStringContainsString('<p>| not a table |</p>', $html);
+
+        // Greek upsilon contains byte 0x85 (\xCF\x85) which standard PCRE \R without /u mistakes for a newline.
+        $greek = "| el | Παραμετροποιήθηκε | Ανακάλυψη |\n|---|---|---|\n| 1 | 2 | 3 |";
+        $rendered = DocsService::render($greek);
+        $this->assertStringContainsString('Παραμετροποιήθηκε', $rendered);
+        $this->assertStringContainsString('Ανακάλυψη', $rendered);
+        $this->assertStringContainsString('<table class="doc-table">', $rendered);
+    }
 }
