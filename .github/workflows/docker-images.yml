@@ -1,0 +1,71 @@
+name: Docker images
+
+# Nothing built the stack's images, so two breakages sat on this branch unnoticed:
+# the web image COPYed a file that lived in a separate PR, and the optional `ai`
+# profile could not resolve `ai/` at all because the root .dockerignore excludes
+# it. Both were found by running the build by hand. This job builds every image
+# compose.yaml defines — on the pull request's merge commit, so the result is the
+# tree that would actually land — and fails if a COPY or a context is wrong.
+#
+# The paths filter is deliberately narrow: these images only change with the
+# compose file, docker/ or the ignore file, and a Docker build is minutes.
+# `ai` is the long pole (ONNX, Vosk, CTranslate2), hence the job timeout.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'compose.yaml'
+      - 'docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker-images.yml'
+  pull_request:
+    paths:
+      - 'compose.yaml'
+      - 'docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker-images.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versions
+        run: |
+          docker version --format '{{.Server.Version}}'
+          docker compose version
+
+      # The stack reads its secrets from git-ignored files. This is the same
+      # generator a real deployment runs first, so the check follows that path
+      # rather than inventing its own values.
+      - name: Generate the deployment secrets
+        run: bash docker/gen-secrets.sh
+
+      - name: The compose file resolves
+        run: docker compose --profile ai config -q
+
+      - name: Build every image
+        run: docker compose --profile ai build
+
+      # `compose build` skips a service whose profile is inactive, and says
+      # nothing if a service was added without an image. Assert the four exist.
+      - name: Every image the stack defines exists
+        run: |
+          missing=0
+          for img in aipbx-web aipbx-asterisk aipbx-signaling aipbx-ai; do
+            if docker image inspect "$img:latest" >/dev/null 2>&1; then
+              printf '  ok      %s:latest\n' "$img"
+            else
+              printf '  MISSING %s:latest\n' "$img"
+              missing=1
+            fi
+          done
+          exit "$missing"
