@@ -200,7 +200,7 @@ function getDB() {
     if ($pdo === null) {
         try {
             $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
-            if (file_exists('/var/lib/mysql/mysql.sock')) {
+            if ((DB_HOST === 'localhost' || DB_HOST === '127.0.0.1') && DB_PORT === '3306' && file_exists('/var/lib/mysql/mysql.sock')) {
                 $dsn = 'mysql:unix_socket=/var/lib/mysql/mysql.sock;dbname=' . DB_NAME . ';charset=utf8mb4';
             }
             $pdo = new PDO($dsn, DB_USER, DB_PASS, [
