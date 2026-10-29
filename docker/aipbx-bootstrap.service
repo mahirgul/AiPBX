@@ -1,0 +1,18 @@
+[Unit]
+Description=AiPBX first-boot installer (runs install.sh once inside the container)
+# install.sh starts and enables services with systemctl, so systemd has to be
+# up before it runs — this is not an entrypoint script for that reason.
+After=multi-user.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/aipbx-bootstrap
+RemainAfterExit=yes
+# The first boot takes 10–30 minutes; the script itself copies its output to
+# the container's stdout so `docker compose logs -f` follows it (systemd's
+# journal alone does not reach Docker's log sink).
+TimeoutStartSec=3600
+
+[Install]
+WantedBy=multi-user.target
