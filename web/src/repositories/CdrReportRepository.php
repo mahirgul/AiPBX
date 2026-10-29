@@ -161,6 +161,28 @@ class CdrReportRepository extends BaseRepository
         return $map;
     }
 
+    /**
+     * Translates system CDR route / queue labels into the user's active language.
+     * Handles both standardized keys and legacy SQL view strings.
+     */
+    public static function formatRouteLabel(?string $label): string
+    {
+        if ($label === null || $label === '') {
+            return '';
+        }
+        return match ($label) {
+            'fax_in', 'Gelen Faks' => t('cdr_reports.leg_fax_in'),
+            'fax_out', 'Giden Faks' => t('cdr_reports.leg_fax_out'),
+            'internal', 'Dahili Görüşme' => t('cdr_reports.dir_internal'),
+            'queue_call', 'Kuyruk Çağrısı' => t('cdr_reports.queue'),
+            default => str_starts_with($label, 'Gelen Rota: ')
+                ? (t('sidebar.item_did_routes') . ': ' . substr($label, 12))
+                : (str_starts_with($label, 'did:')
+                    ? (t('sidebar.item_did_routes') . ': ' . substr($label, 4))
+                    : $label),
+        };
+    }
+
     public static function analyzer(): CdrCallAnalyzer
     {
         [$userMap] = static::getLookupMaps();

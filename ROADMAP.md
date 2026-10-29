@@ -14,11 +14,11 @@ large projects.
 
 | Item | Where |
 |---|---|
-| Trunk limits: calls per minute and channels (inbound and outbound together), health alarm *Trunk limits* | Trunks → Routing; [Trunks](trunks.md#limits) |
-| Voicemail limits and PIN rules | PBX settings → Voicemail; [Voicemail](voicemail.md) |
+| Trunk limits: calls per minute and channels (inbound and outbound together), health alarm *Trunk limits* | Trunks → Routing; [Trunks](docs/trunks.md#limits) |
+| Voicemail limits and PIN rules | PBX settings → Voicemail; [Voicemail](docs/voicemail.md) |
 | IVR menu repeat on no key; queue position and periodic announcements | IVR and queue forms |
 | Spoken busy / no answer / unreachable messages (early media) | PBX settings → Ringtone |
-| Night dialling protection | Dial permissions; [Security](security.md#toll-fraud) |
+| Night dialling protection | Dial permissions; [Security](docs/security.md#toll-fraud) |
 
 All of them are off (or unchanged) until switched on.
 
@@ -26,12 +26,12 @@ All of them are off (or unchanged) until switched on.
 
 | Item | Where |
 |---|---|
-| Scheduled tasks: sandboxed shell, PHP, Python background scripts | System → Scheduled tasks; [Scheduled tasks](scheduled-tasks.md) |
-| External database connections: encrypted MySQL/PostgreSQL storage & test | Integrations → Database connections; [External databases](external-databases.md) |
-| IVR data step: caller lookup via external DB or HTTP API | PBX → IVR Data Steps; [IVR data steps](external-databases.md#ivr-data-steps) |
-| Carrier format & dialled number normalisation per trunk | Trunks → edit; [Trunks](trunks.md#carrier-dialled-number-format) |
-| PBX fine tuning: per-trunk DTMF, session timers, 100rel, T.38, jitter buffer tuning, SIP timers, night restart, SIP debug | PBX settings → Tuning & Ops; [PBX fine tuning](pbx-tuning.md), [Trunks](trunks.md#media-and-signaling) |
-| Failed-registration threshold alarm (an Asterisk-side ACL is still open) | Health checks → Failed Registrations; [Health checks](health.md#checks), [PBX tuning](pbx-tuning.md#failed-registration-alarm) |
+| Scheduled tasks: sandboxed shell, PHP, Python background scripts | System → Scheduled tasks; [Scheduled tasks](docs/scheduled-tasks.md) |
+| External database connections: encrypted MySQL/PostgreSQL storage & test | Integrations → Database connections; [External databases](docs/external-databases.md) |
+| IVR data step: caller lookup via external DB or HTTP API | PBX → IVR Data Steps; [IVR data steps](docs/external-databases.md#ivr-data-steps) |
+| Carrier format & dialled number normalisation per trunk | Trunks → edit; [Trunks](docs/trunks.md#carrier-dialled-number-format) |
+| PBX fine tuning: per-trunk DTMF, session timers, 100rel, T.38, jitter buffer tuning, SIP timers, night restart, SIP debug | PBX settings → Tuning & Ops; [PBX fine tuning](docs/pbx-tuning.md), [Trunks](docs/trunks.md#media-and-signaling) |
+| Failed-registration threshold alarm (an Asterisk-side ACL is still open) | Health checks → Failed Registrations; [Health checks](docs/health.md#checks), [PBX tuning](docs/pbx-tuning.md#failed-registration-alarm) |
 
 All of them are off (or unchanged) until switched on.
 
@@ -97,7 +97,7 @@ Example: "enter your customer number" → look up the customer → route VIP cus
 #### 2.4 Number normalisation
 
 - Numbers dialled by extensions in different forms (0532…, +90532…, 90532…) become one form before
-  route matching; partly done in [Call normalisation](call-normalization.md), to be finished there.
+  route matching; partly done in [Call normalisation](docs/call-normalization.md), to be finished there.
 - Per trunk: the form each carrier wants (strip +90, add 0, a prefix) and the caller ID format, on the
   trunk page.
 
@@ -189,23 +189,23 @@ Also waiting: per-domain apply of pending changes (#120).
 |---|------|-------|------|
 | 1 | [Website call widget](#1-website-call-widget) and WordPress plugin | [#14](https://github.com/mahirgul/AiPBX/issues/14) | large |
 | 2 | [Delete chat messages and attachments](#2-delete-chat-messages-and-attachments) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
-| 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): done, see [File storage](file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | done |
-| 4 | [Video calls](#4-video-calls): web phone, Android and desk video phones done (1.22), see [Video calls](video-calls.md); iOS open | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
-| 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning): steps 0–1 in [Local AI models](local-ai.md) | | large, in steps |
+| 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): done, see [File storage](docs/file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | done |
+| 4 | [Video calls](#4-video-calls): web phone, Android and desk video phones done (1.22), see [Video calls](docs/video-calls.md); iOS open | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
+| 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning): steps 0–1 in [Local AI models](docs/local-ai.md) | | large, in steps |
 | 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
 | 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
-| 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](network-services.md) | | medium |
+| 10 | [DHCP and TFTP management](#10-dhcp-and-tftp-management): first version in [Network services](docs/network-services.md) | | medium |
 | 11 | [Visual IVR editor](#11-visual-ivr-editor) (later) | [#16](https://github.com/mahirgul/AiPBX/issues/16) | large |
-| 12 | [Server address change in one step](#12-server-address-change-in-one-step): done (1.33.0), see [Network settings](network-settings.md) | | done |
+| 12 | [Server address change in one step](#12-server-address-change-in-one-step): done (1.33.0), see [Network settings](docs/network-settings.md) | | done |
 | 13 | [Network settings page](#13-network-settings-page): done (1.33.0) except changing the server's own address (netplan) | | medium |
 | 14 | [Menu reorganisation](#14-menu-reorganisation): done (1.33.0) | | done |
 
-Done recently: website call widget with the call-back form and a WordPress plugin ([Website call widget](web-widgets.md)); phone provisioning with key layouts (1.7.0, [Phones](phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
+Done recently: website call widget with the call-back form and a WordPress plugin ([Website call widget](docs/web-widgets.md)); phone provisioning with key layouts (1.7.0, [Phones](docs/phones.md)); deleting chat messages and the `_.` dialplan clean-up (1.7.0); busy lamps on desk phones for colleagues, do-not-disturb, forwarding and queue login, BLF pickup and the voicemail lamp (1.6.5–1.6.6, see [Busy lamps](docs/blf.md)); e-mail templates (1.6.0), Android full-screen calls, call history clean-up and
 notification reply (1.6.0), show password (1.6.1), Google sign-in fix and "Forgot your password?"
 (1.6.2), help contact on the sign-in page (1.6.3), 23 languages for all new texts (1.6.4). See the
-[CHANGELOG](../CHANGELOG.md).
+[CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -550,7 +550,7 @@ place, and seeing the changes before Apply. Until then keys are edited in the IV
 ## 12. Server address change in one step
 
 **Done in 1.33.0**: health check *Server address*, *Network settings → Apply new address* and
-`sudo aipbx-readdress`; see [Network settings](network-settings.md). Planned 2026-10-16. Today the server's IP address is written into many places, at install time or
+`sudo aipbx-readdress`; see [Network settings](docs/network-settings.md). Planned 2026-10-16. Today the server's IP address is written into many places, at install time or
 by hand, and nothing notices when it changes (a new DHCP lease, a move to another network, a
 cloned VM). Calls then break in ways that are hard to trace: TURN has no audio, desk phones
 register to the old address, the portal's certificate no longer matches.

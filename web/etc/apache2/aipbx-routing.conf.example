@@ -4,11 +4,12 @@
 # then copy this file to /etc/apache2/conf-available/aipbx-routing.conf,
 # run `a2enconf aipbx-routing` and reload Apache. (install.sh does this for you.)
 #
-# src/, vendor/, db/, and bin/ are intentionally denied from direct HTTP
+# src/, vendor/, db/, bin/, and tests/ are intentionally denied from direct HTTP
 # access — src/ is the application layer (only ever require()'d server-side
 # by index.php), vendor/ holds Composer packages, db/ holds migrations plus
-# phinx.php (which reads DB credentials), and bin/ holds CLI-only maintenance
-# scripts (e.g. lint_lang.php). None of these should ever be served directly.
+# phinx.php (which reads DB credentials), bin/ holds CLI-only maintenance
+# scripts (e.g. lint_lang.php), and tests/ holds test fixtures. None of these
+# should ever be served directly.
 
 <Directory "/var/www/html">
     DirectoryIndex index.php
@@ -16,12 +17,23 @@
     AllowOverride All
     Require all granted
 
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/api/(v1|plugins)(/|$)
     RewriteRule ^(api|assets|modules)(/|$) - [L]
+    RewriteRule ^chat/(ws|api|media)(/|$) - [L]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [QSA,L]
 </Directory>
+
+<FilesMatch "\.aab$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "(composer\.(json|lock)|phpunit\.xml|phinx\.php|phpstan(\.dist)?\.neon|\.env(\..+)?)$">
+    Require all denied
+</FilesMatch>
 
 <Directory "/var/www/html/src">
     Options -Indexes
@@ -42,6 +54,12 @@
 </Directory>
 
 <Directory "/var/www/html/bin">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory "/var/www/html/tests">
     Options -Indexes
     AllowOverride None
     Require all denied

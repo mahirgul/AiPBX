@@ -30,19 +30,36 @@ final class SecretBox
             return self::$key = hash_hkdf('sha256', $env, SODIUM_CRYPTO_SECRETBOX_KEYBYTES, 'aipbx-settings');
         }
         $file = self::KEY_FILE;
-        $raw = is_readable($file) ? (string) file_get_contents($file) : '';
+        $raw = is_readable($file) ? (string) @file_get_contents($file) : '';
         if (strlen($raw) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
-            $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
             $dir = dirname($file);
             $canWrite = file_exists($file) ? is_writable($file) : (is_dir($dir) && is_writable($dir));
             if ($canWrite) {
                 $old = umask(0077);
-                $ok = @file_put_contents($file, $raw, LOCK_EX);
-                umask($old);
-                if ($ok === false) {
-                    error_log('[SecretBox] WARNING: could not persist key to ' . $file . '; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
+                $fp = @fopen($file, 'c+');
+                if ($fp !== false && flock($fp, LOCK_EX)) {
+                    $existing = stream_get_contents($fp);
+                    if (is_string($existing) && strlen($existing) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+                        $raw = $existing;
+                    } else {
+                        $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+                        ftruncate($fp, 0);
+                        rewind($fp);
+                        fwrite($fp, $raw);
+                        fflush($fp);
+                    }
+                    flock($fp, LOCK_UN);
+                    fclose($fp);
+                } else {
+                    if ($fp !== false) {
+                        fclose($fp);
+                    }
+                    $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+                    error_log('[SecretBox] WARNING: could not lock and persist key to ' . $file . '; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
                 }
+                umask($old);
             } else {
+                $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
                 error_log('[SecretBox] WARNING: ' . $file . ' is not writable; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
             }
         }

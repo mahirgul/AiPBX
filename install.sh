@@ -1146,6 +1146,10 @@ cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
     Require all denied
 </FilesMatch>
 
+<FilesMatch "(composer\.(json|lock)|phpunit\.xml|phinx\.php|phpstan(\.dist)?\.neon|\.env(\..+)?)$">
+    Require all denied
+</FilesMatch>
+
 <Directory "/var/www/html/src">
     Require all denied
 </Directory>
@@ -1156,6 +1160,9 @@ cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
     Require all denied
 </Directory>
 <Directory "/var/www/html/bin">
+    Require all denied
+</Directory>
+<Directory "/var/www/html/tests">
     Require all denied
 </Directory>
 ROUTING
@@ -1169,7 +1176,7 @@ cat > /etc/apache2/conf-available/aipbx-security.conf << 'SECHDR'
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set Content-Security-Policy "frame-ancestors 'self'"
+    Header always set Content-Security-Policy "frame-ancestors 'self'; base-uri 'self'; object-src 'none'"
     Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
     # Brand files uploaded by the admin (may be SVG): the regex clean-up can be
     # bypassed, so no script may ever run in an SVG opened directly.

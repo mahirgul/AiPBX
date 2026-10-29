@@ -196,7 +196,7 @@ class CdrReportController extends BaseController
                 $f['caller_name'] ?? '',
                 $f['in_trunk_title'] ?? '',
                 $f['dialed_number'] ?? '',
-                $c['route'] ?? ($c['queue_name'] ?? ''),
+                CdrReportRepository::formatRouteLabel($c['route'] ?? ($c['queue_name'] ?? '')),
                 $f['out_trunk_title'] ?? '',
                 $f['out_number'] ?? '',
                 $c['agent_extension'] ?? '',
