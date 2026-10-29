@@ -536,6 +536,13 @@ PACKAGES=(
   certbot
   python3-certbot-apache
   openssl
+  # Health checks (Admin -> Health checks) shell out to curl; a minimal
+  # Ubuntu image does not have it, and the check then reports a false FAIL.
+  curl
+  # Reads /etc/cron.d/aipbx (queue sync, the 02:30 backup, phone discovery,
+  # retention). Ubuntu server images ship it; a minimal one — a cloud image,
+  # the container — does not, and then every scheduled job silently never runs.
+  cron
   avahi-daemon
   avahi-utils
   dnsmasq-base
@@ -2260,6 +2267,15 @@ systemctl is-active --quiet nginx      && echo -e "  ✅ Nginx    : ${GREEN}runn
 systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC} (80 / 8443 Backend)"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
 systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}running${NC}"  || echo -e "  ⚠️  coturn   : ${YELLOW}not running${NC}"
 systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
+echo ""
+
+# A crontab nobody reads is worse than none: the nightly backup, phone discovery
+# and retention would stop without a word. Starting the daemon is this script's
+# job, not the package's — on a container the enablement lives on the /etc
+# volume, which an image built without cron never seeded, so `apt-get install`
+# alone leaves it installed and never run. Last, once the scripts the jobs call
+# are in place, so cron's first minute is not a page of "not found".
+systemctl enable --now cron >/dev/null 2>&1 || warn "cron did not start — scheduled backups, phone discovery and retention will not run"
 echo ""
 
 # Self test (Admin -> Health checks): what this install set up, checked from the outside.
