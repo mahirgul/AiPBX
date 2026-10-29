@@ -124,7 +124,7 @@ class DocsService
         foreach (self::list() as $doc) {
             $anchor = '';
             $hits = [];
-            foreach (preg_split('/\R/', (string) self::source($doc['name'])) ?: [] as $line) {
+            foreach (preg_split('/\r\n|\r|\n/', (string) self::source($doc['name'])) ?: [] as $line) {
                 if (preg_match('/^#{1,6}\s+(.+)$/', $line, $m)) {
                     $anchor = self::slug($m[1]);
                 }
@@ -189,7 +189,7 @@ class DocsService
 
     public static function render(string $markdown): string
     {
-        $lines = preg_split('/\R/', $markdown) ?: [];
+        $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
         $html = '';
         $n = count($lines);
         for ($i = 0; $i < $n;) {
@@ -265,8 +265,8 @@ class DocsService
                 $html .= $block;
                 continue;
             }
-            // Paragraph: until a blank line or the start of another block.
-            $para = [];
+            // Paragraph: consume first line, then subsequent lines until a blank line or another block.
+            $para = [trim($lines[$i++])];
             for (; $i < $n; $i++) {
                 $l = $lines[$i];
                 if (trim($l) === '' || preg_match('/^(#{1,6}\s|\s*```|\s*>|\s*([-*+]|\d+[.)])\s+|\s*\|)/', $l)) {
