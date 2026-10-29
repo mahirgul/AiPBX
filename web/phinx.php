@@ -8,6 +8,15 @@
  * never be able to change the schema; this split is a deliberate security
  * boundary. This file is closed to direct access from the web server (see
  * /etc/apache2/conf-available/aipbx-routing.conf — /var/www/html/db Require all denied).
+ *
+ * The PORT is read, not assumed. The compose deployment publishes MariaDB on
+ * 127.0.0.1:${AIPBX_DB_PORT} and hands that value to every service as DB_PORT
+ * (docker/README.md), so a fixed 3306 here meant `phinx migrate` connected to
+ * nothing at all on any host that had to move the port. The same precedence as
+ * config.php applies — environment, then env file — because a migration must
+ * run against the server the portal is going to use, not a second guess at it.
+ * The env file itself follows AIPBX_ENV_FILE when set (aipbx-init.sh writes it
+ * to that path), so a deployment that relocates it still migrates.
  */
 
 function phinxLoadEnv($path = null) {
@@ -28,7 +37,21 @@ function phinxLoadEnv($path = null) {
     return $env;
 }
 
-$env = phinxLoadEnv();
+/**
+ * One setting: the environment first, then the env file, then $default.
+ * Deployment variables are visible to the process (compose sets them) and are
+ * also written into the env file; the environment wins, exactly like
+ * portalEnv() in config.php.
+ */
+function phinxSetting(array $env, string $key, $default = '') {
+    $v = getenv($key);
+    if ($v === false || $v === '') {
+        $v = $env[$key] ?? null;
+    }
+    return ($v === null || $v === '') ? $default : $v;
+}
+
+$env = phinxLoadEnv(getenv('AIPBX_ENV_FILE') ?: null);
 
 return [
     'paths' => [
@@ -40,11 +63,12 @@ return [
         'default_environment' => 'production',
         'production' => [
             'adapter' => 'mysql',
-            'host' => $env['DB_HOST'] ?? 'localhost',
-            'name' => $env['DB_NAME'] ?? 'asterisk',
-            'user' => $env['MIGRATOR_DB_USER'] ?? '',
-            'pass' => $env['MIGRATOR_DB_PASS'] ?? '',
-            'port' => 3306,
+            'host' => phinxSetting($env, 'DB_HOST', 'localhost'),
+            'name' => phinxSetting($env, 'DB_NAME', 'asterisk'),
+            'user' => phinxSetting($env, 'MIGRATOR_DB_USER'),
+            'pass' => phinxSetting($env, 'MIGRATOR_DB_PASS'),
+            // The deployment's port (DB_PORT), not MariaDB's default.
+            'port' => (int) phinxSetting($env, 'DB_PORT', 3306),
             'charset' => 'utf8mb4',
         ],
         // Isolated test database (used by bin/setup-test-db.sh).
@@ -56,7 +80,7 @@ return [
             'name' => getenv('DB_NAME') ?: 'asterisk_test',
             'user' => getenv('DB_USER') ?: '',
             'pass' => getenv('DB_PASS') ?: '',
-            'port' => 3306,
+            'port' => (int) (getenv('DB_PORT') ?: 3306),
             'charset' => 'utf8mb4',
         ],
     ],
