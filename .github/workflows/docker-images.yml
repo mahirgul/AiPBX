@@ -1,0 +1,105 @@
+name: Docker images
+
+# Nothing used to build these images, which is how two breakages reached a branch
+# unnoticed: the stack's web image COPYed a file that lived in a separate pull
+# request, and its optional `ai` profile could not resolve `ai/` because the root
+# .dockerignore excludes it. Both surfaced only when someone ran a build by hand.
+#
+# The two Docker shapes live in different pull requests, so the steps are
+# conditional on what the tree carries: the per-tier stack (#127) is built when
+# compose.yaml is present, the all-in-one testbed (#144) when compose.allinone.yaml
+# is. This file is identical on both branches, so whichever merges first, the
+# other merge is a no-op rather than a conflict.
+#
+# The paths filter is deliberately narrow — these images only change with the
+# compose files, docker/ or the ignore file — and `ai` is the long pole (ONNX,
+# Vosk, CTranslate2), hence the job timeout.
+
+on:
+  push:
+    branches: [ main ]
+    paths: &shapes
+      - 'compose.yaml'
+      - 'compose.allinone.yaml'
+      - 'docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker-images.yml'
+  pull_request:
+    paths: *shapes
+  workflow_dispatch:
+
+concurrency:
+  group: docker-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versions
+        run: |
+          docker version --format '{{.Server.Version}}'
+          docker compose version
+
+      - name: Which shapes does this tree carry?
+        id: shapes
+        run: |
+          if [ -f compose.yaml ];           then echo 'stack=true'    >> "$GITHUB_OUTPUT"; else echo 'stack=false'    >> "$GITHUB_OUTPUT"; fi
+          if [ -f compose.allinone.yaml ];  then echo 'allinone=true' >> "$GITHUB_OUTPUT"; else echo 'allinone=false' >> "$GITHUB_OUTPUT"; fi
+          cat "$GITHUB_OUTPUT"
+
+      # ---------------------------------------------------------------- stack
+      # The stack reads its secrets from git-ignored files. This is the same
+      # generator a real deployment runs first, so the check follows that path
+      # rather than inventing its own values.
+      - name: Generate the deployment secrets
+        if: steps.shapes.outputs.stack == 'true'
+        run: bash docker/gen-secrets.sh
+
+      - name: The stack's compose file resolves
+        if: steps.shapes.outputs.stack == 'true'
+        run: docker compose --profile ai config -q
+
+      # The `ai` profile has to be named explicitly or compose leaves it out
+      # without a word, which is how the context bug below it went unseen.
+      - name: Build every image the stack defines
+        if: steps.shapes.outputs.stack == 'true'
+        run: docker compose --profile ai build
+
+      # `compose build` also says nothing if a service was added without an
+      # image, so assert the four exist rather than trusting the exit code.
+      - name: Every stack image exists
+        if: steps.shapes.outputs.stack == 'true'
+        run: |
+          missing=0
+          for img in aipbx-web aipbx-asterisk aipbx-signaling aipbx-ai; do
+            if docker image inspect "$img:latest" >/dev/null 2>&1; then
+              printf '  ok      %s:latest\n' "$img"
+            else
+              printf '  MISSING %s:latest\n' "$img"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      # ------------------------------------------------------------ all-in-one
+      - name: Build the all-in-one image
+        if: steps.shapes.outputs.allinone == 'true'
+        run: docker build -f docker/Dockerfile -t aipbx-allinone:ci .
+
+      # The image is only useful if the two COPYs landed and the bootstrap is
+      # executable — that is what turns install.sh into a first-boot action.
+      - name: The all-in-one image carries its bootstrap
+        if: steps.shapes.outputs.allinone == 'true'
+        run: |
+          docker image inspect aipbx-allinone:ci >/dev/null
+          docker run --rm --entrypoint /bin/sh aipbx-allinone:ci -c '
+            set -e
+            test -x /usr/local/sbin/aipbx-bootstrap
+            test -f /etc/systemd/system/aipbx-bootstrap.service
+            command -v systemctl >/dev/null
+            printf "  bootstrap ok, systemd present\n"
+          '
