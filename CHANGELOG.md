@@ -5,6 +5,27 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.27
+
+- **Linux Kernel & Network Sysctl Optimization:**
+  - Added dedicated `/etc/sysctl.d/99-aipbx.conf` kernel tuning in `install.sh` applied automatically on both fresh installations and upgrades (`aipbx-update`):
+    - `net.core.rmem_max` & `wmem_max = 16777216` (16 MB buffer limits to absorb massive UDP burst traffic without dropped packets).
+    - `net.core.netdev_max_backlog = 10000` (deep interface queue to withstand simultaneous VoIP invite bursts).
+    - `net.core.somaxconn = 4096` (connection listen backlog for high-density WebRTC/WSS signaling).
+    - `vm.swappiness = 10`, `vm.dirty_ratio = 10`, `vm.dirty_background_ratio = 5` (preserves RAM for media processing and eliminates disk write stalls).
+- **Systemd Priority & Memory Protection:**
+  - Configured Asterisk systemd unit drop-in in `/etc/systemd/system/asterisk.service.d/aipbx.conf` with:
+    - `Nice=-10` (elevated CPU scheduling priority to ensure real-time audio packet dispatch under host load).
+    - `OOMScoreAdjust=-500` (protects Asterisk from Linux Out-Of-Memory killer termination during high memory load or AI inference).
+  - Bumped `ASTERISK_RESTART_EPOCH` from 1 to 2 in `install.sh` so `aipbx-update` restarts Asterisk and immediately activates the new systemd scheduling and OOM parameters.
+- **VoIP & WebRTC Media Integrity:**
+  - Blacklisted and dynamically unloaded kernel SIP ALG modules (`nf_conntrack_sip`, `nf_nat_sip`) in `/etc/modprobe.d/aipbx-blacklist-sip.conf` to prevent kernel-level mangling of SIP headers and WebRTC SDP payloads.
+  - Added `rtpkeepalive = 5` in `asterisk-config/rtp.conf` and `web/src/sync/SyncRtpSettings.php` to prevent stateful NAT routers and firewalls from dropping inactive RTP audio streams.
+- **Config & Security Hardening (Phase 1 Audit):**
+  - Corrected Portuguese ISO code typo (`'pr'` -> `'pt'`) in `web/config.php` `LANGUAGE_LABELS`.
+  - Added explicit error logging in `setSystemSetting` (`web/config.php`) when database writes fail, preventing silent suppression of critical configuration updates.
+  - Added regression test `testLanguageLabelsIncludesPortuguesePt()` in `web/tests/unit/PbxFineTuningTest.php`.
+
 ## 1.50.26
 
 - **Asterisk Core & High-Concurrency Performance Tuning:**
