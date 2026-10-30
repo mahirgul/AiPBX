@@ -86,7 +86,11 @@ function __syncTransportsBody() {
     $conf .= "[system]\n";
     $conf .= "type=system\n";
     $conf .= "timer_t1={$timer_t1}\n";
-    $conf .= "timer_b={$timer_b}\n\n";
+    $conf .= "timer_b={$timer_b}\n";
+    $conf .= "threadpool_initial_size=10\n";
+    $conf .= "threadpool_auto_increment=5\n";
+    $conf .= "threadpool_idle_timeout=60\n";
+    $conf .= "threadpool_max_size=500\n\n";
 
     $conf .= "[global]\n";
     $conf .= "type=global\n";

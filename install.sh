@@ -808,6 +808,21 @@ cat > /etc/logrotate.d/aipbx-fax << 'ROT'
     create 0640 asterisk adm
 }
 ROT
+
+cat > /etc/logrotate.d/asterisk << 'ROT'
+/var/log/asterisk/*.log /var/log/asterisk/*_log {
+    daily
+    maxsize 50M
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /usr/sbin/invoke-rc.d asterisk logger-reload > /dev/null 2>&1 || asterisk -rx "logger reload" > /dev/null 2>&1 || true
+    endscript
+}
+ROT
 chmod 755 "$(dirname "$INSTALL_DIR")" "$INSTALL_DIR"
 
 ok "Directory structure created"
@@ -1563,7 +1578,7 @@ for f in "$INSTALL_DIR/asterisk-config/pbx/"*.conf; do
     [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
 done
 
-for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf; do
+for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf stasis.conf dnsmgr.conf; do
     if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
@@ -1632,6 +1647,11 @@ if [[ -f /etc/asterisk/asterisk.conf ]]; then
         sed -i "s/^;*defaultlanguage\s*=.*/defaultlanguage = ${SPOKEN_LANG}/" /etc/asterisk/asterisk.conf
     else
         echo "defaultlanguage = ${SPOKEN_LANG}" >> /etc/asterisk/asterisk.conf
+    fi
+    if grep -q "maxfiles" /etc/asterisk/asterisk.conf; then
+        sed -i "s/^;*maxfiles\s*=.*/maxfiles = 65536/" /etc/asterisk/asterisk.conf
+    elif grep -q "^\[options\]" /etc/asterisk/asterisk.conf; then
+        sed -i "/^\[options\]/a maxfiles = 65536" /etc/asterisk/asterisk.conf
     fi
     if ! grep -q "^\[files\]" /etc/asterisk/asterisk.conf; then
         cat >> /etc/asterisk/asterisk.conf << 'EOF'
@@ -1734,6 +1754,7 @@ After=mariadb.service
 
 [Service]
 UMask=0002
+LimitNOFILE=65536
 UNIT
 systemctl daemon-reload
 
