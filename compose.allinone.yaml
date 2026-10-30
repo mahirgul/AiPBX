@@ -1,0 +1,112 @@
+# AiPBX in one container — the quick testbed, not the production shape.
+#
+#   docker compose -f compose.allinone.yaml up -d --build
+#   docker compose -f compose.allinone.yaml logs -f aipbx
+#
+# The real installer (install.sh) runs unchanged on first boot and configures
+# the whole host inside this container: Asterisk, MariaDB, Apache, the 443
+# multiplexer, coturn, Postfix, cron and their units. That makes it the fastest
+# way to get a working PBX on a laptop, and it is how the project is demoed.
+#
+# It is *not* how a PBX should be run in production, and compose.yaml is the
+# alternative: one container per tier, so a portal update never restarts
+# Asterisk and media never passes through Docker's userland proxy. See
+# docker/README.md for the trade-offs and where the split stack is not (yet)
+# feature-complete.
+#
+# Host ports can be moved with the AIPBX_* variables (or a .env file next to
+# this file) when something else already holds 80/443/5060.
+name: aipbx-allinone
+
+services:
+  aipbx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: aipbx:latest
+    container_name: aipbx
+    hostname: aipbx
+
+    # Not optional: install.sh configures a host. MariaDB needs CAP_SYS_ADMIN
+    # inside the container and systemd needs the host's cgroup hierarchy.
+    # docker/README.md says plainly what that means for the machine.
+    privileged: true
+    cgroup: host
+    stop_signal: SIGRTMIN+3
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      # The whole host-side configuration lives in /etc (secrets in
+      # /etc/ai-pbx.env, Asterisk, Apache, the 443 multiplexer, the units). A
+      # named volume is seeded from the image on first use and then belongs to
+      # the deployment, so a rebuilt image does not lose the install.
+      - aipbx-etc:/etc
+      # The source checkout (git, so `aipbx-update` works inside the container).
+      - aipbx-src:/opt/aipbx
+      - aipbx-mysql:/var/lib/mysql
+      - aipbx-spool:/var/spool/asterisk
+      # Sounds, music on hold (the custom class is yours) and the Asterisk keys.
+      - aipbx-asterisk:/var/lib/asterisk
+      # Received and sent faxes (the portal and Asterisk both write here).
+      - aipbx-faxes:/var/www/faxes
+      - aipbx-state:/var/lib/aipbx
+      - aipbx-logs:/var/log/aipbx
+
+    environment:
+      # The installer's own switch: a .local name means self-signed TLS and no
+      # questions, which is what makes a first boot unattended. A public FQDN
+      # here would need a reachable 80/443 for Let's Encrypt.
+      AIPBX_FQDN: ${AIPBX_FQDN:-aipbx.local}
+      # Empty = the newest release tag (like the curl installer). main, a tag
+      # or a commit is honoured.
+      AIPBX_REF: ${AIPBX_REF:-}
+      # What the first boot clones: a fork works, and so does a mirror. The
+      # source volume at /opt/aipbx is what `aipbx-update` then updates.
+      AIPBX_REPO: ${AIPBX_REPO:-https://github.com/mahirgul/AiPBX.git}
+      # The UDP window published below. It is also written into the portal's
+      # RTP setting and rtp.conf on first boot: both sides must agree or calls
+      # have no audio. Widen both if you need more concurrent calls.
+      AIPBX_RTP_RANGE: ${AIPBX_RTP_RANGE:-10000-10199}
+
+    ports:
+      # HTTP portal (Apache; the 443 multiplexer redirects here).
+      - "${AIPBX_HTTP_PORT:-80}:80/tcp"
+      # HTTPS + WSS + TURNS, ALPN-multiplexed by nginx inside the container.
+      - "${AIPBX_HTTPS_PORT:-443}:443/tcp"
+      # WebSocket for the browser phone, direct from Asterisk.
+      - "${AIPBX_WS_PORT:-8089}:8089/tcp"
+      # SIP: UDP (the default for desk phones), TCP, and TLS.
+      - "${AIPBX_SIP_PORT:-5060}:5060/udp"
+      - "${AIPBX_SIP_TCP_PORT:-5060}:5060/tcp"
+      - "${AIPBX_SIP_TLS_PORT:-5061}:5061/tcp"
+      # RTP media. Kept identical on both sides: Docker runs a proxy process
+      # per published UDP port, so a 3000-port range would be 3000 processes.
+      - "${AIPBX_RTP_RANGE:-10000-10199}:${AIPBX_RTP_RANGE:-10000-10199}/udp"
+      # Optional: STUN on 3478/udp for WebRTC clients that do not use the 443
+      # multiplexer, and TURN over UDP 5349 (before the multiplexer moves it).
+      # - "3478:3478/udp"
+
+    # "Installed" is the honest readiness signal: the portal answers before the
+    # installer has finished, and the installer takes as long as apt does.
+    healthcheck:
+      test: ["CMD", "test", "-f", "/var/lib/aipbx/.installed"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45m
+
+    restart: unless-stopped
+
+volumes:
+  aipbx-etc:
+  aipbx-src:
+  aipbx-mysql:
+  aipbx-spool:
+  aipbx-asterisk:
+  aipbx-faxes:
+  aipbx-state:
+  aipbx-logs:
