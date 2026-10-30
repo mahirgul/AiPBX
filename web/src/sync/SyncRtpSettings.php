@@ -71,6 +71,7 @@ function buildRtpConf(): string
     $conf .= "probation=8\n";
     $conf .= "rtptimeout=60\n";
     $conf .= "rtpholdtimeout=300\n";
+    $conf .= "rtpkeepalive=5\n";
     $conf .= "tos=ef\n";
     $conf .= "cos=6\n";
     if ($local_ip !== '') {
