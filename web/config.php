@@ -261,7 +261,9 @@ function setSystemSetting(string $key, string $value): void {
         $db = getDB();
         $stmt = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
         $stmt->execute([$key, $value]);
-    } catch (\Throwable $e) {}
+    } catch (\Throwable $e) {
+        error_log("setSystemSetting failed for {$key}: " . $e->getMessage());
+    }
 }
 
 /**
@@ -299,7 +301,7 @@ const LANGUAGE_LABELS = [
     'ja' => '日本語 (ja)',
     'ru' => 'Русский (ru)',
     'sv' => 'Svenska (sv)',
-    'pr' => 'Português (pr)',
+    'pt' => 'Português (pt)',
     'pt_BR' => 'Português - Brasil (pt_BR)',
 ];
 

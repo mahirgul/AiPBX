@@ -156,4 +156,11 @@ final class PbxFineTuningTest extends TestCase
         $old = 'SecurityEvent="InvalidPassword",EventTV="' . date('Y-m-d\\TH:i:s.000O', time() - 3600) . '"';
         $this->assertSame(1, HealthChecks::countRecentFailures($line . "\n" . $old, time() - 900), 'only the last 15 minutes count');
     }
+
+    public function testLanguageLabelsIncludesPortuguesePt(): void
+    {
+        $this->assertArrayHasKey('pt', LANGUAGE_LABELS);
+        $this->assertSame('Português (pt)', LANGUAGE_LABELS['pt']);
+        $this->assertArrayNotHasKey('pr', LANGUAGE_LABELS, 'pr was a typo for pt');
+    }
 }
