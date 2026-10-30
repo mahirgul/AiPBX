@@ -61,7 +61,7 @@ fi
 # when it and asterisk-config/ are unchanged, Asterisk is only reloaded and
 # calls in progress stay up.
 # shellcheck disable=SC2034 # Read externally by scripts/asterisk-restart-needed.sh from git tree
-ASTERISK_RESTART_EPOCH=1
+ASTERISK_RESTART_EPOCH=2
 
 # --- Bounded waits: a stall must become an error, not a 45-minute silence ---
 # On 2026-10-26 the install test sat inside `install.sh` until the job timeout
@@ -1755,8 +1755,35 @@ After=mariadb.service
 [Service]
 UMask=0002
 LimitNOFILE=65536
+Nice=-10
+OOMScoreAdjust=-500
 UNIT
 systemctl daemon-reload
+
+# Kernel sysctl tuning for real-time VoIP, high UDP burst, and WebRTC
+mkdir -p /etc/sysctl.d
+cat > /etc/sysctl.d/99-aipbx.conf << 'SYSCTL'
+# Managed by AiPBX: VoIP & Asterisk high-concurrency kernel network tuning
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.core.rmem_default = 1048576
+net.core.wmem_default = 1048576
+net.core.netdev_max_backlog = 10000
+net.core.somaxconn = 4096
+vm.swappiness = 10
+vm.dirty_background_ratio = 5
+vm.dirty_ratio = 10
+SYSCTL
+sysctl --system >/dev/null 2>&1 || sysctl -p /etc/sysctl.d/99-aipbx.conf >/dev/null 2>&1 || true
+
+# Disable Linux kernel SIP ALG (nf_conntrack_sip/nf_nat_sip) which corrupts VoIP/WebRTC SDP
+mkdir -p /etc/modprobe.d
+cat > /etc/modprobe.d/aipbx-blacklist-sip.conf << 'MOD'
+# Managed by AiPBX: disable kernel SIP ALG modules that corrupt VoIP/WebRTC SDP
+blacklist nf_conntrack_sip
+blacklist nf_nat_sip
+MOD
+modprobe -r nf_nat_sip nf_conntrack_sip 2>/dev/null || true
 
 # needrestart (unattended-upgrades) restarted Asterisk after library updates
 # at 06:35 and dropped the calls in progress. Asterisk is left out; it picks
