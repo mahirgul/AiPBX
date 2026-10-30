@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.26
+
+- **Asterisk Core & High-Concurrency Performance Tuning:**
+  - Resolved taskprocessor queue backlog warnings (`stasis/pool-control reached 500 tasks`) during mass reloads by increasing Stasis threadpool capacity in `asterisk-config/stasis.conf` (`max_size = 500`, `initial_size = 10`, `idle_timeout_sec = 60`).
+  - Raised Asterisk process open files limit from the Linux default 1024 to 65,536 files via `asterisk-config/asterisk.conf` (`maxfiles = 65536`) and systemd service override `LimitNOFILE=65536` in `install.sh`, preventing `socket(): Too many open files` errors under high concurrent call volume.
+  - Enabled asynchronous managed DNS lookups in `asterisk-config/dnsmgr.conf` (`enable = yes`, `refreshinterval = 300`) to prevent temporary DNS resolution stalls from blocking PJSIP distributor threads.
+  - Scaled PJSIP threadpool capacity to 500 threads in `web/src/sync/SyncTransports.php` `[system]` section (`threadpool_max_size = 500`, `threadpool_initial_size = 10`), avoiding SIP registration timeouts during burst registrations.
+  - Expanded Asterisk database connection pool in `asterisk-config/res_odbc.conf` (`max_connections => 30` for `[asterisk]`, `50` for `[general]`), eliminating CDR and queue log write contention on busy call centers.
+- **Log Rotation & Disk Protection Policy:**
+  - Integrated hardened Asterisk logrotate configuration in `install.sh` (`/etc/logrotate.d/asterisk`) with daily rotation, 50MB ceiling (`maxsize 50M`), 14-day history retention, and automatic gzip compression, preventing `security.log` and `messages.log` from exhausting disk space.
+
 ## 1.50.25
 
 - **Admin Documentation & Markdown Engine Hardening:**
