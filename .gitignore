@@ -106,3 +106,7 @@ RAPOR*.md
 /REPORT*.md
 /*_RAPOR*.md
 rapor/
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
