@@ -101,7 +101,8 @@ class InboundBlacklistController extends BaseController
      */
     private static function handleCsvImport(): array
     {
-        if (empty($_FILES['csv_file']['tmp_name']) || !is_uploaded_file($_FILES['csv_file']['tmp_name'])) {
+        $tmp = (string)($_FILES['csv_file']['tmp_name'] ?? '');
+        if ($tmp === '' || (!is_uploaded_file($tmp) && (PHP_SAPI !== 'cli' || !file_exists($tmp)))) {
             return ['message' => '', 'error' => t('blacklist.err_no_file', 'Lütfen geçerli bir CSV dosyası seçin.')];
         }
 
@@ -114,11 +115,23 @@ class InboundBlacklistController extends BaseController
         $imported = 0;
         $skipped = 0;
 
-        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+        $firstLine = fgets($handle);
+        $delimiter = ',';
+        if ($firstLine !== false) {
+            $commaCount = substr_count($firstLine, ',');
+            $semiCount = substr_count($firstLine, ';');
+            if ($semiCount > $commaCount) {
+                $delimiter = ';';
+            }
+            rewind($handle);
+        }
+
+        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
             if (!isset($row[0]) || trim((string)$row[0]) === '') {
                 continue;
             }
             $num = trim((string)$row[0]);
+            $num = preg_replace('/^\xEF\xBB\xBF/', '', $num) ?? $num;
             // Skip header if present
             if (strcasecmp($num, 'number') === 0 || strcasecmp($num, 'numara') === 0) {
                 continue;

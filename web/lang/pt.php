@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'O nome de utilizador e o nome completo são obrigatórios!',
     'srv_user.err_username_taken' => 'O nome de utilizador \'%s\' já está em uso!',
     'srv_user.err_ext_taken' => 'A extensão %s está atribuída a outro utilizador!',
+    'srv_user.err_email_invalid' => 'Por favor, introduza um endereço de e-mail válido!',
+    'srv_user.err_email_taken' => 'O endereço de e-mail \'%s\' já está atribuído a outro utilizador!',
     'srv_user.err_role' => 'Função de sistema inválida: \'%s\'',
     'srv_user.err_last_admin_role' => 'A função da última conta de administrador ativa não pode ser alterada nem desativada! Torne primeiro outro utilizador administrador.',
     'srv_user.updated' => 'Utilizador \'%s\' atualizado!',

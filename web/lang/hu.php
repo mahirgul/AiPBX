@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'A felhasználónév és a teljes név megadása kötelező!',
     'srv_user.err_username_taken' => 'A(z) \'%s\' felhasználónév már foglalt!',
     'srv_user.err_ext_taken' => 'A(z) %s mellék egy másik felhasználóhoz van rendelve!',
+    'srv_user.err_email_invalid' => 'Kérjük, adjon meg egy érvényes e-mail címet!',
+    'srv_user.err_email_taken' => 'A(z) \'%s\' e-mail cím már hozzá van rendelve egy másik felhasználóhoz!',
     'srv_user.err_role' => 'Érvénytelen rendszerszerepkör: \'%s\'',
     'srv_user.err_last_admin_role' => 'Az utolsó aktív admin fiók szerepköre nem módosítható és nem tiltható le! Előbb tegyen admin jogúvá egy másik felhasználót.',
     'srv_user.updated' => 'A(z) \'%s\' felhasználó frissítve!',

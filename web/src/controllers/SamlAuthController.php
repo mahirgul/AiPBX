@@ -104,7 +104,11 @@ class SamlAuthController extends BaseController
         }
 
         // Web login session
-        SamlAuthService::loginUserSession($user);
+        $redirectUrl = SamlAuthService::loginUserSession($user);
+        if ($redirectUrl === '/force-reset') {
+            static::redirect('/force-reset');
+            return;
+        }
 
         notify(sprintf(t('saml.welcome', 'Welcome, %s! Signed in via SAML 2.0 SSO.'), htmlspecialchars((string)$user['full_name'])), 'success');
 

@@ -207,8 +207,30 @@ final class OidcAuthTest extends TestCase
         $this->assertSame(99999, $_SESSION['user_id']);
         $this->assertSame('sso_tester', $_SESSION['username']);
         $this->assertSame('admin', $_SESSION['user_role']);
+        $this->assertSame('admin', $_SESSION['role']);
         $this->assertSame('oidc', $_SESSION['auth_method']);
+        $this->assertSame('oidc', $_SESSION['auth_provider']);
+        $this->assertSame('both', $_SESSION['allowed_phone_mode']);
         $this->assertSame('/dashboard', $redirect);
+    }
+
+    public function testLoginUserRedirectsToForceResetWhenMustResetPassword(): void
+    {
+        $_SESSION = [];
+        $fakeUser = [
+            'id'                  => 88888,
+            'username'            => 'reset_needed',
+            'full_name'           => 'Reset User',
+            'role'                => 'user',
+            'extension'           => '',
+            'email'               => 'reset@example.com',
+            'must_reset_password' => 1,
+        ];
+
+        $redirect = OidcAuthService::loginUser($fakeUser, '127.0.0.1');
+        $this->assertSame('/force-reset', $redirect);
+        $this->assertSame(88888, $_SESSION['pending_reset_user_id']);
+        $this->assertArrayNotHasKey('user_id', $_SESSION);
     }
 
     public function testAutoProvisionInvalidRoleFallsBackToUser(): void

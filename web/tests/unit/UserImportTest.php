@@ -123,4 +123,34 @@ final class UserImportTest extends TestCase
         $this->assertFalse($res['success']);
         $this->assertStringContainsString('is assigned to another user', $res['error']);
     }
+
+    public function testSaveUserRejectsInvalidEmail(): void
+    {
+        $res = UserService::saveUser([
+            'csrf_token' => 'test-token',
+            'username' => 'csvtest_badmail',
+            'full_name' => 'Bad Mail',
+            'email' => 'invalid-email-format',
+            'password' => self::tempSecret(),
+            'role' => 'cc_agent',
+        ]);
+        $this->assertFalse($res['success']);
+        $this->assertNotEmpty($res['error']);
+    }
+
+    public function testSaveUserRejectsDuplicateEmail(): void
+    {
+        $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, is_active) VALUES ('csvtest_orig', 'x', 'Orig', 'dup_check@example.com', 'cc_agent', 1)")->execute();
+
+        $res = UserService::saveUser([
+            'csrf_token' => 'test-token',
+            'username' => 'csvtest_dup',
+            'full_name' => 'Dup',
+            'email' => 'DUP_CHECK@EXAMPLE.COM',
+            'password' => self::tempSecret(),
+            'role' => 'cc_agent',
+        ]);
+        $this->assertFalse($res['success']);
+        $this->assertStringContainsString('dup_check@example.com', mb_strtolower((string)$res['error']));
+    }
 }

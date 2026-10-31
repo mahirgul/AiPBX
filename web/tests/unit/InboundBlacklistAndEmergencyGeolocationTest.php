@@ -184,4 +184,44 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         $this->assertStringContainsString('exten => 911,1,NoOp(Outbound Call via Route Unit_Emergency_Test', $conf);
         $this->assertStringContainsString('same => n,Set(__AIPBX_GEOLOCATION_URI=<geo:39.9334,32.8597>)', $conf);
     }
+
+    public function testInboundBlacklistCsvImportWithSemicolonAndBom(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/core/BaseController.php';
+        require_once dirname(__DIR__, 2) . '/src/controllers/InboundBlacklistController.php';
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'bl_csv_');
+        $csvContent = "\xEF\xBB\xBFnumara;aciklama;eylem\r\n08509990001;Spam A;busy\r\n08509990002;Spam B;drop\r\n";
+        file_put_contents($tempFile, $csvContent);
+
+        $_FILES['csv_file'] = [
+            'tmp_name' => $tempFile,
+            'name' => 'test.csv',
+            'error' => UPLOAD_ERR_OK,
+            'size' => strlen($csvContent),
+        ];
+        $_POST['default_action'] = 'busy';
+
+        $ref = new ReflectionMethod(InboundBlacklistController::class, 'handleCsvImport');
+        $ref->setAccessible(true);
+        /** @var array{message: string, error: string} $res */
+        $res = $ref->invoke(null);
+
+        $this->assertEmpty($res['error']);
+        $this->assertStringContainsString('2', $res['message']);
+
+        $entry1 = InboundBlacklistRepository::findByNumber('08509990001');
+        $this->assertNotNull($entry1);
+        $this->assertSame('Spam A', $entry1['title']);
+        $this->assertSame('busy', $entry1['block_action']);
+
+        $entry2 = InboundBlacklistRepository::findByNumber('08509990002');
+        $this->assertNotNull($entry2);
+        $this->assertSame('Spam B', $entry2['title']);
+        $this->assertSame('drop', $entry2['block_action']);
+
+        @unlink($tempFile);
+        $this->db->exec("DELETE FROM pbx_inbound_blacklist WHERE number IN ('08509990001', '08509990002')");
+        unset($_FILES['csv_file'], $_POST['default_action']);
+    }
 }

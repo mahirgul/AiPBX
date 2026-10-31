@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Käyttäjätunnus ja koko nimi vaaditaan!',
     'srv_user.err_username_taken' => 'Käyttäjätunnus \'%s\' on jo käytössä!',
     'srv_user.err_ext_taken' => 'Alanumero %s on määritetty toiselle käyttäjälle!',
+    'srv_user.err_email_invalid' => 'Anna kelvollinen sähköpostiosoite!',
+    'srv_user.err_email_taken' => 'Sähköpostiosoite \'%s\' on jo määritetty toiselle käyttäjälle!',
     'srv_user.err_role' => 'Virheellinen järjestelmärooli: \'%s\'',
     'srv_user.err_last_admin_role' => 'Viimeisen aktiivisen ylläpitäjätilin roolia ei voi muuttaa eikä tiliä poistaa käytöstä! Tee ensin toisesta käyttäjästä ylläpitäjä.',
     'srv_user.updated' => 'Käyttäjä \'%s\' päivitetty!',

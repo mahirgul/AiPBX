@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Nazwa użytkownika oraz imię i nazwisko są wymagane!',
     'srv_user.err_username_taken' => 'Nazwa użytkownika \'%s\' jest już używana!',
     'srv_user.err_ext_taken' => 'Numer wewnętrzny %s jest przypisany do innego użytkownika!',
+    'srv_user.err_email_invalid' => 'Wprowadź prawidłowy adres e-mail!',
+    'srv_user.err_email_taken' => 'Adres e-mail \'%s\' jest już przypisany do innego użytkownika!',
     'srv_user.err_role' => 'Nieprawidłowa rola systemowa: \'%s\'',
     'srv_user.err_last_admin_role' => 'Nie można zmienić roli ani wyłączyć ostatniego aktywnego konta administratora! Najpierw nadaj uprawnienia administratora innemu użytkownikowi.',
     'srv_user.updated' => 'Użytkownik \'%s\' zaktualizowany!',

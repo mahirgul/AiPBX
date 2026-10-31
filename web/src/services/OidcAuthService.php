@@ -630,16 +630,41 @@ class OidcAuthService
             session_start();
         }
 
+        if (!empty($user['must_reset_password'])) {
+            session_regenerate_id(true);
+            $_SESSION['pending_reset_user_id'] = $user['id'];
+            unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
+            if (function_exists('logLoginAttempt')) {
+                logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');
+            }
+            if (function_exists('writeAuditLog')) {
+                writeAuditLog(
+                    'security',
+                    'sys_users',
+                    (string)$user['id'],
+                    "User '{$user['username']}' signed in with OIDC SSO, required to reset password.",
+                    'oidc_login',
+                    (int)$user['id']
+                );
+            }
+            return '/force-reset';
+        }
+
         session_regenerate_id(true);
 
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['full_name'] = $user['full_name'];
         $_SESSION['user_role'] = $user['role'];
+        $_SESSION['role'] = $user['role'];
         $_SESSION['extension'] = $user['extension'] ?? '';
+        $_SESSION['extension_type'] = $user['extension_type'] ?? '';
+        $_SESSION['allowed_phone_mode'] = $user['allowed_phone_mode'] ?? 'both';
         $_SESSION['last_activity'] = time();
         $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
+        $_SESSION['language'] = $user['language_preference'] ?? 'tr';
         $_SESSION['auth_method'] = 'oidc';
+        $_SESSION['auth_provider'] = 'oidc';
 
         $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
             ? $user['language_preference']

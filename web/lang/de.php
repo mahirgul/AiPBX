@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Benutzername und vollständiger Name sind erforderlich!',
     'srv_user.err_username_taken' => 'Der Benutzername \'%s\' wird bereits verwendet!',
     'srv_user.err_ext_taken' => 'Die Nebenstelle %s ist einem anderen Benutzer zugewiesen!',
+    'srv_user.err_email_invalid' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein!',
+    'srv_user.err_email_taken' => 'Die E-Mail-Adresse \'%s\' ist bereits einem anderen Benutzer zugewiesen!',
     'srv_user.err_role' => 'Ungültige Systemrolle: \'%s\'',
     'srv_user.err_last_admin_role' => 'Die Rolle des letzten aktiven Admin-Kontos kann nicht geändert oder deaktiviert werden! Machen Sie zuerst einen anderen Benutzer zum Admin.',
     'srv_user.updated' => 'Benutzer \'%s\' aktualisiert!',

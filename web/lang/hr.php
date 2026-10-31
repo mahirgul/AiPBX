@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Korisničko ime i ime i prezime su obavezni!',
     'srv_user.err_username_taken' => 'Korisničko ime \'%s\' već se koristi!',
     'srv_user.err_ext_taken' => 'Lokal %s dodijeljen je drugom korisniku!',
+    'srv_user.err_email_invalid' => 'Unesite valjanu adresu e-pošte!',
+    'srv_user.err_email_taken' => 'Adresa e-pošte \'%s\' već je dodijeljena drugom korisniku!',
     'srv_user.err_role' => 'Nevažeća uloga u sustavu: \'%s\'',
     'srv_user.err_last_admin_role' => 'Uloga zadnjeg aktivnog administratorskog računa ne može se promijeniti niti se račun može onemogućiti! Najprije drugog korisnika postavite za administratora.',
     'srv_user.updated' => 'Korisnik \'%s\' je ažuriran!',

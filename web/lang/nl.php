@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Gebruikersnaam en volledige naam zijn verplicht!',
     'srv_user.err_username_taken' => 'De gebruikersnaam \'%s\' is al in gebruik!',
     'srv_user.err_ext_taken' => 'Toestel %s is aan een andere gebruiker toegewezen!',
+    'srv_user.err_email_invalid' => 'Voer een geldig e-mailadres in!',
+    'srv_user.err_email_taken' => 'Het e-mailadres \'%s\' is al toegewezen aan een andere gebruiker!',
     'srv_user.err_role' => 'Ongeldige systeemrol: \'%s\'',
     'srv_user.err_last_admin_role' => 'De rol van het laatste actieve beheerdersaccount kan niet worden gewijzigd of uitgeschakeld! Maak eerst een andere gebruiker beheerder.',
     'srv_user.updated' => 'Gebruiker \'%s\' bijgewerkt!',

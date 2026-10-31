@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'İstifadəçi adı və tam ad tələb olunur!',
     'srv_user.err_username_taken' => '\'%s\' istifadəçi adı artıq istifadə olunur!',
     'srv_user.err_ext_taken' => '%s daxili nömrəsi başqa istifadəçiyə təyin edilib!',
+    'srv_user.err_email_invalid' => 'Zəhmət olmasa düzgün bir e-poçt ünvanı daxil edin!',
+    'srv_user.err_email_taken' => '\'%s\' e-poçt ünvanı artıq başqa bir istifadəçiyə təyin edilib!',
     'srv_user.err_role' => 'Yanlış sistem rolu: \'%s\'',
     'srv_user.err_last_admin_role' => 'Son aktiv admin hesabının rolu dəyişdirilə və ya deaktiv edilə bilməz! Əvvəlcə başqa istifadəçini admin edin.',
     'srv_user.updated' => '\'%s\' istifadəçisi yeniləndi!',

@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Användarnamn och fullständigt namn krävs!',
     'srv_user.err_username_taken' => 'Användarnamnet \'%s\' används redan!',
     'srv_user.err_ext_taken' => 'Anknytning %s är tilldelad en annan användare!',
+    'srv_user.err_email_invalid' => 'Ange en giltig e-postadress!',
+    'srv_user.err_email_taken' => 'E-postadressen \'%s\' är redan tilldelad en annan användare!',
     'srv_user.err_role' => 'Ogiltig systemroll: \'%s\'',
     'srv_user.err_last_admin_role' => 'Rollen för det sista aktiva admin-kontot kan inte ändras eller inaktiveras! Gör först en annan användare till admin.',
     'srv_user.updated' => 'Användaren \'%s\' har uppdaterats!',

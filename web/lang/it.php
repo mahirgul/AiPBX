@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Nome utente e nome completo sono obbligatori!',
     'srv_user.err_username_taken' => 'Il nome utente \'%s\' è già in uso!',
     'srv_user.err_ext_taken' => 'L\'interno %s è assegnato a un altro utente!',
+    'srv_user.err_email_invalid' => 'Inserisci un indirizzo e-mail valido!',
+    'srv_user.err_email_taken' => 'L\'indirizzo e-mail \'%s\' è già assegnato a un altro utente!',
     'srv_user.err_role' => 'Ruolo di sistema non valido: \'%s\'',
     'srv_user.err_last_admin_role' => 'Non è possibile modificare il ruolo o disattivare l\'ultimo account amministratore attivo! Nomini prima amministratore un altro utente.',
     'srv_user.updated' => 'Utente \'%s\' aggiornato!',
