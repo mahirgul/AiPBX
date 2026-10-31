@@ -64,6 +64,7 @@ class Capture:
         self.queue: list = []
         self.lock = threading.Lock()
         self.stop = threading.Event()
+        self.ready = threading.Event()
         self.stats = {"received": 0, "parsed": 0, "dropped": 0, "wrong_source": 0}
         self.allowed_source = "127.0.0.1"
 
@@ -121,12 +122,19 @@ def serve(listen: str = "", source_check: bool = True, store: Store = None,
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if hasattr(socket, "SO_REUSEPORT"):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except OSError:
+            pass
     try:
         sock.bind((host, port))
     except OSError as exc:
+        sock.close()
         LOG.error("cannot listen on %s:%d: %s", host, port, exc)
         return 1
     sock.settimeout(0.5)
+    capture.ready.set()
 
     def stop(signum, _frame):
         LOG.info("signal %d: stopping", signum)
