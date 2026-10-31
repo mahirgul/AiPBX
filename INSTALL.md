@@ -1,6 +1,6 @@
 # AI PBX — Installation & Deployment Guide
 
-This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
+This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS+**, **Debian 13+**, and **64-bit Raspberry Pi OS / Armbian** (x86_64 & aarch64/ARM64).
 
 > 📺 **Prefer to watch?** The installation step by step, narrated and subtitled:
 > [English](https://www.youtube.com/watch?v=lH1-k_z5jFE) · [Türkçe](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) ·
