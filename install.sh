@@ -1773,6 +1773,9 @@ net.core.somaxconn = 4096
 vm.swappiness = 10
 vm.dirty_background_ratio = 5
 vm.dirty_ratio = 10
+# Security: disable Linux MPTCP (MultiPath TCP) at kernel level
+# Mitigates CVE-2026-98432 and eliminates exposure to MPTCP subflow attacks
+net.mptcp.enabled = 0
 SYSCTL
 sysctl --system >/dev/null 2>&1 || sysctl -p /etc/sysctl.d/99-aipbx.conf >/dev/null 2>&1 || true
 
@@ -1855,6 +1858,7 @@ Type=simple
 User=www-data
 WorkingDirectory=${INSTALL_DIR}/chat
 EnvironmentFile=/etc/ai-pbx.env
+Environment="GODEBUG=multipathtcp=0"
 ExecStart=${INSTALL_DIR}/chat/aipbx-chat
 Restart=always
 RestartSec=3
