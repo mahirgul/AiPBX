@@ -88,7 +88,9 @@ class TwoFactorLoginController extends BaseController
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['full_name'] = $user['full_name'];
                     $_SESSION['user_role'] = $user['role'];
+                    $_SESSION['role'] = $user['role'];
                     $_SESSION['extension'] = $user['extension'];
+                    $_SESSION['last_activity'] = time();
                     $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
                     $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
                         ? $user['language_preference']

@@ -249,6 +249,8 @@ final class TwoFactorCoverageTest extends TestCase
         $this->assertSame($this->testUserId, $_SESSION['user_id']);
         $this->assertSame('zz_cov_2fa_7901', $_SESSION['username']);
         $this->assertSame('admin', $_SESSION['user_role']);
+        $this->assertSame('admin', $_SESSION['role']);
+        $this->assertGreaterThan(0, $_SESSION['last_activity']);
         $this->assertSame('7901', $_SESSION['extension']);
         $this->assertArrayNotHasKey('pending_2fa_user_id', $_SESSION);
         $this->assertArrayNotHasKey('pending_2fa_failures', $_SESSION);

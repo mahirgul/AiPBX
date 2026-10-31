@@ -899,10 +899,24 @@ XML;
      *
      * @param array<string, mixed> $user
      */
-    public static function loginUserSession(array $user): void
+    public static function loginUserSession(array $user): string
     {
         if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
             @session_start();
+        }
+
+        if (!empty($user['must_reset_password'])) {
+            session_regenerate_id(true);
+            $_SESSION['pending_reset_user_id'] = $user['id'];
+            unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
+            $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            if (function_exists('logLoginAttempt')) {
+                logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');
+            }
+            if (function_exists('logSecurityEvent')) {
+                logSecurityEvent('saml_login_reset_required', "SAML SSO login for {$user['username']}, password reset required");
+            }
+            return '/force-reset';
         }
 
         session_regenerate_id(true);
@@ -921,14 +935,12 @@ XML;
             ? $user['language_preference']
             : (defined('DEFAULT_UI_LANGUAGE') ? DEFAULT_UI_LANGUAGE : 'tr');
         $_SESSION['auth_provider'] = 'saml';
+        $_SESSION['auth_method'] = 'saml';
         $_SESSION['last_activity'] = time();
 
         unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
         $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-        $db = getDB();
-        $stmt = $db->prepare('UPDATE sys_users SET last_login = NOW(), last_ip = ? WHERE id = ?');
-        $stmt->execute([$clientIp, $user['id']]);
 
         if (function_exists('logLoginAttempt')) {
             logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');
@@ -937,5 +949,7 @@ XML;
         if (function_exists('logSecurityEvent')) {
             logSecurityEvent('saml_login_success', "SAML SSO login for {$user['username']} ({$user['email']}) from {$clientIp}");
         }
+
+        return '';
     }
 }

@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Numele de utilizator și numele complet sunt obligatorii!',
     'srv_user.err_username_taken' => 'Numele de utilizator \'%s\' este deja folosit!',
     'srv_user.err_ext_taken' => 'Interiorul %s este alocat altui utilizator!',
+    'srv_user.err_email_invalid' => 'Vă rugăm să introduceți o adresă de e-mail validă!',
+    'srv_user.err_email_taken' => 'Adresa de e-mail \'%s\' este deja atribuită unui alt utilizator!',
     'srv_user.err_role' => 'Rol de sistem nevalid: \'%s\'',
     'srv_user.err_last_admin_role' => 'Rolul ultimului cont de administrator activ nu poate fi schimbat sau dezactivat! Faceți mai întâi alt utilizator administrator.',
     'srv_user.updated' => 'Utilizatorul \'%s\' a fost actualizat!',

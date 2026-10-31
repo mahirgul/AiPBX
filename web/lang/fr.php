@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Le nom d\'utilisateur et le nom complet sont obligatoires !',
     'srv_user.err_username_taken' => 'Le nom d\'utilisateur \'%s\' est déjà utilisé !',
     'srv_user.err_ext_taken' => 'Le poste %s est attribué à un autre utilisateur !',
+    'srv_user.err_email_invalid' => 'Veuillez saisir une adresse e-mail valide !',
+    'srv_user.err_email_taken' => 'L\'adresse e-mail \'%s\' est déjà attribuée à un autre utilisateur !',
     'srv_user.err_role' => 'Rôle système invalide : \'%s\'',
     'srv_user.err_last_admin_role' => 'Le rôle du dernier compte administrateur actif ne peut être ni modifié ni désactivé ! Nommez d\'abord un autre utilisateur administrateur.',
     'srv_user.updated' => 'Utilisateur \'%s\' mis à jour !',

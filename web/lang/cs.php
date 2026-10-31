@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Uživatelské jméno a celé jméno jsou povinné!',
     'srv_user.err_username_taken' => 'Uživatelské jméno \'%s\' se již používá!',
     'srv_user.err_ext_taken' => 'Linka %s je přiřazena jinému uživateli!',
+    'srv_user.err_email_invalid' => 'Zadejte prosím platnou e-mailovou adresu!',
+    'srv_user.err_email_taken' => 'E-mailová adresa \'%s\' je již přiřazena jinému uživateli!',
     'srv_user.err_role' => 'Neplatná systémová role: \'%s\'',
     'srv_user.err_last_admin_role' => 'Roli posledního aktivního administrátorského účtu nelze změnit ani jej deaktivovat! Nejprve udělejte administrátorem jiného uživatele.',
     'srv_user.updated' => 'Uživatel \'%s\' byl aktualizován!',

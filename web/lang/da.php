@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => 'Brugernavn og fulde navn er påkrævet!',
     'srv_user.err_username_taken' => 'Brugernavnet \'%s\' er allerede i brug!',
     'srv_user.err_ext_taken' => 'Lokalnummer %s er tildelt en anden bruger!',
+    'srv_user.err_email_invalid' => 'Indtast venligst en gyldig e-mailadresse!',
+    'srv_user.err_email_taken' => 'E-mailadressen \'%s\' er allerede tildelt en anden bruger!',
     'srv_user.err_role' => 'Ugyldig systemrolle: \'%s\'',
     'srv_user.err_last_admin_role' => 'Rollen for den sidste aktive admin-konto kan ikke ændres eller deaktiveres! Gør først en anden bruger til admin.',
     'srv_user.updated' => 'Brugeren \'%s\' er opdateret!',

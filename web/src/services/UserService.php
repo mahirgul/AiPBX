@@ -65,6 +65,14 @@ class UserService {
             if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE username = ? AND id != ?', [$username, $user_id]) > 0) {
                 throw new \Exception(sprintf(t('srv_user.err_username_taken'), $username));
             }
+            if ($email !== '') {
+                if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                    throw new \Exception(t('srv_user.err_email_invalid'));
+                }
+                if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE LOWER(TRIM(email)) = ? AND id != ?', [mb_strtolower($email), $user_id]) > 0) {
+                    throw new \Exception(sprintf(t('srv_user.err_email_taken'), $email));
+                }
+            }
             if ($extension !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE extension = ? AND id != ?', [$extension, $user_id]) > 0) {
                 throw new \Exception(sprintf(t('srv_user.err_ext_taken'), $extension));
             }

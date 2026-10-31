@@ -3552,6 +3552,8 @@ return [
     'srv_user.err_required' => 'Username and full name are required!',
     'srv_user.err_username_taken' => 'The username \'%s\' is already in use!',
     'srv_user.err_ext_taken' => 'Extension %s is assigned to another user!',
+    'srv_user.err_email_invalid' => 'Please enter a valid e-mail address!',
+    'srv_user.err_email_taken' => 'The e-mail address \'%s\' is already assigned to another user!',
     'srv_user.err_role' => 'Invalid system role: \'%s\'',
     'srv_user.err_last_admin_role' => 'The last active admin account\'s role cannot be changed or disabled! Make another user admin first.',
     'srv_user.updated' => 'User \'%s\' updated!',

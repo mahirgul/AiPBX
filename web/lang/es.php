@@ -3408,6 +3408,8 @@ return [
     'srv_user.err_required' => '¡El nombre de usuario y el nombre completo son obligatorios!',
     'srv_user.err_username_taken' => '¡El nombre de usuario \'%s\' ya está en uso!',
     'srv_user.err_ext_taken' => '¡La extensión %s está asignada a otro usuario!',
+    'srv_user.err_email_invalid' => '¡Por favor, introduzca una dirección de correo electrónico válida!',
+    'srv_user.err_email_taken' => '¡La dirección de correo electrónico \'%s\' ya está asignada a otro usuario!',
     'srv_user.err_role' => 'Rol del sistema no válido: \'%s\'',
     'srv_user.err_last_admin_role' => '¡No se puede cambiar el rol ni deshabilitar la última cuenta de administrador activa! Convierta primero a otro usuario en administrador.',
     'srv_user.updated' => '¡Usuario \'%s\' actualizado!',

@@ -3493,6 +3493,8 @@ return [
     'srv_user.err_required' => 'Kullanıcı adı ve ad soyad zorunludur!',
     'srv_user.err_username_taken' => '\'%s\' kullanıcı adı zaten kullanılıyor!',
     'srv_user.err_ext_taken' => '%s numaralı dahili başka bir kullanıcıya atanmış!',
+    'srv_user.err_email_invalid' => 'Lütfen geçerli bir e-posta adresi girin!',
+    'srv_user.err_email_taken' => '\'%s\' e-posta adresi başka bir kullanıcıya atanmış!',
     'srv_user.err_role' => 'Geçersiz sistem rolü: \'%s\'',
     'srv_user.err_last_admin_role' => 'Sistemdeki son aktif admin hesabının rolü değiştirilemez veya pasife alınamaz! Önce başka bir kullanıcıyı admin yapın.',
     'srv_user.updated' => 'Kullanıcı \'%s\' güncellendi!',

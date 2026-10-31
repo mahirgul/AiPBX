@@ -241,4 +241,39 @@ XML;
         $this->assertNotSame($user['username'], $user2['username']);
         $this->assertStringStartsWith('saml_test_user', $user2['username']);
     }
+
+    public function testLoginUserSessionSetsKeysAndRedirectsOnMustResetPassword(): void
+    {
+        $_SESSION = [];
+        $fakeUser = [
+            'id'                  => 77777,
+            'username'            => 'saml_session_user',
+            'full_name'           => 'SAML Session User',
+            'role'                => 'supervisor',
+            'extension'           => '2001',
+            'email'               => 'saml_sess@example.com',
+            'theme_preference'    => 'dark',
+            'language_preference' => 'tr',
+            'must_reset_password' => 0,
+        ];
+
+        $res = SamlAuthService::loginUserSession($fakeUser);
+        $this->assertSame('', $res);
+        $this->assertSame(77777, $_SESSION['user_id']);
+        $this->assertSame('saml_session_user', $_SESSION['username']);
+        $this->assertSame('supervisor', $_SESSION['role']);
+        $this->assertSame('supervisor', $_SESSION['user_role']);
+        $this->assertSame('saml', $_SESSION['auth_provider']);
+        $this->assertSame('saml', $_SESSION['auth_method']);
+        $this->assertSame('both', $_SESSION['allowed_phone_mode']);
+        $this->assertGreaterThan(0, $_SESSION['last_activity']);
+
+        // Now test with must_reset_password = 1
+        $_SESSION = [];
+        $fakeUser['must_reset_password'] = 1;
+        $resReset = SamlAuthService::loginUserSession($fakeUser);
+        $this->assertSame('/force-reset', $resReset);
+        $this->assertSame(77777, $_SESSION['pending_reset_user_id']);
+        $this->assertArrayNotHasKey('user_id', $_SESSION);
+    }
 }
