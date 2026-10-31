@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP parametrləri',
     'pending_sync.domain_udptl' => 'UDPTL (faks) parametrləri',
     'pending_sync.domain_internal_numbers' => 'Daxili hədəf nömrələri',
+    'pending_sync.domain_custom_dialplan' => 'Fərdi Zəng Planı',
     'audit_log.title' => 'Audit jurnalı',
     'audit_log.header_title_pbx' => 'PBX parametr dəyişiklikləri',
     'audit_log.header_title_logins' => 'Giriş cəhdləri',

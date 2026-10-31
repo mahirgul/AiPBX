@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP-asetukset',
     'pending_sync.domain_udptl' => 'UDPTL (faksi) -asetukset',
     'pending_sync.domain_internal_numbers' => 'Sisäiset kohdenumerot',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Tarkastusloki',
     'audit_log.header_title_pbx' => 'PBX-asetusten muutokset',
     'audit_log.header_title_logins' => 'Kirjautumisyritykset',

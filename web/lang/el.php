@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'Ρυθμίσεις RTP',
     'pending_sync.domain_udptl' => 'Ρυθμίσεις UDPTL (φαξ)',
     'pending_sync.domain_internal_numbers' => 'Εσωτερικοί αριθμοί προορισμών',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Αρχείο ελέγχου',
     'audit_log.header_title_pbx' => 'Αλλαγές ρυθμίσεων PBX',
     'audit_log.header_title_logins' => 'Προσπάθειες σύνδεσης',

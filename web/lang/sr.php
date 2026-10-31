@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP podešavanja',
     'pending_sync.domain_udptl' => 'UDPTL (faks) podešavanja',
     'pending_sync.domain_internal_numbers' => 'Interni brojevi odredišta',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Dnevnik revizije',
     'audit_log.header_title_pbx' => 'Izmene PBX podešavanja',
     'audit_log.header_title_logins' => 'Pokušaji prijave',

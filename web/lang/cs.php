@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'Nastavení RTP',
     'pending_sync.domain_udptl' => 'Nastavení UDPTL (fax)',
     'pending_sync.domain_internal_numbers' => 'Interní čísla cílů',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Protokol auditu',
     'audit_log.header_title_pbx' => 'Změny nastavení ústředny',
     'audit_log.header_title_logins' => 'Pokusy o přihlášení',

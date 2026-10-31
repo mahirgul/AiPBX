@@ -1875,6 +1875,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP Settings',
     'pending_sync.domain_udptl' => 'UDPTL (Fax) Settings',
     'pending_sync.domain_internal_numbers' => 'Internal Destination Numbers',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
 
     // Audit Log page
     'audit_log.title' => 'Audit Log',

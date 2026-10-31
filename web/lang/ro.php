@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'Setări RTP',
     'pending_sync.domain_udptl' => 'Setări UDPTL (fax)',
     'pending_sync.domain_internal_numbers' => 'Numere interne de destinație',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Jurnal de audit',
     'audit_log.header_title_pbx' => 'Modificări ale setărilor PBX',
     'audit_log.header_title_logins' => 'Încercări de autentificare',

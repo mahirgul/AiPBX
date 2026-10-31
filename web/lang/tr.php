@@ -1817,6 +1817,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP Ayarları',
     'pending_sync.domain_udptl' => 'UDPTL (Faks) Ayarları',
     'pending_sync.domain_internal_numbers' => 'Dahili Hedef Numaraları',
+    'pending_sync.domain_custom_dialplan' => 'Özel Arama Planı',
 
     // Denetim Kayıtları (Audit Log) sayfası
     'audit_log.title' => 'Denetim Kayıtları',

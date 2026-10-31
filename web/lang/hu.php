@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP beállítások',
     'pending_sync.domain_udptl' => 'UDPTL (fax) beállítások',
     'pending_sync.domain_internal_numbers' => 'Belső célszámok',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Auditnapló',
     'audit_log.header_title_pbx' => 'PBX-beállítások módosításai',
     'audit_log.header_title_logins' => 'Bejelentkezési kísérletek',
