@@ -141,6 +141,8 @@ final class PluginAndApiV1Test extends TestCase
     {
         PluginManager::resetCache();
         $manifests = PluginManager::discoverManifests();
+        $this->assertArrayHasKey('auto-dialer', $manifests);
+        $this->assertArrayHasKey('oidc-auth', $manifests);
         $this->assertArrayHasKey('google-auth', $manifests);
         $this->assertArrayHasKey('ms-teams', $manifests);
         $this->assertArrayHasKey('web-widgets', $manifests);
@@ -306,6 +308,8 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertSame('official', $bySlug['auto-dialer']['type']);
         $this->assertArrayHasKey('google-auth', $bySlug);
         $this->assertSame('official', $bySlug['google-auth']['type']);
+        $this->assertArrayHasKey('oidc-auth', $bySlug);
+        $this->assertSame('official', $bySlug['oidc-auth']['type']);
 
         // Community plugins
         if (isset($bySlug['ai-assistant'])) {
