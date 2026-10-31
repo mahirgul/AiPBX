@@ -210,4 +210,23 @@ final class OidcAuthTest extends TestCase
         $this->assertSame('oidc', $_SESSION['auth_method']);
         $this->assertSame('/dashboard', $redirect);
     }
+
+    public function testAutoProvisionInvalidRoleFallsBackToUser(): void
+    {
+        $testEmail = 'oidc_test_' . bin2hex(random_bytes(4)) . '@example.com';
+        $userInfo = [
+            'email'              => $testEmail,
+            'full_name'          => 'Fallback Role User',
+            'preferred_username' => 'oidc_fallback_user',
+            'sub'                => 'sub-nonexistent-role',
+            'claims'             => [
+                'roles' => ['nonexistent_role_123'],
+            ],
+        ];
+
+        $user = OidcAuthService::autoProvisionUser($userInfo);
+        $this->assertNotNull($user);
+        $this->cleanUserIds[] = (int)$user['id'];
+        $this->assertSame('user', $user['role']);
+    }
 }

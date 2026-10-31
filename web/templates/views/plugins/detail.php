@@ -69,9 +69,12 @@ $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
                             </div>
                         <?php elseif ($fType === 'select' && !empty($field['options']) && is_array($field['options'])): ?>
                             <select name="<?php echo htmlspecialchars($fKey); ?>" class="form-control">
-                                <?php foreach ($field['options'] as $optVal => $optLabel): ?>
-                                    <option value="<?php echo htmlspecialchars((string)$optVal); ?>" <?php echo $curVal === (string)$optVal ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars((string)$optLabel); ?>
+                                <?php foreach ($field['options'] as $optVal => $optLabel):
+                                    $val = is_array($optLabel) ? ($optLabel['value'] ?? (string)$optVal) : (string)$optVal;
+                                    $lbl = is_array($optLabel) ? ($optLabel['label'] ?? $optLabel['value'] ?? (string)$optVal) : (string)$optLabel;
+                                ?>
+                                    <option value="<?php echo htmlspecialchars((string)$val); ?>" <?php echo $curVal === (string)$val ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars((string)$lbl); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

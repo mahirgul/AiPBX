@@ -910,19 +910,29 @@ XML;
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['full_name'] = $user['full_name'];
+        $_SESSION['user_role'] = $user['role'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['extension'] = $user['extension'] ?? '';
         $_SESSION['extension_type'] = $user['extension_type'] ?? '';
         $_SESSION['allowed_phone_mode'] = $user['allowed_phone_mode'] ?? 'both';
         $_SESSION['theme'] = $user['theme_preference'] ?? 'dark';
         $_SESSION['language'] = $user['language_preference'] ?? 'tr';
+        $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
+            ? $user['language_preference']
+            : (defined('DEFAULT_UI_LANGUAGE') ? DEFAULT_UI_LANGUAGE : 'tr');
         $_SESSION['auth_provider'] = 'saml';
         $_SESSION['last_activity'] = time();
+
+        unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
         $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         $db = getDB();
         $stmt = $db->prepare('UPDATE sys_users SET last_login = NOW(), last_ip = ? WHERE id = ?');
         $stmt->execute([$clientIp, $user['id']]);
+
+        if (function_exists('logLoginAttempt')) {
+            logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');
+        }
 
         if (function_exists('logSecurityEvent')) {
             logSecurityEvent('saml_login_success', "SAML SSO login for {$user['username']} ({$user['email']}) from {$clientIp}");

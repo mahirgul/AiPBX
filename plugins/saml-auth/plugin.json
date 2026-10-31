@@ -158,13 +158,13 @@
             "key": "default_role",
             "type": "select",
             "default": "user",
-            "options": [
-                {"value": "user", "label": "User"},
-                {"value": "admin", "label": "Admin"},
-                {"value": "cc_manager", "label": "Call Center Manager"},
-                {"value": "cc_agent", "label": "Call Center Agent"},
-                {"value": "read_only_admin", "label": "Read-Only Admin"}
-            ],
+            "options": {
+                "user": "User",
+                "admin": "Admin",
+                "cc_manager": "Call Center Manager",
+                "cc_agent": "Call Center Agent",
+                "read_only_admin": "Read-Only Admin"
+            },
             "label": "Default User Role",
             "label_i18n": {
                 "tr": "Varsayılan Kullanıcı Rolü",

@@ -469,17 +469,17 @@ class OidcAuthService
      */
     public static function isDomainAllowed(string $email): bool
     {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2 || empty($parts[0]) || empty($parts[1])) {
+            return false;
+        }
+
         $allowed = trim(self::getSetting('allowed_domains', ''));
         if (empty($allowed)) {
             return true;
         }
 
-        $parts = explode('@', $email);
-        if (count($parts) !== 2) {
-            return false;
-        }
         $domain = mb_strtolower(trim($parts[1]));
-
         $list = array_filter(array_map('trim', explode(',', mb_strtolower($allowed))));
         return in_array($domain, $list, true);
     }
@@ -495,7 +495,7 @@ class OidcAuthService
         $adminMatch = trim(self::getSetting('admin_role_value', 'aipbx_admin'));
         $defaultRole = self::getSetting('default_role', 'user');
 
-        $validRoles = ['user', 'manager', 'operator', 'admin'];
+        $validRoles = ['user', 'admin', 'cc_manager', 'cc_agent', 'read_only_admin'];
         if (!in_array($defaultRole, $validRoles, true)) {
             $defaultRole = 'user';
         }
@@ -567,6 +567,13 @@ class OidcAuthService
         }
 
         $db = getDB();
+
+        // Validate role exists in sys_roles to satisfy fk_users_role
+        $chkRole = $db->prepare('SELECT role_key FROM sys_roles WHERE role_key = ? LIMIT 1');
+        $chkRole->execute([$role]);
+        if (!$chkRole->fetch()) {
+            $role = 'user';
+        }
 
         // Check for username collision and append counter if necessary
         $candidateUsername = $cleanUsername;

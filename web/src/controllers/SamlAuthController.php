@@ -112,6 +112,8 @@ class SamlAuthController extends BaseController
         if (!empty($_SESSION['return_to'])) {
             $returnTo = (string)$_SESSION['return_to'];
             unset($_SESSION['return_to']);
+        } elseif (function_exists('roleHomePath')) {
+            $returnTo = roleHomePath((string)$user['role']);
         }
 
         static::redirect($returnTo);
