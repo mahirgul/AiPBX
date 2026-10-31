@@ -82,6 +82,7 @@ return [
             ['href' => '/sounds', 'icon' => 'fas fa-music', 'label' => 'sidebar.item_sounds', 'show' => $can('sounds'), 'pages' => ['sounds.php']],
             ['href' => '/feature-codes', 'icon' => 'fas fa-hashtag', 'label' => 'sidebar.item_feature_codes', 'title' => 'sidebar.item_feature_codes_tooltip', 'show' => $can('feature_codes'), 'pages' => ['feature_codes.php']],
             ['href' => '/feature-codes-status', 'icon' => 'fas fa-list-check', 'label' => 'sidebar.item_feature_codes_status', 'show' => $can('feature_codes'), 'pages' => ['feature_codes_status.php']],
+            ['href' => '/custom-dialplan', 'icon' => 'fas fa-code', 'label' => 'sidebar.item_custom_dialplan', 'show' => $can('custom_dialplan'), 'pages' => ['custom_dialplan.php'], 'uri' => '/custom-dialplan'],
         ],
     ],
     [
