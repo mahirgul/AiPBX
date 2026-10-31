@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'Definições RTP',
     'pending_sync.domain_udptl' => 'Definições UDPTL (fax)',
     'pending_sync.domain_internal_numbers' => 'Números de destino internos',
+    'pending_sync.domain_custom_dialplan' => 'Plano de discagem personalizado',
     'audit_log.title' => 'Registo de auditoria',
     'audit_log.header_title_pbx' => 'Alterações às definições do PBX',
     'audit_log.header_title_logins' => 'Tentativas de início de sessão',

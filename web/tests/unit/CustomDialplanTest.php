@@ -199,4 +199,39 @@ final class CustomDialplanTest extends TestCase
         $this->assertStringContainsString('exten => _*80.,1,NoOp(Intercom)', $conf);
         $this->assertStringContainsString('exten => s,1,NoOp(CRM)', $conf);
     }
+
+    public function testServiceSaveAndPendingSync(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
+
+        $ctxName = 'test-sync-' . bin2hex(random_bytes(4));
+        $res = CustomDialplanService::save([
+            'title' => 'Pending Sync Test',
+            'context_name' => $ctxName,
+            'dialplan_content' => "exten => *99,1,NoOp(Pending Sync)\n same => n,Hangup()\n",
+            'include_in_internal' => 1,
+            'sort_order' => 20,
+            'is_active' => 1,
+        ], 1);
+
+        $this->assertTrue($res['success']);
+        $id = $res['id'];
+        $this->createdIds[] = $id;
+
+        // Pending sync must have a row in 'custom_dialplan' domain
+        $pending = getPendingSyncList();
+        $this->assertArrayHasKey('custom_dialplan', $pending);
+
+        // Apply pending sync
+        $results = applyPendingSync(1);
+        $this->assertArrayHasKey('custom_dialplan', $results);
+        $this->assertTrue($results['custom_dialplan']['success']);
+
+        // Check generated file in test conf dir
+        $confPath = ASTERISK_PBX_DIR . '/extensions_custom.conf';
+        $this->assertFileExists($confPath);
+        $content = file_get_contents($confPath);
+        $this->assertStringContainsString($ctxName, $content);
+        $this->assertStringContainsString('exten => *99,1,NoOp(Pending Sync)', $content);
+    }
 }

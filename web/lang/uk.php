@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'Налаштування RTP',
     'pending_sync.domain_udptl' => 'Налаштування UDPTL (факс)',
     'pending_sync.domain_internal_numbers' => 'Внутрішні номери призначень',
+    'pending_sync.domain_custom_dialplan' => 'Користувацький план набору',
     'audit_log.title' => 'Журнал аудиту',
     'audit_log.header_title_pbx' => 'Зміни налаштувань АТС',
     'audit_log.header_title_logins' => 'Спроби входу',

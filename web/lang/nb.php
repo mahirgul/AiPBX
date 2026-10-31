@@ -1796,6 +1796,7 @@ return [
     'pending_sync.domain_rtp' => 'RTP-innstillinger',
     'pending_sync.domain_udptl' => 'UDPTL-innstillinger (faks)',
     'pending_sync.domain_internal_numbers' => 'Interne målnumre',
+    'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
     'audit_log.title' => 'Revisjonslogg',
     'audit_log.header_title_pbx' => 'Endringer i PBX-innstillinger',
     'audit_log.header_title_logins' => 'Innloggingsforsøk',
