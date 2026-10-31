@@ -38,6 +38,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🎧 [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
 | 🗄️ [External databases & IVR data steps](external-databases.md) | Read-only MySQL/PostgreSQL connections, encrypted credentials, real-time IVR caller/DTMF data lookups and call branching |
 | 🎚️ [PBX fine tuning & maintenance](pbx-tuning.md) | Jitter buffer, SIP protocol timers (T1, B, Max-Forwards), 10-minute SIP debug, safe night restart window, spoken status messages |
+| 🐧 [Linux OS & kernel tuning](linux-tuning.md) | Network sysctl (RTP buffers, MPTCP disable), SIP ALG blacklist, real-time CPU scheduling, OOM protection, needrestart shielding |
 
 ## 🔐 Users and security
 
