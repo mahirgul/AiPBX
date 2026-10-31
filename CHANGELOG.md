@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.32
+
+- **64-Bit ARM (`aarch64` / `arm64`) Architecture Support (#147):**
+  - Officially enabled full support for 64-bit ARM architectures in `install.sh`, allowing seamless single-command installation on Raspberry Pi 4, Raspberry Pi 5, AWS Graviton, and Ampere Altra servers.
+  - Added strict 64-bit architecture validation during installation; immediately catches and stops unsupported 32-bit platforms (`armv7l`, `i686`) with a clear advisory to install a 64-bit OS.
+  - Native ARM64 binary compilation for the Go chat microservice (`aipbx-chat`) and full compatibility with existing Asterisk 22, Apache, and MariaDB package ecosystems.
+- **Expanded Operating System Support (Debian Family):**
+  - Broadened `install.sh` system verification beyond Ubuntu 26.04 LTS to officially support Debian 13 (Trixie)+, 64-bit Raspberry Pi OS, and 64-bit Armbian.
+  - Added automatic detection for pre-existing PHP >= 8.4 environments on Debian-family installations (e.g. Debian 12 / Bookworm with Surý PPA).
+- **Cleanup:**
+  - Removed unused partial `docker/` first-boot init script directory.
+
 ## 1.50.31
 
 - **Security Hardening (CVE-2026-98432 & Go 1.24+ MPTCP Defense-in-Depth):**
