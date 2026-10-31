@@ -1,0 +1,268 @@
+# AiPBX in Docker — modular services. See docker/README.md before the first start.
+#
+#   ./docker/gen-secrets.sh          # once: writes .env and docker/secrets/*.env
+#   docker compose up -d --build     # db, init, asterisk, web, signaling
+#   docker compose --profile ai up -d --build   # also the local AI runtime
+#
+# Nothing here bundles the whole PBX into one container. Each tier has its own
+# image and its own lifecycle, so `docker compose up -d --no-deps --build web`
+# replaces the portal and leaves Asterisk — and every call in progress — alone.
+#
+#   db        MariaDB, official image, its own volume. Only the tiers that must
+#             (nothing but localhost, in practice) can reach it.
+#   init      One-shot: generates /etc/aipbx-env.d/ai-pbx.env, migrates the
+#             schema, seeds the data, writes the Asterisk config the portal
+#             owns, and exits. Re-runnable; it only ever fills gaps.
+#   asterisk  Asterisk 22 alone, on the host network. SIP, RTP, WSS and
+#             AudioSocket never pass through Docker's userland proxy.
+#   web       PHP + Apache for the portal. Restarting it is a portal restart.
+#   signaling HEPv3 capture (Homer-style), writes to the same MariaDB.
+#   ai        Local models (Whisper/Vosk STT, Piper/Kokoro TTS). Optional
+#             profile: the image carries several hundred MB of runtimes.
+#
+# The four long-running tiers share the host's network namespace because the
+# application talks to itself over loopback: the portal calls `asterisk -rx`,
+# Asterisk calls http://127.0.0.1/api/..., the AI runtime answers on
+# 127.0.0.1:8790 and its AudioSocket on 8791, and HEP arrives on
+# 127.0.0.1:9061. Bridging those would mean rewriting every one of those
+# addresses; see docker/README.md, "Why host networking".
+name: aipbx
+
+# Everything the services need to agree on, in one place.
+x-aipbx-env: &aipbx-env
+  AIPBX_ENV_FILE: /etc/aipbx-env.d/ai-pbx.env
+  AIPBX_STATE_DIR: /var/lib/aipbx
+  TIMEZONE: ${AIPBX_TIMEZONE:-Europe/Istanbul}
+  SITE_NAME: ${AIPBX_SITE_NAME:-AI PBX Portal}
+  PORTAL_DOMAIN: ${AIPBX_DOMAIN:-aipbx.local}
+  HTTP_PORT: ${AIPBX_HTTP_PORT:-80}
+  # asterisk / ai / signaling are on the host network; the DB is the only
+  # service on a bridge, published to loopback.
+  DB_HOST: 127.0.0.1
+  DB_PORT: ${AIPBX_DB_PORT:-3306}
+  DB_NAME: ${AIPBX_DB_NAME:-asterisk}
+  DB_USER: ${AIPBX_DB_USER:-aipbx}
+  MIGRATOR_DB_USER: ${AIPBX_DB_MIGRATOR_USER:-aipbx_migrator}
+  ODBC_DB_USER: ${AIPBX_DB_ODBC_USER:-asterisk_odbc}
+  AMI_USER: ${AIPBX_AMI_USER:-aipbx}
+  AMI_PORT: ${AIPBX_AMI_PORT:-5038}
+  # No credentials in this block, deliberately. DB_PASS, MIGRATOR_DB_PASS,
+  # ODBC_DB_PASS and AMI_PASS come from AIPBX_ENV_FILE — the file `init` writes
+  # once, 0640 root:aipbx — so passing them here would give every container a
+  # secret none of them reads. Only `db` and `init` are handed credentials,
+  # each through its own env_file under docker/secrets (docker/README.md).
+  # The RTP window Asterisk opens. On host networking it is not published by
+  # compose — it is simply the range rtp.conf is given, so it can be as wide
+  # as the box needs (Asterisk's own default is 10000-20000).
+  RTP_RANGE: ${AIPBX_RTP_RANGE:-10000-10199}
+
+# The configuration and state the tiers share. Asterisk's config directory is
+# written by the portal (its Sync* classes own every file under pbx/) and read
+# by the Asterisk container, so it has to be one volume, not two copies.
+x-aipbx-volumes: &aipbx-volumes
+  - &vol-conf aipbx-conf:/etc/aipbx-env.d
+  # The AI runtime's bearer token and model metadata (/etc/aipbx/ai.token),
+  # read by the portal and by the AI container.
+  - &vol-ai-conf aipbx-ai-conf:/etc/aipbx
+  - &vol-ast-etc aipbx-asterisk-etc:/etc/asterisk
+  - &vol-ast-run aipbx-asterisk-run:/var/run/asterisk
+  - &vol-ast-lib aipbx-asterisk-lib:/var/lib/asterisk
+  - &vol-ast-spool aipbx-asterisk-spool:/var/spool/asterisk
+  - &vol-faxes aipbx-faxes:/var/www/faxes
+  - &vol-state aipbx-state:/var/lib/aipbx
+  - &vol-logs aipbx-logs:/var/log/aipbx
+
+services:
+  db:
+    image: mariadb:11
+    container_name: aipbx-db
+    restart: unless-stopped
+    # The root password and nothing else: `init` creates the database and the
+    # three least-privileged users, so this container never needs their
+    # credentials. The value is generated, 0600 and git-ignored — no password
+    # is written in this file.
+    env_file:
+      - docker/secrets/db.env
+    environment:
+      TZ: ${AIPBX_TIMEZONE:-Europe/Istanbul}
+    volumes:
+      - aipbx-db:/var/lib/mysql
+    ports:
+      # Loopback only: the services that need it are on the host network and
+      # reach it at 127.0.0.1. Nothing off this machine can open the database.
+      - "127.0.0.1:${AIPBX_DB_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      # The image's first start creates the database and its users before the
+      # server accepts TCP connections at all; on a slow disk that is longer
+      # than the default window, and compose treats one unhealthy result as a
+      # failed dependency.
+      start_period: 120s
+
+  # One-shot. install.sh used to do this on a real host; here it is the only
+  # thing that runs once, and it writes into the volumes the tiers share.
+  init:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    image: aipbx-web:latest
+    container_name: aipbx-init
+    # Its own entrypoint: the image's is the portal's Apache start-up, which a
+    # one-shot has no business running.
+    entrypoint: ["/usr/local/sbin/aipbx-init"]
+    network_mode: host
+    # service_started, not service_healthy: the healthcheck above is for
+    # operators, and aipbx-init waits for the database itself (and retries with
+    # the real credentials). A single early "unhealthy" must not abort the start.
+    depends_on:
+      db:
+        condition: service_started
+    # Every credential the deployment owns, and only here: this runs once to
+    # create the database, its three users, the AMI account and the first admin,
+    # then writes them to AIPBX_ENV_FILE for the tiers that read that file.
+    # Only `init` gets the root password; the long-running services never see it.
+    env_file:
+      - docker/secrets/init.env
+    environment:
+      <<: *aipbx-env
+      AIPBX_ASTERISK_CONF_DIR: /etc/asterisk
+    volumes: *aipbx-volumes
+    restart: "no"
+
+  # Asterisk on the host network: 5060/udp-tcp, 5061/tcp TLS, 8089/tcp WSS,
+  # the RTP window and AudioSocket all bind the host directly, so media is not
+  # proxied. It is never restarted by a portal update.
+  asterisk:
+    build:
+      context: .
+      dockerfile: docker/asterisk/Dockerfile
+      args:
+        ASTERISK_VERSION: ${AIPBX_ASTERISK_VERSION:-22}
+    image: aipbx-asterisk:latest
+    container_name: aipbx-asterisk
+    network_mode: host
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      <<: *aipbx-env
+      AIPBX_ASTERISK_CONF_DIR: /etc/asterisk
+      # The CLI and the container share the socket directory, so `asterisk -rx`
+      # from the portal reaches this process (see docker/web/Dockerfile).
+      AIPBX_ASTERISK_UID: ${AIPBX_ASTERISK_UID:-2000}
+    volumes: *aipbx-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "asterisk -rx 'core show uptime' >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # The portal. Rebuild and restart this as often as you like: Asterisk is a
+  # different container and is not touched, so no call is dropped.
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    image: aipbx-web:latest
+    container_name: aipbx-web
+    network_mode: host
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      asterisk:
+        condition: service_started
+    environment:
+      <<: *aipbx-env
+      AIPBX_ASTERISK_CONF_DIR: /etc/asterisk
+    volumes: *aipbx-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:${AIPBX_HTTP_PORT:-80}/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # One-shot, after Asterisk is up: the portal's Sync* classes write a file and
+  # reload Asterisk to check it, so they can only run against a live daemon.
+  # This is what leaves a fresh deployment with a dialplan, transports and
+  # endpoint templates instead of an empty Asterisk.
+  cfg:
+    image: aipbx-web:latest
+    container_name: aipbx-cfg
+    entrypoint: ["/usr/local/sbin/aipbx-config"]
+    network_mode: host
+    depends_on:
+      asterisk:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
+    environment:
+      <<: *aipbx-env
+      AIPBX_ASTERISK_CONF_DIR: /etc/asterisk
+    volumes: *aipbx-volumes
+    restart: "no"
+
+  # HEPv3 capture. Asterisk sends res_hep datagrams to 127.0.0.1:9061; this
+  # writes them to pbx_signaling_events. It can stop without affecting a call.
+  signaling:
+    build:
+      context: .
+      dockerfile: docker/signaling/Dockerfile
+    image: aipbx-signaling:latest
+    container_name: aipbx-signaling
+    network_mode: host
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      <<: *aipbx-env
+      AIPBX_SIGNALING_LISTEN: 127.0.0.1:9061
+      AIPBX_SIGNALING_SOURCE: "0"
+    volumes:
+      - *vol-conf
+      - *vol-state
+      - *vol-logs
+    restart: unless-stopped
+
+  # Local models. Off by default: the image is a few hundred MB and the portal
+  # runs without it (cloud models, or no AI at all).
+  ai:
+    profiles: ["ai"]
+    build:
+      context: .
+      dockerfile: docker/ai/Dockerfile
+    image: aipbx-ai:latest
+    container_name: aipbx-ai
+    network_mode: host
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      <<: *aipbx-env
+      AIPBX_AI_PORT: 8790
+      AIPBX_AI_AUDIOSOCKET_PORT: 8791
+      AIPBX_AI_DATA: /var/lib/aipbx-ai
+    volumes:
+      - *vol-conf
+      - aipbx-ai:/var/lib/aipbx-ai
+      - *vol-logs
+    restart: unless-stopped
+
+volumes:
+  aipbx-db:
+  aipbx-conf:
+  aipbx-ai-conf:
+  aipbx-asterisk-etc:
+  aipbx-asterisk-run:
+  aipbx-asterisk-lib:
+  aipbx-asterisk-spool:
+  aipbx-faxes:
+  aipbx-state:
+  aipbx-logs:
+  aipbx-ai:

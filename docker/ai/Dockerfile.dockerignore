@@ -1,0 +1,30 @@
+# Build context for the optional `ai` image only.
+#
+# BuildKit prefers <Dockerfile>.dockerignore over the root .dockerignore, so this
+# file exists to undo exactly one line of it: the root list excludes `ai/` as
+# "context weight", which is correct for the four images that never read that
+# directory and wrong for this one, whose Dockerfile does `COPY ai/`. Everything
+# else is inherited verbatim, so the context here is as small as it is elsewhere.
+#
+# The image copies two files from docker/ — the rest of the tree is only
+# context weight. The AiPBX source is cloned inside the container, so nothing
+# here ends up in the image.
+.git
+.github
+.env
+arenv
+src
+aipbx.git
+android
+ios
+chat
+docs
+sounds
+evidence
+node_modules
+**/node_modules
+web/vendor
+**/*.zip
+**/*.png
+**/*.jpg
+**/*.pdf
