@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.35
+
+- **Custom Asterisk Dialplan Contexts & Code Injection (`/custom-dialplan`):**
+  - Dedicated management interface under **PBX → Custom Dialplan** for creating, editing, and organizing custom Asterisk dialplan contexts.
+  - Live Asterisk dialplan syntax validator checking bracket balance, variable expansions, and directive formatting before persisting.
+  - Automatic compilation into `/etc/asterisk/pbx/extensions_custom.conf` with seamless Asterisk reload and rollback protection (`writeConfWithRollback`).
+  - Internal Aggregator Context (`[custom-dialplan-pbx]`): entries flagged with "Include in internal dialplan" are automatically included into `[from-internal-pbx-ortak]`, making custom codes dialable from all registered desk phones, softphones, and mobile apps.
+  - Standalone contexts for custom inbound trunk filters, IVR subroutines, AGI scripts, and CRM notifications.
+- **Built-in Telephony Recipe Templates & Feature Codes:**
+  - One-click recipe insert library in the custom dialplan editor:
+    - *1-to-1 Intercom / Auto-Answer (`*80<ext>`)* with SIP `Alert-Info` and `Call-Info` headers.
+    - *Supervisor Direct Listen (`*55<ext>`) & Whisper Coaching (`*56<ext>`) via ChanSpy*.
+    - *Broadcast Audio Paging Group (`*700`)* using Asterisk `Page()`.
+    - *Non-Blocking CRM Webhook Trigger* sending asynchronous HTTP curl POST on call arrival.
+    - *Inbound VIP Caller Priority Routing Hook* with Caller ID name tagging.
+    - *PIN-Protected DISA (Direct Inward System Access)* for secure remote trunk calling.
+- **Security & Access Control:**
+  - Administrative circuit breaker enforcement: strictly locked to `admin` role in `RoleRepository` and `auth.php` (`hasModulePermission`).
+  - Full audit logging for create, edit, toggle, and delete operations in `sys_audit_log`.
+- **Internationalization & Testing:**
+  - 100% translation key parity across all 22 supported languages (5,573 / 5,573 strings, 0 problems).
+  - Comprehensive unit test coverage in `CustomDialplanTest.php` and full green verification on `smoke.php` and PHPStan.
+
 ## 1.50.34
 
 - **Inbound Caller ID Blacklist & Spam Blocker (`/blacklist`) (#148):**
