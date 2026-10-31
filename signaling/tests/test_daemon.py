@@ -176,12 +176,9 @@ class TestCaptureLoop(unittest.TestCase):
         """The real loop: bind, receive over UDP, flush to the store."""
         from aipbx_signaling.__main__ import serve
 
-        # _free_port() finds a port by binding and closing a probe; the
-        # daemon binds it a moment later. Another binder (or the probe in
-        # _wait_for_port) can win that race, and serve() then exits without
-        # listening. A few fresh ports make the test deterministic without
-        # weakening what it checks.
-        for _attempt in range(3):
+        # Uses capture.ready event set by serve() immediately after successful bind.
+        # This completely avoids external probe sockets racing for the port.
+        for _attempt in range(5):
             port = _free_port()
             store = FakeStore()
             capture = Capture(store, source_check=False)
@@ -192,7 +189,7 @@ class TestCaptureLoop(unittest.TestCase):
                 daemon=True)
             thread.start()
             try:
-                if not _wait_for_port(port):
+                if not capture.ready.wait(timeout=2.0):
                     continue          # lost the bind race; try another port
                 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 client.sendto(hep_packet(INVITE.encode()), ("127.0.0.1", port))
@@ -209,7 +206,7 @@ class TestCaptureLoop(unittest.TestCase):
                 capture.stop.set()
                 thread.join(timeout=5)
                 self.assertFalse(thread.is_alive())
-        self.fail("daemon never bound a free port (3 attempts)")
+        self.fail("daemon never bound a free port (5 attempts)")
 
     def test_batch_over_the_limit_is_written(self):
         from aipbx_signaling.db import BATCH_MAX
