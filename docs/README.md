@@ -15,6 +15,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📺 [Video: Installation](https://www.youtube.com/@aipbx) | Step-by-step setup on YouTube: [English](https://www.youtube.com/watch?v=lH1-k_z5jFE) · [Türkçe](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) · [Deutsch](https://www.youtube.com/watch?v=1QuOM6Rtcbg) |
 | 📺 [Video: Menu tour](https://www.youtube.com/@aipbx) | Every screen of the portal on YouTube: [English](https://www.youtube.com/watch?v=xU0BYN6AKE4) · [Türkçe](https://www.youtube.com/watch?v=Teol14NgXbY) · [Deutsch](https://www.youtube.com/watch?v=8whV_DY3ZqQ) |
 | 🖥️ [Portal basics](portal.md) | The *Apply* workflow, edit dialogs, ordering lists, copying records |
+| 💾 [Backups, recovery & rollback](backup-and-rollback.md) | Reproducible daily backups (`aipbx-backup`), disaster recovery restore commands, and zero-downtime automated upgrade rollback (`aipbx-update`) |
 | 🏗️ [Architecture](../ARCHITECTURE.md) | Components, traffic flow, security model |
 
 ## 📞 Telephony
@@ -47,6 +48,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 |------|----------------|
 | 👥 [Users & roles](users-and-roles.md) | Built-in roles, landing pages, permissions, *My Phone* |
 | 🛡️ [Security](security.md) | Firewall, fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| 🛡️ [Threat model & attack surface](threat-model.md) | Security architecture, SIP exposure boundaries, WebRTC/TURNS credentials, recording retention, mobile push tokens, and AI least privilege guardrails |
 | ⚖️ [GDPR, KVKK & data privacy](privacy.md) | Optional regulatory presets (KVKK, GDPR, CCPA/FCC, HIPAA, PCI-DSS, LGPD), pre-call opt-in/opt-out, periodic beep, retention purge, SAR export, Right to Erasure, and Cloud AI lock |
 | 📜 [Certificates](certificates.md) | One certificate for portal, TURNS and SIP-TLS; Let's Encrypt, upload, renewals |
 | 💡 [Busy lamps (BLF)](blf.md) | Desk phone keys for colleagues, do-not-disturb, forwarding and queue login; pickup; voicemail lamp |
