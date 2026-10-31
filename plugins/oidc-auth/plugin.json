@@ -150,8 +150,10 @@
             },
             "options": {
                 "user": "User (Kullanıcı)",
-                "manager": "Manager (Yönetici)",
-                "operator": "Operator (Operatör)"
+                "admin": "Admin (Sistem Yöneticisi)",
+                "cc_manager": "Call Center Manager (Çağrı Merkezi Yöneticisi)",
+                "cc_agent": "Call Center Agent (Temsilci)",
+                "read_only_admin": "Read-Only Admin (Salt Okunur Yönetici)"
             },
             "help": "Role assigned to automatically provisioned users.",
             "help_i18n": {
