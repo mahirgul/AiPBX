@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.34
+
+- **Inbound Caller ID Blacklist & Spam Blocker (`/blacklist`) (#148):**
+  - Dedicated management interface under **Telephony → Inbound Blacklist** with RBAC (`did_routes` module permissions).
+  - Sub-microsecond caller ID lookups via Asterisk internal AstDB (`blacklist/<clean_number>` and `blacklist_action/<clean_number>`).
+  - Supports both specific phone numbers (E.164 / local) and dialplan wildcard patterns (`_X.`, `_0850.`, `_0900.`).
+  - Four customizable call blocking actions: Busy tone (`Hangup 17`), Congestion / Out-of-service (`Hangup 34`), Silent drop (`Hangup 16`), and Spoken announcement (`Playback ss-noservice`).
+  - Automatic CDR tagging with `SPAM_BLOCKED` and `Blacklist: <action>`.
+  - Batch CSV import with delimiter autodetection and last-caller fast lookup per extension.
+- **RFC 6442 & RFC 6443 Emergency Call Geolocation Support:**
+  - Added `geolocation_uri` and `geolocation_routing` fields to Outbound Routes.
+  - Automatically appends SIP `Geolocation` and `Geolocation-Routing` headers to outbound emergency INVITE requests via `sub-callee-jb`.
+  - Configurable system-wide default emergency location URI with per-route overriding.
+- **Security Architecture & Threat Model Documentation:**
+  - Published comprehensive [Security Architecture & Threat Model](docs/threat-model.md) covering SIP exposure boundaries, Port 443 ALPN stream multiplexing, WebRTC DTLS-SRTP media encryption, ephemeral TURN tokens, mobile push token minimization, and AI assistant Least Privilege execution sandboxing.
+- **Disaster Recovery & Automated Upgrade Rollback Documentation:**
+  - Published [Backups, Disaster Recovery & Upgrade Rollback](docs/backup-and-rollback.md) guide detailing daily reproducible backups (`aipbx-backup`), step-by-step restoration commands, and the automated atomic rollback safeguard in `aipbx-update`.
+- **Expanded Multi-OS & Multi-Architecture Verification:**
+  - Formally validated single-command turnkey installation across Ubuntu 26.04 LTS+, Debian 13 (Trixie)+, 64-bit Raspberry Pi OS, and 64-bit Armbian on both x86_64 and ARM64 (`aarch64`).
+- **Fixes & Code Hardening:**
+  - Standardized RBAC access control in `InboundBlacklistController` using `BaseController::requireModule('did_routes', 'access')`.
+  - Improved CSV row parsing and type safety in blacklist imports.
+
 ## 1.50.32
 
 - **64-Bit ARM (`aarch64` / `arm64`) Architecture Support (#147):**
