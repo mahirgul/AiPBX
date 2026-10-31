@@ -14,9 +14,7 @@ class InboundBlacklistController extends BaseController
     public static function index(): void
     {
         static::requireLogin();
-        if (!hasModulePermission('did_routes', 'access')) {
-            static::forbidden();
-        }
+        static::requireModule('did_routes', 'access');
 
         // AJAX helper: get last caller for an extension
         if (isset($_GET['action']) && $_GET['action'] === 'last_caller') {
@@ -117,7 +115,7 @@ class InboundBlacklistController extends BaseController
         $skipped = 0;
 
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-            if (empty($row) || empty($row[0])) {
+            if (!isset($row[0]) || trim((string)$row[0]) === '') {
                 continue;
             }
             $num = trim((string)$row[0]);
