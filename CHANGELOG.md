@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.28
+
+- **Official OpenID Connect (OIDC) & Corporate SSO Plugin (`oidc-auth`) (#146):**
+  - Added official built-in plugin `plugins/oidc-auth/` providing standard OpenID Connect (OIDC Core 1.0) Single Sign-On and auto-provisioning.
+  - Compatible out of the box with any OpenID Provider (OP): Keycloak, Microsoft Entra ID (Azure AD), Authentik, Okta, Google Workspace, and PingFederate.
+  - **Dynamic OpenID Discovery & Caching:** Discovers authorization, token, and userinfo endpoints automatically from `/.well-known/openid-configuration` with persistent KV caching via `sys_plugin_kv`.
+  - **Interactive Admin Discovery Tester & Setup Guides:** Dedicated admin panel with a copyable redirect URI (`/auth/oidc/callback`), a real-time discovery validation tool, and setup guides for major identity providers.
+  - **Zero-Trust Security & Token Exchange:** State and nonce verification against CSRF and replay attacks, secure token code exchange, and client secret encryption at rest via `SecretBox`.
+  - **Just-In-Time (JIT) Auto-Provisioning:** Seamless user account creation on first sign-in with automatic username extraction from claims (`preferred_username` / `email`), unique collision handling, and secure randomized passwords.
+  - **Claim-Based Role Mapping & Domain Restrictions:** Flexible claim paths for role resolution (e.g. `roles`, `groups`), configurable default role assignment (`admin`, `manager`, `user`), and email domain allowlist enforcement (`allowed_domains`).
+  - **Login Portal Integration & Deep Linking:** Dynamic SSO button on the web login interface with customizable button label/icon, plus mobile client authentication callback support (`aipbx://auth?success=1&code=...`).
+  - **Comprehensive Test Suite:** 9 new unit tests with 38 assertions (`web/tests/unit/OidcAuthTest.php`), full role matrix registration, and plugin schema verification.
+
 ## 1.50.27
 
 - **Linux Kernel & Network Sysctl Optimization:**
