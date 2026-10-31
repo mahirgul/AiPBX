@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/LoginService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
+require_once __DIR__ . '/../services/OidcAuthService.php';
 
 /**
  * Sign-in page (/login), public: password with a small sum captcha, Google and passkey
@@ -47,6 +48,8 @@ class LoginController extends BaseController
         $site_logo_wide = $site_logo_type === 'image' && !empty($site_logo_image) && getSystemSetting('site_logo_style', 'square') === 'wide';
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
         $googleLoginEnabled = GoogleAuthService::isEnabled();
+        $oidcLoginEnabled = OidcAuthService::isEnabled();
+        $oidcPublicSettings = $oidcLoginEnabled ? OidcAuthService::getPublicSettings() : [];
 
         static::renderAuthPage('login/index', [
             'error' => $error,
@@ -63,6 +66,8 @@ class LoginController extends BaseController
             'site_logo_wide' => $site_logo_wide,
             'site_favicon_url' => $site_favicon_url,
             'googleLoginEnabled' => $googleLoginEnabled,
+            'oidcLoginEnabled' => $oidcLoginEnabled,
+            'oidcPublicSettings' => $oidcPublicSettings,
         ], ['title' => t('login.page_title'), 'inline_lang_switch' => true]);
     }
 }

@@ -91,7 +91,7 @@ ob_start(); ?>
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
             <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey'); ?>
         </button>
-<?php elseif (!empty($googleLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled())): ?>
+<?php elseif (!empty($googleLoginEnabled) || !empty($oidcLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled()) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled())): ?>
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
             <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider'); ?></span>
@@ -108,6 +108,18 @@ ob_start(); ?>
                 <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
             </svg>
             <span><?php echo t('login.btn_google'); ?></span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (!empty($oidcLoginEnabled) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled())): ?>
+            <?php
+            $oidcMeta = !empty($oidcPublicSettings) ? $oidcPublicSettings : (class_exists('OidcAuthService') ? OidcAuthService::getPublicSettings() : ['provider_name' => 'Corporate SSO', 'icon' => 'fas fa-shield-alt']);
+            $oidcLabel = htmlspecialchars((string)($oidcMeta['provider_name'] ?? 'Corporate SSO'));
+            $oidcIcon = htmlspecialchars((string)($oidcMeta['icon'] ?? 'fas fa-shield-alt'));
+            ?>
+        <a href="/auth/oidc" class="btn btn-outline-primary" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 10px; border-radius: 10px; margin-top: 10px; text-decoration: none; display: inline-flex; align-items: center; transition: all 0.2s;">
+            <i class="<?php echo $oidcIcon; ?> u-fs-16"></i>
+            <span><?php echo $oidcLabel; ?></span>
         </a>
         <?php endif; ?>
 

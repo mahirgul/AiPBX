@@ -1,0 +1,227 @@
+{
+    "slug": "oidc-auth",
+    "name": "OpenID Connect & SSO (OIDC)",
+    "name_i18n": {
+        "tr": "OpenID Connect ve Kurumsal SSO (OIDC)",
+        "en": "OpenID Connect & Corporate SSO (OIDC)"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "author_url": "https://github.com/mahirgul/AiPBX",
+    "type": "official",
+    "category": "integration",
+    "icon": "fas fa-shield-alt",
+    "icon_style": "color: #3b82f6;",
+    "description": "Enterprise Single Sign-On (SSO) via OpenID Connect (OIDC) with auto-provisioning for Keycloak, Microsoft Entra ID, Authentik, Okta, and Google Workspace.",
+    "description_i18n": {
+        "tr": "Keycloak, Microsoft Entra ID (Azure AD), Authentik, Okta ve kurumsal kimlik sağlayıcılar için OpenID Connect (OIDC) ile tek noktadan giriş (SSO) ve otomatik kullanıcı açma (auto-provisioning) sağlar.",
+        "en": "Enterprise Single Sign-On (SSO) via OpenID Connect (OIDC) with auto-provisioning for Keycloak, Microsoft Entra ID, Authentik, Okta, and Google Workspace."
+    },
+    "scopes": [
+        "users:read",
+        "users:write"
+    ],
+    "hooks": {
+        "auth_provider": true,
+        "admin_page": {
+            "group": "integrations"
+        }
+    },
+    "settings_schema": [
+        {
+            "key": "enabled",
+            "type": "boolean",
+            "default": "0",
+            "label": "Enable OIDC SSO",
+            "label_i18n": {
+                "tr": "OIDC Kurumsal Girişini Etkinleştir",
+                "en": "Enable OIDC SSO"
+            },
+            "help": "Show the SSO button on the web login page and allow single sign-on.",
+            "help_i18n": {
+                "tr": "Web giriş sayfasında SSO ile giriş butonunu gösterir ve kurumsal kimlik doğrulamayı etkinleştirir.",
+                "en": "Show the SSO button on the web login page and allow single sign-on."
+            }
+        },
+        {
+            "key": "provider_name",
+            "type": "text",
+            "default": "Corporate SSO",
+            "label": "Provider / Button Label",
+            "label_i18n": {
+                "tr": "Sağlayıcı / Buton Başlığı",
+                "en": "Provider / Button Label"
+            },
+            "placeholder": "e.g. Corporate SSO, Keycloak, Microsoft 365, Okta",
+            "help": "Label displayed on the login button (e.g. 'Sign in with Corporate SSO').",
+            "help_i18n": {
+                "tr": "Giriş butonunda gösterilecek isim (ör. 'Kurumsal SSO ile Giriş').",
+                "en": "Label displayed on the login button (e.g. 'Sign in with Corporate SSO')."
+            }
+        },
+        {
+            "key": "discovery_url",
+            "type": "text",
+            "default": "",
+            "label": "OIDC Discovery / Issuer URL",
+            "label_i18n": {
+                "tr": "OIDC Keşif (Discovery) / Issuer URL",
+                "en": "OIDC Discovery / Issuer URL"
+            },
+            "placeholder": "https://auth.example.com/realms/master/.well-known/openid-configuration",
+            "help": "The OpenID Connect discovery document URL or base issuer URL (e.g. Keycloak realm, Azure AD tenant). Automatically configures authorization, token, and userinfo endpoints.",
+            "help_i18n": {
+                "tr": "OpenID Connect .well-known/openid-configuration adresi veya temel Issuer URL'si (Keycloak, Azure AD vb.). Yetkilendirme, token ve kullanıcı bilgisi uç noktalarını otomatik yapılandırır.",
+                "en": "The OpenID Connect discovery document URL or base issuer URL (e.g. Keycloak realm, Azure AD tenant). Automatically configures authorization, token, and userinfo endpoints."
+            }
+        },
+        {
+            "key": "client_id",
+            "type": "text",
+            "default": "",
+            "label": "Client ID",
+            "label_i18n": {
+                "tr": "Client ID (İstemci Kimliği)",
+                "en": "Client ID"
+            },
+            "placeholder": "aipbx-client",
+            "help": "OAuth 2.0 / OIDC Client ID registered in your Identity Provider.",
+            "help_i18n": {
+                "tr": "Kimlik sağlayıcınızda (Keycloak, Entra ID vb.) oluşturulan Client ID.",
+                "en": "OAuth 2.0 / OIDC Client ID registered in your Identity Provider."
+            }
+        },
+        {
+            "key": "client_secret",
+            "type": "password",
+            "secret": true,
+            "default": "",
+            "label": "Client Secret",
+            "label_i18n": {
+                "tr": "Client Secret (İstemci Gizli Anahtarı)",
+                "en": "Client Secret"
+            },
+            "placeholder": "••••••••••••••••",
+            "help": "OAuth 2.0 Client Secret (encrypted at rest using SecretBox).",
+            "help_i18n": {
+                "tr": "OAuth 2.0 Client Secret anahtarı (veritabanında SecretBox ile şifrelenir).",
+                "en": "OAuth 2.0 Client Secret (encrypted at rest using SecretBox)."
+            }
+        },
+        {
+            "key": "scopes",
+            "type": "text",
+            "default": "openid email profile",
+            "label": "Scopes",
+            "label_i18n": {
+                "tr": "İzin Kapsamı (Scopes)",
+                "en": "Scopes"
+            },
+            "placeholder": "openid email profile",
+            "help": "Space-separated OIDC scopes requested from the Identity Provider.",
+            "help_i18n": {
+                "tr": "Kimlik sağlayıcıdan talep edilen boşlukla ayrılmış OIDC izinleri (varsayılan: openid email profile).",
+                "en": "Space-separated OIDC scopes requested from the Identity Provider."
+            }
+        },
+        {
+            "key": "auto_provision",
+            "type": "boolean",
+            "default": "1",
+            "label": "Auto-Provision New Users (JIT)",
+            "label_i18n": {
+                "tr": "Yeni Kullanıcıları Otomatik Oluştur (JIT)",
+                "en": "Auto-Provision New Users (JIT)"
+            },
+            "help": "When enabled, users logging in via SSO for the first time are automatically registered in AiPBX.",
+            "help_i18n": {
+                "tr": "Etkinleştirildiğinde, SSO ile ilk kez giriş yapan doğrulanmış kullanıcılara AiPBX üzerinde otomatik hesap açılır.",
+                "en": "When enabled, users logging in via SSO for the first time are automatically registered in AiPBX."
+            }
+        },
+        {
+            "key": "default_role",
+            "type": "select",
+            "default": "user",
+            "label": "Default Role for New Users",
+            "label_i18n": {
+                "tr": "Yeni Kullanıcılar İçin Varsayılan Rol",
+                "en": "Default Role for New Users"
+            },
+            "options": {
+                "user": "User (Kullanıcı)",
+                "manager": "Manager (Yönetici)",
+                "operator": "Operator (Operatör)"
+            },
+            "help": "Role assigned to automatically provisioned users.",
+            "help_i18n": {
+                "tr": "Otomatik oluşturulan kullanıcılara atanacak varsayılan yetki rolü.",
+                "en": "Role assigned to automatically provisioned users."
+            }
+        },
+        {
+            "key": "allowed_domains",
+            "type": "text",
+            "default": "",
+            "label": "Allowed Email Domains",
+            "label_i18n": {
+                "tr": "İzin Verilen E-posta Alan Adları",
+                "en": "Allowed Email Domains"
+            },
+            "placeholder": "e.g. company.com, subsidiary.org",
+            "help": "Comma-separated list of allowed email domains. Leave empty to allow any verified domain from your IdP.",
+            "help_i18n": {
+                "tr": "Virgülle ayrılmış izin verilen alan adları (ör. sirketim.com). Boş bırakılırsa IdP tarafından doğrulanan tüm alan adları kabul edilir.",
+                "en": "Comma-separated list of allowed email domains. Leave empty to allow any verified domain from your IdP."
+            }
+        },
+        {
+            "key": "role_claim_name",
+            "type": "text",
+            "default": "roles",
+            "label": "Role / Group Claim Name",
+            "label_i18n": {
+                "tr": "Rol / Grup Claim Alanı",
+                "en": "Role / Group Claim Name"
+            },
+            "placeholder": "roles, groups, or realm_access.roles",
+            "help": "Optional JWT/UserInfo claim name containing user roles or group memberships for role mapping.",
+            "help_i18n": {
+                "tr": "Kullanıcı gruplarını veya rollerini içeren opsiyonel claim adı (ör. roles, groups).",
+                "en": "Optional JWT/UserInfo claim name containing user roles or group memberships for role mapping."
+            }
+        },
+        {
+            "key": "admin_role_value",
+            "type": "text",
+            "default": "aipbx_admin",
+            "label": "Admin Role Match Value",
+            "label_i18n": {
+                "tr": "Admin Rolü Eşleşme Değeri",
+                "en": "Admin Role Match Value"
+            },
+            "placeholder": "aipbx_admin or pbx-admins",
+            "help": "If the user's role/group claim contains this value, the user is assigned the 'admin' role.",
+            "help_i18n": {
+                "tr": "Kullanıcının claim listesi bu değeri içeriyorsa 'admin' rolü atanır.",
+                "en": "If the user's role/group claim contains this value, the user is assigned the 'admin' role."
+            }
+        },
+        {
+            "key": "custom_redirect_uri",
+            "type": "text",
+            "default": "",
+            "label": "Custom Redirect URI (Optional)",
+            "label_i18n": {
+                "tr": "Özel Yönlendirme Adresi (Opsiyonel)",
+                "en": "Custom Redirect URI (Optional)"
+            },
+            "placeholder": "https://pbx.example.com/auth/oidc/callback",
+            "help": "Override the automatically detected redirect URI (useful behind complex reverse proxies or load balancers).",
+            "help_i18n": {
+                "tr": "Otomatik hesaplanan geri dönüş adresini geçersiz kılmak için (ters vekil / load balancer arkasındayken).",
+                "en": "Override the automatically detected redirect URI (useful behind complex reverse proxies or load balancers)."
+            }
+        }
+    ]
+}

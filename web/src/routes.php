@@ -98,5 +98,7 @@ return [
     '/integrations/google' => ['controller' => GoogleIntegrationController::class, 'action' => 'index', 'module' => 'google_integration.php'],
     '/auth/google'     => ['controller' => GoogleAuthController::class, 'action' => 'auth', 'module' => 'google_auth.php'],
     '/auth/google/callback' => ['controller' => GoogleAuthController::class, 'action' => 'callback', 'module' => 'google_auth_callback.php'],
+    '/auth/oidc'       => ['controller' => OidcAuthController::class, 'action' => 'auth', 'module' => 'oidc_auth.php'],
+    '/auth/oidc/callback' => ['controller' => OidcAuthController::class, 'action' => 'callback', 'module' => 'oidc_auth_callback.php'],
 ];
 
