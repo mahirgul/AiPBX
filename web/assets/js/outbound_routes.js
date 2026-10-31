@@ -23,6 +23,13 @@ function clearRouteTrunkRows() {
     if (list) list.innerHTML = '';
 }
 
+function toggleEmergencyFields(show) {
+    const box = document.getElementById('emergency_geo_fields');
+    if (box) {
+        box.style.display = show ? 'flex' : 'none';
+    }
+}
+
 function openCreateRouteModal() {
     const title = document.getElementById('routeModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.out.new_title') + '';
@@ -38,6 +45,14 @@ function openCreateRouteModal() {
     addRouteTrunkRow();
     const intCb = document.getElementById('modal_is_internal');
     if (intCb) intCb.checked = false;
+    const emgCb = document.getElementById('modal_is_emergency');
+    if (emgCb) emgCb.checked = false;
+    const geoUri = document.getElementById('modal_geolocation_uri');
+    if (geoUri) geoUri.value = '';
+    const geoRouting = document.getElementById('modal_geolocation_routing');
+    if (geoRouting) geoRouting.value = 'yes';
+    toggleEmergencyFields(false);
+
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = true;
 
@@ -63,6 +78,15 @@ function openEditRouteModal(item) {
     document.getElementById('modal_strip_back').value = item.strip_back || 0;
     const intCb = document.getElementById('modal_is_internal');
     if (intCb) intCb.checked = (parseInt(item.is_internal) === 1);
+    const emgCb = document.getElementById('modal_is_emergency');
+    const isEmergency = (parseInt(item.is_emergency) === 1 || !!(item.geolocation_uri && item.geolocation_uri.trim()));
+    if (emgCb) emgCb.checked = isEmergency;
+    const geoUri = document.getElementById('modal_geolocation_uri');
+    if (geoUri) geoUri.value = item.geolocation_uri || '';
+    const geoRouting = document.getElementById('modal_geolocation_routing');
+    if (geoRouting) geoRouting.value = item.geolocation_routing || 'yes';
+    toggleEmergencyFields(isEmergency);
+
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = (parseInt(item.is_active) === 1);
 

@@ -66,6 +66,12 @@ class RouteService {
             // does not land in an unreachable group and silently vanish.
             $route_group = max(1, min(99, intval($data['route_group'] ?? 1)));
             $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
+            $is_emergency = PBXHelper::boolFlag($data, 'is_emergency', 0);
+            $geolocation_uri = trim((string)($data['geolocation_uri'] ?? ''));
+            $geolocation_routing = trim((string)($data['geolocation_routing'] ?? 'yes'));
+            if (!in_array($geolocation_routing, ['yes', 'no'], true)) {
+                $geolocation_routing = 'yes';
+            }
 
             // Trunks: no primary/backup split — a list added one by one and tried in
             // order. Every row can have its own caller ID masking value.
@@ -107,6 +113,9 @@ class RouteService {
                 'strip_back' => $strip_back,
                 'trunks_json' => json_encode($trunks),
                 'is_internal' => $is_internal,
+                'is_emergency' => $is_emergency,
+                'geolocation_uri' => $geolocation_uri !== '' ? $geolocation_uri : null,
+                'geolocation_routing' => $geolocation_routing,
                 'route_group' => $route_group,
                 'is_active' => $is_active
             ]);

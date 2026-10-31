@@ -58,4 +58,21 @@ In one group, `00…` would mean national for A and international for B. Put B's
 ## Copy and order
 
 **Copy** opens a new route with the same settings; change the pattern before saving. Drag rows to
+reorder; reordering has no effect on which route matches (patterns decide that), only on display.
+
+## Emergency Routes & Geolocation Headers (RFC 6442 / RFC 6443)
+
+Outbound routes can be designated as **Emergency Routes** (e.g. for numbers like `112`, `911`, `999`). When configured:
+
+1. **CDR Tagging:** Asterisk marks the call with `CDR(accountcode) = EMERGENCY` for auditing and compliance records.
+2. **SIP Geolocation Header (RFC 6442):** Injects the location URI (geographic coordinates, civic address, or location URI) directly into the outbound SIP `INVITE`:
+   ```sip
+   Geolocation: <geo:41.0082,28.9784;u=15>
+   ```
+3. **Geolocation-Routing Header (RFC 6443):** Instructs the upstream carrier and emergency PSAP (Public Safety Answering Point) to route the call according to the coordinates:
+   ```sip
+   Geolocation-Routing: yes
+   ```
+4. **Pre-dial Handler Integration:** The headers are safely appended to the outbound trunk channel in `[sub-callee-jb]` right before the INVITE leaves the PBX, avoiding any exposure on internal extension legs.
+
 order the list (see [Portal basics](portal.md)).

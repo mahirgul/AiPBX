@@ -42,6 +42,7 @@ function __syncInboundDialplanBody() {
             // Any DID: plain digits or +E.164 (see CATCH_ALL_EXTEN_PATTERNS).
             $same = " same => n,Set(CDR(direction)=inbound)\n";
             $same .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
+            $same .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
 
             if ($is_busy_tone_wrapper) {
                 // Hang-up tone detector (in-band disconnect supervision)
@@ -67,6 +68,7 @@ function __syncInboundDialplanBody() {
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
+            $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
             if ($is_busy_tone_wrapper) {
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
@@ -118,6 +120,7 @@ function __syncInboundDialplanBody() {
         $conf .= " same => n,Return()\n\n";
     }
 
+    $conf .= inboundBlacklistSubroutine();
     $conf .= trunkLimitSubroutine();
     $conf .= "[from-trunk-inbound]\n\n";
 
@@ -198,6 +201,7 @@ function __syncInboundDialplanBody() {
     $conf .= "; --- Inbound route wrapper with hang-up tone detection ---\n";
     $conf .= "[from-trunk-kapanma-tonu]\n";
     $conf .= "exten => _X.,1,NoOp(Hangup tone detector active - DID \${EXTEN})\n";
+    $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
     $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
     $conf .= " same => n,Goto(from-trunk-inbound,\${EXTEN},1)\n\n";
 
@@ -244,4 +248,76 @@ function trunkLimitSubroutine(): string
         . " same => n,NoOp(Trunk \${ARG1}: call refused, limit \${TRUNK_LIMIT})\n"
         . " same => n,Return()\n\n";
 }
+
+/**
+ * [sub-inbound-blacklist]: checks caller ID against AstDB blacklist and pattern rules.
+ * Fast AstDB exact match, followed by pattern match context if any patterns exist.
+ * Block actions: busy (Hangup 17), congestion (Hangup 34), drop (Hangup 16), announcement (ss-noservice).
+ */
+function inboundBlacklistSubroutine(): string
+{
+    $db = getDB();
+    $patterns = [];
+    try {
+        $patterns = $db->query("SELECT number, block_action FROM pbx_inbound_blacklist WHERE is_active = 1 AND number LIKE '\\_%' ORDER BY number ASC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Exception $e) {
+        $patterns = [];
+    }
+
+    $out = "; --- Inbound Spam & Blacklist Filter ---\n";
+    $out .= "[sub-inbound-blacklist]\n";
+    $out .= "exten => s,1,NoOp(Inbound Blacklist Filter - Caller: \${CALLERID(num)})\n";
+    $out .= " same => n,Set(LOCAL(raw_cid)=\${CALLERID(num)})\n";
+    $out .= " same => n,Set(LOCAL(clean_cid)=\${FILTER(0-9,\${LOCAL(raw_cid)})})\n";
+    $out .= " same => n,GotoIf(\$[\"\${LOCAL(clean_cid)}\" = \"\"]?chk_raw)\n";
+    $out .= " same => n,GotoIf(\$[\${DB_EXISTS(blacklist/\${LOCAL(clean_cid)})}]?blocked_clean)\n";
+    $out .= " same => n(chk_raw),GotoIf(\$[\"\${LOCAL(raw_cid)}\" = \"\"]?allow)\n";
+    $out .= " same => n,GotoIf(\$[\${DB_EXISTS(blacklist/\${LOCAL(raw_cid)})}]?blocked_raw)\n";
+    if (!empty($patterns)) {
+        $out .= " same => n,Set(LOCAL(match_target)=\${IF(\$[\"\${LOCAL(clean_cid)}\" != \"\"]?\${LOCAL(clean_cid)}:\${LOCAL(raw_cid)})})\n";
+        $out .= " same => n,Set(BLK_MATCH=0)\n";
+        $out .= " same => n,Set(BLK_ACTION=)\n";
+        $out .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-inbound-blacklist-patterns,\${LOCAL(match_target)},1)}]?sub-inbound-blacklist-patterns,\${LOCAL(match_target)},1)\n";
+        $out .= " same => n,GotoIf(\$[\"\${BLK_MATCH}\" = \"1\"]?do_block)\n";
+    }
+    $out .= " same => n(allow),Return()\n\n";
+
+    $out .= " same => n(blocked_clean),Set(BLK_ACTION=\${DB(blacklist_action/\${LOCAL(clean_cid)})})\n";
+    $out .= " same => n,Goto(do_block)\n";
+    $out .= " same => n(blocked_raw),Set(BLK_ACTION=\${DB(blacklist_action/\${LOCAL(raw_cid)})})\n";
+    $out .= " same => n,Goto(do_block)\n\n";
+
+    $out .= " same => n(do_block),NoOp(Spam call BLOCKED by Inbound Blacklist - CID: \${LOCAL(raw_cid)} - Action: \${BLK_ACTION})\n";
+    $out .= " same => n,Set(CDR(accountcode)=SPAM_BLOCKED)\n";
+    $out .= " same => n,Set(CDR(userfield)=Blacklist: \${BLK_ACTION})\n";
+    $out .= " same => n,GotoIf(\$[\"\${BLK_ACTION}\" = \"busy\"]?act_busy)\n";
+    $out .= " same => n,GotoIf(\$[\"\${BLK_ACTION}\" = \"congestion\"]?act_congestion)\n";
+    $out .= " same => n,GotoIf(\$[\"\${BLK_ACTION}\" = \"announcement\"]?act_announcement)\n";
+    $out .= " same => n(act_drop),Hangup(16)\n";
+    $out .= " same => n(act_busy),Playtones(busy)\n";
+    $out .= " same => n,Busy(5)\n";
+    $out .= " same => n,Hangup(17)\n";
+    $out .= " same => n(act_congestion),Playtones(congestion)\n";
+    $out .= " same => n,Congestion(5)\n";
+    $out .= " same => n,Hangup(34)\n";
+    $out .= " same => n(act_announcement),Answer()\n";
+    $out .= " same => n,Wait(1)\n";
+    $out .= " same => n,Playback(ss-noservice)\n";
+    $out .= " same => n,Hangup(1)\n\n";
+
+    if (!empty($patterns)) {
+        $out .= "[sub-inbound-blacklist-patterns]\n";
+        foreach ($patterns as $p) {
+            $num = trim($p['number']);
+            $act = in_array($p['block_action'], ['busy', 'congestion', 'drop', 'announcement'], true) ? $p['block_action'] : 'busy';
+            $out .= "exten => {$num},1,Set(BLK_MATCH=1)\n";
+            $out .= " same => n,Set(BLK_ACTION={$act})\n";
+            $out .= " same => n,Return()\n";
+        }
+        $out .= "\n";
+    }
+
+    return $out;
+}
+
 

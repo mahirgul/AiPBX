@@ -116,6 +116,7 @@ function getModuleKeyForPage($page = null) {
         'chat.php'              => 'chat',
         'trunks.php'            => 'trunks',
         'did_routes.php'        => 'did_routes',
+        'blacklist.php'         => 'did_routes',
         'outbound_routes.php'   => 'outbound_routes',
         'dialplan_rules.php'    => 'outbound_routes',
         'dial_permissions.php' => 'dial_permissions',
