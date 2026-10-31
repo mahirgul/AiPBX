@@ -142,6 +142,34 @@ final class CustomDialplanTest extends TestCase
         ]);
         $this->assertNotEmpty($errsReserved);
         $this->assertStringContainsString('reserved', $errsReserved[0]);
+
+        // Duplicate context name
+        $uniqueCtx = 'ctx-dup-' . bin2hex(random_bytes(4));
+        $firstId = CustomDialplanRepository::create([
+            'title' => 'First Context',
+            'context_name' => $uniqueCtx,
+            'dialplan_content' => 'exten => s,1,Hangup()',
+            'include_in_internal' => 1,
+            'is_active' => 1,
+        ]);
+        $this->createdIds[] = $firstId;
+
+        // Try creating another with same context name
+        $errsDup = CustomDialplanService::validateData([
+            'title' => 'Second Context',
+            'context_name' => $uniqueCtx,
+            'dialplan_content' => 'exten => s,1,Hangup()',
+        ]);
+        $this->assertNotEmpty($errsDup);
+        $this->assertStringContainsString('already exists', $errsDup[0]);
+
+        // Validating the same ID should be allowed (updating self)
+        $errsSelf = CustomDialplanService::validateData([
+            'title' => 'First Context Updated',
+            'context_name' => $uniqueCtx,
+            'dialplan_content' => 'exten => s,1,Hangup()',
+        ], $firstId);
+        $this->assertEmpty($errsSelf);
     }
 
     public function testTemplatesLibrary(): void
@@ -233,5 +261,42 @@ final class CustomDialplanTest extends TestCase
         $content = file_get_contents($confPath);
         $this->assertStringContainsString($ctxName, $content);
         $this->assertStringContainsString('exten => *99,1,NoOp(Pending Sync)', $content);
+    }
+
+    public function testServiceToggleAndDeletePendingSync(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
+
+        $ctxName = 'test-toggle-' . bin2hex(random_bytes(4));
+        $res = CustomDialplanService::save([
+            'title' => 'Toggle Sync Test',
+            'context_name' => $ctxName,
+            'dialplan_content' => "exten => *88,1,NoOp(Toggle)\n same => n,Hangup()\n",
+            'include_in_internal' => 1,
+            'is_active' => 1,
+        ], 1);
+
+        $this->assertTrue($res['success']);
+        $id = $res['id'];
+        $this->createdIds[] = $id;
+
+        // Apply initial sync
+        applyPendingSync(1);
+        $this->assertEmpty(getPendingSyncList());
+
+        // Toggle active -> should mark pending sync
+        $toggled = CustomDialplanService::toggleActive($id, 1);
+        $this->assertTrue($toggled);
+        $pendingAfterToggle = getPendingSyncList();
+        $this->assertArrayHasKey('custom_dialplan', $pendingAfterToggle);
+
+        applyPendingSync(1);
+        $this->assertEmpty(getPendingSyncList());
+
+        // Delete -> should mark pending sync
+        $deleted = CustomDialplanService::delete($id, 1);
+        $this->assertTrue($deleted);
+        $pendingAfterDelete = getPendingSyncList();
+        $this->assertArrayHasKey('custom_dialplan', $pendingAfterDelete);
     }
 }
