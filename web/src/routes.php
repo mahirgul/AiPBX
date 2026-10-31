@@ -100,5 +100,8 @@ return [
     '/auth/google/callback' => ['controller' => GoogleAuthController::class, 'action' => 'callback', 'module' => 'google_auth_callback.php'],
     '/auth/oidc'       => ['controller' => OidcAuthController::class, 'action' => 'auth', 'module' => 'oidc_auth.php'],
     '/auth/oidc/callback' => ['controller' => OidcAuthController::class, 'action' => 'callback', 'module' => 'oidc_auth_callback.php'],
+    '/auth/saml'          => ['controller' => SamlAuthController::class, 'action' => 'login', 'module' => 'saml_auth.php'],
+    '/auth/saml/acs'      => ['controller' => SamlAuthController::class, 'action' => 'acs', 'module' => 'saml_auth_acs.php'],
+    '/auth/saml/metadata' => ['controller' => SamlAuthController::class, 'action' => 'metadata', 'module' => 'saml_auth_metadata.php'],
 ];
 

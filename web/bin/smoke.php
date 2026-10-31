@@ -97,7 +97,17 @@ function check_routes(?string $onlyRoute = null): void
     // no page is correct, only "no fatal/PHP error" is checked.
     // /force-reset → goes to /login without $_SESSION['pending_reset_user_id'].
     // /login-2fa   → goes to /login without $_SESSION['pending_2fa_user_id'].
-    $REDIRECT_OK = ['/force-reset', '/login-2fa', '/auth/google', '/auth/google/callback', '/auth/oidc', '/auth/oidc/callback'];
+    $REDIRECT_OK = [
+        '/force-reset',
+        '/login-2fa',
+        '/auth/google',
+        '/auth/google/callback',
+        '/auth/oidc',
+        '/auth/oidc/callback',
+        '/auth/saml',
+        '/auth/saml/acs',
+        '/auth/saml/metadata',
+    ];
 
     // Lower bound for a full page. /reset-password without a token prints a
     // legitimate ~1700-byte form; the threshold sits below that but still
@@ -477,6 +487,7 @@ function check_conventions(): void
         'MobileLoginController.php',
         'GoogleAuthController.php',
         'OidcAuthController.php',
+        'SamlAuthController.php',
         // Desk phones fetch their configuration without a session; the token,
         // allowed networks and rate limit guard it (PhoneProvisionService).
         'ProvisionController.php',
