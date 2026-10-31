@@ -10,7 +10,8 @@ This guide covers installing and configuring **AI PBX** on **Ubuntu 26.04 LTS**.
 
 ## System Requirements
 
-- **Operating System**: Clean Ubuntu Server (26.04 LTS x86_64)
+- **Operating System**: Clean 64-bit OS: Ubuntu Server (26.04 LTS+), Debian 13 (Trixie)+, 64-bit Raspberry Pi OS, or Armbian
+- **Supported Architectures**: `x86_64` (amd64) and `aarch64` (arm64 — e.g. Raspberry Pi 4/5, AWS Graviton, Ampere)
 - **Minimum Specs**: 2 GB RAM, 2 vCPU, 15 GB SSD storage
 - **Recommended Specs (Production)**: 4 GB+ RAM, 4 vCPU, 40 GB+ NVMe SSD
 - **Network**: Static Public IPv4 and/or configured FQDN (e.g. `pbx.company.com`)

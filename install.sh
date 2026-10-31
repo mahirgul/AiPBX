@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================================
-# AI PBX — Ubuntu LTS Fresh Install Script
-# Supported: Ubuntu 26.04 LTS
+# AI PBX — Fresh Install Script
+# Supported: Ubuntu 26.04 LTS+, Debian 13+, 64-bit Raspberry Pi OS / Armbian
+# Architectures: x86_64 (amd64), aarch64 (arm64)
 #
 # Usage:
 #   git clone https://github.com/mahirgul/AiPBX.git /opt/aipbx
@@ -42,16 +43,54 @@ step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 # --- Root check ---
 [[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
 
-# --- Supported OS: Ubuntu 26.04 LTS or newer ---
+# --- Architecture check: 64-bit (x86_64, aarch64/arm64) only ---
+ARCH="$(uname -m)"
+case "$ARCH" in
+    x86_64|amd64)
+        TARGET_ARCH="amd64"
+        ;;
+    aarch64|arm64)
+        TARGET_ARCH="arm64"
+        ;;
+    *)
+        error "AiPBX requires a 64-bit architecture (x86_64 or aarch64/arm64); detected: ${ARCH}. 32-bit systems (such as 32-bit Raspbian/armv7l or i686) are not supported. Please install a 64-bit operating system."
+        ;;
+esac
+
+# --- Supported OS: Ubuntu 26.04 LTS+, Debian 13+, or Debian-derivatives (Raspberry Pi OS 64-bit, Armbian) ---
 # The PHP dependencies (Symfony 8 via Phinx, composer.lock) need PHP >= 8.4.1
-# and the portal targets Asterisk 22; Ubuntu 24.04 ships PHP 8.3 / Asterisk 20,
-# so an install there used to fail half-way with "vendor/bin/phinx" missing.
-# Stop before touching anything; AIPBX_SKIP_OS_CHECK=1 tries anyway.
+# and the portal targets Asterisk 22. Ubuntu 26.04+ and Debian 13+ (Trixie) provide
+# these out of the box. Other Debian derivatives are supported if PHP >= 8.4 is present.
+# Set AIPBX_SKIP_OS_CHECK=1 to bypass.
 if [[ "${AIPBX_SKIP_OS_CHECK:-0}" != 1 ]]; then
     OS_ID="$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}")"
+    OS_ID_LIKE="$(. /etc/os-release 2>/dev/null; echo "${ID_LIKE:-}")"
     OS_VER="$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-0}")"
-    if [[ "$OS_ID" != ubuntu ]] || [[ "$(printf '%s\n' 26.04 "$OS_VER" | sort -V | head -1)" != 26.04 ]]; then
-        error "AiPBX needs Ubuntu 26.04 LTS or newer (PHP >= 8.4, Asterisk 22); this is ${OS_ID} ${OS_VER}. Set AIPBX_SKIP_OS_CHECK=1 to try anyway."
+
+    IS_SUPPORTED=0
+    if [[ "$OS_ID" == "ubuntu" ]]; then
+        if [[ "$(printf '%s\n' 26.04 "$OS_VER" | sort -V | head -1)" == 26.04 ]]; then
+            IS_SUPPORTED=1
+        fi
+    elif [[ "$OS_ID" == "debian" || "$OS_ID" == "raspbian" || "$OS_ID" == "armbian" || "$OS_ID_LIKE" =~ (debian|ubuntu) ]]; then
+        if [[ "$OS_VER" =~ ^[0-9]+$ ]] && [[ "$OS_VER" -ge 13 ]]; then
+            IS_SUPPORTED=1
+        elif [[ "$OS_VER" == "0" || -z "$OS_VER" ]]; then
+            # Debian testing/sid has VERSION_ID empty or 0
+            IS_SUPPORTED=1
+        fi
+    fi
+
+    # Fallback: if on a Debian-family OS and PHP >= 8.4 is already installed (e.g. via Sury PPA on Debian 12 / RPi OS)
+    if [[ "$IS_SUPPORTED" -eq 0 ]] && command -v php >/dev/null 2>&1; then
+        PHP_VER="$(php -r 'echo PHP_VERSION;' 2>/dev/null || echo 0)"
+        if [[ "$(printf '%s\n' 8.4.1 "$PHP_VER" | sort -V | head -1)" == 8.4.1 ]]; then
+            IS_SUPPORTED=1
+        fi
+    fi
+
+    if [[ "$IS_SUPPORTED" -eq 0 ]]; then
+        error "AiPBX officially supports 64-bit Ubuntu 26.04 LTS+, Debian 13 (Trixie)+, or 64-bit Raspberry Pi OS / Armbian (detected: ${OS_ID} ${OS_VER} on ${ARCH}). Prerequisites: PHP >= 8.4 and Asterisk 22. If your system meets these prerequisites (e.g. via Sury PPA or backports), set AIPBX_SKIP_OS_CHECK=1 to try anyway."
     fi
 fi
 

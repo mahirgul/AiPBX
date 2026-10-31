@@ -20,6 +20,7 @@
   <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
   <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-$250_Free_Credit-7b1fa2?logo=cloud&amp;logoColor=white" alt="Deploy on UpCloud"></a>
   <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
+  <img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20arm64-blue" alt="x86_64 and arm64">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
   <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
   <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
@@ -73,7 +74,7 @@ The installer:
    firewalld and fail2ban, and builds the database from migrations
 4. 📄 Prints the credentials and saves them to `/root/aipbx-credentials.txt`
 
-> 💡 **Requirements**: Ubuntu 26.04 LTS · 2 GB RAM · 10 GB disk · root access
+> 💡 **Requirements**: 64-bit OS (Ubuntu 26.04 LTS+, Debian 13+, Raspberry Pi OS 64-bit, or Armbian) · x86_64 or aarch64/arm64 · 2 GB RAM · 10 GB disk · root access
 >
 > ☁️ **Cloud Server**: Deploy on **[UpCloud](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250)** (fast MaxIOPS storage) with **$250 free cloud credits** using promo code `affiliate-aipbx250`.
 >
