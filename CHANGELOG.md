@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.29
+
+- **Official SAML 2.0 Corporate Single Sign-On (SSO) Plugin (`saml-auth`) (#146):**
+  - Added official built-in plugin `plugins/saml-auth/` providing complete SAML 2.0 Web Browser SSO Profile support (Service Provider - SP role) and auto-provisioning.
+  - Compatible out of the box with major enterprise identity providers: Microsoft Entra ID (Azure AD Enterprise Applications SAML), Okta SAML 2.0, Keycloak, Authentik, Active Directory Federation Services (ADFS), Google Workspace, and PingFederate.
+  - **Service Provider (SP) Metadata & Endpoints:** Automatic generation of SP EntityDescriptor XML at `/auth/saml/metadata` with HTTP-POST binding, NameID formats (`emailAddress`, `persistent`, `transient`), and dedicated Assertion Consumer Service (ACS) at `/auth/saml/acs`.
+  - **Quick Setup IdP Metadata XML Importer:** Built-in admin parser that accepts federation metadata XML from Entra ID, Okta, Keycloak, or ADFS to auto-populate Entity ID, SingleSignOnService URL, and X.509 Certificate with one click.
+  - **Cryptographic XML-DSig Verification:** Enforces digital signature and digest verification (SHA-256 and SHA-1) using IdP X.509 public certificates over Response or Assertion elements, with enveloped signature canonicalization (`C14N`).
+  - **Enterprise Security & Replay Mitigation:** Enforces temporal validity (`NotBefore` and `NotOnOrAfter` with 120-second clock skew tolerance), AudienceRestriction, Destination matching, and cryptographically random RelayState state tokens against CSRF and replay attacks.
+  - **Just-In-Time (JIT) Auto-Provisioning & Role Mapping:** Automatically provisions new users in `sys_users` on first sign-in with claim-based username extraction, collision resolution, email domain allowlisting, and customizable role attribute mapping.
+  - **Login Portal & Mobile Deep-Linking:** Dynamic SAML SSO button on the login screen with customizable label and icon, plus mobile client authentication callback support (`aipbx://auth?success=1&code=...`).
+  - **Unit Test Coverage:** 10 new unit tests with 41 assertions in `web/tests/unit/SamlAuthTest.php`, full role matrix integration, and zero-defect plugin validation.
+
 ## 1.50.28
 
 - **Official OpenID Connect (OIDC) & Corporate SSO Plugin (`oidc-auth`) (#146):**
