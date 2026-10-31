@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.31
+
+- **Security Hardening (CVE-2026-98432 & Go 1.24+ MPTCP Defense-in-Depth):**
+  - **Linux Kernel MPTCP Disabling (`/etc/sysctl.d/99-aipbx.conf`):** Added `net.mptcp.enabled = 0` to kernel sysctl tuning in `install.sh` and `aipbx-update`. This completely shuts down MultiPath TCP at the kernel level across all processes and network listeners on the system, definitively neutralizing the remote UAF attack vector identified in CVE-2026-98432.
+  - **Compile-Time Go Module Hardening (`chat/go.mod`):** Configured build directive `godebug multipathtcp=0`, embedding `multipathtcp=0` directly into the binary's `DefaultGODEBUG` so `aipbx-chat` rejects MPTCP listeners by default even in the absence of explicit environment flags.
+  - **Chat Systemd Unit Hardening (`aipbx-chat.service`):** Injected `Environment="GODEBUG=multipathtcp=0"` into `/etc/systemd/system/aipbx-chat.service` for runtime service isolation.
+
 ## 1.50.30
 
 - **SSO Role Mapping, Session Integrity & Plugin Detail Hardening:**
