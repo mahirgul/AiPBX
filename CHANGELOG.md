@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.30
+
+- **SSO Role Mapping, Session Integrity & Plugin Detail Hardening:**
+  - Standardized `default_role` options in `oidc-auth` and `saml-auth` manifests to match valid system roles in `sys_roles` (`user`, `admin`, `cc_manager`, `cc_agent`, `read_only_admin`), preventing database foreign key constraint violations during JIT auto-provisioning.
+  - Added role validation fallback in `OidcAuthService::autoProvisionUser` ensuring unmatched or deprecated roles gracefully fallback to `'user'`.
+  - Harmonized SAML web session keys in `SamlAuthService::loginUserSession` by setting `user_role` (alongside `role`), `ui_language`, login attempt audit logging, and routing authenticated users to their respective `roleHomePath`.
+  - Hardened select field rendering in `web/templates/views/plugins/detail.php` to seamlessly support both key-value dictionaries and indexed `{value, label}` option formats.
+
 ## 1.50.29
 
 - **Official SAML 2.0 Corporate Single Sign-On (SSO) Plugin (`saml-auth`) (#146):**
