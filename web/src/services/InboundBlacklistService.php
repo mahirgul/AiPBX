@@ -229,11 +229,11 @@ class InboundBlacklistService
     {
         $db = getDB();
         $stmt = $db->prepare(
-            "SELECT src FROM sys_cdrs 
-             WHERE (dst = ? OR did = ?) AND direction = 'inbound' AND src != '' AND src != ?
-             ORDER BY calldate DESC LIMIT 1"
+            "SELECT src FROM asteriskcdr 
+             WHERE (dst = ? OR did = ? OR dstchannel LIKE ?) AND src != '' AND src != ?
+             ORDER BY calldate DESC, id DESC LIMIT 1"
         );
-        $stmt->execute([$extension, $extension, $extension]);
+        $stmt->execute([$extension, $extension, "PJSIP/{$extension}-%", $extension]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? (string)$row['src'] : null;
     }

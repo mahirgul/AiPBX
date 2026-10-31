@@ -114,4 +114,74 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         $this->assertStringContainsString('Set(PJSIP_HEADER(add,Geolocation)=${AIPBX_GEOLOCATION_URI})', $genConf);
         $this->assertStringContainsString('Set(PJSIP_HEADER(add,Geolocation-Routing)=${AIPBX_GEOLOCATION_ROUTING})', $genConf);
     }
+
+    public function testInvalidBlacklistInputs(): void
+    {
+        // Empty number
+        $res = InboundBlacklistService::add('   ', 'Empty');
+        $this->assertFalse($res['success']);
+
+        // Only pattern prefix without pattern
+        $res2 = InboundBlacklistService::add('_', 'Just underscore');
+        $this->assertFalse($res2['success']);
+
+        // Invalid action falls back to 'busy'
+        $res3 = InboundBlacklistService::add('9994445566', 'Fallback action', 'nonexistent_action');
+        $this->assertTrue($res3['success']);
+        $entry = InboundBlacklistService::getById((int)$res3['id']);
+        $this->assertNotNull($entry);
+        $this->assertSame('busy', $entry['block_action']);
+
+        // Update non-existent record
+        $res4 = InboundBlacklistService::update(99999999, '9991112233', 'Not found');
+        $this->assertFalse($res4['success']);
+    }
+
+    public function testRebuildAstDb(): void
+    {
+        InboundBlacklistService::add('9993332211', 'AstDB rebuild test', 'congestion', true);
+        InboundBlacklistService::rebuildAstDb();
+        $entry = InboundBlacklistRepository::findByNumber('9993332211');
+        $this->assertNotNull($entry);
+        $this->assertSame('congestion', $entry['block_action']);
+    }
+
+    public function testLastCallerForExtension(): void
+    {
+        // Insert CDR row
+        $this->db->prepare(
+            "INSERT INTO asteriskcdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, duration, billsec, disposition, amaflags, uniqueid) 
+             VALUES (NOW(), 'Spam Tester', '9997776655', '1099', 'from-trunk', 'PJSIP/trunk-001', 'PJSIP/1099-001', 'Dial', 'PJSIP/1099', 15, 10, 'ANSWERED', 3, 'test.123.456')"
+        )->execute();
+
+        $last = InboundBlacklistService::getLastCallerForExtension('1099');
+        $this->assertSame('9997776655', $last);
+
+        // Non-existent extension returns null
+        $this->assertNull(InboundBlacklistService::getLastCallerForExtension('9999'));
+    }
+
+    public function testEmergencyDefaultGeolocationFallback(): void
+    {
+        $this->db->prepare(
+            "INSERT INTO sys_settings (setting_key, setting_value) VALUES ('emergency_default_geolocation_uri', 'geo:39.9334,32.8597') 
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)"
+        )->execute();
+
+        // Route without explicit geolocation URI
+        $this->db->prepare(
+            "INSERT INTO pbx_outbound_routes 
+             (route_name, match_pattern, trunks_json, is_emergency, geolocation_uri, geolocation_routing, route_group, is_active, sort_order) 
+             VALUES ('Unit_Emergency_Test', '911', ?, 1, NULL, 'yes', 1, 1, 999)"
+        )->execute([
+            json_encode([['trunk_name' => 'trunk1', 'callerid_override' => '']]),
+        ]);
+
+        __syncOutboundDialplanBody();
+        $confFile = getenv('ASTERISK_PBX_DIR') . '/extensions_outbound.conf';
+        $this->assertFileExists($confFile);
+        $conf = file_get_contents($confFile);
+        $this->assertStringContainsString('exten => 911,1,NoOp(Outbound Call via Route Unit_Emergency_Test', $conf);
+        $this->assertStringContainsString('same => n,Set(__AIPBX_GEOLOCATION_URI=<geo:39.9334,32.8597>)', $conf);
+    }
 }
