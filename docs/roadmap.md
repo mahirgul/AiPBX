@@ -190,9 +190,9 @@ Also waiting: per-domain apply of pending changes (#120).
 | 1 | [Website call widget](#1-website-call-widget) and WordPress plugin | [#14](https://github.com/mahirgul/AiPBX/issues/14) | large |
 | 2 | [Delete chat messages and attachments](#2-delete-chat-messages-and-attachments) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | medium |
 | 3 | [S3 storage for chat attachments](#3-s3-storage-for-chat-attachments): done, see [File storage](file-storage.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | done |
-| 4 | [Video calls](#4-video-calls): web phone, Android and desk video phones done (1.22), see [Video calls](video-calls.md); iOS open | [#15](https://github.com/mahirgul/AiPBX/issues/15) | large |
+| 4 | [Video calls](#4-video-calls): web phone, Android, iOS and desk video phones done (1.22/1.50), see [Video calls](video-calls.md) | [#15](https://github.com/mahirgul/AiPBX/issues/15) | done |
 | 5 | [Local AI models](#5-local-ai-models-embeddinggemma-2-ema-lightning) (EmbeddingGemma 2, EMA Lightning): steps 0–1 in [Local AI models](local-ai.md) | | large, in steps |
-| 6 | [iOS app: same features as Android 1.0.54](#6-ios-app-same-features-as-android-1054) | | small |
+| 6 | [iOS app parity](#6-ios-app-parity): same features as Android (swipe remove calls, notification reply, own message deletion, in-app image viewer) | | done |
 | 7 | [Dialplan pattern clean-up](#7-dialplan-pattern-clean-up) | | small |
 | 8 | [Busy lamps (BLF) and voicemail lamp on desk phones](#8-busy-lamps-blf-and-voicemail-lamp-on-desk-phones): watching 10–100 colleagues on multi-key phones | | medium |
 | 9 | [Phone provisioning page](#9-phone-provisioning-page) | | large |
@@ -425,11 +425,16 @@ recording and CDR stay here; (2) transcripts of call recordings in the CDR, sear
 to a person when unsure); (4) appointments with a calendar and outbound confirmation calls;
 (5) several assistants with hand-over. Not scheduled yet.
 
-## 6. iOS app: same features as Android 1.0.54
+## 6. iOS app parity — done
 
-Android 1.0.54 added removing calls from the call history (swipe, clear all) and replying to a
-chat notification. The iOS app needs the same two; full-screen incoming calls already come from
-CallKit there.
+The native iOS app ([AiPBX-ios](https://github.com/mahirgul/AiPBX-ios)) maintains full feature parity with the Android app:
+- Removing calls from call history (swipe with Undo, and full "Clear all" confirmation).
+- Replying directly to incoming chat notifications without opening the app (`UNTextInputNotificationAction`).
+- Deleting own chat messages and attachments for everyone in the room.
+- Native in-app full-screen photo viewer with pinch-to-zoom (`ImageViewerOverlay`), pan, double-tap zoom, and iOS share sheet.
+- WebRTC video calls with CallKit integration.
+- 23-language UI localization (`.lproj`).
+- Unified release version `1.50.35` (build 75).
 
 ## 7. Dialplan pattern clean-up
 

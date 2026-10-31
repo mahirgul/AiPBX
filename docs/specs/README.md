@@ -61,3 +61,4 @@ For any new feature or substantial enhancement:
 | Spec # | Feature | Status | Release |
 |---|---|---|---|
 | [`001`](001-custom-dialplan.md) | Custom Asterisk Dialplan & Context Injection | Implemented | v1.50.35 |
+| [`002`](002-ios-app-parity.md) | iOS Mobile App Feature Parity & In-App Media Viewer | Implemented | v1.50.35 |
